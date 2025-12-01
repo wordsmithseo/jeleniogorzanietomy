@@ -49,6 +49,10 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_change_status', array($this, 'admin_change_status'));
         add_action('wp_ajax_jg_admin_approve_point', array($this, 'admin_approve_point'));
         add_action('wp_ajax_jg_admin_reject_point', array($this, 'admin_reject_point'));
+        add_action('wp_ajax_jg_get_point_history', array($this, 'get_point_history'));
+        add_action('wp_ajax_jg_admin_approve_edit', array($this, 'admin_approve_edit'));
+        add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'));
+        add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'));
     }
 
     /**
@@ -115,13 +119,40 @@ class JG_Map_Ajax_Handlers {
                 }
             }
 
+            // Check if promo expired
+            $is_promo = (bool)$point['is_promo'];
+            $promo_until = $point['promo_until'];
+            if ($is_promo && $promo_until) {
+                if (strtotime($promo_until) < current_time('timestamp')) {
+                    // Promo expired, update DB
+                    JG_Map_Database::update_point($point['id'], array('is_promo' => 0));
+                    $is_promo = false;
+                }
+            }
+
             // Status labels
             $status_label = $this->get_status_label($point['status']);
             $report_status_label = $this->get_report_status_label($point['report_status']);
 
             // Check if pending or edit
             $is_pending = ($point['status'] === 'pending');
-            $is_edit = ($point['status'] === 'edit');
+
+            // Get pending edit history
+            $edit_info = null;
+            $pending_history = JG_Map_Database::get_pending_history($point['id']);
+            if ($pending_history) {
+                $old_values = json_decode($pending_history['old_values'], true);
+                $new_values = json_decode($pending_history['new_values'], true);
+
+                $edit_info = array(
+                    'history_id' => intval($pending_history['id']),
+                    'prev_title' => $old_values['title'] ?? '',
+                    'prev_type' => $old_values['type'] ?? '',
+                    'prev_content' => $old_values['content'] ?? '',
+                    'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
+                );
+            }
+            $is_edit = ($pending_history !== null);
 
             $result[] = array(
                 'id' => intval($point['id']),
@@ -131,7 +162,8 @@ class JG_Map_Ajax_Handlers {
                 'lat' => floatval($point['lat']),
                 'lng' => floatval($point['lng']),
                 'type' => $point['type'],
-                'promo' => (bool)$point['is_promo'],
+                'promo' => $is_promo,
+                'promo_until' => $promo_until,
                 'status' => $point['status'],
                 'status_label' => $status_label,
                 'report_status' => $point['report_status'],
@@ -154,7 +186,7 @@ class JG_Map_Ajax_Handlers {
                 'admin_note' => $point['admin_note'],
                 'is_pending' => $is_pending,
                 'is_edit' => $is_edit,
-                'edit_info' => null, // TODO: implement edit history
+                'edit_info' => $edit_info,
                 'reports_count' => $reports_count
             );
         }
@@ -262,18 +294,37 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // If user is not admin, set status to 'edit' for moderation
-        $new_status = $is_admin ? $point['status'] : 'edit';
+        // If user is admin, update directly
+        if ($is_admin) {
+            JG_Map_Database::update_point($point_id, array(
+                'title' => $title,
+                'type' => $type,
+                'content' => $content,
+                'excerpt' => wp_trim_words($content, 20)
+            ));
 
-        JG_Map_Database::update_point($point_id, array(
-            'title' => $title,
-            'type' => $type,
-            'content' => $content,
-            'excerpt' => wp_trim_words($content, 20),
-            'status' => $new_status
-        ));
+            wp_send_json_success(array('message' => 'Zaktualizowano'));
+        } else {
+            // For regular users, create history entry for moderation
+            $old_values = array(
+                'title' => $point['title'],
+                'type' => $point['type'],
+                'content' => $point['content']
+            );
 
-        wp_send_json_success(array('message' => 'Zaktualizowano'));
+            $new_values = array(
+                'title' => $title,
+                'type' => $type,
+                'content' => $content
+            );
+
+            JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values);
+
+            // Notify admin
+            $this->notify_admin_edit($point_id);
+
+            wp_send_json_success(array('message' => 'Wysłano do moderacji'));
+        }
     }
 
     /**
@@ -713,5 +764,183 @@ class JG_Map_Ajax_Handlers {
 
             wp_mail($author->user_email, $subject, $message);
         }
+    }
+
+    /**
+     * Notify admin about edit
+     */
+    private function notify_admin_edit($point_id) {
+        $admin_email = get_option('admin_email');
+        $point = JG_Map_Database::get_point($point_id);
+
+        $subject = '[JG Map] Edycja miejsca do zatwierdzenia';
+        $message = "Użytkownik zaktualizował miejsce:\n\n";
+        $message .= "Tytuł: {$point['title']}\n";
+        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
+
+        wp_mail($admin_email, $subject, $message);
+    }
+
+    /**
+     * Get point history (admin only)
+     */
+    public function get_point_history() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $history = JG_Map_Database::get_point_history($point_id);
+        $formatted_history = array();
+
+        foreach ($history as $entry) {
+            $user = get_userdata($entry['user_id']);
+            $old_values = json_decode($entry['old_values'], true);
+            $new_values = json_decode($entry['new_values'], true);
+
+            $formatted_history[] = array(
+                'id' => intval($entry['id']),
+                'user_name' => $user ? $user->display_name : 'Nieznany',
+                'action_type' => $entry['action_type'],
+                'old_values' => $old_values,
+                'new_values' => $new_values,
+                'status' => $entry['status'],
+                'created_at' => human_time_diff(strtotime($entry['created_at']), current_time('timestamp')) . ' temu',
+                'resolved_at' => $entry['resolved_at'] ? human_time_diff(strtotime($entry['resolved_at']), current_time('timestamp')) . ' temu' : null
+            );
+        }
+
+        wp_send_json_success($formatted_history);
+    }
+
+    /**
+     * Approve edit (admin only)
+     */
+    public function admin_approve_edit() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $history_id = intval($_POST['history_id'] ?? 0);
+
+        if (!$history_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $history = JG_Map_Database::get_pending_history(0); // Get by ID instead
+        global $wpdb;
+        $table = JG_Map_Database::get_history_table();
+        $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
+
+        if (!$history) {
+            wp_send_json_error(array('message' => 'Historia nie istnieje'));
+            exit;
+        }
+
+        $new_values = json_decode($history['new_values'], true);
+
+        // Update point with new values
+        JG_Map_Database::update_point($history['point_id'], array(
+            'title' => $new_values['title'],
+            'type' => $new_values['type'],
+            'content' => $new_values['content'],
+            'excerpt' => wp_trim_words($new_values['content'], 20)
+        ));
+
+        // Approve history
+        JG_Map_Database::approve_history($history_id, get_current_user_id());
+
+        // Notify author
+        $point = JG_Map_Database::get_point($history['point_id']);
+        $author = get_userdata($point['author_id']);
+        if ($author && $author->user_email) {
+            $subject = '[JG Map] Twoja edycja została zaakceptowana';
+            $message = "Twoja edycja miejsca \"{$point['title']}\" została zaakceptowana.";
+            wp_mail($author->user_email, $subject, $message);
+        }
+
+        wp_send_json_success(array('message' => 'Edycja zaakceptowana'));
+    }
+
+    /**
+     * Reject edit (admin only)
+     */
+    public function admin_reject_edit() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $history_id = intval($_POST['history_id'] ?? 0);
+        $reason = sanitize_textarea_field($_POST['reason'] ?? '');
+
+        if (!$history_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        global $wpdb;
+        $table = JG_Map_Database::get_history_table();
+        $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
+
+        if (!$history) {
+            wp_send_json_error(array('message' => 'Historia nie istnieje'));
+            exit;
+        }
+
+        // Reject history
+        JG_Map_Database::reject_history($history_id, get_current_user_id());
+
+        // Notify author
+        $point = JG_Map_Database::get_point($history['point_id']);
+        $author = get_userdata($point['author_id']);
+        if ($author && $author->user_email) {
+            $subject = '[JG Map] Twoja edycja została odrzucona';
+            $message = "Twoja edycja miejsca \"{$point['title']}\" została odrzucona.\n\n";
+            if ($reason) {
+                $message .= "Powód: $reason\n";
+            }
+            wp_mail($author->user_email, $subject, $message);
+        }
+
+        wp_send_json_success(array('message' => 'Edycja odrzucona'));
+    }
+
+    /**
+     * Update promo date (admin only)
+     */
+    public function admin_update_promo_date() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+        $promo_until = sanitize_text_field($_POST['promo_until'] ?? '');
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        // If promo_until is provided, set is_promo to 1
+        $is_promo = !empty($promo_until) ? 1 : $point['is_promo'];
+
+        JG_Map_Database::update_point($point_id, array(
+            'is_promo' => $is_promo,
+            'promo_until' => $promo_until ? $promo_until : null
+        ));
+
+        wp_send_json_success(array(
+            'message' => 'Data promocji zaktualizowana',
+            'promo_until' => $promo_until
+        ));
     }
 }
