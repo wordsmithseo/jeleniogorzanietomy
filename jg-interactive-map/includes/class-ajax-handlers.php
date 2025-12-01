@@ -295,8 +295,18 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // If user is admin, update directly
-        if ($is_admin) {
+        // Check if there's already pending edit for this point
+        $pending_edit = JG_Map_Database::get_pending_history($point_id);
+        if ($pending_edit && !$is_admin) {
+            wp_send_json_error(array('message' => 'Ta lokalizacja ma już oczekującą edycję'));
+            exit;
+        }
+
+        // Admins and moderators can edit directly ONLY if they use admin panel
+        // Regular edits from map always go through moderation
+        $direct_edit = $is_admin && isset($_POST['admin_edit']);
+
+        if ($direct_edit) {
             JG_Map_Database::update_point($point_id, array(
                 'title' => $title,
                 'type' => $type,
@@ -306,7 +316,7 @@ class JG_Map_Ajax_Handlers {
 
             wp_send_json_success(array('message' => 'Zaktualizowano'));
         } else {
-            // For regular users, create history entry for moderation
+            // All edits from map go through moderation system
             $old_values = array(
                 'title' => $point['title'],
                 'type' => $point['type'],
@@ -324,7 +334,7 @@ class JG_Map_Ajax_Handlers {
             // Notify admin
             $this->notify_admin_edit($point_id);
 
-            wp_send_json_success(array('message' => 'Wysłano do moderacji'));
+            wp_send_json_success(array('message' => 'Edycja wysłana do moderacji'));
         }
     }
 

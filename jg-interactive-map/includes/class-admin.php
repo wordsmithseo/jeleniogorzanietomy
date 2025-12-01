@@ -272,6 +272,7 @@ class JG_Map_Admin {
                     <tr>
                         <th>Miejsce</th>
                         <th>Użytkownik</th>
+                        <th>Zmiany</th>
                         <th>Data</th>
                         <th>Akcje</th>
                     </tr>
@@ -279,18 +280,137 @@ class JG_Map_Admin {
                 <tbody>
                     <?php foreach ($edits as $edit):
                         $user = get_userdata($edit['user_id']);
+                        $old_values = json_decode($edit['old_values'], true);
+                        $new_values = json_decode($edit['new_values'], true);
+
+                        $changes = array();
+                        if ($old_values['title'] !== $new_values['title']) {
+                            $changes[] = 'Tytuł';
+                        }
+                        if ($old_values['type'] !== $new_values['type']) {
+                            $changes[] = 'Typ';
+                        }
+                        if ($old_values['content'] !== $new_values['content']) {
+                            $changes[] = 'Opis';
+                        }
                         ?>
                         <tr>
                             <td><strong><?php echo esc_html($edit['point_title']); ?></strong></td>
                             <td><?php echo $user ? esc_html($user->display_name) : 'Nieznany'; ?></td>
+                            <td><?php echo implode(', ', $changes); ?></td>
                             <td><?php echo human_time_diff(strtotime($edit['created_at']), current_time('timestamp')); ?> temu</td>
                             <td>
-                                <a href="<?php echo get_site_url(); ?>?jg_preview_edit=<?php echo $edit['id']; ?>" class="button">Zobacz zmiany</a>
+                                <button class="button jg-view-edit-details" data-edit='<?php echo esc_attr(json_encode($edit)); ?>'>Szczegóły</button>
+                                <button class="button button-primary jg-approve-edit" data-id="<?php echo $edit['id']; ?>">Zatwierdź</button>
+                                <button class="button jg-reject-edit" data-id="<?php echo $edit['id']; ?>">Odrzuć</button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+
+            <script>
+            jQuery(document).ready(function($) {
+                // View edit details
+                $('.jg-view-edit-details').on('click', function() {
+                    var edit = $(this).data('edit');
+                    var old_values = JSON.parse(edit.old_values);
+                    var new_values = JSON.parse(edit.new_values);
+
+                    var html = '<h3>Szczegóły edycji: ' + edit.point_title + '</h3>';
+                    html += '<table style="width:100%;border-collapse:collapse">';
+                    html += '<tr><th style="text-align:left;padding:8px;border:1px solid #ddd">Pole</th><th style="text-align:left;padding:8px;border:1px solid #ddd">Poprzednia wartość</th><th style="text-align:left;padding:8px;border:1px solid #ddd">Nowa wartość</th></tr>';
+
+                    if (old_values.title !== new_values.title) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Tytuł</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + old_values.title + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + new_values.title + '</td></tr>';
+                    }
+                    if (old_values.type !== new_values.type) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Typ</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + old_values.type + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + new_values.type + '</td></tr>';
+                    }
+                    if (old_values.content !== new_values.content) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Opis</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee;max-width:300px;word-wrap:break-word">' + old_values.content + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5;max-width:300px;word-wrap:break-word">' + new_values.content + '</td></tr>';
+                    }
+                    html += '</table>';
+
+                    $('<div>').html(html).dialog({
+                        title: 'Porównanie zmian',
+                        width: 800,
+                        modal: true,
+                        buttons: {
+                            'Zamknij': function() {
+                                $(this).dialog('close');
+                            }
+                        }
+                    });
+                });
+
+                // Approve edit
+                $('.jg-approve-edit').on('click', function() {
+                    if (!confirm('Zatwierdzić tę edycję?')) return;
+
+                    var btn = $(this);
+                    var editId = btn.data('id');
+                    btn.prop('disabled', true).text('Zatwierdzam...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_approve_edit',
+                            history_id: editId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Edycja zatwierdzona!');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
+                                btn.prop('disabled', false).text('Zatwierdź');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd połączenia');
+                            btn.prop('disabled', false).text('Zatwierdź');
+                        }
+                    });
+                });
+
+                // Reject edit
+                $('.jg-reject-edit').on('click', function() {
+                    var reason = prompt('Powód odrzucenia (zostanie wysłany do użytkownika):');
+                    if (reason === null) return;
+
+                    var btn = $(this);
+                    var editId = btn.data('id');
+                    btn.prop('disabled', true).text('Odrzucam...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_reject_edit',
+                            history_id: editId,
+                            reason: reason,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Edycja odrzucona!');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
+                                btn.prop('disabled', false).text('Odrzuć');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd połączenia');
+                            btn.prop('disabled', false).text('Odrzuć');
+                        }
+                    });
+                });
+            });
+            </script>
             <?php endif; ?>
 
             <?php if (!empty($pending)): ?>
