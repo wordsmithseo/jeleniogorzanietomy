@@ -132,19 +132,30 @@
       if (elMap.dataset.lng) lng = parseFloat(elMap.dataset.lng);
       if (elMap.dataset.zoom) zoom = parseInt(elMap.dataset.zoom);
 
-      // Define bounds for Jelenia Góra region
-      var southWest = L.latLng(50.80, 15.60);
-      var northEast = L.latLng(51.00, 15.90);
+      // Define bounds for Jelenia Góra region (stricter)
+      var southWest = L.latLng(50.82, 15.62);
+      var northEast = L.latLng(50.96, 15.82);
       var bounds = L.latLngBounds(southWest, northEast);
 
       var map = L.map(elMap, {
         zoomControl: true,
         scrollWheelZoom: true,
-        minZoom: 11,
+        minZoom: 12,
         maxZoom: 18,
         maxBounds: bounds,
         maxBoundsViscosity: 1.0
       }).setView([lat, lng], zoom);
+
+      // Enforce bounds strictly - reset view if user tries to go outside
+      map.on('drag', function() {
+        map.panInsideBounds(bounds, { animate: false });
+      });
+
+      map.on('zoomend', function() {
+        if (!bounds.contains(map.getCenter())) {
+          map.panInsideBounds(bounds, { animate: true });
+        }
+      });
 
       var tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -473,10 +484,17 @@
         return api('jg_admin_reject_point', d);
       };
 
+      var adminDeletePoint = function(d) {
+        return api('jg_admin_delete_point', d);
+      };
+
       var ALL = [];
 
       function refreshData() {
+        console.log('[JG MAP] refreshData() called, current points:', ALL.length);
         return fetchPoints().then(function(data) {
+          console.log('[JG MAP] Fetched', data ? data.length : 0, 'points from server');
+
           ALL = (data || []).map(function(r) {
             return {
               id: r.id,
@@ -506,7 +524,10 @@
               reports_count: +(r.reports_count || 0)
             };
           });
+
+          console.log('[JG MAP] Processed', ALL.length, 'points, calling apply()');
           apply();
+          console.log('[JG MAP] apply() completed');
           return ALL;
         });
       }
@@ -530,7 +551,24 @@
               disableClusteringAtZoom: 17,
               spiderfyDistanceMultiplier: 2.5,
               animate: true,
-              animateAddingMarkers: false
+              animateAddingMarkers: false,
+              iconCreateFunction: function(cluster) {
+                // Default cluster icon
+                var childCount = cluster.getChildCount();
+                var c = ' marker-cluster-';
+                if (childCount < 10) {
+                  c += 'small';
+                } else if (childCount < 100) {
+                  c += 'medium';
+                } else {
+                  c += 'large';
+                }
+                return L.divIcon({
+                  html: '<div><span>' + childCount + '</span></div>',
+                  className: 'marker-cluster' + c,
+                  iconSize: L.point(40, 40)
+                });
+              }
             });
 
             map.addLayer(cluster);
@@ -544,6 +582,13 @@
             cluster.clearLayers();
           } catch (e) {}
         }
+
+        // Remove all existing promo markers from map first
+        map.eachLayer(function(layer) {
+          if (layer.options && layer.options.isPromo) {
+            map.removeLayer(layer);
+          }
+        });
 
         var bounds = [];
         var validPoints = 0;
@@ -575,7 +620,13 @@
 
             if (isNaN(lat) || isNaN(lng)) return;
 
-            var m = L.marker([lat, lng], { icon: iconFor(p) });
+            // Create marker with special option for promo
+            var markerOptions = {
+              icon: iconFor(p),
+              isPromo: !!p.promo
+            };
+
+            var m = L.marker([lat, lng], markerOptions);
 
             (function(point) {
               m.on('click', function(e) {
@@ -585,10 +636,11 @@
               });
             })(p);
 
-            // Promo markers never go into cluster - always on top
+            // Promo markers NEVER go into cluster - always added directly to map
             if (p.promo) {
               m.addTo(map);
               m.setZIndexOffset(10000); // Always on top
+              console.log('[JG MAP] Added promo marker:', p.title);
             } else if (clusterReady && cluster) {
               cluster.addLayer(m);
             } else {
@@ -1032,6 +1084,7 @@
             controls += '<button class="jg-btn jg-btn--ghost" id="btn-change-status">Zmień status</button>';
           }
           controls += '<button class="jg-btn jg-btn--ghost" id="btn-admin-note">' + (p.admin_note ? 'Edytuj' : 'Dodaj') + ' notatkę</button>';
+          controls += '<button class="jg-btn jg-btn--danger" id="btn-delete-point">🗑️ Usuń miejsce</button>';
           controls += '</div>';
 
           adminBox = '<div class="jg-admin-panel"><div class="jg-admin-panel-title">Panel Administratora</div>' + adminData.join('') + controls + '</div>';
@@ -1142,6 +1195,7 @@
           var btnNote = qs('#btn-admin-note', modalView);
           var btnApprove = qs('#btn-approve-point', modalView);
           var btnReject = qs('#btn-reject-point', modalView);
+          var btnDelete = qs('#btn-delete-point', modalView);
 
           if (btnApprove) {
             btnApprove.onclick = function() {
@@ -1260,6 +1314,29 @@
                 });
             };
           }
+
+          if (btnDelete) {
+            btnDelete.onclick = function() {
+              if (!confirm('NA PEWNO usunąć to miejsce? Tej operacji nie można cofnąć!')) return;
+
+              btnDelete.disabled = true;
+              btnDelete.textContent = 'Usuwanie...';
+
+              adminDeletePoint({ post_id: p.id })
+                .then(function() {
+                  close(modalView);
+                  return refreshData();
+                })
+                .then(function() {
+                  alert('Miejsce usunięte trwale!');
+                })
+                .catch(function(err) {
+                  alert('Błąd: ' + (err.message || '?'));
+                  btnDelete.disabled = false;
+                  btnDelete.textContent = '🗑️ Usuń miejsce';
+                });
+            };
+          }
         }
       }
 
@@ -1282,14 +1359,25 @@
         }
 
         var list = (ALL || []).filter(function(p) {
+          // Search filter
           if (searchQuery) {
             var title = (p.title || '').toLowerCase();
-            if (title.indexOf(searchQuery) === -1) return false;
+            var content = (p.content || '').toLowerCase();
+            var excerpt = (p.excerpt || '').toLowerCase();
+            if (title.indexOf(searchQuery) === -1 &&
+                content.indexOf(searchQuery) === -1 &&
+                excerpt.indexOf(searchQuery) === -1) {
+              return false;
+            }
           }
 
+          // Promo only filter
           if (promoOnly) return p.promo;
+
+          // Always show promo places (unless promo-only is active)
           if (p.promo) return true;
 
+          // Type filters
           var passType = (Object.keys(enabled).length ? !!enabled[p.type] : true);
           return passType;
         });
@@ -1298,12 +1386,33 @@
         draw(list);
       }
 
+      // Setup search input listener
       setTimeout(function() {
         var searchInput = document.getElementById('jg-search-input');
         if (searchInput) {
+          console.log('[JG MAP] Search input attached');
           searchInput.addEventListener('input', function() {
+            console.log('[JG MAP] Search query:', this.value);
             apply();
           });
+        } else {
+          console.error('[JG MAP] Search input not found!');
+        }
+      }, 100);
+
+      // Setup filter listeners
+      setTimeout(function() {
+        if (elFilters) {
+          var allCheckboxes = elFilters.querySelectorAll('input[type="checkbox"]');
+          console.log('[JG MAP] Found', allCheckboxes.length, 'filter checkboxes');
+          allCheckboxes.forEach(function(cb) {
+            cb.addEventListener('change', function() {
+              console.log('[JG MAP] Filter changed:', this.getAttribute('data-type') || 'promo');
+              apply();
+            });
+          });
+        } else {
+          console.error('[JG MAP] Filter container not found!');
         }
       }, 100);
 
@@ -1340,26 +1449,41 @@
           });
 
           apply();
-
-          if (elFilters) {
-            elFilters.querySelectorAll('input').forEach(function(inp) {
-              inp.addEventListener('change', apply);
-            });
-          }
         })
         .catch(function(e) {
           showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
         });
 
-      // Auto-refresh every 30 seconds for real-time updates
-      setInterval(function() {
+      // Auto-refresh every 15 seconds for real-time updates
+      var refreshInterval = setInterval(function() {
         console.log('[JG MAP] Auto-refresh triggered');
+
+        // Add subtle visual feedback
+        if (elMap) {
+          elMap.style.transition = 'opacity 0.2s';
+          elMap.style.opacity = '0.95';
+        }
+
         refreshData().then(function() {
-          console.log('[JG MAP] Data refreshed');
+          console.log('[JG MAP] Data refreshed - map updated');
+          if (elMap) {
+            elMap.style.opacity = '1';
+          }
         }).catch(function(err) {
           console.error('[JG MAP] Auto-refresh error:', err);
+          if (elMap) {
+            elMap.style.opacity = '1';
+          }
         });
-      }, 30000); // 30 seconds
+      }, 15000); // 15 seconds (faster for better real-time feel)
+
+      // Also refresh when page becomes visible again
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+          console.log('[JG MAP] Page visible - refreshing data');
+          refreshData();
+        }
+      });
 
     } catch (e) {
       showError('Błąd: ' + e.message);

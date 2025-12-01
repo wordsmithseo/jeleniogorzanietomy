@@ -108,7 +108,7 @@ class JG_Map_Enqueue {
                 'ajax' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('jg_map_nonce'),
                 'isLoggedIn' => is_user_logged_in(),
-                'isAdmin' => current_user_can('manage_options'),
+                'isAdmin' => current_user_can('manage_options') || current_user_can('jg_map_moderate'),
                 'currentUserId' => get_current_user_id(),
                 'loginUrl' => wp_login_url(get_permalink()),
                 'defaults' => array(
