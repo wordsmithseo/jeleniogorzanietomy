@@ -328,16 +328,23 @@
 
               lastSubmitTime = Date.now();
 
-              msg.textContent = 'Wysłano do moderacji!';
+              msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
               msg.style.color = '#15803d';
               form.reset();
 
-              setTimeout(function() {
-                close(modalAdd);
-                refreshData().then(function() {
-                  console.log('[JG MAP] Dane odświeżone po dodaniu punktu');
-                });
-              }, 1500);
+              // Immediate refresh for better UX
+              refreshData().then(function() {
+                console.log('[JG MAP] Dane odświeżone po dodaniu punktu');
+                msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
+                setTimeout(function() {
+                  close(modalAdd);
+                }, 800);
+              }).catch(function(err) {
+                console.error('[JG MAP] Błąd odświeżania:', err);
+                setTimeout(function() {
+                  close(modalAdd);
+                }, 1000);
+              });
             })
             .catch(function(err) {
               msg.textContent = err.message || 'Błąd';
@@ -926,6 +933,104 @@
         };
       }
 
+      function openPromoModal(p) {
+        var currentPromoUntil = p.promo_until || '';
+        var promoDateValue = '';
+
+        if (currentPromoUntil && currentPromoUntil !== 'null') {
+          try {
+            var d = new Date(currentPromoUntil);
+            // Format to YYYY-MM-DDTHH:MM for datetime-local input
+            var year = d.getFullYear();
+            var month = String(d.getMonth() + 1).padStart(2, '0');
+            var day = String(d.getDate()).padStart(2, '0');
+            var hours = String(d.getHours()).padStart(2, '0');
+            var minutes = String(d.getMinutes()).padStart(2, '0');
+            promoDateValue = year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+          } catch (e) {
+            console.error('Error parsing promo date:', e);
+          }
+        }
+
+        var html = '<header><h3>Zarządzaj promocją</h3><button class="jg-close" id="promo-modal-close">&times;</button></header>' +
+          '<div class="jg-grid" style="padding:16px">' +
+          '<p><strong>Miejsce:</strong> ' + esc(p.title) + '</p>' +
+          '<div style="margin:16px 0">' +
+          '<label style="display:block;margin-bottom:8px"><strong>Status promocji:</strong></label>' +
+          '<div style="display:flex;gap:12px;margin-bottom:16px">' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:12px;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer;flex:1">' +
+          '<input type="radio" name="promo_status" value="1" ' + (p.promo ? 'checked' : '') + ' style="width:20px;height:20px">' +
+          '<div><strong>Promocja aktywna</strong></div>' +
+          '</label>' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:12px;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer;flex:1">' +
+          '<input type="radio" name="promo_status" value="0" ' + (!p.promo ? 'checked' : '') + ' style="width:20px;height:20px">' +
+          '<div><strong>Bez promocji</strong></div>' +
+          '</label>' +
+          '</div>' +
+          '<label style="display:block;margin-bottom:8px"><strong>Data wygaśnięcia promocji (opcjonalnie):</strong></label>' +
+          '<input type="datetime-local" id="promo-until-input" value="' + promoDateValue + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-bottom:8px">' +
+          '<small style="display:block;color:#666;margin-bottom:16px">Pozostaw puste dla promocji bez limitu czasowego</small>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+          '<button type="button" class="jg-btn jg-btn--ghost" id="promo-modal-cancel">Anuluj</button>' +
+          '<button type="button" class="jg-btn" id="promo-modal-save">Zapisz</button>' +
+          '</div>' +
+          '<div id="promo-modal-msg" style="margin-top:12px;font-size:12px"></div>' +
+          '</div>';
+
+        open(modalStatus, html);
+
+        qs('#promo-modal-close', modalStatus).onclick = function() {
+          close(modalStatus);
+        };
+
+        qs('#promo-modal-cancel', modalStatus).onclick = function() {
+          close(modalStatus);
+        };
+
+        var msg = qs('#promo-modal-msg', modalStatus);
+        var saveBtn = qs('#promo-modal-save', modalStatus);
+        var dateInput = qs('#promo-until-input', modalStatus);
+
+        saveBtn.onclick = function() {
+          var selectedPromo = qs('input[name="promo_status"]:checked', modalStatus);
+          if (!selectedPromo) {
+            msg.textContent = 'Wybierz status promocji';
+            msg.style.color = '#b91c1c';
+            return;
+          }
+
+          var isPromo = selectedPromo.value === '1';
+          var promoUntil = dateInput.value || '';
+
+          msg.textContent = 'Zapisywanie...';
+          msg.style.color = '#666';
+          saveBtn.disabled = true;
+
+          // Use new AJAX endpoint for updating promo with date
+          api('jg_admin_update_promo', {
+            post_id: p.id,
+            is_promo: isPromo ? '1' : '0',
+            promo_until: promoUntil
+          })
+            .then(function(result) {
+              p.promo = !!result.is_promo;
+              p.promo_until = result.promo_until || null;
+              close(modalStatus);
+              close(modalView);
+              return refreshData();
+            })
+            .then(function() {
+              console.log('[JG MAP] Promo updated, data refreshed');
+            })
+            .catch(function(err) {
+              msg.textContent = 'Błąd: ' + (err.message || '?');
+              msg.style.color = '#b91c1c';
+              saveBtn.disabled = false;
+            });
+        };
+      }
+
       function openStatusModal(p) {
         var currentStatus = p.report_status || 'added';
         var html = '<header><h3>Zmień status</h3><button class="jg-close" id="status-close">&times;</button></header>' +
@@ -1246,25 +1351,7 @@
 
           if (btnPromo) {
             btnPromo.onclick = function() {
-              if (!confirm((p.promo ? 'Usunąć' : 'Dodać') + ' promocję?')) return;
-              btnPromo.disabled = true;
-              btnPromo.textContent = 'Zapisywanie...';
-
-              adminTogglePromo({ post_id: p.id })
-                .then(function(result) {
-                  p.promo = result.promo;
-                  // Close modal and refresh data immediately
-                  close(modalView);
-                  return refreshData();
-                })
-                .then(function() {
-                  console.log('[JG MAP] Promo toggled, data refreshed');
-                })
-                .catch(function(err) {
-                  alert('Błąd: ' + (err.message || '?'));
-                  btnPromo.disabled = false;
-                  btnPromo.textContent = p.promo ? 'Usuń promocję' : 'Promocja';
-                });
+              openPromoModal(p);
             };
           }
 
