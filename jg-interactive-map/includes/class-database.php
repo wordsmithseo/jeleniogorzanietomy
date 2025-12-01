@@ -27,6 +27,9 @@ class JG_Map_Database {
         // Table for reports
         $table_reports = $wpdb->prefix . 'jg_map_reports';
 
+        // Table for edit history
+        $table_history = $wpdb->prefix . 'jg_map_history';
+
         // Points table SQL
         $sql_points = "CREATE TABLE IF NOT EXISTS $table_points (
             id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -41,6 +44,7 @@ class JG_Map_Database {
             author_id bigint(20) UNSIGNED NOT NULL,
             author_hidden tinyint(1) DEFAULT 0,
             is_promo tinyint(1) DEFAULT 0,
+            promo_until datetime DEFAULT NULL,
             admin_note text,
             images longtext,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
@@ -81,10 +85,29 @@ class JG_Map_Database {
             KEY status (status)
         ) $charset_collate;";
 
+        // History table SQL
+        $sql_history = "CREATE TABLE IF NOT EXISTS $table_history (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            user_id bigint(20) UNSIGNED NOT NULL,
+            action_type varchar(50) NOT NULL,
+            old_values longtext,
+            new_values longtext,
+            status varchar(20) DEFAULT 'pending',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            resolved_at datetime DEFAULT NULL,
+            resolved_by bigint(20) UNSIGNED DEFAULT NULL,
+            PRIMARY KEY (id),
+            KEY point_id (point_id),
+            KEY user_id (user_id),
+            KEY status (status)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_points);
         dbDelta($sql_votes);
         dbDelta($sql_reports);
+        dbDelta($sql_history);
 
         // Set plugin version
         update_option('jg_map_db_version', JG_MAP_VERSION);
@@ -339,6 +362,102 @@ class JG_Map_Database {
                 'resolved_at' => current_time('mysql')
             ),
             array('point_id' => $point_id, 'status' => 'pending')
+        );
+    }
+
+    /**
+     * Get history table name
+     */
+    public static function get_history_table() {
+        global $wpdb;
+        return $wpdb->prefix . 'jg_map_history';
+    }
+
+    /**
+     * Add history entry
+     */
+    public static function add_history($point_id, $user_id, $action_type, $old_values, $new_values) {
+        global $wpdb;
+        $table = self::get_history_table();
+
+        return $wpdb->insert(
+            $table,
+            array(
+                'point_id' => $point_id,
+                'user_id' => $user_id,
+                'action_type' => $action_type,
+                'old_values' => is_array($old_values) ? json_encode($old_values) : $old_values,
+                'new_values' => is_array($new_values) ? json_encode($new_values) : $new_values,
+                'status' => 'pending'
+            )
+        );
+    }
+
+    /**
+     * Get pending history for a point
+     */
+    public static function get_pending_history($point_id) {
+        global $wpdb;
+        $table = self::get_history_table();
+
+        return $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE point_id = %d AND status = 'pending' ORDER BY created_at DESC LIMIT 1",
+                $point_id
+            ),
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Get all history for a point
+     */
+    public static function get_point_history($point_id) {
+        global $wpdb;
+        $table = self::get_history_table();
+
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE point_id = %d ORDER BY created_at DESC",
+                $point_id
+            ),
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Approve history entry
+     */
+    public static function approve_history($history_id, $admin_id) {
+        global $wpdb;
+        $table = self::get_history_table();
+
+        return $wpdb->update(
+            $table,
+            array(
+                'status' => 'approved',
+                'resolved_at' => current_time('mysql'),
+                'resolved_by' => $admin_id
+            ),
+            array('id' => $history_id)
+        );
+    }
+
+    /**
+     * Reject history entry
+     */
+    public static function reject_history($history_id, $admin_id) {
+        global $wpdb;
+        $table = self::get_history_table();
+
+        return $wpdb->update(
+            $table,
+            array(
+                'status' => 'rejected',
+                'resolved_at' => current_time('mysql'),
+                'resolved_by' => $admin_id
+            ),
+            array('id' => $history_id)
         );
     }
 }

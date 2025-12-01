@@ -132,11 +132,18 @@
       if (elMap.dataset.lng) lng = parseFloat(elMap.dataset.lng);
       if (elMap.dataset.zoom) zoom = parseInt(elMap.dataset.zoom);
 
+      // Define bounds for Jelenia Góra region
+      var southWest = L.latLng(50.80, 15.60);
+      var northEast = L.latLng(51.00, 15.90);
+      var bounds = L.latLngBounds(southWest, northEast);
+
       var map = L.map(elMap, {
         zoomControl: true,
         scrollWheelZoom: true,
         minZoom: 11,
-        maxZoom: 18
+        maxZoom: 18,
+        maxBounds: bounds,
+        maxBoundsViscosity: 1.0
       }).setView([lat, lng], zoom);
 
       var tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -358,11 +365,13 @@
 
         var labelHtml = '<span class="' + labelClass + '">' + esc(p.title || 'Bez nazwy') + suffix + '</span>';
 
-        var iconHtml = lbl + labelHtml;
-
+        // Build icon HTML with reports counter
+        var reportsHtml = '';
         if (hasReports) {
-          iconHtml = '<span data-reports="' + p.reports_count + '">' + lbl + '</span>' + labelHtml;
+          reportsHtml = '<span class="jg-reports-counter">' + p.reports_count + '</span>';
         }
+
+        var iconHtml = '<span class="jg-pin-inner">' + lbl + '</span>' + reportsHtml + labelHtml;
 
         return L.divIcon({
           className: c,
@@ -576,7 +585,11 @@
               });
             })(p);
 
-            if (clusterReady && cluster) {
+            // Promo markers never go into cluster - always on top
+            if (p.promo) {
+              m.addTo(map);
+              m.setZIndexOffset(10000); // Always on top
+            } else if (clusterReady && cluster) {
               cluster.addLayer(m);
             } else {
               m.addTo(map);
@@ -1029,7 +1042,13 @@
         var canEdit = (CFG.isAdmin || (CFG.currentUserId > 0 && CFG.currentUserId === +p.author_id));
         var myVote = p.my_vote || '';
 
-        var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>' + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        // Don't show voting for promo points
+        var voteHtml = '';
+        if (!p.promo) {
+          voteHtml = '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>';
+        }
+
+        var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim() });
 
@@ -1046,44 +1065,49 @@
           });
         }
 
-        var cnt = qs('#v-cnt', modalView);
-        var up = qs('#v-up', modalView);
-        var down = qs('#v-down', modalView);
+        // Setup voting handlers only if not promo
+        if (!p.promo) {
+          var cnt = qs('#v-cnt', modalView);
+          var up = qs('#v-up', modalView);
+          var down = qs('#v-down', modalView);
 
-        function refresh(n, my) {
-          cnt.textContent = n;
-          cnt.setAttribute('style', colorForVotes(+n || 0));
-          up.classList.toggle('active', my === 'up');
-          down.classList.toggle('active', my === 'down');
-        }
+          if (cnt && up && down) {
+            function refresh(n, my) {
+              cnt.textContent = n;
+              cnt.setAttribute('style', colorForVotes(+n || 0));
+              up.classList.toggle('active', my === 'up');
+              down.classList.toggle('active', my === 'down');
+            }
 
-        function doVote(dir) {
-          if (!CFG.isLoggedIn) {
-            alert('Zaloguj się.');
-            return;
+            function doVote(dir) {
+              if (!CFG.isLoggedIn) {
+                alert('Zaloguj się.');
+                return;
+              }
+              up.disabled = down.disabled = true;
+              voteReq({ post_id: p.id, dir: dir })
+                .then(function(d) {
+                  p.votes = +d.votes || 0;
+                  p.my_vote = d.my_vote || '';
+                  refresh(p.votes, p.my_vote);
+                })
+                .catch(function(e) {
+                  alert((e && e.message) || 'Błąd');
+                })
+                .finally(function() {
+                  up.disabled = down.disabled = false;
+                });
+            }
+
+            up.onclick = function() {
+              doVote('up');
+            };
+
+            down.onclick = function() {
+              doVote('down');
+            };
           }
-          up.disabled = down.disabled = true;
-          voteReq({ post_id: p.id, dir: dir })
-            .then(function(d) {
-              p.votes = +d.votes || 0;
-              p.my_vote = d.my_vote || '';
-              refresh(p.votes, p.my_vote);
-            })
-            .catch(function(e) {
-              alert((e && e.message) || 'Błąd');
-            })
-            .finally(function() {
-              up.disabled = down.disabled = false;
-            });
         }
-
-        up.onclick = function() {
-          doVote('up');
-        };
-
-        down.onclick = function() {
-          doVote('down');
-        };
 
         qs('#btn-report', modalView).onclick = function() {
           openReportModal(p);
@@ -1326,6 +1350,16 @@
         .catch(function(e) {
           showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
         });
+
+      // Auto-refresh every 30 seconds for real-time updates
+      setInterval(function() {
+        console.log('[JG MAP] Auto-refresh triggered');
+        refreshData().then(function() {
+          console.log('[JG MAP] Data refreshed');
+        }).catch(function(err) {
+          console.error('[JG MAP] Auto-refresh error:', err);
+        });
+      }, 30000); // 30 seconds
 
     } catch (e) {
       showError('Błąd: ' + e.message);

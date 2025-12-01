@@ -61,6 +61,7 @@ class JG_Interactive_Map {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-enqueue.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-shortcode.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-ajax-handlers.php';
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-admin.php';
     }
 
     /**
@@ -85,6 +86,7 @@ class JG_Interactive_Map {
         JG_Map_Enqueue::get_instance();
         JG_Map_Shortcode::get_instance();
         JG_Map_Ajax_Handlers::get_instance();
+        JG_Map_Admin::get_instance();
     }
 
     /**

@@ -316,6 +316,7 @@
   font-size: 16px;
   font-weight: 800;
   box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7), 0 4px 16px rgba(245, 158, 11, 0.5);
+  animation: pulse-gold 2s ease-in-out infinite;
 }
 
 .jg-pin.jg-pin--pending {
@@ -328,8 +329,7 @@
   opacity: 0.7 !important;
 }
 
-.jg-pin.jg-pin--reported::after {
-  content: attr(data-reports);
+.jg-reports-counter {
   position: absolute;
   top: -8px;
   right: -8px;
@@ -525,4 +525,23 @@
 
 .leaflet-container a {
   color: #2563eb;
+}
+
+/* Animations */
+@keyframes pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7), 0 4px 16px rgba(245, 158, 11, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(245, 158, 11, 0), 0 4px 24px rgba(245, 158, 11, 0.8);
+  }
+}
+
+/* Promo markers always on top and never clustered */
+.leaflet-marker-icon.jg-pin--promo {
+  z-index: 10000 !important;
+}
+
+.marker-cluster {
+  z-index: 500 !important;
 }
