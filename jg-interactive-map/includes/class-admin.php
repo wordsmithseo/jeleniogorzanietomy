@@ -30,6 +30,71 @@ class JG_Map_Admin {
      */
     private function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
+        add_action('admin_bar_menu', array($this, 'add_admin_bar_notifications'), 100);
+    }
+
+    /**
+     * Add admin bar notifications
+     */
+    public function add_admin_bar_notifications($wp_admin_bar) {
+        // Only for admins and moderators
+        if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
+            return;
+        }
+
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+        $reports_table = JG_Map_Database::get_reports_table();
+        $history_table = JG_Map_Database::get_history_table();
+
+        // Count pending items
+        $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'");
+        $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
+        $pending_reports = $wpdb->get_var("SELECT COUNT(*) FROM $reports_table WHERE status = 'pending'");
+
+        $total_pending = intval($pending_points) + intval($pending_edits) + intval($pending_reports);
+
+        if ($total_pending === 0) {
+            return;
+        }
+
+        // Add parent node
+        $wp_admin_bar->add_node(array(
+            'id' => 'jg-map-notifications',
+            'title' => '<span style="background:#dc2626;color:#fff;padding:2px 6px;border-radius:10px;font-size:11px;font-weight:700;margin-right:4px">' . $total_pending . '</span> JG Map',
+            'href' => admin_url('admin.php?page=jg-map-moderation'),
+            'meta' => array(
+                'title' => 'JG Map - Oczekujące moderacje'
+            )
+        ));
+
+        // Add child nodes
+        if ($pending_points > 0) {
+            $wp_admin_bar->add_node(array(
+                'parent' => 'jg-map-notifications',
+                'id' => 'jg-map-pending-points',
+                'title' => '📍 ' . $pending_points . ' nowych miejsc',
+                'href' => admin_url('admin.php?page=jg-map-moderation')
+            ));
+        }
+
+        if ($pending_edits > 0) {
+            $wp_admin_bar->add_node(array(
+                'parent' => 'jg-map-notifications',
+                'id' => 'jg-map-pending-edits',
+                'title' => '✏️ ' . $pending_edits . ' edycji do zatwierdzenia',
+                'href' => admin_url('admin.php?page=jg-map-moderation')
+            ));
+        }
+
+        if ($pending_reports > 0) {
+            $wp_admin_bar->add_node(array(
+                'parent' => 'jg-map-notifications',
+                'id' => 'jg-map-pending-reports',
+                'title' => '🚨 ' . $pending_reports . ' zgłoszeń',
+                'href' => admin_url('admin.php?page=jg-map-reports')
+            ));
+        }
     }
 
     /**
@@ -80,6 +145,15 @@ class JG_Map_Admin {
             'manage_options',
             'jg-map-all',
             array($this, 'render_all_points_page')
+        );
+
+        add_submenu_page(
+            'jg-map',
+            'Role użytkowników',
+            'Role użytkowników',
+            'manage_options',
+            'jg-map-roles',
+            array($this, 'render_roles_page')
         );
     }
 
@@ -316,6 +390,25 @@ class JG_Map_Admin {
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
+        // Handle promo actions
+        if (isset($_POST['jg_promo_action']) && check_admin_referer('jg_promo_action', 'jg_promo_nonce')) {
+            $point_id = intval($_POST['point_id'] ?? 0);
+            $action = sanitize_text_field($_POST['action_type'] ?? '');
+
+            if ($point_id && $action) {
+                if ($action === 'update_date') {
+                    $promo_until = sanitize_text_field($_POST['promo_until'] ?? '');
+                    JG_Map_Database::update_point($point_id, array(
+                        'promo_until' => $promo_until ? $promo_until : null
+                    ));
+                    echo '<div class="notice notice-success"><p>Data promocji zaktualizowana!</p></div>';
+                } elseif ($action === 'remove') {
+                    JG_Map_Database::update_point($point_id, array('is_promo' => 0, 'promo_until' => null));
+                    echo '<div class="notice notice-success"><p>Promocja usunięta!</p></div>';
+                }
+            }
+        }
+
         $promos = $wpdb->get_results(
             "SELECT * FROM $table WHERE is_promo = 1 AND status = 'publish' ORDER BY created_at DESC",
             ARRAY_A
@@ -375,8 +468,14 @@ class JG_Map_Admin {
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <a href="<?php echo get_site_url(); ?>?jg_edit_promo=<?php echo $promo['id']; ?>" class="button">Edytuj datę</a>
-                                <a href="<?php echo get_site_url(); ?>?jg_remove_promo=<?php echo $promo['id']; ?>" class="button">Usuń promocję</a>
+                                <button type="button" class="button jg-edit-promo-date" data-id="<?php echo $promo['id']; ?>" data-current="<?php echo $promo['promo_until'] ? date('Y-m-d\TH:i', strtotime($promo['promo_until'])) : ''; ?>">Edytuj datę</button>
+                                <form method="post" style="display:inline" onsubmit="return confirm('Na pewno usunąć promocję?');">
+                                    <?php wp_nonce_field('jg_promo_action', 'jg_promo_nonce'); ?>
+                                    <input type="hidden" name="jg_promo_action" value="1">
+                                    <input type="hidden" name="point_id" value="<?php echo $promo['id']; ?>">
+                                    <input type="hidden" name="action_type" value="remove">
+                                    <button type="submit" class="button">Usuń promocję</button>
+                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -385,6 +484,49 @@ class JG_Map_Admin {
             <?php else: ?>
             <p>Brak aktywnych promocji.</p>
             <?php endif; ?>
+
+            <!-- Modal for editing promo date -->
+            <div id="jg-promo-date-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+                <div style="background:#fff;padding:20px;border-radius:8px;max-width:400px;width:90%;">
+                    <h2>Edytuj datę wygaśnięcia</h2>
+                    <form method="post" id="jg-promo-date-form">
+                        <?php wp_nonce_field('jg_promo_action', 'jg_promo_nonce'); ?>
+                        <input type="hidden" name="jg_promo_action" value="1">
+                        <input type="hidden" name="point_id" id="jg-promo-point-id">
+                        <input type="hidden" name="action_type" value="update_date">
+                        <p>
+                            <label style="display:block;margin-bottom:8px"><strong>Data wygaśnięcia:</strong></label>
+                            <input type="datetime-local" name="promo_until" id="jg-promo-until" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px">
+                            <small style="display:block;margin-top:4px;color:#666">Pozostaw puste dla promocji bez limitu czasowego</small>
+                        </p>
+                        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                            <button type="button" class="button" id="jg-promo-cancel">Anuluj</button>
+                            <button type="submit" class="button button-primary">Zapisz</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+            jQuery(document).ready(function($) {
+                var modal = $('#jg-promo-date-modal');
+
+                $('.jg-edit-promo-date').on('click', function() {
+                    var pointId = $(this).data('id');
+                    var currentDate = $(this).data('current');
+
+                    $('#jg-promo-point-id').val(pointId);
+                    $('#jg-promo-until').val(currentDate);
+                    modal.css('display', 'flex');
+                });
+
+                $('#jg-promo-cancel, #jg-promo-date-modal').on('click', function(e) {
+                    if (e.target === this) {
+                        modal.hide();
+                    }
+                });
+            });
+            </script>
         </div>
         <?php
     }
@@ -430,6 +572,142 @@ class JG_Map_Admin {
                             <td><?php echo human_time_diff(strtotime($point['created_at']), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button button-small">Zobacz</a>
+                                <button class="button button-small jg-delete-point" data-id="<?php echo $point['id']; ?>" style="color:#b32d2e">Usuń</button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <script>
+            jQuery(document).ready(function($) {
+                $('.jg-delete-point').on('click', function() {
+                    var pointId = $(this).data('id');
+                    var btn = $(this);
+
+                    if (!confirm('NA PEWNO usunąć to miejsce? Tej operacji nie można cofnąć!')) {
+                        return;
+                    }
+
+                    btn.prop('disabled', true).text('Usuwanie...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_delete_point',
+                            post_id: pointId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Miejsce usunięte!');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
+                                btn.prop('disabled', false).text('Usuń');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd połączenia');
+                            btn.prop('disabled', false).text('Usuń');
+                        }
+                    });
+                });
+            });
+            </script>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render roles page
+     */
+    public function render_roles_page() {
+        // Handle role update
+        if (isset($_POST['jg_update_roles']) && check_admin_referer('jg_roles_update', 'jg_roles_nonce')) {
+            $user_id = intval($_POST['user_id'] ?? 0);
+            $action = sanitize_text_field($_POST['role_action'] ?? '');
+
+            if ($user_id && in_array($action, array('add', 'remove'))) {
+                $user = get_userdata($user_id);
+                if ($user) {
+                    if ($action === 'add') {
+                        $user->add_cap('jg_map_moderate');
+                        echo '<div class="notice notice-success"><p>Uprawnienia moderatora dodane!</p></div>';
+                    } else {
+                        $user->remove_cap('jg_map_moderate');
+                        echo '<div class="notice notice-success"><p>Uprawnienia moderatora usunięte!</p></div>';
+                    }
+                }
+            }
+        }
+
+        // Get all users
+        $users = get_users(array('orderby' => 'registered', 'order' => 'DESC'));
+
+        ?>
+        <div class="wrap">
+            <h1>Zarządzanie rolami użytkowników</h1>
+
+            <div style="background:#fff7e6;border:2px solid #f59e0b;padding:15px;border-radius:8px;margin:20px 0">
+                <h3 style="margin-top:0">ℹ️ O rolach:</h3>
+                <ul>
+                    <li><strong>Administrator</strong> - pełny dostęp do wszystkich funkcji pluginu</li>
+                    <li><strong>Moderator JG Map</strong> - może moderować miejsca, zgłoszenia i edycje</li>
+                    <li><strong>Użytkownik</strong> - może dodawać i edytować swoje miejsca</li>
+                </ul>
+                <p><strong>Uwaga:</strong> Uprawnienia moderatora można nadać dowolnemu użytkownikowi. Administratorzy WordPress mają automatycznie wszystkie uprawnienia.</p>
+            </div>
+
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nazwa użytkownika</th>
+                        <th>Email</th>
+                        <th>Rola WordPress</th>
+                        <th>Moderator JG Map</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($users as $user):
+                        $is_admin = user_can($user->ID, 'manage_options');
+                        $is_moderator = user_can($user->ID, 'jg_map_moderate');
+                        $roles = implode(', ', $user->roles);
+                        ?>
+                        <tr>
+                            <td><?php echo $user->ID; ?></td>
+                            <td><strong><?php echo esc_html($user->display_name); ?></strong> (<?php echo esc_html($user->user_login); ?>)</td>
+                            <td><?php echo esc_html($user->user_email); ?></td>
+                            <td><?php echo esc_html(ucfirst($roles)); ?></td>
+                            <td>
+                                <?php if ($is_admin): ?>
+                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px">✓ Administrator</span>
+                                <?php elseif ($is_moderator): ?>
+                                    <span style="background:#3b82f6;color:#fff;padding:4px 8px;border-radius:4px">✓ Moderator</span>
+                                <?php else: ?>
+                                    <span style="background:#e5e7eb;color:#6b7280;padding:4px 8px;border-radius:4px">Brak</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!$is_admin): ?>
+                                    <form method="post" style="display:inline">
+                                        <?php wp_nonce_field('jg_roles_update', 'jg_roles_nonce'); ?>
+                                        <input type="hidden" name="user_id" value="<?php echo $user->ID; ?>">
+                                        <input type="hidden" name="jg_update_roles" value="1">
+                                        <?php if ($is_moderator): ?>
+                                            <input type="hidden" name="role_action" value="remove">
+                                            <button type="submit" class="button button-small">Usuń moderatora</button>
+                                        <?php else: ?>
+                                            <input type="hidden" name="role_action" value="add">
+                                            <button type="submit" class="button button-small button-primary">Dodaj moderatora</button>
+                                        <?php endif; ?>
+                                    </form>
+                                <?php else: ?>
+                                    <em style="color:#6b7280">Admin (nie można zmienić)</em>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>

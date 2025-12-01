@@ -53,6 +53,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_approve_edit', array($this, 'admin_approve_edit'));
         add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'));
         add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'));
+        add_action('wp_ajax_jg_admin_delete_point', array($this, 'admin_delete_point'));
     }
 
     /**
@@ -66,10 +67,10 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Check if user is admin
+     * Check if user is admin or moderator
      */
     private function check_admin() {
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
             wp_send_json_error(array('message' => 'Brak uprawnień'));
             exit;
         }
@@ -79,7 +80,7 @@ class JG_Map_Ajax_Handlers {
      * Get all points
      */
     public function get_points() {
-        $is_admin = current_user_can('manage_options');
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $current_user_id = get_current_user_id();
 
         $points = JG_Map_Database::get_published_points($is_admin);
@@ -279,7 +280,7 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Check permissions
-        $is_admin = current_user_can('manage_options');
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         if (!$is_admin && intval($point['author_id']) !== $user_id) {
             wp_send_json_error(array('message' => 'Brak uprawnień'));
             exit;
@@ -942,5 +943,47 @@ class JG_Map_Ajax_Handlers {
             'message' => 'Data promocji zaktualizowana',
             'promo_until' => $promo_until
         ));
+    }
+
+    /**
+     * Delete point permanently (admin only)
+     */
+    public function admin_delete_point() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+        $votes_table = JG_Map_Database::get_votes_table();
+        $reports_table = JG_Map_Database::get_reports_table();
+        $history_table = JG_Map_Database::get_history_table();
+
+        // Delete related data
+        $wpdb->delete($votes_table, array('point_id' => $point_id), array('%d'));
+        $wpdb->delete($reports_table, array('point_id' => $point_id), array('%d'));
+        $wpdb->delete($history_table, array('point_id' => $point_id), array('%d'));
+
+        // Delete the point itself
+        $deleted = $wpdb->delete($points_table, array('id' => $point_id), array('%d'));
+
+        if ($deleted === false) {
+            wp_send_json_error(array('message' => 'Błąd usuwania'));
+            exit;
+        }
+
+        wp_send_json_success(array('message' => 'Miejsce usunięte'));
     }
 }
