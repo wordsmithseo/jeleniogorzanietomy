@@ -53,6 +53,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_approve_edit', array($this, 'admin_approve_edit'));
         add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'));
         add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'));
+        add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'));
         add_action('wp_ajax_jg_admin_delete_point', array($this, 'admin_delete_point'));
     }
 
@@ -952,6 +953,46 @@ class JG_Map_Ajax_Handlers {
         wp_send_json_success(array(
             'message' => 'Data promocji zaktualizowana',
             'promo_until' => $promo_until
+        ));
+    }
+
+    /**
+     * Update promo status and date (admin only)
+     */
+    public function admin_update_promo() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+        $is_promo = intval($_POST['is_promo'] ?? 0);
+        $promo_until = sanitize_text_field($_POST['promo_until'] ?? '');
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        // If promo_until is provided, ensure it's a valid date
+        $promo_until_value = null;
+        if (!empty($promo_until)) {
+            $promo_until_value = $promo_until;
+        }
+
+        JG_Map_Database::update_point($point_id, array(
+            'is_promo' => $is_promo,
+            'promo_until' => $promo_until_value
+        ));
+
+        wp_send_json_success(array(
+            'message' => 'Promocja zaktualizowana',
+            'is_promo' => $is_promo,
+            'promo_until' => $promo_until_value
         ));
     }
 
