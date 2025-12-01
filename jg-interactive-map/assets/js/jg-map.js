@@ -525,15 +525,17 @@
             };
           });
 
-          console.log('[JG MAP] Processed', ALL.length, 'points, calling apply()');
-          apply();
+          console.log('[JG MAP] Processed', ALL.length, 'points, calling apply(true) to skip fitBounds');
+          apply(true); // Skip fitBounds on refresh to preserve user's view
           console.log('[JG MAP] apply() completed');
           return ALL;
         });
       }
 
-      function draw(list) {
-        console.log('[JG MAP] draw() wywołane, punktów:', list ? list.length : 0);
+      var isInitialLoad = true; // Track if this is the first load
+
+      function draw(list, skipFitBounds) {
+        console.log('[JG MAP] draw() wywołane, punktów:', list ? list.length : 0, 'skipFitBounds:', skipFitBounds);
 
         if (!list || list.length === 0) {
           showMap();
@@ -655,20 +657,22 @@
 
         console.log('[JG MAP] Dodano markerów:', addedCount);
 
-        if (bounds.length > 0) {
+        // Only fit bounds on initial load, not on refresh
+        if (!skipFitBounds && isInitialLoad && bounds.length > 0) {
           setTimeout(function() {
             try {
               var leafletBounds = L.latLngBounds(bounds);
-              var padding = validPoints <= 3 ? [100, 100] : [50, 50];
-              var maxZoom = validPoints === 1 ? 16 : (validPoints <= 3 ? 15 : 14);
+              // Show more points unclustered - use zoom 14 max
+              var maxZoom = 14;
 
               map.fitBounds(leafletBounds, {
-                padding: padding,
+                padding: [50, 50],
                 maxZoom: maxZoom,
                 animate: false
               });
 
-              console.log('[JG MAP] FitBounds wykonany, zoom:', map.getZoom());
+              console.log('[JG MAP] Initial fitBounds wykonany, zoom:', map.getZoom());
+              isInitialLoad = false;
             } catch (e) {
               console.error('[JG MAP] Błąd fitBounds:', e);
             }
@@ -833,12 +837,11 @@
               reason: reasonField.value
             })
             .then(function(result) {
-              handleMsg.textContent = result.message;
-              handleMsg.style.color = '#15803d';
-              setTimeout(function() {
-                close(modalReportsList);
-                refreshData();
-              }, 1500);
+              close(modalReportsList);
+              return refreshData();
+            })
+            .then(function() {
+              console.log('[JG MAP] Reports handled (keep), data refreshed');
             })
             .catch(function(err) {
               handleMsg.textContent = err.message || 'Błąd';
@@ -859,13 +862,12 @@
               reason: reasonField.value
             })
             .then(function(result) {
-              handleMsg.textContent = result.message;
-              handleMsg.style.color = '#15803d';
-              setTimeout(function() {
-                close(modalReportsList);
-                close(modalView);
-                refreshData();
-              }, 1500);
+              close(modalReportsList);
+              close(modalView);
+              return refreshData();
+            })
+            .then(function() {
+              console.log('[JG MAP] Reports handled (remove), data refreshed');
             })
             .catch(function(err) {
               handleMsg.textContent = err.message || 'Błąd';
@@ -984,13 +986,12 @@
             .then(function(result) {
               p.report_status = result.report_status;
               p.report_status_label = result.report_status_label;
-              msg.textContent = 'Zmieniono!';
-              msg.style.color = '#15803d';
-              setTimeout(function() {
-                close(modalStatus);
-                close(modalView);
-                refreshData();
-              }, 1000);
+              close(modalStatus);
+              close(modalView);
+              return refreshData();
+            })
+            .then(function() {
+              console.log('[JG MAP] Status changed, data refreshed');
             })
             .catch(function(err) {
               msg.textContent = 'Błąd: ' + (err.message || '?');
@@ -1247,19 +1248,22 @@
             btnPromo.onclick = function() {
               if (!confirm((p.promo ? 'Usunąć' : 'Dodać') + ' promocję?')) return;
               btnPromo.disabled = true;
+              btnPromo.textContent = 'Zapisywanie...';
 
               adminTogglePromo({ post_id: p.id })
                 .then(function(result) {
                   p.promo = result.promo;
+                  // Close modal and refresh data immediately
                   close(modalView);
                   return refreshData();
                 })
                 .then(function() {
-                  alert('Zaktualizowano!');
+                  console.log('[JG MAP] Promo toggled, data refreshed');
                 })
                 .catch(function(err) {
                   alert('Błąd: ' + (err.message || '?'));
                   btnPromo.disabled = false;
+                  btnPromo.textContent = p.promo ? 'Usuń promocję' : 'Promocja';
                 });
             };
           }
@@ -1268,19 +1272,22 @@
             btnAuthor.onclick = function() {
               if (!confirm((p.author_hidden ? 'Ujawnić' : 'Ukryć') + ' autora?')) return;
               btnAuthor.disabled = true;
+              btnAuthor.textContent = 'Zapisywanie...';
 
               adminToggleAuthor({ post_id: p.id })
                 .then(function(result) {
                   p.author_hidden = result.author_hidden;
-                  alert('Zaktualizowano!');
+                  // Close modal and refresh data immediately
                   close(modalView);
-                  setTimeout(function() {
-                    window.location.reload();
-                  }, 500);
+                  return refreshData();
+                })
+                .then(function() {
+                  console.log('[JG MAP] Author visibility toggled, data refreshed');
                 })
                 .catch(function(err) {
                   alert('Błąd: ' + (err.message || '?'));
                   btnAuthor.disabled = false;
+                  btnAuthor.textContent = p.author_hidden ? 'Ujawnij autora' : 'Ukryj autora';
                 });
             };
           }
@@ -1298,6 +1305,7 @@
               if (newNote === null) return;
 
               btnNote.disabled = true;
+              btnNote.textContent = 'Zapisywanie...';
 
               adminUpdateNote({ post_id: p.id, note: newNote })
                 .then(function(result) {
@@ -1306,11 +1314,12 @@
                   return refreshData();
                 })
                 .then(function() {
-                  alert('Zaktualizowano!');
+                  console.log('[JG MAP] Admin note updated, data refreshed');
                 })
                 .catch(function(err) {
                   alert('Błąd: ' + (err.message || '?'));
                   btnNote.disabled = false;
+                  btnNote.textContent = p.admin_note ? 'Edytuj notatkę' : 'Dodaj notatkę';
                 });
             };
           }
@@ -1340,7 +1349,7 @@
         }
       }
 
-      function apply() {
+      function apply(skipFitBounds) {
         var enabled = {};
         var promoOnly = false;
         var searchQuery = '';
@@ -1383,7 +1392,7 @@
         });
 
         pendingData = list;
-        draw(list);
+        draw(list, skipFitBounds);
       }
 
       // Setup search input listener
