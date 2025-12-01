@@ -1,10 +1,23 @@
 /**
  * JG Interactive Map - Frontend JavaScript
- * Version: 2.8.0
+ * Version: 3.0.0
  */
 
 (function($) {
   'use strict';
+
+  // Register Service Worker for advanced caching
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/wp-content/plugins/jg-interactive-map/assets/js/service-worker.js')
+        .then(function(registration) {
+          console.log('[JG MAP] Service Worker registered:', registration.scope);
+        })
+        .catch(function(error) {
+          console.log('[JG MAP] Service Worker registration failed:', error);
+        });
+    });
+  }
 
   var loadingEl = document.getElementById('jg-map-loading');
   var errorEl = document.getElementById('jg-map-error');
@@ -182,11 +195,13 @@
           try {
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
-              maxClusterRadius: 40,
+              maxClusterRadius: 50,
               spiderfyOnMaxZoom: true,
               zoomToBoundsOnClick: true,
-              disableClusteringAtZoom: 17,
-              spiderfyDistanceMultiplier: 2.5
+              disableClusteringAtZoom: 16,
+              spiderfyDistanceMultiplier: 2,
+              animate: true,
+              animateAddingMarkers: true
             });
 
             map.addLayer(cluster);
@@ -333,7 +348,7 @@
               form.reset();
 
               // Immediate refresh for better UX
-              refreshData().then(function() {
+              refreshData(true).then(function() {
                 console.log('[JG MAP] Dane odświeżone po dodaniu punktu');
                 msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
                 setTimeout(function() {
@@ -355,25 +370,26 @@
       });
 
       function iconFor(p) {
-        var promo = !!p.promo;
+        var sponsored = !!p.sponsored;
         var isPending = !!p.is_pending;
         var isEdit = !!p.is_edit;
         var hasReports = (CFG.isAdmin && p.reports_count > 0);
 
-        var size = promo ? [42, 42] : [28, 28];
+        // Larger pins for better visibility - sponsored even bigger
+        var size = sponsored ? [56, 56] : [36, 36];
         var anchor = [size[0] / 2, size[1] / 2];
         var c = 'jg-pin';
 
         if (p.type === 'ciekawostka') c += ' jg-pin--ciekawostka';
         if (p.type === 'miejsce') c += ' jg-pin--miejsce';
-        if (p.promo) c += ' jg-pin--promo';
+        if (p.sponsored) c += ' jg-pin--sponsored';
         if (isPending) c += ' jg-pin--pending';
         if (isEdit) c += ' jg-pin--edit';
         if (hasReports) c += ' jg-pin--reported';
 
         var lbl = (p.type === 'ciekawostka' ? 'i' : (p.type === 'miejsce' ? 'M' : '!'));
 
-        var labelClass = promo ? 'jg-marker-label jg-marker-label--promo' : 'jg-marker-label';
+        var labelClass = sponsored ? 'jg-marker-label jg-marker-label--sponsored' : 'jg-marker-label';
         if (isPending) labelClass += ' jg-marker-label--pending';
         if (isEdit) labelClass += ' jg-marker-label--edit';
 
@@ -496,9 +512,76 @@
       };
 
       var ALL = [];
+      var lastModified = 0;
+      var CACHE_KEY = 'jg_map_cache';
+      var CACHE_VERSION_KEY = 'jg_map_cache_version';
 
-      function refreshData() {
-        console.log('[JG MAP] refreshData() called, current points:', ALL.length);
+      // Try to load from cache
+      function loadFromCache() {
+        try {
+          var cached = localStorage.getItem(CACHE_KEY);
+          var cachedVersion = localStorage.getItem(CACHE_VERSION_KEY);
+          if (cached && cachedVersion) {
+            var data = JSON.parse(cached);
+            lastModified = parseInt(cachedVersion);
+            console.log('[JG MAP] Loaded from cache:', data.length, 'points, version:', lastModified);
+            return data;
+          }
+        } catch (e) {
+          console.error('[JG MAP] Cache load error:', e);
+        }
+        return null;
+      }
+
+      // Save to cache
+      function saveToCache(data, version) {
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+          localStorage.setItem(CACHE_VERSION_KEY, version.toString());
+          lastModified = version;
+          console.log('[JG MAP] Saved to cache:', data.length, 'points, version:', version);
+        } catch (e) {
+          console.error('[JG MAP] Cache save error:', e);
+        }
+      }
+
+      // Check if updates are available
+      function checkForUpdates() {
+        return api('jg_check_updates', {}).then(function(data) {
+          return {
+            hasUpdates: data.last_modified > lastModified,
+            lastModified: data.last_modified,
+            pendingCount: data.pending_count || 0
+          };
+        });
+      }
+
+      function refreshData(force) {
+        console.log('[JG MAP] refreshData() called, current points:', ALL.length, 'force:', force);
+
+        // If not forced, check for updates first
+        if (!force) {
+          return checkForUpdates().then(function(updateInfo) {
+            if (!updateInfo.hasUpdates) {
+              console.log('[JG MAP] No updates available, skipping refresh');
+
+              // Update pending count in title for moderators
+              if (CFG.isAdmin && updateInfo.pendingCount > 0) {
+                document.title = '(' + updateInfo.pendingCount + ') ' + document.title.replace(/^\(\d+\)\s*/, '');
+              }
+
+              return ALL;
+            }
+
+            console.log('[JG MAP] Updates available, fetching...');
+            return fetchAndProcessPoints(updateInfo.lastModified);
+          });
+        }
+
+        return fetchAndProcessPoints();
+      }
+
+      function fetchAndProcessPoints(version) {
         return fetchPoints().then(function(data) {
           console.log('[JG MAP] Fetched', data ? data.length : 0, 'points from server');
 
@@ -532,6 +615,11 @@
             };
           });
 
+          // Save to cache
+          if (version) {
+            saveToCache(ALL, version);
+          }
+
           console.log('[JG MAP] Processed', ALL.length, 'points, calling apply(true) to skip fitBounds');
           apply(true); // Skip fitBounds on refresh to preserve user's view
           console.log('[JG MAP] apply() completed');
@@ -554,13 +642,13 @@
           try {
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
-              maxClusterRadius: 40,
+              maxClusterRadius: 50,
               spiderfyOnMaxZoom: true,
               zoomToBoundsOnClick: true,
-              disableClusteringAtZoom: 17,
-              spiderfyDistanceMultiplier: 2.5,
+              disableClusteringAtZoom: 16,
+              spiderfyDistanceMultiplier: 2,
               animate: true,
-              animateAddingMarkers: false,
+              animateAddingMarkers: true,
               iconCreateFunction: function(cluster) {
                 // Default cluster icon
                 var childCount = cluster.getChildCount();
@@ -632,7 +720,7 @@
             // Create marker with special option for promo
             var markerOptions = {
               icon: iconFor(p),
-              isPromo: !!p.promo
+              isPromo: !!p.sponsored
             };
 
             var m = L.marker([lat, lng], markerOptions);
@@ -646,10 +734,10 @@
             })(p);
 
             // Promo markers NEVER go into cluster - always added directly to map
-            if (p.promo) {
+            if (p.sponsored) {
               m.addTo(map);
               m.setZIndexOffset(10000); // Always on top
-              console.log('[JG MAP] Added promo marker:', p.title);
+              console.log('[JG MAP] Added sponsored marker:', p.title);
             } else if (clusterReady && cluster) {
               cluster.addLayer(m);
             } else {
@@ -695,7 +783,7 @@
 
       function chip(p) {
         var h = '';
-        if (p.promo) h += '<span class="jg-promo-tag">PŁATNA PROMOCJA</span>';
+        if (p.sponsored) h += '<span class="jg-sponsored-tag">MIEJSCE SPONSOROWANE</span>';
 
         if (p.type === 'zgloszenie' && p.report_status) {
           var statusClass = 'jg-status-badge--' + p.report_status;
@@ -845,7 +933,7 @@
             })
             .then(function(result) {
               close(modalReportsList);
-              return refreshData();
+              return refreshData(true);
             })
             .then(function() {
               console.log('[JG MAP] Reports handled (keep), data refreshed');
@@ -871,7 +959,7 @@
             .then(function(result) {
               close(modalReportsList);
               close(modalView);
-              return refreshData();
+              return refreshData(true);
             })
             .then(function() {
               console.log('[JG MAP] Reports handled (remove), data refreshed');
@@ -922,7 +1010,7 @@
             msg.textContent = 'Zaktualizowano.';
             setTimeout(function() {
               close(modalEdit);
-              refreshData().then(function() {
+              refreshData(true).then(function() {
                 alert('Wysłano do moderacji. Zmiany będą widoczne po zaakceptowaniu.');
               });
             }, 300);
@@ -934,7 +1022,7 @@
       }
 
       function openPromoModal(p) {
-        var currentPromoUntil = p.promo_until || '';
+        var currentPromoUntil = p.sponsored_until || '';
         var promoDateValue = '';
 
         if (currentPromoUntil && currentPromoUntil !== 'null') {
@@ -952,76 +1040,76 @@
           }
         }
 
-        var html = '<header><h3>Zarządzaj promocją</h3><button class="jg-close" id="promo-modal-close">&times;</button></header>' +
+        var html = '<header><h3>Zarządzaj sponsorowaniem</h3><button class="jg-close" id="sponsored-modal-close">&times;</button></header>' +
           '<div class="jg-grid" style="padding:16px">' +
           '<p><strong>Miejsce:</strong> ' + esc(p.title) + '</p>' +
           '<div style="margin:16px 0">' +
-          '<label style="display:block;margin-bottom:8px"><strong>Status promocji:</strong></label>' +
+          '<label style="display:block;margin-bottom:8px"><strong>Status sponsorowania:</strong></label>' +
           '<div style="display:flex;gap:12px;margin-bottom:16px">' +
           '<label style="display:flex;align-items:center;gap:8px;padding:12px;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer;flex:1">' +
-          '<input type="radio" name="promo_status" value="1" ' + (p.promo ? 'checked' : '') + ' style="width:20px;height:20px">' +
-          '<div><strong>Promocja aktywna</strong></div>' +
+          '<input type="radio" name="sponsored_status" value="1" ' + (p.sponsored ? 'checked' : '') + ' style="width:20px;height:20px">' +
+          '<div><strong>Sponsorowane</strong></div>' +
           '</label>' +
           '<label style="display:flex;align-items:center;gap:8px;padding:12px;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer;flex:1">' +
-          '<input type="radio" name="promo_status" value="0" ' + (!p.promo ? 'checked' : '') + ' style="width:20px;height:20px">' +
-          '<div><strong>Bez promocji</strong></div>' +
+          '<input type="radio" name="sponsored_status" value="0" ' + (!p.sponsored ? 'checked' : '') + ' style="width:20px;height:20px">' +
+          '<div><strong>Bez sponsorowania</strong></div>' +
           '</label>' +
           '</div>' +
-          '<label style="display:block;margin-bottom:8px"><strong>Data wygaśnięcia promocji (opcjonalnie):</strong></label>' +
-          '<input type="datetime-local" id="promo-until-input" value="' + promoDateValue + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-bottom:8px">' +
-          '<small style="display:block;color:#666;margin-bottom:16px">Pozostaw puste dla promocji bez limitu czasowego</small>' +
+          '<label style="display:block;margin-bottom:8px"><strong>Data wygaśnięcia sponsorowania (opcjonalnie):</strong></label>' +
+          '<input type="datetime-local" id="sponsored-until-input" value="' + promoDateValue + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-bottom:8px">' +
+          '<small style="display:block;color:#666;margin-bottom:16px">Pozostaw puste dla sponsorowania bez limitu czasowego</small>' +
           '</div>' +
           '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-          '<button type="button" class="jg-btn jg-btn--ghost" id="promo-modal-cancel">Anuluj</button>' +
-          '<button type="button" class="jg-btn" id="promo-modal-save">Zapisz</button>' +
+          '<button type="button" class="jg-btn jg-btn--ghost" id="sponsored-modal-cancel">Anuluj</button>' +
+          '<button type="button" class="jg-btn" id="sponsored-modal-save">Zapisz</button>' +
           '</div>' +
-          '<div id="promo-modal-msg" style="margin-top:12px;font-size:12px"></div>' +
+          '<div id="sponsored-modal-msg" style="margin-top:12px;font-size:12px"></div>' +
           '</div>';
 
         open(modalStatus, html);
 
-        qs('#promo-modal-close', modalStatus).onclick = function() {
+        qs('#sponsored-modal-close', modalStatus).onclick = function() {
           close(modalStatus);
         };
 
-        qs('#promo-modal-cancel', modalStatus).onclick = function() {
+        qs('#sponsored-modal-cancel', modalStatus).onclick = function() {
           close(modalStatus);
         };
 
-        var msg = qs('#promo-modal-msg', modalStatus);
-        var saveBtn = qs('#promo-modal-save', modalStatus);
-        var dateInput = qs('#promo-until-input', modalStatus);
+        var msg = qs('#sponsored-modal-msg', modalStatus);
+        var saveBtn = qs('#sponsored-modal-save', modalStatus);
+        var dateInput = qs('#sponsored-until-input', modalStatus);
 
         saveBtn.onclick = function() {
-          var selectedPromo = qs('input[name="promo_status"]:checked', modalStatus);
-          if (!selectedPromo) {
-            msg.textContent = 'Wybierz status promocji';
+          var selectedSponsored = qs('input[name="sponsored_status"]:checked', modalStatus);
+          if (!selectedSponsored) {
+            msg.textContent = 'Wybierz status sponsorowania';
             msg.style.color = '#b91c1c';
             return;
           }
 
-          var isPromo = selectedPromo.value === '1';
-          var promoUntil = dateInput.value || '';
+          var isSponsored = selectedSponsored.value === '1';
+          var sponsoredUntil = dateInput.value || '';
 
           msg.textContent = 'Zapisywanie...';
           msg.style.color = '#666';
           saveBtn.disabled = true;
 
-          // Use new AJAX endpoint for updating promo with date
-          api('jg_admin_update_promo', {
+          // Use new AJAX endpoint for updating sponsored with date
+          api('jg_admin_update_sponsored', {
             post_id: p.id,
-            is_promo: isPromo ? '1' : '0',
-            promo_until: promoUntil
+            is_sponsored: isSponsored ? '1' : '0',
+            sponsored_until: sponsoredUntil
           })
             .then(function(result) {
-              p.promo = !!result.is_promo;
-              p.promo_until = result.promo_until || null;
+              p.sponsored = !!result.is_sponsored;
+              p.sponsored_until = result.sponsored_until || null;
               close(modalStatus);
               close(modalView);
-              return refreshData();
+              return refreshData(true);
             })
             .then(function() {
-              console.log('[JG MAP] Promo updated, data refreshed');
+              console.log('[JG MAP] Sponsored updated, data refreshed');
             })
             .catch(function(err) {
               msg.textContent = 'Błąd: ' + (err.message || '?');
@@ -1029,6 +1117,10 @@
               saveBtn.disabled = false;
             });
         };
+      }
+
+      function openSponsoredModal(p) {
+        return openPromoModal(p); // Backward compatibility wrapper
       }
 
       function openStatusModal(p) {
@@ -1093,7 +1185,7 @@
               p.report_status_label = result.report_status_label;
               close(modalStatus);
               close(modalView);
-              return refreshData();
+              return refreshData(true);
             })
             .then(function() {
               console.log('[JG MAP] Status changed, data refreshed');
@@ -1108,8 +1200,11 @@
 
       function openDetails(p) {
         var imgs = Array.isArray(p.images) ? p.images : [];
-        var gal = imgs.map(function(u) {
-          return '<img src="' + esc(u) + '" alt="">';
+        var gal = imgs.map(function(img) {
+          // Support both old format (string URL) and new format (object with thumb/full)
+          var thumbUrl = typeof img === 'object' ? (img.thumb || img.full) : img;
+          var fullUrl = typeof img === 'object' ? (img.full || img.thumb) : img;
+          return '<img src="' + esc(thumbUrl) + '" data-full="' + esc(fullUrl) + '" alt="" loading="lazy" style="cursor:pointer">';
         }).join('');
 
         var dateInfo = (p.date && p.date.human) ? '<div class="jg-date-info">Dodano: ' + esc(p.date.human) + '</div>' : '';
@@ -1184,7 +1279,7 @@
             controls += '<button class="jg-btn" id="btn-reject-point" style="background:#b91c1c">✗ Odrzuć</button>';
           }
 
-          controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-promo">' + (p.promo ? 'Usuń promocję' : 'Promocja') + '</button>';
+          controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-sponsored">' + (p.sponsored ? 'Usuń sponsorowanie' : 'Sponsorowane') + '</button>';
           controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-author">' + (p.author_hidden ? 'Ujawnij' : 'Ukryj') + ' autora</button>';
           if (p.type === 'zgloszenie') {
             controls += '<button class="jg-btn jg-btn--ghost" id="btn-change-status">Zmień status</button>';
@@ -1196,14 +1291,14 @@
           adminBox = '<div class="jg-admin-panel"><div class="jg-admin-panel-title">Panel Administratora</div>' + adminData.join('') + controls + '</div>';
         }
 
-        var promoClass = p.promo ? ' jg-modal--promo' : '';
+        var promoClass = p.sponsored ? ' jg-modal--promo' : '';
         var typeClass = ' jg-modal--' + (p.type || 'zgloszenie');
         var canEdit = (CFG.isAdmin || (CFG.currentUserId > 0 && CFG.currentUserId === +p.author_id));
         var myVote = p.my_vote || '';
 
         // Don't show voting for promo points
         var voteHtml = '';
-        if (!p.promo) {
+        if (!p.sponsored) {
           voteHtml = '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>';
         }
 
@@ -1219,13 +1314,14 @@
         if (g) {
           g.querySelectorAll('img').forEach(function(img) {
             img.addEventListener('click', function() {
-              openLightbox(this.src);
+              var fullUrl = this.getAttribute('data-full') || this.src;
+              openLightbox(fullUrl);
             });
           });
         }
 
         // Setup voting handlers only if not promo
-        if (!p.promo) {
+        if (!p.sponsored) {
           var cnt = qs('#v-cnt', modalView);
           var up = qs('#v-up', modalView);
           var down = qs('#v-down', modalView);
@@ -1295,7 +1391,6 @@
             };
           }
 
-          var btnPromo = qs('#btn-toggle-promo', modalView);
           var btnAuthor = qs('#btn-toggle-author', modalView);
           var btnStatus = qs('#btn-change-status', modalView);
           var btnNote = qs('#btn-admin-note', modalView);
@@ -1312,7 +1407,7 @@
               adminApprovePoint({ post_id: p.id })
                 .then(function() {
                   close(modalView);
-                  return refreshData();
+                  return refreshData(true);
                 })
                 .then(function() {
                   alert('Zaakceptowano i opublikowano!');
@@ -1336,7 +1431,7 @@
               adminRejectPoint({ post_id: p.id, reason: reason })
                 .then(function() {
                   close(modalView);
-                  return refreshData();
+                  return refreshData(true);
                 })
                 .then(function() {
                   alert('Odrzucono i przeniesiono do kosza.');
@@ -1349,9 +1444,10 @@
             };
           }
 
-          if (btnPromo) {
-            btnPromo.onclick = function() {
-              openPromoModal(p);
+          var btnSponsored = qs('#btn-toggle-sponsored', modalView);
+          if (btnSponsored) {
+            btnSponsored.onclick = function() {
+              openSponsoredModal(p);
             };
           }
 
@@ -1366,7 +1462,7 @@
                   p.author_hidden = result.author_hidden;
                   // Close modal and refresh data immediately
                   close(modalView);
-                  return refreshData();
+                  return refreshData(true);
                 })
                 .then(function() {
                   console.log('[JG MAP] Author visibility toggled, data refreshed');
@@ -1398,7 +1494,7 @@
                 .then(function(result) {
                   p.admin_note = newNote;
                   close(modalView);
-                  return refreshData();
+                  return refreshData(true);
                 })
                 .then(function() {
                   console.log('[JG MAP] Admin note updated, data refreshed');
@@ -1421,7 +1517,7 @@
               adminDeletePoint({ post_id: p.id })
                 .then(function() {
                   close(modalView);
-                  return refreshData();
+                  return refreshData(true);
                 })
                 .then(function() {
                   alert('Miejsce usunięte trwale!');
@@ -1468,10 +1564,10 @@
           }
 
           // Promo only filter
-          if (promoOnly) return p.promo;
+          if (promoOnly) return p.sponsored;
 
           // Always show promo places (unless promo-only is active)
-          if (p.promo) return true;
+          if (p.sponsored) return true;
 
           // Type filters
           var passType = (Object.keys(enabled).length ? !!enabled[p.type] : true);
@@ -1503,7 +1599,7 @@
           console.log('[JG MAP] Found', allCheckboxes.length, 'filter checkboxes');
           allCheckboxes.forEach(function(cb) {
             cb.addEventListener('change', function() {
-              console.log('[JG MAP] Filter changed:', this.getAttribute('data-type') || 'promo');
+              console.log('[JG MAP] Filter changed:', this.getAttribute('data-type') || 'sponsored');
               apply();
             });
           });
@@ -1512,72 +1608,43 @@
         }
       }, 100);
 
-      fetchPoints()
-        .then(function(data) {
-          ALL = (data || []).map(function(r) {
-            return {
-              id: r.id,
-              title: r.title || '',
-              excerpt: r.excerpt || '',
-              content: r.content || '',
-              lat: +r.lat,
-              lng: +r.lng,
-              type: r.type || 'zgloszenie',
-              promo: !!r.promo,
-              status: r.status || '',
-              status_label: r.status_label || '',
-              report_status: r.report_status || '',
-              report_status_label: r.report_status_label || '',
-              author_id: +(r.author_id || 0),
-              author_name: (r.author_name || ''),
-              author_hidden: !!r.author_hidden,
-              images: (r.images || []),
-              votes: +(r.votes || 0),
-              my_vote: (r.my_vote || ''),
-              date: r.date || null,
-              admin: r.admin || null,
-              admin_note: r.admin_note || '',
-              is_pending: !!r.is_pending,
-              is_edit: !!r.is_edit,
-              edit_info: r.edit_info || null,
-              reports_count: +(r.reports_count || 0)
-            };
-          });
+      // Try to load from cache first for instant display
+      var cachedData = loadFromCache();
+      if (cachedData) {
+        ALL = cachedData;
+        apply();
+        console.log('[JG MAP] Displayed cached data, checking for updates...');
+      }
 
-          apply();
+      // Then fetch fresh data (or just check for updates)
+      refreshData(true)
+        .then(function() {
+          console.log('[JG MAP] Initial data load complete');
         })
         .catch(function(e) {
-          showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
+          if (!cachedData) {
+            showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
+          } else {
+            console.error('[JG MAP] Update check failed, using cached data:', e);
+          }
         });
 
-      // Auto-refresh every 15 seconds for real-time updates
+      // Smart auto-refresh: Check for updates every 15 seconds, only fetch if needed
       var refreshInterval = setInterval(function() {
-        console.log('[JG MAP] Auto-refresh triggered');
+        console.log('[JG MAP] Auto-refresh triggered - checking for updates');
 
-        // Add subtle visual feedback
-        if (elMap) {
-          elMap.style.transition = 'opacity 0.2s';
-          elMap.style.opacity = '0.95';
-        }
-
-        refreshData().then(function() {
-          console.log('[JG MAP] Data refreshed - map updated');
-          if (elMap) {
-            elMap.style.opacity = '1';
-          }
+        refreshData(false).then(function() {
+          console.log('[JG MAP] Auto-refresh complete');
         }).catch(function(err) {
           console.error('[JG MAP] Auto-refresh error:', err);
-          if (elMap) {
-            elMap.style.opacity = '1';
-          }
         });
-      }, 15000); // 15 seconds (faster for better real-time feel)
+      }, 15000); // 15 seconds
 
-      // Also refresh when page becomes visible again
+      // Also check for updates when page becomes visible again
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
-          console.log('[JG MAP] Page visible - refreshing data');
-          refreshData();
+          console.log('[JG MAP] Page visible - checking for updates');
+          refreshData(false);
         }
       });
 

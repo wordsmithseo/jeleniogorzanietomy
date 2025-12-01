@@ -32,6 +32,8 @@ class JG_Map_Ajax_Handlers {
         // Public AJAX actions (logged in and not logged in)
         add_action('wp_ajax_jg_points', array($this, 'get_points'));
         add_action('wp_ajax_nopriv_jg_points', array($this, 'get_points'));
+        add_action('wp_ajax_jg_check_updates', array($this, 'check_updates'));
+        add_action('wp_ajax_nopriv_jg_check_updates', array($this, 'check_updates'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -54,6 +56,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'));
         add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'));
         add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'));
+        add_action('wp_ajax_jg_admin_update_sponsored', array($this, 'admin_update_sponsored'));
         add_action('wp_ajax_jg_admin_delete_point', array($this, 'admin_delete_point'));
     }
 
@@ -75,6 +78,40 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_error(array('message' => 'Brak uprawnień'));
             exit;
         }
+    }
+
+    /**
+     * Check for updates - returns last modified timestamp
+     */
+    public function check_updates() {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+        $reports_table = JG_Map_Database::get_reports_table();
+        $history_table = JG_Map_Database::get_history_table();
+
+        // Get latest timestamp from all relevant tables
+        $points_time = $wpdb->get_var("SELECT MAX(updated_at) FROM $table");
+        $reports_time = $wpdb->get_var("SELECT MAX(created_at) FROM $reports_table");
+        $history_time = $wpdb->get_var("SELECT MAX(created_at) FROM $history_table");
+
+        $timestamps = array_filter(array($points_time, $reports_time, $history_time));
+        $last_modified = empty($timestamps) ? current_time('mysql') : max($timestamps);
+
+        // Get counts for moderators
+        $pending_count = 0;
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        if ($is_admin) {
+            $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = 'pending'");
+            $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
+            $pending_reports = $wpdb->get_var("SELECT COUNT(*) FROM $reports_table WHERE status = 'pending'");
+            $pending_count = intval($pending_points) + intval($pending_edits) + intval($pending_reports);
+        }
+
+        wp_send_json_success(array(
+            'last_modified' => strtotime($last_modified),
+            'pending_count' => $pending_count
+        ));
     }
 
     /**
@@ -121,14 +158,14 @@ class JG_Map_Ajax_Handlers {
                 }
             }
 
-            // Check if promo expired
-            $is_promo = (bool)$point['is_promo'];
-            $promo_until = $point['promo_until'];
-            if ($is_promo && $promo_until) {
-                if (strtotime($promo_until) < current_time('timestamp')) {
-                    // Promo expired, update DB
+            // Check if sponsored expired
+            $is_sponsored = (bool)$point['is_promo'];
+            $sponsored_until = $point['promo_until'];
+            if ($is_sponsored && $sponsored_until) {
+                if (strtotime($sponsored_until) < current_time('timestamp')) {
+                    // Sponsored expired, update DB
                     JG_Map_Database::update_point($point['id'], array('is_promo' => 0));
-                    $is_promo = false;
+                    $is_sponsored = false;
                 }
             }
 
@@ -164,8 +201,8 @@ class JG_Map_Ajax_Handlers {
                 'lat' => floatval($point['lat']),
                 'lng' => floatval($point['lng']),
                 'type' => $point['type'],
-                'promo' => $is_promo,
-                'promo_until' => $promo_until,
+                'sponsored' => $is_sponsored,
+                'sponsored_until' => $sponsored_until,
                 'status' => $point['status'],
                 'status_label' => $status_label,
                 'report_status' => $point['report_status'],
@@ -646,6 +683,10 @@ class JG_Map_Ajax_Handlers {
             require_once(ABSPATH . 'wp-admin/includes/file.php');
         }
 
+        if (!function_exists('wp_get_image_editor')) {
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+        }
+
         $upload_overrides = array('test_form' => false);
 
         // Handle multiple files
@@ -665,13 +706,48 @@ class JG_Map_Ajax_Handlers {
                     $movefile = wp_handle_upload($file, $upload_overrides);
 
                     if ($movefile && !isset($movefile['error'])) {
-                        $images[] = $movefile['url'];
+                        // Create thumbnail
+                        $thumbnail_url = $this->create_thumbnail($movefile['file'], $movefile['url']);
+
+                        $images[] = array(
+                            'full' => $movefile['url'],
+                            'thumb' => $thumbnail_url ?: $movefile['url']
+                        );
                     }
                 }
             }
         }
 
         return $images;
+    }
+
+    /**
+     * Create thumbnail for uploaded image
+     */
+    private function create_thumbnail($file_path, $original_url) {
+        $image_editor = wp_get_image_editor($file_path);
+
+        if (is_wp_error($image_editor)) {
+            return false;
+        }
+
+        // Resize to 300x300 thumbnail
+        $image_editor->resize(300, 300, false);
+
+        $file_info = pathinfo($file_path);
+        $thumbnail_path = $file_info['dirname'] . '/' . $file_info['filename'] . '-thumb.' . $file_info['extension'];
+
+        $saved = $image_editor->save($thumbnail_path);
+
+        if (is_wp_error($saved)) {
+            return false;
+        }
+
+        // Convert file path to URL
+        $upload_dir = wp_upload_dir();
+        $thumbnail_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $thumbnail_path);
+
+        return $thumbnail_url;
     }
 
     /**
@@ -993,6 +1069,46 @@ class JG_Map_Ajax_Handlers {
             'message' => 'Promocja zaktualizowana',
             'is_promo' => $is_promo,
             'promo_until' => $promo_until_value
+        ));
+    }
+
+    /**
+     * Update sponsored status and date (admin only) - NEW API with sponsored naming
+     */
+    public function admin_update_sponsored() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+        $is_sponsored = intval($_POST['is_sponsored'] ?? 0);
+        $sponsored_until = sanitize_text_field($_POST['sponsored_until'] ?? '');
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        // Map sponsored naming to promo in database
+        $sponsored_until_value = null;
+        if (!empty($sponsored_until)) {
+            $sponsored_until_value = $sponsored_until;
+        }
+
+        JG_Map_Database::update_point($point_id, array(
+            'is_promo' => $is_sponsored,
+            'promo_until' => $sponsored_until_value
+        ));
+
+        wp_send_json_success(array(
+            'message' => 'Sponsorowanie zaktualizowane',
+            'is_sponsored' => $is_sponsored,
+            'sponsored_until' => $sponsored_until_value
         ));
     }
 
