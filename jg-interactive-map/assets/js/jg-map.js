@@ -333,7 +333,7 @@
               form.reset();
 
               // Immediate refresh for better UX
-              refreshData().then(function() {
+              refreshData(true).then(function() {
                 console.log('[JG MAP] Dane odświeżone po dodaniu punktu');
                 msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
                 setTimeout(function() {
@@ -496,9 +496,76 @@
       };
 
       var ALL = [];
+      var lastModified = 0;
+      var CACHE_KEY = 'jg_map_cache';
+      var CACHE_VERSION_KEY = 'jg_map_cache_version';
 
-      function refreshData() {
-        console.log('[JG MAP] refreshData() called, current points:', ALL.length);
+      // Try to load from cache
+      function loadFromCache() {
+        try {
+          var cached = localStorage.getItem(CACHE_KEY);
+          var cachedVersion = localStorage.getItem(CACHE_VERSION_KEY);
+          if (cached && cachedVersion) {
+            var data = JSON.parse(cached);
+            lastModified = parseInt(cachedVersion);
+            console.log('[JG MAP] Loaded from cache:', data.length, 'points, version:', lastModified);
+            return data;
+          }
+        } catch (e) {
+          console.error('[JG MAP] Cache load error:', e);
+        }
+        return null;
+      }
+
+      // Save to cache
+      function saveToCache(data, version) {
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+          localStorage.setItem(CACHE_VERSION_KEY, version.toString());
+          lastModified = version;
+          console.log('[JG MAP] Saved to cache:', data.length, 'points, version:', version);
+        } catch (e) {
+          console.error('[JG MAP] Cache save error:', e);
+        }
+      }
+
+      // Check if updates are available
+      function checkForUpdates() {
+        return api('jg_check_updates', {}).then(function(data) {
+          return {
+            hasUpdates: data.last_modified > lastModified,
+            lastModified: data.last_modified,
+            pendingCount: data.pending_count || 0
+          };
+        });
+      }
+
+      function refreshData(force) {
+        console.log('[JG MAP] refreshData() called, current points:', ALL.length, 'force:', force);
+
+        // If not forced, check for updates first
+        if (!force) {
+          return checkForUpdates().then(function(updateInfo) {
+            if (!updateInfo.hasUpdates) {
+              console.log('[JG MAP] No updates available, skipping refresh');
+
+              // Update pending count in title for moderators
+              if (CFG.isAdmin && updateInfo.pendingCount > 0) {
+                document.title = '(' + updateInfo.pendingCount + ') ' + document.title.replace(/^\(\d+\)\s*/, '');
+              }
+
+              return ALL;
+            }
+
+            console.log('[JG MAP] Updates available, fetching...');
+            return fetchAndProcessPoints(updateInfo.lastModified);
+          });
+        }
+
+        return fetchAndProcessPoints();
+      }
+
+      function fetchAndProcessPoints(version) {
         return fetchPoints().then(function(data) {
           console.log('[JG MAP] Fetched', data ? data.length : 0, 'points from server');
 
@@ -531,6 +598,11 @@
               reports_count: +(r.reports_count || 0)
             };
           });
+
+          // Save to cache
+          if (version) {
+            saveToCache(ALL, version);
+          }
 
           console.log('[JG MAP] Processed', ALL.length, 'points, calling apply(true) to skip fitBounds');
           apply(true); // Skip fitBounds on refresh to preserve user's view
@@ -845,7 +917,7 @@
             })
             .then(function(result) {
               close(modalReportsList);
-              return refreshData();
+              return refreshData(true);
             })
             .then(function() {
               console.log('[JG MAP] Reports handled (keep), data refreshed');
@@ -871,7 +943,7 @@
             .then(function(result) {
               close(modalReportsList);
               close(modalView);
-              return refreshData();
+              return refreshData(true);
             })
             .then(function() {
               console.log('[JG MAP] Reports handled (remove), data refreshed');
@@ -922,7 +994,7 @@
             msg.textContent = 'Zaktualizowano.';
             setTimeout(function() {
               close(modalEdit);
-              refreshData().then(function() {
+              refreshData(true).then(function() {
                 alert('Wysłano do moderacji. Zmiany będą widoczne po zaakceptowaniu.');
               });
             }, 300);
@@ -1018,7 +1090,7 @@
               p.promo_until = result.promo_until || null;
               close(modalStatus);
               close(modalView);
-              return refreshData();
+              return refreshData(true);
             })
             .then(function() {
               console.log('[JG MAP] Promo updated, data refreshed');
@@ -1093,7 +1165,7 @@
               p.report_status_label = result.report_status_label;
               close(modalStatus);
               close(modalView);
-              return refreshData();
+              return refreshData(true);
             })
             .then(function() {
               console.log('[JG MAP] Status changed, data refreshed');
@@ -1108,8 +1180,11 @@
 
       function openDetails(p) {
         var imgs = Array.isArray(p.images) ? p.images : [];
-        var gal = imgs.map(function(u) {
-          return '<img src="' + esc(u) + '" alt="">';
+        var gal = imgs.map(function(img) {
+          // Support both old format (string URL) and new format (object with thumb/full)
+          var thumbUrl = typeof img === 'object' ? (img.thumb || img.full) : img;
+          var fullUrl = typeof img === 'object' ? (img.full || img.thumb) : img;
+          return '<img src="' + esc(thumbUrl) + '" data-full="' + esc(fullUrl) + '" alt="" loading="lazy" style="cursor:pointer">';
         }).join('');
 
         var dateInfo = (p.date && p.date.human) ? '<div class="jg-date-info">Dodano: ' + esc(p.date.human) + '</div>' : '';
@@ -1219,7 +1294,8 @@
         if (g) {
           g.querySelectorAll('img').forEach(function(img) {
             img.addEventListener('click', function() {
-              openLightbox(this.src);
+              var fullUrl = this.getAttribute('data-full') || this.src;
+              openLightbox(fullUrl);
             });
           });
         }
@@ -1312,7 +1388,7 @@
               adminApprovePoint({ post_id: p.id })
                 .then(function() {
                   close(modalView);
-                  return refreshData();
+                  return refreshData(true);
                 })
                 .then(function() {
                   alert('Zaakceptowano i opublikowano!');
@@ -1336,7 +1412,7 @@
               adminRejectPoint({ post_id: p.id, reason: reason })
                 .then(function() {
                   close(modalView);
-                  return refreshData();
+                  return refreshData(true);
                 })
                 .then(function() {
                   alert('Odrzucono i przeniesiono do kosza.');
@@ -1366,7 +1442,7 @@
                   p.author_hidden = result.author_hidden;
                   // Close modal and refresh data immediately
                   close(modalView);
-                  return refreshData();
+                  return refreshData(true);
                 })
                 .then(function() {
                   console.log('[JG MAP] Author visibility toggled, data refreshed');
@@ -1398,7 +1474,7 @@
                 .then(function(result) {
                   p.admin_note = newNote;
                   close(modalView);
-                  return refreshData();
+                  return refreshData(true);
                 })
                 .then(function() {
                   console.log('[JG MAP] Admin note updated, data refreshed');
@@ -1421,7 +1497,7 @@
               adminDeletePoint({ post_id: p.id })
                 .then(function() {
                   close(modalView);
-                  return refreshData();
+                  return refreshData(true);
                 })
                 .then(function() {
                   alert('Miejsce usunięte trwale!');
@@ -1512,72 +1588,43 @@
         }
       }, 100);
 
-      fetchPoints()
-        .then(function(data) {
-          ALL = (data || []).map(function(r) {
-            return {
-              id: r.id,
-              title: r.title || '',
-              excerpt: r.excerpt || '',
-              content: r.content || '',
-              lat: +r.lat,
-              lng: +r.lng,
-              type: r.type || 'zgloszenie',
-              promo: !!r.promo,
-              status: r.status || '',
-              status_label: r.status_label || '',
-              report_status: r.report_status || '',
-              report_status_label: r.report_status_label || '',
-              author_id: +(r.author_id || 0),
-              author_name: (r.author_name || ''),
-              author_hidden: !!r.author_hidden,
-              images: (r.images || []),
-              votes: +(r.votes || 0),
-              my_vote: (r.my_vote || ''),
-              date: r.date || null,
-              admin: r.admin || null,
-              admin_note: r.admin_note || '',
-              is_pending: !!r.is_pending,
-              is_edit: !!r.is_edit,
-              edit_info: r.edit_info || null,
-              reports_count: +(r.reports_count || 0)
-            };
-          });
+      // Try to load from cache first for instant display
+      var cachedData = loadFromCache();
+      if (cachedData) {
+        ALL = cachedData;
+        apply();
+        console.log('[JG MAP] Displayed cached data, checking for updates...');
+      }
 
-          apply();
+      // Then fetch fresh data (or just check for updates)
+      refreshData(true)
+        .then(function() {
+          console.log('[JG MAP] Initial data load complete');
         })
         .catch(function(e) {
-          showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
+          if (!cachedData) {
+            showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
+          } else {
+            console.error('[JG MAP] Update check failed, using cached data:', e);
+          }
         });
 
-      // Auto-refresh every 15 seconds for real-time updates
+      // Smart auto-refresh: Check for updates every 15 seconds, only fetch if needed
       var refreshInterval = setInterval(function() {
-        console.log('[JG MAP] Auto-refresh triggered');
+        console.log('[JG MAP] Auto-refresh triggered - checking for updates');
 
-        // Add subtle visual feedback
-        if (elMap) {
-          elMap.style.transition = 'opacity 0.2s';
-          elMap.style.opacity = '0.95';
-        }
-
-        refreshData().then(function() {
-          console.log('[JG MAP] Data refreshed - map updated');
-          if (elMap) {
-            elMap.style.opacity = '1';
-          }
+        refreshData(false).then(function() {
+          console.log('[JG MAP] Auto-refresh complete');
         }).catch(function(err) {
           console.error('[JG MAP] Auto-refresh error:', err);
-          if (elMap) {
-            elMap.style.opacity = '1';
-          }
         });
-      }, 15000); // 15 seconds (faster for better real-time feel)
+      }, 15000); // 15 seconds
 
-      // Also refresh when page becomes visible again
+      // Also check for updates when page becomes visible again
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
-          console.log('[JG MAP] Page visible - refreshing data');
-          refreshData();
+          console.log('[JG MAP] Page visible - checking for updates');
+          refreshData(false);
         }
       });
 

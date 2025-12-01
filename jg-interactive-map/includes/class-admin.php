@@ -248,16 +248,33 @@ class JG_Map_Admin {
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
+        // Get pending points with priority calculation
         $pending = $wpdb->get_results(
-            "SELECT * FROM $table WHERE status = 'pending' ORDER BY created_at DESC",
+            "SELECT p.*,
+            COUNT(r.id) as report_count,
+            TIMESTAMPDIFF(HOUR, p.created_at, NOW()) as hours_old
+            FROM $table p
+            LEFT JOIN $reports_table r ON p.id = r.point_id AND r.status = 'pending'
+            WHERE p.status = 'pending'
+            GROUP BY p.id
+            ORDER BY report_count DESC, hours_old DESC",
             ARRAY_A
         );
 
         $history_table = JG_Map_Database::get_history_table();
+        $reports_table = JG_Map_Database::get_reports_table();
+
+        // Get edits with priority calculation (based on how old they are and number of reports on the point)
         $edits = $wpdb->get_results(
-            "SELECT h.*, p.title as point_title FROM $history_table h
+            "SELECT h.*, p.title as point_title,
+            COUNT(r.id) as report_count,
+            TIMESTAMPDIFF(HOUR, h.created_at, NOW()) as hours_old
+            FROM $history_table h
             LEFT JOIN $table p ON h.point_id = p.id
-            WHERE h.status = 'pending' ORDER BY h.created_at DESC",
+            LEFT JOIN $reports_table r ON h.point_id = r.point_id AND r.status = 'pending'
+            WHERE h.status = 'pending'
+            GROUP BY h.id
+            ORDER BY report_count DESC, hours_old DESC",
             ARRAY_A
         );
 
@@ -293,9 +310,28 @@ class JG_Map_Admin {
                         if ($old_values['content'] !== $new_values['content']) {
                             $changes[] = 'Opis';
                         }
+
+                        // Calculate priority badge
+                        $report_count = intval($edit['report_count']);
+                        $hours_old = intval($edit['hours_old']);
+                        $priority = '';
+                        $priority_style = '';
+
+                        if ($report_count > 0) {
+                            $priority = '🔴 PILNE';
+                            $priority_style = 'background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700;margin-left:8px';
+                        } elseif ($hours_old > 48) {
+                            $priority = '⚠️ Stare';
+                            $priority_style = 'background:#f59e0b;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700;margin-left:8px';
+                        }
                         ?>
                         <tr>
-                            <td><strong><?php echo esc_html($edit['point_title']); ?></strong></td>
+                            <td>
+                                <strong><?php echo esc_html($edit['point_title']); ?></strong>
+                                <?php if ($priority): ?>
+                                    <span style="<?php echo $priority_style; ?>"><?php echo $priority; ?></span>
+                                <?php endif; ?>
+                            </td>
                             <td><?php echo $user ? esc_html($user->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo implode(', ', $changes); ?></td>
                             <td><?php echo human_time_diff(strtotime($edit['created_at']), current_time('timestamp')); ?> temu</td>
@@ -428,9 +464,28 @@ class JG_Map_Admin {
                 <tbody>
                     <?php foreach ($pending as $point):
                         $author = get_userdata($point['author_id']);
+
+                        // Calculate priority badge
+                        $report_count = intval($point['report_count']);
+                        $hours_old = intval($point['hours_old']);
+                        $priority = '';
+                        $priority_style = '';
+
+                        if ($report_count > 0) {
+                            $priority = '🔴 PILNE';
+                            $priority_style = 'background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700;margin-left:8px';
+                        } elseif ($hours_old > 48) {
+                            $priority = '⚠️ Stare';
+                            $priority_style = 'background:#f59e0b;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700;margin-left:8px';
+                        }
                         ?>
                         <tr>
-                            <td><strong><?php echo esc_html($point['title']); ?></strong></td>
+                            <td>
+                                <strong><?php echo esc_html($point['title']); ?></strong>
+                                <?php if ($priority): ?>
+                                    <span style="<?php echo $priority_style; ?>"><?php echo $priority; ?></span>
+                                <?php endif; ?>
+                            </td>
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo human_time_diff(strtotime($point['created_at']), current_time('timestamp')); ?> temu</td>

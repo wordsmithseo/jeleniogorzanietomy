@@ -32,6 +32,8 @@ class JG_Map_Ajax_Handlers {
         // Public AJAX actions (logged in and not logged in)
         add_action('wp_ajax_jg_points', array($this, 'get_points'));
         add_action('wp_ajax_nopriv_jg_points', array($this, 'get_points'));
+        add_action('wp_ajax_jg_check_updates', array($this, 'check_updates'));
+        add_action('wp_ajax_nopriv_jg_check_updates', array($this, 'check_updates'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -75,6 +77,40 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_error(array('message' => 'Brak uprawnień'));
             exit;
         }
+    }
+
+    /**
+     * Check for updates - returns last modified timestamp
+     */
+    public function check_updates() {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+        $reports_table = JG_Map_Database::get_reports_table();
+        $history_table = JG_Map_Database::get_history_table();
+
+        // Get latest timestamp from all relevant tables
+        $points_time = $wpdb->get_var("SELECT MAX(updated_at) FROM $table");
+        $reports_time = $wpdb->get_var("SELECT MAX(created_at) FROM $reports_table");
+        $history_time = $wpdb->get_var("SELECT MAX(created_at) FROM $history_table");
+
+        $timestamps = array_filter(array($points_time, $reports_time, $history_time));
+        $last_modified = empty($timestamps) ? current_time('mysql') : max($timestamps);
+
+        // Get counts for moderators
+        $pending_count = 0;
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        if ($is_admin) {
+            $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = 'pending'");
+            $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
+            $pending_reports = $wpdb->get_var("SELECT COUNT(*) FROM $reports_table WHERE status = 'pending'");
+            $pending_count = intval($pending_points) + intval($pending_edits) + intval($pending_reports);
+        }
+
+        wp_send_json_success(array(
+            'last_modified' => strtotime($last_modified),
+            'pending_count' => $pending_count
+        ));
     }
 
     /**
@@ -646,6 +682,10 @@ class JG_Map_Ajax_Handlers {
             require_once(ABSPATH . 'wp-admin/includes/file.php');
         }
 
+        if (!function_exists('wp_get_image_editor')) {
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+        }
+
         $upload_overrides = array('test_form' => false);
 
         // Handle multiple files
@@ -665,13 +705,48 @@ class JG_Map_Ajax_Handlers {
                     $movefile = wp_handle_upload($file, $upload_overrides);
 
                     if ($movefile && !isset($movefile['error'])) {
-                        $images[] = $movefile['url'];
+                        // Create thumbnail
+                        $thumbnail_url = $this->create_thumbnail($movefile['file'], $movefile['url']);
+
+                        $images[] = array(
+                            'full' => $movefile['url'],
+                            'thumb' => $thumbnail_url ?: $movefile['url']
+                        );
                     }
                 }
             }
         }
 
         return $images;
+    }
+
+    /**
+     * Create thumbnail for uploaded image
+     */
+    private function create_thumbnail($file_path, $original_url) {
+        $image_editor = wp_get_image_editor($file_path);
+
+        if (is_wp_error($image_editor)) {
+            return false;
+        }
+
+        // Resize to 300x300 thumbnail
+        $image_editor->resize(300, 300, false);
+
+        $file_info = pathinfo($file_path);
+        $thumbnail_path = $file_info['dirname'] . '/' . $file_info['filename'] . '-thumb.' . $file_info['extension'];
+
+        $saved = $image_editor->save($thumbnail_path);
+
+        if (is_wp_error($saved)) {
+            return false;
+        }
+
+        // Convert file path to URL
+        $upload_dir = wp_upload_dir();
+        $thumbnail_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $thumbnail_path);
+
+        return $thumbnail_url;
     }
 
     /**
