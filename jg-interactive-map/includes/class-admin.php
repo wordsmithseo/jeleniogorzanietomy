@@ -247,6 +247,8 @@ class JG_Map_Admin {
     public function render_moderation_page() {
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
+        $history_table = JG_Map_Database::get_history_table();
+        $reports_table = JG_Map_Database::get_reports_table();
 
         // Get pending points with priority calculation
         $pending = $wpdb->get_results(
@@ -260,9 +262,6 @@ class JG_Map_Admin {
             ORDER BY report_count DESC, hours_old DESC",
             ARRAY_A
         );
-
-        $history_table = JG_Map_Database::get_history_table();
-        $reports_table = JG_Map_Database::get_reports_table();
 
         // Get edits with priority calculation (based on how old they are and number of reports on the point)
         $edits = $wpdb->get_results(

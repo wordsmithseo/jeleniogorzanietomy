@@ -6,16 +6,34 @@
 (function($) {
   'use strict';
 
-  // Register Service Worker for advanced caching
+  // Unregister Service Worker to fix caching issues
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/wp-content/plugins/jg-interactive-map/assets/js/service-worker.js')
-        .then(function(registration) {
-          console.log('[JG MAP] Service Worker registered:', registration.scope);
-        })
-        .catch(function(error) {
-          console.log('[JG MAP] Service Worker registration failed:', error);
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (var registration of registrations) {
+          registration.unregister().then(function() {
+            console.log('[JG MAP] Service Worker unregistered');
+          });
+        }
+      });
+
+      // Clear all caches
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (var name of names) {
+            caches.delete(name);
+          }
         });
+      }
+
+      // Clear localStorage cache
+      try {
+        localStorage.removeItem('jg_map_cache');
+        localStorage.removeItem('jg_map_cache_version');
+        console.log('[JG MAP] localStorage cache cleared');
+      } catch (e) {
+        console.error('[JG MAP] Failed to clear localStorage:', e);
+      }
     });
   }
 
@@ -594,7 +612,8 @@
               lat: +r.lat,
               lng: +r.lng,
               type: r.type || 'zgloszenie',
-              promo: !!r.promo,
+              sponsored: !!r.sponsored,
+              sponsored_until: r.sponsored_until || null,
               status: r.status || '',
               status_label: r.status_label || '',
               report_status: r.report_status || '',
@@ -1608,25 +1627,13 @@
         }
       }, 100);
 
-      // Try to load from cache first for instant display
-      var cachedData = loadFromCache();
-      if (cachedData) {
-        ALL = cachedData;
-        apply();
-        console.log('[JG MAP] Displayed cached data, checking for updates...');
-      }
-
-      // Then fetch fresh data (or just check for updates)
+      // Always fetch fresh data on load (no cache)
       refreshData(true)
         .then(function() {
           console.log('[JG MAP] Initial data load complete');
         })
         .catch(function(e) {
-          if (!cachedData) {
-            showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
-          } else {
-            console.error('[JG MAP] Update check failed, using cached data:', e);
-          }
+          showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
         });
 
       // Smart auto-refresh: Check for updates every 15 seconds, only fetch if needed
