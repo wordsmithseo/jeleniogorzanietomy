@@ -56,6 +56,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'));
         add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'));
         add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'));
+        add_action('wp_ajax_jg_admin_update_sponsored', array($this, 'admin_update_sponsored'));
         add_action('wp_ajax_jg_admin_delete_point', array($this, 'admin_delete_point'));
     }
 
@@ -157,14 +158,14 @@ class JG_Map_Ajax_Handlers {
                 }
             }
 
-            // Check if promo expired
-            $is_promo = (bool)$point['is_promo'];
-            $promo_until = $point['promo_until'];
-            if ($is_promo && $promo_until) {
-                if (strtotime($promo_until) < current_time('timestamp')) {
-                    // Promo expired, update DB
+            // Check if sponsored expired
+            $is_sponsored = (bool)$point['is_promo'];
+            $sponsored_until = $point['promo_until'];
+            if ($is_sponsored && $sponsored_until) {
+                if (strtotime($sponsored_until) < current_time('timestamp')) {
+                    // Sponsored expired, update DB
                     JG_Map_Database::update_point($point['id'], array('is_promo' => 0));
-                    $is_promo = false;
+                    $is_sponsored = false;
                 }
             }
 
@@ -200,8 +201,8 @@ class JG_Map_Ajax_Handlers {
                 'lat' => floatval($point['lat']),
                 'lng' => floatval($point['lng']),
                 'type' => $point['type'],
-                'promo' => $is_promo,
-                'promo_until' => $promo_until,
+                'sponsored' => $is_sponsored,
+                'sponsored_until' => $sponsored_until,
                 'status' => $point['status'],
                 'status_label' => $status_label,
                 'report_status' => $point['report_status'],
@@ -1068,6 +1069,46 @@ class JG_Map_Ajax_Handlers {
             'message' => 'Promocja zaktualizowana',
             'is_promo' => $is_promo,
             'promo_until' => $promo_until_value
+        ));
+    }
+
+    /**
+     * Update sponsored status and date (admin only) - NEW API with sponsored naming
+     */
+    public function admin_update_sponsored() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+        $is_sponsored = intval($_POST['is_sponsored'] ?? 0);
+        $sponsored_until = sanitize_text_field($_POST['sponsored_until'] ?? '');
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        // Map sponsored naming to promo in database
+        $sponsored_until_value = null;
+        if (!empty($sponsored_until)) {
+            $sponsored_until_value = $sponsored_until;
+        }
+
+        JG_Map_Database::update_point($point_id, array(
+            'is_promo' => $is_sponsored,
+            'promo_until' => $sponsored_until_value
+        ));
+
+        wp_send_json_success(array(
+            'message' => 'Sponsorowanie zaktualizowane',
+            'is_sponsored' => $is_sponsored,
+            'sponsored_until' => $sponsored_until_value
         ));
     }
 
