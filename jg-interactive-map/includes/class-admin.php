@@ -47,6 +47,9 @@ class JG_Map_Admin {
         $reports_table = JG_Map_Database::get_reports_table();
         $history_table = JG_Map_Database::get_history_table();
 
+        // Ensure history table exists
+        JG_Map_Database::ensure_history_table();
+
         // Count pending items
         $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'");
         $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
@@ -171,6 +174,9 @@ class JG_Map_Admin {
         $reports_table = JG_Map_Database::get_reports_table();
         $reports = $wpdb->get_var("SELECT COUNT(*) FROM $reports_table WHERE status = 'pending'");
 
+        // Ensure history table exists
+        JG_Map_Database::ensure_history_table();
+
         $history_table = JG_Map_Database::get_history_table();
         $edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
 
@@ -249,6 +255,9 @@ class JG_Map_Admin {
         $table = JG_Map_Database::get_points_table();
         $history_table = JG_Map_Database::get_history_table();
         $reports_table = JG_Map_Database::get_reports_table();
+
+        // Ensure history table exists
+        JG_Map_Database::ensure_history_table();
 
         // Get pending points with priority calculation
         $pending = $wpdb->get_results(

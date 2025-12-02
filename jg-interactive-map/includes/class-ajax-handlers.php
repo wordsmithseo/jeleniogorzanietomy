@@ -1144,10 +1144,13 @@ class JG_Map_Ajax_Handlers {
             'promo_until' => $sponsored_until_value
         ));
 
+        // Get updated point to return current state
+        $updated_point = JG_Map_Database::get_point($point_id);
+
         wp_send_json_success(array(
             'message' => 'Sponsorowanie zaktualizowane',
-            'is_sponsored' => $is_sponsored,
-            'sponsored_until' => $sponsored_until_value
+            'is_sponsored' => (bool)$updated_point['is_promo'],
+            'sponsored_until' => $updated_point['promo_until']
         ));
     }
 
