@@ -957,6 +957,8 @@ class JG_Map_Ajax_Handlers {
 
         $history_id = intval($_POST['history_id'] ?? 0);
 
+        error_log('JG MAP EDIT APPROVE: Received request - history_id=' . $history_id);
+
         if (!$history_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
             exit;
@@ -967,20 +969,34 @@ class JG_Map_Ajax_Handlers {
         $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
 
         if (!$history) {
+            error_log('JG MAP EDIT APPROVE: History not found - history_id=' . $history_id);
             wp_send_json_error(array('message' => 'Historia nie istnieje'));
             exit;
         }
 
+        error_log('JG MAP EDIT APPROVE: History found - point_id=' . $history['point_id'] . ', action_type=' . $history['action_type'] . ', status=' . $history['status']);
+
         $new_values = json_decode($history['new_values'], true);
 
+        error_log('JG MAP EDIT APPROVE: New values - ' . json_encode($new_values));
+
         if (!$new_values || !isset($new_values['title'])) {
+            error_log('JG MAP EDIT APPROVE: Invalid new_values');
             wp_send_json_error(array('message' => 'Nieprawidłowe dane edycji'));
             exit;
         }
 
         // Verify point exists
         $point = JG_Map_Database::get_point($history['point_id']);
+
+        error_log('JG MAP EDIT APPROVE: Point lookup - point_id=' . $history['point_id'] . ', found=' . ($point ? 'yes (status=' . $point['status'] . ')' : 'NO'));
+
         if (!$point) {
+            // Check if point exists at all
+            $points_table = JG_Map_Database::get_points_table();
+            $point_exists = $wpdb->get_row($wpdb->prepare("SELECT id, status FROM $points_table WHERE id = %d", $history['point_id']), ARRAY_A);
+            error_log('JG MAP EDIT APPROVE: Direct DB check - ' . ($point_exists ? 'exists (id=' . $point_exists['id'] . ', status=' . $point_exists['status'] . ')' : 'does not exist'));
+
             wp_send_json_error(array('message' => 'Nieprawidłowy punkt'));
             exit;
         }
@@ -1136,6 +1152,8 @@ class JG_Map_Ajax_Handlers {
         $is_sponsored = intval($_POST['is_sponsored'] ?? 0);
         $sponsored_until = sanitize_text_field($_POST['sponsored_until'] ?? '');
 
+        error_log('JG MAP SPONSORED: Received request - point_id=' . $point_id . ', is_sponsored=' . $is_sponsored . ', sponsored_until=' . $sponsored_until);
+
         if (!$point_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
             exit;
@@ -1147,21 +1165,29 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        error_log('JG MAP SPONSORED: Point before update - is_promo=' . $point['is_promo'] . ', promo_until=' . ($point['promo_until'] ?? 'null'));
+
         // Map sponsored naming to promo in database
         $sponsored_until_value = null;
         if (!empty($sponsored_until)) {
             $sponsored_until_value = $sponsored_until;
         }
 
-        JG_Map_Database::update_point($point_id, array(
+        $update_data = array(
             'is_promo' => $is_sponsored,
             'promo_until' => $sponsored_until_value
-        ));
+        );
+
+        error_log('JG MAP SPONSORED: Update data - ' . json_encode($update_data));
+
+        $update_result = JG_Map_Database::update_point($point_id, $update_data);
+
+        error_log('JG MAP SPONSORED: Update result - ' . ($update_result !== false ? 'success (rows=' . $update_result . ')' : 'failed'));
 
         // Get updated point to return current state
         $updated_point = JG_Map_Database::get_point($point_id);
 
-        error_log('JG MAP: Updated point ' . $point_id . ' - is_promo in DB: ' . $updated_point['is_promo']);
+        error_log('JG MAP SPONSORED: Point after update - is_promo=' . $updated_point['is_promo'] . ', promo_until=' . ($updated_point['promo_until'] ?? 'null'));
 
         wp_send_json_success(array(
             'message' => 'Sponsorowanie zaktualizowane',
