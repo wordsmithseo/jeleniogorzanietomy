@@ -393,8 +393,8 @@
         var isEdit = !!p.is_edit;
         var hasReports = (CFG.isAdmin && p.reports_count > 0);
 
-        // Larger pins for better visibility - sponsored even bigger
-        var size = sponsored ? [56, 56] : [36, 36];
+        // Much larger pins for better visibility - sponsored even bigger
+        var size = sponsored ? [72, 72] : [48, 48];
         var anchor = [size[0] / 2, size[1] / 2];
         var c = 'jg-pin';
 
@@ -776,8 +776,8 @@
           setTimeout(function() {
             try {
               var leafletBounds = L.latLngBounds(bounds);
-              // Show more points unclustered - use zoom 14 max
-              var maxZoom = 14;
+              // Show more points unclustered - use zoom 15 max
+              var maxZoom = 15;
 
               map.fitBounds(leafletBounds, {
                 padding: [50, 50],
@@ -861,6 +861,120 @@
         }).catch(function() {
           qs('#ath-list', modalAuthor).innerHTML = '<p>Błąd.</p>';
         });
+      }
+
+      function openUserActionsModal(userId, userName) {
+        var html = '<header><h3>Akcje wobec użytkownika: ' + esc(userName) + '</h3><button class="jg-close" id="user-actions-close">&times;</button></header>' +
+          '<div class="jg-grid" style="padding:16px">' +
+          '<div style="margin-bottom:16px">' +
+          '<button class="jg-btn jg-btn--ghost" id="btn-view-user-places" style="width:100%">Zobacz miejsca użytkownika</button>' +
+          '</div>' +
+          '<div style="background:#fee;border:2px solid #dc2626;border-radius:8px;padding:12px;margin-bottom:16px">' +
+          '<div style="font-weight:700;margin-bottom:12px;color:#dc2626">⚠️ Akcje moderacyjne</div>' +
+          '<div style="display:grid;gap:8px">' +
+          '<button class="jg-btn jg-btn--danger" id="btn-ban-permanent">Ban permanentny</button>' +
+          '<button class="jg-btn jg-btn--danger" id="btn-ban-temporary">Ban czasowy</button>' +
+          '<button class="jg-btn jg-btn--ghost" id="btn-ban-voting">Blokada głosowania</button>' +
+          '<button class="jg-btn jg-btn--ghost" id="btn-ban-add-places">Blokada dodawania miejsc</button>' +
+          '<button class="jg-btn jg-btn--ghost" id="btn-ban-add-events">Blokada dodawania wydarzeń</button>' +
+          '<button class="jg-btn jg-btn--ghost" id="btn-ban-add-trivia">Blokada dodawania ciekawostek</button>' +
+          '<button class="jg-btn jg-btn--ghost" id="btn-ban-edit-places">Blokada edycji własnych miejsc</button>' +
+          '</div>' +
+          '</div>' +
+          '<div id="user-actions-msg" style="font-size:12px;margin-top:12px"></div>' +
+          '</div>';
+
+        open(modalAuthor, html);
+
+        qs('#user-actions-close', modalAuthor).onclick = function() {
+          close(modalAuthor);
+        };
+
+        var msg = qs('#user-actions-msg', modalAuthor);
+
+        qs('#btn-view-user-places', modalAuthor).onclick = function() {
+          close(modalAuthor);
+          openAuthorModal(userId, userName);
+        };
+
+        qs('#btn-ban-permanent', modalAuthor).onclick = function() {
+          if (!confirm('Zbanować użytkownika ' + userName + ' permanentnie?')) return;
+          this.disabled = true;
+          msg.textContent = 'Banowanie...';
+
+          api('jg_admin_ban_user', { user_id: userId, ban_type: 'permanent' })
+            .then(function(result) {
+              msg.textContent = 'Użytkownik zbanowany permanentnie!';
+              msg.style.color = '#15803d';
+            })
+            .catch(function(err) {
+              msg.textContent = 'Błąd: ' + (err.message || '?');
+              msg.style.color = '#b91c1c';
+              this.disabled = false;
+            }.bind(this));
+        };
+
+        qs('#btn-ban-temporary', modalAuthor).onclick = function() {
+          var days = prompt('Na ile dni zbanować użytkownika ' + userName + '?', '7');
+          if (days === null) return;
+
+          var daysNum = parseInt(days);
+          if (isNaN(daysNum) || daysNum < 1) {
+            alert('Podaj poprawną liczbę dni');
+            return;
+          }
+
+          this.disabled = true;
+          msg.textContent = 'Banowanie...';
+
+          api('jg_admin_ban_user', { user_id: userId, ban_type: 'temporary', ban_days: daysNum })
+            .then(function(result) {
+              msg.textContent = 'Użytkownik zbanowany na ' + daysNum + ' dni!';
+              msg.style.color = '#15803d';
+            })
+            .catch(function(err) {
+              msg.textContent = 'Błąd: ' + (err.message || '?');
+              msg.style.color = '#b91c1c';
+              this.disabled = false;
+            }.bind(this));
+        };
+
+        var banActions = {
+          'btn-ban-voting': { type: 'voting', label: 'głosowania' },
+          'btn-ban-add-places': { type: 'add_places', label: 'dodawania miejsc' },
+          'btn-ban-add-events': { type: 'add_events', label: 'dodawania wydarzeń' },
+          'btn-ban-add-trivia': { type: 'add_trivia', label: 'dodawania ciekawostek' },
+          'btn-ban-edit-places': { type: 'edit_places', label: 'edycji własnych miejsc' }
+        };
+
+        for (var btnId in banActions) {
+          (function(id, action) {
+            var btn = qs('#' + id, modalAuthor);
+            if (btn) {
+              btn.onclick = function() {
+                if (!confirm('Zablokować ' + action.label + ' dla użytkownika ' + userName + '?')) return;
+                this.disabled = true;
+                msg.textContent = 'Blokowanie...';
+
+                api('jg_admin_toggle_user_restriction', {
+                  user_id: userId,
+                  restriction_type: action.type
+                })
+                  .then(function(result) {
+                    msg.textContent = result.message || 'Zaktualizowano!';
+                    msg.style.color = '#15803d';
+                    btn.textContent = result.is_restricted ? 'Odblokuj ' + action.label : 'Blokuj ' + action.label;
+                    this.disabled = false;
+                  }.bind(this))
+                  .catch(function(err) {
+                    msg.textContent = 'Błąd: ' + (err.message || '?');
+                    msg.style.color = '#b91c1c';
+                    this.disabled = false;
+                  }.bind(this));
+              };
+            }
+          })(btnId, banActions[btnId]);
+        }
       }
 
       function openReportModal(p) {
@@ -1121,14 +1235,21 @@
             sponsored_until: sponsoredUntil
           })
             .then(function(result) {
-              p.sponsored = !!result.is_sponsored;
-              p.sponsored_until = result.sponsored_until || null;
-              close(modalStatus);
-              close(modalView);
+              msg.textContent = 'Zapisano! Odświeżanie...';
+              msg.style.color = '#15803d';
               return refreshData(true);
             })
             .then(function() {
               console.log('[JG MAP] Sponsored updated, data refreshed');
+              close(modalStatus);
+              close(modalView);
+              // Find and reopen the point to show updated state
+              var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+              if (updatedPoint) {
+                setTimeout(function() {
+                  openDetails(updatedPoint);
+                }, 200);
+              }
             })
             .catch(function(err) {
               msg.textContent = 'Błąd: ' + (err.message || '?');
@@ -1200,14 +1321,20 @@
 
           adminChangeStatus({ post_id: p.id, new_status: newStatus })
             .then(function(result) {
-              p.report_status = result.report_status;
-              p.report_status_label = result.report_status_label;
-              close(modalStatus);
-              close(modalView);
+              msg.textContent = 'Zapisano! Odświeżanie...';
+              msg.style.color = '#15803d';
               return refreshData(true);
             })
             .then(function() {
               console.log('[JG MAP] Status changed, data refreshed');
+              close(modalStatus);
+              close(modalView);
+              var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+              if (updatedPoint) {
+                setTimeout(function() {
+                  openDetails(updatedPoint);
+                }, 200);
+              }
             })
             .catch(function(err) {
               msg.textContent = 'Błąd: ' + (err.message || '?');
@@ -1296,6 +1423,11 @@
           if (p.is_pending) {
             controls += '<button class="jg-btn" id="btn-approve-point" style="background:#15803d">✓ Akceptuj</button>';
             controls += '<button class="jg-btn" id="btn-reject-point" style="background:#b91c1c">✗ Odrzuć</button>';
+          }
+
+          if (p.is_edit && p.edit_info) {
+            controls += '<button class="jg-btn" id="btn-approve-edit" style="background:#15803d">✓ Akceptuj edycję</button>';
+            controls += '<button class="jg-btn" id="btn-reject-edit" style="background:#b91c1c">✗ Odrzuć edycję</button>';
           }
 
           controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-sponsored">' + (p.sponsored ? 'Usuń sponsorowanie' : 'Sponsorowane') + '</button>';
@@ -1398,7 +1530,14 @@
         if (ba) {
           ba.addEventListener('click', function(ev) {
             ev.preventDefault();
-            openAuthorModal(+this.getAttribute('data-id'), this.textContent);
+            var authorId = +this.getAttribute('data-id');
+            var authorName = this.textContent;
+
+            if (CFG.isAdmin) {
+              openUserActionsModal(authorId, authorName);
+            } else {
+              openAuthorModal(authorId, authorName);
+            }
           });
         }
 
@@ -1415,6 +1554,8 @@
           var btnNote = qs('#btn-admin-note', modalView);
           var btnApprove = qs('#btn-approve-point', modalView);
           var btnReject = qs('#btn-reject-point', modalView);
+          var btnApproveEdit = qs('#btn-approve-edit', modalView);
+          var btnRejectEdit = qs('#btn-reject-edit', modalView);
           var btnDelete = qs('#btn-delete-point', modalView);
 
           if (btnApprove) {
@@ -1478,13 +1619,17 @@
 
               adminToggleAuthor({ post_id: p.id })
                 .then(function(result) {
-                  p.author_hidden = result.author_hidden;
-                  // Close modal and refresh data immediately
-                  close(modalView);
                   return refreshData(true);
                 })
                 .then(function() {
                   console.log('[JG MAP] Author visibility toggled, data refreshed');
+                  close(modalView);
+                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                  if (updatedPoint) {
+                    setTimeout(function() {
+                      openDetails(updatedPoint);
+                    }, 200);
+                  }
                 })
                 .catch(function(err) {
                   alert('Błąd: ' + (err.message || '?'));
@@ -1503,7 +1648,7 @@
           if (btnNote) {
             btnNote.onclick = function() {
               var currentNote = p.admin_note || '';
-              var newNote = prompt('Notatka administratora:', currentNote);
+              var newNote = prompt('Notatka administratora (pozostaw puste aby usunąć):', currentNote);
               if (newNote === null) return;
 
               btnNote.disabled = true;
@@ -1511,17 +1656,81 @@
 
               adminUpdateNote({ post_id: p.id, note: newNote })
                 .then(function(result) {
-                  p.admin_note = newNote;
-                  close(modalView);
                   return refreshData(true);
                 })
                 .then(function() {
                   console.log('[JG MAP] Admin note updated, data refreshed');
+                  close(modalView);
+                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                  if (updatedPoint) {
+                    setTimeout(function() {
+                      openDetails(updatedPoint);
+                    }, 200);
+                  }
                 })
                 .catch(function(err) {
                   alert('Błąd: ' + (err.message || '?'));
                   btnNote.disabled = false;
                   btnNote.textContent = p.admin_note ? 'Edytuj notatkę' : 'Dodaj notatkę';
+                });
+            };
+          }
+
+          if (btnApproveEdit) {
+            btnApproveEdit.onclick = function() {
+              if (!confirm('Zaakceptować edycję?')) return;
+
+              btnApproveEdit.disabled = true;
+              btnApproveEdit.textContent = 'Akceptowanie...';
+
+              api('jg_admin_approve_edit', { history_id: p.edit_info.history_id })
+                .then(function(result) {
+                  return refreshData(true);
+                })
+                .then(function() {
+                  console.log('[JG MAP] Edit approved, data refreshed');
+                  close(modalView);
+                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                  if (updatedPoint) {
+                    setTimeout(function() {
+                      openDetails(updatedPoint);
+                    }, 200);
+                  }
+                })
+                .catch(function(err) {
+                  alert('Błąd: ' + (err.message || '?'));
+                  btnApproveEdit.disabled = false;
+                  btnApproveEdit.textContent = '✓ Akceptuj edycję';
+                });
+            };
+          }
+
+          if (btnRejectEdit) {
+            btnRejectEdit.onclick = function() {
+              var reason = prompt('Powód odrzucenia edycji (zostanie wysłany do autora):');
+              if (reason === null) return;
+
+              btnRejectEdit.disabled = true;
+              btnRejectEdit.textContent = 'Odrzucanie...';
+
+              api('jg_admin_reject_edit', { history_id: p.edit_info.history_id, reason: reason })
+                .then(function(result) {
+                  return refreshData(true);
+                })
+                .then(function() {
+                  console.log('[JG MAP] Edit rejected, data refreshed');
+                  close(modalView);
+                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                  if (updatedPoint) {
+                    setTimeout(function() {
+                      openDetails(updatedPoint);
+                    }, 200);
+                  }
+                })
+                .catch(function(err) {
+                  alert('Błąd: ' + (err.message || '?'));
+                  btnRejectEdit.disabled = false;
+                  btnRejectEdit.textContent = '✗ Odrzuć edycję';
                 });
             };
           }
