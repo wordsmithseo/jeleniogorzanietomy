@@ -58,6 +58,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'));
         add_action('wp_ajax_jg_admin_update_sponsored', array($this, 'admin_update_sponsored'));
         add_action('wp_ajax_jg_admin_delete_point', array($this, 'admin_delete_point'));
+        add_action('wp_ajax_jg_admin_ban_user', array($this, 'admin_ban_user'));
+        add_action('wp_ajax_jg_admin_toggle_user_restriction', array($this, 'admin_toggle_user_restriction'));
     }
 
     /**
@@ -246,6 +248,18 @@ class JG_Map_Ajax_Handlers {
 
         $user_id = get_current_user_id();
 
+        // Check if user is banned
+        if (self::is_user_banned($user_id)) {
+            wp_send_json_error(array('message' => 'Twoje konto zostało zbanowane'));
+            exit;
+        }
+
+        // Check if user has restriction for adding places
+        if (self::has_user_restriction($user_id, 'add_places')) {
+            wp_send_json_error(array('message' => 'Masz zablokowaną możliwość dodawania miejsc'));
+            exit;
+        }
+
         // Validate required fields
         $title = sanitize_text_field($_POST['title'] ?? '');
         $lat = floatval($_POST['lat'] ?? 0);
@@ -324,6 +338,18 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Check if user is banned (skip for admins)
+        if (!$is_admin && self::is_user_banned($user_id)) {
+            wp_send_json_error(array('message' => 'Twoje konto zostało zbanowane'));
+            exit;
+        }
+
+        // Check if user has restriction for editing places (skip for admins)
+        if (!$is_admin && self::has_user_restriction($user_id, 'edit_places')) {
+            wp_send_json_error(array('message' => 'Masz zablokowaną możliwość edycji miejsc'));
+            exit;
+        }
+
         $title = sanitize_text_field($_POST['title'] ?? '');
         $type = sanitize_text_field($_POST['type'] ?? '');
         $content = wp_kses_post($_POST['content'] ?? '');
@@ -388,6 +414,19 @@ class JG_Map_Ajax_Handlers {
         }
 
         $user_id = get_current_user_id();
+
+        // Check if user is banned
+        if (self::is_user_banned($user_id)) {
+            wp_send_json_error(array('message' => 'Twoje konto zostało zbanowane'));
+            exit;
+        }
+
+        // Check if user has restriction for voting
+        if (self::has_user_restriction($user_id, 'voting')) {
+            wp_send_json_error(array('message' => 'Masz zablokowaną możliwość głosowania'));
+            exit;
+        }
+
         $point_id = intval($_POST['post_id'] ?? 0);
         $direction = sanitize_text_field($_POST['dir'] ?? '');
 
@@ -1152,5 +1191,128 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success(array('message' => 'Miejsce usunięte'));
+    }
+
+    /**
+     * Ban user (admin only)
+     */
+    public function admin_ban_user() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+        $ban_type = sanitize_text_field($_POST['ban_type'] ?? '');
+
+        if (!$user_id || !in_array($ban_type, array('permanent', 'temporary'))) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        if ($ban_type === 'permanent') {
+            update_user_meta($user_id, 'jg_map_banned', 'permanent');
+            delete_user_meta($user_id, 'jg_map_ban_until');
+        } else {
+            // Temporary ban
+            $ban_days = intval($_POST['ban_days'] ?? 7);
+            $ban_until = date('Y-m-d H:i:s', strtotime('+' . $ban_days . ' days'));
+
+            update_user_meta($user_id, 'jg_map_banned', 'temporary');
+            update_user_meta($user_id, 'jg_map_ban_until', $ban_until);
+        }
+
+        wp_send_json_success(array(
+            'message' => 'Użytkownik zbanowany',
+            'ban_type' => $ban_type
+        ));
+    }
+
+    /**
+     * Toggle user restriction (admin only)
+     */
+    public function admin_toggle_user_restriction() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+        $restriction_type = sanitize_text_field($_POST['restriction_type'] ?? '');
+
+        $allowed_restrictions = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places');
+        if (!$user_id || !in_array($restriction_type, $allowed_restrictions)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        $meta_key = 'jg_map_ban_' . $restriction_type;
+        $current_value = get_user_meta($user_id, $meta_key, true);
+
+        if ($current_value) {
+            // Remove restriction
+            delete_user_meta($user_id, $meta_key);
+            $is_restricted = false;
+            $message = 'Blokada usunięta';
+        } else {
+            // Add restriction
+            update_user_meta($user_id, $meta_key, '1');
+            $is_restricted = true;
+            $message = 'Blokada dodana';
+        }
+
+        wp_send_json_success(array(
+            'message' => $message,
+            'is_restricted' => $is_restricted
+        ));
+    }
+
+    /**
+     * Check if user is banned - helper function
+     */
+    public static function is_user_banned($user_id) {
+        if (!$user_id) {
+            return false;
+        }
+
+        $ban_status = get_user_meta($user_id, 'jg_map_banned', true);
+
+        if ($ban_status === 'permanent') {
+            return true;
+        }
+
+        if ($ban_status === 'temporary') {
+            $ban_until = get_user_meta($user_id, 'jg_map_ban_until', true);
+            if ($ban_until && strtotime($ban_until) > current_time('timestamp')) {
+                return true;
+            } else {
+                // Ban expired, remove it
+                delete_user_meta($user_id, 'jg_map_banned');
+                delete_user_meta($user_id, 'jg_map_ban_until');
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user has specific restriction
+     */
+    public static function has_user_restriction($user_id, $restriction_type) {
+        if (!$user_id) {
+            return false;
+        }
+
+        $meta_key = 'jg_map_ban_' . $restriction_type;
+        return (bool)get_user_meta($user_id, $meta_key, true);
     }
 }
