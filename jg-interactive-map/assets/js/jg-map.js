@@ -1357,7 +1357,7 @@
 
         var who = '';
         if (p.author_name && p.author_name.trim() !== '') {
-          who = '<div><strong>Autor:</strong> <a href="#" id="btn-author" data-id="' + esc(p.author_id) + '">' + esc(p.author_name) + '</a></div>';
+          who = '<div><strong>Autor:</strong> <a href="#" id="btn-author" data-id="' + esc(p.author_id) + '" style="color:#2563eb;text-decoration:underline;cursor:pointer">' + esc(p.author_name) + '</a></div>';
         } else if (p.author_hidden || p.author_id > 0) {
           who = '<div><strong>Autor:</strong> ukryty</div>';
         }
@@ -1370,16 +1370,16 @@
         var editInfo = '';
         if (CFG.isAdmin && p.is_edit && p.edit_info) {
           var changes = [];
-          if (p.edit_info.prev_title && p.edit_info.prev_title !== p.title) {
-            changes.push('<div><strong>Tytuł:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(p.edit_info.prev_title) + '</span><br><span style="color:#16a34a">→ ' + esc(p.title) + '</span></div>');
+          if (p.edit_info.prev_title !== p.edit_info.new_title) {
+            changes.push('<div><strong>Tytuł:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(p.edit_info.prev_title) + '</span><br><span style="color:#16a34a">→ ' + esc(p.edit_info.new_title) + '</span></div>');
           }
-          if (p.edit_info.prev_type && p.edit_info.prev_type !== p.type) {
+          if (p.edit_info.prev_type !== p.edit_info.new_type) {
             var typeLabels = { zgloszenie: 'Zgłoszenie', ciekawostka: 'Ciekawostka', miejsce: 'Miejsce' };
-            changes.push('<div><strong>Typ:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (typeLabels[p.edit_info.prev_type] || p.edit_info.prev_type) + '</span><br><span style="color:#16a34a">→ ' + (typeLabels[p.type] || p.type) + '</span></div>');
+            changes.push('<div><strong>Typ:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (typeLabels[p.edit_info.prev_type] || p.edit_info.prev_type) + '</span><br><span style="color:#16a34a">→ ' + (typeLabels[p.edit_info.new_type] || p.edit_info.new_type) + '</span></div>');
           }
-          if (p.edit_info.prev_content && p.edit_info.prev_content !== p.content) {
+          if (p.edit_info.prev_content !== p.edit_info.new_content) {
             var prevContentText = p.edit_info.prev_content.replace(/<\/?[^>]+(>|$)/g, '');
-            var newContentText = p.content ? p.content.replace(/<\/?[^>]+(>|$)/g, '') : '';
+            var newContentText = p.edit_info.new_content.replace(/<\/?[^>]+(>|$)/g, '');
             changes.push('<div><strong>Opis:</strong><br>' +
               '<div style="max-height:150px;overflow-y:auto;padding:8px;background:#fee;border-radius:4px;margin-top:4px">' +
               '<strong style="color:#dc2626">Poprzedni:</strong><br>' +
@@ -1393,7 +1393,7 @@
           }
 
           if (changes.length > 0) {
-            editInfo = '<div style="background:#faf5ff;border:2px solid #9333ea;border-radius:8px;padding:12px;margin:16px 0"><div style="font-weight:700;margin-bottom:8px;color:#6b21a8">📝 Zmiany oczekujące:</div>' + changes.join('') + '</div>';
+            editInfo = '<div style="background:#faf5ff;border:2px solid #9333ea;border-radius:8px;padding:12px;margin:16px 0"><div style="font-weight:700;margin-bottom:8px;color:#6b21a8">📝 Zmiany oczekujące (edytowano ' + esc(p.edit_info.edited_at) + '):</div>' + changes.join('<hr style="margin:12px 0;border:none;border-top:1px solid #e9d5ff">') + '</div>';
           }
         }
 
@@ -1806,35 +1806,35 @@
         draw(list, skipFitBounds);
       }
 
-      // Setup search input listener
+      // Setup search input listener - wait for DOM
       setTimeout(function() {
         var searchInput = document.getElementById('jg-search-input');
         if (searchInput) {
           console.log('[JG MAP] Search input attached');
           searchInput.addEventListener('input', function() {
             console.log('[JG MAP] Search query:', this.value);
-            apply();
+            apply(true); // Skip fitBounds on filter change
           });
         } else {
           console.error('[JG MAP] Search input not found!');
         }
-      }, 100);
+      }, 500);
 
-      // Setup filter listeners
+      // Setup filter listeners - wait for DOM
       setTimeout(function() {
         if (elFilters) {
           var allCheckboxes = elFilters.querySelectorAll('input[type="checkbox"]');
           console.log('[JG MAP] Found', allCheckboxes.length, 'filter checkboxes');
           allCheckboxes.forEach(function(cb) {
             cb.addEventListener('change', function() {
-              console.log('[JG MAP] Filter changed:', this.getAttribute('data-type') || 'sponsored');
-              apply();
+              console.log('[JG MAP] Filter changed:', this.getAttribute('data-type') || this.getAttribute('data-promo') ? 'promo' : 'unknown');
+              apply(true); // Skip fitBounds on filter change
             });
           });
         } else {
           console.error('[JG MAP] Filter container not found!');
         }
-      }, 100);
+      }, 500);
 
       // Always fetch fresh data on load (no cache)
       refreshData(true)
