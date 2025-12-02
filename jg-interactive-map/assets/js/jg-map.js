@@ -1154,6 +1154,50 @@
         };
       }
 
+      function openDeletionRequestModal(p) {
+        open(modalEdit, '<header><h3>Zgłoś usunięcie miejsca</h3><button class="jg-close" id="del-close">&times;</button></header><form id="deletion-form" class="jg-grid"><p>Czy na pewno chcesz zgłosić usunięcie tego miejsca? Administracja musi zatwierdzić Twoje zgłoszenie.</p><label>Powód (opcjonalnie) <textarea name="reason" rows="4" placeholder="Podaj powód usunięcia..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea></label><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button type="button" class="jg-btn jg-btn--ghost" id="del-cancel">Anuluj</button><button type="submit" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button></div><div id="deletion-msg" style="font-size:12px;margin-top:8px"></div></form>');
+
+        qs('#del-close', modalEdit).onclick = function() {
+          close(modalEdit);
+        };
+
+        qs('#del-cancel', modalEdit).onclick = function() {
+          close(modalEdit);
+        };
+
+        var form = qs('#deletion-form', modalEdit);
+        var msg = qs('#deletion-msg', modalEdit);
+
+        form.onsubmit = function(e) {
+          e.preventDefault();
+
+          if (!confirm('Czy na pewno chcesz zgłosić usunięcie tego miejsca?')) {
+            return;
+          }
+
+          msg.textContent = 'Wysyłanie zgłoszenia...';
+          msg.style.color = '#666';
+
+          api('jg_request_deletion', {
+            post_id: p.id,
+            reason: form.reason.value.trim()
+          })
+            .then(function() {
+              msg.textContent = 'Zgłoszenie wysłane do moderacji!';
+              msg.style.color = '#15803d';
+              setTimeout(function() {
+                close(modalEdit);
+                close(modalView);
+                refreshData(true);
+              }, 1500);
+            })
+            .catch(function(err) {
+              msg.textContent = (err && err.message) || 'Błąd';
+              msg.style.color = '#b91c1c';
+            });
+        };
+      }
+
       function openPromoModal(p) {
         var currentPromoUntil = p.sponsored_until || '';
         var promoDateValue = '';
@@ -1397,6 +1441,19 @@
           }
         }
 
+        // Deletion request info
+        var deletionInfo = '';
+        if (CFG.isAdmin && p.is_deletion_requested && p.deletion_info) {
+          deletionInfo = '<div style="background:#fef2f2;border:2px solid #dc2626;border-radius:8px;padding:12px;margin:16px 0">' +
+            '<div style="font-weight:700;margin-bottom:8px;color:#991b1b">🗑️ Zgłoszenie usunięcia (zgłoszono ' + esc(p.deletion_info.requested_at) + ')</div>';
+
+          if (p.deletion_info.reason && p.deletion_info.reason.trim()) {
+            deletionInfo += '<div><strong>Powód:</strong> ' + esc(p.deletion_info.reason) + '</div>';
+          }
+
+          deletionInfo += '</div>';
+        }
+
         var reportsWarning = '';
         if (CFG.isAdmin && p.reports_count > 0) {
           reportsWarning = '<div class="jg-reports-warning">' +
@@ -1430,6 +1487,11 @@
             controls += '<button class="jg-btn" id="btn-reject-edit" style="background:#b91c1c">✗ Odrzuć edycję</button>';
           }
 
+          if (p.is_deletion_requested && p.deletion_info) {
+            controls += '<button class="jg-btn" id="btn-approve-deletion" style="background:#15803d">✓ Zatwierdź usunięcie</button>';
+            controls += '<button class="jg-btn" id="btn-reject-deletion" style="background:#b91c1c">✗ Odrzuć usunięcie</button>';
+          }
+
           controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-sponsored">' + (p.sponsored ? 'Usuń sponsorowanie' : 'Sponsorowane') + '</button>';
           controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-author">' + (p.author_hidden ? 'Ujawnij' : 'Ukryj') + ' autora</button>';
           if (p.type === 'zgloszenie') {
@@ -1453,7 +1515,13 @@
           voteHtml = '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>';
         }
 
-        var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        // Add deletion request button for authors (non-admins)
+        var deletionBtn = '';
+        if (canEdit && !CFG.isAdmin && !p.is_deletion_requested) {
+          deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
+        }
+
+        var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim() });
 
@@ -1523,6 +1591,12 @@
           var editBtn = qs('#btn-edit', modalView);
           if (editBtn) editBtn.onclick = function() {
             openEditModal(p);
+          };
+
+          // Add handler for deletion request button
+          var deletionBtn = qs('#btn-request-deletion', modalView);
+          if (deletionBtn) deletionBtn.onclick = function() {
+            openDeletionRequestModal(p);
           };
         }
 
@@ -1731,6 +1805,64 @@
                   alert('Błąd: ' + (err.message || '?'));
                   btnRejectEdit.disabled = false;
                   btnRejectEdit.textContent = '✗ Odrzuć edycję';
+                });
+            };
+          }
+
+          // Deletion request handlers
+          var btnApproveDeletion = qs('#btn-approve-deletion', modalView);
+          var btnRejectDeletion = qs('#btn-reject-deletion', modalView);
+
+          if (btnApproveDeletion) {
+            btnApproveDeletion.onclick = function() {
+              if (!confirm('Zatwierdzić usunięcie miejsca? Miejsca nie będzie można przywrócić!')) return;
+
+              btnApproveDeletion.disabled = true;
+              btnApproveDeletion.textContent = 'Usuwanie...';
+
+              api('jg_admin_approve_deletion', { history_id: p.deletion_info.history_id })
+                .then(function(result) {
+                  return refreshData(true);
+                })
+                .then(function() {
+                  console.log('[JG MAP] Deletion approved, data refreshed');
+                  close(modalView);
+                  alert('Miejsce zostało usunięte');
+                })
+                .catch(function(err) {
+                  alert('Błąd: ' + (err.message || '?'));
+                  btnApproveDeletion.disabled = false;
+                  btnApproveDeletion.textContent = '✓ Zatwierdź usunięcie';
+                });
+            };
+          }
+
+          if (btnRejectDeletion) {
+            btnRejectDeletion.onclick = function() {
+              var reason = prompt('Powód odrzucenia zgłoszenia usunięcia (zostanie wysłany do autora):');
+              if (reason === null) return;
+
+              btnRejectDeletion.disabled = true;
+              btnRejectDeletion.textContent = 'Odrzucanie...';
+
+              api('jg_admin_reject_deletion', { history_id: p.deletion_info.history_id, reason: reason })
+                .then(function(result) {
+                  return refreshData(true);
+                })
+                .then(function() {
+                  console.log('[JG MAP] Deletion rejected, data refreshed');
+                  close(modalView);
+                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                  if (updatedPoint) {
+                    setTimeout(function() {
+                      openDetails(updatedPoint);
+                    }, 200);
+                  }
+                })
+                .catch(function(err) {
+                  alert('Błąd: ' + (err.message || '?'));
+                  btnRejectDeletion.disabled = false;
+                  btnRejectDeletion.textContent = '✗ Odrzuć usunięcie';
                 });
             };
           }
