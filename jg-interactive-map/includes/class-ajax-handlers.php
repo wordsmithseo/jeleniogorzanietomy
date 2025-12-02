@@ -190,6 +190,9 @@ class JG_Map_Ajax_Handlers {
                     'prev_title' => $old_values['title'] ?? '',
                     'prev_type' => $old_values['type'] ?? '',
                     'prev_content' => $old_values['content'] ?? '',
+                    'new_title' => $new_values['title'] ?? '',
+                    'new_type' => $new_values['type'] ?? '',
+                    'new_content' => $new_values['content'] ?? '',
                     'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
                 );
             }
@@ -959,7 +962,6 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        $history = JG_Map_Database::get_pending_history(0); // Get by ID instead
         global $wpdb;
         $table = JG_Map_Database::get_history_table();
         $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
@@ -970,6 +972,18 @@ class JG_Map_Ajax_Handlers {
         }
 
         $new_values = json_decode($history['new_values'], true);
+
+        if (!$new_values || !isset($new_values['title'])) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane edycji'));
+            exit;
+        }
+
+        // Verify point exists
+        $point = JG_Map_Database::get_point($history['point_id']);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy punkt'));
+            exit;
+        }
 
         // Update point with new values
         JG_Map_Database::update_point($history['point_id'], array(
@@ -1146,6 +1160,8 @@ class JG_Map_Ajax_Handlers {
 
         // Get updated point to return current state
         $updated_point = JG_Map_Database::get_point($point_id);
+
+        error_log('JG MAP: Updated point ' . $point_id . ' - is_promo in DB: ' . $updated_point['is_promo']);
 
         wp_send_json_success(array(
             'message' => 'Sponsorowanie zaktualizowane',
