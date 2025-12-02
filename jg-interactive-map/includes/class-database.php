@@ -374,10 +374,50 @@ class JG_Map_Database {
     }
 
     /**
+     * Ensure history table exists
+     */
+    public static function ensure_history_table() {
+        global $wpdb;
+        $table_history = self::get_history_table();
+
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_history'");
+
+        if ($table_exists != $table_history) {
+            // Create table
+            $charset_collate = $wpdb->get_charset_collate();
+
+            $sql = "CREATE TABLE IF NOT EXISTS $table_history (
+                id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                point_id bigint(20) UNSIGNED NOT NULL,
+                user_id bigint(20) UNSIGNED NOT NULL,
+                action_type varchar(50) NOT NULL,
+                old_values longtext,
+                new_values longtext,
+                status varchar(20) DEFAULT 'pending',
+                created_at datetime DEFAULT CURRENT_TIMESTAMP,
+                resolved_at datetime DEFAULT NULL,
+                resolved_by bigint(20) UNSIGNED DEFAULT NULL,
+                PRIMARY KEY (id),
+                KEY point_id (point_id),
+                KEY user_id (user_id),
+                KEY status (status)
+            ) $charset_collate;";
+
+            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+            dbDelta($sql);
+        }
+    }
+
+    /**
      * Add history entry
      */
     public static function add_history($point_id, $user_id, $action_type, $old_values, $new_values) {
         global $wpdb;
+
+        // Ensure history table exists
+        self::ensure_history_table();
+
         $table = self::get_history_table();
 
         return $wpdb->insert(
@@ -398,6 +438,10 @@ class JG_Map_Database {
      */
     public static function get_pending_history($point_id) {
         global $wpdb;
+
+        // Ensure history table exists
+        self::ensure_history_table();
+
         $table = self::get_history_table();
 
         return $wpdb->get_row(
