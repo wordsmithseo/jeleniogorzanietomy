@@ -1739,22 +1739,18 @@
 
         var promoClass = p.sponsored ? ' jg-modal--promo' : '';
         var typeClass = ' jg-modal--' + (p.type || 'zgloszenie');
-        var canEdit = (CFG.isAdmin || (CFG.currentUserId > 0 && CFG.currentUserId === +p.author_id));
+        // FIX: Convert currentUserId to number for comparison (wp_localize_script converts to string)
+        var canEdit = (CFG.isAdmin || (+CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id));
         var myVote = p.my_vote || '';
 
-        // DEBUG: Log edit button visibility logic
-        console.log('[JG MAP] Edit button check:', {
+        // DEBUG: Log edit button visibility logic (keeping for verification)
+        console.log('[JG MAP] Edit button check (FIXED):', {
           isAdmin: CFG.isAdmin,
           currentUserId: CFG.currentUserId,
+          currentUserIdConverted: +CFG.currentUserId,
           authorId: p.author_id,
-          authorIdType: typeof p.author_id,
           canEdit: canEdit,
-          calculation: {
-            isAdmin: CFG.isAdmin,
-            userIdGreaterThanZero: CFG.currentUserId > 0,
-            userIdEqualsAuthorId: CFG.currentUserId === +p.author_id,
-            authorIdConverted: +p.author_id
-          }
+          comparison: +CFG.currentUserId + ' === ' + +p.author_id + ' = ' + (+CFG.currentUserId === +p.author_id)
         });
 
         // Don't show voting for promo points
