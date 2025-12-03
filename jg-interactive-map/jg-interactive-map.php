@@ -83,6 +83,9 @@ class JG_Interactive_Map {
      * Initialize plugin components
      */
     public function init_components() {
+        // Check and update database schema on every load (only runs if needed)
+        JG_Map_Database::check_and_update_schema();
+
         JG_Map_Enqueue::get_instance();
         JG_Map_Shortcode::get_instance();
         JG_Map_Ajax_Handlers::get_instance();
