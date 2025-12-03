@@ -69,20 +69,37 @@ class JG_Map_Ajax_Handlers {
      * Verify nonce
      */
     private function verify_nonce() {
-        if (!isset($_POST['_ajax_nonce']) || !wp_verify_nonce($_POST['_ajax_nonce'], 'jg_map_nonce')) {
-            wp_send_json_error(array('message' => 'Błąd bezpieczeństwa'));
+        if (!isset($_POST['_ajax_nonce'])) {
+            error_log('JG MAP NONCE: Nonce not set in POST data');
+            wp_send_json_error(array('message' => 'Błąd bezpieczeństwa - brak nonce'));
             exit;
         }
+
+        if (!wp_verify_nonce($_POST['_ajax_nonce'], 'jg_map_nonce')) {
+            error_log('JG MAP NONCE: Nonce verification failed - ' . $_POST['_ajax_nonce']);
+            wp_send_json_error(array('message' => 'Błąd bezpieczeństwa - nieprawidłowy nonce'));
+            exit;
+        }
+
+        error_log('JG MAP NONCE: Verification passed');
     }
 
     /**
      * Check if user is admin or moderator
      */
     private function check_admin() {
-        if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
+        $user_id = get_current_user_id();
+        $can_manage = current_user_can('manage_options');
+        $can_moderate = current_user_can('jg_map_moderate');
+
+        error_log('JG MAP ADMIN CHECK: user_id=' . $user_id . ', can_manage=' . ($can_manage ? 'yes' : 'no') . ', can_moderate=' . ($can_moderate ? 'yes' : 'no'));
+
+        if (!$can_manage && !$can_moderate) {
             wp_send_json_error(array('message' => 'Brak uprawnień'));
             exit;
         }
+
+        error_log('JG MAP ADMIN CHECK: Access granted');
     }
 
     /**
