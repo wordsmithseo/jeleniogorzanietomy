@@ -128,10 +128,24 @@ class JG_Map_Database {
 
         // Check if promo_until column exists
         $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'promo_until'");
-
         if (empty($column_exists)) {
-            // Add promo_until column
             $wpdb->query("ALTER TABLE $table ADD COLUMN promo_until datetime DEFAULT NULL AFTER is_promo");
+        }
+
+        // Check if deletion request columns exist
+        $deletion_requested = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'is_deletion_requested'");
+        if (empty($deletion_requested)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN is_deletion_requested tinyint(1) DEFAULT 0 AFTER author_hidden");
+        }
+
+        $deletion_reason = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'deletion_reason'");
+        if (empty($deletion_reason)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN deletion_reason text DEFAULT NULL AFTER is_deletion_requested");
+        }
+
+        $deletion_requested_at = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'deletion_requested_at'");
+        if (empty($deletion_requested_at)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN deletion_requested_at datetime DEFAULT NULL AFTER deletion_reason");
         }
     }
 
