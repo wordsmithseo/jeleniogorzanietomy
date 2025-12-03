@@ -62,6 +62,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_ban_user', array($this, 'admin_ban_user'));
         add_action('wp_ajax_jg_admin_unban_user', array($this, 'admin_unban_user'));
         add_action('wp_ajax_jg_admin_toggle_user_restriction', array($this, 'admin_toggle_user_restriction'));
+        add_action('wp_ajax_jg_get_user_restrictions', array($this, 'get_user_restrictions'));
         add_action('wp_ajax_jg_admin_approve_deletion', array($this, 'admin_approve_deletion'));
         add_action('wp_ajax_jg_admin_reject_deletion', array($this, 'admin_reject_deletion'));
     }
@@ -1626,6 +1627,40 @@ class JG_Map_Ajax_Handlers {
         wp_send_json_success(array(
             'message' => $message,
             'is_restricted' => $is_restricted
+        ));
+    }
+
+    /**
+     * Get user restrictions and ban status (admin only)
+     */
+    public function get_user_restrictions() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $ban_status = get_user_meta($user_id, 'jg_map_banned', true);
+        $ban_until = get_user_meta($user_id, 'jg_map_ban_until', true);
+        $is_banned = self::is_user_banned($user_id);
+
+        $restrictions = array();
+        $restriction_types = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places');
+        foreach ($restriction_types as $type) {
+            if (get_user_meta($user_id, 'jg_map_ban_' . $type, true)) {
+                $restrictions[] = $type;
+            }
+        }
+
+        wp_send_json_success(array(
+            'is_banned' => $is_banned,
+            'ban_status' => $ban_status,
+            'ban_until' => $ban_until,
+            'restrictions' => $restrictions
         ));
     }
 

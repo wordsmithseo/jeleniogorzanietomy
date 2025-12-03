@@ -878,6 +878,9 @@
       function openUserActionsModal(userId, userName) {
         var html = '<header><h3>Akcje wobec użytkownika: ' + esc(userName) + '</h3><button class="jg-close" id="user-actions-close">&times;</button></header>' +
           '<div class="jg-grid" style="padding:16px">' +
+          '<div id="user-current-status" style="margin-bottom:16px;padding:12px;background:#f5f5f5;border-radius:8px">' +
+          '<strong>Pobieranie informacji...</strong>' +
+          '</div>' +
           '<div style="margin-bottom:16px">' +
           '<button class="jg-btn jg-btn--ghost" id="btn-view-user-places" style="width:100%">Zobacz miejsca użytkownika</button>' +
           '</div>' +
@@ -886,6 +889,7 @@
           '<div style="display:grid;gap:8px">' +
           '<button class="jg-btn jg-btn--danger" id="btn-ban-permanent">Ban permanentny</button>' +
           '<button class="jg-btn jg-btn--danger" id="btn-ban-temporary">Ban czasowy</button>' +
+          '<button class="jg-btn" id="btn-unban" style="display:none;background:#10b981;color:#fff">Usuń ban</button>' +
           '<button class="jg-btn jg-btn--ghost" id="btn-ban-voting">Blokada głosowania</button>' +
           '<button class="jg-btn jg-btn--ghost" id="btn-ban-add-places">Blokada dodawania miejsc</button>' +
           '<button class="jg-btn jg-btn--ghost" id="btn-ban-add-events">Blokada dodawania wydarzeń</button>' +
@@ -897,6 +901,47 @@
           '</div>';
 
         open(modalAuthor, html);
+
+        // Fetch user restrictions
+        api('jg_get_user_restrictions', { user_id: userId })
+          .then(function(result) {
+            var statusDiv = qs('#user-current-status', modalAuthor);
+            var statusHtml = '<strong>Aktualny status:</strong><br>';
+
+            if (result.is_banned) {
+              if (result.ban_status === 'permanent') {
+                statusHtml += '<span style="color:#dc2626;font-weight:700">🚫 Ban permanentny</span>';
+              } else if (result.ban_status === 'temporary') {
+                var banDate = result.ban_until ? new Date(result.ban_until).toLocaleDateString('pl-PL') : '?';
+                statusHtml += '<span style="color:#dc2626;font-weight:700">🚫 Ban czasowy do ' + banDate + '</span>';
+              }
+              // Show unban button
+              var unbanBtn = qs('#btn-unban', modalAuthor);
+              if (unbanBtn) unbanBtn.style.display = 'block';
+            } else {
+              statusHtml += '<span style="color:#10b981;font-weight:700">✓ Aktywny</span>';
+            }
+
+            if (result.restrictions && result.restrictions.length > 0) {
+              var labels = {
+                'voting': 'głosowanie',
+                'add_places': 'dodawanie miejsc',
+                'add_events': 'wydarzenia',
+                'add_trivia': 'ciekawostki',
+                'edit_places': 'edycja miejsc'
+              };
+              statusHtml += '<br><strong>Aktywne blokady:</strong><br>';
+              result.restrictions.forEach(function(r) {
+                statusHtml += '<span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin:2px;display:inline-block">⚠️ ' + (labels[r] || r) + '</span>';
+              });
+            }
+
+            statusDiv.innerHTML = statusHtml;
+          })
+          .catch(function(err) {
+            var statusDiv = qs('#user-current-status', modalAuthor);
+            statusDiv.innerHTML = '<span style="color:#b91c1c">Błąd pobierania danych</span>';
+          });
 
         qs('#user-actions-close', modalAuthor).onclick = function() {
           close(modalAuthor);
@@ -944,6 +989,30 @@
               msg.textContent = 'Użytkownik zbanowany na ' + daysNum + ' dni!';
               msg.style.color = '#15803d';
             })
+            .catch(function(err) {
+              msg.textContent = 'Błąd: ' + (err.message || '?');
+              msg.style.color = '#b91c1c';
+              this.disabled = false;
+            }.bind(this));
+        };
+
+        qs('#btn-unban', modalAuthor).onclick = function() {
+          if (!confirm('Usunąć ban dla użytkownika ' + userName + '?')) return;
+          this.disabled = true;
+          msg.textContent = 'Usuwanie banu...';
+
+          api('jg_admin_unban_user', { user_id: userId })
+            .then(function(result) {
+              msg.textContent = 'Ban usunięty!';
+              msg.style.color = '#15803d';
+              this.style.display = 'none';
+              // Refresh status
+              api('jg_get_user_restrictions', { user_id: userId })
+                .then(function(result) {
+                  var statusDiv = qs('#user-current-status', modalAuthor);
+                  statusDiv.innerHTML = '<strong>Aktualny status:</strong><br><span style="color:#10b981;font-weight:700">✓ Aktywny</span>';
+                });
+            }.bind(this))
             .catch(function(err) {
               msg.textContent = 'Błąd: ' + (err.message || '?');
               msg.style.color = '#b91c1c';
