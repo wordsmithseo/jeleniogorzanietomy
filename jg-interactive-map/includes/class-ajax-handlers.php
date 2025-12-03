@@ -58,30 +58,29 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_reject_point', array($this, 'admin_reject_point'));
         add_action('wp_ajax_jg_get_point_history', array($this, 'get_point_history'));
 
-        // Explicitly register admin_approve_edit with detailed logging
-        error_log('===== JG MAP: About to register wp_ajax_jg_admin_approve_edit =====');
-        add_action('wp_ajax_jg_admin_approve_edit', array($this, 'admin_approve_edit'), 10, 0);
+        // Explicitly register admin_approve_edit with PRIORITY 1 to run BEFORE other plugins (like WPCode)
+        error_log('===== JG MAP: About to register wp_ajax_jg_admin_approve_edit with priority 1 =====');
+        add_action('wp_ajax_jg_admin_approve_edit', array($this, 'admin_approve_edit'), 1, 0);
         error_log('===== JG MAP: Registered wp_ajax_jg_admin_approve_edit with callback =====');
 
-        add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'));
-        add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'));
-        add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'));
-        add_action('wp_ajax_jg_admin_update_sponsored', array($this, 'admin_update_sponsored'));
-        add_action('wp_ajax_jg_admin_delete_point', array($this, 'admin_delete_point'));
-        add_action('wp_ajax_jg_admin_ban_user', array($this, 'admin_ban_user'));
-        add_action('wp_ajax_jg_admin_unban_user', array($this, 'admin_unban_user'));
-        add_action('wp_ajax_jg_admin_toggle_user_restriction', array($this, 'admin_toggle_user_restriction'));
-        add_action('wp_ajax_jg_get_user_restrictions', array($this, 'get_user_restrictions'));
-        add_action('wp_ajax_jg_get_my_restrictions', array($this, 'get_my_restrictions'));
-        add_action('wp_ajax_jg_admin_approve_deletion', array($this, 'admin_approve_deletion'));
-        add_action('wp_ajax_jg_admin_reject_deletion', array($this, 'admin_reject_deletion'));
+        add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'), 1);
+        add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'), 1);
+        add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'), 1);
+        add_action('wp_ajax_jg_admin_update_sponsored', array($this, 'admin_update_sponsored'), 1);
+        add_action('wp_ajax_jg_admin_delete_point', array($this, 'admin_delete_point'), 1);
+        add_action('wp_ajax_jg_admin_ban_user', array($this, 'admin_ban_user'), 1);
+        add_action('wp_ajax_jg_admin_unban_user', array($this, 'admin_unban_user'), 1);
+        add_action('wp_ajax_jg_admin_toggle_user_restriction', array($this, 'admin_toggle_user_restriction'), 1);
+        add_action('wp_ajax_jg_get_user_restrictions', array($this, 'get_user_restrictions'), 1);
+        add_action('wp_ajax_jg_get_my_restrictions', array($this, 'get_my_restrictions'), 1);
+        add_action('wp_ajax_jg_admin_approve_deletion', array($this, 'admin_approve_deletion'), 1);
+        add_action('wp_ajax_jg_admin_reject_deletion', array($this, 'admin_reject_deletion'), 1);
 
         // DEBUG: Test endpoint
         add_action('wp_ajax_jg_test_endpoint', array($this, 'test_endpoint'));
 
-        // DEBUG: Add early action hook to catch ALL AJAX requests
-        add_action('wp_ajax_nopriv_*', array($this, 'debug_all_ajax'), 1);
-        add_action('wp_ajax_*', array($this, 'debug_all_ajax'), 1);
+        // DEBUG: Add early action hook to catch AJAX requests
+        add_action('init', array($this, 'debug_all_ajax'), 1);
         add_action('admin_init', array($this, 'debug_action_hooks'), 999);
     }
 
