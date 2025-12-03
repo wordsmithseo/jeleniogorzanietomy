@@ -112,8 +112,27 @@ class JG_Map_Database {
         // Set plugin version
         update_option('jg_map_db_version', JG_MAP_VERSION);
 
+        // Check and update schema for existing installations
+        self::check_and_update_schema();
+
         // Create upload directory for map images
         self::create_upload_directory();
+    }
+
+    /**
+     * Check and update database schema for missing columns
+     */
+    public static function check_and_update_schema() {
+        global $wpdb;
+        $table = self::get_points_table();
+
+        // Check if promo_until column exists
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'promo_until'");
+
+        if (empty($column_exists)) {
+            // Add promo_until column
+            $wpdb->query("ALTER TABLE $table ADD COLUMN promo_until datetime DEFAULT NULL AFTER is_promo");
+        }
     }
 
     /**
@@ -407,6 +426,9 @@ class JG_Map_Database {
             require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
             dbDelta($sql);
         }
+
+        // Also check and update main table schema
+        self::check_and_update_schema();
     }
 
     /**

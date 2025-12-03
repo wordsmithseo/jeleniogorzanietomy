@@ -165,7 +165,7 @@ class JG_Map_Ajax_Handlers {
 
             // Check if sponsored expired
             $is_sponsored = (bool)$point['is_promo'];
-            $sponsored_until = $point['promo_until'];
+            $sponsored_until = $point['promo_until'] ?? null;
             if ($is_sponsored && $sponsored_until) {
                 if (strtotime($sponsored_until) < current_time('timestamp')) {
                     // Sponsored expired, update DB
@@ -1402,12 +1402,12 @@ class JG_Map_Ajax_Handlers {
         // Get updated point to return current state
         $updated_point = JG_Map_Database::get_point($point_id);
 
-        error_log('JG MAP SPONSORED: Point after update - is_promo=' . var_export($updated_point['is_promo'], true) . ' (type: ' . gettype($updated_point['is_promo']) . '), promo_until=' . var_export($updated_point['promo_until'], true));
+        error_log('JG MAP SPONSORED: Point after update - is_promo=' . var_export($updated_point['is_promo'], true) . ' (type: ' . gettype($updated_point['is_promo']) . '), promo_until=' . var_export($updated_point['promo_until'] ?? null, true));
 
         wp_send_json_success(array(
             'message' => 'Sponsorowanie zaktualizowane',
             'is_sponsored' => (bool)$updated_point['is_promo'],
-            'sponsored_until' => $updated_point['promo_until']
+            'sponsored_until' => $updated_point['promo_until'] ?? null
         ));
     }
 
