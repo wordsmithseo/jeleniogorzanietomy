@@ -60,6 +60,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_update_sponsored', array($this, 'admin_update_sponsored'));
         add_action('wp_ajax_jg_admin_delete_point', array($this, 'admin_delete_point'));
         add_action('wp_ajax_jg_admin_ban_user', array($this, 'admin_ban_user'));
+        add_action('wp_ajax_jg_admin_unban_user', array($this, 'admin_unban_user'));
         add_action('wp_ajax_jg_admin_toggle_user_restriction', array($this, 'admin_toggle_user_restriction'));
         add_action('wp_ajax_jg_admin_approve_deletion', array($this, 'admin_approve_deletion'));
         add_action('wp_ajax_jg_admin_reject_deletion', array($this, 'admin_reject_deletion'));
@@ -1557,6 +1558,32 @@ class JG_Map_Ajax_Handlers {
             'message' => 'Użytkownik zbanowany',
             'ban_type' => $ban_type
         ));
+    }
+
+    /**
+     * Unban user (admin only)
+     */
+    public function admin_unban_user() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        delete_user_meta($user_id, 'jg_map_banned');
+        delete_user_meta($user_id, 'jg_map_ban_until');
+
+        wp_send_json_success(array('message' => 'Ban usunięty'));
     }
 
     /**

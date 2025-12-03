@@ -399,17 +399,33 @@ class JG_Map_Admin {
                 </tbody>
             </table>
 
+            <!-- Modal for edit details -->
+            <div id="jg-edit-details-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+                <div style="background:#fff;padding:20px;border-radius:8px;max-width:900px;width:90%;max-height:80vh;overflow:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h2 id="jg-edit-modal-title" style="margin:0">Szczegóły edycji</h2>
+                        <button id="jg-edit-modal-close" style="background:#dc2626;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-weight:700;">✕ Zamknij</button>
+                    </div>
+                    <div id="jg-edit-modal-content"></div>
+                </div>
+            </div>
+
             <script>
             jQuery(document).ready(function($) {
+                var modal = $('#jg-edit-details-modal');
+                var modalContent = $('#jg-edit-modal-content');
+                var modalTitle = $('#jg-edit-modal-title');
+
                 // View edit details
                 $('.jg-view-edit-details').on('click', function() {
                     var edit = $(this).data('edit');
                     var old_values = JSON.parse(edit.old_values);
                     var new_values = JSON.parse(edit.new_values);
 
-                    var html = '<h3>Szczegóły edycji: ' + edit.point_title + '</h3>';
-                    html += '<table style="width:100%;border-collapse:collapse">';
-                    html += '<tr><th style="text-align:left;padding:8px;border:1px solid #ddd">Pole</th><th style="text-align:left;padding:8px;border:1px solid #ddd">Poprzednia wartość</th><th style="text-align:left;padding:8px;border:1px solid #ddd">Nowa wartość</th></tr>';
+                    modalTitle.text('Szczegóły edycji: ' + edit.point_title);
+
+                    var html = '<table style="width:100%;border-collapse:collapse">';
+                    html += '<tr><th style="text-align:left;padding:8px;border:1px solid #ddd;background:#f5f5f5">Pole</th><th style="text-align:left;padding:8px;border:1px solid #ddd;background:#f5f5f5">Poprzednia wartość</th><th style="text-align:left;padding:8px;border:1px solid #ddd;background:#f5f5f5">Nowa wartość</th></tr>';
 
                     if (old_values.title !== new_values.title) {
                         html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Tytuł</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + old_values.title + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + new_values.title + '</td></tr>';
@@ -422,16 +438,14 @@ class JG_Map_Admin {
                     }
                     html += '</table>';
 
-                    $('<div>').html(html).dialog({
-                        title: 'Porównanie zmian',
-                        width: 800,
-                        modal: true,
-                        buttons: {
-                            'Zamknij': function() {
-                                $(this).dialog('close');
-                            }
-                        }
-                    });
+                    modalContent.html(html);
+                    modal.css('display', 'flex');
+                });
+
+                $('#jg-edit-modal-close, #jg-edit-details-modal').on('click', function(e) {
+                    if (e.target === this) {
+                        modal.hide();
+                    }
                 });
 
                 // Approve edit
@@ -1216,9 +1230,25 @@ class JG_Map_Admin {
                 $user->ID
             ));
 
+            // Get ban status
+            $ban_status = get_user_meta($user->ID, 'jg_map_banned', true);
+            $ban_until = get_user_meta($user->ID, 'jg_map_ban_until', true);
+
+            // Get restrictions
+            $restrictions = array();
+            $restriction_types = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places');
+            foreach ($restriction_types as $type) {
+                if (get_user_meta($user->ID, 'jg_map_ban_' . $type, true)) {
+                    $restrictions[] = $type;
+                }
+            }
+
             $user_stats[$user->ID] = array(
                 'points' => $points_count,
-                'pending' => $pending_count
+                'pending' => $pending_count,
+                'ban_status' => $ban_status,
+                'ban_until' => $ban_until,
+                'restrictions' => $restrictions
             );
         }
 
@@ -1240,48 +1270,254 @@ class JG_Map_Admin {
                     <tr>
                         <th>ID</th>
                         <th>Użytkownik</th>
-                        <th>Email</th>
                         <th>Miejsca</th>
-                        <th>Oczekujące</th>
-                        <th>Data rejestracji</th>
+                        <th>Status</th>
+                        <th>Blokady</th>
                         <th>Akcje</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($users as $user):
                         $stats = $user_stats[$user->ID];
+                        $is_banned = JG_Map_Ajax_Handlers::is_user_banned($user->ID);
                         ?>
                         <tr>
                             <td><?php echo $user->ID; ?></td>
                             <td>
                                 <strong><?php echo esc_html($user->display_name); ?></strong>
-                                <br><small style="color:#666"><?php echo esc_html($user->user_login); ?></small>
+                                <br><small style="color:#666"><?php echo esc_html($user->user_email); ?></small>
                             </td>
-                            <td><?php echo esc_html($user->user_email); ?></td>
-                            <td><span style="background:#e5e7eb;padding:4px 8px;border-radius:4px"><?php echo $stats['points']; ?></span></td>
                             <td>
+                                <span style="background:#e5e7eb;padding:4px 8px;border-radius:4px"><?php echo $stats['points']; ?> opubl.</span>
                                 <?php if ($stats['pending'] > 0): ?>
-                                    <span style="background:#fbbf24;padding:4px 8px;border-radius:4px"><?php echo $stats['pending']; ?></span>
-                                <?php else: ?>
-                                    <span style="color:#999">0</span>
+                                    <span style="background:#fbbf24;padding:4px 8px;border-radius:4px;margin-left:4px"><?php echo $stats['pending']; ?> oczek.</span>
                                 <?php endif; ?>
                             </td>
-                            <td><?php echo date('Y-m-d', strtotime($user->user_registered)); ?></td>
                             <td>
-                                <a href="<?php echo get_site_url(); ?>?jg_user_points=<?php echo $user->ID; ?>" class="button button-small" target="_blank">Miejsca użytkownika</a>
-                                <button class="button button-small jg-manage-user-actions" data-user-id="<?php echo $user->ID; ?>" data-user-name="<?php echo esc_attr($user->display_name); ?>">Akcje</button>
+                                <?php if ($is_banned): ?>
+                                    <?php if ($stats['ban_status'] === 'permanent'): ?>
+                                        <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700">🚫 Ban permanentny</span>
+                                    <?php else: ?>
+                                        <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700">🚫 Ban do <?php echo date('Y-m-d', strtotime($stats['ban_until'])); ?></span>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px">✓ Aktywny</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($stats['restrictions'])): ?>
+                                    <?php
+                                    $labels = array(
+                                        'voting' => 'głosowanie',
+                                        'add_places' => 'dodawanie miejsc',
+                                        'add_events' => 'wydarzenia',
+                                        'add_trivia' => 'ciekawostki',
+                                        'edit_places' => 'edycja'
+                                    );
+                                    foreach ($stats['restrictions'] as $r): ?>
+                                        <span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin:2px;display:inline-block">⚠️ <?php echo $labels[$r] ?? $r; ?></span>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <span style="color:#999">Brak</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <button class="button button-small jg-manage-user"
+                                        data-user-id="<?php echo $user->ID; ?>"
+                                        data-user-name="<?php echo esc_attr($user->display_name); ?>"
+                                        data-ban-status="<?php echo esc_attr($stats['ban_status']); ?>"
+                                        data-restrictions='<?php echo esc_attr(json_encode($stats['restrictions'])); ?>'>
+                                    Zarządzaj
+                                </button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
 
+            <!-- Modal for user management -->
+            <div id="jg-user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+                <div style="background:#fff;padding:20px;border-radius:8px;max-width:600px;width:90%;max-height:80vh;overflow:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h2 id="jg-user-modal-title" style="margin:0">Zarządzanie użytkownikiem</h2>
+                        <button id="jg-user-modal-close" style="background:#dc2626;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-weight:700;">✕</button>
+                    </div>
+
+                    <div id="jg-user-current-status" style="margin-bottom:20px;padding:12px;background:#f5f5f5;border-radius:8px;"></div>
+
+                    <div style="margin-bottom:20px;">
+                        <h3>Bany</h3>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="button jg-ban-permanent">Ban permanentny</button>
+                            <button class="button jg-ban-temporary">Ban czasowy</button>
+                            <button class="button jg-unban" style="background:#10b981;color:#fff;border-color:#10b981;">Usuń ban</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:20px;">
+                        <h3>Blokady</h3>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <button class="button jg-toggle-restriction" data-type="voting">Głosowanie</button>
+                            <button class="button jg-toggle-restriction" data-type="add_places">Dodawanie miejsc</button>
+                            <button class="button jg-toggle-restriction" data-type="add_events">Wydarzenia</button>
+                            <button class="button jg-toggle-restriction" data-type="add_trivia">Ciekawostki</button>
+                            <button class="button jg-toggle-restriction" data-type="edit_places">Edycja miejsc</button>
+                        </div>
+                    </div>
+
+                    <div id="jg-user-message" style="margin-top:16px;padding:12px;border-radius:8px;display:none;"></div>
+                </div>
+            </div>
+
             <script>
             jQuery(document).ready(function($) {
-                $('.jg-manage-user-actions').on('click', function() {
-                    var userId = $(this).data('user-id');
+                var modal = $('#jg-user-modal');
+                var modalTitle = $('#jg-user-modal-title');
+                var currentStatus = $('#jg-user-current-status');
+                var message = $('#jg-user-message');
+                var currentUserId = null;
+                var currentRestrictions = [];
+
+                $('.jg-manage-user').on('click', function() {
+                    currentUserId = $(this).data('user-id');
                     var userName = $(this).data('user-name');
-                    alert('Funkcja zarządzania banami/blokadami dla użytkownika "' + userName + '" jest dostępna w mapie poprzez przycisk z trzema kropkami (⋮) w panelu administracyjnym miejsca.');
+                    var banStatus = $(this).data('ban-status');
+                    currentRestrictions = $(this).data('restrictions') || [];
+
+                    modalTitle.text('Zarządzanie: ' + userName);
+
+                    // Update current status display
+                    var statusHtml = '<strong>Aktualny status:</strong><br>';
+                    if (banStatus === 'permanent') {
+                        statusHtml += '<span style="color:#dc2626">🚫 Ban permanentny</span>';
+                    } else if (banStatus === 'temporary') {
+                        statusHtml += '<span style="color:#dc2626">🚫 Ban czasowy</span>';
+                    } else {
+                        statusHtml += '<span style="color:#10b981">✓ Aktywny</span>';
+                    }
+
+                    if (currentRestrictions.length > 0) {
+                        statusHtml += '<br><strong>Aktywne blokady:</strong> ' + currentRestrictions.join(', ');
+                    }
+
+                    currentStatus.html(statusHtml);
+
+                    // Update restriction button states
+                    $('.jg-toggle-restriction').each(function() {
+                        var type = $(this).data('type');
+                        if (currentRestrictions.indexOf(type) !== -1) {
+                            $(this).css({
+                                'background': '#dc2626',
+                                'color': '#fff',
+                                'border-color': '#dc2626'
+                            }).text($(this).text() + ' ✓');
+                        } else {
+                            $(this).css({
+                                'background': '',
+                                'color': '',
+                                'border-color': ''
+                            });
+                        }
+                    });
+
+                    modal.css('display', 'flex');
+                });
+
+                $('#jg-user-modal-close, #jg-user-modal').on('click', function(e) {
+                    if (e.target === this) {
+                        modal.hide();
+                        message.hide();
+                    }
+                });
+
+                function showMessage(text, isError) {
+                    message.text(text)
+                        .css('background', isError ? '#fee' : '#d1fae5')
+                        .css('color', isError ? '#dc2626' : '#10b981')
+                        .show();
+                    setTimeout(function() {
+                        if (!isError) {
+                            location.reload();
+                        }
+                    }, 1500);
+                }
+
+                $('.jg-ban-permanent').on('click', function() {
+                    if (!confirm('Czy na pewno zbanować użytkownika permanentnie?')) return;
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_ban_user',
+                            user_id: currentUserId,
+                            ban_type: 'permanent',
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            showMessage(response.success ? 'Użytkownik zbanowany permanentnie!' : response.data.message, !response.success);
+                        }
+                    });
+                });
+
+                $('.jg-ban-temporary').on('click', function() {
+                    var days = prompt('Na ile dni zbanować użytkownika?', '7');
+                    if (!days) return;
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_ban_user',
+                            user_id: currentUserId,
+                            ban_type: 'temporary',
+                            ban_days: parseInt(days),
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            showMessage(response.success ? 'Użytkownik zbanowany na ' + days + ' dni!' : response.data.message, !response.success);
+                        }
+                    });
+                });
+
+                $('.jg-unban').on('click', function() {
+                    if (!confirm('Czy na pewno usunąć ban?')) return;
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_unban_user',
+                            user_id: currentUserId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            showMessage(response.success ? 'Ban usunięty!' : response.data.message, !response.success);
+                        }
+                    });
+                });
+
+                $('.jg-toggle-restriction').on('click', function() {
+                    var type = $(this).data('type');
+                    var btn = $(this);
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_toggle_user_restriction',
+                            user_id: currentUserId,
+                            restriction_type: type,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                showMessage(response.data.message, false);
+                            } else {
+                                showMessage(response.data.message, true);
+                            }
+                        }
+                    });
                 });
             });
             </script>
