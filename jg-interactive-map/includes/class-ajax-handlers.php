@@ -167,7 +167,7 @@ class JG_Map_Ajax_Handlers {
             $is_sponsored = (bool)$point['is_promo'];
             $sponsored_until = $point['promo_until'] ?? null;
             if ($is_sponsored && $sponsored_until) {
-                if (strtotime($sponsored_until) < current_time('timestamp')) {
+                if (strtotime($sponsored_until) < current_time('timestamp', true)) {
                     // Sponsored expired, update DB
                     JG_Map_Database::update_point($point['id'], array('is_promo' => 0));
                     $is_sponsored = false;
@@ -199,13 +199,13 @@ class JG_Map_Ajax_Handlers {
                         'new_title' => $new_values['title'] ?? '',
                         'new_type' => $new_values['type'] ?? '',
                         'new_content' => $new_values['content'] ?? '',
-                        'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
+                        'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp', true)) . ' temu'
                     );
                 } else if ($pending_history['action_type'] === 'delete_request') {
                     $deletion_info = array(
                         'history_id' => intval($pending_history['id']),
                         'reason' => $new_values['reason'] ?? '',
-                        'requested_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
+                        'requested_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp', true)) . ' temu'
                     );
                 }
             }
@@ -234,7 +234,7 @@ class JG_Map_Ajax_Handlers {
                 'my_vote' => $my_vote,
                 'date' => array(
                     'raw' => $point['created_at'],
-                    'human' => human_time_diff(strtotime($point['created_at']), current_time('timestamp')) . ' temu'
+                    'human' => human_time_diff(strtotime($point['created_at']), current_time('timestamp', true)) . ' temu'
                 ),
                 'admin' => $is_admin ? array(
                     'author_name_real' => $author ? $author->display_name : '',
@@ -1096,7 +1096,15 @@ class JG_Map_Ajax_Handlers {
 
         if (!$point && !$point_check) {
             error_log('JG MAP EDIT APPROVE: FATAL - Point does not exist in database at all!');
-            wp_send_json_error(array('message' => 'Punkt nie istnieje (ID: ' . $history['point_id'] . ')'));
+            wp_send_json_error(array(
+                'message' => 'Punkt nie istnieje',
+                'debug' => array(
+                    'point_id' => $history['point_id'],
+                    'history_id' => $history_id,
+                    'action_type' => $history['action_type'],
+                    'db_query_executed' => true
+                )
+            ));
             exit;
         }
 

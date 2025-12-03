@@ -1481,7 +1481,8 @@
         if (CFG.isAdmin) {
           var adminData = [];
           if (p.admin) {
-            adminData.push('<div><strong>Autor:</strong> ' + esc(p.admin.author_name_real || '?') + '</div>');
+            // Author name with 3-dot menu button
+            adminData.push('<div style="display:flex;align-items:center;gap:8px"><div><strong>Autor:</strong> ' + esc(p.admin.author_name_real || '?') + '</div><button id="btn-user-actions" class="jg-btn jg-btn--ghost" style="padding:2px 8px;font-size:16px;line-height:1" title="Akcje użytkownika">⋮</button></div>');
             adminData.push('<div><strong>Email:</strong> ' + esc(p.admin.author_email || '?') + '</div>');
             if (p.admin.ip && p.admin.ip !== '(brak)' && p.admin.ip.trim() !== '') {
               adminData.push('<div><strong>IP:</strong> ' + esc(p.admin.ip) + '</div>');
@@ -1543,6 +1544,18 @@
         var deletionBtn = '';
         if (canEdit && !CFG.isAdmin && !p.is_deletion_requested) {
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
+        }
+
+        // Debug logging for deletion button visibility
+        if (canEdit && !CFG.isAdmin) {
+          console.log('[JG MAP] Deletion button check:', {
+            canEdit: canEdit,
+            isAdmin: CFG.isAdmin,
+            isDeletionRequested: p.is_deletion_requested,
+            showButton: !p.is_deletion_requested,
+            authorId: p.author_id,
+            currentUserId: CFG.currentUserId
+          });
         }
 
         var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
@@ -1644,6 +1657,14 @@
           if (btnViewReports) {
             btnViewReports.onclick = function() {
               openReportsListModal(p);
+            };
+          }
+
+          // User actions menu button
+          var btnUserActions = qs('#btn-user-actions', modalView);
+          if (btnUserActions && p.admin) {
+            btnUserActions.onclick = function() {
+              openUserActionsModal(p.author_id, p.admin.author_name_real || 'Użytkownik');
             };
           }
 
