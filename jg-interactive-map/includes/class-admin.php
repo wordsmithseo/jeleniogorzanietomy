@@ -388,7 +388,7 @@ class JG_Map_Admin {
                             </td>
                             <td><?php echo $user ? esc_html($user->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo implode(', ', $changes); ?></td>
-                            <td><?php echo human_time_diff(strtotime($edit['created_at']), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($edit['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <button class="button jg-view-edit-details" data-edit='<?php echo esc_attr(json_encode($edit)); ?>'>Szczegóły</button>
                                 <button class="button button-primary jg-approve-edit" data-id="<?php echo $edit['id']; ?>">Zatwierdź</button>
@@ -556,7 +556,7 @@ class JG_Map_Admin {
                             </td>
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
-                            <td><?php echo human_time_diff(strtotime($point['created_at']), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_preview_point=<?php echo $point['id']; ?>" class="button">Zobacz szczegóły</a>
                             </td>
@@ -611,7 +611,7 @@ class JG_Map_Admin {
                         <tr>
                             <td><strong><?php echo esc_html($report['point_title']); ?></strong></td>
                             <td><span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px"><?php echo $report['report_count']; ?></span></td>
-                            <td><?php echo human_time_diff(strtotime($report['created_at']), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($report['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_reports=<?php echo $report['point_id']; ?>" class="button">Zobacz szczegóły</a>
                             </td>
@@ -812,7 +812,7 @@ class JG_Map_Admin {
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo $point['is_promo'] ? '⭐' : '-'; ?></td>
-                            <td><?php echo human_time_diff(strtotime($point['created_at']), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button button-small">Zobacz</a>
                                 <button class="button button-small jg-delete-point" data-id="<?php echo $point['id']; ?>" style="color:#b32d2e">Usuń</button>
@@ -1132,7 +1132,7 @@ class JG_Map_Admin {
                                 <p style="margin:0 0 8px;font-size:12px;color:#666">
                                     <strong><?php echo esc_html($point['type']); ?></strong> •
                                     <?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?> •
-                                    <?php echo human_time_diff(strtotime($point['created_at']), current_time('timestamp')); ?> temu
+                                    <?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu
                                 </p>
                                 <div style="display:flex;gap:8px">
                                     <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>"

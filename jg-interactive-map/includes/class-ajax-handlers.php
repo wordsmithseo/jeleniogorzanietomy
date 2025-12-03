@@ -279,13 +279,13 @@ class JG_Map_Ajax_Handlers {
                         'new_title' => $new_values['title'] ?? '',
                         'new_type' => $new_values['type'] ?? '',
                         'new_content' => $new_values['content'] ?? '',
-                        'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
+                        'edited_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
                     );
                 } else if ($pending_history['action_type'] === 'delete_request') {
                     $deletion_info = array(
                         'history_id' => intval($pending_history['id']),
                         'reason' => $new_values['reason'] ?? '',
-                        'requested_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
+                        'requested_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
                     );
                 }
             }
@@ -314,7 +314,7 @@ class JG_Map_Ajax_Handlers {
                 'my_vote' => $my_vote,
                 'date' => array(
                     'raw' => $point['created_at'],
-                    'human' => human_time_diff(strtotime($point['created_at']), current_time('timestamp')) . ' temu'
+                    'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu'
                 ),
                 'admin' => $is_admin ? array(
                     'author_name_real' => $author ? $author->display_name : '',
@@ -737,7 +737,7 @@ class JG_Map_Ajax_Handlers {
             $formatted_reports[] = array(
                 'user_name' => $user_name,
                 'reason' => $report['reason'] ?: 'Brak powodu',
-                'date' => human_time_diff(strtotime($report['created_at']), current_time('timestamp')) . ' temu'
+                'date' => human_time_diff(strtotime(get_date_from_gmt($report['created_at'])), current_time('timestamp')) . ' temu'
             );
         }
 
@@ -1136,8 +1136,8 @@ class JG_Map_Ajax_Handlers {
                 'old_values' => $old_values,
                 'new_values' => $new_values,
                 'status' => $entry['status'],
-                'created_at' => human_time_diff(strtotime($entry['created_at']), current_time('timestamp')) . ' temu',
-                'resolved_at' => $entry['resolved_at'] ? human_time_diff(strtotime($entry['resolved_at']), current_time('timestamp')) . ' temu' : null
+                'created_at' => human_time_diff(strtotime(get_date_from_gmt($entry['created_at'])), current_time('timestamp')) . ' temu',
+                'resolved_at' => $entry['resolved_at'] ? human_time_diff(strtotime(get_date_from_gmt($entry['resolved_at'])), current_time('timestamp')) . ' temu' : null
             );
         }
 
