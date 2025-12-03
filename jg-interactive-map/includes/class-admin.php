@@ -54,8 +54,9 @@ class JG_Map_Admin {
         $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'");
         $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
         $pending_reports = $wpdb->get_var("SELECT COUNT(*) FROM $reports_table WHERE status = 'pending'");
+        $pending_deletions = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = 1");
 
-        $total_pending = intval($pending_points) + intval($pending_edits) + intval($pending_reports);
+        $total_pending = intval($pending_points) + intval($pending_edits) + intval($pending_reports) + intval($pending_deletions);
 
         if ($total_pending === 0) {
             return;
@@ -96,6 +97,15 @@ class JG_Map_Admin {
                 'id' => 'jg-map-pending-reports',
                 'title' => '🚨 ' . $pending_reports . ' zgłoszeń',
                 'href' => admin_url('admin.php?page=jg-map-reports')
+            ));
+        }
+
+        if ($pending_deletions > 0) {
+            $wp_admin_bar->add_node(array(
+                'parent' => 'jg-map-notifications',
+                'id' => 'jg-map-pending-deletions',
+                'title' => '🗑️ ' . $pending_deletions . ' żądań usunięcia',
+                'href' => admin_url('admin.php?page=jg-map-deletions')
             ));
         }
     }
@@ -143,11 +153,38 @@ class JG_Map_Admin {
 
         add_submenu_page(
             'jg-map',
+            'Żądania usunięcia',
+            'Żądania usunięcia',
+            'manage_options',
+            'jg-map-deletions',
+            array($this, 'render_deletions_page')
+        );
+
+        add_submenu_page(
+            'jg-map',
             'Wszystkie miejsca',
             'Wszystkie miejsca',
             'manage_options',
             'jg-map-all',
             array($this, 'render_all_points_page')
+        );
+
+        add_submenu_page(
+            'jg-map',
+            'Galeria zdjęć',
+            'Galeria zdjęć',
+            'manage_options',
+            'jg-map-gallery',
+            array($this, 'render_gallery_page')
+        );
+
+        add_submenu_page(
+            'jg-map',
+            'Użytkownicy',
+            'Użytkownicy',
+            'manage_options',
+            'jg-map-users',
+            array($this, 'render_users_page')
         );
 
         add_submenu_page(
@@ -170,6 +207,7 @@ class JG_Map_Admin {
         $total = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = 'publish'");
         $pending = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = 'pending'");
         $promos = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE is_promo = 1 AND status = 'publish'");
+        $deletions = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE is_deletion_requested = 1");
 
         $reports_table = JG_Map_Database::get_reports_table();
         $reports = $wpdb->get_var("SELECT COUNT(*) FROM $reports_table WHERE status = 'pending'");
@@ -211,6 +249,14 @@ class JG_Map_Admin {
                     <p style="font-size:32px;font-weight:700;margin:0;color:#d63638"><?php echo $reports; ?></p>
                     <?php if ($reports > 0): ?>
                     <a href="<?php echo admin_url('admin.php?page=jg-map-reports'); ?>" class="button">Zobacz</a>
+                    <?php endif; ?>
+                </div>
+
+                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
+                    <h3 style="margin:0 0 10px">🗑️ Żądania usunięcia</h3>
+                    <p style="font-size:32px;font-weight:700;margin:0;color:#dc2626"><?php echo $deletions; ?></p>
+                    <?php if ($deletions > 0): ?>
+                    <a href="<?php echo admin_url('admin.php?page=jg-map-deletions'); ?>" class="button">Zarządzaj</a>
                     <?php endif; ?>
                 </div>
 
@@ -896,6 +942,349 @@ class JG_Map_Admin {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render deletions page
+     */
+    public function render_deletions_page() {
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+
+        // Get all deletion requests
+        $deletions = $wpdb->get_results(
+            "SELECT * FROM $points_table WHERE is_deletion_requested = 1 ORDER BY deletion_requested_at DESC",
+            ARRAY_A
+        );
+
+        ?>
+        <div class="wrap">
+            <h1>Żądania usunięcia miejsc</h1>
+
+            <?php if (!empty($deletions)): ?>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>Tytuł</th>
+                        <th>Typ</th>
+                        <th>Autor</th>
+                        <th>Powód</th>
+                        <th>Data żądania</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($deletions as $point):
+                        $author = get_userdata($point['author_id']);
+                        ?>
+                        <tr>
+                            <td><strong><?php echo esc_html($point['title']); ?></strong></td>
+                            <td><?php echo esc_html($point['type']); ?></td>
+                            <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
+                            <td><?php echo $point['deletion_reason'] ? esc_html($point['deletion_reason']) : '<em>Brak powodu</em>'; ?></td>
+                            <td><?php echo human_time_diff(strtotime($point['deletion_requested_at']), current_time('timestamp')); ?> temu</td>
+                            <td>
+                                <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button" target="_blank">Zobacz miejsce</a>
+                                <button class="button button-primary jg-approve-deletion" data-id="<?php echo $point['id']; ?>">Zatwierdź usunięcie</button>
+                                <button class="button jg-reject-deletion" data-id="<?php echo $point['id']; ?>">Odrzuć</button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <script>
+            jQuery(document).ready(function($) {
+                // Approve deletion
+                $('.jg-approve-deletion').on('click', function() {
+                    if (!confirm('Na pewno usunąć to miejsce? Tej operacji nie można cofnąć!')) return;
+
+                    var btn = $(this);
+                    var pointId = btn.data('id');
+                    btn.prop('disabled', true).text('Usuwanie...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_approve_deletion',
+                            post_id: pointId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Miejsce zostało usunięte!');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
+                                btn.prop('disabled', false).text('Zatwierdź usunięcie');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd połączenia');
+                            btn.prop('disabled', false).text('Zatwierdź usunięcie');
+                        }
+                    });
+                });
+
+                // Reject deletion
+                $('.jg-reject-deletion').on('click', function() {
+                    if (!confirm('Odrzucić żądanie usunięcia?')) return;
+
+                    var btn = $(this);
+                    var pointId = btn.data('id');
+                    btn.prop('disabled', true).text('Odrzucanie...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_reject_deletion',
+                            post_id: pointId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Żądanie usunięcia zostało odrzucone!');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
+                                btn.prop('disabled', false).text('Odrzuć');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd połączenia');
+                            btn.prop('disabled', false).text('Odrzuć');
+                        }
+                    });
+                });
+            });
+            </script>
+            <?php else: ?>
+            <p>Brak żądań usunięcia! 🎉</p>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render gallery page
+     */
+    public function render_gallery_page() {
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+
+        // Get all points with images
+        $points = $wpdb->get_results(
+            "SELECT id, title, images, type, author_id, created_at FROM $points_table
+            WHERE status = 'publish' AND images IS NOT NULL AND images != '[]'
+            ORDER BY created_at DESC LIMIT 200",
+            ARRAY_A
+        );
+
+        ?>
+        <div class="wrap">
+            <h1>Galeria wszystkich zdjęć</h1>
+
+            <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);margin:20px 0">
+                <p><strong>Łącznie miejsc ze zdjęciami:</strong> <?php echo count($points); ?></p>
+            </div>
+
+            <?php if (!empty($points)): ?>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;margin-top:30px">
+                    <?php foreach ($points as $point):
+                        $images = json_decode($point['images'], true);
+                        if (empty($images)) continue;
+
+                        $author = get_userdata($point['author_id']);
+                        ?>
+                        <div style="background:#fff;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);overflow:hidden">
+                            <div style="position:relative;height:200px;background:#f5f5f5">
+                                <img src="<?php echo esc_url($images[0]['thumb'] ?? $images[0]['full']); ?>"
+                                     style="width:100%;height:100%;object-fit:cover"
+                                     alt="<?php echo esc_attr($point['title']); ?>">
+                                <?php if (count($images) > 1): ?>
+                                    <span style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">
+                                        +<?php echo count($images) - 1; ?> zdjęć
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                            <div style="padding:12px">
+                                <h3 style="margin:0 0 8px;font-size:16px">
+                                    <?php echo esc_html($point['title']); ?>
+                                </h3>
+                                <p style="margin:0 0 8px;font-size:12px;color:#666">
+                                    <strong><?php echo esc_html($point['type']); ?></strong> •
+                                    <?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?> •
+                                    <?php echo human_time_diff(strtotime($point['created_at']), current_time('timestamp')); ?> temu
+                                </p>
+                                <div style="display:flex;gap:8px">
+                                    <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>"
+                                       class="button button-small" target="_blank">Zobacz miejsce</a>
+                                    <button class="button button-small jg-view-all-images"
+                                            data-images='<?php echo esc_attr(json_encode($images)); ?>'
+                                            data-title="<?php echo esc_attr($point['title']); ?>">
+                                        Wszystkie zdjęcia
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Lightbox modal -->
+                <div id="jg-gallery-lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;align-items:center;justify-content:center;padding:20px">
+                    <div style="position:relative;max-width:1200px;width:100%">
+                        <button id="jg-gallery-close" style="position:absolute;top:-40px;right:0;background:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-weight:700">✕ Zamknij</button>
+                        <h2 id="jg-gallery-title" style="color:#fff;margin-bottom:20px"></h2>
+                        <div id="jg-gallery-images" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px"></div>
+                    </div>
+                </div>
+
+                <script>
+                jQuery(document).ready(function($) {
+                    var lightbox = $('#jg-gallery-lightbox');
+                    var imagesContainer = $('#jg-gallery-images');
+                    var titleEl = $('#jg-gallery-title');
+
+                    $('.jg-view-all-images').on('click', function() {
+                        var images = $(this).data('images');
+                        var title = $(this).data('title');
+
+                        titleEl.text(title);
+                        imagesContainer.empty();
+
+                        images.forEach(function(img) {
+                            imagesContainer.append(
+                                $('<a>').attr({
+                                    href: img.full,
+                                    target: '_blank'
+                                }).css({
+                                    display: 'block',
+                                    borderRadius: '8px',
+                                    overflow: 'hidden'
+                                }).append(
+                                    $('<img>').attr('src', img.thumb || img.full).css({
+                                        width: '100%',
+                                        height: '250px',
+                                        objectFit: 'cover',
+                                        display: 'block'
+                                    })
+                                )
+                            );
+                        });
+
+                        lightbox.css('display', 'flex');
+                    });
+
+                    $('#jg-gallery-close, #jg-gallery-lightbox').on('click', function(e) {
+                        if (e.target === this) {
+                            lightbox.hide();
+                        }
+                    });
+                });
+                </script>
+            <?php else: ?>
+                <p>Brak miejsc ze zdjęciami.</p>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render users management page
+     */
+    public function render_users_page() {
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+
+        // Get all users with their statistics
+        $users = get_users(array('orderby' => 'registered', 'order' => 'DESC'));
+
+        // Build stats for each user
+        $user_stats = array();
+        foreach ($users as $user) {
+            $points_count = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $points_table WHERE author_id = %d AND status = 'publish'",
+                $user->ID
+            ));
+
+            $pending_count = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $points_table WHERE author_id = %d AND status = 'pending'",
+                $user->ID
+            ));
+
+            $user_stats[$user->ID] = array(
+                'points' => $points_count,
+                'pending' => $pending_count
+            );
+        }
+
+        ?>
+        <div class="wrap">
+            <h1>Zarządzanie użytkownikami</h1>
+
+            <div style="background:#fff7e6;border:2px solid #f59e0b;padding:15px;border-radius:8px;margin:20px 0">
+                <h3 style="margin-top:0">ℹ️ Zarządzanie użytkownikami:</h3>
+                <ul>
+                    <li>Zobacz statystyki aktywności użytkowników</li>
+                    <li>Zarządzaj banami i blokadami</li>
+                    <li>Przypisuj role moderatorów</li>
+                </ul>
+            </div>
+
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Użytkownik</th>
+                        <th>Email</th>
+                        <th>Miejsca</th>
+                        <th>Oczekujące</th>
+                        <th>Data rejestracji</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($users as $user):
+                        $stats = $user_stats[$user->ID];
+                        ?>
+                        <tr>
+                            <td><?php echo $user->ID; ?></td>
+                            <td>
+                                <strong><?php echo esc_html($user->display_name); ?></strong>
+                                <br><small style="color:#666"><?php echo esc_html($user->user_login); ?></small>
+                            </td>
+                            <td><?php echo esc_html($user->user_email); ?></td>
+                            <td><span style="background:#e5e7eb;padding:4px 8px;border-radius:4px"><?php echo $stats['points']; ?></span></td>
+                            <td>
+                                <?php if ($stats['pending'] > 0): ?>
+                                    <span style="background:#fbbf24;padding:4px 8px;border-radius:4px"><?php echo $stats['pending']; ?></span>
+                                <?php else: ?>
+                                    <span style="color:#999">0</span>
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo date('Y-m-d', strtotime($user->user_registered)); ?></td>
+                            <td>
+                                <a href="<?php echo get_site_url(); ?>?jg_user_points=<?php echo $user->ID; ?>" class="button button-small" target="_blank">Miejsca użytkownika</a>
+                                <button class="button button-small jg-manage-user-actions" data-user-id="<?php echo $user->ID; ?>" data-user-name="<?php echo esc_attr($user->display_name); ?>">Akcje</button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <script>
+            jQuery(document).ready(function($) {
+                $('.jg-manage-user-actions').on('click', function() {
+                    var userId = $(this).data('user-id');
+                    var userName = $(this).data('user-name');
+                    alert('Funkcja zarządzania banami/blokadami dla użytkownika "' + userName + '" jest dostępna w mapie poprzez przycisk z trzema kropkami (⋮) w panelu administracyjnym miejsca.');
+                });
+            });
+            </script>
         </div>
         <?php
     }
