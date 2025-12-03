@@ -1123,7 +1123,7 @@
 
       function openEditModal(p) {
         var contentText = p.content ? p.content.replace(/<\/?[^>]+(>|$)/g, "") : (p.excerpt || '');
-        open(modalEdit, '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header><form id="edit-form" class="jg-grid cols-2"><label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label><label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"><option value="zgloszenie"' + (p.type === 'zgloszenie' ? ' selected' : '') + '>Zgłoszenie</option><option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option><option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option></select></label><label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label><div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button><button type="submit" class="jg-btn">Zapisz</button></div><div id="edit-msg" class="cols-2" style="font-size:12px"></div></form>');
+        open(modalEdit, '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header><form id="edit-form" class="jg-grid cols-2"><label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label><label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"><option value="zgloszenie"' + (p.type === 'zgloszenie' ? ' selected' : '') + '>Zgłoszenie</option><option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option><option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option></select></label><label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label><label class="cols-2">Dodaj zdjęcia (max 6) <input type="file" name="images" multiple accept="image/*" style="width:100%;padding:8px"></label><div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button><button type="submit" class="jg-btn">Zapisz</button></div><div id="edit-msg" class="cols-2" style="font-size:12px"></div></form>');
 
         qs('#edt-close', modalEdit).onclick = function() {
           close(modalEdit);
@@ -1139,28 +1139,49 @@
         form.onsubmit = function(e) {
           e.preventDefault();
           msg.textContent = 'Zapisywanie...';
-          var fd = {
-            post_id: p.id,
-            title: form.title.value.trim(),
-            type: form.type.value,
-            content: form.content.value
-          };
-          if (!fd.title) {
+
+          if (!form.title.value.trim()) {
             form.title.focus();
             msg.textContent = 'Podaj tytuł.';
             msg.style.color = '#b91c1c';
             return;
           }
-          updatePoint(fd).then(function() {
+
+          // Use FormData to support file uploads
+          var fd = new FormData(form);
+          fd.append('action', 'jg_update_point');
+          fd.append('_ajax_nonce', CFG.nonce);
+          fd.append('post_id', p.id);
+
+          fetch(CFG.ajax, {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin'
+          })
+          .then(function(r) {
+            return r.text();
+          })
+          .then(function(t) {
+            var j = null;
+            try {
+              j = JSON.parse(t);
+            } catch (_) {}
+
+            if (!j || j.success === false) {
+              throw new Error((j && j.data && j.data.message) || 'Błąd');
+            }
+
             msg.textContent = 'Zaktualizowano.';
+            msg.style.color = '#15803d';
             setTimeout(function() {
               close(modalEdit);
               refreshData(true).then(function() {
                 alert('Wysłano do moderacji. Zmiany będą widoczne po zaakceptowaniu.');
               });
             }, 300);
-          }).catch(function(err) {
-            msg.textContent = (err && err.message) || 'Błąd';
+          })
+          .catch(function(err) {
+            msg.textContent = err.message || 'Błąd';
             msg.style.color = '#b91c1c';
           });
         };

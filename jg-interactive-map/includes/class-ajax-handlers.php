@@ -378,6 +378,12 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Handle image uploads
+        $new_images = array();
+        if (!empty($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+            $new_images = $this->handle_image_upload($_FILES['images']);
+        }
+
         // Check if there's already pending edit for this point
         $pending_edit = JG_Map_Database::get_pending_history($point_id);
         if ($pending_edit && !$is_admin) {
@@ -390,12 +396,23 @@ class JG_Map_Ajax_Handlers {
         $direct_edit = $is_admin && isset($_POST['admin_edit']);
 
         if ($direct_edit) {
-            JG_Map_Database::update_point($point_id, array(
+            $update_data = array(
                 'title' => $title,
                 'type' => $type,
                 'content' => $content,
                 'excerpt' => wp_trim_words($content, 20)
-            ));
+            );
+
+            // Add new images to existing images
+            if (!empty($new_images)) {
+                $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
+                $all_images = array_merge($existing_images, $new_images);
+                // Limit to 6 images
+                $all_images = array_slice($all_images, 0, 6);
+                $update_data['images'] = json_encode($all_images);
+            }
+
+            JG_Map_Database::update_point($point_id, $update_data);
 
             wp_send_json_success(array('message' => 'Zaktualizowano'));
         } else {
@@ -403,13 +420,15 @@ class JG_Map_Ajax_Handlers {
             $old_values = array(
                 'title' => $point['title'],
                 'type' => $point['type'],
-                'content' => $point['content']
+                'content' => $point['content'],
+                'images' => $point['images'] ?? '[]'
             );
 
             $new_values = array(
                 'title' => $title,
                 'type' => $type,
-                'content' => $content
+                'content' => $content,
+                'new_images' => json_encode($new_images) // Store new images separately for moderation
             );
 
             JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values);
@@ -1114,13 +1133,30 @@ class JG_Map_Ajax_Handlers {
             error_log('JG MAP EDIT APPROVE: Using direct DB result instead of get_point()');
         }
 
-        // Update point with new values
-        JG_Map_Database::update_point($history['point_id'], array(
+        // Prepare update data
+        $update_data = array(
             'title' => $new_values['title'],
             'type' => $new_values['type'],
             'content' => $new_values['content'],
             'excerpt' => wp_trim_words($new_values['content'], 20)
-        ));
+        );
+
+        // Handle new images if present
+        if (isset($new_values['new_images'])) {
+            $new_images = json_decode($new_values['new_images'], true) ?: array();
+            if (!empty($new_images)) {
+                // Get existing images
+                $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
+                // Merge old and new images
+                $all_images = array_merge($existing_images, $new_images);
+                // Limit to 6 images
+                $all_images = array_slice($all_images, 0, 6);
+                $update_data['images'] = json_encode($all_images);
+            }
+        }
+
+        // Update point with new values
+        JG_Map_Database::update_point($history['point_id'], $update_data);
 
         // Approve history
         JG_Map_Database::approve_history($history_id, get_current_user_id());
