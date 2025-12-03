@@ -247,7 +247,7 @@ class JG_Map_Ajax_Handlers {
             $is_sponsored = (bool)$point['is_promo'];
             $sponsored_until = $point['promo_until'] ?? null;
             if ($is_sponsored && $sponsored_until) {
-                if (strtotime($sponsored_until) < current_time('timestamp', true)) {
+                if (strtotime($sponsored_until) < current_time('timestamp')) {
                     // Sponsored expired, update DB
                     JG_Map_Database::update_point($point['id'], array('is_promo' => 0));
                     $is_sponsored = false;
@@ -279,13 +279,13 @@ class JG_Map_Ajax_Handlers {
                         'new_title' => $new_values['title'] ?? '',
                         'new_type' => $new_values['type'] ?? '',
                         'new_content' => $new_values['content'] ?? '',
-                        'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp', true)) . ' temu'
+                        'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
                     );
                 } else if ($pending_history['action_type'] === 'delete_request') {
                     $deletion_info = array(
                         'history_id' => intval($pending_history['id']),
                         'reason' => $new_values['reason'] ?? '',
-                        'requested_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp', true)) . ' temu'
+                        'requested_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
                     );
                 }
             }
@@ -314,7 +314,7 @@ class JG_Map_Ajax_Handlers {
                 'my_vote' => $my_vote,
                 'date' => array(
                     'raw' => $point['created_at'],
-                    'human' => human_time_diff(strtotime($point['created_at']), current_time('timestamp', true)) . ' temu'
+                    'human' => human_time_diff(strtotime($point['created_at']), current_time('timestamp')) . ' temu'
                 ),
                 'admin' => $is_admin ? array(
                     'author_name_real' => $author ? $author->display_name : '',
