@@ -29,6 +29,9 @@ class JG_Map_Ajax_Handlers {
      * Constructor
      */
     private function __construct() {
+        error_log('===== JG MAP AJAX HANDLERS: Constructor called =====');
+        error_log('Registering AJAX action: wp_ajax_jg_admin_approve_edit');
+
         // Public AJAX actions (logged in and not logged in)
         add_action('wp_ajax_jg_points', array($this, 'get_points'));
         add_action('wp_ajax_nopriv_jg_points', array($this, 'get_points'));
@@ -66,6 +69,26 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_get_my_restrictions', array($this, 'get_my_restrictions'));
         add_action('wp_ajax_jg_admin_approve_deletion', array($this, 'admin_approve_deletion'));
         add_action('wp_ajax_jg_admin_reject_deletion', array($this, 'admin_reject_deletion'));
+
+        // DEBUG: Test endpoint
+        add_action('wp_ajax_jg_test_endpoint', array($this, 'test_endpoint'));
+    }
+
+    /**
+     * TEST ENDPOINT - Always returns success with debug info
+     */
+    public function test_endpoint() {
+        error_log('===== JG MAP TEST ENDPOINT CALLED =====');
+        error_log('POST data: ' . print_r($_POST, true));
+        error_log('User ID: ' . get_current_user_id());
+        error_log('User can manage_options: ' . (current_user_can('manage_options') ? 'yes' : 'no'));
+
+        wp_send_json_success(array(
+            'message' => 'Test endpoint works!',
+            'user_id' => get_current_user_id(),
+            'time' => current_time('mysql'),
+            'post_data' => $_POST
+        ));
     }
 
     /**
@@ -1088,6 +1111,10 @@ class JG_Map_Ajax_Handlers {
      * Approve edit (admin only)
      */
     public function admin_approve_edit() {
+        // LOG 1: Function called
+        error_log('===== JG MAP EDIT APPROVE START ===== Function called!');
+        error_log('POST data: ' . print_r($_POST, true));
+
         $this->verify_nonce();
         $this->check_admin();
 
