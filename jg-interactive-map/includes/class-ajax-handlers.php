@@ -394,7 +394,9 @@ class JG_Map_Ajax_Handlers {
             'author_id' => $user_id,
             'author_hidden' => !$public_name,
             'images' => json_encode($images),
-            'ip_address' => $ip_address
+            'ip_address' => $ip_address,
+            'created_at' => current_time('mysql', true),  // GMT time for consistency
+            'updated_at' => current_time('mysql', true)   // GMT time for consistency
         ));
 
         if ($point_id) {
