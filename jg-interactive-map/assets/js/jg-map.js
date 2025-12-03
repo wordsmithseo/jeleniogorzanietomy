@@ -400,14 +400,24 @@
 
         if (p.type === 'ciekawostka') c += ' jg-pin--ciekawostka';
         if (p.type === 'miejsce') c += ' jg-pin--miejsce';
-        if (p.sponsored) c += ' jg-pin--sponsored';
+        if (p.sponsored) c += ' jg-pin--promo';  // Changed from --sponsored to --promo
         if (isPending) c += ' jg-pin--pending';
         if (isEdit) c += ' jg-pin--edit';
         if (hasReports) c += ' jg-pin--reported';
 
-        var lbl = (p.type === 'ciekawostka' ? 'i' : (p.type === 'miejsce' ? 'M' : '!'));
+        // Use emoji icons instead of letters
+        var lbl = '';
+        if (p.sponsored) {
+          lbl = '⭐';  // Gold star for sponsored
+        } else if (p.type === 'ciekawostka') {
+          lbl = 'ℹ️';  // Info icon for curiosities
+        } else if (p.type === 'miejsce') {
+          lbl = '📍';  // Pin icon for places
+        } else {
+          lbl = '❗';  // Exclamation for reports
+        }
 
-        var labelClass = sponsored ? 'jg-marker-label jg-marker-label--sponsored' : 'jg-marker-label';
+        var labelClass = sponsored ? 'jg-marker-label jg-marker-label--promo' : 'jg-marker-label';  // Changed --sponsored to --promo
         if (isPending) labelClass += ' jg-marker-label--pending';
         if (isEdit) labelClass += ' jg-marker-label--edit';
 
@@ -802,7 +812,9 @@
 
       function chip(p) {
         var h = '';
-        if (p.sponsored) h += '<span class="jg-sponsored-tag">MIEJSCE SPONSOROWANE</span>';
+        if (p.sponsored) {
+          h += '<span class="jg-promo-tag">⭐ MIEJSCE SPONSOROWANE</span>';  // Changed class name and added star emoji
+        }
 
         if (p.type === 'zgloszenie' && p.report_status) {
           var statusClass = 'jg-status-badge--' + p.report_status;
@@ -1205,13 +1217,11 @@
         if (currentPromoUntil && currentPromoUntil !== 'null') {
           try {
             var d = new Date(currentPromoUntil);
-            // Format to YYYY-MM-DDTHH:MM for datetime-local input
+            // Format to YYYY-MM-DD for date input (time will be set to end of day)
             var year = d.getFullYear();
             var month = String(d.getMonth() + 1).padStart(2, '0');
             var day = String(d.getDate()).padStart(2, '0');
-            var hours = String(d.getHours()).padStart(2, '0');
-            var minutes = String(d.getMinutes()).padStart(2, '0');
-            promoDateValue = year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+            promoDateValue = year + '-' + month + '-' + day;
           } catch (e) {
             console.error('Error parsing promo date:', e);
           }
@@ -1233,8 +1243,8 @@
           '</label>' +
           '</div>' +
           '<label style="display:block;margin-bottom:8px"><strong>Data wygaśnięcia sponsorowania (opcjonalnie):</strong></label>' +
-          '<input type="datetime-local" id="sponsored-until-input" value="' + promoDateValue + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-bottom:8px">' +
-          '<small style="display:block;color:#666;margin-bottom:16px">Pozostaw puste dla sponsorowania bez limitu czasowego</small>' +
+          '<input type="date" id="sponsored-until-input" value="' + promoDateValue + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-bottom:8px">' +
+          '<small style="display:block;color:#666;margin-bottom:16px">Sponsorowanie wygasa o północy wybranego dnia. Pozostaw puste dla sponsorowania bezterminowego.</small>' +
           '</div>' +
           '<div style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button type="button" class="jg-btn jg-btn--ghost" id="sponsored-modal-cancel">Anuluj</button>' +
@@ -1267,6 +1277,11 @@
 
           var isSponsored = selectedSponsored.value === '1';
           var sponsoredUntil = dateInput.value || '';
+
+          // If date is provided, add end of day time (23:59:59)
+          if (sponsoredUntil) {
+            sponsoredUntil = sponsoredUntil + ' 23:59:59';
+          }
 
           msg.textContent = 'Zapisywanie...';
           msg.style.color = '#666';
@@ -1474,6 +1489,15 @@
           }
 
           adminData.push('<div><strong>Status:</strong> ' + esc(p.status) + '</div>');
+
+          // Show sponsored until date for admins
+          if (p.sponsored && p.sponsored_until) {
+            var sponsoredDate = new Date(p.sponsored_until);
+            var dateStr = sponsoredDate.toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
+            adminData.push('<div style="color:#f59e0b;font-weight:700">⭐ Sponsorowane do: ' + dateStr + '</div>');
+          } else if (p.sponsored) {
+            adminData.push('<div style="color:#f59e0b;font-weight:700">⭐ Sponsorowane bezterminowo</div>');
+          }
 
           var controls = '<div class="jg-admin-controls">';
 

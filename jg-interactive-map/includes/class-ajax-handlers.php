@@ -1370,6 +1370,12 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Only allow sponsoring places and curiosities, not reports
+        if ($is_sponsored && !in_array($point['type'], array('miejsce', 'ciekawostka'))) {
+            wp_send_json_error(array('message' => 'Tylko miejsca i ciekawostki mogą być sponsorowane'));
+            exit;
+        }
+
         error_log('JG MAP SPONSORED: Point before update - is_promo=' . $point['is_promo'] . ', promo_until=' . ($point['promo_until'] ?? 'null'));
 
         // Map sponsored naming to promo in database
