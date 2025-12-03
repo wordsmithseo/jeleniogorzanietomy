@@ -60,7 +60,10 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_update_sponsored', array($this, 'admin_update_sponsored'));
         add_action('wp_ajax_jg_admin_delete_point', array($this, 'admin_delete_point'));
         add_action('wp_ajax_jg_admin_ban_user', array($this, 'admin_ban_user'));
+        add_action('wp_ajax_jg_admin_unban_user', array($this, 'admin_unban_user'));
         add_action('wp_ajax_jg_admin_toggle_user_restriction', array($this, 'admin_toggle_user_restriction'));
+        add_action('wp_ajax_jg_get_user_restrictions', array($this, 'get_user_restrictions'));
+        add_action('wp_ajax_jg_get_my_restrictions', array($this, 'get_my_restrictions'));
         add_action('wp_ajax_jg_admin_approve_deletion', array($this, 'admin_approve_deletion'));
         add_action('wp_ajax_jg_admin_reject_deletion', array($this, 'admin_reject_deletion'));
     }
@@ -1560,6 +1563,32 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Unban user (admin only)
+     */
+    public function admin_unban_user() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        delete_user_meta($user_id, 'jg_map_banned');
+        delete_user_meta($user_id, 'jg_map_ban_until');
+
+        wp_send_json_success(array('message' => 'Ban usunięty'));
+    }
+
+    /**
      * Toggle user restriction (admin only)
      */
     public function admin_toggle_user_restriction() {
@@ -1603,6 +1632,40 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Get user restrictions and ban status (admin only)
+     */
+    public function get_user_restrictions() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $ban_status = get_user_meta($user_id, 'jg_map_banned', true);
+        $ban_until = get_user_meta($user_id, 'jg_map_ban_until', true);
+        $is_banned = self::is_user_banned($user_id);
+
+        $restrictions = array();
+        $restriction_types = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places');
+        foreach ($restriction_types as $type) {
+            if (get_user_meta($user_id, 'jg_map_ban_' . $type, true)) {
+                $restrictions[] = $type;
+            }
+        }
+
+        wp_send_json_success(array(
+            'is_banned' => $is_banned,
+            'ban_status' => $ban_status,
+            'ban_until' => $ban_until,
+            'restrictions' => $restrictions
+        ));
+    }
+
+    /**
      * Check if user is banned - helper function
      */
     public static function is_user_banned($user_id) {
@@ -1641,5 +1704,39 @@ class JG_Map_Ajax_Handlers {
 
         $meta_key = 'jg_map_ban_' . $restriction_type;
         return (bool)get_user_meta($user_id, $meta_key, true);
+    }
+
+    /**
+     * Get current user's restrictions (for displaying ban banner)
+     */
+    public function get_my_restrictions() {
+        $user_id = get_current_user_id();
+
+        if (!$user_id) {
+            wp_send_json_success(array(
+                'is_banned' => false,
+                'restrictions' => array()
+            ));
+            return;
+        }
+
+        $ban_status = get_user_meta($user_id, 'jg_map_banned', true);
+        $ban_until = get_user_meta($user_id, 'jg_map_ban_until', true);
+        $is_banned = self::is_user_banned($user_id);
+
+        $restrictions = array();
+        $restriction_types = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places');
+        foreach ($restriction_types as $type) {
+            if (get_user_meta($user_id, 'jg_map_ban_' . $type, true)) {
+                $restrictions[] = $type;
+            }
+        }
+
+        wp_send_json_success(array(
+            'is_banned' => $is_banned,
+            'ban_status' => $ban_status,
+            'ban_until' => $ban_until,
+            'restrictions' => $restrictions
+        ));
     }
 }

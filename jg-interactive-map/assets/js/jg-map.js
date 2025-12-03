@@ -290,6 +290,18 @@
             return;
           }
 
+          // Check if user is banned or has add_places restriction
+          if (window.JG_USER_RESTRICTIONS) {
+            if (window.JG_USER_RESTRICTIONS.is_banned) {
+              alert('Nie możesz dodawać miejsc - Twoje konto jest zbanowane.');
+              return;
+            }
+            if (window.JG_USER_RESTRICTIONS.restrictions && window.JG_USER_RESTRICTIONS.restrictions.indexOf('add_places') !== -1) {
+              alert('Nie możesz dodawać miejsc - masz aktywną blokadę dodawania miejsc.');
+              return;
+            }
+          }
+
           var now = Date.now();
           if (lastSubmitTime > 0 && (now - lastSubmitTime) < FLOOD_DELAY) {
             var sec = Math.ceil((FLOOD_DELAY - (now - lastSubmitTime)) / 1000);
@@ -538,6 +550,100 @@
       var adminDeletePoint = function(d) {
         return api('jg_admin_delete_point', d);
       };
+
+      // Check user restrictions and display banner
+      function checkUserRestrictions() {
+        if (!CFG.isLoggedIn) {
+          return; // Don't check for guests
+        }
+
+        api('jg_get_my_restrictions', {})
+          .then(function(result) {
+            if (!result.is_banned && (!result.restrictions || result.restrictions.length === 0)) {
+              return; // No restrictions, nothing to display
+            }
+
+            var bannerHtml = '<div id="jg-ban-banner" style="position:fixed;top:0;left:0;right:0;z-index:10000;background:#dc2626;color:#fff;padding:16px;box-shadow:0 4px 6px rgba(0,0,0,0.1);font-family:sans-serif;">';
+            bannerHtml += '<div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">';
+            bannerHtml += '<div style="flex:1;min-width:300px;">';
+            bannerHtml += '<div style="font-size:18px;font-weight:700;margin-bottom:8px;">⚠️ ';
+
+            if (result.is_banned) {
+              if (result.ban_status === 'permanent') {
+                bannerHtml += 'Twoje konto zostało zbanowane permanentnie';
+              } else if (result.ban_status === 'temporary' && result.ban_until) {
+                var banDate = new Date(result.ban_until);
+                var banDateStr = banDate.toLocaleDateString('pl-PL', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+                bannerHtml += 'Twoje konto zostało zbanowane do ' + banDateStr;
+              } else {
+                bannerHtml += 'Twoje konto zostało zbanowane';
+              }
+              bannerHtml += '</div>';
+              bannerHtml += '<div style="font-size:14px;opacity:0.95;">W czasie banu nie możesz wykonywać żadnych akcji na mapie.</div>';
+            } else if (result.restrictions && result.restrictions.length > 0) {
+              bannerHtml += 'Twoje konto ma aktywne blokady</div>';
+              bannerHtml += '<div style="font-size:14px;opacity:0.95;">Zablokowane akcje: ';
+
+              var labels = {
+                'voting': 'głosowanie',
+                'add_places': 'dodawanie miejsc',
+                'add_events': 'dodawanie wydarzeń',
+                'add_trivia': 'dodawanie ciekawostek',
+                'edit_places': 'edycja miejsc'
+              };
+
+              var restrictionLabels = result.restrictions.map(function(r) {
+                return labels[r] || r;
+              });
+
+              bannerHtml += '<strong>' + restrictionLabels.join(', ') + '</strong>';
+              bannerHtml += '</div>';
+            }
+
+            bannerHtml += '</div>';
+            bannerHtml += '<button id="jg-ban-banner-close" style="background:rgba(255,255,255,0.2);color:#fff;border:2px solid #fff;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:14px;white-space:nowrap;">Zamknij</button>';
+            bannerHtml += '</div>';
+            bannerHtml += '</div>';
+
+            var existingBanner = document.getElementById('jg-ban-banner');
+            if (existingBanner) {
+              existingBanner.remove();
+            }
+
+            var bannerEl = document.createElement('div');
+            bannerEl.innerHTML = bannerHtml;
+            document.body.insertBefore(bannerEl.firstChild, document.body.firstChild);
+
+            // Add close button handler
+            var closeBtn = document.getElementById('jg-ban-banner-close');
+            if (closeBtn) {
+              closeBtn.addEventListener('click', function() {
+                var banner = document.getElementById('jg-ban-banner');
+                if (banner) {
+                  banner.style.transition = 'all 0.3s ease';
+                  banner.style.opacity = '0';
+                  banner.style.transform = 'translateY(-100%)';
+                  setTimeout(function() {
+                    banner.remove();
+                  }, 300);
+                }
+              });
+            }
+
+            // Store restrictions globally so we can check them before actions
+            window.JG_USER_RESTRICTIONS = result;
+            console.log('[JG MAP] User restrictions loaded:', result);
+          })
+          .catch(function(e) {
+            console.error('[JG MAP] Failed to check restrictions:', e);
+          });
+      }
 
       var ALL = [];
       var lastModified = 0;
@@ -878,6 +984,9 @@
       function openUserActionsModal(userId, userName) {
         var html = '<header><h3>Akcje wobec użytkownika: ' + esc(userName) + '</h3><button class="jg-close" id="user-actions-close">&times;</button></header>' +
           '<div class="jg-grid" style="padding:16px">' +
+          '<div id="user-current-status" style="margin-bottom:16px;padding:12px;background:#f5f5f5;border-radius:8px">' +
+          '<strong>Pobieranie informacji...</strong>' +
+          '</div>' +
           '<div style="margin-bottom:16px">' +
           '<button class="jg-btn jg-btn--ghost" id="btn-view-user-places" style="width:100%">Zobacz miejsca użytkownika</button>' +
           '</div>' +
@@ -886,6 +995,7 @@
           '<div style="display:grid;gap:8px">' +
           '<button class="jg-btn jg-btn--danger" id="btn-ban-permanent">Ban permanentny</button>' +
           '<button class="jg-btn jg-btn--danger" id="btn-ban-temporary">Ban czasowy</button>' +
+          '<button class="jg-btn" id="btn-unban" style="display:none;background:#10b981;color:#fff">Usuń ban</button>' +
           '<button class="jg-btn jg-btn--ghost" id="btn-ban-voting">Blokada głosowania</button>' +
           '<button class="jg-btn jg-btn--ghost" id="btn-ban-add-places">Blokada dodawania miejsc</button>' +
           '<button class="jg-btn jg-btn--ghost" id="btn-ban-add-events">Blokada dodawania wydarzeń</button>' +
@@ -897,6 +1007,47 @@
           '</div>';
 
         open(modalAuthor, html);
+
+        // Fetch user restrictions
+        api('jg_get_user_restrictions', { user_id: userId })
+          .then(function(result) {
+            var statusDiv = qs('#user-current-status', modalAuthor);
+            var statusHtml = '<strong>Aktualny status:</strong><br>';
+
+            if (result.is_banned) {
+              if (result.ban_status === 'permanent') {
+                statusHtml += '<span style="color:#dc2626;font-weight:700">🚫 Ban permanentny</span>';
+              } else if (result.ban_status === 'temporary') {
+                var banDate = result.ban_until ? new Date(result.ban_until).toLocaleDateString('pl-PL') : '?';
+                statusHtml += '<span style="color:#dc2626;font-weight:700">🚫 Ban czasowy do ' + banDate + '</span>';
+              }
+              // Show unban button
+              var unbanBtn = qs('#btn-unban', modalAuthor);
+              if (unbanBtn) unbanBtn.style.display = 'block';
+            } else {
+              statusHtml += '<span style="color:#10b981;font-weight:700">✓ Aktywny</span>';
+            }
+
+            if (result.restrictions && result.restrictions.length > 0) {
+              var labels = {
+                'voting': 'głosowanie',
+                'add_places': 'dodawanie miejsc',
+                'add_events': 'wydarzenia',
+                'add_trivia': 'ciekawostki',
+                'edit_places': 'edycja miejsc'
+              };
+              statusHtml += '<br><strong>Aktywne blokady:</strong><br>';
+              result.restrictions.forEach(function(r) {
+                statusHtml += '<span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin:2px;display:inline-block">⚠️ ' + (labels[r] || r) + '</span>';
+              });
+            }
+
+            statusDiv.innerHTML = statusHtml;
+          })
+          .catch(function(err) {
+            var statusDiv = qs('#user-current-status', modalAuthor);
+            statusDiv.innerHTML = '<span style="color:#b91c1c">Błąd pobierania danych</span>';
+          });
 
         qs('#user-actions-close', modalAuthor).onclick = function() {
           close(modalAuthor);
@@ -944,6 +1095,30 @@
               msg.textContent = 'Użytkownik zbanowany na ' + daysNum + ' dni!';
               msg.style.color = '#15803d';
             })
+            .catch(function(err) {
+              msg.textContent = 'Błąd: ' + (err.message || '?');
+              msg.style.color = '#b91c1c';
+              this.disabled = false;
+            }.bind(this));
+        };
+
+        qs('#btn-unban', modalAuthor).onclick = function() {
+          if (!confirm('Usunąć ban dla użytkownika ' + userName + '?')) return;
+          this.disabled = true;
+          msg.textContent = 'Usuwanie banu...';
+
+          api('jg_admin_unban_user', { user_id: userId })
+            .then(function(result) {
+              msg.textContent = 'Ban usunięty!';
+              msg.style.color = '#15803d';
+              this.style.display = 'none';
+              // Refresh status
+              api('jg_get_user_restrictions', { user_id: userId })
+                .then(function(result) {
+                  var statusDiv = qs('#user-current-status', modalAuthor);
+                  statusDiv.innerHTML = '<strong>Aktualny status:</strong><br><span style="color:#10b981;font-weight:700">✓ Aktywny</span>';
+                });
+            }.bind(this))
             .catch(function(err) {
               msg.textContent = 'Błąd: ' + (err.message || '?');
               msg.style.color = '#b91c1c';
@@ -1122,6 +1297,18 @@
       }
 
       function openEditModal(p) {
+        // Check if user is banned or has edit_places restriction
+        if (window.JG_USER_RESTRICTIONS) {
+          if (window.JG_USER_RESTRICTIONS.is_banned) {
+            alert('Nie możesz edytować miejsc - Twoje konto jest zbanowane.');
+            return;
+          }
+          if (window.JG_USER_RESTRICTIONS.restrictions && window.JG_USER_RESTRICTIONS.restrictions.indexOf('edit_places') !== -1) {
+            alert('Nie możesz edytować miejsc - masz aktywną blokadę edycji miejsc.');
+            return;
+          }
+        }
+
         var contentText = p.content ? p.content.replace(/<\/?[^>]+(>|$)/g, "") : (p.excerpt || '');
         open(modalEdit, '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header><form id="edit-form" class="jg-grid cols-2"><label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label><label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"><option value="zgloszenie"' + (p.type === 'zgloszenie' ? ' selected' : '') + '>Zgłoszenie</option><option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option><option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option></select></label><label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label><label class="cols-2">Dodaj zdjęcia (max 6) <input type="file" name="images" multiple accept="image/*" style="width:100%;padding:8px"></label><div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button><button type="submit" class="jg-btn">Zapisz</button></div><div id="edit-msg" class="cols-2" style="font-size:12px"></div></form>');
 
@@ -1616,6 +1803,19 @@
                 alert('Zaloguj się.');
                 return;
               }
+
+              // Check if user is banned or has voting restriction
+              if (window.JG_USER_RESTRICTIONS) {
+                if (window.JG_USER_RESTRICTIONS.is_banned) {
+                  alert('Nie możesz głosować - Twoje konto jest zbanowane.');
+                  return;
+                }
+                if (window.JG_USER_RESTRICTIONS.restrictions && window.JG_USER_RESTRICTIONS.restrictions.indexOf('voting') !== -1) {
+                  alert('Nie możesz głosować - masz aktywną blokadę głosowania.');
+                  return;
+                }
+              }
+
               up.disabled = down.disabled = true;
               voteReq({ post_id: p.id, dir: dir })
                 .then(function(d) {
@@ -2038,6 +2238,8 @@
       refreshData(true)
         .then(function() {
           console.log('[JG MAP] Initial data load complete');
+          // Check user restrictions and display banner if needed
+          checkUserRestrictions();
         })
         .catch(function(e) {
           showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
