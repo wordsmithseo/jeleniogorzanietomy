@@ -1956,6 +1956,12 @@
         }
 
         var list = (ALL || []).filter(function(p) {
+          // Promo only filter
+          if (promoOnly) return p.sponsored;
+
+          // Always show sponsored places - they should never be hidden by search or filters
+          if (p.sponsored) return true;
+
           // Search filter
           if (searchQuery) {
             var title = (p.title || '').toLowerCase();
@@ -1967,12 +1973,6 @@
               return false;
             }
           }
-
-          // Promo only filter
-          if (promoOnly) return p.sponsored;
-
-          // Always show promo places (unless promo-only is active)
-          if (p.sponsored) return true;
 
           // Type filters
           var passType = (Object.keys(enabled).length ? !!enabled[p.type] : true);
