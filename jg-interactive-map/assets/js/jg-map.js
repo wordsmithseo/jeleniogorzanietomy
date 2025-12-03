@@ -1742,6 +1742,21 @@
         var canEdit = (CFG.isAdmin || (CFG.currentUserId > 0 && CFG.currentUserId === +p.author_id));
         var myVote = p.my_vote || '';
 
+        // DEBUG: Log edit button visibility logic
+        console.log('[JG MAP] Edit button check:', {
+          isAdmin: CFG.isAdmin,
+          currentUserId: CFG.currentUserId,
+          authorId: p.author_id,
+          authorIdType: typeof p.author_id,
+          canEdit: canEdit,
+          calculation: {
+            isAdmin: CFG.isAdmin,
+            userIdGreaterThanZero: CFG.currentUserId > 0,
+            userIdEqualsAuthorId: CFG.currentUserId === +p.author_id,
+            authorIdConverted: +p.author_id
+          }
+        });
+
         // Don't show voting for promo points
         var voteHtml = '';
         if (!p.sponsored) {
