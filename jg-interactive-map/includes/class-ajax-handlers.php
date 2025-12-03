@@ -30,7 +30,8 @@ class JG_Map_Ajax_Handlers {
      */
     private function __construct() {
         error_log('===== JG MAP AJAX HANDLERS: Constructor called =====');
-        error_log('Registering AJAX action: wp_ajax_jg_admin_approve_edit');
+        error_log('Class name: ' . get_class($this));
+        error_log('Method exists admin_approve_edit: ' . (method_exists($this, 'admin_approve_edit') ? 'YES' : 'NO'));
 
         // Public AJAX actions (logged in and not logged in)
         add_action('wp_ajax_jg_points', array($this, 'get_points'));
@@ -56,7 +57,12 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_approve_point', array($this, 'admin_approve_point'));
         add_action('wp_ajax_jg_admin_reject_point', array($this, 'admin_reject_point'));
         add_action('wp_ajax_jg_get_point_history', array($this, 'get_point_history'));
-        add_action('wp_ajax_jg_admin_approve_edit', array($this, 'admin_approve_edit'));
+
+        // Explicitly register admin_approve_edit with detailed logging
+        error_log('===== JG MAP: About to register wp_ajax_jg_admin_approve_edit =====');
+        add_action('wp_ajax_jg_admin_approve_edit', array($this, 'admin_approve_edit'), 10, 0);
+        error_log('===== JG MAP: Registered wp_ajax_jg_admin_approve_edit with callback =====');
+
         add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'));
         add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'));
         add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'));
@@ -72,6 +78,38 @@ class JG_Map_Ajax_Handlers {
 
         // DEBUG: Test endpoint
         add_action('wp_ajax_jg_test_endpoint', array($this, 'test_endpoint'));
+
+        // DEBUG: Add early action hook to catch ALL AJAX requests
+        add_action('wp_ajax_nopriv_*', array($this, 'debug_all_ajax'), 1);
+        add_action('wp_ajax_*', array($this, 'debug_all_ajax'), 1);
+        add_action('admin_init', array($this, 'debug_action_hooks'), 999);
+    }
+
+    /**
+     * DEBUG: Log all registered action hooks for jg_admin_approve_edit
+     */
+    public function debug_action_hooks() {
+        global $wp_filter;
+        if (isset($wp_filter['wp_ajax_jg_admin_approve_edit'])) {
+            error_log('===== JG MAP DEBUG: wp_ajax_jg_admin_approve_edit hook is registered =====');
+            error_log('Callbacks: ' . print_r($wp_filter['wp_ajax_jg_admin_approve_edit']->callbacks, true));
+        } else {
+            error_log('===== JG MAP DEBUG: wp_ajax_jg_admin_approve_edit hook NOT FOUND =====');
+        }
+    }
+
+    /**
+     * DEBUG: Catch all AJAX requests
+     */
+    public function debug_all_ajax() {
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : 'unknown';
+            if ($action === 'jg_admin_approve_edit') {
+                error_log('===== JG MAP DEBUG: AJAX REQUEST DETECTED for jg_admin_approve_edit =====');
+                error_log('POST data: ' . print_r($_POST, true));
+                error_log('Current user: ' . get_current_user_id());
+            }
+        }
     }
 
     /**
@@ -1111,12 +1149,27 @@ class JG_Map_Ajax_Handlers {
      * Approve edit (admin only)
      */
     public function admin_approve_edit() {
-        // LOG 1: Function called
+        // LOG 1: Function called - THIS IS THE FIRST LOG IN THE METHOD
         error_log('===== JG MAP EDIT APPROVE START ===== Function called!');
+        error_log('===== JG MAP: Backtrace: ' . wp_debug_backtrace_summary());
         error_log('POST data: ' . print_r($_POST, true));
+        error_log('REQUEST data: ' . print_r($_REQUEST, true));
+        error_log('User ID: ' . get_current_user_id());
+        error_log('Is AJAX: ' . (defined('DOING_AJAX') && DOING_AJAX ? 'YES' : 'NO'));
 
-        $this->verify_nonce();
-        $this->check_admin();
+        try {
+            $this->verify_nonce();
+        } catch (Exception $e) {
+            error_log('===== JG MAP: Nonce verification failed with exception: ' . $e->getMessage());
+            throw $e;
+        }
+
+        try {
+            $this->check_admin();
+        } catch (Exception $e) {
+            error_log('===== JG MAP: Admin check failed with exception: ' . $e->getMessage());
+            throw $e;
+        }
 
         $history_id = intval($_POST['history_id'] ?? 0);
 
