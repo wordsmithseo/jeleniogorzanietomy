@@ -400,14 +400,24 @@
 
         if (p.type === 'ciekawostka') c += ' jg-pin--ciekawostka';
         if (p.type === 'miejsce') c += ' jg-pin--miejsce';
-        if (p.sponsored) c += ' jg-pin--sponsored';
+        if (p.sponsored) c += ' jg-pin--promo';  // Changed from --sponsored to --promo
         if (isPending) c += ' jg-pin--pending';
         if (isEdit) c += ' jg-pin--edit';
         if (hasReports) c += ' jg-pin--reported';
 
-        var lbl = (p.type === 'ciekawostka' ? 'i' : (p.type === 'miejsce' ? 'M' : '!'));
+        // Use emoji icons instead of letters
+        var lbl = '';
+        if (p.sponsored) {
+          lbl = '⭐';  // Gold star for sponsored
+        } else if (p.type === 'ciekawostka') {
+          lbl = 'ℹ️';  // Info icon for curiosities
+        } else if (p.type === 'miejsce') {
+          lbl = '📍';  // Pin icon for places
+        } else {
+          lbl = '❗';  // Exclamation for reports
+        }
 
-        var labelClass = sponsored ? 'jg-marker-label jg-marker-label--sponsored' : 'jg-marker-label';
+        var labelClass = sponsored ? 'jg-marker-label jg-marker-label--promo' : 'jg-marker-label';  // Changed --sponsored to --promo
         if (isPending) labelClass += ' jg-marker-label--pending';
         if (isEdit) labelClass += ' jg-marker-label--edit';
 
@@ -802,7 +812,9 @@
 
       function chip(p) {
         var h = '';
-        if (p.sponsored) h += '<span class="jg-sponsored-tag">MIEJSCE SPONSOROWANE</span>';
+        if (p.sponsored) {
+          h += '<span class="jg-promo-tag">⭐ MIEJSCE SPONSOROWANE</span>';  // Changed class name and added star emoji
+        }
 
         if (p.type === 'zgloszenie' && p.report_status) {
           var statusClass = 'jg-status-badge--' + p.report_status;
@@ -1111,7 +1123,7 @@
 
       function openEditModal(p) {
         var contentText = p.content ? p.content.replace(/<\/?[^>]+(>|$)/g, "") : (p.excerpt || '');
-        open(modalEdit, '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header><form id="edit-form" class="jg-grid cols-2"><label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label><label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"><option value="zgloszenie"' + (p.type === 'zgloszenie' ? ' selected' : '') + '>Zgłoszenie</option><option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option><option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option></select></label><label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label><div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button><button type="submit" class="jg-btn">Zapisz</button></div><div id="edit-msg" class="cols-2" style="font-size:12px"></div></form>');
+        open(modalEdit, '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header><form id="edit-form" class="jg-grid cols-2"><label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label><label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"><option value="zgloszenie"' + (p.type === 'zgloszenie' ? ' selected' : '') + '>Zgłoszenie</option><option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option><option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option></select></label><label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label><label class="cols-2">Dodaj zdjęcia (max 6) <input type="file" name="images" multiple accept="image/*" style="width:100%;padding:8px"></label><div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button><button type="submit" class="jg-btn">Zapisz</button></div><div id="edit-msg" class="cols-2" style="font-size:12px"></div></form>');
 
         qs('#edt-close', modalEdit).onclick = function() {
           close(modalEdit);
@@ -1127,28 +1139,49 @@
         form.onsubmit = function(e) {
           e.preventDefault();
           msg.textContent = 'Zapisywanie...';
-          var fd = {
-            post_id: p.id,
-            title: form.title.value.trim(),
-            type: form.type.value,
-            content: form.content.value
-          };
-          if (!fd.title) {
+
+          if (!form.title.value.trim()) {
             form.title.focus();
             msg.textContent = 'Podaj tytuł.';
             msg.style.color = '#b91c1c';
             return;
           }
-          updatePoint(fd).then(function() {
+
+          // Use FormData to support file uploads
+          var fd = new FormData(form);
+          fd.append('action', 'jg_update_point');
+          fd.append('_ajax_nonce', CFG.nonce);
+          fd.append('post_id', p.id);
+
+          fetch(CFG.ajax, {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin'
+          })
+          .then(function(r) {
+            return r.text();
+          })
+          .then(function(t) {
+            var j = null;
+            try {
+              j = JSON.parse(t);
+            } catch (_) {}
+
+            if (!j || j.success === false) {
+              throw new Error((j && j.data && j.data.message) || 'Błąd');
+            }
+
             msg.textContent = 'Zaktualizowano.';
+            msg.style.color = '#15803d';
             setTimeout(function() {
               close(modalEdit);
               refreshData(true).then(function() {
                 alert('Wysłano do moderacji. Zmiany będą widoczne po zaakceptowaniu.');
               });
             }, 300);
-          }).catch(function(err) {
-            msg.textContent = (err && err.message) || 'Błąd';
+          })
+          .catch(function(err) {
+            msg.textContent = err.message || 'Błąd';
             msg.style.color = '#b91c1c';
           });
         };
@@ -1205,13 +1238,11 @@
         if (currentPromoUntil && currentPromoUntil !== 'null') {
           try {
             var d = new Date(currentPromoUntil);
-            // Format to YYYY-MM-DDTHH:MM for datetime-local input
+            // Format to YYYY-MM-DD for date input (time will be set to end of day)
             var year = d.getFullYear();
             var month = String(d.getMonth() + 1).padStart(2, '0');
             var day = String(d.getDate()).padStart(2, '0');
-            var hours = String(d.getHours()).padStart(2, '0');
-            var minutes = String(d.getMinutes()).padStart(2, '0');
-            promoDateValue = year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+            promoDateValue = year + '-' + month + '-' + day;
           } catch (e) {
             console.error('Error parsing promo date:', e);
           }
@@ -1233,8 +1264,8 @@
           '</label>' +
           '</div>' +
           '<label style="display:block;margin-bottom:8px"><strong>Data wygaśnięcia sponsorowania (opcjonalnie):</strong></label>' +
-          '<input type="datetime-local" id="sponsored-until-input" value="' + promoDateValue + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-bottom:8px">' +
-          '<small style="display:block;color:#666;margin-bottom:16px">Pozostaw puste dla sponsorowania bez limitu czasowego</small>' +
+          '<input type="date" id="sponsored-until-input" value="' + promoDateValue + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-bottom:8px">' +
+          '<small style="display:block;color:#666;margin-bottom:16px">Sponsorowanie wygasa o północy wybranego dnia. Pozostaw puste dla sponsorowania bezterminowego.</small>' +
           '</div>' +
           '<div style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button type="button" class="jg-btn jg-btn--ghost" id="sponsored-modal-cancel">Anuluj</button>' +
@@ -1267,6 +1298,11 @@
 
           var isSponsored = selectedSponsored.value === '1';
           var sponsoredUntil = dateInput.value || '';
+
+          // If date is provided, add end of day time (23:59:59)
+          if (sponsoredUntil) {
+            sponsoredUntil = sponsoredUntil + ' 23:59:59';
+          }
 
           msg.textContent = 'Zapisywanie...';
           msg.style.color = '#666';
@@ -1466,7 +1502,8 @@
         if (CFG.isAdmin) {
           var adminData = [];
           if (p.admin) {
-            adminData.push('<div><strong>Autor:</strong> ' + esc(p.admin.author_name_real || '?') + '</div>');
+            // Author name with 3-dot menu button
+            adminData.push('<div style="display:flex;align-items:center;gap:8px"><div><strong>Autor:</strong> ' + esc(p.admin.author_name_real || '?') + '</div><button id="btn-user-actions" class="jg-btn jg-btn--ghost" style="padding:2px 8px;font-size:16px;line-height:1" title="Akcje użytkownika">⋮</button></div>');
             adminData.push('<div><strong>Email:</strong> ' + esc(p.admin.author_email || '?') + '</div>');
             if (p.admin.ip && p.admin.ip !== '(brak)' && p.admin.ip.trim() !== '') {
               adminData.push('<div><strong>IP:</strong> ' + esc(p.admin.ip) + '</div>');
@@ -1474,6 +1511,15 @@
           }
 
           adminData.push('<div><strong>Status:</strong> ' + esc(p.status) + '</div>');
+
+          // Show sponsored until date for admins
+          if (p.sponsored && p.sponsored_until) {
+            var sponsoredDate = new Date(p.sponsored_until);
+            var dateStr = sponsoredDate.toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
+            adminData.push('<div style="color:#f59e0b;font-weight:700">⭐ Sponsorowane do: ' + dateStr + '</div>');
+          } else if (p.sponsored) {
+            adminData.push('<div style="color:#f59e0b;font-weight:700">⭐ Sponsorowane bezterminowo</div>');
+          }
 
           var controls = '<div class="jg-admin-controls">';
 
@@ -1519,6 +1565,18 @@
         var deletionBtn = '';
         if (canEdit && !CFG.isAdmin && !p.is_deletion_requested) {
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
+        }
+
+        // Debug logging for deletion button visibility
+        if (canEdit && !CFG.isAdmin) {
+          console.log('[JG MAP] Deletion button check:', {
+            canEdit: canEdit,
+            isAdmin: CFG.isAdmin,
+            isDeletionRequested: p.is_deletion_requested,
+            showButton: !p.is_deletion_requested,
+            authorId: p.author_id,
+            currentUserId: CFG.currentUserId
+          });
         }
 
         var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
@@ -1620,6 +1678,14 @@
           if (btnViewReports) {
             btnViewReports.onclick = function() {
               openReportsListModal(p);
+            };
+          }
+
+          // User actions menu button
+          var btnUserActions = qs('#btn-user-actions', modalView);
+          if (btnUserActions && p.admin) {
+            btnUserActions.onclick = function() {
+              openUserActionsModal(p.author_id, p.admin.author_name_real || 'Użytkownik');
             };
           }
 
@@ -1911,6 +1977,12 @@
         }
 
         var list = (ALL || []).filter(function(p) {
+          // Promo only filter
+          if (promoOnly) return p.sponsored;
+
+          // Always show sponsored places - they should never be hidden by search or filters
+          if (p.sponsored) return true;
+
           // Search filter
           if (searchQuery) {
             var title = (p.title || '').toLowerCase();
@@ -1922,12 +1994,6 @@
               return false;
             }
           }
-
-          // Promo only filter
-          if (promoOnly) return p.sponsored;
-
-          // Always show promo places (unless promo-only is active)
-          if (p.sponsored) return true;
 
           // Type filters
           var passType = (Object.keys(enabled).length ? !!enabled[p.type] : true);

@@ -167,7 +167,7 @@ class JG_Map_Ajax_Handlers {
             $is_sponsored = (bool)$point['is_promo'];
             $sponsored_until = $point['promo_until'] ?? null;
             if ($is_sponsored && $sponsored_until) {
-                if (strtotime($sponsored_until) < current_time('timestamp')) {
+                if (strtotime($sponsored_until) < current_time('timestamp', true)) {
                     // Sponsored expired, update DB
                     JG_Map_Database::update_point($point['id'], array('is_promo' => 0));
                     $is_sponsored = false;
@@ -199,13 +199,13 @@ class JG_Map_Ajax_Handlers {
                         'new_title' => $new_values['title'] ?? '',
                         'new_type' => $new_values['type'] ?? '',
                         'new_content' => $new_values['content'] ?? '',
-                        'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
+                        'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp', true)) . ' temu'
                     );
                 } else if ($pending_history['action_type'] === 'delete_request') {
                     $deletion_info = array(
                         'history_id' => intval($pending_history['id']),
                         'reason' => $new_values['reason'] ?? '',
-                        'requested_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
+                        'requested_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp', true)) . ' temu'
                     );
                 }
             }
@@ -234,7 +234,7 @@ class JG_Map_Ajax_Handlers {
                 'my_vote' => $my_vote,
                 'date' => array(
                     'raw' => $point['created_at'],
-                    'human' => human_time_diff(strtotime($point['created_at']), current_time('timestamp')) . ' temu'
+                    'human' => human_time_diff(strtotime($point['created_at']), current_time('timestamp', true)) . ' temu'
                 ),
                 'admin' => $is_admin ? array(
                     'author_name_real' => $author ? $author->display_name : '',
@@ -378,6 +378,12 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Handle image uploads
+        $new_images = array();
+        if (!empty($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+            $new_images = $this->handle_image_upload($_FILES['images']);
+        }
+
         // Check if there's already pending edit for this point
         $pending_edit = JG_Map_Database::get_pending_history($point_id);
         if ($pending_edit && !$is_admin) {
@@ -390,12 +396,23 @@ class JG_Map_Ajax_Handlers {
         $direct_edit = $is_admin && isset($_POST['admin_edit']);
 
         if ($direct_edit) {
-            JG_Map_Database::update_point($point_id, array(
+            $update_data = array(
                 'title' => $title,
                 'type' => $type,
                 'content' => $content,
                 'excerpt' => wp_trim_words($content, 20)
-            ));
+            );
+
+            // Add new images to existing images
+            if (!empty($new_images)) {
+                $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
+                $all_images = array_merge($existing_images, $new_images);
+                // Limit to 6 images
+                $all_images = array_slice($all_images, 0, 6);
+                $update_data['images'] = json_encode($all_images);
+            }
+
+            JG_Map_Database::update_point($point_id, $update_data);
 
             wp_send_json_success(array('message' => 'Zaktualizowano'));
         } else {
@@ -403,13 +420,15 @@ class JG_Map_Ajax_Handlers {
             $old_values = array(
                 'title' => $point['title'],
                 'type' => $point['type'],
-                'content' => $point['content']
+                'content' => $point['content'],
+                'images' => $point['images'] ?? '[]'
             );
 
             $new_values = array(
                 'title' => $title,
                 'type' => $type,
-                'content' => $content
+                'content' => $content,
+                'new_images' => json_encode($new_images) // Store new images separately for moderation
             );
 
             JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values);
@@ -1096,7 +1115,15 @@ class JG_Map_Ajax_Handlers {
 
         if (!$point && !$point_check) {
             error_log('JG MAP EDIT APPROVE: FATAL - Point does not exist in database at all!');
-            wp_send_json_error(array('message' => 'Punkt nie istnieje (ID: ' . $history['point_id'] . ')'));
+            wp_send_json_error(array(
+                'message' => 'Punkt nie istnieje',
+                'debug' => array(
+                    'point_id' => $history['point_id'],
+                    'history_id' => $history_id,
+                    'action_type' => $history['action_type'],
+                    'db_query_executed' => true
+                )
+            ));
             exit;
         }
 
@@ -1106,13 +1133,30 @@ class JG_Map_Ajax_Handlers {
             error_log('JG MAP EDIT APPROVE: Using direct DB result instead of get_point()');
         }
 
-        // Update point with new values
-        JG_Map_Database::update_point($history['point_id'], array(
+        // Prepare update data
+        $update_data = array(
             'title' => $new_values['title'],
             'type' => $new_values['type'],
             'content' => $new_values['content'],
             'excerpt' => wp_trim_words($new_values['content'], 20)
-        ));
+        );
+
+        // Handle new images if present
+        if (isset($new_values['new_images'])) {
+            $new_images = json_decode($new_values['new_images'], true) ?: array();
+            if (!empty($new_images)) {
+                // Get existing images
+                $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
+                // Merge old and new images
+                $all_images = array_merge($existing_images, $new_images);
+                // Limit to 6 images
+                $all_images = array_slice($all_images, 0, 6);
+                $update_data['images'] = json_encode($all_images);
+            }
+        }
+
+        // Update point with new values
+        JG_Map_Database::update_point($history['point_id'], $update_data);
 
         // Approve history
         JG_Map_Database::approve_history($history_id, get_current_user_id());
@@ -1367,6 +1411,12 @@ class JG_Map_Ajax_Handlers {
         $point = JG_Map_Database::get_point($point_id);
         if (!$point) {
             wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        // Only allow sponsoring places and curiosities, not reports
+        if ($is_sponsored && !in_array($point['type'], array('miejsce', 'ciekawostka'))) {
+            wp_send_json_error(array('message' => 'Tylko miejsca i ciekawostki mogą być sponsorowane'));
             exit;
         }
 
