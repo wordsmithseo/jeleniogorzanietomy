@@ -126,8 +126,8 @@ class JG_Map_Admin {
 
         add_submenu_page(
             'jg-map',
-            'Moderacja',
-            'Moderacja',
+            'Dodane miejsca',
+            'Dodane miejsca',
             'manage_options',
             'jg-map-moderation',
             array($this, 'render_moderation_page')
@@ -334,7 +334,7 @@ class JG_Map_Admin {
 
         ?>
         <div class="wrap">
-            <h1>Moderacja miejsc</h1>
+            <h1>Dodane miejsca</h1>
 
             <?php if (!empty($edits)): ?>
             <h2>Edycje do zatwierdzenia (<?php echo count($edits); ?>)</h2>

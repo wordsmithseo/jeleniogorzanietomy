@@ -312,38 +312,92 @@
           var lat = e.latlng.lat.toFixed(6);
           var lng = e.latlng.lng.toFixed(6);
 
-          var formHtml = '<header><h3>Dodaj nowe miejsce</h3><button class="jg-close" id="add-close">&times;</button></header>' +
-            '<form id="add-form" class="jg-grid cols-2">' +
-            '<input type="hidden" name="lat" value="' + lat + '">' +
-            '<input type="hidden" name="lng" value="' + lng + '">' +
-            '<label>Tytuł* <input name="title" required placeholder="Nazwa miejsca" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
-            '<label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
-            '<option value="zgloszenie">Zgłoszenie</option>' +
-            '<option value="ciekawostka">Ciekawostka</option>' +
-            '<option value="miejsce">Miejsce</option>' +
-            '</select></label>' +
-            '<label class="cols-2">Opis <textarea name="content" rows="4" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea></label>' +
-            '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
-            '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images" multiple accept="image/*" style="width:100%;padding:8px"></label>' +
-            '<div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end">' +
-            '<button type="button" class="jg-btn jg-btn--ghost" id="add-cancel">Anuluj</button>' +
-            '<button type="submit" class="jg-btn">Wyślij do moderacji</button>' +
-            '</div>' +
-            '<div id="add-msg" class="cols-2" style="font-size:12px;color:#555"></div>' +
-            '</form>';
+          // Fetch daily limits first
+          api('jg_get_daily_limits', {})
+            .then(function(limits) {
+              var limitsHtml = '';
+              if (!limits.is_admin) {
+                limitsHtml = '<div class="cols-2" style="background:#f0f9ff;border:2px solid #3b82f6;border-radius:8px;padding:12px;margin-bottom:12px">' +
+                  '<strong style="color:#1e40af">Pozostałe dzienne limity:</strong>' +
+                  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">' +
+                  '<div style="background:#fff;padding:8px;border-radius:4px;text-align:center">' +
+                  '<div style="font-size:24px;font-weight:700;color:#3b82f6">' + limits.places_remaining + '</div>' +
+                  '<div style="font-size:11px;color:#666">miejsc/ciekawostek</div>' +
+                  '</div>' +
+                  '<div style="background:#fff;padding:8px;border-radius:4px;text-align:center">' +
+                  '<div style="font-size:24px;font-weight:700;color:#3b82f6">' + limits.reports_remaining + '</div>' +
+                  '<div style="font-size:11px;color:#666">zgłoszeń</div>' +
+                  '</div>' +
+                  '</div>' +
+                  '</div>';
+              }
 
-          open(modalAdd, formHtml);
+              var formHtml = '<header><h3>Dodaj nowe miejsce</h3><button class="jg-close" id="add-close">&times;</button></header>' +
+                '<form id="add-form" class="jg-grid cols-2">' +
+                '<input type="hidden" name="lat" value="' + lat + '">' +
+                '<input type="hidden" name="lng" value="' + lng + '">' +
+                limitsHtml +
+                '<label>Tytuł* <input name="title" required placeholder="Nazwa miejsca" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
+                '<label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+                '<option value="zgloszenie">Zgłoszenie</option>' +
+                '<option value="ciekawostka">Ciekawostka</option>' +
+                '<option value="miejsce">Miejsce</option>' +
+                '</select></label>' +
+                '<label class="cols-2">Opis <textarea name="content" rows="4" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea></label>' +
+                '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
+                '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
+                '<div class="cols-2" id="add-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
+                '<div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end">' +
+                '<button type="button" class="jg-btn jg-btn--ghost" id="add-cancel">Anuluj</button>' +
+                '<button type="submit" class="jg-btn">Wyślij do moderacji</button>' +
+                '</div>' +
+                '<div id="add-msg" class="cols-2" style="font-size:12px;color:#555"></div>' +
+                '</form>';
 
-          qs('#add-close', modalAdd).onclick = function() {
-            close(modalAdd);
-          };
+              open(modalAdd, formHtml);
 
-          qs('#add-cancel', modalAdd).onclick = function() {
-            close(modalAdd);
-          };
+              qs('#add-close', modalAdd).onclick = function() {
+                close(modalAdd);
+              };
 
-          var form = qs('#add-form', modalAdd);
-          var msg = qs('#add-msg', modalAdd);
+              qs('#add-cancel', modalAdd).onclick = function() {
+                close(modalAdd);
+              };
+
+              var form = qs('#add-form', modalAdd);
+              var msg = qs('#add-msg', modalAdd);
+
+              // Image preview functionality
+              var imagesInput = qs('#add-images-input', modalAdd);
+              var imagesPreview = qs('#add-images-preview', modalAdd);
+
+              if (imagesInput) {
+                imagesInput.addEventListener('change', function(e) {
+                  imagesPreview.innerHTML = '';
+                  var files = e.target.files;
+
+                  if (files.length > 0) {
+                    imagesPreview.style.display = 'grid';
+                    for (var i = 0; i < Math.min(files.length, 6); i++) {
+                      var file = files[i];
+                      var reader = new FileReader();
+
+                      reader.onload = (function(f) {
+                        return function(e) {
+                          var imgHtml = '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid #e5e7eb">' +
+                            '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover" alt="Podgląd">' +
+                            '</div>';
+                          imagesPreview.innerHTML += imgHtml;
+                        };
+                      })(file);
+
+                      reader.readAsDataURL(file);
+                    }
+                  } else {
+                    imagesPreview.style.display = 'none';
+                  }
+                });
+              }
 
           form.onsubmit = function(e) {
             e.preventDefault();
@@ -396,6 +450,10 @@
               msg.style.color = '#b91c1c';
             });
           };
+        })
+        .catch(function(err) {
+          alert('Błąd pobierania limitów: ' + (err.message || 'Nieznany błąd'));
+        });
         }, 200);
       });
 
@@ -1332,7 +1390,8 @@
           '</select></label>' +
           '<label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label>' +
           existingImagesHtml +
-          '<label class="cols-2">Dodaj nowe zdjęcia (max 6 łącznie) <input type="file" name="images" multiple accept="image/*" style="width:100%;padding:8px"></label>' +
+          '<label class="cols-2">Dodaj nowe zdjęcia (max 6 łącznie) <input type="file" name="images" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
+          '<div class="cols-2" id="edit-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
           '<div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button>' +
           '<button type="submit" class="jg-btn">Zapisz</button>' +
@@ -1352,6 +1411,38 @@
 
         var form = qs('#edit-form', modalEdit);
         var msg = qs('#edit-msg', modalEdit);
+
+        // Image preview functionality for edit
+        var imagesInput = qs('#edit-images-input', modalEdit);
+        var imagesPreview = qs('#edit-images-preview', modalEdit);
+
+        if (imagesInput) {
+          imagesInput.addEventListener('change', function(e) {
+            imagesPreview.innerHTML = '';
+            var files = e.target.files;
+
+            if (files.length > 0) {
+              imagesPreview.style.display = 'grid';
+              for (var i = 0; i < Math.min(files.length, 6); i++) {
+                var file = files[i];
+                var reader = new FileReader();
+
+                reader.onload = (function(f) {
+                  return function(e) {
+                    var imgHtml = '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid #e5e7eb">' +
+                      '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover" alt="Podgląd">' +
+                      '</div>';
+                    imagesPreview.innerHTML += imgHtml;
+                  };
+                })(file);
+
+                reader.readAsDataURL(file);
+              }
+            } else {
+              imagesPreview.style.display = 'none';
+            }
+          });
+        }
 
         form.onsubmit = function(e) {
           e.preventDefault();
