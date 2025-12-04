@@ -76,6 +76,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_get_my_restrictions', array($this, 'get_my_restrictions'), 1);
         add_action('wp_ajax_jg_admin_approve_deletion', array($this, 'admin_approve_deletion'), 1);
         add_action('wp_ajax_jg_admin_reject_deletion', array($this, 'admin_reject_deletion'), 1);
+        add_action('wp_ajax_jg_admin_get_user_limits', array($this, 'admin_get_user_limits'), 1);
+        add_action('wp_ajax_jg_admin_set_user_limits', array($this, 'admin_set_user_limits'), 1);
 
         // DEBUG: Test endpoint
         add_action('wp_ajax_jg_test_endpoint', array($this, 'test_endpoint'));
@@ -1467,6 +1469,17 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Return daily limit to user before deleting
+        $author_id = intval($point['author_id']);
+        $point_type = $point['type'];
+
+        // Determine limit category and decrement
+        if ($point_type === 'miejsce' || $point_type === 'ciekawostka') {
+            $this->decrement_daily_limit($author_id, 'places');
+        } elseif ($point_type === 'zgloszenie') {
+            $this->decrement_daily_limit($author_id, 'reports');
+        }
+
         // Delete the point
         JG_Map_Database::delete_point($history['point_id']);
 
@@ -1935,6 +1948,111 @@ class JG_Map_Ajax_Handlers {
             'ban_status' => $ban_status,
             'ban_until' => $ban_until,
             'restrictions' => $restrictions
+        ));
+    }
+
+    /**
+     * Get user's daily limits (admin only)
+     */
+    public function admin_get_user_limits() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID użytkownika'));
+            exit;
+        }
+
+        // Check if user is admin
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        if (user_can($user_id, 'manage_options')) {
+            wp_send_json_success(array(
+                'places_remaining' => 999,
+                'reports_remaining' => 999,
+                'is_admin' => true
+            ));
+            exit;
+        }
+
+        $today = date('Y-m-d');
+        $last_reset = get_user_meta($user_id, 'jg_map_daily_reset', true);
+
+        // Reset if needed
+        if ($last_reset !== $today) {
+            update_user_meta($user_id, 'jg_map_daily_places', 0);
+            update_user_meta($user_id, 'jg_map_daily_reports', 0);
+            update_user_meta($user_id, 'jg_map_daily_reset', $today);
+        }
+
+        $places_used = intval(get_user_meta($user_id, 'jg_map_daily_places', true));
+        $reports_used = intval(get_user_meta($user_id, 'jg_map_daily_reports', true));
+
+        wp_send_json_success(array(
+            'places_remaining' => max(0, 5 - $places_used),
+            'reports_remaining' => max(0, 5 - $reports_used),
+            'is_admin' => false
+        ));
+    }
+
+    /**
+     * Set user's daily limits (admin only)
+     */
+    public function admin_set_user_limits() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+        $places_limit = intval($_POST['places_limit'] ?? 5);
+        $reports_limit = intval($_POST['reports_limit'] ?? 5);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID użytkownika'));
+            exit;
+        }
+
+        // Validate limits
+        if ($places_limit < 0 || $reports_limit < 0) {
+            wp_send_json_error(array('message' => 'Limity nie mogą być ujemne'));
+            exit;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        // Calculate how many were already used
+        $today = date('Y-m-d');
+        $last_reset = get_user_meta($user_id, 'jg_map_daily_reset', true);
+
+        // Reset if needed
+        if ($last_reset !== $today) {
+            update_user_meta($user_id, 'jg_map_daily_reset', $today);
+        }
+
+        $places_used = intval(get_user_meta($user_id, 'jg_map_daily_places', true));
+        $reports_used = intval(get_user_meta($user_id, 'jg_map_daily_reports', true));
+
+        // Set the "used" counter so that remaining = desired limit
+        // remaining = 5 - used, so used = 5 - remaining
+        $places_to_set = max(0, 5 - $places_limit);
+        $reports_to_set = max(0, 5 - $reports_limit);
+
+        update_user_meta($user_id, 'jg_map_daily_places', $places_to_set);
+        update_user_meta($user_id, 'jg_map_daily_reports', $reports_to_set);
+
+        wp_send_json_success(array(
+            'message' => 'Limity ustawione',
+            'places_remaining' => $places_limit,
+            'reports_remaining' => $reports_limit
         ));
     }
 }
