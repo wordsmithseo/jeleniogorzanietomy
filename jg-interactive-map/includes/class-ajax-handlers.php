@@ -237,15 +237,6 @@ class JG_Map_Ajax_Handlers {
                 $reports_count = JG_Map_Database::get_reports_count($point['id']);
             }
 
-            // Parse images
-            $images = array();
-            if (!empty($point['images'])) {
-                $images_data = json_decode($point['images'], true);
-                if (is_array($images_data)) {
-                    $images = $images_data;
-                }
-            }
-
             // Check if sponsored expired
             $is_sponsored = (bool)$point['is_promo'];
             $sponsored_until = $point['promo_until'] ?? null;
@@ -254,6 +245,18 @@ class JG_Map_Ajax_Handlers {
                     // Sponsored expired, update DB
                     JG_Map_Database::update_point($point['id'], array('is_promo' => 0));
                     $is_sponsored = false;
+                }
+            }
+
+            // Parse images and limit based on sponsored status
+            $images = array();
+            if (!empty($point['images'])) {
+                $images_data = json_decode($point['images'], true);
+                if (is_array($images_data)) {
+                    // Show only first 6 images for regular places, 12 for sponsored
+                    // All images are kept in database, but only visible number is returned
+                    $max_visible_images = $is_sponsored ? 12 : 6;
+                    $images = array_slice($images_data, 0, $max_visible_images);
                 }
             }
 
@@ -274,6 +277,15 @@ class JG_Map_Ajax_Handlers {
                 $new_values = json_decode($pending_history['new_values'], true);
 
                 if ($pending_history['action_type'] === 'edit') {
+                    // Parse new images if present
+                    $new_images = array();
+                    if (isset($new_values['new_images'])) {
+                        $new_images_data = json_decode($new_values['new_images'], true);
+                        if (is_array($new_images_data)) {
+                            $new_images = $new_images_data;
+                        }
+                    }
+
                     $edit_info = array(
                         'history_id' => intval($pending_history['id']),
                         'prev_title' => $old_values['title'] ?? '',
@@ -282,6 +294,7 @@ class JG_Map_Ajax_Handlers {
                         'new_title' => $new_values['title'] ?? '',
                         'new_type' => $new_values['type'] ?? '',
                         'new_content' => $new_values['content'] ?? '',
+                        'new_images' => $new_images,
                         'edited_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
                     );
                 } else if ($pending_history['action_type'] === 'delete_request') {
