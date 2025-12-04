@@ -345,7 +345,7 @@
                 '</select></label>' +
                 '<label class="cols-2">Opis <textarea name="content" rows="4" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea></label>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
-                '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
+                '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images[]" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
                 '<div class="cols-2" id="add-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
                 '<div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end">' +
                 '<button type="button" class="jg-btn jg-btn--ghost" id="add-cancel">Anuluj</button>' +
@@ -1494,7 +1494,7 @@
           '</select></label>' +
           '<label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label>' +
           existingImagesHtml +
-          '<label class="cols-2">Dodaj nowe zdjęcia (max 6 łącznie) <input type="file" name="images" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
+          '<label class="cols-2">Dodaj nowe zdjęcia (max 6 łącznie) <input type="file" name="images[]" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
           '<div class="cols-2" id="edit-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
           '<div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button>' +

@@ -485,7 +485,13 @@ class JG_Map_Ajax_Handlers {
         error_log('JG MAP SUBMIT: Checking for image uploads');
         error_log('JG MAP SUBMIT: $_FILES data: ' . print_r($_FILES, true));
 
-        if (!empty($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+        // Check if files are present (works for both array and single file format)
+        $has_files = !empty($_FILES['images']) && (
+            (is_array($_FILES['images']['name']) && !empty($_FILES['images']['name'][0])) ||
+            (!is_array($_FILES['images']['name']) && !empty($_FILES['images']['name']))
+        );
+
+        if ($has_files) {
             error_log('JG MAP SUBMIT: Images found, processing upload');
             // For new submissions, always limit to 6 images (sponsoring is set by admin later)
             $images = $this->handle_image_upload($_FILES['images'], 6);
@@ -581,7 +587,13 @@ class JG_Map_Ajax_Handlers {
         error_log('JG MAP UPDATE: Checking for image uploads');
         error_log('JG MAP UPDATE: $_FILES data: ' . print_r($_FILES, true));
 
-        if (!empty($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+        // Check if files are present (works for both array and single file format)
+        $has_files = !empty($_FILES['images']) && (
+            (is_array($_FILES['images']['name']) && !empty($_FILES['images']['name'][0])) ||
+            (!is_array($_FILES['images']['name']) && !empty($_FILES['images']['name']))
+        );
+
+        if ($has_files) {
             error_log('JG MAP UPDATE: Images found, processing upload');
 
             // Check existing image count
@@ -1086,9 +1098,10 @@ class JG_Map_Ajax_Handlers {
 
         $upload_overrides = array('test_form' => false);
 
-        // Handle multiple files
+        // Check if files are in array format (multiple files) or single file format
         if (is_array($files['name'])) {
-            error_log('JG MAP IMAGE UPLOAD: Processing ' . count($files['name']) . ' files, max allowed: ' . $max_images);
+            // Multiple files format
+            error_log('JG MAP IMAGE UPLOAD: Processing multiple files array format - ' . count($files['name']) . ' files, max allowed: ' . $max_images);
 
             for ($i = 0; $i < count($files['name']); $i++) {
                 if ($i >= $max_images) {
@@ -1128,7 +1141,31 @@ class JG_Map_Ajax_Handlers {
                 }
             }
         } else {
-            error_log('JG MAP IMAGE UPLOAD: Files name is not an array');
+            // Single file format (happens when input name doesn't have [])
+            error_log('JG MAP IMAGE UPLOAD: Processing single file format');
+
+            if ($files['error'] === UPLOAD_ERR_OK) {
+                error_log('JG MAP IMAGE UPLOAD: Processing file: ' . $files['name'] . ', error code: ' . $files['error']);
+                error_log('JG MAP IMAGE UPLOAD: Calling wp_handle_upload for: ' . $files['name']);
+
+                $movefile = wp_handle_upload($files, $upload_overrides);
+                error_log('JG MAP IMAGE UPLOAD: wp_handle_upload result: ' . print_r($movefile, true));
+
+                if ($movefile && !isset($movefile['error'])) {
+                    // Create thumbnail
+                    $thumbnail_url = $this->create_thumbnail($movefile['file'], $movefile['url']);
+
+                    $images[] = array(
+                        'full' => $movefile['url'],
+                        'thumb' => $thumbnail_url ?: $movefile['url']
+                    );
+                    error_log('JG MAP IMAGE UPLOAD: Successfully uploaded: ' . $movefile['url']);
+                } else {
+                    error_log('JG MAP IMAGE UPLOAD: Upload failed for ' . $files['name'] . ': ' . ($movefile['error'] ?? 'Unknown error'));
+                }
+            } else {
+                error_log('JG MAP IMAGE UPLOAD: File has error code: ' . $files['error']);
+            }
         }
 
         error_log('JG MAP IMAGE UPLOAD: Upload complete. Total images: ' . count($images));
