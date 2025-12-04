@@ -1848,7 +1848,8 @@
         var imgs = Array.isArray(p.images) ? p.images : [];
 
         // Check if user can delete images (admin/moderator or own place)
-        var canDeleteImages = CFG.isAdmin || (CFG.currentUserId && CFG.currentUserId === p.author_id);
+        // FIX: Convert currentUserId to number for comparison (wp_localize_script converts to string)
+        var canDeleteImages = CFG.isAdmin || (+CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id);
 
         var gal = imgs.map(function(img, idx) {
           // Support both old format (string URL) and new format (object with thumb/full)
