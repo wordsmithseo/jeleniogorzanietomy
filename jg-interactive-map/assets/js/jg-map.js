@@ -824,6 +824,27 @@
           console.log('[JG MAP] Processed', ALL.length, 'points, calling apply(true) to skip fitBounds');
           apply(true); // Skip fitBounds on refresh to preserve user's view
           console.log('[JG MAP] apply() completed');
+
+          // Check if URL contains jg_view_point parameter (from dashboard Gallery)
+          var urlParams = new URLSearchParams(window.location.search);
+          var viewPointId = urlParams.get('jg_view_point');
+          if (viewPointId) {
+            console.log('[JG MAP] Found jg_view_point parameter:', viewPointId);
+            // Find point by ID
+            var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewPointId); });
+            if (targetPoint) {
+              console.log('[JG MAP] Found point, zooming and opening modal');
+              // Zoom to point
+              myMap.setView([targetPoint.lat, targetPoint.lng], 15);
+              // Wait a bit for markers to render, then open modal
+              setTimeout(function() {
+                openViewModal(targetPoint);
+              }, 500);
+            } else {
+              console.log('[JG MAP] Point not found with ID:', viewPointId);
+            }
+          }
+
           return ALL;
         });
       }
