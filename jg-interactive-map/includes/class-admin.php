@@ -1267,13 +1267,19 @@ class JG_Map_Admin {
                                     <?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?> •
                                     <?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu
                                 </p>
-                                <div style="display:flex;gap:8px">
+                                <div style="display:flex;gap:8px;flex-wrap:wrap">
                                     <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>"
                                        class="button button-small" target="_blank">Zobacz miejsce</a>
                                     <button class="button button-small jg-view-all-images"
                                             data-images='<?php echo esc_attr(json_encode($images)); ?>'
-                                            data-title="<?php echo esc_attr($point['title']); ?>">
+                                            data-title="<?php echo esc_attr($point['title']); ?>"
+                                            data-point-id="<?php echo $point['id']; ?>">
                                         Wszystkie zdjęcia
+                                    </button>
+                                    <button class="button button-small button-link-delete jg-delete-all-images"
+                                            data-point-id="<?php echo $point['id']; ?>"
+                                            style="color:#dc2626">
+                                        Usuń wszystkie
                                     </button>
                                 </div>
                             </div>
@@ -1295,23 +1301,52 @@ class JG_Map_Admin {
                     var lightbox = $('#jg-gallery-lightbox');
                     var imagesContainer = $('#jg-gallery-images');
                     var titleEl = $('#jg-gallery-title');
+                    var currentPointId = null;
 
                     $('.jg-view-all-images').on('click', function() {
                         var images = $(this).data('images');
                         var title = $(this).data('title');
+                        currentPointId = $(this).data('point-id');
 
                         titleEl.text(title);
                         imagesContainer.empty();
 
-                        images.forEach(function(img) {
-                            imagesContainer.append(
+                        images.forEach(function(img, idx) {
+                            var container = $('<div>').css({
+                                position: 'relative',
+                                borderRadius: '8px',
+                                overflow: 'hidden'
+                            });
+
+                            var deleteBtn = $('<button>')
+                                .text('×')
+                                .addClass('jg-delete-single-image')
+                                .attr('data-point-id', currentPointId)
+                                .attr('data-image-index', idx)
+                                .css({
+                                    position: 'absolute',
+                                    top: '8px',
+                                    right: '8px',
+                                    background: 'rgba(220,38,38,0.9)',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    width: '32px',
+                                    height: '32px',
+                                    cursor: 'pointer',
+                                    fontWeight: '700',
+                                    fontSize: '20px',
+                                    zIndex: 10
+                                })
+                                .attr('title', 'Usuń zdjęcie');
+
+                            container.append(deleteBtn);
+                            container.append(
                                 $('<a>').attr({
                                     href: img.full,
                                     target: '_blank'
                                 }).css({
-                                    display: 'block',
-                                    borderRadius: '8px',
-                                    overflow: 'hidden'
+                                    display: 'block'
                                 }).append(
                                     $('<img>').attr('src', img.thumb || img.full).css({
                                         width: '100%',
@@ -1321,9 +1356,92 @@ class JG_Map_Admin {
                                     })
                                 )
                             );
+
+                            imagesContainer.append(container);
                         });
 
                         lightbox.css('display', 'flex');
+                    });
+
+                    // Delete single image
+                    $(document).on('click', '.jg-delete-single-image', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        if (!confirm('Czy na pewno chcesz usunąć to zdjęcie?')) {
+                            return;
+                        }
+
+                        var btn = $(this);
+                        var pointId = btn.data('point-id');
+                        var imageIndex = btn.data('image-index');
+
+                        btn.prop('disabled', true).text('...');
+
+                        $.post(ajaxurl, {
+                            action: 'jg_delete_image',
+                            point_id: pointId,
+                            image_index: imageIndex,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        }, function(response) {
+                            if (response.success) {
+                                alert('Zdjęcie usunięte');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nie udało się usunąć'));
+                                btn.prop('disabled', false).text('×');
+                            }
+                        });
+                    });
+
+                    // Delete all images
+                    $('.jg-delete-all-images').on('click', function(e) {
+                        e.preventDefault();
+
+                        if (!confirm('Czy na pewno chcesz usunąć WSZYSTKIE zdjęcia z tego miejsca? Tej operacji nie można cofnąć!')) {
+                            return;
+                        }
+
+                        var btn = $(this);
+                        var pointId = btn.data('point-id');
+
+                        btn.prop('disabled', true).text('Usuwanie...');
+
+                        // Delete images one by one from the end
+                        function deleteNextImage(index) {
+                            if (index < 0) {
+                                alert('Wszystkie zdjęcia zostały usunięte');
+                                location.reload();
+                                return;
+                            }
+
+                            $.post(ajaxurl, {
+                                action: 'jg_delete_image',
+                                point_id: pointId,
+                                image_index: index,
+                                _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                            }, function(response) {
+                                if (response.success) {
+                                    // Continue with next image (always delete index 0 since array shrinks)
+                                    deleteNextImage(index - 1);
+                                } else {
+                                    alert('Błąd: ' + (response.data.message || 'Nie udało się usunąć'));
+                                    btn.prop('disabled', false).text('Usuń wszystkie');
+                                }
+                            });
+                        }
+
+                        // Start from the last image
+                        $.get(ajaxurl, {
+                            action: 'jg_get_points'
+                        }, function(response) {
+                            if (response.success && response.data) {
+                                var point = response.data.find(function(p) { return p.id == pointId; });
+                                if (point && point.images) {
+                                    deleteNextImage(point.images.length - 1);
+                                }
+                            }
+                        });
                     });
 
                     $('#jg-gallery-close, #jg-gallery-lightbox').on('click', function(e) {
