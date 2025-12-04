@@ -482,8 +482,16 @@ class JG_Map_Ajax_Handlers {
 
         // Handle image uploads
         $images = array();
-        if (!empty($_FILES['images'])) {
-            $images = $this->handle_image_upload($_FILES['images']);
+        error_log('JG MAP SUBMIT: Checking for image uploads');
+        error_log('JG MAP SUBMIT: $_FILES data: ' . print_r($_FILES, true));
+
+        if (!empty($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+            error_log('JG MAP SUBMIT: Images found, processing upload');
+            // For new submissions, always limit to 6 images (sponsoring is set by admin later)
+            $images = $this->handle_image_upload($_FILES['images'], 6);
+            error_log('JG MAP SUBMIT: Upload complete, got ' . count($images) . ' images');
+        } else {
+            error_log('JG MAP SUBMIT: No images to upload');
         }
 
         // Get user IP
@@ -570,8 +578,31 @@ class JG_Map_Ajax_Handlers {
 
         // Handle image uploads
         $new_images = array();
+        error_log('JG MAP UPDATE: Checking for image uploads');
+        error_log('JG MAP UPDATE: $_FILES data: ' . print_r($_FILES, true));
+
         if (!empty($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
-            $new_images = $this->handle_image_upload($_FILES['images']);
+            error_log('JG MAP UPDATE: Images found, processing upload');
+
+            // Check existing image count
+            $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
+            $existing_count = count($existing_images);
+
+            // Determine max images based on sponsored status
+            $is_sponsored = (bool)$point['is_promo'];
+            $max_total_images = $is_sponsored ? 12 : 6;
+            $max_new_images = max(0, $max_total_images - $existing_count);
+
+            error_log('JG MAP UPDATE: Existing images: ' . $existing_count . ', Max total: ' . $max_total_images . ', Max new: ' . $max_new_images . ', Is sponsored: ' . ($is_sponsored ? 'yes' : 'no'));
+
+            if ($max_new_images > 0) {
+                $new_images = $this->handle_image_upload($_FILES['images'], $max_new_images);
+                error_log('JG MAP UPDATE: Upload complete, got ' . count($new_images) . ' images');
+            } else {
+                error_log('JG MAP UPDATE: Already at max image limit, skipping upload');
+            }
+        } else {
+            error_log('JG MAP UPDATE: No images to upload');
         }
 
         // Check if there's already pending edit for this point
@@ -597,8 +628,12 @@ class JG_Map_Ajax_Handlers {
             if (!empty($new_images)) {
                 $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
                 $all_images = array_merge($existing_images, $new_images);
-                // Limit to 6 images
-                $all_images = array_slice($all_images, 0, 6);
+
+                // Limit based on sponsored status - 12 for sponsored, 6 for regular
+                $is_sponsored = (bool)$point['is_promo'];
+                $max_images = $is_sponsored ? 12 : 6;
+                $all_images = array_slice($all_images, 0, $max_images);
+
                 $update_data['images'] = json_encode($all_images);
             }
 
@@ -1035,8 +1070,11 @@ class JG_Map_Ajax_Handlers {
     /**
      * Handle image upload
      */
-    private function handle_image_upload($files) {
+    private function handle_image_upload($files, $max_images = 6) {
         $images = array();
+
+        error_log('JG MAP IMAGE UPLOAD: Starting upload process');
+        error_log('JG MAP IMAGE UPLOAD: Files data: ' . print_r($files, true));
 
         if (!function_exists('wp_handle_upload')) {
             require_once(ABSPATH . 'wp-admin/includes/file.php');
@@ -1050,8 +1088,15 @@ class JG_Map_Ajax_Handlers {
 
         // Handle multiple files
         if (is_array($files['name'])) {
+            error_log('JG MAP IMAGE UPLOAD: Processing ' . count($files['name']) . ' files, max allowed: ' . $max_images);
+
             for ($i = 0; $i < count($files['name']); $i++) {
-                if ($i >= 6) break; // Max 6 images
+                if ($i >= $max_images) {
+                    error_log('JG MAP IMAGE UPLOAD: Reached max images limit (' . $max_images . '), skipping remaining files');
+                    break;
+                }
+
+                error_log('JG MAP IMAGE UPLOAD: Processing file ' . ($i + 1) . ': ' . $files['name'][$i] . ', error code: ' . $files['error'][$i]);
 
                 if ($files['error'][$i] === UPLOAD_ERR_OK) {
                     $file = array(
@@ -1062,7 +1107,9 @@ class JG_Map_Ajax_Handlers {
                         'size' => $files['size'][$i]
                     );
 
+                    error_log('JG MAP IMAGE UPLOAD: Calling wp_handle_upload for: ' . $file['name']);
                     $movefile = wp_handle_upload($file, $upload_overrides);
+                    error_log('JG MAP IMAGE UPLOAD: wp_handle_upload result: ' . print_r($movefile, true));
 
                     if ($movefile && !isset($movefile['error'])) {
                         // Create thumbnail
@@ -1072,11 +1119,19 @@ class JG_Map_Ajax_Handlers {
                             'full' => $movefile['url'],
                             'thumb' => $thumbnail_url ?: $movefile['url']
                         );
+                        error_log('JG MAP IMAGE UPLOAD: Successfully uploaded: ' . $movefile['url']);
+                    } else {
+                        error_log('JG MAP IMAGE UPLOAD: Upload failed for ' . $file['name'] . ': ' . ($movefile['error'] ?? 'Unknown error'));
                     }
+                } else {
+                    error_log('JG MAP IMAGE UPLOAD: Skipping file with error code: ' . $files['error'][$i]);
                 }
             }
+        } else {
+            error_log('JG MAP IMAGE UPLOAD: Files name is not an array');
         }
 
+        error_log('JG MAP IMAGE UPLOAD: Upload complete. Total images: ' . count($images));
         return $images;
     }
 
@@ -1369,9 +1424,14 @@ class JG_Map_Ajax_Handlers {
                 $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
                 // Merge old and new images
                 $all_images = array_merge($existing_images, $new_images);
-                // Limit to 6 images
-                $all_images = array_slice($all_images, 0, 6);
+
+                // Limit based on sponsored status - 12 for sponsored, 6 for regular
+                $is_sponsored = (bool)$point['is_promo'];
+                $max_images = $is_sponsored ? 12 : 6;
+                $all_images = array_slice($all_images, 0, $max_images);
+
                 $update_data['images'] = json_encode($all_images);
+                error_log('JG MAP APPROVE EDIT: Merged images - existing: ' . count($existing_images) . ', new: ' . count($new_images) . ', total: ' . count($all_images) . ', max: ' . $max_images);
             }
         }
 
@@ -1710,6 +1770,17 @@ class JG_Map_Ajax_Handlers {
         if (!$point) {
             wp_send_json_error(array('message' => 'Punkt nie istnieje'));
             exit;
+        }
+
+        // Return daily limit to user before deleting
+        $author_id = intval($point['author_id']);
+        $point_type = $point['type'];
+
+        // Determine limit category and decrement
+        if ($point_type === 'miejsce' || $point_type === 'ciekawostka') {
+            $this->decrement_daily_limit($author_id, 'places');
+        } elseif ($point_type === 'zgloszenie') {
+            $this->decrement_daily_limit($author_id, 'reports');
         }
 
         global $wpdb;
