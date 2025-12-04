@@ -1498,6 +1498,38 @@ class JG_Map_Admin {
                         </div>
                     </div>
 
+                    <div style="margin-bottom:20px;">
+                        <h3>Limity dzienne (tymczasowe)</h3>
+                        <p style="font-size:12px;color:#666;margin:8px 0">Zmiany obowiązują tylko do północy. O północy limity są automatycznie resetowane do domyślnych wartości (5/5).</p>
+                        <div id="jg-current-limits" style="background:#f0f9ff;padding:12px;border-radius:8px;margin-bottom:12px;border:2px solid #3b82f6;">
+                            <strong>Aktualne limity:</strong>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
+                                <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
+                                    <div style="font-size:24px;font-weight:700;color:#3b82f6;" id="limit-places-display">-</div>
+                                    <div style="font-size:11px;color:#666;">miejsc/ciekawostek</div>
+                                </div>
+                                <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
+                                    <div style="font-size:24px;font-weight:700;color:#3b82f6;" id="limit-reports-display">-</div>
+                                    <div style="font-size:11px;color:#666;">zgłoszeń</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;">
+                            <div>
+                                <label style="display:block;font-weight:600;margin-bottom:4px;">Miejsca/Ciekawostki:</label>
+                                <input type="number" id="limit-places-input" min="0" max="999" value="5" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;">
+                            </div>
+                            <div>
+                                <label style="display:block;font-weight:600;margin-bottom:4px;">Zgłoszenia:</label>
+                                <input type="number" id="limit-reports-input" min="0" max="999" value="5" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;">
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="button button-primary jg-set-limits">Ustaw limity</button>
+                            <button class="button jg-reset-limits">Reset do domyślnych (5/5)</button>
+                        </div>
+                    </div>
+
                     <div id="jg-user-message" style="margin-top:16px;padding:12px;border-radius:8px;display:none;"></div>
                 </div>
             </div>
@@ -1550,6 +1582,26 @@ class JG_Map_Admin {
                                 'color': '',
                                 'border-color': ''
                             });
+                        }
+                    });
+
+                    // Fetch current daily limits
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_get_user_limits',
+                            user_id: currentUserId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                var data = response.data;
+                                $('#limit-places-display').text(data.places_remaining);
+                                $('#limit-reports-display').text(data.reports_remaining);
+                                $('#limit-places-input').val(data.places_remaining);
+                                $('#limit-reports-input').val(data.reports_remaining);
+                            }
                         }
                     });
 
@@ -1648,6 +1700,66 @@ class JG_Map_Admin {
                                 showMessage(response.data.message, false);
                             } else {
                                 showMessage(response.data.message, true);
+                            }
+                        }
+                    });
+                });
+
+                // Set custom limits
+                $('.jg-set-limits').on('click', function() {
+                    var placesLimit = parseInt($('#limit-places-input').val());
+                    var reportsLimit = parseInt($('#limit-reports-input').val());
+
+                    if (isNaN(placesLimit) || isNaN(reportsLimit) || placesLimit < 0 || reportsLimit < 0) {
+                        showMessage('Nieprawidłowe wartości limitów', true);
+                        return;
+                    }
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_set_user_limits',
+                            user_id: currentUserId,
+                            places_limit: placesLimit,
+                            reports_limit: reportsLimit,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#limit-places-display').text(response.data.places_remaining);
+                                $('#limit-reports-display').text(response.data.reports_remaining);
+                                showMessage('Limity ustawione pomyślnie!', false);
+                            } else {
+                                showMessage(response.data.message || 'Błąd', true);
+                            }
+                        }
+                    });
+                });
+
+                // Reset limits to default
+                $('.jg-reset-limits').on('click', function() {
+                    if (!confirm('Zresetować limity do domyślnych wartości (5/5)?')) return;
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_set_user_limits',
+                            user_id: currentUserId,
+                            places_limit: 5,
+                            reports_limit: 5,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#limit-places-display').text('5');
+                                $('#limit-reports-display').text('5');
+                                $('#limit-places-input').val(5);
+                                $('#limit-reports-input').val(5);
+                                showMessage('Limity zresetowane do domyślnych!', false);
+                            } else {
+                                showMessage(response.data.message || 'Błąd', true);
                             }
                         }
                     });

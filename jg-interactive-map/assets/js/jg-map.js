@@ -1061,6 +1061,28 @@
           '<button class="jg-btn jg-btn--ghost" id="btn-ban-edit-places">Blokada edycji własnych miejsc</button>' +
           '</div>' +
           '</div>' +
+          '<div style="background:#f0f9ff;border:2px solid #3b82f6;border-radius:8px;padding:12px;margin-bottom:16px">' +
+          '<div style="font-weight:700;margin-bottom:8px;color:#1e40af">📊 Limity dzienne (tymczasowe)</div>' +
+          '<p style="font-size:11px;color:#666;margin:4px 0 12px 0">Reset o północy</p>' +
+          '<div id="user-limits-display" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">' +
+          '<div style="text-align:center;background:#fff;padding:8px;border-radius:6px">' +
+          '<div style="font-size:24px;font-weight:700;color:#3b82f6" id="ulimit-places">-</div>' +
+          '<div style="font-size:10px;color:#666">miejsc/ciekawostek</div>' +
+          '</div>' +
+          '<div style="text-align:center;background:#fff;padding:8px;border-radius:6px">' +
+          '<div style="font-size:24px;font-weight:700;color:#3b82f6" id="ulimit-reports">-</div>' +
+          '<div style="font-size:10px;color:#666">zgłoszeń</div>' +
+          '</div>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
+          '<input type="number" id="ulimit-places-input" min="0" max="999" value="5" placeholder="Miejsca" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:12px">' +
+          '<input type="number" id="ulimit-reports-input" min="0" max="999" value="5" placeholder="Zgłoszenia" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:12px">' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          '<button class="jg-btn jg-btn--ghost" id="btn-reset-limits" style="font-size:11px;padding:6px">Reset (5/5)</button>' +
+          '<button class="jg-btn" id="btn-set-limits" style="font-size:11px;padding:6px;background:#3b82f6;color:#fff">Ustaw</button>' +
+          '</div>' +
+          '</div>' +
           '<div id="user-actions-msg" style="font-size:12px;margin-top:12px"></div>' +
           '</div>';
 
@@ -1105,6 +1127,19 @@
           .catch(function(err) {
             var statusDiv = qs('#user-current-status', modalAuthor);
             statusDiv.innerHTML = '<span style="color:#b91c1c">Błąd pobierania danych</span>';
+          });
+
+        // Fetch user daily limits
+        api('jg_admin_get_user_limits', { user_id: userId })
+          .then(function(result) {
+            qs('#ulimit-places', modalAuthor).textContent = result.places_remaining;
+            qs('#ulimit-reports', modalAuthor).textContent = result.reports_remaining;
+            qs('#ulimit-places-input', modalAuthor).value = result.places_remaining;
+            qs('#ulimit-reports-input', modalAuthor).value = result.reports_remaining;
+          })
+          .catch(function(err) {
+            qs('#ulimit-places', modalAuthor).textContent = '?';
+            qs('#ulimit-reports', modalAuthor).textContent = '?';
           });
 
         qs('#user-actions-close', modalAuthor).onclick = function() {
@@ -1220,6 +1255,67 @@
             }
           })(btnId, banActions[btnId]);
         }
+
+        // Set custom limits
+        qs('#btn-set-limits', modalAuthor).onclick = function() {
+          var placesLimit = parseInt(qs('#ulimit-places-input', modalAuthor).value);
+          var reportsLimit = parseInt(qs('#ulimit-reports-input', modalAuthor).value);
+
+          if (isNaN(placesLimit) || isNaN(reportsLimit) || placesLimit < 0 || reportsLimit < 0) {
+            msg.textContent = 'Nieprawidłowe wartości limitów';
+            msg.style.color = '#b91c1c';
+            return;
+          }
+
+          this.disabled = true;
+          msg.textContent = 'Ustawianie limitów...';
+
+          api('jg_admin_set_user_limits', {
+            user_id: userId,
+            places_limit: placesLimit,
+            reports_limit: reportsLimit
+          })
+            .then(function(result) {
+              qs('#ulimit-places', modalAuthor).textContent = result.places_remaining;
+              qs('#ulimit-reports', modalAuthor).textContent = result.reports_remaining;
+              msg.textContent = 'Limity ustawione!';
+              msg.style.color = '#15803d';
+              this.disabled = false;
+            }.bind(this))
+            .catch(function(err) {
+              msg.textContent = 'Błąd: ' + (err.message || '?');
+              msg.style.color = '#b91c1c';
+              this.disabled = false;
+            }.bind(this));
+        };
+
+        // Reset limits to default
+        qs('#btn-reset-limits', modalAuthor).onclick = function() {
+          if (!confirm('Zresetować limity do domyślnych (5/5)?')) return;
+
+          this.disabled = true;
+          msg.textContent = 'Resetowanie...';
+
+          api('jg_admin_set_user_limits', {
+            user_id: userId,
+            places_limit: 5,
+            reports_limit: 5
+          })
+            .then(function(result) {
+              qs('#ulimit-places', modalAuthor).textContent = '5';
+              qs('#ulimit-reports', modalAuthor).textContent = '5';
+              qs('#ulimit-places-input', modalAuthor).value = 5;
+              qs('#ulimit-reports-input', modalAuthor).value = 5;
+              msg.textContent = 'Limity zresetowane!';
+              msg.style.color = '#15803d';
+              this.disabled = false;
+            }.bind(this))
+            .catch(function(err) {
+              msg.textContent = 'Błąd: ' + (err.message || '?');
+              msg.style.color = '#b91c1c';
+              this.disabled = false;
+            }.bind(this));
+        };
       }
 
       function openReportModal(p) {
