@@ -46,6 +46,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_report_point', array($this, 'report_point'));
         add_action('wp_ajax_jg_author_points', array($this, 'get_author_points'));
         add_action('wp_ajax_jg_request_deletion', array($this, 'request_deletion'));
+        add_action('wp_ajax_jg_get_daily_limits', array($this, 'get_daily_limits'));
 
         // Admin actions
         add_action('wp_ajax_jg_get_reports', array($this, 'get_reports'));
@@ -368,6 +369,59 @@ class JG_Map_Ajax_Handlers {
         // Increment counter
         update_user_meta($user_id, $meta_key, $current_count + 1);
         return true;
+    }
+
+    /**
+     * Decrement daily limit (called when point is rejected)
+     */
+    private function decrement_daily_limit($user_id, $limit_type) {
+        $meta_key = 'jg_map_daily_' . $limit_type;
+        $current_count = intval(get_user_meta($user_id, $meta_key, true));
+
+        if ($current_count > 0) {
+            update_user_meta($user_id, $meta_key, $current_count - 1);
+        }
+    }
+
+    /**
+     * Get remaining daily limits for current user
+     */
+    public function get_daily_limits() {
+        $user_id = get_current_user_id();
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nie jesteś zalogowany'));
+            exit;
+        }
+
+        // Admins have no limits
+        if (current_user_can('manage_options')) {
+            wp_send_json_success(array(
+                'places_remaining' => 999,
+                'reports_remaining' => 999,
+                'is_admin' => true
+            ));
+            exit;
+        }
+
+        $today = date('Y-m-d');
+        $last_reset = get_user_meta($user_id, 'jg_map_daily_reset', true);
+
+        // Reset if needed
+        if ($last_reset !== $today) {
+            update_user_meta($user_id, 'jg_map_daily_places', 0);
+            update_user_meta($user_id, 'jg_map_daily_reports', 0);
+            update_user_meta($user_id, 'jg_map_daily_reset', $today);
+        }
+
+        $places_used = intval(get_user_meta($user_id, 'jg_map_daily_places', true));
+        $reports_used = intval(get_user_meta($user_id, 'jg_map_daily_reports', true));
+
+        wp_send_json_success(array(
+            'places_remaining' => max(0, 5 - $places_used),
+            'reports_remaining' => max(0, 5 - $reports_used),
+            'is_admin' => false
+        ));
     }
 
     /**
@@ -955,6 +1009,17 @@ class JG_Map_Ajax_Handlers {
         if (!$point) {
             wp_send_json_error(array('message' => 'Punkt nie istnieje'));
             exit;
+        }
+
+        // Return daily limit to user before deleting
+        $author_id = intval($point['author_id']);
+        $point_type = $point['type'];
+
+        // Determine limit category and decrement
+        if ($point_type === 'miejsce' || $point_type === 'ciekawostka') {
+            $this->decrement_daily_limit($author_id, 'places');
+        } elseif ($point_type === 'zgloszenie') {
+            $this->decrement_daily_limit($author_id, 'reports');
         }
 
         JG_Map_Database::update_point($point_id, array('status' => 'trash'));
