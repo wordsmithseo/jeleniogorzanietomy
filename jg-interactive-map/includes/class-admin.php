@@ -1487,7 +1487,7 @@ class JG_Map_Admin {
 
             // Get restrictions
             $restrictions = array();
-            $restriction_types = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places');
+            $restriction_types = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places', 'photo_upload');
             foreach ($restriction_types as $type) {
                 if (get_user_meta($user->ID, 'jg_map_ban_' . $type, true)) {
                     $restrictions[] = $type;
@@ -1613,6 +1613,7 @@ class JG_Map_Admin {
                             <button class="button jg-toggle-restriction" data-type="add_events">Wydarzenia</button>
                             <button class="button jg-toggle-restriction" data-type="add_trivia">Ciekawostki</button>
                             <button class="button jg-toggle-restriction" data-type="edit_places">Edycja miejsc</button>
+                            <button class="button jg-toggle-restriction" data-type="photo_upload">Przesyłanie zdjęć</button>
                         </div>
                     </div>
 
@@ -1645,6 +1646,29 @@ class JG_Map_Admin {
                         <div style="display:flex;gap:8px;">
                             <button class="button button-primary jg-set-limits">Ustaw limity</button>
                             <button class="button jg-reset-limits">Reset do domyślnych (5/5)</button>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Photo Upload Limit -->
+                    <div style="background:#f8fafc;padding:16px;border-radius:8px;margin-top:16px;">
+                        <h3 style="margin:0 0 12px 0;font-size:14px;color:#334155;">📸 Miesięczny limit przesyłania zdjęć</h3>
+                        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px;">
+                            <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
+                                <div style="font-size:24px;font-weight:700;color:#8b5cf6;" id="photo-used-display">-</div>
+                                <div style="font-size:11px;color:#666;">wykorzystano (MB)</div>
+                            </div>
+                            <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
+                                <div style="font-size:24px;font-weight:700;color:#3b82f6;" id="photo-limit-display">-</div>
+                                <div style="font-size:11px;color:#666;">limit (MB)</div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom:8px;">
+                            <label style="display:block;font-weight:600;margin-bottom:4px;">Ustaw nowy limit (MB):</label>
+                            <input type="number" id="photo-limit-input" min="1" max="10000" value="100" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;">
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="button button-primary jg-set-photo-limit">Ustaw limit</button>
+                            <button class="button jg-reset-photo-limit">Reset do domyślnych (100MB)</button>
                         </div>
                     </div>
 
@@ -1719,6 +1743,25 @@ class JG_Map_Admin {
                                 $('#limit-reports-display').text(data.reports_remaining);
                                 $('#limit-places-input').val(data.places_remaining);
                                 $('#limit-reports-input').val(data.reports_remaining);
+                            }
+                        }
+                    });
+
+                    // Fetch monthly photo limits
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_get_user_photo_limit',
+                            user_id: currentUserId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                var data = response.data;
+                                $('#photo-used-display').text(data.used_mb);
+                                $('#photo-limit-display').text(data.limit_mb);
+                                $('#photo-limit-input').val(data.limit_mb);
                             }
                         }
                     });
@@ -1876,6 +1919,60 @@ class JG_Map_Admin {
                                 $('#limit-places-input').val(5);
                                 $('#limit-reports-input').val(5);
                                 showMessage('Limity zresetowane do domyślnych!', false);
+                            } else {
+                                showMessage(response.data.message || 'Błąd', true);
+                            }
+                        }
+                    });
+                });
+
+                // Set custom photo limit
+                $('.jg-set-photo-limit').on('click', function() {
+                    var photoLimit = parseInt($('#photo-limit-input').val());
+
+                    if (isNaN(photoLimit) || photoLimit < 1) {
+                        showMessage('Nieprawidłowa wartość limitu zdjęć', true);
+                        return;
+                    }
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_set_user_photo_limit',
+                            user_id: currentUserId,
+                            limit_mb: photoLimit,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#photo-limit-display').text(response.data.limit_mb);
+                                showMessage('Limit zdjęć ustawiony pomyślnie!', false);
+                            } else {
+                                showMessage(response.data.message || 'Błąd', true);
+                            }
+                        }
+                    });
+                });
+
+                // Reset photo limit to default
+                $('.jg-reset-photo-limit').on('click', function() {
+                    if (!confirm('Zresetować limit zdjęć do domyślnej wartości (100MB)?')) return;
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_reset_user_photo_limit',
+                            user_id: currentUserId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#photo-used-display').text(response.data.used_mb);
+                                $('#photo-limit-display').text(response.data.limit_mb);
+                                $('#photo-limit-input').val(response.data.limit_mb);
+                                showMessage('Limit zdjęć zresetowany do domyślnego (100MB)!', false);
                             } else {
                                 showMessage(response.data.message || 'Błąd', true);
                             }
