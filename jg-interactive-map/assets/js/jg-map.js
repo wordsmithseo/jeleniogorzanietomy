@@ -1310,7 +1310,37 @@
         }
 
         var contentText = p.content ? p.content.replace(/<\/?[^>]+(>|$)/g, "") : (p.excerpt || '');
-        open(modalEdit, '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header><form id="edit-form" class="jg-grid cols-2"><label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label><label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"><option value="zgloszenie"' + (p.type === 'zgloszenie' ? ' selected' : '') + '>Zgłoszenie</option><option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option><option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option></select></label><label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label><label class="cols-2">Dodaj zdjęcia (max 6) <input type="file" name="images" multiple accept="image/*" style="width:100%;padding:8px"></label><div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button><button type="submit" class="jg-btn">Zapisz</button></div><div id="edit-msg" class="cols-2" style="font-size:12px"></div></form>');
+
+        // Build existing images section
+        var existingImagesHtml = '';
+        if (p.images && p.images.length > 0) {
+          existingImagesHtml = '<div class="cols-2" style="margin-bottom:16px"><label style="display:block;margin-bottom:8px;font-weight:600">Obecne zdjęcia:</label><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">';
+          p.images.forEach(function(img, idx) {
+            var thumbUrl = typeof img === 'object' ? (img.thumb || img.full) : img;
+            existingImagesHtml += '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid #e5e7eb"><img src="' + esc(thumbUrl) + '" style="width:100%;height:100%;object-fit:cover" alt="Zdjęcie ' + (idx + 1) + '"></div>';
+          });
+          existingImagesHtml += '</div><small style="display:block;color:#666;margin-top:8px">Zdjęcia nie mogą być usuwane podczas edycji. Nowe zdjęcia zostaną dodane do istniejących.</small></div>';
+        }
+
+        var formHtml = '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header>' +
+          '<form id="edit-form" class="jg-grid cols-2">' +
+          '<label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
+          '<label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+          '<option value="zgloszenie"' + (p.type === 'zgloszenie' ? ' selected' : '') + '>Zgłoszenie</option>' +
+          '<option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option>' +
+          '<option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option>' +
+          '</select></label>' +
+          '<label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label>' +
+          existingImagesHtml +
+          '<label class="cols-2">Dodaj nowe zdjęcia (max 6 łącznie) <input type="file" name="images" multiple accept="image/*" style="width:100%;padding:8px"></label>' +
+          '<div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end">' +
+          '<button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button>' +
+          '<button type="submit" class="jg-btn">Zapisz</button>' +
+          '</div>' +
+          '<div id="edit-msg" class="cols-2" style="font-size:12px"></div>' +
+          '</form>';
+
+        open(modalEdit, formHtml);
 
         qs('#edt-close', modalEdit).onclick = function() {
           close(modalEdit);

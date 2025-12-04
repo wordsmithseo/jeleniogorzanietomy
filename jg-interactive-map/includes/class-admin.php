@@ -558,12 +558,145 @@ class JG_Map_Admin {
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
-                                <a href="<?php echo get_site_url(); ?>?jg_preview_point=<?php echo $point['id']; ?>" class="button">Zobacz szczegóły</a>
+                                <button class="button jg-view-pending-details" data-point='<?php echo esc_attr(json_encode($point)); ?>'>Zobacz szczegóły</button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+
+            <!-- Modal for pending point details -->
+            <div id="jg-pending-details-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+                <div style="background:#fff;padding:20px;border-radius:8px;max-width:800px;width:90%;max-height:80vh;overflow:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h2 id="jg-pending-modal-title" style="margin:0">Szczegóły miejsca</h2>
+                        <button id="jg-pending-modal-close" style="background:#dc2626;color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-weight:700;">✕ Zamknij</button>
+                    </div>
+                    <div id="jg-pending-modal-content"></div>
+                    <div style="margin-top:20px;padding-top:20px;border-top:2px solid #e5e7eb;display:flex;gap:12px;justify-content:flex-end;">
+                        <button class="button button-large jg-reject-point" id="jg-pending-reject" style="background:#dc2626;color:#fff;border-color:#dc2626">Odrzuć</button>
+                        <button class="button button-primary button-large jg-approve-point" id="jg-pending-approve">Zatwierdź</button>
+                    </div>
+                    <div id="jg-pending-msg" style="margin-top:12px;padding:12px;border-radius:8px;display:none;"></div>
+                </div>
+            </div>
+
+            <script>
+            jQuery(document).ready(function($) {
+                var modal = $('#jg-pending-details-modal');
+                var modalContent = $('#jg-pending-modal-content');
+                var modalTitle = $('#jg-pending-modal-title');
+                var currentPointId = null;
+
+                // View pending point details
+                $('.jg-view-pending-details').on('click', function() {
+                    var point = $(this).data('point');
+                    currentPointId = point.id;
+
+                    modalTitle.text('Szczegóły: ' + point.title);
+
+                    // Parse images
+                    var images = [];
+                    if (point.images) {
+                        try {
+                            images = JSON.parse(point.images);
+                        } catch (e) {}
+                    }
+
+                    var imagesHtml = '';
+                    if (images.length > 0) {
+                        imagesHtml = '<div style="margin:16px 0"><strong>Zdjęcia:</strong><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px">';
+                        images.forEach(function(img) {
+                            var thumbUrl = typeof img === 'object' ? (img.thumb || img.full) : img;
+                            var fullUrl = typeof img === 'object' ? (img.full || img.thumb) : img;
+                            imagesHtml += '<a href="' + fullUrl + '" target="_blank"><img src="' + thumbUrl + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:2px solid #e5e7eb"></a>';
+                        });
+                        imagesHtml += '</div></div>';
+                    }
+
+                    var html = '<div style="display:grid;gap:12px">' +
+                        '<div><strong>Typ:</strong> ' + point.type + '</div>' +
+                        '<div><strong>Lokalizacja:</strong> ' + point.lat + ', ' + point.lng + '</div>' +
+                        '<div><strong>Opis:</strong><div style="margin-top:8px;padding:12px;background:#f9fafb;border-radius:8px;white-space:pre-wrap">' + (point.content || point.excerpt || '<em>Brak opisu</em>') + '</div></div>' +
+                        imagesHtml +
+                        '<div><strong>IP:</strong> ' + (point.ip_address || '<em>brak</em>') + '</div>' +
+                        '</div>';
+
+                    modalContent.html(html);
+                    modal.css('display', 'flex');
+                });
+
+                $('#jg-pending-modal-close, #jg-pending-details-modal').on('click', function(e) {
+                    if (e.target === this) {
+                        modal.hide();
+                    }
+                });
+
+                // Approve point
+                $('#jg-pending-approve').on('click', function() {
+                    if (!confirm('Zatwierdzić to miejsce?')) return;
+
+                    var btn = $(this);
+                    btn.prop('disabled', true).text('Zatwierdzam...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_approve_point',
+                            post_id: currentPointId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Miejsce zatwierdzone!');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
+                                btn.prop('disabled', false).text('Zatwierdź');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd połączenia');
+                            btn.prop('disabled', false).text('Zatwierdź');
+                        }
+                    });
+                });
+
+                // Reject point
+                $('#jg-pending-reject').on('click', function() {
+                    var reason = prompt('Powód odrzucenia (zostanie wysłany do użytkownika):');
+                    if (reason === null) return;
+
+                    var btn = $(this);
+                    btn.prop('disabled', true).text('Odrzucam...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_reject_point',
+                            post_id: currentPointId,
+                            reason: reason,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Miejsce odrzucone!');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
+                                btn.prop('disabled', false).text('Odrzuć');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd połączenia');
+                            btn.prop('disabled', false).text('Odrzuć');
+                        }
+                    });
+                });
+            });
+            </script>
             <?php endif; ?>
 
             <?php if (empty($pending) && empty($edits)): ?>

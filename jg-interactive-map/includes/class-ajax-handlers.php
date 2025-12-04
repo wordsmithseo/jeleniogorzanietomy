@@ -335,6 +335,42 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Check daily limits for user
+     */
+    private function check_daily_limit($user_id, $limit_type) {
+        // Admins have no limits
+        if (current_user_can('manage_options')) {
+            return true;
+        }
+
+        $today = date('Y-m-d');
+        $last_reset = get_user_meta($user_id, 'jg_map_daily_reset', true);
+
+        // Reset counters if it's a new day
+        if ($last_reset !== $today) {
+            update_user_meta($user_id, 'jg_map_daily_places', 0);
+            update_user_meta($user_id, 'jg_map_daily_reports', 0);
+            update_user_meta($user_id, 'jg_map_daily_reset', $today);
+        }
+
+        $limits = array(
+            'places' => 5,  // Places + Curiosities combined
+            'reports' => 5  // Reports
+        );
+
+        $meta_key = 'jg_map_daily_' . $limit_type;
+        $current_count = intval(get_user_meta($user_id, $meta_key, true));
+
+        if ($current_count >= $limits[$limit_type]) {
+            return false;
+        }
+
+        // Increment counter
+        update_user_meta($user_id, $meta_key, $current_count + 1);
+        return true;
+    }
+
+    /**
      * Submit new point
      */
     public function submit_point() {
@@ -359,11 +395,27 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Get type to determine limit category
+        $type = sanitize_text_field($_POST['type'] ?? 'zgloszenie');
+
+        // Check daily limits - places and curiosities count together, reports separate
+        if ($type === 'miejsce' || $type === 'ciekawostka') {
+            if (!$this->check_daily_limit($user_id, 'places')) {
+                wp_send_json_error(array('message' => 'Osiągnięto dzienny limit dodawania miejsc i ciekawostek (5 na dobę)'));
+                exit;
+            }
+        } elseif ($type === 'zgloszenie') {
+            if (!$this->check_daily_limit($user_id, 'reports')) {
+                wp_send_json_error(array('message' => 'Osiągnięto dzienny limit zgłoszeń (5 na dobę)'));
+                exit;
+            }
+        }
+
         // Validate required fields
         $title = sanitize_text_field($_POST['title'] ?? '');
         $lat = floatval($_POST['lat'] ?? 0);
         $lng = floatval($_POST['lng'] ?? 0);
-        $type = sanitize_text_field($_POST['type'] ?? 'zgloszenie');
+        // Type already sanitized above for limit check
         $content = wp_kses_post($_POST['content'] ?? '');
         $public_name = isset($_POST['public_name']);
 
