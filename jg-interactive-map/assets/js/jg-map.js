@@ -824,6 +824,27 @@
           console.log('[JG MAP] Processed', ALL.length, 'points, calling apply(true) to skip fitBounds');
           apply(true); // Skip fitBounds on refresh to preserve user's view
           console.log('[JG MAP] apply() completed');
+
+          // Check if URL contains jg_view_point parameter (from dashboard Gallery)
+          var urlParams = new URLSearchParams(window.location.search);
+          var viewPointId = urlParams.get('jg_view_point');
+          if (viewPointId) {
+            console.log('[JG MAP] Found jg_view_point parameter:', viewPointId);
+            // Find point by ID
+            var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewPointId); });
+            if (targetPoint) {
+              console.log('[JG MAP] Found point, zooming and opening modal');
+              // Zoom to point
+              myMap.setView([targetPoint.lat, targetPoint.lng], 15);
+              // Wait a bit for markers to render, then open modal
+              setTimeout(function() {
+                openViewModal(targetPoint);
+              }, 500);
+            } else {
+              console.log('[JG MAP] Point not found with ID:', viewPointId);
+            }
+          }
+
           return ALL;
         });
       }
@@ -1484,6 +1505,10 @@
           existingImagesHtml += '</div><small style="display:block;color:#666;margin-top:8px">Zdjęcia nie mogą być usuwane podczas edycji. Nowe zdjęcia zostaną dodane do istniejących.</small></div>';
         }
 
+        // Determine max images based on sponsored status
+        var isSponsored = !!p.sponsored;
+        var maxTotalImages = isSponsored ? 12 : 6;
+
         var formHtml = '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header>' +
           '<form id="edit-form" class="jg-grid cols-2">' +
           '<label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
@@ -1494,7 +1519,7 @@
           '</select></label>' +
           '<label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label>' +
           existingImagesHtml +
-          '<label class="cols-2">Dodaj nowe zdjęcia (max 6 łącznie) <input type="file" name="images[]" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
+          '<label class="cols-2">Dodaj nowe zdjęcia (max ' + maxTotalImages + ' łącznie) <input type="file" name="images[]" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
           '<div class="cols-2" id="edit-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
           '<div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button>' +
@@ -1527,12 +1552,10 @@
 
             // Calculate max images based on existing count
             var existingCount = p.images ? p.images.length : 0;
-            var isSponsored = !!p.sponsored;
-            var maxTotal = isSponsored ? 12 : 6;
-            var maxNew = Math.max(0, maxTotal - existingCount);
+            var maxNew = Math.max(0, maxTotalImages - existingCount);
 
             if (files.length > maxNew) {
-              msg.textContent = 'Uwaga: Możesz dodać maksymalnie ' + maxNew + ' zdjęć (masz już ' + existingCount + '/' + maxTotal + '). Pierwsze ' + maxNew + ' zostanie użytych.';
+              msg.textContent = 'Uwaga: Możesz dodać maksymalnie ' + maxNew + ' zdjęć (masz już ' + existingCount + '/' + maxTotalImages + '). Pierwsze ' + maxNew + ' zostanie użytych.';
               msg.style.color = '#d97706';
             } else if (msg.textContent.indexOf('Możesz dodać maksymalnie') !== -1) {
               msg.textContent = '';
@@ -1896,6 +1919,20 @@
               (newContentText ? esc(newContentText) : '<em>brak</em>') +
               '</div>' +
               '</div>');
+          }
+
+          // Show new images if present
+          if (p.edit_info.new_images && p.edit_info.new_images.length > 0) {
+            var newImagesHtml = '<div><strong>Nowe zdjęcia (' + p.edit_info.new_images.length + '):</strong><br>' +
+              '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px">';
+            p.edit_info.new_images.forEach(function(img) {
+              var thumbUrl = typeof img === 'object' ? (img.thumb || img.full) : img;
+              newImagesHtml += '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid #16a34a">' +
+                '<img src="' + esc(thumbUrl) + '" style="width:100%;height:100%;object-fit:cover" alt="Nowe zdjęcie">' +
+                '</div>';
+            });
+            newImagesHtml += '</div></div>';
+            changes.push(newImagesHtml);
           }
 
           if (changes.length > 0) {
