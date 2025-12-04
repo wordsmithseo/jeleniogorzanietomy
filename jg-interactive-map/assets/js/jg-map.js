@@ -376,9 +376,17 @@
                   imagesPreview.innerHTML = '';
                   var files = e.target.files;
 
+                  if (files.length > 6) {
+                    msg.textContent = 'Uwaga: Możesz dodać maksymalnie 6 zdjęć. Pierwsze 6 zostanie użytych.';
+                    msg.style.color = '#d97706';
+                  } else if (msg.textContent.indexOf('maksymalnie 6') !== -1) {
+                    msg.textContent = '';
+                  }
+
                   if (files.length > 0) {
                     imagesPreview.style.display = 'grid';
-                    for (var i = 0; i < Math.min(files.length, 6); i++) {
+                    var maxFiles = Math.min(files.length, 6);
+                    for (var i = 0; i < maxFiles; i++) {
                       var file = files[i];
                       var reader = new FileReader();
 
@@ -1517,9 +1525,23 @@
             imagesPreview.innerHTML = '';
             var files = e.target.files;
 
+            // Calculate max images based on existing count
+            var existingCount = p.images ? p.images.length : 0;
+            var isSponsored = !!p.sponsored;
+            var maxTotal = isSponsored ? 12 : 6;
+            var maxNew = Math.max(0, maxTotal - existingCount);
+
+            if (files.length > maxNew) {
+              msg.textContent = 'Uwaga: Możesz dodać maksymalnie ' + maxNew + ' zdjęć (masz już ' + existingCount + '/' + maxTotal + '). Pierwsze ' + maxNew + ' zostanie użytych.';
+              msg.style.color = '#d97706';
+            } else if (msg.textContent.indexOf('Możesz dodać maksymalnie') !== -1) {
+              msg.textContent = '';
+            }
+
             if (files.length > 0) {
               imagesPreview.style.display = 'grid';
-              for (var i = 0; i < Math.min(files.length, 6); i++) {
+              var maxFiles = Math.min(files.length, maxNew);
+              for (var i = 0; i < maxFiles; i++) {
                 var file = files[i];
                 var reader = new FileReader();
 
