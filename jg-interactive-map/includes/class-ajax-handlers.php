@@ -69,6 +69,9 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_reject_deletion', array($this, 'admin_reject_deletion'), 1);
         add_action('wp_ajax_jg_admin_get_user_limits', array($this, 'admin_get_user_limits'), 1);
         add_action('wp_ajax_jg_admin_set_user_limits', array($this, 'admin_set_user_limits'), 1);
+        add_action('wp_ajax_jg_admin_get_user_photo_limit', array($this, 'admin_get_user_photo_limit'), 1);
+        add_action('wp_ajax_jg_admin_set_user_photo_limit', array($this, 'admin_set_user_photo_limit'), 1);
+        add_action('wp_ajax_jg_admin_reset_user_photo_limit', array($this, 'admin_reset_user_photo_limit'), 1);
         add_action('wp_ajax_jg_delete_image', array($this, 'delete_image'), 1);
     }
 
@@ -350,6 +353,8 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_success(array(
                 'places_remaining' => 999,
                 'reports_remaining' => 999,
+                'photo_used_mb' => 0,
+                'photo_limit_mb' => 999,
                 'is_admin' => true
             ));
             exit;
@@ -368,9 +373,14 @@ class JG_Map_Ajax_Handlers {
         $places_used = intval(get_user_meta($user_id, 'jg_map_daily_places', true));
         $reports_used = intval(get_user_meta($user_id, 'jg_map_daily_reports', true));
 
+        // Get monthly photo usage
+        $photo_data = $this->get_monthly_photo_usage($user_id);
+
         wp_send_json_success(array(
             'places_remaining' => max(0, 5 - $places_used),
             'reports_remaining' => max(0, 5 - $reports_used),
+            'photo_used_mb' => $photo_data['used_mb'],
+            'photo_limit_mb' => $photo_data['limit_mb'],
             'is_admin' => false
         ));
     }
@@ -439,8 +449,21 @@ class JG_Map_Ajax_Handlers {
         );
 
         if ($has_files) {
+            // Check if user has photo upload restriction (skip for admins)
+            if (!$is_admin && self::has_user_restriction($user_id, 'photo_upload')) {
+                wp_send_json_error(array('message' => 'Nie możesz dodawać zdjęć - masz aktywną blokadę przesyłania zdjęć'));
+                exit;
+            }
+
             // For new submissions, always limit to 6 images (sponsoring is set by admin later)
-            $images = $this->handle_image_upload($_FILES['images'], 6);
+            $upload_result = $this->handle_image_upload($_FILES['images'], 6, $user_id);
+
+            if (isset($upload_result['error'])) {
+                wp_send_json_error(array('message' => $upload_result['error']));
+                exit;
+            }
+
+            $images = $upload_result['images'];
         } else {
         }
 
@@ -536,6 +559,11 @@ class JG_Map_Ajax_Handlers {
         );
 
         if ($has_files) {
+            // Check if user has photo upload restriction (skip for admins)
+            if (!$is_admin && self::has_user_restriction($user_id, 'photo_upload')) {
+                wp_send_json_error(array('message' => 'Nie możesz dodawać zdjęć - masz aktywną blokadę przesyłania zdjęć'));
+                exit;
+            }
 
             // Check existing image count
             $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
@@ -546,9 +574,15 @@ class JG_Map_Ajax_Handlers {
             $max_total_images = $is_sponsored ? 12 : 6;
             $max_new_images = max(0, $max_total_images - $existing_count);
 
-
             if ($max_new_images > 0) {
-                $new_images = $this->handle_image_upload($_FILES['images'], $max_new_images);
+                $upload_result = $this->handle_image_upload($_FILES['images'], $max_new_images, $user_id);
+
+                if (isset($upload_result['error'])) {
+                    wp_send_json_error(array('message' => $upload_result['error']));
+                    exit;
+                }
+
+                $new_images = $upload_result['images'];
             } else {
             }
         } else {
@@ -1017,11 +1051,16 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Handle image upload
+     * Handle image upload with size/dimension validation and monthly limit tracking
      */
-    private function handle_image_upload($files, $max_images = 6) {
+    private function handle_image_upload($files, $max_images = 6, $user_id = 0) {
         $images = array();
+        $total_size_uploaded = 0;
 
+        // Const limits
+        $MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+        $MAX_DIMENSION = 800; // 800x800
+        $MONTHLY_LIMIT_MB = 100; // 100MB per month for regular users
 
         if (!function_exists('wp_handle_upload')) {
             require_once(ABSPATH . 'wp-admin/includes/file.php');
@@ -1031,19 +1070,35 @@ class JG_Map_Ajax_Handlers {
             require_once(ABSPATH . 'wp-admin/includes/image.php');
         }
 
+        // Check monthly limit for non-admins
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+        if (!$is_admin && $user_id > 0) {
+            $monthly_data = $this->get_monthly_photo_usage($user_id);
+            $used_mb = $monthly_data['used_mb'];
+            $limit_mb = $monthly_data['limit_mb'];
+
+            // If already at limit, reject
+            if ($used_mb >= $limit_mb) {
+                return array('error' => 'Osiągnięto miesięczny limit przesyłania zdjęć (' . $limit_mb . 'MB)');
+            }
+        }
+
         $upload_overrides = array('test_form' => false);
 
         // Check if files are in array format (multiple files) or single file format
         if (is_array($files['name'])) {
             // Multiple files format
-
             for ($i = 0; $i < count($files['name']); $i++) {
                 if ($i >= $max_images) {
                     break;
                 }
 
-
                 if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    // Check file size (2MB limit)
+                    if ($files['size'][$i] > $MAX_FILE_SIZE) {
+                        return array('error' => 'Plik ' . $files['name'][$i] . ' jest za duży. Maksymalny rozmiar to 2MB');
+                    }
+
                     $file = array(
                         'name' => $files['name'][$i],
                         'type' => $files['type'][$i],
@@ -1055,40 +1110,119 @@ class JG_Map_Ajax_Handlers {
                     $movefile = wp_handle_upload($file, $upload_overrides);
 
                     if ($movefile && !isset($movefile['error'])) {
+                        // Resize to 800x800 if needed
+                        $resized_file = $this->resize_image_if_needed($movefile['file'], $MAX_DIMENSION);
+
                         // Create thumbnail
-                        $thumbnail_url = $this->create_thumbnail($movefile['file'], $movefile['url']);
+                        $thumbnail_url = $this->create_thumbnail($resized_file, $movefile['url']);
+
+                        // Get actual file size after resize
+                        $actual_size = file_exists($resized_file) ? filesize($resized_file) : 0;
+                        $total_size_uploaded += $actual_size;
 
                         $images[] = array(
                             'full' => $movefile['url'],
                             'thumb' => $thumbnail_url ?: $movefile['url']
                         );
                     } else {
+                        return array('error' => 'Błąd uploadu: ' . ($movefile['error'] ?? 'Nieznany błąd'));
                     }
-                } else {
                 }
             }
         } else {
-            // Single file format (happens when input name doesn't have [])
-
+            // Single file format
             if ($files['error'] === UPLOAD_ERR_OK) {
+                // Check file size (2MB limit)
+                if ($files['size'] > $MAX_FILE_SIZE) {
+                    return array('error' => 'Plik jest za duży. Maksymalny rozmiar to 2MB');
+                }
 
                 $movefile = wp_handle_upload($files, $upload_overrides);
 
                 if ($movefile && !isset($movefile['error'])) {
+                    // Resize to 800x800 if needed
+                    $resized_file = $this->resize_image_if_needed($movefile['file'], $MAX_DIMENSION);
+
                     // Create thumbnail
-                    $thumbnail_url = $this->create_thumbnail($movefile['file'], $movefile['url']);
+                    $thumbnail_url = $this->create_thumbnail($resized_file, $movefile['url']);
+
+                    // Get actual file size after resize
+                    $actual_size = file_exists($resized_file) ? filesize($resized_file) : 0;
+                    $total_size_uploaded += $actual_size;
 
                     $images[] = array(
                         'full' => $movefile['url'],
                         'thumb' => $thumbnail_url ?: $movefile['url']
                     );
                 } else {
+                    return array('error' => 'Błąd uploadu: ' . ($movefile['error'] ?? 'Nieznany błąd'));
                 }
-            } else {
             }
         }
 
-        return $images;
+        // Update monthly usage for non-admins
+        if (!$is_admin && $user_id > 0 && $total_size_uploaded > 0) {
+            $this->update_monthly_photo_usage($user_id, $total_size_uploaded);
+        }
+
+        return array('images' => $images);
+    }
+
+    /**
+     * Resize image if it exceeds max dimension
+     */
+    private function resize_image_if_needed($file_path, $max_dimension) {
+        $image_editor = wp_get_image_editor($file_path);
+
+        if (is_wp_error($image_editor)) {
+            return $file_path; // Return original if can't edit
+        }
+
+        $size = $image_editor->get_size();
+        $width = $size['width'];
+        $height = $size['height'];
+
+        // Only resize if larger than max
+        if ($width > $max_dimension || $height > $max_dimension) {
+            $image_editor->resize($max_dimension, $max_dimension, false);
+            $image_editor->save($file_path);
+        }
+
+        return $file_path;
+    }
+
+    /**
+     * Get monthly photo usage for user
+     */
+    private function get_monthly_photo_usage($user_id) {
+        $current_month = date('Y-m');
+        $last_reset_month = get_user_meta($user_id, 'jg_map_photo_month', true);
+
+        // Reset if new month
+        if ($last_reset_month !== $current_month) {
+            update_user_meta($user_id, 'jg_map_photo_month', $current_month);
+            update_user_meta($user_id, 'jg_map_photo_used_bytes', 0);
+            delete_user_meta($user_id, 'jg_map_photo_custom_limit'); // Reset custom limit
+        }
+
+        $used_bytes = intval(get_user_meta($user_id, 'jg_map_photo_used_bytes', true));
+        $custom_limit_mb = get_user_meta($user_id, 'jg_map_photo_custom_limit', true);
+        $limit_mb = $custom_limit_mb ? intval($custom_limit_mb) : 100; // Default 100MB
+
+        return array(
+            'used_mb' => round($used_bytes / (1024 * 1024), 2),
+            'limit_mb' => $limit_mb,
+            'used_bytes' => $used_bytes
+        );
+    }
+
+    /**
+     * Update monthly photo usage
+     */
+    private function update_monthly_photo_usage($user_id, $bytes_to_add) {
+        $current_usage = intval(get_user_meta($user_id, 'jg_map_photo_used_bytes', true));
+        $new_usage = $current_usage + $bytes_to_add;
+        update_user_meta($user_id, 'jg_map_photo_used_bytes', $new_usage);
     }
 
     /**
@@ -1835,7 +1969,7 @@ class JG_Map_Ajax_Handlers {
         $user_id = intval($_POST['user_id'] ?? 0);
         $restriction_type = sanitize_text_field($_POST['restriction_type'] ?? '');
 
-        $allowed_restrictions = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places');
+        $allowed_restrictions = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places', 'photo_upload');
         if (!$user_id || !in_array($restriction_type, $allowed_restrictions)) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
             exit;
@@ -1887,7 +2021,7 @@ class JG_Map_Ajax_Handlers {
         $is_banned = self::is_user_banned($user_id);
 
         $restrictions = array();
-        $restriction_types = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places');
+        $restriction_types = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places', 'photo_upload');
         foreach ($restriction_types as $type) {
             if (get_user_meta($user_id, 'jg_map_ban_' . $type, true)) {
                 $restrictions[] = $type;
@@ -1962,7 +2096,7 @@ class JG_Map_Ajax_Handlers {
         $is_banned = self::is_user_banned($user_id);
 
         $restrictions = array();
-        $restriction_types = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places');
+        $restriction_types = array('voting', 'add_places', 'add_events', 'add_trivia', 'edit_places', 'photo_upload');
         foreach ($restriction_types as $type) {
             if (get_user_meta($user_id, 'jg_map_ban_' . $type, true)) {
                 $restrictions[] = $type;
@@ -2079,6 +2213,104 @@ class JG_Map_Ajax_Handlers {
             'message' => 'Limity ustawione',
             'places_remaining' => $places_limit,
             'reports_remaining' => $reports_limit
+        ));
+    }
+
+    /**
+     * Get user's monthly photo upload limit and usage (admin only)
+     */
+    public function admin_get_user_photo_limit() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID użytkownika'));
+            exit;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        // Use existing get_monthly_photo_usage method
+        $monthly_data = $this->get_monthly_photo_usage($user_id);
+
+        wp_send_json_success(array(
+            'used_mb' => $monthly_data['used_mb'],
+            'limit_mb' => $monthly_data['limit_mb'],
+            'used_bytes' => $monthly_data['used_bytes']
+        ));
+    }
+
+    /**
+     * Set user's monthly photo upload limit (admin only)
+     */
+    public function admin_set_user_photo_limit() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+        $limit_mb = intval($_POST['limit_mb'] ?? 100);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID użytkownika'));
+            exit;
+        }
+
+        if ($limit_mb < 1) {
+            wp_send_json_error(array('message' => 'Limit musi być większy niż 0'));
+            exit;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        // Set custom limit
+        update_user_meta($user_id, 'jg_map_photo_custom_limit', $limit_mb);
+
+        wp_send_json_success(array(
+            'message' => 'Limit zdjęć ustawiony',
+            'limit_mb' => $limit_mb
+        ));
+    }
+
+    /**
+     * Reset user's monthly photo upload limit to default 100MB (admin only)
+     */
+    public function admin_reset_user_photo_limit() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID użytkownika'));
+            exit;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        // Remove custom limit, falling back to default 100MB
+        delete_user_meta($user_id, 'jg_map_photo_custom_limit');
+
+        // Get current usage
+        $monthly_data = $this->get_monthly_photo_usage($user_id);
+
+        wp_send_json_success(array(
+            'message' => 'Limit zresetowany do domyślnego (100MB)',
+            'used_mb' => $monthly_data['used_mb'],
+            'limit_mb' => $monthly_data['limit_mb']
         ));
     }
 

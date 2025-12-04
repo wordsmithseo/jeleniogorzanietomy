@@ -314,6 +314,7 @@
             .then(function(limits) {
               var limitsHtml = '';
               if (!limits.is_admin) {
+                var photoRemaining = (limits.photo_limit_mb - limits.photo_used_mb).toFixed(2);
                 limitsHtml = '<div class="cols-2" style="background:#f0f9ff;border:2px solid #3b82f6;border-radius:8px;padding:12px;margin-bottom:12px">' +
                   '<strong style="color:#1e40af">Pozostałe dzienne limity:</strong>' +
                   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">' +
@@ -325,6 +326,10 @@
                   '<div style="font-size:24px;font-weight:700;color:#3b82f6">' + limits.reports_remaining + '</div>' +
                   '<div style="font-size:11px;color:#666">zgłoszeń</div>' +
                   '</div>' +
+                  '</div>' +
+                  '<div style="margin-top:8px;padding:8px;background:#fff;border-radius:4px;text-align:center">' +
+                  '<div style="font-size:18px;font-weight:700;color:#8b5cf6">' + photoRemaining + ' MB / ' + limits.photo_limit_mb + ' MB</div>' +
+                  '<div style="font-size:11px;color:#666">pozostały miesięczny limit zdjęć</div>' +
                   '</div>' +
                   '</div>';
               }
@@ -1465,43 +1470,69 @@
           }
         }
 
-        var contentText = p.content ? p.content.replace(/<\/?[^>]+(>|$)/g, "") : (p.excerpt || '');
+        // Fetch daily limits first
+        api('jg_get_daily_limits', {})
+          .then(function(limits) {
+            var limitsHtml = '';
+            if (!limits.is_admin) {
+              var photoRemaining = (limits.photo_limit_mb - limits.photo_used_mb).toFixed(2);
+              limitsHtml = '<div class="cols-2" style="background:#f0f9ff;border:2px solid #3b82f6;border-radius:8px;padding:12px;margin-bottom:12px">' +
+                '<strong style="color:#1e40af">Pozostałe limity:</strong>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">' +
+                '<div style="background:#fff;padding:8px;border-radius:4px;text-align:center">' +
+                '<div style="font-size:24px;font-weight:700;color:#3b82f6">' + limits.places_remaining + '</div>' +
+                '<div style="font-size:11px;color:#666">miejsc/ciekawostek</div>' +
+                '</div>' +
+                '<div style="background:#fff;padding:8px;border-radius:4px;text-align:center">' +
+                '<div style="font-size:24px;font-weight:700;color:#3b82f6">' + limits.reports_remaining + '</div>' +
+                '<div style="font-size:11px;color:#666">zgłoszeń</div>' +
+                '</div>' +
+                '</div>' +
+                '<div style="margin-top:8px;padding:8px;background:#fff;border-radius:4px;text-align:center">' +
+                '<div style="font-size:18px;font-weight:700;color:#8b5cf6">' + photoRemaining + ' MB / ' + limits.photo_limit_mb + ' MB</div>' +
+                '<div style="font-size:11px;color:#666">pozostały miesięczny limit zdjęć</div>' +
+                '</div>' +
+                '</div>';
+            }
 
-        // Build existing images section
-        var existingImagesHtml = '';
-        if (p.images && p.images.length > 0) {
-          existingImagesHtml = '<div class="cols-2" style="margin-bottom:16px"><label style="display:block;margin-bottom:8px;font-weight:600">Obecne zdjęcia:</label><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">';
-          p.images.forEach(function(img, idx) {
-            var thumbUrl = typeof img === 'object' ? (img.thumb || img.full) : img;
-            existingImagesHtml += '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid #e5e7eb"><img src="' + esc(thumbUrl) + '" style="width:100%;height:100%;object-fit:cover" alt="Zdjęcie ' + (idx + 1) + '"></div>';
-          });
-          existingImagesHtml += '</div><small style="display:block;color:#666;margin-top:8px">Zdjęcia nie mogą być usuwane podczas edycji. Nowe zdjęcia zostaną dodane do istniejących.</small></div>';
-        }
+            var contentText = p.content ? p.content.replace(/<\/?[^>]+(>|$)/g, "") : (p.excerpt || '');
 
-        // Determine max images based on sponsored status
-        var isSponsored = !!p.sponsored;
-        var maxTotalImages = isSponsored ? 12 : 6;
+            // Build existing images section
+            var existingImagesHtml = '';
+            if (p.images && p.images.length > 0) {
+              existingImagesHtml = '<div class="cols-2" style="margin-bottom:16px"><label style="display:block;margin-bottom:8px;font-weight:600">Obecne zdjęcia:</label><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">';
+              p.images.forEach(function(img, idx) {
+                var thumbUrl = typeof img === 'object' ? (img.thumb || img.full) : img;
+                existingImagesHtml += '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid #e5e7eb"><img src="' + esc(thumbUrl) + '" style="width:100%;height:100%;object-fit:cover" alt="Zdjęcie ' + (idx + 1) + '"></div>';
+              });
+              existingImagesHtml += '</div><small style="display:block;color:#666;margin-top:8px">Zdjęcia nie mogą być usuwane podczas edycji. Nowe zdjęcia zostaną dodane do istniejących.</small></div>';
+            }
 
-        var formHtml = '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header>' +
-          '<form id="edit-form" class="jg-grid cols-2">' +
-          '<label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
-          '<label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
-          '<option value="zgloszenie"' + (p.type === 'zgloszenie' ? ' selected' : '') + '>Zgłoszenie</option>' +
-          '<option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option>' +
-          '<option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option>' +
-          '</select></label>' +
-          '<label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label>' +
-          existingImagesHtml +
-          '<label class="cols-2">Dodaj nowe zdjęcia (max ' + maxTotalImages + ' łącznie) <input type="file" name="images[]" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
-          '<div class="cols-2" id="edit-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
-          '<div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end">' +
-          '<button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button>' +
-          '<button type="submit" class="jg-btn">Zapisz</button>' +
-          '</div>' +
-          '<div id="edit-msg" class="cols-2" style="font-size:12px"></div>' +
-          '</form>';
+            // Determine max images based on sponsored status
+            var isSponsored = !!p.sponsored;
+            var maxTotalImages = isSponsored ? 12 : 6;
 
-        open(modalEdit, formHtml);
+            var formHtml = '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header>' +
+              '<form id="edit-form" class="jg-grid cols-2">' +
+              limitsHtml +
+              '<label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
+              '<label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+              '<option value="zgloszenie"' + (p.type === 'zgloszenie' ? ' selected' : '') + '>Zgłoszenie</option>' +
+              '<option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option>' +
+              '<option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option>' +
+              '</select></label>' +
+              '<label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label>' +
+              existingImagesHtml +
+              '<label class="cols-2">Dodaj nowe zdjęcia (max ' + maxTotalImages + ' łącznie) <input type="file" name="images[]" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
+              '<div class="cols-2" id="edit-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
+              '<div class="cols-2" style="display:flex;gap:8px;justify-content:flex-end">' +
+              '<button type="button" class="jg-btn jg-btn--ghost" id="edt-cancel">Anuluj</button>' +
+              '<button type="submit" class="jg-btn">Zapisz</button>' +
+              '</div>' +
+              '<div id="edit-msg" class="cols-2" style="font-size:12px"></div>' +
+              '</form>';
+
+            open(modalEdit, formHtml);
 
         qs('#edt-close', modalEdit).onclick = function() {
           close(modalEdit);
@@ -1607,6 +1638,10 @@
             msg.style.color = '#b91c1c';
           });
         };
+      })
+      .catch(function(err) {
+        alert('Błąd podczas ładowania limitów: ' + (err.message || 'Nieznany błąd'));
+      });
       }
 
       function openDeletionRequestModal(p) {
@@ -1861,9 +1896,9 @@
             deleteBtn = '<button class="jg-delete-image" data-point-id="' + p.id + '" data-image-index="' + idx + '" style="position:absolute;top:4px;right:4px;background:rgba(220,38,38,0.9);color:#fff;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:10" title="Usuń zdjęcie">×</button>';
           }
 
-          return '<div style="position:relative;display:inline-block">' +
+          return '<div style="position:relative;width:120px;height:120px;display:inline-block;margin:4px;border-radius:12px;overflow:hidden;border:2px solid #e5e7eb;box-shadow:0 2px 4px rgba(0,0,0,0.1)">' +
                  deleteBtn +
-                 '<img src="' + esc(thumbUrl) + '" data-full="' + esc(fullUrl) + '" alt="" loading="lazy" style="cursor:pointer">' +
+                 '<img src="' + esc(thumbUrl) + '" data-full="' + esc(fullUrl) + '" alt="" loading="lazy" style="cursor:pointer;width:100%;height:100%;object-fit:cover">' +
                  '</div>';
         }).join('');
 
