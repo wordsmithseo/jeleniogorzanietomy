@@ -29,10 +29,6 @@ class JG_Map_Ajax_Handlers {
      * Constructor
      */
     private function __construct() {
-        error_log('===== JG MAP AJAX HANDLERS: Constructor called =====');
-        error_log('Class name: ' . get_class($this));
-        error_log('Method exists admin_approve_edit: ' . (method_exists($this, 'admin_approve_edit') ? 'YES' : 'NO'));
-
         // Public AJAX actions (logged in and not logged in)
         add_action('wp_ajax_jg_points', array($this, 'get_points'));
         add_action('wp_ajax_nopriv_jg_points', array($this, 'get_points'));
@@ -58,12 +54,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_approve_point', array($this, 'admin_approve_point'));
         add_action('wp_ajax_jg_admin_reject_point', array($this, 'admin_reject_point'));
         add_action('wp_ajax_jg_get_point_history', array($this, 'get_point_history'));
-
-        // Explicitly register admin_approve_edit with PRIORITY 1 to run BEFORE other plugins (like WPCode)
-        error_log('===== JG MAP: About to register wp_ajax_jg_admin_approve_edit with priority 1 =====');
         add_action('wp_ajax_jg_admin_approve_edit', array($this, 'admin_approve_edit'), 1, 0);
-        error_log('===== JG MAP: Registered wp_ajax_jg_admin_approve_edit with callback =====');
-
         add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'), 1);
         add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'), 1);
         add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'), 1);
@@ -78,57 +69,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_reject_deletion', array($this, 'admin_reject_deletion'), 1);
         add_action('wp_ajax_jg_admin_get_user_limits', array($this, 'admin_get_user_limits'), 1);
         add_action('wp_ajax_jg_admin_set_user_limits', array($this, 'admin_set_user_limits'), 1);
-
-        // DEBUG: Test endpoint
-        add_action('wp_ajax_jg_test_endpoint', array($this, 'test_endpoint'));
-
-        // DEBUG: Add early action hook to catch AJAX requests
-        add_action('init', array($this, 'debug_all_ajax'), 1);
-        add_action('admin_init', array($this, 'debug_action_hooks'), 999);
-    }
-
-    /**
-     * DEBUG: Log all registered action hooks for jg_admin_approve_edit
-     */
-    public function debug_action_hooks() {
-        global $wp_filter;
-        if (isset($wp_filter['wp_ajax_jg_admin_approve_edit'])) {
-            error_log('===== JG MAP DEBUG: wp_ajax_jg_admin_approve_edit hook is registered =====');
-            error_log('Callbacks: ' . print_r($wp_filter['wp_ajax_jg_admin_approve_edit']->callbacks, true));
-        } else {
-            error_log('===== JG MAP DEBUG: wp_ajax_jg_admin_approve_edit hook NOT FOUND =====');
-        }
-    }
-
-    /**
-     * DEBUG: Catch all AJAX requests
-     */
-    public function debug_all_ajax() {
-        if (defined('DOING_AJAX') && DOING_AJAX) {
-            $action = isset($_REQUEST['action']) ? $_REQUEST['action'] : 'unknown';
-            if ($action === 'jg_admin_approve_edit') {
-                error_log('===== JG MAP DEBUG: AJAX REQUEST DETECTED for jg_admin_approve_edit =====');
-                error_log('POST data: ' . print_r($_POST, true));
-                error_log('Current user: ' . get_current_user_id());
-            }
-        }
-    }
-
-    /**
-     * TEST ENDPOINT - Always returns success with debug info
-     */
-    public function test_endpoint() {
-        error_log('===== JG MAP TEST ENDPOINT CALLED =====');
-        error_log('POST data: ' . print_r($_POST, true));
-        error_log('User ID: ' . get_current_user_id());
-        error_log('User can manage_options: ' . (current_user_can('manage_options') ? 'yes' : 'no'));
-
-        wp_send_json_success(array(
-            'message' => 'Test endpoint works!',
-            'user_id' => get_current_user_id(),
-            'time' => current_time('mysql'),
-            'post_data' => $_POST
-        ));
+        add_action('wp_ajax_jg_delete_image', array($this, 'delete_image'), 1);
     }
 
     /**
@@ -136,18 +77,15 @@ class JG_Map_Ajax_Handlers {
      */
     private function verify_nonce() {
         if (!isset($_POST['_ajax_nonce'])) {
-            error_log('JG MAP NONCE: Nonce not set in POST data');
             wp_send_json_error(array('message' => 'Błąd bezpieczeństwa - brak nonce'));
             exit;
         }
 
         if (!wp_verify_nonce($_POST['_ajax_nonce'], 'jg_map_nonce')) {
-            error_log('JG MAP NONCE: Nonce verification failed - ' . $_POST['_ajax_nonce']);
             wp_send_json_error(array('message' => 'Błąd bezpieczeństwa - nieprawidłowy nonce'));
             exit;
         }
 
-        error_log('JG MAP NONCE: Verification passed');
     }
 
     /**
@@ -158,14 +96,12 @@ class JG_Map_Ajax_Handlers {
         $can_manage = current_user_can('manage_options');
         $can_moderate = current_user_can('jg_map_moderate');
 
-        error_log('JG MAP ADMIN CHECK: user_id=' . $user_id . ', can_manage=' . ($can_manage ? 'yes' : 'no') . ', can_moderate=' . ($can_moderate ? 'yes' : 'no'));
 
         if (!$can_manage && !$can_moderate) {
             wp_send_json_error(array('message' => 'Brak uprawnień'));
             exit;
         }
 
-        error_log('JG MAP ADMIN CHECK: Access granted');
     }
 
     /**
@@ -495,8 +431,6 @@ class JG_Map_Ajax_Handlers {
 
         // Handle image uploads
         $images = array();
-        error_log('JG MAP SUBMIT: Checking for image uploads');
-        error_log('JG MAP SUBMIT: $_FILES data: ' . print_r($_FILES, true));
 
         // Check if files are present (works for both array and single file format)
         $has_files = !empty($_FILES['images']) && (
@@ -505,12 +439,9 @@ class JG_Map_Ajax_Handlers {
         );
 
         if ($has_files) {
-            error_log('JG MAP SUBMIT: Images found, processing upload');
             // For new submissions, always limit to 6 images (sponsoring is set by admin later)
             $images = $this->handle_image_upload($_FILES['images'], 6);
-            error_log('JG MAP SUBMIT: Upload complete, got ' . count($images) . ' images');
         } else {
-            error_log('JG MAP SUBMIT: No images to upload');
         }
 
         // Get user IP
@@ -597,8 +528,6 @@ class JG_Map_Ajax_Handlers {
 
         // Handle image uploads
         $new_images = array();
-        error_log('JG MAP UPDATE: Checking for image uploads');
-        error_log('JG MAP UPDATE: $_FILES data: ' . print_r($_FILES, true));
 
         // Check if files are present (works for both array and single file format)
         $has_files = !empty($_FILES['images']) && (
@@ -607,7 +536,6 @@ class JG_Map_Ajax_Handlers {
         );
 
         if ($has_files) {
-            error_log('JG MAP UPDATE: Images found, processing upload');
 
             // Check existing image count
             $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
@@ -618,16 +546,12 @@ class JG_Map_Ajax_Handlers {
             $max_total_images = $is_sponsored ? 12 : 6;
             $max_new_images = max(0, $max_total_images - $existing_count);
 
-            error_log('JG MAP UPDATE: Existing images: ' . $existing_count . ', Max total: ' . $max_total_images . ', Max new: ' . $max_new_images . ', Is sponsored: ' . ($is_sponsored ? 'yes' : 'no'));
 
             if ($max_new_images > 0) {
                 $new_images = $this->handle_image_upload($_FILES['images'], $max_new_images);
-                error_log('JG MAP UPDATE: Upload complete, got ' . count($new_images) . ' images');
             } else {
-                error_log('JG MAP UPDATE: Already at max image limit, skipping upload');
             }
         } else {
-            error_log('JG MAP UPDATE: No images to upload');
         }
 
         // Check if there's already pending edit for this point
@@ -1098,8 +1022,6 @@ class JG_Map_Ajax_Handlers {
     private function handle_image_upload($files, $max_images = 6) {
         $images = array();
 
-        error_log('JG MAP IMAGE UPLOAD: Starting upload process');
-        error_log('JG MAP IMAGE UPLOAD: Files data: ' . print_r($files, true));
 
         if (!function_exists('wp_handle_upload')) {
             require_once(ABSPATH . 'wp-admin/includes/file.php');
@@ -1114,15 +1036,12 @@ class JG_Map_Ajax_Handlers {
         // Check if files are in array format (multiple files) or single file format
         if (is_array($files['name'])) {
             // Multiple files format
-            error_log('JG MAP IMAGE UPLOAD: Processing multiple files array format - ' . count($files['name']) . ' files, max allowed: ' . $max_images);
 
             for ($i = 0; $i < count($files['name']); $i++) {
                 if ($i >= $max_images) {
-                    error_log('JG MAP IMAGE UPLOAD: Reached max images limit (' . $max_images . '), skipping remaining files');
                     break;
                 }
 
-                error_log('JG MAP IMAGE UPLOAD: Processing file ' . ($i + 1) . ': ' . $files['name'][$i] . ', error code: ' . $files['error'][$i]);
 
                 if ($files['error'][$i] === UPLOAD_ERR_OK) {
                     $file = array(
@@ -1133,9 +1052,7 @@ class JG_Map_Ajax_Handlers {
                         'size' => $files['size'][$i]
                     );
 
-                    error_log('JG MAP IMAGE UPLOAD: Calling wp_handle_upload for: ' . $file['name']);
                     $movefile = wp_handle_upload($file, $upload_overrides);
-                    error_log('JG MAP IMAGE UPLOAD: wp_handle_upload result: ' . print_r($movefile, true));
 
                     if ($movefile && !isset($movefile['error'])) {
                         // Create thumbnail
@@ -1145,24 +1062,17 @@ class JG_Map_Ajax_Handlers {
                             'full' => $movefile['url'],
                             'thumb' => $thumbnail_url ?: $movefile['url']
                         );
-                        error_log('JG MAP IMAGE UPLOAD: Successfully uploaded: ' . $movefile['url']);
                     } else {
-                        error_log('JG MAP IMAGE UPLOAD: Upload failed for ' . $file['name'] . ': ' . ($movefile['error'] ?? 'Unknown error'));
                     }
                 } else {
-                    error_log('JG MAP IMAGE UPLOAD: Skipping file with error code: ' . $files['error'][$i]);
                 }
             }
         } else {
             // Single file format (happens when input name doesn't have [])
-            error_log('JG MAP IMAGE UPLOAD: Processing single file format');
 
             if ($files['error'] === UPLOAD_ERR_OK) {
-                error_log('JG MAP IMAGE UPLOAD: Processing file: ' . $files['name'] . ', error code: ' . $files['error']);
-                error_log('JG MAP IMAGE UPLOAD: Calling wp_handle_upload for: ' . $files['name']);
 
                 $movefile = wp_handle_upload($files, $upload_overrides);
-                error_log('JG MAP IMAGE UPLOAD: wp_handle_upload result: ' . print_r($movefile, true));
 
                 if ($movefile && !isset($movefile['error'])) {
                     // Create thumbnail
@@ -1172,16 +1082,12 @@ class JG_Map_Ajax_Handlers {
                         'full' => $movefile['url'],
                         'thumb' => $thumbnail_url ?: $movefile['url']
                     );
-                    error_log('JG MAP IMAGE UPLOAD: Successfully uploaded: ' . $movefile['url']);
                 } else {
-                    error_log('JG MAP IMAGE UPLOAD: Upload failed for ' . $files['name'] . ': ' . ($movefile['error'] ?? 'Unknown error'));
                 }
             } else {
-                error_log('JG MAP IMAGE UPLOAD: File has error code: ' . $files['error']);
             }
         }
 
-        error_log('JG MAP IMAGE UPLOAD: Upload complete. Total images: ' . count($images));
         return $images;
     }
 
@@ -1481,7 +1387,6 @@ class JG_Map_Ajax_Handlers {
                 $all_images = array_slice($all_images, 0, $max_images);
 
                 $update_data['images'] = json_encode($all_images);
-                error_log('JG MAP APPROVE EDIT: Merged images - existing: ' . count($existing_images) . ', new: ' . count($new_images) . ', total: ' . count($all_images) . ', max: ' . $max_images);
             }
         }
 
@@ -2174,6 +2079,64 @@ class JG_Map_Ajax_Handlers {
             'message' => 'Limity ustawione',
             'places_remaining' => $places_limit,
             'reports_remaining' => $reports_limit
+        ));
+    }
+
+    /**
+     * Delete image from point
+     * Admins/moderators can delete from any point, users can only delete from their own points
+     */
+    public function delete_image() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $user_id = get_current_user_id();
+        $point_id = intval($_POST['point_id'] ?? 0);
+        $image_index = intval($_POST['image_index'] ?? -1);
+
+        if (!$point_id || $image_index < 0) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        // Check permissions
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+        $is_author = (intval($point['author_id']) === $user_id);
+
+        if (!$is_admin && !$is_author) {
+            wp_send_json_error(array('message' => 'Brak uprawnień do usuwania zdjęć z tego miejsca'));
+            exit;
+        }
+
+        // Get existing images
+        $images = json_decode($point['images'] ?? '[]', true) ?: array();
+
+        if (!isset($images[$image_index])) {
+            wp_send_json_error(array('message' => 'Zdjęcie nie istnieje'));
+            exit;
+        }
+
+        // Remove image from array
+        array_splice($images, $image_index, 1);
+
+        // Update point with new images array
+        JG_Map_Database::update_point($point_id, array(
+            'images' => json_encode($images)
+        ));
+
+        wp_send_json_success(array(
+            'message' => 'Zdjęcie usunięte',
+            'remaining_count' => count($images)
         ));
     }
 }

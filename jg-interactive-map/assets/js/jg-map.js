@@ -12,7 +12,6 @@
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for (var registration of registrations) {
           registration.unregister().then(function() {
-            console.log('[JG MAP] Service Worker unregistered');
           });
         }
       });
@@ -30,7 +29,6 @@
       try {
         localStorage.removeItem('jg_map_cache');
         localStorage.removeItem('jg_map_cache_version');
-        console.log('[JG MAP] localStorage cache cleared');
       } catch (e) {
         console.error('[JG MAP] Failed to clear localStorage:', e);
       }
@@ -60,7 +58,6 @@
       if (window.L && L.map && L.markerClusterGroup) {
         clearInterval(interval);
         hideLoading();
-        console.log('[JG MAP] Wszystkie biblioteki załadowane');
         cb();
         return;
       }
@@ -441,7 +438,6 @@
 
               // Immediate refresh for better UX
               refreshData(true).then(function() {
-                console.log('[JG MAP] Dane odświeżone po dodaniu punktu');
                 msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
                 setTimeout(function() {
                   close(modalAdd);
@@ -532,7 +528,6 @@
           }
         }
 
-        console.log('[JG MAP] API call:', action, 'nonce:', CFG.nonce);
 
         return fetch(CFG.ajax, {
           method: 'POST',
@@ -540,11 +535,9 @@
           credentials: 'same-origin'
         })
         .then(function(r) {
-          console.log('[JG MAP] Response status:', r.status);
           return r.text();
         })
         .then(function(t) {
-          console.log('[JG MAP] Response text:', t.substring(0, 500));
           var j = null;
           try {
             j = JSON.parse(t);
@@ -704,7 +697,6 @@
 
             // Store restrictions globally so we can check them before actions
             window.JG_USER_RESTRICTIONS = result;
-            console.log('[JG MAP] User restrictions loaded:', result);
           })
           .catch(function(e) {
             console.error('[JG MAP] Failed to check restrictions:', e);
@@ -724,7 +716,6 @@
           if (cached && cachedVersion) {
             var data = JSON.parse(cached);
             lastModified = parseInt(cachedVersion);
-            console.log('[JG MAP] Loaded from cache:', data.length, 'points, version:', lastModified);
             return data;
           }
         } catch (e) {
@@ -739,7 +730,6 @@
           localStorage.setItem(CACHE_KEY, JSON.stringify(data));
           localStorage.setItem(CACHE_VERSION_KEY, version.toString());
           lastModified = version;
-          console.log('[JG MAP] Saved to cache:', data.length, 'points, version:', version);
         } catch (e) {
           console.error('[JG MAP] Cache save error:', e);
         }
@@ -757,13 +747,11 @@
       }
 
       function refreshData(force) {
-        console.log('[JG MAP] refreshData() called, current points:', ALL.length, 'force:', force);
 
         // If not forced, check for updates first
         if (!force) {
           return checkForUpdates().then(function(updateInfo) {
             if (!updateInfo.hasUpdates) {
-              console.log('[JG MAP] No updates available, skipping refresh');
 
               // Update pending count in title for moderators
               if (CFG.isAdmin && updateInfo.pendingCount > 0) {
@@ -773,7 +761,6 @@
               return ALL;
             }
 
-            console.log('[JG MAP] Updates available, fetching...');
             return fetchAndProcessPoints(updateInfo.lastModified);
           });
         }
@@ -783,7 +770,6 @@
 
       function fetchAndProcessPoints(version) {
         return fetchPoints().then(function(data) {
-          console.log('[JG MAP] Fetched', data ? data.length : 0, 'points from server');
 
           ALL = (data || []).map(function(r) {
             return {
@@ -821,27 +807,22 @@
             saveToCache(ALL, version);
           }
 
-          console.log('[JG MAP] Processed', ALL.length, 'points, calling apply(true) to skip fitBounds');
           apply(true); // Skip fitBounds on refresh to preserve user's view
-          console.log('[JG MAP] apply() completed');
 
           // Check if URL contains jg_view_point parameter (from dashboard Gallery)
           var urlParams = new URLSearchParams(window.location.search);
           var viewPointId = urlParams.get('jg_view_point');
           if (viewPointId) {
-            console.log('[JG MAP] Found jg_view_point parameter:', viewPointId);
             // Find point by ID
             var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewPointId); });
             if (targetPoint) {
-              console.log('[JG MAP] Found point, zooming and opening modal');
               // Zoom to point
-              myMap.setView([targetPoint.lat, targetPoint.lng], 15);
+              map.setView([targetPoint.lat, targetPoint.lng], 15);
               // Wait a bit for markers to render, then open modal
               setTimeout(function() {
                 openViewModal(targetPoint);
               }, 500);
             } else {
-              console.log('[JG MAP] Point not found with ID:', viewPointId);
             }
           }
 
@@ -852,7 +833,6 @@
       var isInitialLoad = true; // Track if this is the first load
 
       function draw(list, skipFitBounds) {
-        console.log('[JG MAP] draw() wywołane, punktów:', list ? list.length : 0, 'skipFitBounds:', skipFitBounds);
 
         if (!list || list.length === 0) {
           showMap();
@@ -860,7 +840,6 @@
         }
 
         if (!cluster) {
-          console.log('[JG MAP] Tworzę cluster...');
           try {
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
@@ -926,7 +905,6 @@
           return;
         }
 
-        console.log('[JG MAP] Prawidłowych punktów:', validPoints);
 
         var addedCount = 0;
 
@@ -959,7 +937,6 @@
             if (p.sponsored) {
               m.addTo(map);
               m.setZIndexOffset(10000); // Always on top
-              console.log('[JG MAP] Added sponsored marker:', p.title);
             } else if (clusterReady && cluster) {
               cluster.addLayer(m);
             } else {
@@ -972,7 +949,6 @@
           }
         });
 
-        console.log('[JG MAP] Dodano markerów:', addedCount);
 
         // Only fit bounds on initial load, not on refresh
         if (!skipFitBounds && isInitialLoad && bounds.length > 0) {
@@ -988,7 +964,6 @@
                 animate: false
               });
 
-              console.log('[JG MAP] Initial fitBounds wykonany, zoom:', map.getZoom());
               isInitialLoad = false;
             } catch (e) {
               console.error('[JG MAP] Błąd fitBounds:', e);
@@ -1439,7 +1414,6 @@
               return refreshData(true);
             })
             .then(function() {
-              console.log('[JG MAP] Reports handled (keep), data refreshed');
             })
             .catch(function(err) {
               handleMsg.textContent = err.message || 'Błąd';
@@ -1465,7 +1439,6 @@
               return refreshData(true);
             })
             .then(function() {
-              console.log('[JG MAP] Reports handled (remove), data refreshed');
             })
             .catch(function(err) {
               handleMsg.textContent = err.message || 'Błąd';
@@ -1769,7 +1742,6 @@
               return refreshData(true);
             })
             .then(function() {
-              console.log('[JG MAP] Sponsored updated, data refreshed');
               close(modalStatus);
               close(modalView);
               // Find and reopen the point to show updated state
@@ -1855,7 +1827,6 @@
               return refreshData(true);
             })
             .then(function() {
-              console.log('[JG MAP] Status changed, data refreshed');
               close(modalStatus);
               close(modalView);
               var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
@@ -1875,11 +1846,24 @@
 
       function openDetails(p) {
         var imgs = Array.isArray(p.images) ? p.images : [];
-        var gal = imgs.map(function(img) {
+
+        // Check if user can delete images (admin/moderator or own place)
+        var canDeleteImages = CFG.isAdmin || (CFG.currentUserId && CFG.currentUserId === p.author_id);
+
+        var gal = imgs.map(function(img, idx) {
           // Support both old format (string URL) and new format (object with thumb/full)
           var thumbUrl = typeof img === 'object' ? (img.thumb || img.full) : img;
           var fullUrl = typeof img === 'object' ? (img.full || img.thumb) : img;
-          return '<img src="' + esc(thumbUrl) + '" data-full="' + esc(fullUrl) + '" alt="" loading="lazy" style="cursor:pointer">';
+
+          var deleteBtn = '';
+          if (canDeleteImages) {
+            deleteBtn = '<button class="jg-delete-image" data-point-id="' + p.id + '" data-image-index="' + idx + '" style="position:absolute;top:4px;right:4px;background:rgba(220,38,38,0.9);color:#fff;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:10" title="Usuń zdjęcie">×</button>';
+          }
+
+          return '<div style="position:relative;display:inline-block">' +
+                 deleteBtn +
+                 '<img src="' + esc(thumbUrl) + '" data-full="' + esc(fullUrl) + '" alt="" loading="lazy" style="cursor:pointer">' +
+                 '</div>';
         }).join('');
 
         var dateInfo = (p.date && p.date.human) ? '<div class="jg-date-info">Dodano: ' + esc(p.date.human) + '</div>' : '';
@@ -2020,7 +2004,6 @@
         var myVote = p.my_vote || '';
 
         // DEBUG: Log edit button visibility logic (keeping for verification)
-        console.log('[JG MAP] Edit button check (FIXED):', {
           isAdmin: CFG.isAdmin,
           currentUserId: CFG.currentUserId,
           currentUserIdConverted: +CFG.currentUserId,
@@ -2043,7 +2026,6 @@
 
         // Debug logging for deletion button visibility
         if (canEdit && !CFG.isAdmin) {
-          console.log('[JG MAP] Deletion button check:', {
             canEdit: canEdit,
             isAdmin: CFG.isAdmin,
             isDeletionRequested: p.is_deletion_requested,
@@ -2067,6 +2049,35 @@
             img.addEventListener('click', function() {
               var fullUrl = this.getAttribute('data-full') || this.src;
               openLightbox(fullUrl);
+            });
+          });
+
+          // Add delete image handlers
+          g.querySelectorAll('.jg-delete-image').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var pointId = this.getAttribute('data-point-id');
+              var imageIndex = this.getAttribute('data-image-index');
+
+              if (!confirm('Czy na pewno chcesz usunąć to zdjęcie?')) {
+                return;
+              }
+
+              btn.disabled = true;
+              btn.textContent = '...';
+
+              api('jg_delete_image', { point_id: pointId, image_index: imageIndex })
+                .then(function(result) {
+                  close(modalView);
+                  refreshData(true).then(function() {
+                    alert('Zdjęcie zostało usunięte');
+                  });
+                })
+                .catch(function(err) {
+                  btn.disabled = false;
+                  btn.textContent = '×';
+                  alert('Błąd: ' + (err.message || 'Nie udało się usunąć zdjęcia'));
+                });
             });
           });
         }
@@ -2249,7 +2260,6 @@
                   return refreshData(true);
                 })
                 .then(function() {
-                  console.log('[JG MAP] Author visibility toggled, data refreshed');
                   close(modalView);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
@@ -2286,7 +2296,6 @@
                   return refreshData(true);
                 })
                 .then(function() {
-                  console.log('[JG MAP] Admin note updated, data refreshed');
                   close(modalView);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
@@ -2315,7 +2324,6 @@
                   return refreshData(true);
                 })
                 .then(function() {
-                  console.log('[JG MAP] Edit approved, data refreshed');
                   close(modalView);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
@@ -2345,7 +2353,6 @@
                   return refreshData(true);
                 })
                 .then(function() {
-                  console.log('[JG MAP] Edit rejected, data refreshed');
                   close(modalView);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
@@ -2378,7 +2385,6 @@
                   return refreshData(true);
                 })
                 .then(function() {
-                  console.log('[JG MAP] Deletion approved, data refreshed');
                   close(modalView);
                   alert('Miejsce zostało usunięte');
                 })
@@ -2403,7 +2409,6 @@
                   return refreshData(true);
                 })
                 .then(function() {
-                  console.log('[JG MAP] Deletion rejected, data refreshed');
                   close(modalView);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
@@ -2495,9 +2500,7 @@
       setTimeout(function() {
         var searchInput = document.getElementById('jg-search-input');
         if (searchInput) {
-          console.log('[JG MAP] Search input attached');
           searchInput.addEventListener('input', function() {
-            console.log('[JG MAP] Search query:', this.value);
             apply(true); // Skip fitBounds on filter change
           });
         } else {
@@ -2509,10 +2512,8 @@
       setTimeout(function() {
         if (elFilters) {
           var allCheckboxes = elFilters.querySelectorAll('input[type="checkbox"]');
-          console.log('[JG MAP] Found', allCheckboxes.length, 'filter checkboxes');
           allCheckboxes.forEach(function(cb) {
             cb.addEventListener('change', function() {
-              console.log('[JG MAP] Filter changed:', this.getAttribute('data-type') || this.getAttribute('data-promo') ? 'promo' : 'unknown');
               apply(true); // Skip fitBounds on filter change
             });
           });
@@ -2524,7 +2525,6 @@
       // Always fetch fresh data on load (no cache)
       refreshData(true)
         .then(function() {
-          console.log('[JG MAP] Initial data load complete');
           // Check user restrictions and display banner if needed
           checkUserRestrictions();
         })
@@ -2534,10 +2534,8 @@
 
       // Smart auto-refresh: Check for updates every 15 seconds, only fetch if needed
       var refreshInterval = setInterval(function() {
-        console.log('[JG MAP] Auto-refresh triggered - checking for updates');
 
         refreshData(false).then(function() {
-          console.log('[JG MAP] Auto-refresh complete');
         }).catch(function(err) {
           console.error('[JG MAP] Auto-refresh error:', err);
         });
@@ -2546,7 +2544,6 @@
       // Also check for updates when page becomes visible again
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
-          console.log('[JG MAP] Page visible - checking for updates');
           refreshData(false);
         }
       });
