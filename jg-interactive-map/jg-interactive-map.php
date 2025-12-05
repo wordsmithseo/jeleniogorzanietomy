@@ -77,6 +77,23 @@ class JG_Interactive_Map {
 
         // Load text domain
         add_action('init', array($this, 'load_textdomain'));
+
+        // Set email sender name
+        add_filter('wp_mail_from_name', array($this, 'set_email_from_name'));
+    }
+
+    /**
+     * Set email sender name for all emails from this plugin
+     */
+    public function set_email_from_name($from_name) {
+        // Only modify emails from this plugin (check if we're in a plugin context)
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        foreach ($backtrace as $trace) {
+            if (isset($trace['file']) && strpos($trace['file'], 'jg-interactive-map') !== false) {
+                return 'Jeleniogorzanie to my';
+            }
+        }
+        return $from_name;
     }
 
     /**
