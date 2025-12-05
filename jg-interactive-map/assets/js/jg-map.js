@@ -833,6 +833,27 @@
             }
           }
 
+          // Check if URL contains jg_view_reports parameter (from dashboard Reports)
+          var viewReportsId = urlParams.get('jg_view_reports');
+          if (viewReportsId && CFG.isAdmin) {
+            // Find point by ID
+            var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewReportsId); });
+            if (targetPoint) {
+              // Zoom to point
+              map.setView([targetPoint.lat, targetPoint.lng], 18);
+              // Wait a bit for markers to render, then open reports modal
+              setTimeout(function() {
+                openDetails(targetPoint);
+                setTimeout(function() {
+                  openReportsListModal(targetPoint);
+                }, 300);
+              }, 500);
+              // Remove parameter from URL to avoid reopening on refresh
+              var newUrl = window.location.pathname + window.location.search.replace(/[?&]jg_view_reports=\d+/, '').replace(/^\&/, '?');
+              window.history.replaceState({}, '', newUrl);
+            }
+          }
+
           return ALL;
         });
       }
@@ -1483,9 +1504,10 @@
             '<label style="display:block;margin-bottom:8px">Uzasadnienie (opcjonalne):<br>' +
             '<textarea id="admin-reason" rows="3" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></textarea>' +
             '</label>' +
-            '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-            '<button class="jg-btn jg-btn--ghost" id="btn-keep">Pozostaw</button>' +
-            '<button class="jg-btn jg-btn--danger" id="btn-remove">Usuń</button>' +
+            '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' +
+            '<button class="jg-btn jg-btn--ghost" id="btn-keep">Pozostaw zgłoszenia</button>' +
+            '<button class="jg-btn jg-btn--primary" id="btn-edit-place">Edytuj miejsce</button>' +
+            '<button class="jg-btn jg-btn--danger" id="btn-remove">Usuń miejsce</button>' +
             '</div>' +
             '<div id="handle-msg" style="margin-top:8px;font-size:12px"></div>' +
             '</div>' +
@@ -1518,6 +1540,11 @@
               handleMsg.style.color = '#b91c1c';
               this.disabled = false;
             }.bind(this));
+          };
+
+          qs('#btn-edit-place', modalReportsList).onclick = function() {
+            close(modalReportsList);
+            openEditModal(p);
           };
 
           qs('#btn-remove', modalReportsList).onclick = function() {

@@ -157,7 +157,8 @@ class JG_Map_Ajax_Handlers {
             $author_email = '';
 
             if ($author) {
-                if (!$point['author_hidden']) {
+                // Show author name if not hidden OR if current user is the author
+                if (!$point['author_hidden'] || $current_user_id == $point['author_id']) {
                     $author_name = $author->display_name;
                 }
                 $author_email = $author->user_email;
@@ -234,13 +235,13 @@ class JG_Map_Ajax_Handlers {
                         'new_type' => $new_values['type'] ?? '',
                         'new_content' => $new_values['content'] ?? '',
                         'new_images' => $new_images,
-                        'edited_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
+                        'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
                     );
                 } else if ($pending_history['action_type'] === 'delete_request') {
                     $deletion_info = array(
                         'history_id' => intval($pending_history['id']),
                         'reason' => $new_values['reason'] ?? '',
-                        'requested_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
+                        'requested_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
                     );
                 }
             }
@@ -269,7 +270,7 @@ class JG_Map_Ajax_Handlers {
                 'my_vote' => $my_vote,
                 'date' => array(
                     'raw' => $point['created_at'],
-                    'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu'
+                    'human' => human_time_diff(strtotime($point['created_at']), current_time('timestamp')) . ' temu'
                 ),
                 'admin' => $is_admin ? array(
                     'author_name_real' => $author ? $author->display_name : '',
@@ -865,7 +866,7 @@ class JG_Map_Ajax_Handlers {
             $formatted_reports[] = array(
                 'user_name' => $user_name,
                 'reason' => $report['reason'] ?: 'Brak powodu',
-                'date' => human_time_diff(strtotime(get_date_from_gmt($report['created_at'])), current_time('timestamp')) . ' temu'
+                'date' => human_time_diff(strtotime($report['created_at']), current_time('timestamp')) . ' temu'
             );
         }
 

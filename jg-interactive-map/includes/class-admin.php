@@ -744,7 +744,7 @@ class JG_Map_Admin {
                         <tr>
                             <td><strong><?php echo esc_html($report['point_title']); ?></strong></td>
                             <td><span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px"><?php echo $report['report_count']; ?></span></td>
-                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($report['created_at'])), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime($report['created_at']), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_reports=<?php echo $report['point_id']; ?>" class="button">Zobacz szczegóły</a>
                             </td>
