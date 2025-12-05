@@ -171,6 +171,15 @@ class JG_Map_Admin {
 
         add_submenu_page(
             'jg-map',
+            'Kosz',
+            'Kosz',
+            $cap,
+            'jg-map-trash',
+            array($this, 'render_trash_page')
+        );
+
+        add_submenu_page(
+            'jg-map',
             'Galeria zdjęć',
             'Galeria zdjęć',
             'manage_options',
@@ -992,6 +1001,128 @@ class JG_Map_Admin {
                 });
             });
             </script>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render trash page
+     */
+    public function render_trash_page() {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        $points = $wpdb->get_results(
+            "SELECT * FROM $table WHERE status = 'trash' ORDER BY updated_at DESC LIMIT 100",
+            ARRAY_A
+        );
+
+        ?>
+        <div class="wrap">
+            <h1>Kosz (ostatnie 100 usuniętych miejsc)</h1>
+
+            <?php if (!empty($points)): ?>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tytuł</th>
+                        <th>Typ</th>
+                        <th>Autor</th>
+                        <th>Data usunięcia</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($points as $point):
+                        $author = get_userdata($point['author_id']);
+                        ?>
+                        <tr>
+                            <td><?php echo $point['id']; ?></td>
+                            <td><strong><?php echo esc_html($point['title']); ?></strong></td>
+                            <td><?php echo esc_html($point['type']); ?></td>
+                            <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
+                            <td><?php echo human_time_diff(strtotime($point['updated_at']), current_time('timestamp')); ?> temu</td>
+                            <td>
+                                <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button button-small" target="_blank">Zobacz</a>
+                                <button class="button button-small button-primary jg-restore-point" data-id="<?php echo $point['id']; ?>">Przywróć</button>
+                                <button class="button button-small jg-permanent-delete" data-id="<?php echo $point['id']; ?>" style="color:#b32d2e">Usuń na stałe</button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <script>
+            jQuery(document).ready(function($) {
+                // Restore point
+                $('.jg-restore-point').on('click', function() {
+                    if (!confirm('Przywrócić to miejsce?')) return;
+
+                    var btn = $(this);
+                    var pointId = btn.data('id');
+                    btn.prop('disabled', true).text('Przywracanie...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_restore_point',
+                            post_id: pointId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Miejsce przywrócone!');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
+                                btn.prop('disabled', false).text('Przywróć');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd połączenia');
+                            btn.prop('disabled', false).text('Przywróć');
+                        }
+                    });
+                });
+
+                // Permanent delete
+                $('.jg-permanent-delete').on('click', function() {
+                    if (!confirm('NA PEWNO PERMANENTNIE usunąć to miejsce? Tej operacji NIE MOŻNA cofnąć!')) return;
+
+                    var btn = $(this);
+                    var pointId = btn.data('id');
+                    btn.prop('disabled', true).text('Usuwanie...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_permanent_delete',
+                            post_id: pointId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Miejsce usunięte permanentnie!');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
+                                btn.prop('disabled', false).text('Usuń na stałe');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd połączenia');
+                            btn.prop('disabled', false).text('Usuń na stałe');
+                        }
+                    });
+                });
+            });
+            </script>
+            <?php else: ?>
+            <p>Kosz jest pusty! 🎉</p>
+            <?php endif; ?>
         </div>
         <?php
     }
