@@ -362,6 +362,24 @@ class JG_Map_Database {
     }
 
     /**
+     * Check if user already reported a point
+     */
+    public static function has_user_reported($point_id, $user_id) {
+        global $wpdb;
+        $table = self::get_reports_table();
+
+        $count = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE point_id = %d AND user_id = %d AND status = 'pending'",
+                $point_id,
+                $user_id
+            )
+        );
+
+        return $count > 0;
+    }
+
+    /**
      * Add report
      */
     public static function add_report($point_id, $user_id, $email, $reason) {

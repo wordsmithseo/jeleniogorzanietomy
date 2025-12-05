@@ -1442,7 +1442,13 @@
       }
 
       function openReportModal(p) {
-        open(modalReport, '<header><h3>Zgłoś do moderacji</h3><button class="jg-close" id="rpt-close">&times;</button></header><form id="report-form" class="jg-grid"><input type="email" name="email" placeholder="Twój e-mail (opcjonalnie)" style="padding:8px;border:1px solid #ddd;border-radius:8px"><textarea name="reason" rows="3" placeholder="Powód (opcjonalnie)" style="padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><div style="display:flex;gap:8px;justify-content:flex-end"><button class="jg-btn" type="submit">Zgłoś</button></div><div id="report-msg" style="font-size:12px;color:#555"></div></form>');
+        // Check if user is logged in
+        if (!CFG.isLoggedIn) {
+          alert('Musisz być zalogowany aby zgłosić miejsce');
+          return;
+        }
+
+        open(modalReport, '<header><h3>Zgłoś do moderacji</h3><button class="jg-close" id="rpt-close">&times;</button></header><form id="report-form" class="jg-grid"><textarea name="reason" rows="3" placeholder="Powód zgłoszenia*" required style="padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><small style="color:#666">Powód zgłoszenia jest wymagany</small><div style="display:flex;gap:8px;justify-content:flex-end"><button class="jg-btn" type="submit">Zgłoś</button></div><div id="report-msg" style="font-size:12px;color:#555"></div></form>');
         qs('#rpt-close', modalReport).onclick = function() {
           close(modalReport);
         };
@@ -1452,14 +1458,24 @@
 
         f.onsubmit = function(e) {
           e.preventDefault();
+
+          // Validate reason is not empty
+          if (!f.reason.value || !f.reason.value.trim()) {
+            msg.textContent = 'Powód zgłoszenia jest wymagany';
+            msg.style.color = '#b91c1c';
+            return;
+          }
+
           msg.textContent = 'Wysyłanie...';
+          msg.style.color = '#555';
+
           reportPoint({
             post_id: p.id,
-            email: (f.email.value || ''),
-            reason: (f.reason.value || '')
+            reason: f.reason.value.trim()
           })
           .then(function() {
             msg.textContent = 'Dziękujemy!';
+            msg.style.color = '#15803d';
             f.reset();
             setTimeout(function() {
               close(modalReport);
@@ -1467,6 +1483,7 @@
           })
           .catch(function(err) {
             msg.textContent = (err && err.message) || 'Błąd';
+            msg.style.color = '#b91c1c';
           });
         };
       }
@@ -1543,8 +1560,7 @@
           };
 
           qs('#btn-edit-place', modalReportsList).onclick = function() {
-            close(modalReportsList);
-            openEditModal(p);
+            openEditModal(p, true); // Pass true to indicate editing from reports
           };
 
           qs('#btn-remove', modalReportsList).onclick = function() {
@@ -1577,9 +1593,9 @@
         });
       }
 
-      function openEditModal(p) {
-        // Check if user is banned or has edit_places restriction
-        if (window.JG_USER_RESTRICTIONS) {
+      function openEditModal(p, fromReports) {
+        // Check if user is banned or has edit_places restriction (skip for admin editing from reports)
+        if (!fromReports && window.JG_USER_RESTRICTIONS) {
           if (window.JG_USER_RESTRICTIONS.is_banned) {
             alert('Nie możesz edytować miejsc - Twoje konto jest zbanowane.');
             return;
@@ -1722,7 +1738,8 @@
 
           // Use FormData to support file uploads
           var fd = new FormData(form);
-          fd.append('action', 'jg_update_point');
+          // Use special endpoint when editing from reports modal
+          fd.append('action', fromReports ? 'jg_admin_edit_and_resolve_reports' : 'jg_update_point');
           fd.append('_ajax_nonce', CFG.nonce);
           fd.append('post_id', p.id);
 
@@ -1748,8 +1765,15 @@
             msg.style.color = '#15803d';
             setTimeout(function() {
               close(modalEdit);
+              if (fromReports) {
+                close(modalReportsList);
+              }
               refreshData(true).then(function() {
-                alert('Wysłano do moderacji. Zmiany będą widoczne po zaakceptowaniu.');
+                if (fromReports) {
+                  alert('Miejsce edytowane i zgłoszenia zamknięte!');
+                } else {
+                  alert('Wysłano do moderacji. Zmiany będą widoczne po zaakceptowaniu.');
+                }
               });
             }, 300);
           })

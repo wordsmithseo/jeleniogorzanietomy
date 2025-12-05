@@ -47,6 +47,7 @@ class JG_Map_Ajax_Handlers {
         // Admin actions
         add_action('wp_ajax_jg_get_reports', array($this, 'get_reports'));
         add_action('wp_ajax_jg_handle_reports', array($this, 'handle_reports'));
+        add_action('wp_ajax_jg_admin_edit_and_resolve_reports', array($this, 'admin_edit_and_resolve_reports'));
         add_action('wp_ajax_jg_admin_toggle_promo', array($this, 'admin_toggle_promo'));
         add_action('wp_ajax_jg_admin_toggle_author', array($this, 'admin_toggle_author'));
         add_action('wp_ajax_jg_admin_update_note', array($this, 'admin_update_note'));
@@ -790,15 +791,36 @@ class JG_Map_Ajax_Handlers {
     public function report_point() {
         $this->verify_nonce();
 
-        $user_id = is_user_logged_in() ? get_current_user_id() : null;
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany aby zgłosić miejsce'));
+            exit;
+        }
+
+        $user_id = get_current_user_id();
         $point_id = intval($_POST['post_id'] ?? 0);
-        $email = sanitize_email($_POST['email'] ?? '');
         $reason = sanitize_textarea_field($_POST['reason'] ?? '');
 
         if (!$point_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
             exit;
         }
+
+        // Check if reason is provided
+        if (empty(trim($reason))) {
+            wp_send_json_error(array('message' => 'Powód zgłoszenia jest wymagany'));
+            exit;
+        }
+
+        // Check if user already reported this point
+        if (JG_Map_Database::has_user_reported($point_id, $user_id)) {
+            wp_send_json_error(array('message' => 'To miejsce zostało już przez Ciebie zgłoszone'));
+            exit;
+        }
+
+        // Get email from logged in user
+        $user = get_userdata($user_id);
+        $email = $user ? $user->user_email : '';
 
         JG_Map_Database::add_report($point_id, $user_id, $email, $reason);
 
@@ -887,7 +909,7 @@ class JG_Map_Ajax_Handlers {
         $action_type = sanitize_text_field($_POST['action_type'] ?? '');
         $reason = sanitize_textarea_field($_POST['reason'] ?? '');
 
-        if (!$point_id || !in_array($action_type, array('keep', 'remove'))) {
+        if (!$point_id || !in_array($action_type, array('keep', 'remove', 'edit'))) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
             exit;
         }
@@ -896,15 +918,107 @@ class JG_Map_Ajax_Handlers {
             // Move to trash
             JG_Map_Database::update_point($point_id, array('status' => 'trash'));
             $message = 'Miejsce usunięte';
+            $decision_text = 'usunięte';
+        } else if ($action_type === 'edit') {
+            // Place was edited
+            $message = 'Miejsce edytowane';
+            $decision_text = 'edytowane i pozostawione';
         } else {
             // Keep the point
             $message = 'Miejsce pozostawione';
+            $decision_text = 'pozostawione bez zmian';
         }
+
+        // Notify reporters about decision
+        $this->notify_reporters_decision($point_id, $decision_text, $reason);
 
         // Resolve reports
         JG_Map_Database::resolve_reports($point_id, $reason);
 
         wp_send_json_success(array('message' => $message));
+    }
+
+    /**
+     * Edit place and resolve reports (admin only)
+     * This is used when editing a reported place - edits are applied immediately and reports are closed
+     */
+    public function admin_edit_and_resolve_reports() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+        $title = sanitize_text_field($_POST['title'] ?? '');
+        $type = sanitize_text_field($_POST['type'] ?? '');
+        $content = wp_kses_post($_POST['content'] ?? '');
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        if (empty($title)) {
+            wp_send_json_error(array('message' => 'Tytuł jest wymagany'));
+            exit;
+        }
+
+        // Handle image uploads
+        $new_images = array();
+        $has_files = !empty($_FILES['images']) && (
+            (is_array($_FILES['images']['name']) && !empty($_FILES['images']['name'][0])) ||
+            (!is_array($_FILES['images']['name']) && !empty($_FILES['images']['name']))
+        );
+
+        if ($has_files) {
+            $user_id = get_current_user_id();
+            $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
+            $existing_count = count($existing_images);
+            $is_sponsored = (bool)$point['is_promo'];
+            $max_total_images = $is_sponsored ? 12 : 6;
+            $max_new_images = max(0, $max_total_images - $existing_count);
+
+            if ($max_new_images > 0) {
+                $upload_result = $this->handle_image_upload($_FILES['images'], $max_new_images, $user_id);
+
+                if (isset($upload_result['error'])) {
+                    wp_send_json_error(array('message' => $upload_result['error']));
+                    exit;
+                }
+
+                $new_images = $upload_result['images'];
+            }
+        }
+
+        // Update point directly (no moderation needed)
+        $update_data = array(
+            'title' => $title,
+            'type' => $type,
+            'content' => $content,
+            'excerpt' => wp_trim_words($content, 20)
+        );
+
+        // Add new images to existing images
+        if (!empty($new_images)) {
+            $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
+            $all_images = array_merge($existing_images, $new_images);
+
+            // Limit based on sponsored status
+            $is_sponsored = (bool)$point['is_promo'];
+            $max_images = $is_sponsored ? 12 : 6;
+            $all_images = array_slice($all_images, 0, $max_images);
+
+            $update_data['images'] = json_encode($all_images);
+        }
+
+        JG_Map_Database::update_point($point_id, $update_data);
+
+        // Notify reporters that place was edited
+        $this->notify_reporters_decision($point_id, 'edytowane i pozostawione', '');
+
+        // Resolve reports
+        JG_Map_Database::resolve_reports($point_id, 'Miejsce zostało edytowane przez moderatora');
+
+        wp_send_json_success(array('message' => 'Miejsce edytowane i zgłoszenia zamknięte'));
     }
 
     /**
@@ -1324,6 +1438,36 @@ class JG_Map_Ajax_Handlers {
         $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
 
         wp_mail($admin_email, $subject, $message);
+    }
+
+    /**
+     * Notify reporters about decision
+     */
+    private function notify_reporters_decision($point_id, $decision, $admin_reason) {
+        $point = JG_Map_Database::get_point($point_id);
+        $reports = JG_Map_Database::get_reports($point_id);
+
+        if (empty($reports)) {
+            return;
+        }
+
+        $subject = '[JG Map] Decyzja dotycząca zgłoszonego miejsca';
+        $message = "Zgłoszone przez Ciebie miejsce \"{$point['title']}\" zostało {$decision}.\n\n";
+
+        if ($admin_reason) {
+            $message .= "Uzasadnienie moderatora: {$admin_reason}\n\n";
+        }
+
+        $message .= "Dziękujemy za zgłoszenie!\n";
+
+        // Send email to all unique reporters
+        $sent_emails = array();
+        foreach ($reports as $report) {
+            if (!empty($report['email']) && !in_array($report['email'], $sent_emails)) {
+                wp_mail($report['email'], $subject, $message);
+                $sent_emails[] = $report['email'];
+            }
+        }
     }
 
     /**
