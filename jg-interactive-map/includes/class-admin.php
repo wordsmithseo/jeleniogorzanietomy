@@ -173,7 +173,7 @@ class JG_Map_Admin {
             'jg-map',
             'Kosz',
             'Kosz',
-            $cap,
+            'manage_options',
             'jg-map-trash',
             array($this, 'render_trash_page')
         );
