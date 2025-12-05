@@ -259,7 +259,14 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
-        return $wpdb->delete($table, array('id' => $point_id));
+        // Move to trash instead of permanently deleting
+        return $wpdb->update(
+            $table,
+            array('status' => 'trash'),
+            array('id' => $point_id),
+            array('%s'),
+            array('%d')
+        );
     }
 
     /**
