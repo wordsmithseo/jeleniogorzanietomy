@@ -791,7 +791,13 @@ class JG_Map_Ajax_Handlers {
     public function report_point() {
         $this->verify_nonce();
 
-        $user_id = is_user_logged_in() ? get_current_user_id() : null;
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany aby zgłosić miejsce'));
+            exit;
+        }
+
+        $user_id = get_current_user_id();
         $point_id = intval($_POST['post_id'] ?? 0);
         $reason = sanitize_textarea_field($_POST['reason'] ?? '');
 
@@ -800,14 +806,21 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Get email from logged in user
-        $email = '';
-        if ($user_id) {
-            $user = get_userdata($user_id);
-            if ($user) {
-                $email = $user->user_email;
-            }
+        // Check if reason is provided
+        if (empty(trim($reason))) {
+            wp_send_json_error(array('message' => 'Powód zgłoszenia jest wymagany'));
+            exit;
         }
+
+        // Check if user already reported this point
+        if (JG_Map_Database::has_user_reported($point_id, $user_id)) {
+            wp_send_json_error(array('message' => 'To miejsce zostało już przez Ciebie zgłoszone'));
+            exit;
+        }
+
+        // Get email from logged in user
+        $user = get_userdata($user_id);
+        $email = $user ? $user->user_email : '';
 
         JG_Map_Database::add_report($point_id, $user_id, $email, $reason);
 

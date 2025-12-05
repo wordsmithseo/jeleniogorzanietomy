@@ -1442,7 +1442,13 @@
       }
 
       function openReportModal(p) {
-        open(modalReport, '<header><h3>Zgłoś do moderacji</h3><button class="jg-close" id="rpt-close">&times;</button></header><form id="report-form" class="jg-grid"><textarea name="reason" rows="3" placeholder="Powód (opcjonalnie)" style="padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><div style="display:flex;gap:8px;justify-content:flex-end"><button class="jg-btn" type="submit">Zgłoś</button></div><div id="report-msg" style="font-size:12px;color:#555"></div></form>');
+        // Check if user is logged in
+        if (!CFG.isLoggedIn) {
+          alert('Musisz być zalogowany aby zgłosić miejsce');
+          return;
+        }
+
+        open(modalReport, '<header><h3>Zgłoś do moderacji</h3><button class="jg-close" id="rpt-close">&times;</button></header><form id="report-form" class="jg-grid"><textarea name="reason" rows="3" placeholder="Powód zgłoszenia*" required style="padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><small style="color:#666">Powód zgłoszenia jest wymagany</small><div style="display:flex;gap:8px;justify-content:flex-end"><button class="jg-btn" type="submit">Zgłoś</button></div><div id="report-msg" style="font-size:12px;color:#555"></div></form>');
         qs('#rpt-close', modalReport).onclick = function() {
           close(modalReport);
         };
@@ -1452,13 +1458,24 @@
 
         f.onsubmit = function(e) {
           e.preventDefault();
+
+          // Validate reason is not empty
+          if (!f.reason.value || !f.reason.value.trim()) {
+            msg.textContent = 'Powód zgłoszenia jest wymagany';
+            msg.style.color = '#b91c1c';
+            return;
+          }
+
           msg.textContent = 'Wysyłanie...';
+          msg.style.color = '#555';
+
           reportPoint({
             post_id: p.id,
-            reason: (f.reason.value || '')
+            reason: f.reason.value.trim()
           })
           .then(function() {
             msg.textContent = 'Dziękujemy!';
+            msg.style.color = '#15803d';
             f.reset();
             setTimeout(function() {
               close(modalReport);
@@ -1466,6 +1483,7 @@
           })
           .catch(function(err) {
             msg.textContent = (err && err.message) || 'Błąd';
+            msg.style.color = '#b91c1c';
           });
         };
       }
