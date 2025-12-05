@@ -809,6 +809,8 @@
               is_pending: !!r.is_pending,
               is_edit: !!r.is_edit,
               edit_info: r.edit_info || null,
+              is_deletion_requested: !!r.is_deletion_requested,
+              deletion_info: r.deletion_info || null,
               reports_count: +(r.reports_count || 0)
             };
           });
