@@ -821,13 +821,15 @@
             // Find point by ID
             var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewPointId); });
             if (targetPoint) {
-              // Zoom to point
-              map.setView([targetPoint.lat, targetPoint.lng], 15);
+              // Zoom to point with maximum zoom
+              map.setView([targetPoint.lat, targetPoint.lng], 18);
               // Wait a bit for markers to render, then open modal
               setTimeout(function() {
-                openViewModal(targetPoint);
+                openDetails(targetPoint);
               }, 500);
-            } else {
+              // Remove parameter from URL to avoid reopening on refresh
+              var newUrl = window.location.pathname + window.location.search.replace(/[?&]jg_view_point=\d+/, '').replace(/^\&/, '?');
+              window.history.replaceState({}, '', newUrl);
             }
           }
 
@@ -1068,6 +1070,7 @@
           '<button class="jg-btn jg-btn--ghost" id="btn-ban-add-events">Blokada dodawania wydarzeń</button>' +
           '<button class="jg-btn jg-btn--ghost" id="btn-ban-add-trivia">Blokada dodawania ciekawostek</button>' +
           '<button class="jg-btn jg-btn--ghost" id="btn-ban-edit-places">Blokada edycji własnych miejsc</button>' +
+          '<button class="jg-btn jg-btn--ghost" id="btn-ban-photo-upload">Blokada przesyłania zdjęć</button>' +
           '</div>' +
           '</div>' +
           '<div style="background:#f0f9ff;border:2px solid #3b82f6;border-radius:8px;padding:12px;margin-bottom:16px">' +
@@ -1090,6 +1093,27 @@
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
           '<button class="jg-btn jg-btn--ghost" id="btn-reset-limits" style="font-size:11px;padding:6px">Reset (5/5)</button>' +
           '<button class="jg-btn" id="btn-set-limits" style="font-size:11px;padding:6px;background:#3b82f6;color:#fff">Ustaw</button>' +
+          '</div>' +
+          '</div>' +
+          '<div style="background:#f8fafc;border:2px solid #8b5cf6;border-radius:8px;padding:12px;margin-bottom:16px">' +
+          '<div style="font-weight:700;margin-bottom:8px;color:#6b21a8">📸 Miesięczny limit zdjęć</div>' +
+          '<p style="font-size:11px;color:#666;margin:4px 0 12px 0">Reset 1-go każdego miesiąca</p>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">' +
+          '<div style="text-align:center;background:#fff;padding:8px;border-radius:6px">' +
+          '<div style="font-size:24px;font-weight:700;color:#8b5cf6" id="uphoto-used">-</div>' +
+          '<div style="font-size:10px;color:#666">wykorzystano (MB)</div>' +
+          '</div>' +
+          '<div style="text-align:center;background:#fff;padding:8px;border-radius:6px">' +
+          '<div style="font-size:24px;font-weight:700;color:#3b82f6" id="uphoto-limit">-</div>' +
+          '<div style="font-size:10px;color:#666">limit (MB)</div>' +
+          '</div>' +
+          '</div>' +
+          '<div style="margin-bottom:8px">' +
+          '<input type="number" id="uphoto-limit-input" min="1" max="10000" value="100" placeholder="Limit (MB)" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:4px;font-size:12px">' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          '<button class="jg-btn jg-btn--ghost" id="btn-reset-photo-limit" style="font-size:11px;padding:6px">Reset (100MB)</button>' +
+          '<button class="jg-btn" id="btn-set-photo-limit" style="font-size:11px;padding:6px;background:#8b5cf6;color:#fff">Ustaw</button>' +
           '</div>' +
           '</div>' +
           '<div id="user-actions-msg" style="font-size:12px;margin-top:12px"></div>' +
@@ -1123,7 +1147,8 @@
                 'add_places': 'dodawanie miejsc',
                 'add_events': 'wydarzenia',
                 'add_trivia': 'ciekawostki',
-                'edit_places': 'edycja miejsc'
+                'edit_places': 'edycja miejsc',
+                'photo_upload': 'przesyłanie zdjęć'
               };
               statusHtml += '<br><strong>Aktywne blokady:</strong><br>';
               result.restrictions.forEach(function(r) {
@@ -1149,6 +1174,18 @@
           .catch(function(err) {
             qs('#ulimit-places', modalAuthor).textContent = '?';
             qs('#ulimit-reports', modalAuthor).textContent = '?';
+          });
+
+        // Fetch monthly photo limit
+        api('jg_admin_get_user_photo_limit', { user_id: userId })
+          .then(function(result) {
+            qs('#uphoto-used', modalAuthor).textContent = result.used_mb;
+            qs('#uphoto-limit', modalAuthor).textContent = result.limit_mb;
+            qs('#uphoto-limit-input', modalAuthor).value = result.limit_mb;
+          })
+          .catch(function(err) {
+            qs('#uphoto-used', modalAuthor).textContent = '?';
+            qs('#uphoto-limit', modalAuthor).textContent = '?';
           });
 
         qs('#user-actions-close', modalAuthor).onclick = function() {
@@ -1233,7 +1270,8 @@
           'btn-ban-add-places': { type: 'add_places', label: 'dodawania miejsc' },
           'btn-ban-add-events': { type: 'add_events', label: 'dodawania wydarzeń' },
           'btn-ban-add-trivia': { type: 'add_trivia', label: 'dodawania ciekawostek' },
-          'btn-ban-edit-places': { type: 'edit_places', label: 'edycji własnych miejsc' }
+          'btn-ban-edit-places': { type: 'edit_places', label: 'edycji własnych miejsc' },
+          'btn-ban-photo-upload': { type: 'photo_upload', label: 'przesyłania zdjęć' }
         };
 
         for (var btnId in banActions) {
@@ -1316,6 +1354,61 @@
               qs('#ulimit-places-input', modalAuthor).value = 5;
               qs('#ulimit-reports-input', modalAuthor).value = 5;
               msg.textContent = 'Limity zresetowane!';
+              msg.style.color = '#15803d';
+              this.disabled = false;
+            }.bind(this))
+            .catch(function(err) {
+              msg.textContent = 'Błąd: ' + (err.message || '?');
+              msg.style.color = '#b91c1c';
+              this.disabled = false;
+            }.bind(this));
+        };
+
+        // Set custom photo limit
+        qs('#btn-set-photo-limit', modalAuthor).onclick = function() {
+          var photoLimit = parseInt(qs('#uphoto-limit-input', modalAuthor).value);
+
+          if (isNaN(photoLimit) || photoLimit < 1) {
+            msg.textContent = 'Nieprawidłowa wartość limitu zdjęć (min. 1MB)';
+            msg.style.color = '#b91c1c';
+            return;
+          }
+
+          this.disabled = true;
+          msg.textContent = 'Ustawianie limitu zdjęć...';
+
+          api('jg_admin_set_user_photo_limit', {
+            user_id: userId,
+            limit_mb: photoLimit
+          })
+            .then(function(result) {
+              qs('#uphoto-limit', modalAuthor).textContent = result.limit_mb;
+              msg.textContent = 'Limit zdjęć ustawiony!';
+              msg.style.color = '#15803d';
+              this.disabled = false;
+            }.bind(this))
+            .catch(function(err) {
+              msg.textContent = 'Błąd: ' + (err.message || '?');
+              msg.style.color = '#b91c1c';
+              this.disabled = false;
+            }.bind(this));
+        };
+
+        // Reset photo limit to default
+        qs('#btn-reset-photo-limit', modalAuthor).onclick = function() {
+          if (!confirm('Zresetować miesięczny limit zdjęć do domyślnego (100MB)?')) return;
+
+          this.disabled = true;
+          msg.textContent = 'Resetowanie limitu zdjęć...';
+
+          api('jg_admin_reset_user_photo_limit', {
+            user_id: userId
+          })
+            .then(function(result) {
+              qs('#uphoto-used', modalAuthor).textContent = result.used_mb;
+              qs('#uphoto-limit', modalAuthor).textContent = result.limit_mb;
+              qs('#uphoto-limit-input', modalAuthor).value = result.limit_mb;
+              msg.textContent = 'Limit zdjęć zresetowany do 100MB!';
               msg.style.color = '#15803d';
               this.disabled = false;
             }.bind(this))
