@@ -827,6 +827,9 @@ class JG_Map_Ajax_Handlers {
         // Notify admin
         $this->notify_admin_new_report($point_id);
 
+        // Notify reporter (confirmation email)
+        $this->notify_reporter_confirmation($point_id, $email);
+
         wp_send_json_success(array('message' => 'Zgłoszenie wysłane'));
     }
 
@@ -1438,6 +1441,25 @@ class JG_Map_Ajax_Handlers {
         $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
 
         wp_mail($admin_email, $subject, $message);
+    }
+
+    /**
+     * Notify reporter about confirmation of report
+     */
+    private function notify_reporter_confirmation($point_id, $email) {
+        if (empty($email)) {
+            return;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+
+        $subject = '[JG Map] Potwierdzenie zgłoszenia miejsca';
+        $message = "Dziękujemy za zgłoszenie miejsca \"{$point['title']}\".\n\n";
+        $message .= "Twoje zgłoszenie zostało przyjęte i zostanie rozpatrzone przez moderatorów.\n";
+        $message .= "Otrzymasz powiadomienie email o decyzji moderatora.\n\n";
+        $message .= "Dziękujemy za pomoc w utrzymaniu jakości naszej mapy!\n";
+
+        wp_mail($email, $subject, $message);
     }
 
     /**
