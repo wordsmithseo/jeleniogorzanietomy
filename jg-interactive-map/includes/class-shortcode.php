@@ -43,7 +43,7 @@ class JG_Map_Shortcode {
                 'lat' => '50.904',
                 'lng' => '15.734',
                 'zoom' => '13',
-                'height' => '560px'
+                'height' => '1100px'
             ),
             $atts,
             'jg_map'
