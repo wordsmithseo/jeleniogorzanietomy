@@ -720,7 +720,7 @@ class JG_Map_Ajax_Handlers {
         // Notify admin
         $admin_email = get_option('admin_email');
         if ($admin_email) {
-            $subject = '[JG Map] Nowe zgłoszenie usunięcia miejsca';
+            $subject = 'Portal Jeleniogórzanie to my - Nowe zgłoszenie usunięcia miejsca';
             $message = "Użytkownik zgłosił chęć usunięcia miejsca:\n\n";
             $message .= "Tytuł: {$point['title']}\n";
             $message .= "Powód: {$reason}\n\n";
@@ -1419,7 +1419,7 @@ class JG_Map_Ajax_Handlers {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
 
-        $subject = '[JG Map] Nowy punkt do moderacji';
+        $subject = 'Portal Jeleniogórzanie to my - Nowy punkt do moderacji';
         $message = "Nowy punkt został dodany i czeka na moderację:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
         $message .= "Typ: {$point['type']}\n";
@@ -1435,7 +1435,7 @@ class JG_Map_Ajax_Handlers {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
 
-        $subject = '[JG Map] Nowe zgłoszenie miejsca';
+        $subject = 'Portal Jeleniogórzanie to my - Nowe zgłoszenie miejsca';
         $message = "Miejsce zostało zgłoszone:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
         $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
@@ -1453,7 +1453,7 @@ class JG_Map_Ajax_Handlers {
 
         $point = JG_Map_Database::get_point($point_id);
 
-        $subject = '[JG Map] Potwierdzenie zgłoszenia miejsca';
+        $subject = 'Portal Jeleniogórzanie to my - Potwierdzenie zgłoszenia miejsca';
         $message = "Dziękujemy za zgłoszenie miejsca \"{$point['title']}\".\n\n";
         $message .= "Twoje zgłoszenie zostało przyjęte i zostanie rozpatrzone przez moderatorów.\n";
         $message .= "Otrzymasz powiadomienie email o decyzji moderatora.\n\n";
@@ -1473,7 +1473,7 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        $subject = '[JG Map] Decyzja dotycząca zgłoszonego miejsca';
+        $subject = 'Portal Jeleniogórzanie to my - Decyzja dotycząca zgłoszonego miejsca';
         $message = "Zgłoszone przez Ciebie miejsce \"{$point['title']}\" zostało {$decision}.\n\n";
 
         if ($admin_reason) {
@@ -1500,7 +1500,7 @@ class JG_Map_Ajax_Handlers {
         $author = get_userdata($point['author_id']);
 
         if ($author && $author->user_email) {
-            $subject = '[JG Map] Twój punkt został zaakceptowany';
+            $subject = 'Portal Jeleniogórzanie to my - Twój punkt został zaakceptowany';
             $message = "Twój punkt \"{$point['title']}\" został zaakceptowany i jest teraz widoczny na mapie.";
 
             wp_mail($author->user_email, $subject, $message);
@@ -1515,7 +1515,7 @@ class JG_Map_Ajax_Handlers {
         $author = get_userdata($point['author_id']);
 
         if ($author && $author->user_email) {
-            $subject = '[JG Map] Twój punkt został odrzucony';
+            $subject = 'Portal Jeleniogórzanie to my - Twój punkt został odrzucony';
             $message = "Twój punkt \"{$point['title']}\" został odrzucony.\n\n";
             if ($reason) {
                 $message .= "Powód: $reason\n";
@@ -1532,7 +1532,7 @@ class JG_Map_Ajax_Handlers {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
 
-        $subject = '[JG Map] Edycja miejsca do zatwierdzenia';
+        $subject = 'Portal Jeleniogórzanie to my - Edycja miejsca do zatwierdzenia';
         $message = "Użytkownik zaktualizował miejsce:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
         $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
@@ -1701,7 +1701,7 @@ class JG_Map_Ajax_Handlers {
         $point = JG_Map_Database::get_point($history['point_id']);
         $author = get_userdata($point['author_id']);
         if ($author && $author->user_email) {
-            $subject = '[JG Map] Twoja edycja została zaakceptowana';
+            $subject = 'Portal Jeleniogórzanie to my - Twoja edycja została zaakceptowana';
             $message = "Twoja edycja miejsca \"{$point['title']}\" została zaakceptowana.";
             wp_mail($author->user_email, $subject, $message);
         }
@@ -1740,7 +1740,7 @@ class JG_Map_Ajax_Handlers {
         $point = JG_Map_Database::get_point($history['point_id']);
         $author = get_userdata($point['author_id']);
         if ($author && $author->user_email) {
-            $subject = '[JG Map] Twoja edycja została odrzucona';
+            $subject = 'Portal Jeleniogórzanie to my - Twoja edycja została odrzucona';
             $message = "Twoja edycja miejsca \"{$point['title']}\" została odrzucona.\n\n";
             if ($reason) {
                 $message .= "Powód: $reason\n";
@@ -1805,7 +1805,7 @@ class JG_Map_Ajax_Handlers {
         // Notify author
         $author = get_userdata($point['author_id']);
         if ($author && $author->user_email) {
-            $subject = '[JG Map] Twoje zgłoszenie usunięcia zostało zaakceptowane';
+            $subject = 'Portal Jeleniogórzanie to my - Twoje zgłoszenie usunięcia zostało zaakceptowane';
             $message = "Miejsce \"{$point['title']}\" zostało usunięte zgodnie z Twoim zgłoszeniem.";
             wp_mail($author->user_email, $subject, $message);
         }
@@ -1850,7 +1850,7 @@ class JG_Map_Ajax_Handlers {
         if ($point) {
             $author = get_userdata($point['author_id']);
             if ($author && $author->user_email) {
-                $subject = '[JG Map] Twoje zgłoszenie usunięcia zostało odrzucone';
+                $subject = 'Portal Jeleniogórzanie to my - Twoje zgłoszenie usunięcia zostało odrzucone';
                 $message = "Twoje zgłoszenie usunięcia miejsca \"{$point['title']}\" zostało odrzucone.\n\n";
                 if ($reason) {
                     $message .= "Powód: $reason\n";
