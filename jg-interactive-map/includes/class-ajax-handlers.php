@@ -1500,9 +1500,20 @@ class JG_Map_Ajax_Handlers {
         // Send email to all unique reporters
         $sent_emails = array();
         foreach ($reports as $report) {
-            if (!empty($report['email']) && !in_array($report['email'], $sent_emails)) {
-                wp_mail($report['email'], $subject, $message);
-                $sent_emails[] = $report['email'];
+            // Get email from user account if user_id exists, otherwise use email field
+            $email = null;
+            if (!empty($report['user_id'])) {
+                $user = get_userdata($report['user_id']);
+                if ($user && $user->user_email) {
+                    $email = $user->user_email;
+                }
+            } elseif (!empty($report['email'])) {
+                $email = $report['email'];
+            }
+
+            if ($email && !in_array($email, $sent_emails)) {
+                wp_mail($email, $subject, $message);
+                $sent_emails[] = $email;
             }
         }
     }
@@ -2072,7 +2083,7 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Delete point permanently (admin only)
+     * Move point to trash (admin only)
      */
     public function admin_delete_point() {
         $this->verify_nonce();
@@ -2091,37 +2102,15 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Return daily limit to user before deleting
-        $author_id = intval($point['author_id']);
-        $point_type = $point['type'];
-
-        // Determine limit category and decrement
-        if ($point_type === 'miejsce' || $point_type === 'ciekawostka') {
-            $this->decrement_daily_limit($author_id, 'places');
-        } elseif ($point_type === 'zgloszenie') {
-            $this->decrement_daily_limit($author_id, 'reports');
-        }
-
-        global $wpdb;
-        $points_table = JG_Map_Database::get_points_table();
-        $votes_table = JG_Map_Database::get_votes_table();
-        $reports_table = JG_Map_Database::get_reports_table();
-        $history_table = JG_Map_Database::get_history_table();
-
-        // Delete related data
-        $wpdb->delete($votes_table, array('point_id' => $point_id), array('%d'));
-        $wpdb->delete($reports_table, array('point_id' => $point_id), array('%d'));
-        $wpdb->delete($history_table, array('point_id' => $point_id), array('%d'));
-
-        // Delete the point itself
-        $deleted = $wpdb->delete($points_table, array('id' => $point_id), array('%d'));
+        // Move to trash
+        $deleted = JG_Map_Database::delete_point($point_id);
 
         if ($deleted === false) {
             wp_send_json_error(array('message' => 'Błąd usuwania'));
             exit;
         }
 
-        wp_send_json_success(array('message' => 'Miejsce usunięte'));
+        wp_send_json_success(array('message' => 'Miejsce przeniesione do kosza'));
     }
 
     /**
