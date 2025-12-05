@@ -512,7 +512,13 @@
           reportsHtml = '<span class="jg-reports-counter">' + p.reports_count + '</span>';
         }
 
-        var iconHtml = '<span class="jg-pin-inner">' + lbl + '</span>' + reportsHtml + labelHtml;
+        // Add deletion request indicator
+        var deletionHtml = '';
+        if (CFG.isAdmin && p.is_deletion_requested) {
+          deletionHtml = '<span class="jg-deletion-badge">✕</span>';
+        }
+
+        var iconHtml = '<span class="jg-pin-inner">' + lbl + '</span>' + reportsHtml + deletionHtml + labelHtml;
 
         return L.divIcon({
           className: c,
