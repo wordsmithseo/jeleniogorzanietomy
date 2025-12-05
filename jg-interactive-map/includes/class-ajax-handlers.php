@@ -61,6 +61,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'), 1);
         add_action('wp_ajax_jg_admin_update_sponsored', array($this, 'admin_update_sponsored'), 1);
         add_action('wp_ajax_jg_admin_delete_point', array($this, 'admin_delete_point'), 1);
+        add_action('wp_ajax_jg_admin_restore_point', array($this, 'admin_restore_point'), 1);
+        add_action('wp_ajax_jg_admin_permanent_delete', array($this, 'admin_permanent_delete'), 1);
         add_action('wp_ajax_jg_admin_ban_user', array($this, 'admin_ban_user'), 1);
         add_action('wp_ajax_jg_admin_unban_user', array($this, 'admin_unban_user'), 1);
         add_action('wp_ajax_jg_admin_toggle_user_restriction', array($this, 'admin_toggle_user_restriction'), 1);
@@ -716,6 +718,19 @@ class JG_Map_Ajax_Handlers {
         );
 
         JG_Map_Database::add_history($point_id, $user_id, 'delete_request', $old_values, $new_values);
+
+        // Update point columns for dashboard display
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+        $wpdb->update(
+            $points_table,
+            array(
+                'is_deletion_requested' => 1,
+                'deletion_reason' => $reason,
+                'deletion_requested_at' => current_time('mysql')
+            ),
+            array('id' => $point_id)
+        );
 
         // Notify admin
         $admin_email = get_option('admin_email');
@@ -1759,27 +1774,43 @@ class JG_Map_Ajax_Handlers {
         $this->check_admin();
 
         $history_id = intval($_POST['history_id'] ?? 0);
+        $point_id = intval($_POST['post_id'] ?? 0);
 
-        if (!$history_id) {
+        global $wpdb;
+
+        // Support both history_id (from modal) and post_id (from dashboard)
+        if ($history_id) {
+            $table = JG_Map_Database::get_history_table();
+            $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
+
+            if (!$history) {
+                wp_send_json_error(array('message' => 'Historia nie istnieje'));
+                exit;
+            }
+
+            if ($history['action_type'] !== 'delete_request') {
+                wp_send_json_error(array('message' => 'Nieprawidłowy typ akcji'));
+                exit;
+            }
+
+            $point_id = $history['point_id'];
+        } else if ($point_id) {
+            // Find history entry for this point
+            $table = JG_Map_Database::get_history_table();
+            $history = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE point_id = %d AND action_type = 'delete_request' AND status = 'pending' ORDER BY id DESC LIMIT 1",
+                $point_id
+            ), ARRAY_A);
+
+            if ($history) {
+                $history_id = $history['id'];
+            }
+        } else {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
             exit;
         }
 
-        global $wpdb;
-        $table = JG_Map_Database::get_history_table();
-        $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
-
-        if (!$history) {
-            wp_send_json_error(array('message' => 'Historia nie istnieje'));
-            exit;
-        }
-
-        if ($history['action_type'] !== 'delete_request') {
-            wp_send_json_error(array('message' => 'Nieprawidłowy typ akcji'));
-            exit;
-        }
-
-        $point = JG_Map_Database::get_point($history['point_id']);
+        $point = JG_Map_Database::get_point($point_id);
         if (!$point) {
             wp_send_json_error(array('message' => 'Punkt nie istnieje'));
             exit;
@@ -1797,10 +1828,12 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Delete the point
-        JG_Map_Database::delete_point($history['point_id']);
+        JG_Map_Database::delete_point($point_id);
 
-        // Approve history
-        JG_Map_Database::approve_history($history_id, get_current_user_id());
+        // Approve history if exists
+        if ($history_id) {
+            JG_Map_Database::approve_history($history_id, get_current_user_id());
+        }
 
         // Notify author
         $author = get_userdata($point['author_id']);
@@ -1821,32 +1854,62 @@ class JG_Map_Ajax_Handlers {
         $this->check_admin();
 
         $history_id = intval($_POST['history_id'] ?? 0);
+        $point_id = intval($_POST['post_id'] ?? 0);
         $reason = sanitize_textarea_field($_POST['reason'] ?? '');
 
-        if (!$history_id) {
+        global $wpdb;
+
+        // Support both history_id (from modal) and post_id (from dashboard)
+        if ($history_id) {
+            $table = JG_Map_Database::get_history_table();
+            $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
+
+            if (!$history) {
+                wp_send_json_error(array('message' => 'Historia nie istnieje'));
+                exit;
+            }
+
+            if ($history['action_type'] !== 'delete_request') {
+                wp_send_json_error(array('message' => 'Nieprawidłowy typ akcji'));
+                exit;
+            }
+
+            $point_id = $history['point_id'];
+        } else if ($point_id) {
+            // Find history entry for this point
+            $table = JG_Map_Database::get_history_table();
+            $history = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE point_id = %d AND action_type = 'delete_request' AND status = 'pending' ORDER BY id DESC LIMIT 1",
+                $point_id
+            ), ARRAY_A);
+
+            if ($history) {
+                $history_id = $history['id'];
+            }
+        } else {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
             exit;
         }
 
-        global $wpdb;
-        $table = JG_Map_Database::get_history_table();
-        $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
+        // Clear deletion flags from point
+        $points_table = JG_Map_Database::get_points_table();
+        $wpdb->update(
+            $points_table,
+            array(
+                'is_deletion_requested' => 0,
+                'deletion_reason' => null,
+                'deletion_requested_at' => null
+            ),
+            array('id' => $point_id)
+        );
 
-        if (!$history) {
-            wp_send_json_error(array('message' => 'Historia nie istnieje'));
-            exit;
+        // Reject history if exists
+        if ($history_id) {
+            JG_Map_Database::reject_history($history_id, get_current_user_id());
         }
-
-        if ($history['action_type'] !== 'delete_request') {
-            wp_send_json_error(array('message' => 'Nieprawidłowy typ akcji'));
-            exit;
-        }
-
-        // Reject history
-        JG_Map_Database::reject_history($history_id, get_current_user_id());
 
         // Notify author
-        $point = JG_Map_Database::get_point($history['point_id']);
+        $point = JG_Map_Database::get_point($point_id);
         if ($point) {
             $author = get_userdata($point['author_id']);
             if ($author && $author->user_email) {
@@ -2059,6 +2122,98 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success(array('message' => 'Miejsce usunięte'));
+    }
+
+    /**
+     * Restore point from trash (admin only)
+     */
+    public function admin_restore_point() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        if ($point['status'] !== 'trash') {
+            wp_send_json_error(array('message' => 'Punkt nie znajduje się w koszu'));
+            exit;
+        }
+
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+
+        // Restore point to published status
+        $updated = $wpdb->update(
+            $points_table,
+            array('status' => 'published'),
+            array('id' => $point_id),
+            array('%s'),
+            array('%d')
+        );
+
+        if ($updated === false) {
+            wp_send_json_error(array('message' => 'Błąd przywracania'));
+            exit;
+        }
+
+        wp_send_json_success(array('message' => 'Miejsce przywrócone'));
+    }
+
+    /**
+     * Permanently delete point from trash (admin only)
+     */
+    public function admin_permanent_delete() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        if ($point['status'] !== 'trash') {
+            wp_send_json_error(array('message' => 'Można usunąć tylko punkty z kosza'));
+            exit;
+        }
+
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+        $votes_table = JG_Map_Database::get_votes_table();
+        $reports_table = JG_Map_Database::get_reports_table();
+        $history_table = JG_Map_Database::get_history_table();
+
+        // Delete related data
+        $wpdb->delete($votes_table, array('point_id' => $point_id), array('%d'));
+        $wpdb->delete($reports_table, array('point_id' => $point_id), array('%d'));
+        $wpdb->delete($history_table, array('point_id' => $point_id), array('%d'));
+
+        // Delete the point itself
+        $deleted = $wpdb->delete($points_table, array('id' => $point_id), array('%d'));
+
+        if ($deleted === false) {
+            wp_send_json_error(array('message' => 'Błąd usuwania'));
+            exit;
+        }
+
+        wp_send_json_success(array('message' => 'Miejsce trwale usunięte'));
     }
 
     /**
