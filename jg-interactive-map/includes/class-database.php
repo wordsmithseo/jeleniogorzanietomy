@@ -147,6 +147,18 @@ class JG_Map_Database {
         if (empty($deletion_requested_at)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN deletion_requested_at datetime DEFAULT NULL AFTER deletion_reason");
         }
+
+        // Check if website column exists (for sponsored points)
+        $website = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'website'");
+        if (empty($website)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN website varchar(255) DEFAULT NULL AFTER promo_until");
+        }
+
+        // Check if phone column exists (for sponsored points)
+        $phone = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'phone'");
+        if (empty($phone)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN phone varchar(50) DEFAULT NULL AFTER website");
+        }
     }
 
     /**

@@ -261,6 +261,8 @@ class JG_Map_Ajax_Handlers {
                 'type' => $point['type'],
                 'sponsored' => $is_sponsored,
                 'sponsored_until' => $sponsored_until,
+                'website' => $point['website'] ?? null,
+                'phone' => $point['phone'] ?? null,
                 'status' => $point['status'],
                 'status_label' => $status_label,
                 'report_status' => $point['report_status'],
@@ -1838,8 +1840,20 @@ class JG_Map_Ajax_Handlers {
             $this->decrement_daily_limit($author_id, 'reports');
         }
 
-        // Delete the point
+        // Delete the point (move to trash)
         JG_Map_Database::delete_point($point_id);
+
+        // Clear deletion request flags from point
+        $points_table = JG_Map_Database::get_points_table();
+        $wpdb->update(
+            $points_table,
+            array(
+                'is_deletion_requested' => 0,
+                'deletion_reason' => null,
+                'deletion_requested_at' => null
+            ),
+            array('id' => $point_id)
+        );
 
         // Approve history if exists
         if ($history_id) {
@@ -2021,8 +2035,10 @@ class JG_Map_Ajax_Handlers {
         $point_id = intval($_POST['post_id'] ?? 0);
         $is_sponsored = intval($_POST['is_sponsored'] ?? 0);
         $sponsored_until = sanitize_text_field($_POST['sponsored_until'] ?? '');
+        $website = sanitize_text_field($_POST['website'] ?? '');
+        $phone = sanitize_text_field($_POST['phone'] ?? '');
 
-        error_log('JG MAP SPONSORED: Received request - point_id=' . $point_id . ', is_sponsored=' . $is_sponsored . ', sponsored_until=' . $sponsored_until);
+        error_log('JG MAP SPONSORED: Received request - point_id=' . $point_id . ', is_sponsored=' . $is_sponsored . ', sponsored_until=' . $sponsored_until . ', website=' . $website . ', phone=' . $phone);
 
         if (!$point_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -2057,10 +2073,12 @@ class JG_Map_Ajax_Handlers {
             $table,
             array(
                 'is_promo' => $is_sponsored,
-                'promo_until' => $sponsored_until_value
+                'promo_until' => $sponsored_until_value,
+                'website' => !empty($website) ? $website : null,
+                'phone' => !empty($phone) ? $phone : null
             ),
             array('id' => $point_id),
-            array('%d', '%s'),  // format for data
+            array('%d', '%s', '%s', '%s'),  // format for data
             array('%d')         // format for where
         );
 
@@ -2078,7 +2096,9 @@ class JG_Map_Ajax_Handlers {
         wp_send_json_success(array(
             'message' => 'Sponsorowanie zaktualizowane',
             'is_sponsored' => (bool)$updated_point['is_promo'],
-            'sponsored_until' => $updated_point['promo_until'] ?? null
+            'sponsored_until' => $updated_point['promo_until'] ?? null,
+            'website' => $updated_point['website'] ?? null,
+            'phone' => $updated_point['phone'] ?? null
         ));
     }
 
