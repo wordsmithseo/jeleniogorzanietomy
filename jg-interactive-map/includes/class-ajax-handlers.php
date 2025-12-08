@@ -261,6 +261,8 @@ class JG_Map_Ajax_Handlers {
                 'type' => $point['type'],
                 'sponsored' => $is_sponsored,
                 'sponsored_until' => $sponsored_until,
+                'website' => $point['website'] ?? null,
+                'phone' => $point['phone'] ?? null,
                 'status' => $point['status'],
                 'status_label' => $status_label,
                 'report_status' => $point['report_status'],
@@ -1838,8 +1840,20 @@ class JG_Map_Ajax_Handlers {
             $this->decrement_daily_limit($author_id, 'reports');
         }
 
-        // Delete the point
+        // Delete the point (move to trash)
         JG_Map_Database::delete_point($point_id);
+
+        // Clear deletion request flags from point
+        $points_table = JG_Map_Database::get_points_table();
+        $wpdb->update(
+            $points_table,
+            array(
+                'is_deletion_requested' => 0,
+                'deletion_reason' => null,
+                'deletion_requested_at' => null
+            ),
+            array('id' => $point_id)
+        );
 
         // Approve history if exists
         if ($history_id) {
