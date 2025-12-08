@@ -373,6 +373,12 @@ class JG_Map_Admin {
                         if ($old_values['content'] !== $new_values['content']) {
                             $changes[] = 'Opis';
                         }
+                        if (isset($old_values['website']) && isset($new_values['website']) && $old_values['website'] !== $new_values['website']) {
+                            $changes[] = 'Strona internetowa';
+                        }
+                        if (isset($old_values['phone']) && isset($new_values['phone']) && $old_values['phone'] !== $new_values['phone']) {
+                            $changes[] = 'Telefon';
+                        }
 
                         // Calculate priority badge
                         $report_count = intval($edit['report_count']);
@@ -444,6 +450,12 @@ class JG_Map_Admin {
                     }
                     if (old_values.content !== new_values.content) {
                         html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Opis</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee;max-width:300px;word-wrap:break-word">' + old_values.content + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5;max-width:300px;word-wrap:break-word">' + new_values.content + '</td></tr>';
+                    }
+                    if (old_values.website !== undefined && new_values.website !== undefined && old_values.website !== new_values.website) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Strona internetowa</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.website || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.website || '(brak)') + '</td></tr>';
+                    }
+                    if (old_values.phone !== undefined && new_values.phone !== undefined && old_values.phone !== new_values.phone) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Telefon</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.phone || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.phone || '(brak)') + '</td></tr>';
                     }
                     html += '</table>';
 

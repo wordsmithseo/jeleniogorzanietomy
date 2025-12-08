@@ -1664,9 +1664,28 @@
             var sponsoredContactHtml = '';
             if (isSponsored) {
               sponsoredContactHtml = '<div class="cols-2" style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin:12px 0">' +
-                '<strong style="display:block;margin-bottom:8px;color:#92400e">📋 Dane kontaktowe (punkt sponsorowany)</strong>' +
-                '<label style="display:block;margin-bottom:8px">🌐 Strona internetowa <input type="text" name="website" value="' + esc(p.website || '') + '" placeholder="np. jeleniagora.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
-                '<label style="display:block">📞 Telefon <input type="text" name="phone" value="' + esc(p.phone || '') + '" placeholder="np. 123 456 789" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '<strong style="display:block;margin-bottom:12px;color:#92400e">📋 Dane kontaktowe (punkt sponsorowany)</strong>' +
+                '<label style="display:block;margin-bottom:8px">🌐 Strona internetowa <input type="text" name="website" id="edit-website-input" value="' + esc(p.website || '') + '" placeholder="np. jeleniagora.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '<label style="display:block;margin-bottom:16px">📞 Telefon <input type="text" name="phone" id="edit-phone-input" value="' + esc(p.phone || '') + '" placeholder="np. 123 456 789" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '<div style="border-top:2px solid #f59e0b;padding-top:12px;margin-top:12px">' +
+                '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer">' +
+                '<input type="checkbox" id="edit-cta-enabled-checkbox" ' + (p.cta_enabled ? 'checked' : '') + ' style="width:20px;height:20px">' +
+                '<strong style="color:#92400e">🎯 Włącz przycisk Call-to-Action (CTA)</strong>' +
+                '</label>' +
+                '<div id="edit-cta-type-selection" style="' + (p.cta_enabled ? '' : 'display:none;') + 'margin-left:28px">' +
+                '<label style="display:block;margin-bottom:8px;color:#92400e"><strong>Typ przycisku:</strong></label>' +
+                '<div style="display:flex;gap:8px;flex-direction:column">' +
+                '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #d97706;border-radius:6px;cursor:pointer">' +
+                '<input type="radio" name="cta_type" value="call" ' + (p.cta_type === 'call' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+                '<div><strong>📞 Zadzwoń teraz</strong></div>' +
+                '</label>' +
+                '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #d97706;border-radius:6px;cursor:pointer">' +
+                '<input type="radio" name="cta_type" value="website" ' + (p.cta_type === 'website' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+                '<div><strong>🌐 Wejdź na naszą stronę</strong></div>' +
+                '</label>' +
+                '</div>' +
+                '</div>' +
+                '</div>' +
                 '</div>';
             }
 
@@ -1746,6 +1765,18 @@
               imagesPreview.style.display = 'none';
             }
           });
+        }
+
+        // CTA checkbox toggle for sponsored points
+        if (isSponsored) {
+          var ctaEnabledCheckbox = qs('#edit-cta-enabled-checkbox', modalEdit);
+          var ctaTypeSelection = qs('#edit-cta-type-selection', modalEdit);
+
+          if (ctaEnabledCheckbox && ctaTypeSelection) {
+            ctaEnabledCheckbox.addEventListener('change', function() {
+              ctaTypeSelection.style.display = ctaEnabledCheckbox.checked ? '' : 'none';
+            });
+          }
         }
 
         form.onsubmit = function(e) {
