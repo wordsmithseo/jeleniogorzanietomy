@@ -237,6 +237,14 @@ class JG_Map_Ajax_Handlers {
                         'new_title' => $new_values['title'] ?? '',
                         'new_type' => $new_values['type'] ?? '',
                         'new_content' => $new_values['content'] ?? '',
+                        'prev_website' => $old_values['website'] ?? null,
+                        'new_website' => $new_values['website'] ?? null,
+                        'prev_phone' => $old_values['phone'] ?? null,
+                        'new_phone' => $new_values['phone'] ?? null,
+                        'prev_cta_enabled' => $old_values['cta_enabled'] ?? null,
+                        'new_cta_enabled' => $new_values['cta_enabled'] ?? null,
+                        'prev_cta_type' => $old_values['cta_type'] ?? null,
+                        'new_cta_type' => $new_values['cta_type'] ?? null,
                         'new_images' => $new_images,
                         'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp')) . ' temu'
                     );

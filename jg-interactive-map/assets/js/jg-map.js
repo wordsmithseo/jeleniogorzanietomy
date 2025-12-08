@@ -194,8 +194,10 @@
       tileLayer.addTo(map);
 
       var cluster = null;
+      var promoCluster = null; // Separate cluster for sponsored points
       var markers = [];
       var clusterReady = false;
+      var promoClusterReady = false;
       var pendingData = null;
 
       function showMap() {
@@ -208,6 +210,7 @@
       map.whenReady(function() {
         setTimeout(function() {
           try {
+            // Regular points cluster
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: 50,
@@ -221,6 +224,79 @@
 
             map.addLayer(cluster);
             clusterReady = true;
+
+            // Sponsored points cluster with gold background
+            promoCluster = L.markerClusterGroup({
+              showCoverageOnHover: false,
+              maxClusterRadius: 80, // Larger radius to group nearby sponsored points
+              spiderfyOnMaxZoom: false, // Don't spiderfy, show list instead
+              zoomToBoundsOnClick: false, // Don't zoom, show list instead
+              disableClusteringAtZoom: 17, // Keep clustering until very close
+              animate: true,
+              animateAddingMarkers: true,
+              iconCreateFunction: function(cluster) {
+                var childCount = cluster.getChildCount();
+                return L.divIcon({
+                  html: '<div><span>' + childCount + '</span></div>',
+                  className: 'marker-cluster marker-cluster-promo',
+                  iconSize: L.point(60, 60)
+                });
+              }
+            });
+
+            // Custom click handler for sponsored clusters - show alphabetical list
+            promoCluster.on('clusterclick', function(e) {
+              var cluster = e.layer;
+              var markers = cluster.getAllChildMarkers();
+
+              // Sort markers alphabetically by title
+              markers.sort(function(a, b) {
+                var titleA = (a.options.pointData && a.options.pointData.title) || '';
+                var titleB = (b.options.pointData && b.options.pointData.title) || '';
+                return titleA.localeCompare(titleB, 'pl');
+              });
+
+              // Build list HTML
+              var listHtml = '<div class="jg-promo-cluster-list">';
+              listHtml += '<div class="jg-promo-cluster-header">⭐ Miejsca sponsorowane (' + markers.length + ')</div>';
+              markers.forEach(function(marker) {
+                var p = marker.options.pointData;
+                if (p) {
+                  listHtml += '<div class="jg-promo-cluster-item" data-point-id="' + p.id + '">';
+                  listHtml += '<span class="jg-promo-cluster-item-icon">⭐</span>';
+                  listHtml += '<span class="jg-promo-cluster-item-title">' + esc(p.title || 'Bez nazwy') + '</span>';
+                  listHtml += '</div>';
+                }
+              });
+              listHtml += '</div>';
+
+              // Create popup
+              var popup = L.popup({
+                maxWidth: 300,
+                className: 'jg-promo-cluster-popup'
+              })
+              .setLatLng(cluster.getLatLng())
+              .setContent(listHtml)
+              .openOn(map);
+
+              // Add click handlers to list items
+              setTimeout(function() {
+                var items = document.querySelectorAll('.jg-promo-cluster-item');
+                items.forEach(function(item) {
+                  item.addEventListener('click', function() {
+                    var pointId = parseInt(item.getAttribute('data-point-id'));
+                    var point = ALL.find(function(p) { return p.id === pointId; });
+                    if (point) {
+                      map.closePopup();
+                      openDetails(point);
+                    }
+                  });
+                });
+              }, 50);
+            });
+
+            map.addLayer(promoCluster);
+            promoClusterReady = true;
 
             if (markers.length > 0) {
               markers.forEach(function(m) {
@@ -922,12 +998,85 @@
           } catch (e) {}
         }
 
-        // Remove all existing promo markers from map first
-        map.eachLayer(function(layer) {
-          if (layer.options && layer.options.isPromo) {
-            map.removeLayer(layer);
+        // Initialize or clear sponsored points cluster
+        if (!promoCluster) {
+          try {
+            promoCluster = L.markerClusterGroup({
+              showCoverageOnHover: false,
+              maxClusterRadius: 80,
+              spiderfyOnMaxZoom: false,
+              zoomToBoundsOnClick: false,
+              disableClusteringAtZoom: 17,
+              animate: true,
+              animateAddingMarkers: true,
+              iconCreateFunction: function(cluster) {
+                var childCount = cluster.getChildCount();
+                return L.divIcon({
+                  html: '<div><span>' + childCount + '</span></div>',
+                  className: 'marker-cluster marker-cluster-promo',
+                  iconSize: L.point(60, 60)
+                });
+              }
+            });
+
+            // Custom click handler for sponsored clusters
+            promoCluster.on('clusterclick', function(e) {
+              var cluster = e.layer;
+              var markers = cluster.getAllChildMarkers();
+
+              markers.sort(function(a, b) {
+                var titleA = (a.options.pointData && a.options.pointData.title) || '';
+                var titleB = (b.options.pointData && b.options.pointData.title) || '';
+                return titleA.localeCompare(titleB, 'pl');
+              });
+
+              var listHtml = '<div class="jg-promo-cluster-list">';
+              listHtml += '<div class="jg-promo-cluster-header">⭐ Miejsca sponsorowane (' + markers.length + ')</div>';
+              markers.forEach(function(marker) {
+                var p = marker.options.pointData;
+                if (p) {
+                  listHtml += '<div class="jg-promo-cluster-item" data-point-id="' + p.id + '">';
+                  listHtml += '<span class="jg-promo-cluster-item-icon">⭐</span>';
+                  listHtml += '<span class="jg-promo-cluster-item-title">' + esc(p.title || 'Bez nazwy') + '</span>';
+                  listHtml += '</div>';
+                }
+              });
+              listHtml += '</div>';
+
+              var popup = L.popup({
+                maxWidth: 300,
+                className: 'jg-promo-cluster-popup'
+              })
+              .setLatLng(cluster.getLatLng())
+              .setContent(listHtml)
+              .openOn(map);
+
+              setTimeout(function() {
+                var items = document.querySelectorAll('.jg-promo-cluster-item');
+                items.forEach(function(item) {
+                  item.addEventListener('click', function() {
+                    var pointId = parseInt(item.getAttribute('data-point-id'));
+                    var point = ALL.find(function(p) { return p.id === pointId; });
+                    if (point) {
+                      map.closePopup();
+                      openDetails(point);
+                    }
+                  });
+                });
+              }, 50);
+            });
+
+            map.addLayer(promoCluster);
+            promoClusterReady = true;
+          } catch (e) {
+            console.error('[JG MAP] Błąd tworzenia promo clustera:', e);
+            promoClusterReady = false;
           }
-        });
+        } else {
+          try {
+            promoCluster.clearLayers();
+          } catch (e) {}
+        }
 
         var bounds = [];
         var validPoints = 0;
@@ -958,10 +1107,11 @@
 
             if (isNaN(lat) || isNaN(lng)) return;
 
-            // Create marker with special option for promo
+            // Create marker with special option for promo and store point data
             var markerOptions = {
               icon: iconFor(p),
-              isPromo: !!p.sponsored
+              isPromo: !!p.sponsored,
+              pointData: p // Store point data for cluster list
             };
 
             var m = L.marker([lat, lng], markerOptions);
@@ -974,10 +1124,16 @@
               });
             })(p);
 
-            // Promo markers NEVER go into cluster - always added directly to map
+            // Add markers to appropriate cluster
             if (p.sponsored) {
-              m.addTo(map);
-              m.setZIndexOffset(10000); // Always on top
+              // Sponsored markers go into dedicated promo cluster with gold styling
+              if (promoClusterReady && promoCluster) {
+                promoCluster.addLayer(m);
+              } else {
+                m.addTo(map);
+                m.setZIndexOffset(10000);
+                markers.push(m);
+              }
             } else if (clusterReady && cluster) {
               cluster.addLayer(m);
             } else {
@@ -2205,6 +2361,31 @@
               (newContentText ? esc(newContentText) : '<em>brak</em>') +
               '</div>' +
               '</div>');
+          }
+
+          // Show website changes if present (for sponsored points)
+          if (p.edit_info.prev_website !== undefined && p.edit_info.new_website !== undefined && p.edit_info.prev_website !== p.edit_info.new_website) {
+            changes.push('<div><strong>🌐 Strona internetowa:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_website || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_website || '(brak)') + '</span></div>');
+          }
+
+          // Show phone changes if present (for sponsored points)
+          if (p.edit_info.prev_phone !== undefined && p.edit_info.new_phone !== undefined && p.edit_info.prev_phone !== p.edit_info.new_phone) {
+            changes.push('<div><strong>📞 Telefon:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_phone || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_phone || '(brak)') + '</span></div>');
+          }
+
+          // Show CTA changes if present (for sponsored points)
+          if (p.edit_info.prev_cta_enabled !== undefined && p.edit_info.new_cta_enabled !== undefined && p.edit_info.prev_cta_enabled !== p.edit_info.new_cta_enabled) {
+            var prevCta = p.edit_info.prev_cta_enabled ? 'Włączone' : 'Wyłączone';
+            var newCta = p.edit_info.new_cta_enabled ? 'Włączone' : 'Wyłączone';
+            changes.push('<div><strong>🎯 CTA włączone:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + prevCta + '</span><br><span style="color:#16a34a">→ ' + newCta + '</span></div>');
+          }
+
+          // Show CTA type changes if present (for sponsored points)
+          if (p.edit_info.prev_cta_type !== undefined && p.edit_info.new_cta_type !== undefined && p.edit_info.prev_cta_type !== p.edit_info.new_cta_type) {
+            var ctaTypeLabels = { call: '📞 Zadzwoń teraz', website: '🌐 Wejdź na stronę' };
+            var prevType = ctaTypeLabels[p.edit_info.prev_cta_type] || '(brak)';
+            var newType = ctaTypeLabels[p.edit_info.new_cta_type] || '(brak)';
+            changes.push('<div><strong>🎯 Typ CTA:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + prevType + '</span><br><span style="color:#16a34a">→ ' + newType + '</span></div>');
           }
 
           // Show new images if present
