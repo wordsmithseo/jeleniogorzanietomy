@@ -2207,6 +2207,31 @@
               '</div>');
           }
 
+          // Show website changes if present (for sponsored points)
+          if (p.edit_info.prev_website !== undefined && p.edit_info.new_website !== undefined && p.edit_info.prev_website !== p.edit_info.new_website) {
+            changes.push('<div><strong>🌐 Strona internetowa:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_website || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_website || '(brak)') + '</span></div>');
+          }
+
+          // Show phone changes if present (for sponsored points)
+          if (p.edit_info.prev_phone !== undefined && p.edit_info.new_phone !== undefined && p.edit_info.prev_phone !== p.edit_info.new_phone) {
+            changes.push('<div><strong>📞 Telefon:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_phone || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_phone || '(brak)') + '</span></div>');
+          }
+
+          // Show CTA changes if present (for sponsored points)
+          if (p.edit_info.prev_cta_enabled !== undefined && p.edit_info.new_cta_enabled !== undefined && p.edit_info.prev_cta_enabled !== p.edit_info.new_cta_enabled) {
+            var prevCta = p.edit_info.prev_cta_enabled ? 'Włączone' : 'Wyłączone';
+            var newCta = p.edit_info.new_cta_enabled ? 'Włączone' : 'Wyłączone';
+            changes.push('<div><strong>🎯 CTA włączone:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + prevCta + '</span><br><span style="color:#16a34a">→ ' + newCta + '</span></div>');
+          }
+
+          // Show CTA type changes if present (for sponsored points)
+          if (p.edit_info.prev_cta_type !== undefined && p.edit_info.new_cta_type !== undefined && p.edit_info.prev_cta_type !== p.edit_info.new_cta_type) {
+            var ctaTypeLabels = { call: '📞 Zadzwoń teraz', website: '🌐 Wejdź na stronę' };
+            var prevType = ctaTypeLabels[p.edit_info.prev_cta_type] || '(brak)';
+            var newType = ctaTypeLabels[p.edit_info.new_cta_type] || '(brak)';
+            changes.push('<div><strong>🎯 Typ CTA:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + prevType + '</span><br><span style="color:#16a34a">→ ' + newType + '</span></div>');
+          }
+
           // Show new images if present
           if (p.edit_info.new_images && p.edit_info.new_images.length > 0) {
             var newImagesHtml = '<div><strong>Nowe zdjęcia (' + p.edit_info.new_images.length + '):</strong><br>' +
