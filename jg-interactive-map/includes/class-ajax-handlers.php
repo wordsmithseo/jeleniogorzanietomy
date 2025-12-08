@@ -553,6 +553,8 @@ class JG_Map_Ajax_Handlers {
         $content = wp_kses_post($_POST['content'] ?? '');
         $website = sanitize_text_field($_POST['website'] ?? '');
         $phone = sanitize_text_field($_POST['phone'] ?? '');
+        $cta_enabled = isset($_POST['edit-cta-enabled-checkbox']) ? 1 : 0;
+        $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
         if (empty($title)) {
             wp_send_json_error(array('message' => 'Tytuł jest wymagany'));
@@ -617,11 +619,13 @@ class JG_Map_Ajax_Handlers {
                 'excerpt' => wp_trim_words($content, 20)
             );
 
-            // Add website and phone if point is sponsored
+            // Add website, phone, and CTA if point is sponsored
             $is_sponsored = (bool)$point['is_promo'];
             if ($is_sponsored) {
                 $update_data['website'] = !empty($website) ? $website : null;
                 $update_data['phone'] = !empty($phone) ? $phone : null;
+                $update_data['cta_enabled'] = $cta_enabled;
+                $update_data['cta_type'] = !empty($cta_type) ? $cta_type : null;
             }
 
             // Add new images to existing images
@@ -655,13 +659,17 @@ class JG_Map_Ajax_Handlers {
                 'new_images' => json_encode($new_images) // Store new images separately for moderation
             );
 
-            // Add website and phone if point is sponsored
+            // Add website, phone, and CTA if point is sponsored
             $is_sponsored = (bool)$point['is_promo'];
             if ($is_sponsored) {
                 $old_values['website'] = $point['website'] ?? null;
                 $old_values['phone'] = $point['phone'] ?? null;
+                $old_values['cta_enabled'] = $point['cta_enabled'] ?? 0;
+                $old_values['cta_type'] = $point['cta_type'] ?? null;
                 $new_values['website'] = !empty($website) ? $website : null;
                 $new_values['phone'] = !empty($phone) ? $phone : null;
+                $new_values['cta_enabled'] = $cta_enabled;
+                $new_values['cta_type'] = !empty($cta_type) ? $cta_type : null;
             }
 
             JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values);
@@ -991,6 +999,8 @@ class JG_Map_Ajax_Handlers {
         $content = wp_kses_post($_POST['content'] ?? '');
         $website = sanitize_text_field($_POST['website'] ?? '');
         $phone = sanitize_text_field($_POST['phone'] ?? '');
+        $cta_enabled = isset($_POST['edit-cta-enabled-checkbox']) ? 1 : 0;
+        $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
         $point = JG_Map_Database::get_point($point_id);
         if (!$point) {
@@ -1038,11 +1048,13 @@ class JG_Map_Ajax_Handlers {
             'excerpt' => wp_trim_words($content, 20)
         );
 
-        // Add website and phone if point is sponsored
+        // Add website, phone, and CTA if point is sponsored
         $is_sponsored = (bool)$point['is_promo'];
         if ($is_sponsored) {
             $update_data['website'] = !empty($website) ? $website : null;
             $update_data['phone'] = !empty($phone) ? $phone : null;
+            $update_data['cta_enabled'] = $cta_enabled;
+            $update_data['cta_type'] = !empty($cta_type) ? $cta_type : null;
         }
 
         // Add new images to existing images
@@ -1727,6 +1739,23 @@ class JG_Map_Ajax_Handlers {
             'content' => $new_values['content'],
             'excerpt' => wp_trim_words($new_values['content'], 20)
         );
+
+        // Add website, phone, and CTA if point is sponsored and they are in new_values
+        $is_sponsored = (bool)$point['is_promo'];
+        if ($is_sponsored) {
+            if (isset($new_values['website'])) {
+                $update_data['website'] = $new_values['website'];
+            }
+            if (isset($new_values['phone'])) {
+                $update_data['phone'] = $new_values['phone'];
+            }
+            if (isset($new_values['cta_enabled'])) {
+                $update_data['cta_enabled'] = $new_values['cta_enabled'];
+            }
+            if (isset($new_values['cta_type'])) {
+                $update_data['cta_type'] = $new_values['cta_type'];
+            }
+        }
 
         // Handle new images if present
         if (isset($new_values['new_images'])) {
