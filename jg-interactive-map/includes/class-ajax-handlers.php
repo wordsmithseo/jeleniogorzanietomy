@@ -263,6 +263,8 @@ class JG_Map_Ajax_Handlers {
                 'sponsored_until' => $sponsored_until,
                 'website' => $point['website'] ?? null,
                 'phone' => $point['phone'] ?? null,
+                'cta_enabled' => (bool)($point['cta_enabled'] ?? 0),
+                'cta_type' => $point['cta_type'] ?? null,
                 'status' => $point['status'],
                 'status_label' => $status_label,
                 'report_status' => $point['report_status'],
@@ -549,6 +551,8 @@ class JG_Map_Ajax_Handlers {
         $title = sanitize_text_field($_POST['title'] ?? '');
         $type = sanitize_text_field($_POST['type'] ?? '');
         $content = wp_kses_post($_POST['content'] ?? '');
+        $website = sanitize_text_field($_POST['website'] ?? '');
+        $phone = sanitize_text_field($_POST['phone'] ?? '');
 
         if (empty($title)) {
             wp_send_json_error(array('message' => 'Tytuł jest wymagany'));
@@ -613,13 +617,19 @@ class JG_Map_Ajax_Handlers {
                 'excerpt' => wp_trim_words($content, 20)
             );
 
+            // Add website and phone if point is sponsored
+            $is_sponsored = (bool)$point['is_promo'];
+            if ($is_sponsored) {
+                $update_data['website'] = !empty($website) ? $website : null;
+                $update_data['phone'] = !empty($phone) ? $phone : null;
+            }
+
             // Add new images to existing images
             if (!empty($new_images)) {
                 $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
                 $all_images = array_merge($existing_images, $new_images);
 
                 // Limit based on sponsored status - 12 for sponsored, 6 for regular
-                $is_sponsored = (bool)$point['is_promo'];
                 $max_images = $is_sponsored ? 12 : 6;
                 $all_images = array_slice($all_images, 0, $max_images);
 
@@ -644,6 +654,15 @@ class JG_Map_Ajax_Handlers {
                 'content' => $content,
                 'new_images' => json_encode($new_images) // Store new images separately for moderation
             );
+
+            // Add website and phone if point is sponsored
+            $is_sponsored = (bool)$point['is_promo'];
+            if ($is_sponsored) {
+                $old_values['website'] = $point['website'] ?? null;
+                $old_values['phone'] = $point['phone'] ?? null;
+                $new_values['website'] = !empty($website) ? $website : null;
+                $new_values['phone'] = !empty($phone) ? $phone : null;
+            }
 
             JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values);
 
@@ -970,6 +989,8 @@ class JG_Map_Ajax_Handlers {
         $title = sanitize_text_field($_POST['title'] ?? '');
         $type = sanitize_text_field($_POST['type'] ?? '');
         $content = wp_kses_post($_POST['content'] ?? '');
+        $website = sanitize_text_field($_POST['website'] ?? '');
+        $phone = sanitize_text_field($_POST['phone'] ?? '');
 
         $point = JG_Map_Database::get_point($point_id);
         if (!$point) {
@@ -1017,13 +1038,19 @@ class JG_Map_Ajax_Handlers {
             'excerpt' => wp_trim_words($content, 20)
         );
 
+        // Add website and phone if point is sponsored
+        $is_sponsored = (bool)$point['is_promo'];
+        if ($is_sponsored) {
+            $update_data['website'] = !empty($website) ? $website : null;
+            $update_data['phone'] = !empty($phone) ? $phone : null;
+        }
+
         // Add new images to existing images
         if (!empty($new_images)) {
             $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
             $all_images = array_merge($existing_images, $new_images);
 
             // Limit based on sponsored status
-            $is_sponsored = (bool)$point['is_promo'];
             $max_images = $is_sponsored ? 12 : 6;
             $all_images = array_slice($all_images, 0, $max_images);
 
@@ -2037,8 +2064,10 @@ class JG_Map_Ajax_Handlers {
         $sponsored_until = sanitize_text_field($_POST['sponsored_until'] ?? '');
         $website = sanitize_text_field($_POST['website'] ?? '');
         $phone = sanitize_text_field($_POST['phone'] ?? '');
+        $cta_enabled = intval($_POST['cta_enabled'] ?? 0);
+        $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
-        error_log('JG MAP SPONSORED: Received request - point_id=' . $point_id . ', is_sponsored=' . $is_sponsored . ', sponsored_until=' . $sponsored_until . ', website=' . $website . ', phone=' . $phone);
+        error_log('JG MAP SPONSORED: Received request - point_id=' . $point_id . ', is_sponsored=' . $is_sponsored . ', sponsored_until=' . $sponsored_until . ', website=' . $website . ', phone=' . $phone . ', cta_enabled=' . $cta_enabled . ', cta_type=' . $cta_type);
 
         if (!$point_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -2075,10 +2104,12 @@ class JG_Map_Ajax_Handlers {
                 'is_promo' => $is_sponsored,
                 'promo_until' => $sponsored_until_value,
                 'website' => !empty($website) ? $website : null,
-                'phone' => !empty($phone) ? $phone : null
+                'phone' => !empty($phone) ? $phone : null,
+                'cta_enabled' => $cta_enabled,
+                'cta_type' => !empty($cta_type) ? $cta_type : null
             ),
             array('id' => $point_id),
-            array('%d', '%s', '%s', '%s'),  // format for data
+            array('%d', '%s', '%s', '%s', '%d', '%s'),  // format for data
             array('%d')         // format for where
         );
 
@@ -2098,7 +2129,9 @@ class JG_Map_Ajax_Handlers {
             'is_sponsored' => (bool)$updated_point['is_promo'],
             'sponsored_until' => $updated_point['promo_until'] ?? null,
             'website' => $updated_point['website'] ?? null,
-            'phone' => $updated_point['phone'] ?? null
+            'phone' => $updated_point['phone'] ?? null,
+            'cta_enabled' => (bool)($updated_point['cta_enabled'] ?? 0),
+            'cta_type' => $updated_point['cta_type'] ?? null
         ));
     }
 

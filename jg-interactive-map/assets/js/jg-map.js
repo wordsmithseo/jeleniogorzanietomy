@@ -795,6 +795,8 @@
               sponsored_until: r.sponsored_until || null,
               website: r.website || null,
               phone: r.phone || null,
+              cta_enabled: !!r.cta_enabled,
+              cta_type: r.cta_type || null,
               status: r.status || '',
               status_label: r.status_label || '',
               report_status: r.report_status || '',
@@ -1658,6 +1660,16 @@
             var isSponsored = !!p.sponsored;
             var maxTotalImages = isSponsored ? 12 : 6;
 
+            // Sponsored contact fields (only for sponsored points)
+            var sponsoredContactHtml = '';
+            if (isSponsored) {
+              sponsoredContactHtml = '<div class="cols-2" style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin:12px 0">' +
+                '<strong style="display:block;margin-bottom:8px;color:#92400e">📋 Dane kontaktowe (punkt sponsorowany)</strong>' +
+                '<label style="display:block;margin-bottom:8px">🌐 Strona internetowa <input type="text" name="website" value="' + esc(p.website || '') + '" placeholder="np. jeleniagora.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '<label style="display:block">📞 Telefon <input type="text" name="phone" value="' + esc(p.phone || '') + '" placeholder="np. 123 456 789" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '</div>';
+            }
+
             var formHtml = '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header>' +
               '<form id="edit-form" class="jg-grid cols-2">' +
               limitsHtml +
@@ -1668,6 +1680,7 @@
               '<option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option>' +
               '</select></label>' +
               '<label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label>' +
+              sponsoredContactHtml +
               existingImagesHtml +
               '<label class="cols-2">Dodaj nowe zdjęcia (max ' + maxTotalImages + ' łącznie) <input type="file" name="images[]" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
               '<div class="cols-2" id="edit-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
@@ -1881,6 +1894,25 @@
           '<input type="text" id="sponsored-website-input" value="' + esc(p.website || '') + '" placeholder="np. jeleniagora.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-bottom:8px">' +
           '<label style="display:block;margin-bottom:8px"><strong>📞 Telefon (opcjonalnie):</strong></label>' +
           '<input type="text" id="sponsored-phone-input" value="' + esc(p.phone || '') + '" placeholder="np. 123 456 789" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-bottom:16px">' +
+          '<div style="background:#e0f2fe;border:2px solid #0284c7;border-radius:8px;padding:12px;margin-top:16px">' +
+          '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer">' +
+          '<input type="checkbox" id="cta-enabled-checkbox" ' + (p.cta_enabled ? 'checked' : '') + ' style="width:20px;height:20px">' +
+          '<strong style="color:#075985">🎯 Włącz przycisk Call-to-Action (CTA)</strong>' +
+          '</label>' +
+          '<div id="cta-type-selection" style="' + (p.cta_enabled ? '' : 'display:none;') + 'margin-left:28px">' +
+          '<label style="display:block;margin-bottom:8px;color:#075985"><strong>Typ przycisku:</strong></label>' +
+          '<div style="display:flex;gap:8px;flex-direction:column">' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #cbd5e1;border-radius:6px;cursor:pointer">' +
+          '<input type="radio" name="cta_type" value="call" ' + (p.cta_type === 'call' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+          '<div><strong>📞 Zadzwoń teraz</strong> <span style="color:#666;font-size:12px">(wymaga numeru telefonu)</span></div>' +
+          '</label>' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #cbd5e1;border-radius:6px;cursor:pointer">' +
+          '<input type="radio" name="cta_type" value="website" ' + (p.cta_type === 'website' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+          '<div><strong>🌐 Wejdź na naszą stronę</strong> <span style="color:#666;font-size:12px">(wymaga strony internetowej)</span></div>' +
+          '</label>' +
+          '</div>' +
+          '</div>' +
+          '</div>' +
           '</div>' +
           '<div style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button type="button" class="jg-btn jg-btn--ghost" id="sponsored-modal-cancel">Anuluj</button>' +
@@ -1904,6 +1936,15 @@
         var dateInput = qs('#sponsored-until-input', modalStatus);
         var websiteInput = qs('#sponsored-website-input', modalStatus);
         var phoneInput = qs('#sponsored-phone-input', modalStatus);
+        var ctaEnabledCheckbox = qs('#cta-enabled-checkbox', modalStatus);
+        var ctaTypeSelection = qs('#cta-type-selection', modalStatus);
+
+        // Toggle CTA type selection visibility based on checkbox
+        if (ctaEnabledCheckbox) {
+          ctaEnabledCheckbox.addEventListener('change', function() {
+            ctaTypeSelection.style.display = ctaEnabledCheckbox.checked ? '' : 'none';
+          });
+        }
 
         saveBtn.onclick = function() {
           var selectedSponsored = qs('input[name="sponsored_status"]:checked', modalStatus);
@@ -1917,6 +1958,33 @@
           var sponsoredUntil = dateInput.value || '';
           var website = websiteInput.value.trim();
           var phone = phoneInput.value.trim();
+          var ctaEnabled = ctaEnabledCheckbox.checked;
+          var ctaType = null;
+
+          // Get CTA type if enabled
+          if (ctaEnabled) {
+            var selectedCtaType = qs('input[name="cta_type"]:checked', modalStatus);
+            if (selectedCtaType) {
+              ctaType = selectedCtaType.value;
+            }
+
+            // Validate CTA requirements
+            if (ctaType === 'call' && !phone) {
+              msg.textContent = 'CTA "Zadzwoń teraz" wymaga numeru telefonu';
+              msg.style.color = '#b91c1c';
+              return;
+            }
+            if (ctaType === 'website' && !website) {
+              msg.textContent = 'CTA "Wejdź na naszą stronę" wymaga strony internetowej';
+              msg.style.color = '#b91c1c';
+              return;
+            }
+            if (!ctaType) {
+              msg.textContent = 'Wybierz typ przycisku CTA';
+              msg.style.color = '#b91c1c';
+              return;
+            }
+          }
 
           // If date is provided, add end of day time (23:59:59)
           if (sponsoredUntil) {
@@ -1933,7 +2001,9 @@
             is_sponsored: isSponsored ? '1' : '0',
             sponsored_until: sponsoredUntil,
             website: website,
-            phone: phone
+            phone: phone,
+            cta_enabled: ctaEnabled ? '1' : '0',
+            cta_type: ctaType
           })
             .then(function(result) {
               msg.textContent = 'Zapisano! Odświeżanie...';
@@ -2225,13 +2295,24 @@
           }
         }
 
+        // CTA button for sponsored points
+        var ctaButton = '';
+        if (p.sponsored && p.cta_enabled && p.cta_type) {
+          if (p.cta_type === 'call' && p.phone) {
+            ctaButton = '<div style="margin-top:12px"><a href="tel:' + esc(p.phone) + '" style="display:block;text-align:center;padding:16px 24px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;font-weight:700;font-size:18px;border-radius:12px;text-decoration:none;box-shadow:0 4px 12px rgba(16,185,129,0.4);transition:transform 0.2s,box-shadow 0.2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 16px rgba(16,185,129,0.5)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 12px rgba(16,185,129,0.4)\'">📞 Zadzwoń teraz</a></div>';
+          } else if (p.cta_type === 'website' && p.website) {
+            var websiteUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
+            ctaButton = '<div style="margin-top:12px"><a href="' + esc(websiteUrl) + '" target="_blank" rel="noopener" style="display:block;text-align:center;padding:16px 24px;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);color:#fff;font-weight:700;font-size:18px;border-radius:12px;text-decoration:none;box-shadow:0 4px 12px rgba(59,130,246,0.4);transition:transform 0.2s,box-shadow 0.2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 16px rgba(59,130,246,0.5)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 12px rgba(59,130,246,0.4)\'">🌐 Wejdź na naszą stronę</a></div>';
+          }
+        }
+
         // Add deletion request button for authors (non-admins)
         var deletionBtn = '';
         if (canEdit && !CFG.isAdmin && !p.is_deletion_requested) {
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
         }
 
-        var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim() });
 
