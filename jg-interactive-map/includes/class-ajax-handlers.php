@@ -2035,8 +2035,10 @@ class JG_Map_Ajax_Handlers {
         $point_id = intval($_POST['post_id'] ?? 0);
         $is_sponsored = intval($_POST['is_sponsored'] ?? 0);
         $sponsored_until = sanitize_text_field($_POST['sponsored_until'] ?? '');
+        $website = sanitize_text_field($_POST['website'] ?? '');
+        $phone = sanitize_text_field($_POST['phone'] ?? '');
 
-        error_log('JG MAP SPONSORED: Received request - point_id=' . $point_id . ', is_sponsored=' . $is_sponsored . ', sponsored_until=' . $sponsored_until);
+        error_log('JG MAP SPONSORED: Received request - point_id=' . $point_id . ', is_sponsored=' . $is_sponsored . ', sponsored_until=' . $sponsored_until . ', website=' . $website . ', phone=' . $phone);
 
         if (!$point_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -2071,10 +2073,12 @@ class JG_Map_Ajax_Handlers {
             $table,
             array(
                 'is_promo' => $is_sponsored,
-                'promo_until' => $sponsored_until_value
+                'promo_until' => $sponsored_until_value,
+                'website' => !empty($website) ? $website : null,
+                'phone' => !empty($phone) ? $phone : null
             ),
             array('id' => $point_id),
-            array('%d', '%s'),  // format for data
+            array('%d', '%s', '%s', '%s'),  // format for data
             array('%d')         // format for where
         );
 
@@ -2092,7 +2096,9 @@ class JG_Map_Ajax_Handlers {
         wp_send_json_success(array(
             'message' => 'Sponsorowanie zaktualizowane',
             'is_sponsored' => (bool)$updated_point['is_promo'],
-            'sponsored_until' => $updated_point['promo_until'] ?? null
+            'sponsored_until' => $updated_point['promo_until'] ?? null,
+            'website' => $updated_point['website'] ?? null,
+            'phone' => $updated_point['phone'] ?? null
         ));
     }
 
