@@ -553,7 +553,7 @@ class JG_Map_Ajax_Handlers {
         $content = wp_kses_post($_POST['content'] ?? '');
         $website = sanitize_text_field($_POST['website'] ?? '');
         $phone = sanitize_text_field($_POST['phone'] ?? '');
-        $cta_enabled = isset($_POST['edit-cta-enabled-checkbox']) ? 1 : 0;
+        $cta_enabled = isset($_POST['cta_enabled']) ? 1 : 0;
         $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
         if (empty($title)) {
@@ -999,7 +999,7 @@ class JG_Map_Ajax_Handlers {
         $content = wp_kses_post($_POST['content'] ?? '');
         $website = sanitize_text_field($_POST['website'] ?? '');
         $phone = sanitize_text_field($_POST['phone'] ?? '');
-        $cta_enabled = isset($_POST['edit-cta-enabled-checkbox']) ? 1 : 0;
+        $cta_enabled = isset($_POST['cta_enabled']) ? 1 : 0;
         $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
         $point = JG_Map_Database::get_point($point_id);

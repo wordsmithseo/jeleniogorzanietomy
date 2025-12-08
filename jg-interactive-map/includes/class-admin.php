@@ -379,6 +379,12 @@ class JG_Map_Admin {
                         if (isset($old_values['phone']) && isset($new_values['phone']) && $old_values['phone'] !== $new_values['phone']) {
                             $changes[] = 'Telefon';
                         }
+                        if (isset($old_values['cta_enabled']) && isset($new_values['cta_enabled']) && $old_values['cta_enabled'] !== $new_values['cta_enabled']) {
+                            $changes[] = 'CTA włączone/wyłączone';
+                        }
+                        if (isset($old_values['cta_type']) && isset($new_values['cta_type']) && $old_values['cta_type'] !== $new_values['cta_type']) {
+                            $changes[] = 'Typ CTA';
+                        }
 
                         // Calculate priority badge
                         $report_count = intval($edit['report_count']);
@@ -456,6 +462,14 @@ class JG_Map_Admin {
                     }
                     if (old_values.phone !== undefined && new_values.phone !== undefined && old_values.phone !== new_values.phone) {
                         html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Telefon</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.phone || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.phone || '(brak)') + '</td></tr>';
+                    }
+                    if (old_values.cta_enabled !== undefined && new_values.cta_enabled !== undefined && old_values.cta_enabled !== new_values.cta_enabled) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>CTA włączone</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.cta_enabled ? 'Tak' : 'Nie') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.cta_enabled ? 'Tak' : 'Nie') + '</td></tr>';
+                    }
+                    if (old_values.cta_type !== undefined && new_values.cta_type !== undefined && old_values.cta_type !== new_values.cta_type) {
+                        var ctaTypeOld = old_values.cta_type === 'call' ? 'Zadzwoń teraz' : (old_values.cta_type === 'website' ? 'Wejdź na stronę' : '(brak)');
+                        var ctaTypeNew = new_values.cta_type === 'call' ? 'Zadzwoń teraz' : (new_values.cta_type === 'website' ? 'Wejdź na stronę' : '(brak)');
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Typ CTA</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + ctaTypeOld + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + ctaTypeNew + '</td></tr>';
                     }
                     html += '</table>';
 
