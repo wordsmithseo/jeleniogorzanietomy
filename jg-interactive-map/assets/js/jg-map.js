@@ -472,8 +472,9 @@
         var isEdit = !!p.is_edit;
         var hasReports = (CFG.isAdmin && p.reports_count > 0);
 
-        // Much larger pins for better visibility - sponsored even bigger
-        var size = sponsored ? [72, 72] : [48, 48];
+        // Larger pins for better visibility - sponsored slightly bigger (56px vs 48px)
+        // Reduced from 72px to avoid overshadowing nearby clustered points
+        var size = sponsored ? [56, 56] : [48, 48];
         var anchor = [size[0] / 2, size[1] / 2];
         var c = 'jg-pin';
 
@@ -1669,7 +1670,7 @@
                 '<label style="display:block;margin-bottom:16px">📞 Telefon <input type="text" name="phone" id="edit-phone-input" value="' + esc(p.phone || '') + '" placeholder="np. 123 456 789" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
                 '<div style="border-top:2px solid #f59e0b;padding-top:12px;margin-top:12px">' +
                 '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer">' +
-                '<input type="checkbox" id="edit-cta-enabled-checkbox" ' + (p.cta_enabled ? 'checked' : '') + ' style="width:20px;height:20px">' +
+                '<input type="checkbox" name="cta_enabled" id="edit-cta-enabled-checkbox" value="1" ' + (p.cta_enabled ? 'checked' : '') + ' style="width:20px;height:20px">' +
                 '<strong style="color:#92400e">🎯 Włącz przycisk Call-to-Action (CTA)</strong>' +
                 '</label>' +
                 '<div id="edit-cta-type-selection" style="' + (p.cta_enabled ? '' : 'display:none;') + 'margin-left:28px">' +
@@ -2326,14 +2327,22 @@
           }
         }
 
-        // CTA button for sponsored points
+        // CTA button for sponsored points - large, prominent call-to-action
         var ctaButton = '';
         if (p.sponsored && p.cta_enabled && p.cta_type) {
           if (p.cta_type === 'call' && p.phone) {
-            ctaButton = '<div style="margin-top:12px"><a href="tel:' + esc(p.phone) + '" style="display:block;text-align:center;padding:16px 24px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;font-weight:700;font-size:18px;border-radius:12px;text-decoration:none;box-shadow:0 4px 12px rgba(16,185,129,0.4);transition:transform 0.2s,box-shadow 0.2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 16px rgba(16,185,129,0.5)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 12px rgba(16,185,129,0.4)\'">📞 Zadzwoń teraz</a></div>';
+            ctaButton = '<div style="margin:20px 0;padding:16px;background:linear-gradient(135deg,rgba(16,185,129,0.1) 0%,rgba(5,150,105,0.1) 100%);border-radius:16px;border:3px solid #10b981">' +
+              '<a href="tel:' + esc(p.phone) + '" style="display:block;text-align:center;padding:20px 32px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;font-weight:800;font-size:20px;border-radius:12px;text-decoration:none;box-shadow:0 6px 20px rgba(16,185,129,0.5);transition:all 0.3s;text-transform:uppercase;letter-spacing:0.5px" onmouseover="this.style.transform=\'translateY(-3px) scale(1.02)\';this.style.boxShadow=\'0 10px 30px rgba(16,185,129,0.6)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 6px 20px rgba(16,185,129,0.5)\'">' +
+              '📞 Zadzwoń Teraz</a>' +
+              '<div style="text-align:center;margin-top:8px;font-size:12px;color:#059669;font-weight:600">Bezpośredni kontakt telefoniczny</div>' +
+              '</div>';
           } else if (p.cta_type === 'website' && p.website) {
             var websiteUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
-            ctaButton = '<div style="margin-top:12px"><a href="' + esc(websiteUrl) + '" target="_blank" rel="noopener" style="display:block;text-align:center;padding:16px 24px;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);color:#fff;font-weight:700;font-size:18px;border-radius:12px;text-decoration:none;box-shadow:0 4px 12px rgba(59,130,246,0.4);transition:transform 0.2s,box-shadow 0.2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 16px rgba(59,130,246,0.5)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 12px rgba(59,130,246,0.4)\'">🌐 Wejdź na naszą stronę</a></div>';
+            ctaButton = '<div style="margin:20px 0;padding:16px;background:linear-gradient(135deg,rgba(59,130,246,0.1) 0%,rgba(37,99,235,0.1) 100%);border-radius:16px;border:3px solid #3b82f6">' +
+              '<a href="' + esc(websiteUrl) + '" target="_blank" rel="noopener" style="display:block;text-align:center;padding:20px 32px;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);color:#fff;font-weight:800;font-size:20px;border-radius:12px;text-decoration:none;box-shadow:0 6px 20px rgba(59,130,246,0.5);transition:all 0.3s;text-transform:uppercase;letter-spacing:0.5px" onmouseover="this.style.transform=\'translateY(-3px) scale(1.02)\';this.style.boxShadow=\'0 10px 30px rgba(59,130,246,0.6)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 6px 20px rgba(59,130,246,0.5)\'">' +
+              '🌐 Odwiedź Naszą Stronę</a>' +
+              '<div style="text-align:center;margin-top:8px;font-size:12px;color:#2563eb;font-weight:600">Więcej informacji online</div>' +
+              '</div>';
           }
         }
 
