@@ -159,6 +159,18 @@ class JG_Map_Database {
         if (empty($phone)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN phone varchar(50) DEFAULT NULL AFTER website");
         }
+
+        // Check if cta_enabled column exists (for sponsored points CTA)
+        $cta_enabled = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'cta_enabled'");
+        if (empty($cta_enabled)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN cta_enabled tinyint(1) DEFAULT 0 AFTER phone");
+        }
+
+        // Check if cta_type column exists (for sponsored points CTA - 'call' or 'website')
+        $cta_type = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'cta_type'");
+        if (empty($cta_type)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN cta_type varchar(20) DEFAULT NULL AFTER cta_enabled");
+        }
     }
 
     /**
