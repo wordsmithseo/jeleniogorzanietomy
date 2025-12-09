@@ -1224,10 +1224,9 @@
             };
           });
 
-          // Save to cache
-          if (version) {
-            saveToCache(ALL, version);
-          }
+          // Always save to cache with current timestamp
+          var cacheVersion = version || Date.now();
+          saveToCache(ALL, cacheVersion);
 
           apply(true); // Skip fitBounds on refresh to preserve user's view
 
@@ -3260,15 +3259,32 @@
         }
       }, 500);
 
-      // Always fetch fresh data on load (no cache)
-      refreshData(true)
-        .then(function() {
-          // Check user restrictions and display banner if needed
-          checkUserRestrictions();
-        })
-        .catch(function(e) {
-          showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
+      // Load from cache first for instant display, then check for updates
+      var cachedData = loadFromCache();
+      if (cachedData && cachedData.length > 0) {
+        console.log('[JG MAP] Loaded ' + cachedData.length + ' points from cache');
+        ALL = cachedData;
+        apply(false); // Apply cached data immediately with fitBounds
+        hideLoading();
+
+        // Check user restrictions
+        checkUserRestrictions();
+
+        // Then check for updates in background
+        refreshData(false).catch(function(err) {
+          console.error('[JG MAP] Background update failed:', err);
         });
+      } else {
+        // No cache, fetch fresh data
+        console.log('[JG MAP] No cache, fetching fresh data');
+        refreshData(true)
+          .then(function() {
+            checkUserRestrictions();
+          })
+          .catch(function(e) {
+            showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
+          });
+      }
 
       // Smart auto-refresh: Check for updates every 15 seconds, only fetch if needed
       var refreshInterval = setInterval(function() {
