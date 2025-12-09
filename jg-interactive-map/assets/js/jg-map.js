@@ -556,55 +556,83 @@
         // Anchor at the bottom tip of the pin (where it points to the location)
         var anchor = [pinWidth / 2, pinHeight];
 
-        // Determine pin color based on type and state
-        var pinColor = '#111'; // Default black for reports
-        if (sponsored) {
-          pinColor = '#f59e0b'; // Gold for sponsored
-        } else if (p.type === 'ciekawostka') {
-          pinColor = '#2563eb'; // Blue for curiosities
-        } else if (p.type === 'miejsce') {
-          pinColor = '#16a34a'; // Green for places
-        }
+        // Determine gradient colors based on type and state
+        var gradientId = 'gradient-' + (p.id || Math.random());
+        var gradientStart, gradientMid, gradientEnd;
+        var emojiColor = '#fff'; // Default white for contrast
 
-        // Override color for special states
-        if (isPending) pinColor = '#dc2626'; // Red for pending
-        if (isEdit) pinColor = '#9333ea'; // Purple for edit
+        if (isPending) {
+          // Red gradient for pending
+          gradientStart = '#dc2626';
+          gradientMid = '#ef4444';
+          gradientEnd = '#dc2626';
+        } else if (isEdit) {
+          // Purple gradient for edit
+          gradientStart = '#9333ea';
+          gradientMid = '#a855f7';
+          gradientEnd = '#9333ea';
+        } else if (sponsored) {
+          // Gold gradient for sponsored
+          gradientStart = '#f59e0b';
+          gradientMid = '#fbbf24';
+          gradientEnd = '#f59e0b';
+          emojiColor = '#fff'; // White on gold
+        } else if (p.type === 'ciekawostka') {
+          // Blue gradient for curiosities
+          gradientStart = '#1e40af';
+          gradientMid = '#3b82f6';
+          gradientEnd = '#1e40af';
+        } else if (p.type === 'miejsce') {
+          // Green gradient for places
+          gradientStart = '#15803d';
+          gradientMid = '#22c55e';
+          gradientEnd = '#15803d';
+        } else {
+          // Black gradient for reports
+          gradientStart = '#000';
+          gradientMid = '#1f1f1f';
+          gradientEnd = '#000';
+        }
 
         // Create pin emoji/icon
         var lbl = '';
         if (p.sponsored) {
-          lbl = '⭐';  // Gold star for sponsored
+          lbl = '⭐';
         } else if (p.type === 'ciekawostka') {
-          lbl = 'ℹ️';  // Info icon for curiosities
+          lbl = 'ℹ️';
         } else if (p.type === 'miejsce') {
-          lbl = '📍';  // Pin icon for places
+          lbl = '📍';
         } else {
-          lbl = '❗';  // Exclamation for reports
+          lbl = '❗';
         }
 
-        // Build SVG pin shape (Google Maps style)
+        // Build SVG pin shape with gradients and soft shadow
         var svgPin = '<svg width="' + pinWidth + '" height="' + pinHeight + '" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">';
 
-        // Add gradient for sponsored pins
-        if (sponsored) {
-          svgPin += '<defs>' +
-            '<linearGradient id="gold-gradient-' + (p.id || 'default') + '" x1="0%" y1="0%" x2="100%" y2="100%">' +
-            '<stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />' +
-            '<stop offset="50%" style="stop-color:#fbbf24;stop-opacity:1" />' +
-            '<stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />' +
-            '</linearGradient>' +
-            '</defs>';
-          pinColor = 'url(#gold-gradient-' + (p.id || 'default') + ')';
-        }
+        // Define gradient and shadow filter
+        svgPin += '<defs>' +
+          '<linearGradient id="' + gradientId + '" x1="0%" y1="0%" x2="100%" y2="100%">' +
+          '<stop offset="0%" style="stop-color:' + gradientStart + ';stop-opacity:1" />' +
+          '<stop offset="50%" style="stop-color:' + gradientMid + ';stop-opacity:1" />' +
+          '<stop offset="100%" style="stop-color:' + gradientEnd + ';stop-opacity:1" />' +
+          '</linearGradient>' +
+          '<filter id="soft-shadow-' + gradientId + '" x="-50%" y="-50%" width="200%" height="200%">' +
+          '<feGaussianBlur in="SourceAlpha" stdDeviation="3"/>' +
+          '<feOffset dx="0" dy="3" result="offsetblur"/>' +
+          '<feComponentTransfer>' +
+          '<feFuncA type="linear" slope="0.4"/>' +
+          '</feComponentTransfer>' +
+          '<feMerge>' +
+          '<feMergeNode/>' +
+          '<feMergeNode in="SourceGraphic"/>' +
+          '</feMerge>' +
+          '</filter>' +
+          '</defs>';
 
-        // Pin shape: circle top + triangle bottom
+        // Pin shape: circle top + triangle bottom (no stroke, with soft shadow)
         svgPin += '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 16 0 18 0 20 L16 40 L32 20 C32 18 32 16 32 16 C32 7.163 24.837 0 16 0 Z" ' +
-          'fill="' + pinColor + '" ' +
-          'stroke="#fff" stroke-width="2" ' +
-          'filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))"/>';
-
-        // Add inner circle for emoji - bigger now
-        svgPin += '<circle cx="16" cy="14" r="11" fill="rgba(255,255,255,0.35)"/>';
+          'fill="url(#' + gradientId + ')" ' +
+          'filter="url(#soft-shadow-' + gradientId + ')"/>';
 
         svgPin += '</svg>';
 
@@ -632,9 +660,17 @@
 
         var labelHtml = '<span class="' + labelClass + '">' + esc(p.title || 'Bez nazwy') + suffix + '</span>';
 
-        // Emoji overlay on pin - bigger font sizes!
+        // Emoji overlay on pin with contrasting color and text shadow
         var emojiFontSize = sponsored ? 28 : 22;
-        var emojiOverlay = '<div class="jg-pin-emoji" style="position:absolute;top:' + (pinHeight * 0.25) + 'px;left:50%;transform:translate(-50%,-50%);font-size:' + emojiFontSize + 'px;z-index:2;">' + lbl + '</div>';
+        var emojiStyle = 'position:absolute;' +
+          'top:' + (pinHeight * 0.25) + 'px;' +
+          'left:50%;' +
+          'transform:translate(-50%,-50%);' +
+          'font-size:' + emojiFontSize + 'px;' +
+          'filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));' +
+          'z-index:2;';
+
+        var emojiOverlay = '<div class="jg-pin-emoji" style="' + emojiStyle + '">' + lbl + '</div>';
 
         var iconHtml = '<div class="jg-pin-svg-wrapper" style="position:relative;width:' + pinWidth + 'px;height:' + pinHeight + 'px;">' +
           svgPin + emojiOverlay + reportsHtml + deletionHtml + labelHtml +
