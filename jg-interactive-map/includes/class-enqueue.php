@@ -184,9 +184,19 @@ class JG_Map_Enqueue {
             </div>
             <div class="jg-top-bar-right">
                 <?php if (is_user_logged_in()) : ?>
-                    <?php $current_user = wp_get_current_user(); ?>
+                    <?php
+                    $current_user = wp_get_current_user();
+                    $is_admin = current_user_can('manage_options');
+                    $is_moderator = current_user_can('jg_map_moderate');
+                    $role_icon = '';
+                    if ($is_admin) {
+                        $role_icon = '<span style="color:#fbbf24;font-size:16px;margin-left:4px" title="Administrator">⭐</span>';
+                    } elseif ($is_moderator) {
+                        $role_icon = '<span style="color:#60a5fa;font-size:16px;margin-left:4px" title="Moderator">🛡️</span>';
+                    }
+                    ?>
                     <span class="jg-top-bar-user">
-                        Zalogowano jako: <strong><?php echo esc_html($current_user->display_name); ?></strong>
+                        Zalogowano jako: <strong><?php echo esc_html($current_user->display_name); ?></strong><?php echo $role_icon; ?>
                     </span>
                     <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
                     <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn">Wyloguj</a>

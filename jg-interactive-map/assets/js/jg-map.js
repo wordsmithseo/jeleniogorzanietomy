@@ -135,33 +135,28 @@
       // Edit profile button handler
       if (editProfileBtn) {
         editProfileBtn.addEventListener('click', function() {
-          var html = '<div class="jg-modal-header">' +
-            '<h2>Edytuj profil</h2>' +
-            '<button class="jg-modal-close">&times;</button>' +
+          var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+            '<h2 style="margin:0;font-size:20px;font-weight:600">Edycja profilu</h2>' +
             '</div>' +
-            '<div class="jg-modal-body">' +
+            '<div class="jg-modal-body" style="padding:24px">' +
             '<form id="jg-edit-profile-form">' +
-            '<div class="jg-form-group">' +
-            '<label>Nazwa użytkownika</label>' +
-            '<input type="text" id="profile-display-name" class="jg-input" required>' +
+            '<div class="jg-form-group" style="margin-bottom:20px">' +
+            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Adres email</label>' +
+            '<input type="email" id="profile-email" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
             '</div>' +
-            '<div class="jg-form-group">' +
-            '<label>Email</label>' +
-            '<input type="email" id="profile-email" class="jg-input" required>' +
+            '<div class="jg-form-group" style="margin-bottom:20px">' +
+            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nowe hasło <span style="font-weight:400;color:#666;font-size:12px">(pozostaw puste, aby nie zmieniać)</span></label>' +
+            '<input type="password" id="profile-password" class="jg-input" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
             '</div>' +
-            '<div class="jg-form-group">' +
-            '<label>Nowe hasło (pozostaw puste, aby nie zmieniać)</label>' +
-            '<input type="password" id="profile-password" class="jg-input">' +
-            '</div>' +
-            '<div class="jg-form-group">' +
-            '<label>Potwierdź hasło</label>' +
-            '<input type="password" id="profile-password-confirm" class="jg-input">' +
+            '<div class="jg-form-group" style="margin-bottom:20px">' +
+            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Potwierdź hasło</label>' +
+            '<input type="password" id="profile-password-confirm" class="jg-input" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
             '</div>' +
             '</form>' +
             '</div>' +
-            '<div class="jg-modal-footer">' +
-            '<button class="jg-btn jg-btn--secondary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'">Anuluj</button>' +
-            '<button class="jg-btn jg-btn--primary" id="save-profile-btn">Zapisz zmiany</button>' +
+            '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
+            '<button class="jg-btn jg-btn--secondary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'" style="padding:10px 20px;background:#fff;color:#333;border:2px solid #ddd;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'#fff\'">Anuluj</button>' +
+            '<button class="jg-btn jg-btn--primary" id="save-profile-btn" style="padding:10px 24px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#a02829\'" onmouseout="this.style.background=\'#8d2324\'">Zapisz zmiany</button>' +
             '</div>';
 
           open(modalEdit, html);
@@ -176,7 +171,6 @@
             },
             success: function(response) {
               if (response.success && response.data) {
-                document.getElementById('profile-display-name').value = response.data.display_name || '';
                 document.getElementById('profile-email').value = response.data.email || '';
               }
             }
@@ -184,13 +178,12 @@
 
           // Save profile handler
           document.getElementById('save-profile-btn').addEventListener('click', function() {
-            var displayName = document.getElementById('profile-display-name').value;
             var email = document.getElementById('profile-email').value;
             var password = document.getElementById('profile-password').value;
             var passwordConfirm = document.getElementById('profile-password-confirm').value;
 
-            if (!displayName || !email) {
-              alert('Proszę wypełnić wszystkie wymagane pola');
+            if (!email) {
+              alert('Proszę wypełnić adres email');
               return;
             }
 
@@ -205,7 +198,6 @@
               data: {
                 action: 'jg_map_update_profile',
                 nonce: CFG.nonce,
-                display_name: displayName,
                 email: email,
                 password: password
               },
@@ -223,14 +215,6 @@
               }
             });
           });
-
-          // Close button handler
-          var closeBtn = qs('.jg-modal-close', modalEdit);
-          if (closeBtn) {
-            closeBtn.addEventListener('click', function() {
-              close(modalEdit);
-            });
-          }
         });
       }
       // ====================================
@@ -2622,21 +2606,15 @@
           }
         }
 
-        // CTA button for sponsored points - large, prominent call-to-action with gold gradient
+        // CTA button for sponsored points - single beautiful button with gold gradient
         var ctaButton = '';
         if (p.sponsored && p.cta_enabled) {
           // Priority: website > phone (if both exist, show website)
           if (p.website) {
             var websiteUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
-            ctaButton = '<div class="jg-btn--cta-sponsored" style="margin:20px auto;text-align:center">' +
-              '<a href="' + esc(websiteUrl) + '" target="_blank" rel="noopener" style="display:inline-block;width:100%;text-align:center;padding:16px 24px;background:linear-gradient(135deg,#f59e0b 0%,#fbbf24 50%,#f59e0b 100%);color:#78350f;font-weight:800;font-size:18px;border-radius:10px;text-decoration:none;box-shadow:0 4px 0 #d97706,0 6px 12px rgba(245,158,11,0.4);transition:all 0.2s;text-transform:uppercase;letter-spacing:0.5px;border:none" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 0 #d97706,0 8px 16px rgba(245,158,11,0.5)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 0 #d97706,0 6px 12px rgba(245,158,11,0.4)\'" onmousedown="this.style.transform=\'translateY(2px)\';this.style.boxShadow=\'0 2px 0 #d97706,0 4px 8px rgba(245,158,11,0.3)\'" onmouseup="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 0 #d97706,0 8px 16px rgba(245,158,11,0.5)\'">' +
-              '🌟 Zobacz Więcej 🌟</a>' +
-              '</div>';
+            ctaButton = '<a href="' + esc(websiteUrl) + '" target="_blank" rel="noopener" class="jg-btn-cta-sponsored">🌟 Zobacz Więcej 🌟</a>';
           } else if (p.phone) {
-            ctaButton = '<div class="jg-btn--cta-sponsored" style="margin:20px auto;text-align:center">' +
-              '<a href="tel:' + esc(p.phone) + '" style="display:inline-block;width:100%;text-align:center;padding:16px 24px;background:linear-gradient(135deg,#f59e0b 0%,#fbbf24 50%,#f59e0b 100%);color:#78350f;font-weight:800;font-size:18px;border-radius:10px;text-decoration:none;box-shadow:0 4px 0 #d97706,0 6px 12px rgba(245,158,11,0.4);transition:all 0.2s;text-transform:uppercase;letter-spacing:0.5px;border:none" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 0 #d97706,0 8px 16px rgba(245,158,11,0.5)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 0 #d97706,0 6px 12px rgba(245,158,11,0.4)\'" onmousedown="this.style.transform=\'translateY(2px)\';this.style.boxShadow=\'0 2px 0 #d97706,0 4px 8px rgba(245,158,11,0.3)\'" onmouseup="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 0 #d97706,0 8px 16px rgba(245,158,11,0.5)\'">' +
-              '📞 Zadzwoń Teraz 📞</a>' +
-              '</div>';
+            ctaButton = '<a href="tel:' + esc(p.phone) + '" class="jg-btn-cta-sponsored">📞 Zadzwoń Teraz 📞</a>';
           }
         }
 

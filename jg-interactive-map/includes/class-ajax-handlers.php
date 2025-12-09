@@ -2793,7 +2793,7 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Update user profile
+     * Update user profile (email and password only)
      */
     public function update_profile() {
         if (!is_user_logged_in()) {
@@ -2802,12 +2802,11 @@ class JG_Map_Ajax_Handlers {
         }
 
         $user_id = get_current_user_id();
-        $display_name = isset($_POST['display_name']) ? sanitize_text_field($_POST['display_name']) : '';
         $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
         $password = isset($_POST['password']) ? $_POST['password'] : '';
 
-        if (empty($display_name) || empty($email)) {
-            wp_send_json_error('Proszę wypełnić wszystkie wymagane pola');
+        if (empty($email)) {
+            wp_send_json_error('Proszę podać adres email');
             exit;
         }
 
@@ -2824,10 +2823,9 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Update user data
+        // Update user data (only email, no display name change)
         $user_data = array(
             'ID' => $user_id,
-            'display_name' => $display_name,
             'user_email' => $email
         );
 
