@@ -33,6 +33,9 @@ class JG_Map_Enqueue {
 
         // Hide admin bar for non-admins
         add_action('after_setup_theme', array($this, 'hide_admin_bar_for_users'));
+
+        // Add custom top bar to the page
+        add_action('wp_body_open', array($this, 'render_top_bar'));
     }
 
     /**
@@ -162,5 +165,37 @@ class JG_Map_Enqueue {
             JG_MAP_VERSION,
             true
         );
+    }
+
+    /**
+     * Render custom top bar at the top of the page
+     */
+    public function render_top_bar() {
+        // Only render on pages with shortcode
+        global $post;
+        if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'jg_map')) {
+            return;
+        }
+        ?>
+        <!-- Custom Top Bar -->
+        <div id="jg-custom-top-bar" class="jg-custom-top-bar">
+            <div class="jg-top-bar-left">
+                <span id="jg-top-bar-datetime"></span>
+            </div>
+            <div class="jg-top-bar-right">
+                <?php if (is_user_logged_in()) : ?>
+                    <?php $current_user = wp_get_current_user(); ?>
+                    <span class="jg-top-bar-user">
+                        Zalogowano jako: <strong><?php echo esc_html($current_user->display_name); ?></strong>
+                    </span>
+                    <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
+                    <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn">Wyloguj</a>
+                <?php else : ?>
+                    <a href="<?php echo wp_login_url(get_permalink()); ?>" class="jg-top-bar-btn">Zaloguj</a>
+                    <a href="<?php echo wp_registration_url(); ?>" class="jg-top-bar-btn">Zarejestruj</a>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php
     }
 }
