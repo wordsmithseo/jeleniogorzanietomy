@@ -2942,9 +2942,6 @@
           // Promo only filter
           if (promoOnly) return p.sponsored;
 
-          // Always show sponsored places - they should never be hidden by search or filters
-          if (p.sponsored) return true;
-
           // Search filter
           if (searchQuery) {
             var title = (p.title || '').toLowerCase();
