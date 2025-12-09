@@ -306,7 +306,43 @@
   font-weight: 600;
 }
 
-/* Markers */
+/* Markers - SVG Pin Style */
+.jg-pin-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.jg-pin-svg-wrapper {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.jg-pin-svg-wrapper:hover {
+  transform: translateY(-3px);
+}
+
+.jg-pin-emoji {
+  pointer-events: none;
+  user-select: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Sponsored pin animation */
+.jg-pin-marker--promo .jg-pin-svg-wrapper {
+  animation: pin-pulse-gold 2s ease-in-out infinite;
+}
+
+@keyframes pin-pulse-gold {
+  0%, 100% {
+    filter: drop-shadow(0 0 0 rgba(245, 158, 11, 0.7)) drop-shadow(0 2px 8px rgba(245, 158, 11, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.9)) drop-shadow(0 2px 12px rgba(245, 158, 11, 0.8));
+  }
+}
+
+/* Legacy support for old circular pins (if needed) */
 .jg-pin {
   display: flex;
   align-items: center;
@@ -384,6 +420,10 @@
 }
 
 .leaflet-marker-icon.jg-pin--promo {
+  z-index: 1000 !important;
+}
+
+.leaflet-marker-icon.jg-pin-marker--promo {
   z-index: 1000 !important;
 }
 
