@@ -629,8 +629,8 @@
           '</filter>' +
           '</defs>';
 
-        // Pin shape: circle top + triangle bottom (no stroke, with soft shadow)
-        svgPin += '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 16 0 18 0 20 L16 40 L32 20 C32 18 32 16 32 16 C32 7.163 24.837 0 16 0 Z" ' +
+        // Pin shape: rounded Google Maps style with smooth curves
+        svgPin += '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" ' +
           'fill="url(#' + gradientId + ')" ' +
           'filter="url(#soft-shadow-' + gradientId + ')"/>';
 
@@ -661,9 +661,10 @@
         var labelHtml = '<span class="' + labelClass + '">' + esc(p.title || 'Bez nazwy') + suffix + '</span>';
 
         // Emoji overlay on pin with contrasting color and text shadow
+        // Centered better in the circular top part (0.32 instead of 0.25)
         var emojiFontSize = sponsored ? 28 : 22;
         var emojiStyle = 'position:absolute;' +
-          'top:' + (pinHeight * 0.25) + 'px;' +
+          'top:' + (pinHeight * 0.32) + 'px;' +
           'left:50%;' +
           'transform:translate(-50%,-50%);' +
           'font-size:' + emojiFontSize + 'px;' +
