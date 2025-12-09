@@ -43,6 +43,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_author_points', array($this, 'get_author_points'));
         add_action('wp_ajax_jg_request_deletion', array($this, 'request_deletion'));
         add_action('wp_ajax_jg_get_daily_limits', array($this, 'get_daily_limits'));
+        add_action('wp_ajax_jg_map_get_current_user', array($this, 'get_current_user'));
+        add_action('wp_ajax_jg_map_update_profile', array($this, 'update_profile'));
 
         // Admin actions
         add_action('wp_ajax_jg_get_reports', array($this, 'get_reports'));
@@ -2771,5 +2773,76 @@ class JG_Map_Ajax_Handlers {
             'message' => 'Zdjęcie usunięte',
             'remaining_count' => count($images)
         ));
+    }
+
+    /**
+     * Get current user data
+     */
+    public function get_current_user() {
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Musisz być zalogowany');
+            exit;
+        }
+
+        $current_user = wp_get_current_user();
+
+        wp_send_json_success(array(
+            'display_name' => $current_user->display_name,
+            'email' => $current_user->user_email
+        ));
+    }
+
+    /**
+     * Update user profile
+     */
+    public function update_profile() {
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Musisz być zalogowany');
+            exit;
+        }
+
+        $user_id = get_current_user_id();
+        $display_name = isset($_POST['display_name']) ? sanitize_text_field($_POST['display_name']) : '';
+        $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+        $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+        if (empty($display_name) || empty($email)) {
+            wp_send_json_error('Proszę wypełnić wszystkie wymagane pola');
+            exit;
+        }
+
+        // Validate email
+        if (!is_email($email)) {
+            wp_send_json_error('Nieprawidłowy adres email');
+            exit;
+        }
+
+        // Check if email is already used by another user
+        $email_exists = email_exists($email);
+        if ($email_exists && $email_exists != $user_id) {
+            wp_send_json_error('Ten adres email jest już używany przez innego użytkownika');
+            exit;
+        }
+
+        // Update user data
+        $user_data = array(
+            'ID' => $user_id,
+            'display_name' => $display_name,
+            'user_email' => $email
+        );
+
+        // Add password if provided
+        if (!empty($password)) {
+            $user_data['user_pass'] = $password;
+        }
+
+        $result = wp_update_user($user_data);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message());
+            exit;
+        }
+
+        wp_send_json_success('Profil został zaktualizowany');
     }
 }

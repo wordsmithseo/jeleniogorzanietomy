@@ -1,5 +1,50 @@
 /* JG Interactive Map Styles */
 
+/* Custom Top Bar */
+.jg-custom-top-bar {
+  background: #8d2324;
+  color: #fff;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+}
+
+.jg-top-bar-left,
+.jg-top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.jg-top-bar-user {
+  margin-right: 8px;
+}
+
+.jg-top-bar-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.jg-top-bar-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
 .jg-wrap {
   position: relative;
 }
@@ -176,6 +221,52 @@
 
 .jg-btn.jg-btn--danger:hover {
   background: #b91c1c;
+}
+
+/* Sponsored CTA Button */
+.jg-btn--cta-sponsored {
+  width: 90%;
+  margin: 20px auto;
+  display: block;
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+  color: #111;
+  border: none;
+  border-radius: 10px;
+  padding: 16px 24px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 4px 0 #d97706, 0 6px 12px rgba(245, 158, 11, 0.4);
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.jg-btn--cta-sponsored::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.jg-btn--cta-sponsored:hover::before {
+  left: 100%;
+}
+
+.jg-btn--cta-sponsored:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #d97706, 0 8px 16px rgba(245, 158, 11, 0.5);
+}
+
+.jg-btn--cta-sponsored:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 0 #d97706, 0 4px 8px rgba(245, 158, 11, 0.3);
 }
 
 /* Grid */

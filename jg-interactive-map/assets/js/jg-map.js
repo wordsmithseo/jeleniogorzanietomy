@@ -101,6 +101,142 @@
 
       if ((elMap.offsetHeight || 0) < 50) elMap.style.minHeight = '520px';
 
+      // ====================================
+      // Custom Top Bar: Clock and Profile
+      // ====================================
+      var topBarDateTime = document.getElementById('jg-top-bar-datetime');
+      var editProfileBtn = document.getElementById('jg-edit-profile-btn');
+
+      // Update clock display
+      function updateDateTime() {
+        if (!topBarDateTime) return;
+
+        var now = new Date();
+        var days = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+        var dayName = days[now.getDay()];
+
+        var day = String(now.getDate()).padStart(2, '0');
+        var month = String(now.getMonth() + 1).padStart(2, '0');
+        var year = now.getFullYear();
+
+        var hours = String(now.getHours()).padStart(2, '0');
+        var minutes = String(now.getMinutes()).padStart(2, '0');
+        var seconds = String(now.getSeconds()).padStart(2, '0');
+
+        topBarDateTime.textContent = dayName + ', ' + day + '.' + month + '.' + year + ' • ' + hours + ':' + minutes + ':' + seconds;
+      }
+
+      // Update clock every second
+      if (topBarDateTime) {
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+      }
+
+      // Edit profile button handler
+      if (editProfileBtn) {
+        editProfileBtn.addEventListener('click', function() {
+          var html = '<div class="jg-modal-header">' +
+            '<h2>Edytuj profil</h2>' +
+            '<button class="jg-modal-close">&times;</button>' +
+            '</div>' +
+            '<div class="jg-modal-body">' +
+            '<form id="jg-edit-profile-form">' +
+            '<div class="jg-form-group">' +
+            '<label>Nazwa użytkownika</label>' +
+            '<input type="text" id="profile-display-name" class="jg-input" required>' +
+            '</div>' +
+            '<div class="jg-form-group">' +
+            '<label>Email</label>' +
+            '<input type="email" id="profile-email" class="jg-input" required>' +
+            '</div>' +
+            '<div class="jg-form-group">' +
+            '<label>Nowe hasło (pozostaw puste, aby nie zmieniać)</label>' +
+            '<input type="password" id="profile-password" class="jg-input">' +
+            '</div>' +
+            '<div class="jg-form-group">' +
+            '<label>Potwierdź hasło</label>' +
+            '<input type="password" id="profile-password-confirm" class="jg-input">' +
+            '</div>' +
+            '</form>' +
+            '</div>' +
+            '<div class="jg-modal-footer">' +
+            '<button class="jg-btn jg-btn--secondary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'">Anuluj</button>' +
+            '<button class="jg-btn jg-btn--primary" id="save-profile-btn">Zapisz zmiany</button>' +
+            '</div>';
+
+          open(modalEdit, html);
+
+          // Load current user data
+          jQuery.ajax({
+            url: CFG.ajax,
+            type: 'POST',
+            data: {
+              action: 'jg_map_get_current_user',
+              nonce: CFG.nonce
+            },
+            success: function(response) {
+              if (response.success && response.data) {
+                document.getElementById('profile-display-name').value = response.data.display_name || '';
+                document.getElementById('profile-email').value = response.data.email || '';
+              }
+            }
+          });
+
+          // Save profile handler
+          document.getElementById('save-profile-btn').addEventListener('click', function() {
+            var displayName = document.getElementById('profile-display-name').value;
+            var email = document.getElementById('profile-email').value;
+            var password = document.getElementById('profile-password').value;
+            var passwordConfirm = document.getElementById('profile-password-confirm').value;
+
+            if (!displayName || !email) {
+              alert('Proszę wypełnić wszystkie wymagane pola');
+              return;
+            }
+
+            if (password && password !== passwordConfirm) {
+              alert('Hasła nie pasują do siebie');
+              return;
+            }
+
+            jQuery.ajax({
+              url: CFG.ajax,
+              type: 'POST',
+              data: {
+                action: 'jg_map_update_profile',
+                nonce: CFG.nonce,
+                display_name: displayName,
+                email: email,
+                password: password
+              },
+              success: function(response) {
+                if (response.success) {
+                  alert('Profil został zaktualizowany');
+                  close(modalEdit);
+                  location.reload();
+                } else {
+                  alert(response.data || 'Wystąpił błąd podczas aktualizacji profilu');
+                }
+              },
+              error: function() {
+                alert('Wystąpił błąd podczas komunikacji z serwerem');
+              }
+            });
+          });
+
+          // Close button handler
+          var closeBtn = qs('.jg-modal-close', modalEdit);
+          if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+              close(modalEdit);
+            });
+          }
+        });
+      }
+      // ====================================
+      // End: Custom Top Bar
+      // ====================================
+
       function qs(s, p) {
         return (p || document).querySelector(s);
       }
@@ -2486,21 +2622,20 @@
           }
         }
 
-        // CTA button for sponsored points - large, prominent call-to-action
+        // CTA button for sponsored points - large, prominent call-to-action with gold gradient
         var ctaButton = '';
-        if (p.sponsored && p.cta_enabled && p.cta_type) {
-          if (p.cta_type === 'call' && p.phone) {
-            ctaButton = '<div style="margin:20px 0;padding:16px;background:linear-gradient(135deg,rgba(16,185,129,0.1) 0%,rgba(5,150,105,0.1) 100%);border-radius:16px;border:3px solid #10b981">' +
-              '<a href="tel:' + esc(p.phone) + '" style="display:block;text-align:center;padding:20px 32px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;font-weight:800;font-size:20px;border-radius:12px;text-decoration:none;box-shadow:0 6px 20px rgba(16,185,129,0.5);transition:all 0.3s;text-transform:uppercase;letter-spacing:0.5px" onmouseover="this.style.transform=\'translateY(-3px) scale(1.02)\';this.style.boxShadow=\'0 10px 30px rgba(16,185,129,0.6)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 6px 20px rgba(16,185,129,0.5)\'">' +
-              '📞 Zadzwoń Teraz</a>' +
-              '<div style="text-align:center;margin-top:8px;font-size:12px;color:#059669;font-weight:600">Bezpośredni kontakt telefoniczny</div>' +
-              '</div>';
-          } else if (p.cta_type === 'website' && p.website) {
+        if (p.sponsored) {
+          // Priority: website > phone (if both exist, show website)
+          if (p.website) {
             var websiteUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
-            ctaButton = '<div style="margin:20px 0;padding:16px;background:linear-gradient(135deg,rgba(59,130,246,0.1) 0%,rgba(37,99,235,0.1) 100%);border-radius:16px;border:3px solid #3b82f6">' +
-              '<a href="' + esc(websiteUrl) + '" target="_blank" rel="noopener" style="display:block;text-align:center;padding:20px 32px;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);color:#fff;font-weight:800;font-size:20px;border-radius:12px;text-decoration:none;box-shadow:0 6px 20px rgba(59,130,246,0.5);transition:all 0.3s;text-transform:uppercase;letter-spacing:0.5px" onmouseover="this.style.transform=\'translateY(-3px) scale(1.02)\';this.style.boxShadow=\'0 10px 30px rgba(59,130,246,0.6)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 6px 20px rgba(59,130,246,0.5)\'">' +
-              '🌐 Odwiedź Naszą Stronę</a>' +
-              '<div style="text-align:center;margin-top:8px;font-size:12px;color:#2563eb;font-weight:600">Więcej informacji online</div>' +
+            ctaButton = '<div class="jg-btn--cta-sponsored" style="margin:20px auto;text-align:center">' +
+              '<a href="' + esc(websiteUrl) + '" target="_blank" rel="noopener" style="display:inline-block;width:100%;text-align:center;padding:16px 24px;background:linear-gradient(135deg,#f59e0b 0%,#fbbf24 50%,#f59e0b 100%);color:#78350f;font-weight:800;font-size:18px;border-radius:10px;text-decoration:none;box-shadow:0 4px 0 #d97706,0 6px 12px rgba(245,158,11,0.4);transition:all 0.2s;text-transform:uppercase;letter-spacing:0.5px;border:none" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 0 #d97706,0 8px 16px rgba(245,158,11,0.5)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 0 #d97706,0 6px 12px rgba(245,158,11,0.4)\'" onmousedown="this.style.transform=\'translateY(2px)\';this.style.boxShadow=\'0 2px 0 #d97706,0 4px 8px rgba(245,158,11,0.3)\'" onmouseup="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 0 #d97706,0 8px 16px rgba(245,158,11,0.5)\'">' +
+              '🌟 Zobacz Więcej 🌟</a>' +
+              '</div>';
+          } else if (p.phone) {
+            ctaButton = '<div class="jg-btn--cta-sponsored" style="margin:20px auto;text-align:center">' +
+              '<a href="tel:' + esc(p.phone) + '" style="display:inline-block;width:100%;text-align:center;padding:16px 24px;background:linear-gradient(135deg,#f59e0b 0%,#fbbf24 50%,#f59e0b 100%);color:#78350f;font-weight:800;font-size:18px;border-radius:10px;text-decoration:none;box-shadow:0 4px 0 #d97706,0 6px 12px rgba(245,158,11,0.4);transition:all 0.2s;text-transform:uppercase;letter-spacing:0.5px;border:none" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 0 #d97706,0 8px 16px rgba(245,158,11,0.5)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 0 #d97706,0 6px 12px rgba(245,158,11,0.4)\'" onmousedown="this.style.transform=\'translateY(2px)\';this.style.boxShadow=\'0 2px 0 #d97706,0 4px 8px rgba(245,158,11,0.3)\'" onmouseup="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 0 #d97706,0 8px 16px rgba(245,158,11,0.5)\'">' +
+              '📞 Zadzwoń Teraz 📞</a>' +
               '</div>';
           }
         }

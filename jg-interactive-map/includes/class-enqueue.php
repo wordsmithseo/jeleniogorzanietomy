@@ -30,6 +30,18 @@ class JG_Map_Enqueue {
      */
     private function __construct() {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
+
+        // Hide admin bar for non-admins
+        add_action('after_setup_theme', array($this, 'hide_admin_bar_for_users'));
+    }
+
+    /**
+     * Hide WordPress admin bar for non-admin users
+     */
+    public function hide_admin_bar_for_users() {
+        if (!current_user_can('manage_options')) {
+            show_admin_bar(false);
+        }
     }
 
     /**
