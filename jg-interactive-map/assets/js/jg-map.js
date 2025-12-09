@@ -556,54 +556,47 @@
         // Anchor at the bottom tip of the pin (where it points to the location)
         var anchor = [pinWidth / 2, pinHeight];
 
-        // Determine gradient colors based on type and state
+        // Determine gradient colors and circle color based on type and state
         var gradientId = 'gradient-' + (p.id || Math.random());
         var gradientStart, gradientMid, gradientEnd;
-        var emojiColor = '#fff'; // Default white for contrast
+        var circleColor; // Color for the inner circle
 
         if (isPending) {
           // Red gradient for pending
           gradientStart = '#dc2626';
           gradientMid = '#ef4444';
           gradientEnd = '#dc2626';
+          circleColor = '#7f1d1d'; // Dark red
         } else if (isEdit) {
           // Purple gradient for edit
           gradientStart = '#9333ea';
           gradientMid = '#a855f7';
           gradientEnd = '#9333ea';
+          circleColor = '#581c87'; // Dark purple
         } else if (sponsored) {
           // Gold gradient for sponsored
           gradientStart = '#f59e0b';
           gradientMid = '#fbbf24';
           gradientEnd = '#f59e0b';
-          emojiColor = '#fff'; // White on gold
+          circleColor = null; // No circle, will use star emoji
         } else if (p.type === 'ciekawostka') {
           // Blue gradient for curiosities
           gradientStart = '#1e40af';
           gradientMid = '#3b82f6';
           gradientEnd = '#1e40af';
+          circleColor = '#1e3a8a'; // Dark blue
         } else if (p.type === 'miejsce') {
           // Green gradient for places
           gradientStart = '#15803d';
           gradientMid = '#22c55e';
           gradientEnd = '#15803d';
+          circleColor = '#0a5a28'; // Dark green
         } else {
           // Black gradient for reports
           gradientStart = '#000';
           gradientMid = '#1f1f1f';
           gradientEnd = '#000';
-        }
-
-        // Create pin emoji/icon
-        var lbl = '';
-        if (p.sponsored) {
-          lbl = '⭐';
-        } else if (p.type === 'ciekawostka') {
-          lbl = 'ℹ️';
-        } else if (p.type === 'miejsce') {
-          lbl = '📍';
-        } else {
-          lbl = '❗';
+          circleColor = '#888'; // Light gray (visible on black)
         }
 
         // Build SVG pin shape with gradients and soft shadow
@@ -634,6 +627,11 @@
           'fill="url(#' + gradientId + ')" ' +
           'filter="url(#soft-shadow-' + gradientId + ')"/>';
 
+        // Add inner circle (Google Maps style) - only for non-sponsored
+        if (circleColor) {
+          svgPin += '<circle cx="16" cy="13" r="5.5" fill="' + circleColor + '"/>';
+        }
+
         svgPin += '</svg>';
 
         // Reports counter
@@ -660,21 +658,22 @@
 
         var labelHtml = '<span class="' + labelClass + '">' + esc(p.title || 'Bez nazwy') + suffix + '</span>';
 
-        // Emoji overlay on pin with contrasting color and text shadow
-        // Centered better in the circular top part (0.32 instead of 0.25)
-        var emojiFontSize = sponsored ? 28 : 22;
-        var emojiStyle = 'position:absolute;' +
-          'top:' + (pinHeight * 0.32) + 'px;' +
-          'left:50%;' +
-          'transform:translate(-50%,-50%);' +
-          'font-size:' + emojiFontSize + 'px;' +
-          'filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));' +
-          'z-index:2;';
-
-        var emojiOverlay = '<div class="jg-pin-emoji" style="' + emojiStyle + '">' + lbl + '</div>';
+        // Star emoji ONLY for sponsored pins
+        var centerContent = '';
+        if (sponsored) {
+          var emojiFontSize = 28;
+          var emojiStyle = 'position:absolute;' +
+            'top:' + (pinHeight * 0.32) + 'px;' +
+            'left:50%;' +
+            'transform:translate(-50%,-50%);' +
+            'font-size:' + emojiFontSize + 'px;' +
+            'filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));' +
+            'z-index:2;';
+          centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">⭐</div>';
+        }
 
         var iconHtml = '<div class="jg-pin-svg-wrapper" style="position:relative;width:' + pinWidth + 'px;height:' + pinHeight + 'px;">' +
-          svgPin + emojiOverlay + reportsHtml + deletionHtml + labelHtml +
+          svgPin + centerContent + reportsHtml + deletionHtml + labelHtml +
           '</div>';
 
         var className = 'jg-pin-marker';
