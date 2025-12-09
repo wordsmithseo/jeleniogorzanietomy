@@ -2863,12 +2863,18 @@
           }
         }
 
-        var list = (ALL || []).filter(function(p) {
-          // Promo only filter
-          if (promoOnly) return p.sponsored;
+        // STEP 1: Get ALL sponsored points - they are ALWAYS visible (no filtering!)
+        var sponsoredPoints = (ALL || []).filter(function(p) {
+          return p.sponsored;
+        });
 
-          // Always show sponsored places - they should never be hidden by search or filters
-          if (p.sponsored) return true;
+        // STEP 2: Filter non-sponsored points based on search and type filters
+        var nonSponsoredPoints = (ALL || []).filter(function(p) {
+          // Skip sponsored points - they're already in sponsoredPoints array
+          if (p.sponsored) return false;
+
+          // Promo only mode - hide all non-sponsored
+          if (promoOnly) return false;
 
           // Search filter
           if (searchQuery) {
@@ -2885,13 +2891,24 @@
           }
 
           // Type filters (only apply when no search query)
-          // If no filters are enabled, hide non-sponsored points (sponsored already handled above)
+          // If no filters are enabled, hide all non-sponsored points
           if (Object.keys(enabled).length === 0) {
             return false;
           }
           // Check if point type is in enabled filters
           return !!enabled[p.type];
         });
+
+        // STEP 3: Combine sponsored + filtered non-sponsored points
+        var list = sponsoredPoints.concat(nonSponsoredPoints);
+
+        // Debug logging
+        console.log('[JG MAP FILTER] Total points:', (ALL || []).length);
+        console.log('[JG MAP FILTER] Sponsored (always visible):', sponsoredPoints.length);
+        console.log('[JG MAP FILTER] Non-sponsored (filtered):', nonSponsoredPoints.length);
+        console.log('[JG MAP FILTER] Final list:', list.length);
+        console.log('[JG MAP FILTER] Enabled filters:', Object.keys(enabled).length > 0 ? Object.keys(enabled) : 'NONE');
+        console.log('[JG MAP FILTER] Search query:', searchQuery || 'NONE');
 
         pendingData = list;
         draw(list, skipFitBounds);
