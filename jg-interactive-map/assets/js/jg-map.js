@@ -549,9 +549,9 @@
         var isEdit = !!p.is_edit;
         var hasReports = (CFG.isAdmin && p.reports_count > 0);
 
-        // Pin sizes - sponsored slightly bigger (40px vs 32px)
-        var pinHeight = sponsored ? 50 : 40;
-        var pinWidth = sponsored ? 32 : 26;
+        // Pin sizes - much bigger for visibility! Sponsored even bigger
+        var pinHeight = sponsored ? 90 : 72;
+        var pinWidth = sponsored ? 60 : 48;
 
         // Anchor at the bottom tip of the pin (where it points to the location)
         var anchor = [pinWidth / 2, pinHeight];
@@ -603,8 +603,8 @@
           'stroke="#fff" stroke-width="2" ' +
           'filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))"/>';
 
-        // Add inner circle for emoji
-        svgPin += '<circle cx="16" cy="14" r="10" fill="rgba(255,255,255,0.3)"/>';
+        // Add inner circle for emoji - bigger now
+        svgPin += '<circle cx="16" cy="14" r="11" fill="rgba(255,255,255,0.35)"/>';
 
         svgPin += '</svg>';
 
@@ -632,8 +632,9 @@
 
         var labelHtml = '<span class="' + labelClass + '">' + esc(p.title || 'Bez nazwy') + suffix + '</span>';
 
-        // Emoji overlay on pin
-        var emojiOverlay = '<div class="jg-pin-emoji" style="position:absolute;top:' + (pinHeight * 0.25) + 'px;left:50%;transform:translate(-50%,-50%);font-size:' + (sponsored ? '18px' : '14px') + ';z-index:2;">' + lbl + '</div>';
+        // Emoji overlay on pin - bigger font sizes!
+        var emojiFontSize = sponsored ? 28 : 22;
+        var emojiOverlay = '<div class="jg-pin-emoji" style="position:absolute;top:' + (pinHeight * 0.25) + 'px;left:50%;transform:translate(-50%,-50%);font-size:' + emojiFontSize + 'px;z-index:2;">' + lbl + '</div>';
 
         var iconHtml = '<div class="jg-pin-svg-wrapper" style="position:relative;width:' + pinWidth + 'px;height:' + pinHeight + 'px;">' +
           svgPin + emojiOverlay + reportsHtml + deletionHtml + labelHtml +
