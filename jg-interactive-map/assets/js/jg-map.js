@@ -2624,7 +2624,7 @@
 
         // CTA button for sponsored points - large, prominent call-to-action with gold gradient
         var ctaButton = '';
-        if (p.sponsored) {
+        if (p.sponsored && p.cta_enabled) {
           // Priority: website > phone (if both exist, show website)
           if (p.website) {
             var websiteUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
