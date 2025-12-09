@@ -36,6 +36,10 @@ class JG_Map_Enqueue {
 
         // Add custom top bar to the page
         add_action('wp_body_open', array($this, 'render_top_bar'));
+
+        // Block wp-admin and wp-login access for non-admins
+        add_action('init', array($this, 'block_admin_access'));
+        add_action('login_init', array($this, 'block_login_page'));
     }
 
     /**
@@ -201,11 +205,31 @@ class JG_Map_Enqueue {
                     <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
                     <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn">Wyloguj</a>
                 <?php else : ?>
-                    <a href="<?php echo wp_login_url(get_permalink()); ?>" class="jg-top-bar-btn">Zaloguj</a>
-                    <a href="<?php echo wp_registration_url(); ?>" class="jg-top-bar-btn">Zarejestruj</a>
+                    <button id="jg-login-btn" class="jg-top-bar-btn">Zaloguj</button>
+                    <button id="jg-register-btn" class="jg-top-bar-btn">Zarejestruj</button>
                 <?php endif; ?>
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Block wp-admin access for non-admin users
+     */
+    public function block_admin_access() {
+        if (is_admin() && !current_user_can('manage_options') && !wp_doing_ajax()) {
+            // Redirect to home page
+            wp_redirect(home_url());
+            exit;
+        }
+    }
+
+    /**
+     * Block wp-login.php access (redirect to home with modal trigger)
+     */
+    public function block_login_page() {
+        // Redirect to home page - modal will open via JavaScript
+        wp_redirect(home_url());
+        exit;
     }
 }
