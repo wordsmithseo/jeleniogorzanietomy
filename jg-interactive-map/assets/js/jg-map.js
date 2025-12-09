@@ -957,106 +957,17 @@
           return;
         }
 
-        // Initialize or clear single cluster
-        if (!cluster) {
-          try {
-            cluster = L.markerClusterGroup({
-              showCoverageOnHover: false,
-              maxClusterRadius: 50,
-              spiderfyOnMaxZoom: true,
-              zoomToBoundsOnClick: true,
-              disableClusteringAtZoom: 16,
-              spiderfyDistanceMultiplier: 2,
-              animate: true,
-              animateAddingMarkers: true,
-              iconCreateFunction: function(clusterGroup) {
-                var childMarkers = clusterGroup.getAllChildMarkers();
+        // Wait for cluster to be ready (created in map.whenReady)
+        if (!clusterReady || !cluster) {
+          pendingData = list;
+          return;
+        }
 
-                // Count by type
-                var sponsored = 0;
-                var places = 0;
-                var curiosities = 0;
-                var events = 0;
-
-                childMarkers.forEach(function(marker) {
-                  var opts = marker.options;
-                  if (opts.isPromo) {
-                    sponsored++;
-                  } else if (opts.pointType === 'miejsce') {
-                    places++;
-                  } else if (opts.pointType === 'ciekawostka') {
-                    curiosities++;
-                  } else if (opts.pointType === 'zgloszenie') {
-                    events++;
-                  }
-                });
-
-                // Build grid HTML
-                var html = '<div class="jg-cluster-grid">';
-
-                // Top row - sponsored (if any)
-                if (sponsored > 0) {
-                  html += '<div class="jg-cluster-grid-top">';
-                  html += '<div class="jg-cluster-cell jg-cluster-cell--sponsored">';
-                  html += '<span class="jg-cluster-icon">⭐</span>';
-                  html += '<span class="jg-cluster-num">' + sponsored + '</span>';
-                  html += '</div>';
-                  html += '</div>';
-                }
-
-                // Bottom row - types (if any)
-                var hasBottom = places > 0 || curiosities > 0 || events > 0;
-                if (hasBottom) {
-                  html += '<div class="jg-cluster-grid-bottom">';
-
-                  if (places > 0) {
-                    html += '<div class="jg-cluster-cell jg-cluster-cell--places">';
-                    html += '<span class="jg-cluster-icon">📍</span>';
-                    html += '<span class="jg-cluster-num">' + places + '</span>';
-                    html += '</div>';
-                  }
-
-                  if (curiosities > 0) {
-                    html += '<div class="jg-cluster-cell jg-cluster-cell--curiosities">';
-                    html += '<span class="jg-cluster-icon">ℹ️</span>';
-                    html += '<span class="jg-cluster-num">' + curiosities + '</span>';
-                    html += '</div>';
-                  }
-
-                  if (events > 0) {
-                    html += '<div class="jg-cluster-cell jg-cluster-cell--events">';
-                    html += '<span class="jg-cluster-icon">❗</span>';
-                    html += '<span class="jg-cluster-num">' + events + '</span>';
-                    html += '</div>';
-                  }
-
-                  html += '</div>';
-                }
-
-                html += '</div>';
-
-                // Calculate icon size based on content
-                var width = 80;
-                var height = sponsored > 0 && hasBottom ? 90 : 50;
-
-                return L.divIcon({
-                  html: html,
-                  className: 'jg-cluster-wrapper',
-                  iconSize: [width, height]
-                });
-              }
-            });
-
-            map.addLayer(cluster);
-            clusterReady = true;
-          } catch (e) {
-            console.error('[JG MAP] Błąd tworzenia clustera:', e);
-            clusterReady = false;
-          }
-        } else {
-          try {
-            cluster.clearLayers();
-          } catch (e) {}
+        // Clear cluster layers
+        try {
+          cluster.clearLayers();
+        } catch (e) {
+          console.error('[JG MAP] Błąd czyszczenia clustera:', e);
         }
 
         // Clear any markers that were added directly to map (not in cluster)
