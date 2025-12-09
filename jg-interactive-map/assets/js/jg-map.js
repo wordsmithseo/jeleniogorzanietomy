@@ -1059,6 +1059,17 @@
           } catch (e) {}
         }
 
+        // Clear any markers that were added directly to map (not in cluster)
+        if (markers.length > 0) {
+          markers.forEach(function(m) {
+            try {
+              m.off();
+              if (map.hasLayer(m)) map.removeLayer(m);
+            } catch (e) {}
+          });
+          markers = [];
+        }
+
         var bounds = [];
         var validPoints = 0;
 
@@ -2955,9 +2966,11 @@
                 excerpt.indexOf(searchQuery) === -1) {
               return false;
             }
+            // If search query matches, show the point (ignore type filters during search)
+            return true;
           }
 
-          // Type filters
+          // Type filters (only apply when no search query)
           var passType = (Object.keys(enabled).length ? !!enabled[p.type] : true);
           return passType;
         });
