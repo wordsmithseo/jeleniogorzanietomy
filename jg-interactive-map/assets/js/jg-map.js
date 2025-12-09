@@ -217,6 +217,132 @@
           });
         });
       }
+
+      // Login button handler
+      var loginBtn = document.getElementById('jg-login-btn');
+      if (loginBtn) {
+        loginBtn.addEventListener('click', function() {
+          var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+            '<h2 style="margin:0;font-size:20px;font-weight:600">Logowanie</h2>' +
+            '</div>' +
+            '<div class="jg-modal-body" style="padding:24px">' +
+            '<form id="jg-login-form">' +
+            '<div class="jg-form-group" style="margin-bottom:20px">' +
+            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nazwa użytkownika lub email</label>' +
+            '<input type="text" id="login-username" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
+            '</div>' +
+            '<div class="jg-form-group" style="margin-bottom:20px">' +
+            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Hasło</label>' +
+            '<input type="password" id="login-password" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
+            '</div>' +
+            '</form>' +
+            '</div>' +
+            '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
+            '<button class="jg-btn jg-btn--secondary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'" style="padding:10px 20px;background:#fff;color:#333;border:2px solid #ddd;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'#fff\'">Anuluj</button>' +
+            '<button class="jg-btn jg-btn--primary" id="submit-login-btn" style="padding:10px 24px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#a02829\'" onmouseout="this.style.background=\'#8d2324\'">Zaloguj się</button>' +
+            '</div>';
+
+          open(modalEdit, html);
+
+          document.getElementById('submit-login-btn').addEventListener('click', function() {
+            var username = document.getElementById('login-username').value;
+            var password = document.getElementById('login-password').value;
+
+            if (!username || !password) {
+              alert('Proszę wypełnić wszystkie pola');
+              return;
+            }
+
+            jQuery.ajax({
+              url: CFG.ajax,
+              type: 'POST',
+              data: {
+                action: 'jg_map_login',
+                username: username,
+                password: password
+              },
+              success: function(response) {
+                if (response.success) {
+                  alert('Zalogowano pomyślnie!');
+                  close(modalEdit);
+                  location.reload();
+                } else {
+                  alert(response.data || 'Błąd logowania');
+                }
+              },
+              error: function() {
+                alert('Wystąpił błąd podczas logowania');
+              }
+            });
+          });
+        });
+      }
+
+      // Register button handler
+      var registerBtn = document.getElementById('jg-register-btn');
+      if (registerBtn) {
+        registerBtn.addEventListener('click', function() {
+          var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+            '<h2 style="margin:0;font-size:20px;font-weight:600">Rejestracja</h2>' +
+            '</div>' +
+            '<div class="jg-modal-body" style="padding:24px">' +
+            '<form id="jg-register-form">' +
+            '<div class="jg-form-group" style="margin-bottom:20px">' +
+            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nazwa użytkownika</label>' +
+            '<input type="text" id="register-username" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
+            '</div>' +
+            '<div class="jg-form-group" style="margin-bottom:20px">' +
+            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Adres email</label>' +
+            '<input type="email" id="register-email" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
+            '</div>' +
+            '<div class="jg-form-group" style="margin-bottom:20px">' +
+            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Hasło</label>' +
+            '<input type="password" id="register-password" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
+            '</div>' +
+            '</form>' +
+            '</div>' +
+            '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
+            '<button class="jg-btn jg-btn--secondary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'" style="padding:10px 20px;background:#fff;color:#333;border:2px solid #ddd;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'#fff\'">Anuluj</button>' +
+            '<button class="jg-btn jg-btn--primary" id="submit-register-btn" style="padding:10px 24px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#a02829\'" onmouseout="this.style.background=\'#8d2324\'">Zarejestruj się</button>' +
+            '</div>';
+
+          open(modalEdit, html);
+
+          document.getElementById('submit-register-btn').addEventListener('click', function() {
+            var username = document.getElementById('register-username').value;
+            var email = document.getElementById('register-email').value;
+            var password = document.getElementById('register-password').value;
+
+            if (!username || !email || !password) {
+              alert('Proszę wypełnić wszystkie pola');
+              return;
+            }
+
+            jQuery.ajax({
+              url: CFG.ajax,
+              type: 'POST',
+              data: {
+                action: 'jg_map_register',
+                username: username,
+                email: email,
+                password: password
+              },
+              success: function(response) {
+                if (response.success) {
+                  alert('Rejestracja zakończona pomyślnie!');
+                  close(modalEdit);
+                  location.reload();
+                } else {
+                  alert(response.data || 'Błąd rejestracji');
+                }
+              },
+              error: function() {
+                alert('Wystąpił błąd podczas rejestracji');
+              }
+            });
+          });
+        });
+      }
       // ====================================
       // End: Custom Top Bar
       // ====================================

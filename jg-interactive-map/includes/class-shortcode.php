@@ -66,8 +66,9 @@ class JG_Map_Shortcode {
                  data-lat="<?php echo esc_attr($atts['lat']); ?>"
                  data-lng="<?php echo esc_attr($atts['lng']); ?>"
                  data-zoom="<?php echo esc_attr($atts['zoom']); ?>">
-                <div id="jg-map-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
-                    <?php _e('Ładowanie mapy...', 'jg-map'); ?>
+                <div id="jg-map-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:#fff;padding:30px 40px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15)">
+                    <div class="jg-spinner"></div>
+                    <div style="margin-top:16px;font-size:16px;color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
                 </div>
                 <div id="jg-map-error" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:#fee;padding:20px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15);color:#c00;max-width:400px">
                     <strong><?php _e('Błąd ładowania mapy', 'jg-map'); ?></strong><br>

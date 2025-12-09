@@ -34,6 +34,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_points', array($this, 'get_points'));
         add_action('wp_ajax_jg_check_updates', array($this, 'check_updates'));
         add_action('wp_ajax_nopriv_jg_check_updates', array($this, 'check_updates'));
+        add_action('wp_ajax_nopriv_jg_map_login', array($this, 'login_user'));
+        add_action('wp_ajax_nopriv_jg_map_register', array($this, 'register_user'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -2842,5 +2844,79 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success('Profil został zaktualizowany');
+    }
+
+    /**
+     * Login user via AJAX
+     */
+    public function login_user() {
+        $username = isset($_POST['username']) ? sanitize_text_field($_POST['username']) : '';
+        $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+        if (empty($username) || empty($password)) {
+            wp_send_json_error('Proszę wypełnić wszystkie pola');
+            exit;
+        }
+
+        $credentials = array(
+            'user_login'    => $username,
+            'user_password' => $password,
+            'remember'      => true
+        );
+
+        $user = wp_signon($credentials, false);
+
+        if (is_wp_error($user)) {
+            wp_send_json_error('Nieprawidłowa nazwa użytkownika lub hasło');
+            exit;
+        }
+
+        wp_send_json_success('Zalogowano pomyślnie');
+    }
+
+    /**
+     * Register user via AJAX
+     */
+    public function register_user() {
+        $username = isset($_POST['username']) ? sanitize_text_field($_POST['username']) : '';
+        $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+        $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+        if (empty($username) || empty($email) || empty($password)) {
+            wp_send_json_error('Proszę wypełnić wszystkie pola');
+            exit;
+        }
+
+        // Validate email
+        if (!is_email($email)) {
+            wp_send_json_error('Nieprawidłowy adres email');
+            exit;
+        }
+
+        // Check if username exists
+        if (username_exists($username)) {
+            wp_send_json_error('Ta nazwa użytkownika jest już zajęta');
+            exit;
+        }
+
+        // Check if email exists
+        if (email_exists($email)) {
+            wp_send_json_error('Ten adres email jest już zarejestrowany');
+            exit;
+        }
+
+        // Create user
+        $user_id = wp_create_user($username, $password, $email);
+
+        if (is_wp_error($user_id)) {
+            wp_send_json_error($user_id->get_error_message());
+            exit;
+        }
+
+        // Auto login after registration
+        wp_set_current_user($user_id);
+        wp_set_auth_cookie($user_id, true);
+
+        wp_send_json_success('Rejestracja zakończona pomyślnie');
     }
 }
