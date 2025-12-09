@@ -51,6 +51,26 @@ class JG_Map_Shortcode {
 
         ob_start();
         ?>
+        <!-- Custom Top Bar -->
+        <div id="jg-custom-top-bar" class="jg-custom-top-bar">
+            <div class="jg-top-bar-left">
+                <span id="jg-top-bar-datetime"></span>
+            </div>
+            <div class="jg-top-bar-right">
+                <?php if (is_user_logged_in()) : ?>
+                    <?php $current_user = wp_get_current_user(); ?>
+                    <span class="jg-top-bar-user">
+                        Zalogowano jako: <strong><?php echo esc_html($current_user->display_name); ?></strong>
+                    </span>
+                    <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
+                    <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn">Wyloguj</a>
+                <?php else : ?>
+                    <a href="<?php echo wp_login_url(get_permalink()); ?>" class="jg-top-bar-btn">Zaloguj</a>
+                    <a href="<?php echo wp_registration_url(); ?>" class="jg-top-bar-btn">Zarejestruj</a>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <div id="jg-map-wrap" class="jg-wrap">
             <div id="jg-map-filters" class="jg-filters">
                 <label><input type="checkbox" data-type="zgloszenie" checked> <?php _e('Zgłoszenia', 'jg-map'); ?></label>
