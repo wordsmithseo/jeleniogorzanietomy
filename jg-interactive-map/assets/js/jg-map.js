@@ -999,7 +999,7 @@
         }
 
 
-        var addedCount = 0;
+        var newMarkers = [];
 
         list.forEach(function(p) {
           if (!p.lat || !p.lng) return;
@@ -1027,18 +1027,21 @@
               });
             })(p);
 
-            // Add all markers to single cluster
-            if (clusterReady && cluster) {
-              cluster.addLayer(m);
-            } else {
-              m.addTo(map);
-              markers.push(m);
-            }
-            addedCount++;
+            newMarkers.push(m);
           } catch (e) {
             console.error('[JG MAP] Błąd dodawania markera:', e);
           }
         });
+
+        // Add all markers at once to cluster (reduces animation flicker)
+        if (clusterReady && cluster && newMarkers.length > 0) {
+          cluster.addLayers(newMarkers);
+        } else if (newMarkers.length > 0) {
+          newMarkers.forEach(function(m) {
+            m.addTo(map);
+            markers.push(m);
+          });
+        }
 
 
         // Only fit bounds on initial load, not on refresh
@@ -2882,8 +2885,12 @@
           }
 
           // Type filters (only apply when no search query)
-          var passType = (Object.keys(enabled).length ? !!enabled[p.type] : true);
-          return passType;
+          // If no filters are enabled, hide non-sponsored points (sponsored already handled above)
+          if (Object.keys(enabled).length === 0) {
+            return false;
+          }
+          // Check if point type is in enabled filters
+          return !!enabled[p.type];
         });
 
         pendingData = list;
