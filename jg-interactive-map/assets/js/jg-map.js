@@ -549,20 +549,28 @@
         var isEdit = !!p.is_edit;
         var hasReports = (CFG.isAdmin && p.reports_count > 0);
 
-        // Larger pins for better visibility - sponsored slightly bigger (56px vs 48px)
-        // Reduced from 72px to avoid overshadowing nearby clustered points
-        var size = sponsored ? [56, 56] : [48, 48];
-        var anchor = [size[0] / 2, size[1] / 2];
-        var c = 'jg-pin';
+        // Pin sizes - sponsored slightly bigger (40px vs 32px)
+        var pinHeight = sponsored ? 50 : 40;
+        var pinWidth = sponsored ? 32 : 26;
 
-        if (p.type === 'ciekawostka') c += ' jg-pin--ciekawostka';
-        if (p.type === 'miejsce') c += ' jg-pin--miejsce';
-        if (p.sponsored) c += ' jg-pin--promo';  // Changed from --sponsored to --promo
-        if (isPending) c += ' jg-pin--pending';
-        if (isEdit) c += ' jg-pin--edit';
-        if (hasReports) c += ' jg-pin--reported';
+        // Anchor at the bottom tip of the pin (where it points to the location)
+        var anchor = [pinWidth / 2, pinHeight];
 
-        // Use emoji icons instead of letters
+        // Determine pin color based on type and state
+        var pinColor = '#111'; // Default black for reports
+        if (sponsored) {
+          pinColor = '#f59e0b'; // Gold for sponsored
+        } else if (p.type === 'ciekawostka') {
+          pinColor = '#2563eb'; // Blue for curiosities
+        } else if (p.type === 'miejsce') {
+          pinColor = '#16a34a'; // Green for places
+        }
+
+        // Override color for special states
+        if (isPending) pinColor = '#dc2626'; // Red for pending
+        if (isEdit) pinColor = '#9333ea'; // Purple for edit
+
+        // Create pin emoji/icon
         var lbl = '';
         if (p.sponsored) {
           lbl = '⭐';  // Gold star for sponsored
@@ -574,7 +582,47 @@
           lbl = '❗';  // Exclamation for reports
         }
 
-        var labelClass = sponsored ? 'jg-marker-label jg-marker-label--promo' : 'jg-marker-label';  // Changed --sponsored to --promo
+        // Build SVG pin shape (Google Maps style)
+        var svgPin = '<svg width="' + pinWidth + '" height="' + pinHeight + '" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">';
+
+        // Add gradient for sponsored pins
+        if (sponsored) {
+          svgPin += '<defs>' +
+            '<linearGradient id="gold-gradient-' + (p.id || 'default') + '" x1="0%" y1="0%" x2="100%" y2="100%">' +
+            '<stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />' +
+            '<stop offset="50%" style="stop-color:#fbbf24;stop-opacity:1" />' +
+            '<stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />' +
+            '</linearGradient>' +
+            '</defs>';
+          pinColor = 'url(#gold-gradient-' + (p.id || 'default') + ')';
+        }
+
+        // Pin shape: circle top + triangle bottom
+        svgPin += '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 16 0 18 0 20 L16 40 L32 20 C32 18 32 16 32 16 C32 7.163 24.837 0 16 0 Z" ' +
+          'fill="' + pinColor + '" ' +
+          'stroke="#fff" stroke-width="2" ' +
+          'filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))"/>';
+
+        // Add inner circle for emoji
+        svgPin += '<circle cx="16" cy="14" r="10" fill="rgba(255,255,255,0.3)"/>';
+
+        svgPin += '</svg>';
+
+        // Reports counter
+        var reportsHtml = '';
+        if (hasReports) {
+          reportsHtml = '<span class="jg-reports-counter">' + p.reports_count + '</span>';
+        }
+
+        // Deletion request indicator
+        var deletionHtml = '';
+        if (CFG.isAdmin && p.is_deletion_requested) {
+          deletionHtml = '<span class="jg-deletion-badge">✕</span>';
+        }
+
+        // Label for pin
+        var labelClass = 'jg-marker-label';
+        if (sponsored) labelClass += ' jg-marker-label--promo';
         if (isPending) labelClass += ' jg-marker-label--pending';
         if (isEdit) labelClass += ' jg-marker-label--edit';
 
@@ -584,26 +632,22 @@
 
         var labelHtml = '<span class="' + labelClass + '">' + esc(p.title || 'Bez nazwy') + suffix + '</span>';
 
-        // Build icon HTML with reports counter
-        var reportsHtml = '';
-        if (hasReports) {
-          reportsHtml = '<span class="jg-reports-counter">' + p.reports_count + '</span>';
-        }
+        // Emoji overlay on pin
+        var emojiOverlay = '<div class="jg-pin-emoji" style="position:absolute;top:' + (pinHeight * 0.25) + 'px;left:50%;transform:translate(-50%,-50%);font-size:' + (sponsored ? '18px' : '14px') + ';z-index:2;">' + lbl + '</div>';
 
-        // Add deletion request indicator
-        var deletionHtml = '';
-        if (CFG.isAdmin && p.is_deletion_requested) {
-          deletionHtml = '<span class="jg-deletion-badge">✕</span>';
-        }
+        var iconHtml = '<div class="jg-pin-svg-wrapper" style="position:relative;width:' + pinWidth + 'px;height:' + pinHeight + 'px;">' +
+          svgPin + emojiOverlay + reportsHtml + deletionHtml + labelHtml +
+          '</div>';
 
-        var iconHtml = '<span class="jg-pin-inner">' + lbl + '</span>' + reportsHtml + deletionHtml + labelHtml;
+        var className = 'jg-pin-marker';
+        if (sponsored) className += ' jg-pin-marker--promo';
 
         return L.divIcon({
-          className: c,
+          className: className,
           html: iconHtml,
-          iconSize: size,
+          iconSize: [pinWidth, pinHeight],
           iconAnchor: anchor,
-          popupAnchor: [0, -10]
+          popupAnchor: [0, -pinHeight + 5]
         });
       }
 
