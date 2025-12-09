@@ -578,71 +578,112 @@
   z-index: 500 !important;
 }
 
-/* Promo markers and clusters always on top */
-.leaflet-marker-icon.jg-pin--promo,
-.leaflet-marker-icon.jg-cluster-sponsored {
-  z-index: 10000 !important;
+/* Grid Cluster Layout */
+.jg-cluster-wrapper {
+  background: transparent !important;
 }
 
-/* Type-based Cluster Styles */
+.jg-cluster-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
 
-/* Cluster count badge positioning */
-.cluster-count {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: #fff;
-  color: #111;
-  border-radius: 50%;
-  min-width: 24px;
-  height: 24px;
+.jg-cluster-grid-top {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.jg-cluster-grid-bottom {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.jg-cluster-cell {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  font-weight: 700;
+}
+
+.jg-cluster-icon {
+  font-size: 18px;
+}
+
+.jg-cluster-num {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #fff;
+  color: #111;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
   font-weight: 800;
   border: 2px solid currentColor;
   z-index: 10;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Sponsored cluster - gold with pulsating effect (same as individual) */
-.jg-cluster-sponsored {
-  /* Inherits styles from .jg-pin--promo */
+/* Sponsored cell - gold */
+.jg-cluster-cell--sponsored {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24, #f59e0b);
+  color: #111;
+  width: 56px;
+  height: 56px;
+  animation: pulse-gold 2s ease-in-out infinite;
 }
 
-.jg-cluster-sponsored .cluster-count {
+.jg-cluster-cell--sponsored .jg-cluster-num {
   border-color: #f59e0b;
   color: #111;
-  background: #fff;
 }
 
-/* Events cluster - black */
-.jg-cluster-events {
-  background: #111 !important;
+/* Places cell - green */
+.jg-cluster-cell--places {
+  background: #16a34a;
+  color: #fff;
+  width: 42px;
+  height: 42px;
 }
 
-.jg-cluster-events .cluster-count {
-  border-color: #111;
-  color: #111;
+.jg-cluster-cell--places .jg-cluster-num {
+  border-color: #16a34a;
+  color: #16a34a;
 }
 
-/* Curiosities cluster - blue */
-.jg-cluster-curiosities {
-  /* Inherits from .jg-pin--ciekawostka */
+/* Curiosities cell - blue */
+.jg-cluster-cell--curiosities {
+  background: #2563eb;
+  color: #fff;
+  width: 42px;
+  height: 42px;
 }
 
-.jg-cluster-curiosities .cluster-count {
+.jg-cluster-cell--curiosities .jg-cluster-num {
   border-color: #2563eb;
   color: #2563eb;
 }
 
-/* Places cluster - green */
-.jg-cluster-places {
-  /* Inherits from .jg-pin--miejsce */
+/* Events cell - black */
+.jg-cluster-cell--events {
+  background: #111;
+  color: #fff;
+  width: 42px;
+  height: 42px;
 }
 
-.jg-cluster-places .cluster-count {
-  border-color: #16a34a;
-  color: #16a34a;
+.jg-cluster-cell--events .jg-cluster-num {
+  border-color: #111;
+  color: #111;
 }

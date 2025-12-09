@@ -193,17 +193,9 @@
 
       tileLayer.addTo(map);
 
-      var cluster = null; // Legacy - no longer used
-      var sponsoredCluster = null; // Gold cluster for sponsored points
-      var eventsCluster = null; // Black cluster for events (zdarzenia)
-      var curiositiesCluster = null; // Blue cluster for curiosities (ciekawostka)
-      var placesCluster = null; // Green cluster for places (miejsce)
+      var cluster = null;
       var markers = [];
       var clusterReady = false;
-      var sponsoredClusterReady = false;
-      var eventsClusterReady = false;
-      var curiositiesClusterReady = false;
-      var placesClusterReady = false;
       var pendingData = null;
 
       function showMap() {
@@ -216,30 +208,8 @@
       map.whenReady(function() {
         setTimeout(function() {
           try {
-            // Sponsored points cluster - gold with pulsating effect
-            sponsoredCluster = L.markerClusterGroup({
-              showCoverageOnHover: false,
-              maxClusterRadius: 80,
-              spiderfyOnMaxZoom: true,
-              zoomToBoundsOnClick: true,
-              disableClusteringAtZoom: 16,
-              spiderfyDistanceMultiplier: 2,
-              animate: true,
-              animateAddingMarkers: true,
-              iconCreateFunction: function(cluster) {
-                var childCount = cluster.getChildCount();
-                return L.divIcon({
-                  html: '<span class="jg-pin-inner">⭐</span><span class="cluster-count">' + childCount + '</span>',
-                  className: 'jg-pin jg-pin--promo jg-cluster-sponsored',
-                  iconSize: [60, 60]
-                });
-              }
-            });
-            map.addLayer(sponsoredCluster);
-            sponsoredClusterReady = true;
-
-            // Events cluster - black
-            eventsCluster = L.markerClusterGroup({
+            // Single cluster with grid layout showing types
+            cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: 50,
               spiderfyOnMaxZoom: true,
@@ -248,62 +218,85 @@
               spiderfyDistanceMultiplier: 2,
               animate: true,
               animateAddingMarkers: true,
-              iconCreateFunction: function(cluster) {
-                var childCount = cluster.getChildCount();
+              iconCreateFunction: function(clusterGroup) {
+                var childMarkers = clusterGroup.getAllChildMarkers();
+
+                // Count by type
+                var sponsored = 0;
+                var places = 0;
+                var curiosities = 0;
+                var events = 0;
+
+                childMarkers.forEach(function(marker) {
+                  var opts = marker.options;
+                  if (opts.isPromo) {
+                    sponsored++;
+                  } else if (opts.pointType === 'miejsce') {
+                    places++;
+                  } else if (opts.pointType === 'ciekawostka') {
+                    curiosities++;
+                  } else if (opts.pointType === 'zgloszenie') {
+                    events++;
+                  }
+                });
+
+                // Build grid HTML
+                var html = '<div class="jg-cluster-grid">';
+
+                // Top row - sponsored (if any)
+                if (sponsored > 0) {
+                  html += '<div class="jg-cluster-grid-top">';
+                  html += '<div class="jg-cluster-cell jg-cluster-cell--sponsored">';
+                  html += '<span class="jg-cluster-icon">⭐</span>';
+                  html += '<span class="jg-cluster-num">' + sponsored + '</span>';
+                  html += '</div>';
+                  html += '</div>';
+                }
+
+                // Bottom row - types (if any)
+                var hasBottom = places > 0 || curiosities > 0 || events > 0;
+                if (hasBottom) {
+                  html += '<div class="jg-cluster-grid-bottom">';
+
+                  if (places > 0) {
+                    html += '<div class="jg-cluster-cell jg-cluster-cell--places">';
+                    html += '<span class="jg-cluster-icon">📍</span>';
+                    html += '<span class="jg-cluster-num">' + places + '</span>';
+                    html += '</div>';
+                  }
+
+                  if (curiosities > 0) {
+                    html += '<div class="jg-cluster-cell jg-cluster-cell--curiosities">';
+                    html += '<span class="jg-cluster-icon">ℹ️</span>';
+                    html += '<span class="jg-cluster-num">' + curiosities + '</span>';
+                    html += '</div>';
+                  }
+
+                  if (events > 0) {
+                    html += '<div class="jg-cluster-cell jg-cluster-cell--events">';
+                    html += '<span class="jg-cluster-icon">❗</span>';
+                    html += '<span class="jg-cluster-num">' + events + '</span>';
+                    html += '</div>';
+                  }
+
+                  html += '</div>';
+                }
+
+                html += '</div>';
+
+                // Calculate icon size based on content
+                var width = 80;
+                var height = sponsored > 0 && hasBottom ? 90 : 50;
+
                 return L.divIcon({
-                  html: '<span class="jg-pin-inner">❗</span><span class="cluster-count">' + childCount + '</span>',
-                  className: 'jg-pin jg-cluster-events',
-                  iconSize: [48, 48]
+                  html: html,
+                  className: 'jg-cluster-wrapper',
+                  iconSize: [width, height]
                 });
               }
             });
-            map.addLayer(eventsCluster);
-            eventsClusterReady = true;
 
-            // Curiosities cluster - blue
-            curiositiesCluster = L.markerClusterGroup({
-              showCoverageOnHover: false,
-              maxClusterRadius: 50,
-              spiderfyOnMaxZoom: true,
-              zoomToBoundsOnClick: true,
-              disableClusteringAtZoom: 16,
-              spiderfyDistanceMultiplier: 2,
-              animate: true,
-              animateAddingMarkers: true,
-              iconCreateFunction: function(cluster) {
-                var childCount = cluster.getChildCount();
-                return L.divIcon({
-                  html: '<span class="jg-pin-inner">ℹ️</span><span class="cluster-count">' + childCount + '</span>',
-                  className: 'jg-pin jg-pin--ciekawostka jg-cluster-curiosities',
-                  iconSize: [48, 48]
-                });
-              }
-            });
-            map.addLayer(curiositiesCluster);
-            curiositiesClusterReady = true;
-
-            // Places cluster - green
-            placesCluster = L.markerClusterGroup({
-              showCoverageOnHover: false,
-              maxClusterRadius: 50,
-              spiderfyOnMaxZoom: true,
-              zoomToBoundsOnClick: true,
-              disableClusteringAtZoom: 16,
-              spiderfyDistanceMultiplier: 2,
-              animate: true,
-              animateAddingMarkers: true,
-              iconCreateFunction: function(cluster) {
-                var childCount = cluster.getChildCount();
-                return L.divIcon({
-                  html: '<span class="jg-pin-inner">📍</span><span class="cluster-count">' + childCount + '</span>',
-                  className: 'jg-pin jg-pin--miejsce jg-cluster-places',
-                  iconSize: [48, 48]
-                });
-              }
-            });
-            map.addLayer(placesCluster);
-            placesClusterReady = true;
-
+            map.addLayer(cluster);
             clusterReady = true;
 
             if (markers.length > 0) {
@@ -320,7 +313,7 @@
               }
             }
           } catch (e) {
-            console.error('[JG MAP] Błąd tworzenia clusterów:', e);
+            console.error('[JG MAP] Błąd tworzenia clustera:', e);
             clusterReady = false;
           }
         }, 800);
@@ -964,39 +957,10 @@
           return;
         }
 
-        // Initialize or clear all type-based clusters
-        if (!sponsoredCluster) {
+        // Initialize or clear single cluster
+        if (!cluster) {
           try {
-            sponsoredCluster = L.markerClusterGroup({
-              showCoverageOnHover: false,
-              maxClusterRadius: 80,
-              spiderfyOnMaxZoom: true,
-              zoomToBoundsOnClick: true,
-              disableClusteringAtZoom: 16,
-              spiderfyDistanceMultiplier: 2,
-              animate: true,
-              animateAddingMarkers: true,
-              iconCreateFunction: function(cluster) {
-                var childCount = cluster.getChildCount();
-                return L.divIcon({
-                  html: '<span class="jg-pin-inner">⭐</span><span class="cluster-count">' + childCount + '</span>',
-                  className: 'jg-pin jg-pin--promo jg-cluster-sponsored',
-                  iconSize: [60, 60]
-                });
-              }
-            });
-            map.addLayer(sponsoredCluster);
-            sponsoredClusterReady = true;
-          } catch (e) {
-            console.error('[JG MAP] Błąd tworzenia sponsored clustera:', e);
-          }
-        } else {
-          try { sponsoredCluster.clearLayers(); } catch (e) {}
-        }
-
-        if (!eventsCluster) {
-          try {
-            eventsCluster = L.markerClusterGroup({
+            cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: 50,
               spiderfyOnMaxZoom: true,
@@ -1005,83 +969,95 @@
               spiderfyDistanceMultiplier: 2,
               animate: true,
               animateAddingMarkers: true,
-              iconCreateFunction: function(cluster) {
-                var childCount = cluster.getChildCount();
+              iconCreateFunction: function(clusterGroup) {
+                var childMarkers = clusterGroup.getAllChildMarkers();
+
+                // Count by type
+                var sponsored = 0;
+                var places = 0;
+                var curiosities = 0;
+                var events = 0;
+
+                childMarkers.forEach(function(marker) {
+                  var opts = marker.options;
+                  if (opts.isPromo) {
+                    sponsored++;
+                  } else if (opts.pointType === 'miejsce') {
+                    places++;
+                  } else if (opts.pointType === 'ciekawostka') {
+                    curiosities++;
+                  } else if (opts.pointType === 'zgloszenie') {
+                    events++;
+                  }
+                });
+
+                // Build grid HTML
+                var html = '<div class="jg-cluster-grid">';
+
+                // Top row - sponsored (if any)
+                if (sponsored > 0) {
+                  html += '<div class="jg-cluster-grid-top">';
+                  html += '<div class="jg-cluster-cell jg-cluster-cell--sponsored">';
+                  html += '<span class="jg-cluster-icon">⭐</span>';
+                  html += '<span class="jg-cluster-num">' + sponsored + '</span>';
+                  html += '</div>';
+                  html += '</div>';
+                }
+
+                // Bottom row - types (if any)
+                var hasBottom = places > 0 || curiosities > 0 || events > 0;
+                if (hasBottom) {
+                  html += '<div class="jg-cluster-grid-bottom">';
+
+                  if (places > 0) {
+                    html += '<div class="jg-cluster-cell jg-cluster-cell--places">';
+                    html += '<span class="jg-cluster-icon">📍</span>';
+                    html += '<span class="jg-cluster-num">' + places + '</span>';
+                    html += '</div>';
+                  }
+
+                  if (curiosities > 0) {
+                    html += '<div class="jg-cluster-cell jg-cluster-cell--curiosities">';
+                    html += '<span class="jg-cluster-icon">ℹ️</span>';
+                    html += '<span class="jg-cluster-num">' + curiosities + '</span>';
+                    html += '</div>';
+                  }
+
+                  if (events > 0) {
+                    html += '<div class="jg-cluster-cell jg-cluster-cell--events">';
+                    html += '<span class="jg-cluster-icon">❗</span>';
+                    html += '<span class="jg-cluster-num">' + events + '</span>';
+                    html += '</div>';
+                  }
+
+                  html += '</div>';
+                }
+
+                html += '</div>';
+
+                // Calculate icon size based on content
+                var width = 80;
+                var height = sponsored > 0 && hasBottom ? 90 : 50;
+
                 return L.divIcon({
-                  html: '<span class="jg-pin-inner">❗</span><span class="cluster-count">' + childCount + '</span>',
-                  className: 'jg-pin jg-cluster-events',
-                  iconSize: [48, 48]
+                  html: html,
+                  className: 'jg-cluster-wrapper',
+                  iconSize: [width, height]
                 });
               }
             });
-            map.addLayer(eventsCluster);
-            eventsClusterReady = true;
+
+            map.addLayer(cluster);
+            clusterReady = true;
           } catch (e) {
-            console.error('[JG MAP] Błąd tworzenia events clustera:', e);
+            console.error('[JG MAP] Błąd tworzenia clustera:', e);
+            clusterReady = false;
           }
         } else {
-          try { eventsCluster.clearLayers(); } catch (e) {}
-        }
-
-        if (!curiositiesCluster) {
           try {
-            curiositiesCluster = L.markerClusterGroup({
-              showCoverageOnHover: false,
-              maxClusterRadius: 50,
-              spiderfyOnMaxZoom: true,
-              zoomToBoundsOnClick: true,
-              disableClusteringAtZoom: 16,
-              spiderfyDistanceMultiplier: 2,
-              animate: true,
-              animateAddingMarkers: true,
-              iconCreateFunction: function(cluster) {
-                var childCount = cluster.getChildCount();
-                return L.divIcon({
-                  html: '<span class="jg-pin-inner">ℹ️</span><span class="cluster-count">' + childCount + '</span>',
-                  className: 'jg-pin jg-pin--ciekawostka jg-cluster-curiosities',
-                  iconSize: [48, 48]
-                });
-              }
-            });
-            map.addLayer(curiositiesCluster);
-            curiositiesClusterReady = true;
-          } catch (e) {
-            console.error('[JG MAP] Błąd tworzenia curiosities clustera:', e);
-          }
-        } else {
-          try { curiositiesCluster.clearLayers(); } catch (e) {}
+            cluster.clearLayers();
+          } catch (e) {}
         }
-
-        if (!placesCluster) {
-          try {
-            placesCluster = L.markerClusterGroup({
-              showCoverageOnHover: false,
-              maxClusterRadius: 50,
-              spiderfyOnMaxZoom: true,
-              zoomToBoundsOnClick: true,
-              disableClusteringAtZoom: 16,
-              spiderfyDistanceMultiplier: 2,
-              animate: true,
-              animateAddingMarkers: true,
-              iconCreateFunction: function(cluster) {
-                var childCount = cluster.getChildCount();
-                return L.divIcon({
-                  html: '<span class="jg-pin-inner">📍</span><span class="cluster-count">' + childCount + '</span>',
-                  className: 'jg-pin jg-pin--miejsce jg-cluster-places',
-                  iconSize: [48, 48]
-                });
-              }
-            });
-            map.addLayer(placesCluster);
-            placesClusterReady = true;
-          } catch (e) {
-            console.error('[JG MAP] Błąd tworzenia places clustera:', e);
-          }
-        } else {
-          try { placesCluster.clearLayers(); } catch (e) {}
-        }
-
-        clusterReady = true;
 
         var bounds = [];
         var validPoints = 0;
@@ -1112,10 +1088,11 @@
 
             if (isNaN(lat) || isNaN(lng)) return;
 
-            // Create marker
+            // Create marker with type info
             var markerOptions = {
               icon: iconFor(p),
-              isPromo: !!p.sponsored
+              isPromo: !!p.sponsored,
+              pointType: p.type || 'unknown'
             };
 
             var m = L.marker([lat, lng], markerOptions);
@@ -1128,42 +1105,10 @@
               });
             })(p);
 
-            // Route markers to appropriate cluster based on type and sponsored status
-            if (p.sponsored) {
-              // Sponsored markers -> gold cluster
-              if (sponsoredClusterReady && sponsoredCluster) {
-                sponsoredCluster.addLayer(m);
-              } else {
-                m.addTo(map);
-                m.setZIndexOffset(10000);
-                markers.push(m);
-              }
-            } else if (p.type === 'zgloszenie') {
-              // Events (zdarzenia) -> black cluster
-              if (eventsClusterReady && eventsCluster) {
-                eventsCluster.addLayer(m);
-              } else {
-                m.addTo(map);
-                markers.push(m);
-              }
-            } else if (p.type === 'ciekawostka') {
-              // Curiosities -> blue cluster
-              if (curiositiesClusterReady && curiositiesCluster) {
-                curiositiesCluster.addLayer(m);
-              } else {
-                m.addTo(map);
-                markers.push(m);
-              }
-            } else if (p.type === 'miejsce') {
-              // Places -> green cluster
-              if (placesClusterReady && placesCluster) {
-                placesCluster.addLayer(m);
-              } else {
-                m.addTo(map);
-                markers.push(m);
-              }
+            // Add all markers to single cluster
+            if (clusterReady && cluster) {
+              cluster.addLayer(m);
             } else {
-              // Fallback for unknown types
               m.addTo(map);
               markers.push(m);
             }
