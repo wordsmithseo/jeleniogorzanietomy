@@ -2850,6 +2850,14 @@ class JG_Map_Ajax_Handlers {
      * Login user via AJAX
      */
     public function login_user() {
+        // Honeypot check - if filled, it's a bot
+        $honeypot = isset($_POST['honeypot']) ? $_POST['honeypot'] : '';
+        if (!empty($honeypot)) {
+            // Bot detected - silently fail
+            wp_send_json_error('Nieprawidłowa nazwa użytkownika lub hasło');
+            exit;
+        }
+
         $username = isset($_POST['username']) ? sanitize_text_field($_POST['username']) : '';
         $password = isset($_POST['password']) ? $_POST['password'] : '';
 
@@ -2868,6 +2876,14 @@ class JG_Map_Ajax_Handlers {
 
         if (is_wp_error($user)) {
             wp_send_json_error('Nieprawidłowa nazwa użytkownika lub hasło');
+            exit;
+        }
+
+        // Check if email is verified
+        $account_status = get_user_meta($user->ID, 'jg_map_account_status', true);
+        if ($account_status === 'pending') {
+            wp_logout(); // Logout the user
+            wp_send_json_error('Twoje konto nie zostało jeszcze aktywowane. Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.');
             exit;
         }
 
@@ -2894,6 +2910,14 @@ class JG_Map_Ajax_Handlers {
      * Register user via AJAX
      */
     public function register_user() {
+        // Honeypot check - if filled, it's a bot
+        $honeypot = isset($_POST['honeypot']) ? $_POST['honeypot'] : '';
+        if (!empty($honeypot)) {
+            // Bot detected - silently fail with generic error
+            wp_send_json_error('Wystąpił błąd podczas rejestracji. Spróbuj ponownie.');
+            exit;
+        }
+
         // Check Elementor maintenance mode - block registration completely
         $maintenance_mode = get_option('elementor_maintenance_mode_mode');
 
@@ -2937,10 +2961,27 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Auto login after registration
-        wp_set_current_user($user_id);
-        wp_set_auth_cookie($user_id, true);
+        // Generate activation key
+        $activation_key = wp_generate_password(32, false);
+        update_user_meta($user_id, 'jg_map_activation_key', $activation_key);
+        update_user_meta($user_id, 'jg_map_account_status', 'pending');
 
-        wp_send_json_success('Rejestracja zakończona pomyślnie');
+        // Send activation email
+        $activation_link = home_url('/?jg_activate=' . $activation_key);
+        $subject = 'Aktywacja konta - ' . get_bloginfo('name');
+        $message = "Witaj {$username}!\n\n";
+        $message .= "Dziękujemy za rejestrację na " . get_bloginfo('name') . ".\n\n";
+        $message .= "Aby aktywować swoje konto, kliknij w poniższy link:\n";
+        $message .= $activation_link . "\n\n";
+        $message .= "Link jest ważny przez 48 godzin.\n\n";
+        $message .= "Jeśli to nie Ty zarejestrowałeś to konto, zignoruj tę wiadomość.\n\n";
+        $message .= "Pozdrawiamy,\n";
+        $message .= get_bloginfo('name');
+
+        $headers = array('Content-Type: text/plain; charset=UTF-8');
+        wp_mail($email, $subject, $message, $headers);
+
+        // Don't auto login - user must verify email first
+        wp_send_json_success('Rejestracja zakończona pomyślnie! Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.');
     }
 }

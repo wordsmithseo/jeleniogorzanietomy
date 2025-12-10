@@ -252,6 +252,11 @@
             '</div>' +
             '<div class="jg-modal-body" style="padding:24px">' +
             '<form id="jg-login-form">' +
+            '<!-- Honeypot field - hidden from users, visible to bots -->' +
+            '<div style="position:absolute;left:-9999px;top:-9999px">' +
+            '<label for="login-website">Website</label>' +
+            '<input type="text" id="login-website" name="website" tabindex="-1" autocomplete="off">' +
+            '</div>' +
             '<div class="jg-form-group" style="margin-bottom:20px">' +
             '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nazwa użytkownika lub email</label>' +
             '<input type="text" id="login-username" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
@@ -272,6 +277,7 @@
           document.getElementById('submit-login-btn').addEventListener('click', function() {
             var username = document.getElementById('login-username').value;
             var password = document.getElementById('login-password').value;
+            var honeypot = document.getElementById('login-website').value;
 
             if (!username || !password) {
               alert('Proszę wypełnić wszystkie pola');
@@ -283,6 +289,7 @@
               type: 'POST',
               data: {
                 action: 'jg_map_login',
+                honeypot: honeypot,
                 username: username,
                 password: password
               },
@@ -312,6 +319,11 @@
             '</div>' +
             '<div class="jg-modal-body" style="padding:24px">' +
             '<form id="jg-register-form">' +
+            '<!-- Honeypot field - hidden from users, visible to bots -->' +
+            '<div style="position:absolute;left:-9999px;top:-9999px">' +
+            '<label for="register-website">Website</label>' +
+            '<input type="text" id="register-website" name="website" tabindex="-1" autocomplete="off">' +
+            '</div>' +
             '<div class="jg-form-group" style="margin-bottom:20px">' +
             '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nazwa użytkownika</label>' +
             '<input type="text" id="register-username" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
@@ -324,6 +336,7 @@
             '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Hasło</label>' +
             '<input type="password" id="register-password" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
             '</div>' +
+            '<div style="font-size:12px;color:#666;margin-top:8px">📧 Na podany adres email zostanie wysłany link aktywacyjny</div>' +
             '</form>' +
             '</div>' +
             '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
@@ -337,6 +350,7 @@
             var username = document.getElementById('register-username').value;
             var email = document.getElementById('register-email').value;
             var password = document.getElementById('register-password').value;
+            var honeypot = document.getElementById('register-website').value;
 
             if (!username || !email || !password) {
               alert('Proszę wypełnić wszystkie pola');
@@ -348,6 +362,7 @@
               type: 'POST',
               data: {
                 action: 'jg_map_register',
+                honeypot: honeypot,
                 username: username,
                 email: email,
                 password: password
