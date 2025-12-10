@@ -37,12 +37,6 @@ class JG_Map_Enqueue {
         // Add custom top bar to the page
         add_action('wp_body_open', array($this, 'render_top_bar'));
 
-        // Block wp-admin access for non-admins (use early hook)
-        add_action('init', array($this, 'block_admin_access'), 1);
-
-        // Block wp-login page access
-        add_action('login_init', array($this, 'block_login_page'));
-
         // Hide register button on Elementor maintenance screen
         add_action('wp_head', array($this, 'hide_register_on_maintenance'));
 
@@ -223,71 +217,6 @@ class JG_Map_Enqueue {
     }
 
     /**
-     * Block wp-admin access for non-admin users
-     * Allow access for users with manage_options capability (administrators)
-     *
-     * Using 'init' hook which runs early for both frontend and admin requests
-     */
-    public function block_admin_access() {
-        // Check if this is an admin request (not frontend)
-        // We need to check the URL since is_admin() might not work this early
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-
-        // Only proceed if trying to access wp-admin
-        if (strpos($request_uri, '/wp-admin') === false && strpos($request_uri, 'wp-admin') === false) {
-            return;
-        }
-
-        // Allow AJAX requests (wp-admin/admin-ajax.php)
-        if (defined('DOING_AJAX') && DOING_AJAX) {
-            return;
-        }
-        if (strpos($request_uri, 'admin-ajax.php') !== false) {
-            return;
-        }
-
-        // Allow cron
-        if (defined('DOING_CRON') && DOING_CRON) {
-            return;
-        }
-
-        // If user is not logged in, let WordPress handle it (will show login page)
-        if (!is_user_logged_in()) {
-            return;
-        }
-
-        // DEBUG: Log what's happening
-        $user = wp_get_current_user();
-        $has_cap = current_user_can('manage_options');
-        $user_roles = $user->roles;
-
-        error_log('JG_MAP DEBUG - wp-admin access attempt:');
-        error_log('  User ID: ' . $user->ID);
-        error_log('  User login: ' . $user->user_login);
-        error_log('  User roles: ' . print_r($user_roles, true));
-        error_log('  Has manage_options: ' . ($has_cap ? 'YES' : 'NO'));
-        error_log('  REQUEST_URI: ' . $request_uri);
-
-        // If user has admin capabilities, allow access
-        // This is checked after user is authenticated
-        if (current_user_can('manage_options')) {
-            error_log('  RESULT: Access GRANTED (has manage_options)');
-            return;
-        }
-
-        // Check if user is administrator by role
-        if (in_array('administrator', (array) $user_roles, true)) {
-            error_log('  RESULT: Access GRANTED (administrator role)');
-            return;
-        }
-
-        // Block all other logged-in users from wp-admin
-        error_log('  RESULT: Access DENIED - redirecting to home');
-        wp_safe_redirect(home_url());
-        exit;
-    }
-
-    /**
      * Hide register button on Elementor maintenance screen
      * Registration is blocked during maintenance, so no need to show the button
      */
@@ -308,35 +237,6 @@ class JG_Map_Enqueue {
             </style>
             <?php
         }
-    }
-
-    /**
-     * Block wp-login.php access (redirect to home with modal trigger)
-     * BUT allow logout, lostpassword, and rp (reset password) actions
-     * ALSO don't block during Elementor maintenance mode (admins need to login)
-     */
-    public function block_login_page() {
-        // Don't block wp-login.php during Elementor maintenance mode
-        // Admins and moderators need to be able to login via standard WP login page
-        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
-        if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
-            return; // Allow standard WP login during maintenance
-        }
-
-        // Allow logout, password reset actions, and re-authentication
-        if (isset($_GET['action']) && in_array($_GET['action'], array('logout', 'lostpassword', 'rp', 'resetpass'))) {
-            return; // Don't block these actions
-        }
-
-        // Allow re-authentication requests (reauth parameter)
-        // WordPress requires periodic re-authentication for security
-        if (isset($_GET['reauth'])) {
-            return; // Don't block re-auth
-        }
-
-        // Redirect to home page - modal will open via JavaScript
-        wp_redirect(home_url());
-        exit;
     }
 
     /**
