@@ -3265,7 +3265,7 @@
         console.log('[JG MAP] Loaded ' + cachedData.length + ' points from cache');
         ALL = cachedData;
         apply(false); // Apply cached data immediately with fitBounds
-        hideLoading();
+        // Don't call hideLoading() here - let draw() handle it when cluster is ready
 
         // Check user restrictions
         checkUserRestrictions();
