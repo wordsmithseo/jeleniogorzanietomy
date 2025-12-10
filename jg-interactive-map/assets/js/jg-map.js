@@ -1286,12 +1286,12 @@
                 // Wait for zoom animation, then show pulsing marker
                 setTimeout(function() {
                   // Add pulsing red circle around the point
-                  // After animation completes (5 seconds), open modal
+                  // After animation completes (4 seconds), open modal
                   addPulsingMarker(point.lat, point.lng, function() {
                     console.log('[JG MAP] Pulsing animation complete, opening modal');
 
-                    // Open modal after animation
-                    viewPoint(point);
+                    // Open modal after animation - use openDetails, not viewPoint!
+                    openDetails(point);
 
                     // Clean URL (remove point_id parameter) after modal opens
                     if (history.replaceState) {
@@ -1311,7 +1311,7 @@
       }
 
       // Add pulsing red circle marker for deep-linked points
-      // Callback is called after animation completes (5 seconds)
+      // Callback is called after animation completes (4 seconds)
       function addPulsingMarker(lat, lng, callback) {
         // Create pulsing red circle
         var pulsingCircle = L.circle([lat, lng], {
@@ -1324,7 +1324,7 @@
 
         // Animate the circle (pulse effect)
         var pulseCount = 0;
-        var maxPulses = 10; // 10 pulses over 5 seconds
+        var maxPulses = 8; // 8 pulses over 4 seconds
         var pulseInterval = setInterval(function() {
           pulseCount++;
 
