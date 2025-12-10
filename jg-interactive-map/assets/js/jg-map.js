@@ -38,6 +38,11 @@
   var loadingEl = document.getElementById('jg-map-loading');
   var errorEl = document.getElementById('jg-map-error');
   var errorMsg = document.getElementById('error-msg');
+  var loadStartTime = Date.now(); // Track when loading started
+  var minLoadingTime = 500; // Minimum time to show loader (ms)
+
+  console.log('[JG MAP] Loader element:', loadingEl ? 'found' : 'NOT FOUND');
+  console.log('[JG MAP] Loading started at', new Date(loadStartTime).toISOString());
 
   function showError(msg) {
     console.error('[JG MAP]', msg);
@@ -47,7 +52,27 @@
   }
 
   function hideLoading() {
-    if (loadingEl) loadingEl.style.display = 'none';
+    var elapsed = Date.now() - loadStartTime;
+    var remaining = minLoadingTime - elapsed;
+
+    console.log('[JG MAP] hideLoading() called, elapsed:', elapsed + 'ms');
+
+    if (remaining > 0) {
+      console.log('[JG MAP] Delaying hide by', remaining + 'ms for better UX');
+      setTimeout(function() {
+        if (loadingEl) {
+          loadingEl.style.display = 'none';
+          console.log('[JG MAP] Loader hidden after delay');
+        }
+      }, remaining);
+    } else {
+      if (loadingEl) {
+        loadingEl.style.display = 'none';
+        console.log('[JG MAP] Loader hidden immediately');
+      } else {
+        console.log('[JG MAP] Loader element not found!');
+      }
+    }
   }
 
   function wait(cb, maxAttempts) {
