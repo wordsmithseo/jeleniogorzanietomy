@@ -1285,22 +1285,60 @@
 
                 // Wait for zoom animation, then open modal
                 setTimeout(function() {
+                  // Add pulsing red circle around the point
+                  addPulsingMarker(point.lat, point.lng);
+
+                  // Open modal
                   viewPoint(point);
-                }, 500);
-              }, 1000); // Wait 1s for cluster animation to complete
+
+                  // Clean URL (remove point_id parameter) after modal opens
+                  if (history.replaceState) {
+                    var cleanUrl = window.location.origin + window.location.pathname;
+                    history.replaceState(null, '', cleanUrl);
+                  }
+                }, 800); // Increased time to ensure zoom completes
+              }, 1200); // Increased time for cluster animation to complete
             } else {
               console.warn('[JG MAP] Point not found with id:', pointId);
-            }
-
-            // Clean URL (remove point_id parameter)
-            if (history.replaceState) {
-              var cleanUrl = window.location.origin + window.location.pathname;
-              history.replaceState(null, '', cleanUrl);
             }
           }
         } catch (e) {
           console.error('[JG MAP] Deep link error:', e);
         }
+      }
+
+      // Add pulsing red circle marker for deep-linked points
+      function addPulsingMarker(lat, lng) {
+        // Create pulsing red circle
+        var pulsingCircle = L.circle([lat, lng], {
+          color: '#ef4444',
+          fillColor: '#ef4444',
+          fillOpacity: 0.3,
+          radius: 30,
+          weight: 3
+        }).addTo(map);
+
+        // Animate the circle (pulse effect)
+        var pulseCount = 0;
+        var maxPulses = 10; // 10 pulses over 5 seconds
+        var pulseInterval = setInterval(function() {
+          pulseCount++;
+
+          // Toggle opacity for pulse effect
+          if (pulseCount % 2 === 0) {
+            pulsingCircle.setStyle({ fillOpacity: 0.6, weight: 4 });
+          } else {
+            pulsingCircle.setStyle({ fillOpacity: 0.2, weight: 2 });
+          }
+
+          // Remove after 5 seconds
+          if (pulseCount >= maxPulses) {
+            clearInterval(pulseInterval);
+            setTimeout(function() {
+              map.removeLayer(pulsingCircle);
+            }, 500);
+          }
+        }, 500); // Pulse every 500ms
       }
 
       var ALL = [];
