@@ -46,6 +46,7 @@ class JG_Map_Enqueue {
 
         // Handle email activation
         add_action('template_redirect', array($this, 'handle_email_activation'));
+        add_action('template_redirect', array($this, 'handle_password_reset'));
     }
 
     /**
@@ -323,5 +324,229 @@ class JG_Map_Enqueue {
         // Redirect to home with success message
         wp_redirect(add_query_arg('activation', 'success', home_url()));
         exit;
+    }
+
+    public function handle_password_reset() {
+        if (!isset($_GET['jg_reset'])) {
+            return;
+        }
+
+        $reset_key = sanitize_text_field($_GET['jg_reset']);
+
+        // Find user with this reset key
+        $users = get_users(array(
+            'meta_key' => 'jg_map_reset_key',
+            'meta_value' => $reset_key,
+            'number' => 1
+        ));
+
+        if (empty($users)) {
+            wp_die('Nieprawidłowy lub wygasły link resetowania hasła.', 'Błąd resetowania hasła', array('response' => 400));
+        }
+
+        $user = $users[0];
+
+        // Check if key is still valid (24 hours)
+        $key_time = get_user_meta($user->ID, 'jg_map_reset_key_time', true);
+        if (empty($key_time) || (time() - $key_time) > 86400) {
+            delete_user_meta($user->ID, 'jg_map_reset_key');
+            delete_user_meta($user->ID, 'jg_map_reset_key_time');
+            wp_die('Link resetowania hasła wygasł. Linki są ważne przez 24 godziny.', 'Link wygasł', array('response' => 400));
+        }
+
+        // Handle password reset form submission
+        if (isset($_POST['new_password']) && isset($_POST['reset_key'])) {
+            $new_password = $_POST['new_password'];
+            $posted_key = sanitize_text_field($_POST['reset_key']);
+
+            if ($posted_key !== $reset_key) {
+                wp_die('Nieprawidłowy token bezpieczeństwa.', 'Błąd', array('response' => 400));
+            }
+
+            if (strlen($new_password) < 6) {
+                $error = 'Hasło musi mieć co najmniej 6 znaków.';
+            } else {
+                // Update password
+                wp_set_password($new_password, $user->ID);
+
+                // Remove reset key
+                delete_user_meta($user->ID, 'jg_map_reset_key');
+                delete_user_meta($user->ID, 'jg_map_reset_key_time');
+
+                // Auto login user
+                wp_set_current_user($user->ID);
+                wp_set_auth_cookie($user->ID, true);
+
+                // Redirect to home with success message
+                wp_redirect(add_query_arg('password_reset', 'success', home_url()));
+                exit;
+            }
+        }
+
+        // Show password reset form
+        $this->show_reset_password_form($reset_key, isset($error) ? $error : '');
+        exit;
+    }
+
+    private function show_reset_password_form($reset_key, $error = '') {
+        ?>
+        <!DOCTYPE html>
+        <html <?php language_attributes(); ?>>
+        <head>
+            <meta charset="<?php bloginfo('charset'); ?>">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Resetowanie hasła - <?php bloginfo('name'); ?></title>
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                }
+                .reset-container {
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                    max-width: 480px;
+                    width: 100%;
+                    overflow: hidden;
+                }
+                .reset-header {
+                    background: #8d2324;
+                    color: white;
+                    padding: 30px 24px;
+                    text-align: center;
+                }
+                .reset-header h1 {
+                    font-size: 24px;
+                    font-weight: 600;
+                    margin-bottom: 8px;
+                }
+                .reset-header p {
+                    font-size: 14px;
+                    opacity: 0.9;
+                }
+                .reset-body {
+                    padding: 32px 24px;
+                }
+                .form-group {
+                    margin-bottom: 24px;
+                }
+                label {
+                    display: block;
+                    margin-bottom: 8px;
+                    font-weight: 600;
+                    color: #333;
+                    font-size: 14px;
+                }
+                input[type="password"] {
+                    width: 100%;
+                    padding: 14px;
+                    border: 2px solid #ddd;
+                    border-radius: 8px;
+                    font-size: 15px;
+                    transition: border-color 0.2s;
+                }
+                input[type="password"]:focus {
+                    outline: none;
+                    border-color: #8d2324;
+                }
+                .error-message {
+                    background: #fee;
+                    border: 2px solid #fcc;
+                    color: #c33;
+                    padding: 12px;
+                    border-radius: 8px;
+                    margin-bottom: 20px;
+                    font-size: 14px;
+                }
+                .submit-btn {
+                    width: 100%;
+                    padding: 14px;
+                    background: #8d2324;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                }
+                .submit-btn:hover {
+                    background: #a02829;
+                }
+                .info-box {
+                    background: #f0f9ff;
+                    border: 2px solid #bae6fd;
+                    border-radius: 8px;
+                    padding: 12px;
+                    margin-top: 20px;
+                    font-size: 13px;
+                    color: #0c4a6e;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="reset-container">
+                <div class="reset-header">
+                    <h1>🔑 Ustaw nowe hasło</h1>
+                    <p><?php bloginfo('name'); ?></p>
+                </div>
+                <div class="reset-body">
+                    <?php if (!empty($error)) : ?>
+                        <div class="error-message"><?php echo esc_html($error); ?></div>
+                    <?php endif; ?>
+
+                    <form method="POST" action="">
+                        <input type="hidden" name="reset_key" value="<?php echo esc_attr($reset_key); ?>">
+
+                        <div class="form-group">
+                            <label for="new_password">Nowe hasło</label>
+                            <input type="password" id="new_password" name="new_password" required minlength="6" placeholder="Wprowadź nowe hasło (min. 6 znaków)">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirm_password">Potwierdź nowe hasło</label>
+                            <input type="password" id="confirm_password" name="confirm_password" required minlength="6" placeholder="Wprowadź ponownie nowe hasło">
+                        </div>
+
+                        <button type="submit" class="submit-btn" onclick="return validatePasswords()">Ustaw nowe hasło</button>
+
+                        <div class="info-box">
+                            💡 Hasło musi mieć co najmniej 6 znaków
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                function validatePasswords() {
+                    var password = document.getElementById('new_password').value;
+                    var confirm = document.getElementById('confirm_password').value;
+
+                    if (password.length < 6) {
+                        alert('Hasło musi mieć co najmniej 6 znaków');
+                        return false;
+                    }
+
+                    if (password !== confirm) {
+                        alert('Hasła nie są identyczne');
+                        return false;
+                    }
+
+                    return true;
+                }
+            </script>
+        </body>
+        </html>
+        <?php
     }
 }
