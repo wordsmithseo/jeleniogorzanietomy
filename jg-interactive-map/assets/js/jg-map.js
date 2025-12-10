@@ -1397,11 +1397,11 @@
         // Add all markers at once to cluster (reduces animation flicker)
         if (clusterReady && cluster && newMarkers.length > 0) {
           cluster.addLayers(newMarkers);
+          console.log('[JG MAP] Added', newMarkers.length, 'markers to cluster');
         } else if (newMarkers.length > 0) {
-          newMarkers.forEach(function(m) {
-            m.addTo(map);
-            markers.push(m);
-          });
+          // DON'T add markers directly to map - wait for cluster to be ready
+          // This prevents duplicate markers (one on map, one in cluster)
+          console.log('[JG MAP] Cluster not ready, not adding markers yet');
         }
 
 
