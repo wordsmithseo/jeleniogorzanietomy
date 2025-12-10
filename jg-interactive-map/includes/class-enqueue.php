@@ -226,8 +226,14 @@ class JG_Map_Enqueue {
 
     /**
      * Block wp-login.php access (redirect to home with modal trigger)
+     * BUT allow logout, lostpassword, and rp (reset password) actions
      */
     public function block_login_page() {
+        // Allow logout action
+        if (isset($_GET['action']) && in_array($_GET['action'], array('logout', 'lostpassword', 'rp', 'resetpass'))) {
+            return; // Don't block these actions
+        }
+
         // Redirect to home page - modal will open via JavaScript
         wp_redirect(home_url());
         exit;

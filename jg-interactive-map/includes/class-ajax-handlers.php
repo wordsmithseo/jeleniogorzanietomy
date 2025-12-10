@@ -2871,6 +2871,22 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Check Elementor maintenance mode for non-admin/moderator users
+        $is_admin = user_can($user->ID, 'manage_options');
+        $is_moderator = user_can($user->ID, 'jg_map_moderate');
+
+        if (!$is_admin && !$is_moderator) {
+            $maintenance_mode = get_option('elementor_maintenance_mode_mode');
+
+            if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
+                // Log user out
+                wp_logout();
+
+                wp_send_json_error('Trwa konserwacja serwisu. Zapraszamy później. Przepraszamy za utrudnienia.');
+                exit;
+            }
+        }
+
         wp_send_json_success('Zalogowano pomyślnie');
     }
 
@@ -2878,6 +2894,14 @@ class JG_Map_Ajax_Handlers {
      * Register user via AJAX
      */
     public function register_user() {
+        // Check Elementor maintenance mode - block registration completely
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
+
+        if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
+            wp_send_json_error('Trwają prace konserwacyjne. Rejestracja nowych kont została tymczasowo wstrzymana. Zapraszamy później.');
+            exit;
+        }
+
         $username = isset($_POST['username']) ? sanitize_text_field($_POST['username']) : '';
         $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
         $password = isset($_POST['password']) ? $_POST['password'] : '';

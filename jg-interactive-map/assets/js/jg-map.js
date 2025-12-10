@@ -1148,6 +1148,48 @@
           });
       }
 
+      // Check if URL contains ?point_id= and open that point
+      function checkDeepLink() {
+        try {
+          var urlParams = new URLSearchParams(window.location.search);
+          var pointId = urlParams.get('point_id');
+
+          if (pointId && ALL && ALL.length > 0) {
+            console.log('[JG MAP] Deep link detected, point_id:', pointId);
+
+            // Find the point with this ID
+            var point = ALL.find(function(p) {
+              return p.id.toString() === pointId.toString();
+            });
+
+            if (point) {
+              console.log('[JG MAP] Found point:', point.title);
+
+              // Wait for map to be ready, then zoom and open modal
+              setTimeout(function() {
+                // Zoom to point
+                map.setView([point.lat, point.lng], 18, { animate: true });
+
+                // Wait for zoom animation, then open modal
+                setTimeout(function() {
+                  viewPoint(point);
+                }, 500);
+              }, 1000); // Wait 1s for cluster animation to complete
+            } else {
+              console.warn('[JG MAP] Point not found with id:', pointId);
+            }
+
+            // Clean URL (remove point_id parameter)
+            if (history.replaceState) {
+              var cleanUrl = window.location.origin + window.location.pathname;
+              history.replaceState(null, '', cleanUrl);
+            }
+          }
+        } catch (e) {
+          console.error('[JG MAP] Deep link error:', e);
+        }
+      }
+
       var ALL = [];
       var lastModified = 0;
       var CACHE_KEY = 'jg_map_cache';
@@ -2792,7 +2834,7 @@
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
         }
 
-        var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim() });
 
@@ -2899,6 +2941,51 @@
         qs('#btn-report', modalView).onclick = function() {
           openReportModal(p);
         };
+
+        // Copy link button handler
+        var copyLinkBtn = qs('#btn-copy-link', modalView);
+        if (copyLinkBtn) {
+          copyLinkBtn.onclick = function() {
+            var pointUrl = window.location.origin + window.location.pathname + '?point_id=' + p.id;
+
+            // Copy to clipboard
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(pointUrl)
+                .then(function() {
+                  // Show success message
+                  copyLinkBtn.textContent = '✓ Skopiowano!';
+                  copyLinkBtn.style.background = '#15803d';
+                  setTimeout(function() {
+                    copyLinkBtn.textContent = '📎 Kopiuj link';
+                    copyLinkBtn.style.background = '';
+                  }, 2000);
+                })
+                .catch(function(err) {
+                  console.error('[JG MAP] Failed to copy link:', err);
+                  alert('Nie udało się skopiować linku');
+                });
+            } else {
+              // Fallback for older browsers
+              var tempInput = document.createElement('input');
+              tempInput.value = pointUrl;
+              document.body.appendChild(tempInput);
+              tempInput.select();
+              try {
+                document.execCommand('copy');
+                copyLinkBtn.textContent = '✓ Skopiowano!';
+                copyLinkBtn.style.background = '#15803d';
+                setTimeout(function() {
+                  copyLinkBtn.textContent = '📎 Kopiuj link';
+                  copyLinkBtn.style.background = '';
+                }, 2000);
+              } catch (err) {
+                console.error('[JG MAP] Failed to copy link (fallback):', err);
+                alert('Nie udało się skopiować linku');
+              }
+              document.body.removeChild(tempInput);
+            }
+          };
+        }
 
         if (canEdit) {
           var editBtn = qs('#btn-edit', modalView);
@@ -3313,6 +3400,9 @@
         // Check user restrictions
         checkUserRestrictions();
 
+        // Check for deep-linked point
+        checkDeepLink();
+
         // Then check for updates in background
         refreshData(false).catch(function(err) {
           console.error('[JG MAP] Background update failed:', err);
@@ -3323,6 +3413,7 @@
         refreshData(true)
           .then(function() {
             checkUserRestrictions();
+            checkDeepLink();
           })
           .catch(function(e) {
             showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
