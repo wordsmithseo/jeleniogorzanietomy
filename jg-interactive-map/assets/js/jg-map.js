@@ -810,7 +810,7 @@
                 '<option value="ciekawostka">Ciekawostka</option>' +
                 '<option value="miejsce">Miejsce</option>' +
                 '</select></label>' +
-                '<label class="cols-2">Opis <textarea name="content" rows="4" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea></label>' +
+                '<label class="cols-2">Opis <textarea name="content" rows="4" maxlength="200" id="add-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><div id="add-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">0 / 200 znaków</div></label>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
                 '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images[]" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
                 '<div class="cols-2" id="add-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
@@ -833,6 +833,22 @@
 
               var form = qs('#add-form', modalAdd);
               var msg = qs('#add-msg', modalAdd);
+
+              // Character counter for description
+              var contentInput = qs('#add-content-input', modalAdd);
+              var contentCounter = qs('#add-content-counter', modalAdd);
+              if (contentInput && contentCounter) {
+                contentInput.addEventListener('input', function() {
+                  var length = this.value.length;
+                  var maxLength = 200;
+                  contentCounter.textContent = length + ' / ' + maxLength + ' znaków';
+                  if (length > maxLength * 0.9) {
+                    contentCounter.style.color = '#d97706';
+                  } else {
+                    contentCounter.style.color = '#666';
+                  }
+                });
+              }
 
               // Image preview functionality
               var imagesInput = qs('#add-images-input', modalAdd);
@@ -1313,12 +1329,12 @@
       // Add pulsing red circle marker for deep-linked points
       // Callback is called after animation completes (4 seconds)
       function addPulsingMarker(lat, lng, callback) {
-        // Create pulsing red circle
+        // Create pulsing red circle (small, just around the marker)
         var pulsingCircle = L.circle([lat, lng], {
           color: '#ef4444',
           fillColor: '#ef4444',
           fillOpacity: 0.3,
-          radius: 30,
+          radius: 12, // 12 meters - just slightly bigger than the marker
           weight: 3
         }).addTo(map);
 
@@ -2314,6 +2330,10 @@
                 '</div>';
             }
 
+            // Determine max length for description based on sponsored status
+            var maxDescLength = isSponsored ? 1000 : 200;
+            var currentDescLength = contentText.length;
+
             var formHtml = '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header>' +
               '<form id="edit-form" class="jg-grid cols-2">' +
               limitsHtml +
@@ -2323,7 +2343,7 @@
               '<option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option>' +
               '<option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option>' +
               '</select></label>' +
-              '<label class="cols-2">Opis <textarea name="content" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea></label>' +
+              '<label class="cols-2">Opis <textarea name="content" rows="6" maxlength="' + maxDescLength + '" id="edit-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea><div id="edit-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">' + currentDescLength + ' / ' + maxDescLength + ' znaków</div></label>' +
               sponsoredContactHtml +
               existingImagesHtml +
               '<label class="cols-2">Dodaj nowe zdjęcia (max ' + maxTotalImages + ' łącznie) <input type="file" name="images[]" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
@@ -2347,6 +2367,22 @@
 
         var form = qs('#edit-form', modalEdit);
         var msg = qs('#edit-msg', modalEdit);
+
+        // Character counter for description in edit form
+        var editContentInput = qs('#edit-content-input', modalEdit);
+        var editContentCounter = qs('#edit-content-counter', modalEdit);
+        if (editContentInput && editContentCounter) {
+          editContentInput.addEventListener('input', function() {
+            var length = this.value.length;
+            var maxLength = parseInt(this.getAttribute('maxlength'));
+            editContentCounter.textContent = length + ' / ' + maxLength + ' znaków';
+            if (length > maxLength * 0.9) {
+              editContentCounter.style.color = '#d97706';
+            } else {
+              editContentCounter.style.color = '#666';
+            }
+          });
+        }
 
         // Image preview functionality for edit
         var imagesInput = qs('#edit-images-input', modalEdit);
@@ -2994,7 +3030,7 @@
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
         }
 
-        var html = '<header><h3>' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div>' + p.content + '</div>') : (p.excerpt ? ('<p>' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var html = '<header><h3 class="jg-place-title">' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim() });
 
