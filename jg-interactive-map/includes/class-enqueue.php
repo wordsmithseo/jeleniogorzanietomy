@@ -38,11 +38,14 @@ class JG_Map_Enqueue {
         add_action('wp_body_open', array($this, 'render_top_bar'));
 
         // Block wp-admin and wp-login access for non-admins
-        add_action('init', array($this, 'block_admin_access'));
+        add_action('admin_init', array($this, 'block_admin_access'));
         add_action('login_init', array($this, 'block_login_page'));
 
         // Hide register button on Elementor maintenance screen
         add_action('wp_head', array($this, 'hide_register_on_maintenance'));
+
+        // Handle email activation
+        add_action('template_redirect', array($this, 'handle_email_activation'));
     }
 
     /**
@@ -270,6 +273,49 @@ class JG_Map_Enqueue {
 
         // Redirect to home page - modal will open via JavaScript
         wp_redirect(home_url());
+        exit;
+    }
+
+    /**
+     * Handle email activation from link
+     */
+    public function handle_email_activation() {
+        if (!isset($_GET['jg_activate'])) {
+            return;
+        }
+
+        $activation_key = sanitize_text_field($_GET['jg_activate']);
+
+        // Find user with this activation key
+        $users = get_users(array(
+            'meta_key' => 'jg_map_activation_key',
+            'meta_value' => $activation_key,
+            'number' => 1
+        ));
+
+        if (empty($users)) {
+            wp_die('Nieprawidłowy link aktywacyjny. Konto mogło już zostać aktywowane lub link wygasł.', 'Błąd aktywacji', array('response' => 400));
+        }
+
+        $user = $users[0];
+
+        // Check if already activated
+        $status = get_user_meta($user->ID, 'jg_map_account_status', true);
+        if ($status === 'active') {
+            wp_redirect(add_query_arg('activation', 'already', home_url()));
+            exit;
+        }
+
+        // Activate account
+        update_user_meta($user->ID, 'jg_map_account_status', 'active');
+        delete_user_meta($user->ID, 'jg_map_activation_key');
+
+        // Auto login user
+        wp_set_current_user($user->ID);
+        wp_set_auth_cookie($user->ID, true);
+
+        // Redirect to home with success message
+        wp_redirect(add_query_arg('activation', 'success', home_url()));
         exit;
     }
 }
