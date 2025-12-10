@@ -1313,12 +1313,12 @@
       // Add pulsing red circle marker for deep-linked points
       // Callback is called after animation completes (4 seconds)
       function addPulsingMarker(lat, lng, callback) {
-        // Create pulsing red circle
+        // Create pulsing red circle (small, just around the marker)
         var pulsingCircle = L.circle([lat, lng], {
           color: '#ef4444',
           fillColor: '#ef4444',
           fillOpacity: 0.3,
-          radius: 30,
+          radius: 12, // 12 meters - just slightly bigger than the marker
           weight: 3
         }).addTo(map);
 
