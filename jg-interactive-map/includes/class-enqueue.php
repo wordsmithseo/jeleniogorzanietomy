@@ -323,9 +323,15 @@ class JG_Map_Enqueue {
             return; // Allow standard WP login during maintenance
         }
 
-        // Allow logout, password reset actions
+        // Allow logout, password reset actions, and re-authentication
         if (isset($_GET['action']) && in_array($_GET['action'], array('logout', 'lostpassword', 'rp', 'resetpass'))) {
             return; // Don't block these actions
+        }
+
+        // Allow re-authentication requests (reauth parameter)
+        // WordPress requires periodic re-authentication for security
+        if (isset($_GET['reauth'])) {
+            return; // Don't block re-auth
         }
 
         // Redirect to home page - modal will open via JavaScript
