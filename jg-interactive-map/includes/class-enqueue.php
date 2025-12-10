@@ -227,9 +227,17 @@ class JG_Map_Enqueue {
     /**
      * Block wp-login.php access (redirect to home with modal trigger)
      * BUT allow logout, lostpassword, and rp (reset password) actions
+     * ALSO don't block during Elementor maintenance mode (admins need to login)
      */
     public function block_login_page() {
-        // Allow logout action
+        // Don't block wp-login.php during Elementor maintenance mode
+        // Admins and moderators need to be able to login via standard WP login page
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
+        if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
+            return; // Allow standard WP login during maintenance
+        }
+
+        // Allow logout, password reset actions
         if (isset($_GET['action']) && in_array($_GET['action'], array('logout', 'lostpassword', 'rp', 'resetpass'))) {
             return; // Don't block these actions
         }
