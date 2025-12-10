@@ -1278,26 +1278,29 @@
             if (point) {
               console.log('[JG MAP] Found point:', point.title);
 
-              // Wait for map to be ready, then zoom and open modal
+              // Wait for map to be ready, then zoom and show pulsing marker
               setTimeout(function() {
                 // Zoom to point
                 map.setView([point.lat, point.lng], 18, { animate: true });
 
-                // Wait for zoom animation, then open modal
+                // Wait for zoom animation, then show pulsing marker
                 setTimeout(function() {
                   // Add pulsing red circle around the point
-                  addPulsingMarker(point.lat, point.lng);
+                  // After animation completes (5 seconds), open modal
+                  addPulsingMarker(point.lat, point.lng, function() {
+                    console.log('[JG MAP] Pulsing animation complete, opening modal');
 
-                  // Open modal
-                  viewPoint(point);
+                    // Open modal after animation
+                    viewPoint(point);
 
-                  // Clean URL (remove point_id parameter) after modal opens
-                  if (history.replaceState) {
-                    var cleanUrl = window.location.origin + window.location.pathname;
-                    history.replaceState(null, '', cleanUrl);
-                  }
-                }, 800); // Increased time to ensure zoom completes
-              }, 1200); // Increased time for cluster animation to complete
+                    // Clean URL (remove point_id parameter) after modal opens
+                    if (history.replaceState) {
+                      var cleanUrl = window.location.origin + window.location.pathname;
+                      history.replaceState(null, '', cleanUrl);
+                    }
+                  });
+                }, 800); // Wait for zoom animation
+              }, 1200); // Wait for cluster animation to complete
             } else {
               console.warn('[JG MAP] Point not found with id:', pointId);
             }
@@ -1308,7 +1311,8 @@
       }
 
       // Add pulsing red circle marker for deep-linked points
-      function addPulsingMarker(lat, lng) {
+      // Callback is called after animation completes (5 seconds)
+      function addPulsingMarker(lat, lng, callback) {
         // Create pulsing red circle
         var pulsingCircle = L.circle([lat, lng], {
           color: '#ef4444',
@@ -1331,11 +1335,16 @@
             pulsingCircle.setStyle({ fillOpacity: 0.2, weight: 2 });
           }
 
-          // Remove after 5 seconds
+          // Remove after 5 seconds and call callback
           if (pulseCount >= maxPulses) {
             clearInterval(pulseInterval);
             setTimeout(function() {
               map.removeLayer(pulsingCircle);
+
+              // Call callback after circle is removed
+              if (callback && typeof callback === 'function') {
+                callback();
+              }
             }, 500);
           }
         }, 500); // Pulse every 500ms
