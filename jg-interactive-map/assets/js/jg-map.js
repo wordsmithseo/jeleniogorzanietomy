@@ -57,7 +57,7 @@
 
       if (window.L && L.map && L.markerClusterGroup) {
         clearInterval(interval);
-        hideLoading();
+        // Don't hide loading here - let draw() handle it when map is ready with data
         cb();
         return;
       }
@@ -544,7 +544,9 @@
 
             map.addLayer(cluster);
             clusterReady = true;
+            console.log('[JG MAP] Cluster is now ready, pendingData:', pendingData ? pendingData.length : 0);
 
+            // Clean up any old markers
             if (markers.length > 0) {
               markers.forEach(function(m) {
                 try {
@@ -553,10 +555,12 @@
                 } catch (e) {}
               });
               markers = [];
+            }
 
-              if (pendingData && pendingData.length > 0) {
-                setTimeout(function() { draw(pendingData); }, 300);
-              }
+            // Process pending data if any (regardless of markers)
+            if (pendingData && pendingData.length > 0) {
+              console.log('[JG MAP] Processing pending data:', pendingData.length, 'points');
+              setTimeout(function() { draw(pendingData); }, 300);
             }
           } catch (e) {
             console.error('[JG MAP] Błąd tworzenia clustera:', e);
@@ -1277,17 +1281,23 @@
       var isInitialLoad = true; // Track if this is the first load
 
       function draw(list, skipFitBounds) {
+        console.log('[JG MAP] draw() called with', list ? list.length : 0, 'points, clusterReady:', clusterReady);
 
         if (!list || list.length === 0) {
+          console.log('[JG MAP] No data to draw, showing map anyway');
           showMap();
+          hideLoading();
           return;
         }
 
         // Wait for cluster to be ready (created in map.whenReady)
         if (!clusterReady || !cluster) {
+          console.log('[JG MAP] Cluster not ready, storing', list.length, 'points in pendingData');
           pendingData = list;
           return;
         }
+
+        console.log('[JG MAP] Cluster ready, drawing', list.length, 'markers');
 
         // Clear cluster layers
         try {
