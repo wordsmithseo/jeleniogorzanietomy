@@ -221,10 +221,16 @@ class JG_Map_Enqueue {
 
     /**
      * Block wp-admin access for non-admin users
+     * Allow access for users with manage_options capability (administrators)
      */
     public function block_admin_access() {
-        if (is_admin() && !current_user_can('manage_options') && !wp_doing_ajax()) {
-            // Redirect to home page
+        // Explicitly allow admins and during AJAX
+        if (current_user_can('manage_options') || wp_doing_ajax()) {
+            return; // Admin or AJAX - allow access
+        }
+
+        // Block all other users from wp-admin
+        if (is_admin()) {
             wp_redirect(home_url());
             exit;
         }
