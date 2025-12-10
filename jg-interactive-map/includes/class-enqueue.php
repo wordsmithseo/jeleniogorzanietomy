@@ -40,6 +40,9 @@ class JG_Map_Enqueue {
         // Block wp-admin and wp-login access for non-admins
         add_action('init', array($this, 'block_admin_access'));
         add_action('login_init', array($this, 'block_login_page'));
+
+        // Hide register button on Elementor maintenance screen
+        add_action('wp_head', array($this, 'hide_register_on_maintenance'));
     }
 
     /**
@@ -221,6 +224,29 @@ class JG_Map_Enqueue {
             // Redirect to home page
             wp_redirect(home_url());
             exit;
+        }
+    }
+
+    /**
+     * Hide register button on Elementor maintenance screen
+     * Registration is blocked during maintenance, so no need to show the button
+     */
+    public function hide_register_on_maintenance() {
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
+
+        if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
+            ?>
+            <style>
+                /* Hide register button on Elementor maintenance/coming soon screen */
+                body.elementor-maintenance-mode a[href*="wp-login.php?action=register"],
+                body.elementor-maintenance-mode .elementor-button-link[href*="register"],
+                body.elementor-maintenance-mode a[href*="register"],
+                .elementor-maintenance-mode-register,
+                a[href*="wp-login.php?action=register"] {
+                    display: none !important;
+                }
+            </style>
+            <?php
         }
     }
 
