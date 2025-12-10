@@ -256,13 +256,33 @@ class JG_Map_Enqueue {
             return;
         }
 
+        // DEBUG: Log what's happening
+        $user = wp_get_current_user();
+        $has_cap = current_user_can('manage_options');
+        $user_roles = $user->roles;
+
+        error_log('JG_MAP DEBUG - wp-admin access attempt:');
+        error_log('  User ID: ' . $user->ID);
+        error_log('  User login: ' . $user->user_login);
+        error_log('  User roles: ' . print_r($user_roles, true));
+        error_log('  Has manage_options: ' . ($has_cap ? 'YES' : 'NO'));
+        error_log('  REQUEST_URI: ' . $request_uri);
+
         // If user has admin capabilities, allow access
         // This is checked after user is authenticated
         if (current_user_can('manage_options')) {
+            error_log('  RESULT: Access GRANTED (has manage_options)');
+            return;
+        }
+
+        // Check if user is administrator by role
+        if (in_array('administrator', (array) $user_roles, true)) {
+            error_log('  RESULT: Access GRANTED (administrator role)');
             return;
         }
 
         // Block all other logged-in users from wp-admin
+        error_log('  RESULT: Access DENIED - redirecting to home');
         wp_safe_redirect(home_url());
         exit;
     }
