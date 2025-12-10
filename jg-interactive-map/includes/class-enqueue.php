@@ -37,8 +37,10 @@ class JG_Map_Enqueue {
         // Add custom top bar to the page
         add_action('wp_body_open', array($this, 'render_top_bar'));
 
-        // Block wp-admin and wp-login access for non-admins
-        add_action('template_redirect', array($this, 'block_admin_access'), 1);
+        // Block wp-admin access for non-admins (use early hook)
+        add_action('init', array($this, 'block_admin_access'), 1);
+
+        // Block wp-login page access
         add_action('login_init', array($this, 'block_login_page'));
 
         // Hide register button on Elementor maintenance screen
@@ -223,16 +225,24 @@ class JG_Map_Enqueue {
     /**
      * Block wp-admin access for non-admin users
      * Allow access for users with manage_options capability (administrators)
+     *
+     * Using 'init' hook which runs early for both frontend and admin requests
      */
     public function block_admin_access() {
-        // Only block if user is actually trying to access wp-admin
-        // This prevents blocking on regular frontend pages
-        if (!is_admin()) {
+        // Check if this is an admin request (not frontend)
+        // We need to check the URL since is_admin() might not work this early
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+
+        // Only proceed if trying to access wp-admin
+        if (strpos($request_uri, '/wp-admin') === false && strpos($request_uri, 'wp-admin') === false) {
             return;
         }
 
-        // Allow AJAX requests
-        if (wp_doing_ajax() || (defined('DOING_AJAX') && DOING_AJAX)) {
+        // Allow AJAX requests (wp-admin/admin-ajax.php)
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return;
+        }
+        if (strpos($request_uri, 'admin-ajax.php') !== false) {
             return;
         }
 
@@ -247,12 +257,13 @@ class JG_Map_Enqueue {
         }
 
         // If user has admin capabilities, allow access
+        // This is checked after user is authenticated
         if (current_user_can('manage_options')) {
             return;
         }
 
         // Block all other logged-in users from wp-admin
-        wp_redirect(home_url());
+        wp_safe_redirect(home_url());
         exit;
     }
 
