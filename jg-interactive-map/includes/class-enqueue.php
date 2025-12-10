@@ -46,12 +46,11 @@ class JG_Map_Enqueue {
     }
 
     /**
-     * Hide WordPress admin bar for non-admin users
+     * Hide WordPress admin bar for ALL users (including admins)
+     * Admins can access wp-admin via custom top bar button
      */
     public function hide_admin_bar_for_users() {
-        if (!current_user_can('manage_options')) {
-            show_admin_bar(false);
-        }
+        show_admin_bar(false);
     }
 
     /**
@@ -206,6 +205,9 @@ class JG_Map_Enqueue {
                         Zalogowano jako: <strong><?php echo esc_html($current_user->display_name); ?></strong><?php echo $role_icon; ?>
                     </span>
                     <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
+                    <?php if ($is_admin) : ?>
+                        <a href="<?php echo admin_url(); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin">⚙️ Panel administratora</a>
+                    <?php endif; ?>
                     <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn">Wyloguj</a>
                 <?php else : ?>
                     <button id="jg-login-btn" class="jg-top-bar-btn">Zaloguj</button>

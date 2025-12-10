@@ -53,6 +53,22 @@
   transform: translateY(-1px);
 }
 
+/* Admin panel button - golden style */
+.jg-top-bar-btn-admin {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+  border: 1px solid #f59e0b !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.jg-top-bar-btn-admin:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+  border-color: #fbbf24 !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
+  transform: translateY(-2px);
+}
+
 #jg-top-bar-datetime {
   font-weight: 500;
   font-size: 15px;
