@@ -1424,12 +1424,20 @@
               console.error('[JG MAP] Błąd fitBounds:', e);
             }
 
-            showMap();
-            hideLoading();
+            // Wait for cluster animation to complete before showing map
+            setTimeout(function() {
+              showMap();
+              hideLoading();
+              console.log('[JG MAP] Map shown after cluster animation');
+            }, 600);
           }, 400);
         } else {
-          showMap();
-          hideLoading();
+          // Wait for cluster animation to complete before showing map
+          setTimeout(function() {
+            showMap();
+            hideLoading();
+            console.log('[JG MAP] Map shown after cluster animation');
+          }, 600);
         }
       }
 
