@@ -36,6 +36,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_check_updates', array($this, 'check_updates'));
         add_action('wp_ajax_nopriv_jg_map_login', array($this, 'login_user'));
         add_action('wp_ajax_nopriv_jg_map_register', array($this, 'register_user'));
+        add_action('wp_ajax_nopriv_jg_map_forgot_password', array($this, 'forgot_password'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -2983,5 +2984,52 @@ class JG_Map_Ajax_Handlers {
 
         // Don't auto login - user must verify email first
         wp_send_json_success('Rejestracja zakończona pomyślnie! Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.');
+    }
+
+    public function forgot_password() {
+        $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+
+        if (empty($email)) {
+            wp_send_json_error('Proszę podać adres email');
+            exit;
+        }
+
+        // Validate email format
+        if (!is_email($email)) {
+            wp_send_json_error('Nieprawidłowy adres email');
+            exit;
+        }
+
+        // Check if user exists with this email
+        $user = get_user_by('email', $email);
+
+        if (!$user) {
+            // Don't reveal if email exists or not for security
+            // Send success message anyway
+            wp_send_json_success('Jeśli konto z tym adresem email istnieje, wysłaliśmy link do resetowania hasła.');
+            exit;
+        }
+
+        // Generate reset key
+        $reset_key = wp_generate_password(32, false);
+        update_user_meta($user->ID, 'jg_map_reset_key', $reset_key);
+        update_user_meta($user->ID, 'jg_map_reset_key_time', time());
+
+        // Send reset email
+        $reset_link = home_url('/?jg_reset=' . $reset_key);
+        $subject = 'Resetowanie hasła - ' . get_bloginfo('name');
+        $message = "Witaj {$user->user_login}!\n\n";
+        $message .= "Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta na " . get_bloginfo('name') . ".\n\n";
+        $message .= "Aby ustawić nowe hasło, kliknij w poniższy link:\n";
+        $message .= $reset_link . "\n\n";
+        $message .= "Link jest ważny przez 24 godziny.\n\n";
+        $message .= "Jeśli to nie Ty zleciłeś resetowanie hasła, zignoruj tę wiadomość.\n\n";
+        $message .= "Pozdrawiamy,\n";
+        $message .= get_bloginfo('name');
+
+        $headers = array('Content-Type: text/plain; charset=UTF-8');
+        wp_mail($email, $subject, $message, $headers);
+
+        wp_send_json_success('Link do resetowania hasła został wysłany na Twój adres email.');
     }
 }

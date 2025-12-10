@@ -265,6 +265,9 @@
             '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Hasło</label>' +
             '<input type="password" id="login-password" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
             '</div>' +
+            '<div style="text-align:right;margin-bottom:20px">' +
+            '<a href="#" id="forgot-password-link" style="color:#8d2324;font-size:13px;text-decoration:none;font-weight:600" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">Zapomniałeś hasła?</a>' +
+            '</div>' +
             '</form>' +
             '</div>' +
             '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
@@ -273,6 +276,12 @@
             '</div>';
 
           open(modalEdit, html);
+
+          // Forgot password link handler
+          document.getElementById('forgot-password-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            showForgotPasswordModal();
+          });
 
           document.getElementById('submit-login-btn').addEventListener('click', function() {
             var username = document.getElementById('login-username').value;
@@ -295,7 +304,7 @@
               },
               success: function(response) {
                 if (response.success) {
-                  alert('Zalogowano pomyślnie!');
+                  // No alert - just reload the page
                   close(modalEdit);
                   location.reload();
                 } else {
@@ -369,9 +378,23 @@
               },
               success: function(response) {
                 if (response.success) {
-                  alert('Rejestracja zakończona pomyślnie!');
-                  close(modalEdit);
-                  location.reload();
+                  // Show beautiful success modal instead of alert
+                  var successHtml = '<div class="jg-modal-header" style="background:#15803d;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+                    '<h2 style="margin:0;font-size:20px;font-weight:600">✅ Rejestracja zakończona pomyślnie!</h2>' +
+                    '</div>' +
+                    '<div class="jg-modal-body" style="padding:24px;text-align:center">' +
+                    '<div style="font-size:48px;margin:20px 0">📧</div>' +
+                    '<p style="font-size:16px;line-height:1.6;color:#333;margin-bottom:20px">Na adres email <strong style="color:#8d2324">' + esc(email) + '</strong> wysłaliśmy wiadomość z linkiem aktywacyjnym.</p>' +
+                    '<p style="font-size:14px;color:#666;margin-bottom:20px">Sprawdź swoją skrzynkę pocztową (również folder SPAM) i kliknij w link, aby dokończyć rejestrację.</p>' +
+                    '<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin-top:20px">' +
+                    '<p style="font-size:13px;color:#92400e;margin:0">⏰ Link aktywacyjny jest ważny przez 48 godzin</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:center;border-radius:0 0 8px 8px">' +
+                    '<button class="jg-btn jg-btn--primary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\';location.reload()" style="padding:10px 24px;background:#15803d;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">OK, rozumiem</button>' +
+                    '</div>';
+
+                  open(modalEdit, successHtml);
                 } else {
                   alert(response.data || 'Błąd rejestracji');
                 }
@@ -383,6 +406,81 @@
           });
         });
       }
+
+      // Forgot password modal function
+      function showForgotPasswordModal() {
+        var modalEdit = document.getElementById('jg-map-modal-edit');
+        var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+          '<h2 style="margin:0;font-size:20px;font-weight:600">🔑 Odzyskiwanie hasła</h2>' +
+          '</div>' +
+          '<div class="jg-modal-body" style="padding:24px">' +
+          '<p style="font-size:14px;color:#666;margin-bottom:20px">Podaj swój adres email, a wyślemy Ci link do zresetowania hasła.</p>' +
+          '<form id="jg-forgot-password-form">' +
+          '<div class="jg-form-group" style="margin-bottom:20px">' +
+          '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Adres email</label>' +
+          '<input type="email" id="forgot-email" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
+          '</div>' +
+          '</form>' +
+          '</div>' +
+          '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
+          '<button class="jg-btn jg-btn--secondary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'" style="padding:10px 20px;background:#fff;color:#333;border:2px solid #ddd;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'#fff\'">Anuluj</button>' +
+          '<button class="jg-btn jg-btn--primary" id="submit-forgot-btn" style="padding:10px 24px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#a02829\'" onmouseout="this.style.background=\'#8d2324\'">Wyślij link</button>' +
+          '</div>';
+
+        open(modalEdit, html);
+
+        document.getElementById('submit-forgot-btn').addEventListener('click', function() {
+          var email = document.getElementById('forgot-email').value;
+
+          if (!email) {
+            alert('Proszę podać adres email');
+            return;
+          }
+
+          // Validate email format
+          var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            alert('Proszę podać prawidłowy adres email');
+            return;
+          }
+
+          jQuery.ajax({
+            url: CFG.ajax,
+            type: 'POST',
+            data: {
+              action: 'jg_map_forgot_password',
+              email: email
+            },
+            success: function(response) {
+              if (response.success) {
+                // Show success modal
+                var successHtml = '<div class="jg-modal-header" style="background:#15803d;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+                  '<h2 style="margin:0;font-size:20px;font-weight:600">✅ Link wysłany!</h2>' +
+                  '</div>' +
+                  '<div class="jg-modal-body" style="padding:24px;text-align:center">' +
+                  '<div style="font-size:48px;margin:20px 0">📧</div>' +
+                  '<p style="font-size:16px;line-height:1.6;color:#333;margin-bottom:20px">Na adres <strong style="color:#8d2324">' + esc(email) + '</strong> wysłaliśmy link do resetowania hasła.</p>' +
+                  '<p style="font-size:14px;color:#666;margin-bottom:20px">Sprawdź swoją skrzynkę pocztową (również folder SPAM) i kliknij w link, aby ustawić nowe hasło.</p>' +
+                  '<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin-top:20px">' +
+                  '<p style="font-size:13px;color:#92400e;margin:0">⏰ Link jest ważny przez 24 godziny</p>' +
+                  '</div>' +
+                  '</div>' +
+                  '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-center;border-radius:0 0 8px 8px">' +
+                  '<button class="jg-btn jg-btn--primary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'" style="padding:10px 24px;background:#15803d;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">OK, rozumiem</button>' +
+                  '</div>';
+
+                open(modalEdit, successHtml);
+              } else {
+                alert(response.data || 'Nie znaleziono użytkownika z tym adresem email');
+              }
+            },
+            error: function() {
+              alert('Wystąpił błąd podczas wysyłania emaila');
+            }
+          });
+        });
+      }
+
       // ====================================
       // End: Custom Top Bar
       // ====================================
