@@ -38,7 +38,7 @@ class JG_Map_Enqueue {
         add_action('wp_body_open', array($this, 'render_top_bar'));
 
         // Block wp-admin and wp-login access for non-admins
-        add_action('admin_init', array($this, 'block_admin_access'));
+        add_action('template_redirect', array($this, 'block_admin_access'), 1);
         add_action('login_init', array($this, 'block_login_page'));
 
         // Hide register button on Elementor maintenance screen
@@ -225,25 +225,33 @@ class JG_Map_Enqueue {
      * Allow access for users with manage_options capability (administrators)
      */
     public function block_admin_access() {
+        // Only block if user is actually trying to access wp-admin
+        // This prevents blocking on regular frontend pages
+        if (!is_admin()) {
+            return;
+        }
+
         // Allow AJAX requests
         if (wp_doing_ajax() || (defined('DOING_AJAX') && DOING_AJAX)) {
             return;
         }
 
-        // Get current user
-        $user = wp_get_current_user();
+        // Allow cron
+        if (defined('DOING_CRON') && DOING_CRON) {
+            return;
+        }
+
+        // If user is not logged in, let WordPress handle it (will show login page)
+        if (!is_user_logged_in()) {
+            return;
+        }
 
         // If user has admin capabilities, allow access
         if (current_user_can('manage_options')) {
             return;
         }
 
-        // If user is administrator, allow access
-        if (in_array('administrator', (array) $user->roles)) {
-            return;
-        }
-
-        // Block all other users from wp-admin
+        // Block all other logged-in users from wp-admin
         wp_redirect(home_url());
         exit;
     }
