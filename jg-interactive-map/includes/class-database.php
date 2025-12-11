@@ -232,7 +232,11 @@ class JG_Map_Database {
             ? "status IN ('publish', 'pending', 'edit')"
             : "status = 'publish'";
 
-        $sql = "SELECT * FROM $table WHERE $status_condition ORDER BY created_at DESC";
+        $sql = "SELECT id, title, content, excerpt, lat, lng, type, status, report_status,
+                       author_id, author_hidden, is_deletion_requested, deletion_reason,
+                       deletion_requested_at, is_promo, promo_until, website, phone,
+                       cta_enabled, cta_type, admin_note, images, created_at, updated_at, ip_address
+                FROM $table WHERE $status_condition ORDER BY created_at DESC";
 
         return $wpdb->get_results($sql, ARRAY_A);
     }
@@ -245,7 +249,14 @@ class JG_Map_Database {
         $table = self::get_points_table();
 
         return $wpdb->get_row(
-            $wpdb->prepare("SELECT * FROM $table WHERE id = %d", $point_id),
+            $wpdb->prepare(
+                "SELECT id, title, content, excerpt, lat, lng, type, status, report_status,
+                        author_id, author_hidden, is_deletion_requested, deletion_reason,
+                        deletion_requested_at, is_promo, promo_until, website, phone,
+                        cta_enabled, cta_type, admin_note, images, created_at, updated_at, ip_address
+                 FROM $table WHERE id = %d",
+                $point_id
+            ),
             ARRAY_A
         );
     }
@@ -531,7 +542,10 @@ class JG_Map_Database {
 
         return $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT * FROM $table WHERE point_id = %d AND status = 'pending' ORDER BY created_at DESC LIMIT 1",
+                "SELECT id, point_id, user_id, action_type, old_values, new_values,
+                        status, created_at, resolved_at, resolved_by
+                 FROM $table WHERE point_id = %d AND status = 'pending'
+                 ORDER BY created_at DESC LIMIT 1",
                 $point_id
             ),
             ARRAY_A
@@ -547,7 +561,9 @@ class JG_Map_Database {
 
         return $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT * FROM $table WHERE point_id = %d ORDER BY created_at DESC",
+                "SELECT id, point_id, user_id, action_type, old_values, new_values,
+                        status, created_at, resolved_at, resolved_by
+                 FROM $table WHERE point_id = %d ORDER BY created_at DESC",
                 $point_id
             ),
             ARRAY_A

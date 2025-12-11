@@ -271,9 +271,18 @@ class JG_Map_Enqueue {
             exit;
         }
 
+        // Check if activation key expired (48 hours)
+        $key_time = get_user_meta($user->ID, 'jg_map_activation_key_time', true);
+        if (empty($key_time) || (time() - $key_time) > 172800) {
+            delete_user_meta($user->ID, 'jg_map_activation_key');
+            delete_user_meta($user->ID, 'jg_map_activation_key_time');
+            wp_die('Link aktywacyjny wygasł. Linki są ważne przez 48 godzin. Skontaktuj się z administratorem aby ponownie aktywować konto.', 'Link wygasł', array('response' => 400));
+        }
+
         // Activate account
         update_user_meta($user->ID, 'jg_map_account_status', 'active');
         delete_user_meta($user->ID, 'jg_map_activation_key');
+        delete_user_meta($user->ID, 'jg_map_activation_key_time');
 
         // Auto login user
         wp_set_current_user($user->ID);
@@ -314,15 +323,22 @@ class JG_Map_Enqueue {
 
         // Handle password reset form submission
         if (isset($_POST['new_password']) && isset($_POST['reset_key'])) {
+            // Verify nonce
+            if (!isset($_POST['reset_nonce']) || !wp_verify_nonce($_POST['reset_nonce'], 'jg_reset_password_' . $reset_key)) {
+                wp_die('Token bezpieczeństwa CSRF nieprawidłowy lub wygasł.', 'Błąd bezpieczeństwa', array('response' => 403));
+            }
+
             $new_password = $_POST['new_password'];
             $posted_key = sanitize_text_field($_POST['reset_key']);
 
             if ($posted_key !== $reset_key) {
-                wp_die('Nieprawidłowy token bezpieczeństwa.', 'Błąd', array('response' => 400));
+                wp_die('Nieprawidłowy klucz resetowania.', 'Błąd', array('response' => 400));
             }
 
-            if (strlen($new_password) < 6) {
-                $error = 'Hasło musi mieć co najmniej 6 znaków.';
+            if (strlen($new_password) < 12) {
+                $error = 'Hasło musi mieć co najmniej 12 znaków.';
+            } elseif (!preg_match('/[A-Z]/', $new_password) || !preg_match('/[a-z]/', $new_password) || !preg_match('/[0-9]/', $new_password)) {
+                $error = 'Hasło musi zawierać co najmniej jedną wielką literę, małą literę i cyfrę.';
             } else {
                 // Update password
                 wp_set_password($new_password, $user->ID);
@@ -465,21 +481,22 @@ class JG_Map_Enqueue {
 
                     <form method="POST" action="">
                         <input type="hidden" name="reset_key" value="<?php echo esc_attr($reset_key); ?>">
+                        <?php wp_nonce_field('jg_reset_password_' . $reset_key, 'reset_nonce'); ?>
 
                         <div class="form-group">
                             <label for="new_password">Nowe hasło</label>
-                            <input type="password" id="new_password" name="new_password" required minlength="6" placeholder="Wprowadź nowe hasło (min. 6 znaków)">
+                            <input type="password" id="new_password" name="new_password" required minlength="12" placeholder="Wprowadź nowe hasło (min. 12 znaków)">
                         </div>
 
                         <div class="form-group">
                             <label for="confirm_password">Potwierdź nowe hasło</label>
-                            <input type="password" id="confirm_password" name="confirm_password" required minlength="6" placeholder="Wprowadź ponownie nowe hasło">
+                            <input type="password" id="confirm_password" name="confirm_password" required minlength="12" placeholder="Wprowadź ponownie nowe hasło">
                         </div>
 
                         <button type="submit" class="submit-btn" onclick="return validatePasswords()">Ustaw nowe hasło</button>
 
                         <div class="info-box">
-                            💡 Hasło musi mieć co najmniej 6 znaków
+                            💡 Hasło musi mieć co najmniej 12 znaków, zawierać wielką literę, małą literę i cyfrę
                         </div>
                     </form>
                 </div>
@@ -490,8 +507,23 @@ class JG_Map_Enqueue {
                     var password = document.getElementById('new_password').value;
                     var confirm = document.getElementById('confirm_password').value;
 
-                    if (password.length < 6) {
-                        alert('Hasło musi mieć co najmniej 6 znaków');
+                    if (password.length < 12) {
+                        alert('Hasło musi mieć co najmniej 12 znaków');
+                        return false;
+                    }
+
+                    if (!/[A-Z]/.test(password)) {
+                        alert('Hasło musi zawierać co najmniej jedną wielką literę');
+                        return false;
+                    }
+
+                    if (!/[a-z]/.test(password)) {
+                        alert('Hasło musi zawierać co najmniej jedną małą literę');
+                        return false;
+                    }
+
+                    if (!/[0-9]/.test(password)) {
+                        alert('Hasło musi zawierać co najmniej jedną cyfrę');
                         return false;
                     }
 
