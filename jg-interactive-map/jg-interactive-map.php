@@ -212,6 +212,52 @@ class JG_Interactive_Map {
     }
 
     /**
+     * Detect if visitor is a bot/crawler
+     */
+    private function is_bot() {
+        if (empty($_SERVER['HTTP_USER_AGENT'])) {
+            return false;
+        }
+
+        $user_agent = strtolower($_SERVER['HTTP_USER_AGENT']);
+
+        // Common bot signatures
+        $bots = array(
+            'googlebot',           // Google
+            'bingbot',            // Bing
+            'slurp',              // Yahoo
+            'duckduckbot',        // DuckDuckGo
+            'baiduspider',        // Baidu
+            'yandexbot',          // Yandex
+            'facebookexternalhit', // Facebook
+            'twitterbot',         // Twitter
+            'whatsapp',           // WhatsApp
+            'telegram',           // Telegram
+            'linkedinbot',        // LinkedIn
+            'pinterestbot',       // Pinterest
+            'slackbot',           // Slack
+            'discordbot',         // Discord
+            'applebot',           // Apple
+            'ia_archiver',        // Alexa
+            'semrushbot',         // SEMrush
+            'ahrefsbot',          // Ahrefs
+            'mj12bot',            // Majestic
+            'dotbot',             // Moz
+            'rogerbot',           // Moz
+            'petalbot',           // Huawei
+            'seznambot',          // Seznam
+        );
+
+        foreach ($bots as $bot) {
+            if (strpos($user_agent, $bot) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Handle single point page display
      */
     public function handle_point_page() {
@@ -246,16 +292,36 @@ class JG_Interactive_Map {
             exit;
         }
 
-        // Redirect to home page with point ID hash
-        // JavaScript will detect this and open the modal
-        wp_redirect(home_url('/#point-' . $point['id']));
-        exit;
+        // Check if visitor is a bot
+        if ($this->is_bot()) {
+            // Bots get full HTML page with meta tags for SEO
+            global $jg_current_point;
+            $jg_current_point = $point;
+
+            $this->render_point_page($point);
+            exit;
+        } else {
+            // Humans get redirected to map with modal
+            wp_redirect(home_url('/#point-' . $point['id']));
+            exit;
+        }
     }
 
     /**
      * Render single point page
      */
     private function render_point_page($point) {
+        // Set page title for SEO
+        add_filter('pre_get_document_title', function() use ($point) {
+            $type_labels = array(
+                'miejsce' => 'Miejsce',
+                'ciekawostka' => 'Ciekawostka',
+                'zgloszenie' => 'Zgłoszenie'
+            );
+            $type_label = isset($type_labels[$point['type']]) ? $type_labels[$point['type']] : 'Punkt';
+            return $point['title'] . ' - ' . $type_label . ' w Jeleniej Górze';
+        }, 999);
+
         // Get site header
         get_header();
 
@@ -442,6 +508,36 @@ class JG_Interactive_Map {
 
         <!-- Canonical URL -->
         <link rel="canonical" href="<?php echo esc_url($url); ?>">
+
+        <!-- Schema.org JSON-LD structured data -->
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "<?php echo $point['type'] === 'miejsce' ? 'LocalBusiness' : 'Place'; ?>",
+            "name": <?php echo json_encode($point['title']); ?>,
+            "description": <?php echo json_encode($description); ?>,
+            "url": <?php echo json_encode($url); ?>,
+            <?php if ($first_image): ?>
+            "image": <?php echo json_encode($first_image); ?>,
+            <?php endif; ?>
+            "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": <?php echo json_encode($point['lat']); ?>,
+                "longitude": <?php echo json_encode($point['lng']); ?>
+            },
+            "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Jelenia Góra",
+                "addressCountry": "PL"
+            }
+            <?php if (!empty($point['phone'])): ?>
+            ,"telephone": <?php echo json_encode($point['phone']); ?>
+            <?php endif; ?>
+            <?php if (!empty($point['website'])): ?>
+            ,"sameAs": <?php echo json_encode($point['website']); ?>
+            <?php endif; ?>
+        }
+        </script>
         <?php
     }
 
