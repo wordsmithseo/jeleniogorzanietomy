@@ -593,9 +593,11 @@
         setTimeout(function() {
           try {
             // Single cluster with grid layout showing types
+            // Small maxClusterRadius (20) ensures clusters break apart naturally at high zoom
+            // but still groups very close points together
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
-              maxClusterRadius: 50,
+              maxClusterRadius: 20,
               spiderfyOnMaxZoom: false,
               zoomToBoundsOnClick: false,
               spiderfyDistanceMultiplier: 2,
@@ -673,8 +675,8 @@
 
                 html += '</div>';
 
-                // Add moderation alert badge if needed
-                if (needsModeration > 0) {
+                // Add moderation alert badge if needed (but not when cluster has sponsored items - looks bad)
+                if (needsModeration > 0 && sponsored === 0) {
                   html += '<div style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.3)">' + needsModeration + '</div>';
                 }
 
@@ -3268,7 +3270,15 @@
         var copyLinkBtn = qs('#btn-copy-link', modalView);
         if (copyLinkBtn) {
           copyLinkBtn.onclick = function() {
-            var pointUrl = window.location.origin + window.location.pathname + '?point_id=' + p.id;
+            // Generate SEO-friendly URL with point name
+            var slug = (p.title || 'bez-nazwy')
+              .toLowerCase()
+              .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e')
+              .replace(/ł/g, 'l').replace(/ń/g, 'n').replace(/ó/g, 'o')
+              .replace(/ś/g, 's').replace(/ź/g, 'z').replace(/ż/g, 'z')
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '');
+            var pointUrl = window.location.origin + '/miejsce/' + slug + '/';
 
             // Copy to clipboard
             if (navigator.clipboard && navigator.clipboard.writeText) {
