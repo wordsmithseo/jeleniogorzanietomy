@@ -207,7 +207,11 @@ class JG_Map_Admin {
             );
         }
 
-        // If we have events to show, modify the title
+        // Remove any existing count pattern like "(N)" from the title
+        // This removes phantom notifications that WordPress might have added
+        $admin_title = preg_replace('/\s*\(\d+\)\s*/', ' ', $admin_title);
+
+        // If we have events to show, add them to the title
         if (!empty($events) && $total_count > 0) {
             // Limit to first 3 events for title
             $event_names = array_slice($events, 0, 3);
