@@ -246,12 +246,9 @@ class JG_Interactive_Map {
             exit;
         }
 
-        // Store point data for meta tags
-        global $jg_current_point;
-        $jg_current_point = $point;
-
-        // Render the point page
-        $this->render_point_page($point);
+        // Redirect to home page with point ID hash
+        // JavaScript will detect this and open the modal
+        wp_redirect(home_url('/#point-' . $point['id']));
         exit;
     }
 

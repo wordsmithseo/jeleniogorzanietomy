@@ -1398,11 +1398,22 @@
           });
       }
 
-      // Check if URL contains ?point_id= and open that point
+      // Check if URL contains ?point_id= or #point-123 and open that point
       function checkDeepLink() {
         try {
+          var pointId = null;
+
+          // Check query parameter ?point_id=123
           var urlParams = new URLSearchParams(window.location.search);
-          var pointId = urlParams.get('point_id');
+          pointId = urlParams.get('point_id');
+
+          // Check hash #point-123
+          if (!pointId && window.location.hash) {
+            var hashMatch = window.location.hash.match(/^#point-(\d+)$/);
+            if (hashMatch) {
+              pointId = hashMatch[1];
+            }
+          }
 
           if (pointId && ALL && ALL.length > 0) {
             console.log('[JG MAP] Deep link detected, point_id:', pointId);
@@ -1430,7 +1441,7 @@
                     // Open modal after animation - use openDetails, not viewPoint!
                     openDetails(point);
 
-                    // Clean URL (remove point_id parameter) after modal opens
+                    // Clean URL (remove point_id parameter or hash) after modal opens
                     if (history.replaceState) {
                       var cleanUrl = window.location.origin + window.location.pathname;
                       history.replaceState(null, '', cleanUrl);
