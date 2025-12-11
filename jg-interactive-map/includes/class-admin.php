@@ -31,6 +31,7 @@ class JG_Map_Admin {
     private function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_bar_menu', array($this, 'add_admin_bar_notifications'), 100);
+        add_filter('admin_title', array($this, 'modify_admin_title'), 10, 2);
     }
 
     /**
@@ -53,8 +54,13 @@ class JG_Map_Admin {
         // Count pending items
         $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'");
         $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
-        $pending_reports = $wpdb->get_var("SELECT COUNT(*) FROM $reports_table WHERE status = 'pending'");
-        $pending_deletions = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = 1");
+        $pending_reports = $wpdb->get_var(
+            "SELECT COUNT(DISTINCT r.point_id)
+             FROM $reports_table r
+             INNER JOIN $points_table p ON r.point_id = p.id
+             WHERE r.status = 'pending' AND p.status = 'publish'"
+        );
+        $pending_deletions = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = 1 AND status = 'publish'");
 
         $total_pending = intval($pending_points) + intval($pending_edits) + intval($pending_reports) + intval($pending_deletions);
 
@@ -108,6 +114,119 @@ class JG_Map_Admin {
                 'href' => admin_url('admin.php?page=jg-map-deletions')
             ));
         }
+    }
+
+    /**
+     * Modify admin title to show event names
+     */
+    public function modify_admin_title($admin_title, $title) {
+        global $wpdb;
+
+        // Only for admins and moderators
+        if (!current_user_can('manage_options') && !current_user_can('moderate_comments')) {
+            return $admin_title;
+        }
+
+        // Get current page
+        $screen = get_current_screen();
+        if (!$screen || strpos($screen->id, 'jg-map') === false) {
+            return $admin_title;
+        }
+
+        $points_table = JG_Map_Database::get_points_table();
+        $history_table = JG_Map_Database::get_history_table();
+        $reports_table = JG_Map_Database::get_reports_table();
+
+        // Ensure history table exists
+        JG_Map_Database::ensure_history_table();
+
+        $events = array();
+        $total_count = 0;
+
+        // Moderation page - show pending points and edits
+        if (strpos($screen->id, 'jg-map-moderation') !== false) {
+            // Get pending points
+            $pending_points = $wpdb->get_results(
+                "SELECT title FROM $points_table WHERE status = 'pending' ORDER BY created_at DESC LIMIT 5",
+                ARRAY_A
+            );
+            foreach ($pending_points as $point) {
+                $events[] = $point['title'] ?: 'Bez nazwy';
+            }
+
+            // Get pending edits
+            $pending_edits = $wpdb->get_results(
+                "SELECT p.title FROM $history_table h
+                 LEFT JOIN $points_table p ON h.point_id = p.id
+                 WHERE h.status = 'pending'
+                 ORDER BY h.created_at DESC LIMIT 5",
+                ARRAY_A
+            );
+            foreach ($pending_edits as $edit) {
+                $events[] = 'Edycja: ' . ($edit['title'] ?: 'Bez nazwy');
+            }
+
+            $total_count = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'")
+                         + $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
+        }
+        // Reports page - show report reasons
+        elseif (strpos($screen->id, 'jg-map-reports') !== false) {
+            $pending_reports = $wpdb->get_results(
+                "SELECT r.reason, p.title
+                 FROM $reports_table r
+                 INNER JOIN $points_table p ON r.point_id = p.id
+                 WHERE r.status = 'pending' AND p.status = 'publish'
+                 ORDER BY r.created_at DESC LIMIT 5",
+                ARRAY_A
+            );
+            foreach ($pending_reports as $report) {
+                $events[] = ($report['title'] ?: 'Bez nazwy') . ': ' . $report['reason'];
+            }
+
+            $total_count = $wpdb->get_var(
+                "SELECT COUNT(DISTINCT r.point_id)
+                 FROM $reports_table r
+                 INNER JOIN $points_table p ON r.point_id = p.id
+                 WHERE r.status = 'pending' AND p.status = 'publish'"
+            );
+        }
+        // Deletions page - show deletion requests
+        elseif (strpos($screen->id, 'jg-map-deletions') !== false) {
+            $pending_deletions = $wpdb->get_results(
+                "SELECT title FROM $points_table
+                 WHERE is_deletion_requested = 1 AND status = 'publish'
+                 ORDER BY updated_at DESC LIMIT 5",
+                ARRAY_A
+            );
+            foreach ($pending_deletions as $deletion) {
+                $events[] = $deletion['title'] ?: 'Bez nazwy';
+            }
+
+            $total_count = $wpdb->get_var(
+                "SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = 1 AND status = 'publish'"
+            );
+        }
+
+        // If we have events to show, modify the title
+        if (!empty($events) && $total_count > 0) {
+            // Limit to first 3 events for title
+            $event_names = array_slice($events, 0, 3);
+            $event_text = implode(', ', $event_names);
+
+            // If there are more events, add ellipsis
+            if ($total_count > 3) {
+                $event_text .= '...';
+            }
+
+            // Modify the title: "Page Title: Event1, Event2 (3)"
+            $admin_title = str_replace(
+                $title . ' &lsaquo;',
+                $title . ': ' . $event_text . ' (' . $total_count . ') &lsaquo;',
+                $admin_title
+            );
+        }
+
+        return $admin_title;
     }
 
     /**
@@ -203,6 +322,15 @@ class JG_Map_Admin {
             'manage_options',
             'jg-map-roles',
             array($this, 'render_roles_page')
+        );
+
+        add_submenu_page(
+            'jg-map',
+            'Activity Log',
+            'Activity Log',
+            'manage_options',
+            'jg-map-activity-log',
+            array($this, 'render_activity_log_page')
         );
     }
 
@@ -2138,6 +2266,156 @@ class JG_Map_Admin {
                 });
             });
             </script>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Activity Log page
+     */
+    public function render_activity_log_page() {
+        global $wpdb;
+        $log_table = $wpdb->prefix . 'jg_map_activity_log';
+
+        // Pagination
+        $per_page = 50;
+        $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $offset = ($current_page - 1) * $per_page;
+
+        // Filters
+        $action_filter = isset($_GET['action_filter']) ? sanitize_text_field($_GET['action_filter']) : '';
+        $user_filter = isset($_GET['user_filter']) ? intval($_GET['user_filter']) : 0;
+
+        // Build query
+        $where = array('1=1');
+        if ($action_filter) {
+            $where[] = $wpdb->prepare('action = %s', $action_filter);
+        }
+        if ($user_filter) {
+            $where[] = $wpdb->prepare('user_id = %d', $user_filter);
+        }
+        $where_clause = implode(' AND ', $where);
+
+        // Get logs
+        $logs = $wpdb->get_results(
+            "SELECT * FROM $log_table
+             WHERE $where_clause
+             ORDER BY created_at DESC
+             LIMIT $per_page OFFSET $offset",
+            ARRAY_A
+        );
+
+        // Get total count
+        $total = $wpdb->get_var("SELECT COUNT(*) FROM $log_table WHERE $where_clause");
+        $total_pages = ceil($total / $per_page);
+
+        // Get unique actions for filter
+        $actions = $wpdb->get_col("SELECT DISTINCT action FROM $log_table ORDER BY action");
+
+        // Get users who have logged actions
+        $users_with_logs = $wpdb->get_results(
+            "SELECT DISTINCT user_id FROM $log_table ORDER BY user_id"
+        );
+
+        ?>
+        <div class="wrap">
+            <h1>Activity Log</h1>
+
+            <div style="background:#fff;padding:15px;border:1px solid #ddd;border-radius:4px;margin:20px 0">
+                <form method="get" style="display:flex;gap:15px;align-items:flex-end">
+                    <input type="hidden" name="page" value="jg-map-activity-log">
+
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600">Filtruj po akcji:</label>
+                        <select name="action_filter" style="padding:5px">
+                            <option value="">Wszystkie akcje</option>
+                            <?php foreach ($actions as $action): ?>
+                                <option value="<?php echo esc_attr($action); ?>" <?php selected($action_filter, $action); ?>>
+                                    <?php echo esc_html($action); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600">Filtruj po użytkowniku:</label>
+                        <select name="user_filter" style="padding:5px">
+                            <option value="0">Wszyscy użytkownicy</option>
+                            <?php foreach ($users_with_logs as $u):
+                                $user = get_userdata($u->user_id);
+                                if ($user):
+                            ?>
+                                <option value="<?php echo $u->user_id; ?>" <?php selected($user_filter, $u->user_id); ?>>
+                                    <?php echo esc_html($user->display_name); ?> (ID: <?php echo $u->user_id; ?>)
+                                </option>
+                            <?php endif; endforeach; ?>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="button">Filtruj</button>
+                    <?php if ($action_filter || $user_filter): ?>
+                        <a href="<?php echo admin_url('admin.php?page=jg-map-activity-log'); ?>" class="button">Wyczyść filtry</a>
+                    <?php endif; ?>
+                </form>
+            </div>
+
+            <?php if (!empty($logs)): ?>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th style="width:150px">Data</th>
+                        <th style="width:120px">Użytkownik</th>
+                        <th style="width:150px">Akcja</th>
+                        <th style="width:100px">Typ obiektu</th>
+                        <th style="width:80px">ID obiektu</th>
+                        <th>Opis</th>
+                        <th style="width:120px">IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($logs as $log):
+                        $user = get_userdata($log['user_id']);
+                        $user_name = $user ? $user->display_name : 'Użytkownik #' . $log['user_id'];
+                    ?>
+                        <tr>
+                            <td><?php echo esc_html(date('Y-m-d H:i:s', strtotime($log['created_at']))); ?></td>
+                            <td><?php echo esc_html($user_name); ?></td>
+                            <td><strong><?php echo esc_html($log['action']); ?></strong></td>
+                            <td><?php echo esc_html($log['object_type']); ?></td>
+                            <td><?php echo esc_html($log['object_id'] ?: '-'); ?></td>
+                            <td><?php echo esc_html($log['description']); ?></td>
+                            <td><code><?php echo esc_html($log['ip_address']); ?></code></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <div class="tablenav bottom" style="padding-top:10px">
+                <div class="tablenav-pages">
+                    <?php if ($total_pages > 1): ?>
+                        <span class="displaying-num"><?php echo number_format($total); ?> wpisów</span>
+                        <span class="pagination-links">
+                            <?php for ($i = 1; $i <= $total_pages; $i++):
+                                $url = add_query_arg(array(
+                                    'page' => 'jg-map-activity-log',
+                                    'paged' => $i,
+                                    'action_filter' => $action_filter,
+                                    'user_filter' => $user_filter
+                                ), admin_url('admin.php'));
+                            ?>
+                                <?php if ($i === $current_page): ?>
+                                    <span class="tablenav-pages-navspan button disabled" aria-hidden="true"><?php echo $i; ?></span>
+                                <?php else: ?>
+                                    <a class="button" href="<?php echo esc_url($url); ?>"><?php echo $i; ?></a>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php else: ?>
+            <p>Brak wpisów w activity log.</p>
+            <?php endif; ?>
         </div>
         <?php
     }

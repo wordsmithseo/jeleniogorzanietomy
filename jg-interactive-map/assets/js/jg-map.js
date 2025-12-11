@@ -638,7 +638,7 @@
                 if (sponsored > 0) {
                   html += '<div class="jg-cluster-grid-top">';
                   html += '<div class="jg-cluster-cell jg-cluster-cell--sponsored">';
-                  html += '<span class="jg-cluster-icon">⭐</span>';
+                  html += '<div class="jg-cluster-circle" style="width:10px;height:10px;border-radius:50%;background:#fff;margin:0 auto 2px"></div>';
                   html += '<span class="jg-cluster-num">' + sponsored + '</span>';
                   html += '</div>';
                   html += '</div>';
@@ -651,21 +651,21 @@
 
                   if (places > 0) {
                     html += '<div class="jg-cluster-cell jg-cluster-cell--places">';
-                    html += '<span class="jg-cluster-icon">📍</span>';
+                    html += '<div class="jg-cluster-circle" style="width:10px;height:10px;border-radius:50%;background:#fff;margin:0 auto 2px"></div>';
                     html += '<span class="jg-cluster-num">' + places + '</span>';
                     html += '</div>';
                   }
 
                   if (curiosities > 0) {
                     html += '<div class="jg-cluster-cell jg-cluster-cell--curiosities">';
-                    html += '<span class="jg-cluster-icon">ℹ️</span>';
+                    html += '<div class="jg-cluster-circle" style="width:10px;height:10px;border-radius:50%;background:#fff;margin:0 auto 2px"></div>';
                     html += '<span class="jg-cluster-num">' + curiosities + '</span>';
                     html += '</div>';
                   }
 
                   if (events > 0) {
                     html += '<div class="jg-cluster-cell jg-cluster-cell--events">';
-                    html += '<span class="jg-cluster-icon">❗</span>';
+                    html += '<div class="jg-cluster-circle" style="width:10px;height:10px;border-radius:50%;background:#888;margin:0 auto 2px"></div>';
                     html += '<span class="jg-cluster-num">' + events + '</span>';
                     html += '</div>';
                   }
