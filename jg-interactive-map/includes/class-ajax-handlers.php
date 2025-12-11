@@ -1007,6 +1007,15 @@ class JG_Map_Ajax_Handlers {
         // Resolve reports
         JG_Map_Database::resolve_reports($point_id, $reason);
 
+        // Log action
+        $point = JG_Map_Database::get_point($point_id);
+        JG_Map_Activity_Log::log(
+            'handle_reports',
+            'point',
+            $point_id,
+            sprintf('Rozpatrzono zgłoszenia dla: %s. Decyzja: %s', $point['title'], $decision_text)
+        );
+
         wp_send_json_success(array('message' => $message));
     }
 
@@ -1207,6 +1216,14 @@ class JG_Map_Ajax_Handlers {
 
         JG_Map_Database::update_point($point_id, array('status' => 'publish'));
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'approve_point',
+            'point',
+            $point_id,
+            sprintf('Zaakceptowano punkt: %s', $point['title'])
+        );
+
         // Notify author
         $this->notify_author_approved($point_id);
 
@@ -1242,6 +1259,14 @@ class JG_Map_Ajax_Handlers {
         }
 
         JG_Map_Database::update_point($point_id, array('status' => 'trash'));
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'reject_point',
+            'point',
+            $point_id,
+            sprintf('Odrzucono punkt: %s. Powód: %s', $point['title'], $reason)
+        );
 
         // Notify author
         $this->notify_author_rejected($point_id, $reason);
@@ -1957,6 +1982,14 @@ class JG_Map_Ajax_Handlers {
             wp_mail($author->user_email, $subject, $message);
         }
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'approve_edit',
+            'history',
+            $history_id,
+            sprintf('Zaakceptowano edycję miejsca: %s', $point['title'])
+        );
+
         wp_send_json_success(array('message' => 'Edycja zaakceptowana'));
     }
 
@@ -1998,6 +2031,14 @@ class JG_Map_Ajax_Handlers {
             }
             wp_mail($author->user_email, $subject, $message);
         }
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'reject_edit',
+            'history',
+            $history_id,
+            sprintf('Odrzucono edycję miejsca: %s. Powód: %s', $point['title'], $reason)
+        );
 
         wp_send_json_success(array('message' => 'Edycja odrzucona'));
     }

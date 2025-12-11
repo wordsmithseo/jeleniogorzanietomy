@@ -58,6 +58,7 @@ class JG_Interactive_Map {
      */
     private function load_dependencies() {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-database.php';
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-enqueue.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-shortcode.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-ajax-handlers.php';
@@ -81,6 +82,9 @@ class JG_Interactive_Map {
         // Set email sender name and address
         add_filter('wp_mail_from_name', array($this, 'set_email_from_name'));
         add_filter('wp_mail_from', array($this, 'set_email_from'));
+
+        // Add security headers
+        add_action('send_headers', array($this, 'add_security_headers'));
     }
 
     /**
@@ -113,6 +117,7 @@ class JG_Interactive_Map {
         // Check and update database schema on every load (only runs if needed)
         JG_Map_Database::check_and_update_schema();
 
+        JG_Map_Activity_Log::get_instance();
         JG_Map_Enqueue::get_instance();
         JG_Map_Shortcode::get_instance();
         JG_Map_Ajax_Handlers::get_instance();
@@ -128,6 +133,57 @@ class JG_Interactive_Map {
             false,
             dirname(JG_MAP_PLUGIN_BASENAME) . '/languages'
         );
+    }
+
+    /**
+     * Add security headers including CSP
+     */
+    public function add_security_headers() {
+        // Only add headers for frontend (not admin)
+        if (is_admin()) {
+            return;
+        }
+
+        // Content Security Policy
+        // Allow self, inline scripts (needed for map), and specific external sources
+        $csp_directives = array(
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net",
+            "style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com",
+            "img-src 'self' data: https: blob:",
+            "font-src 'self' data: https://fonts.gstatic.com",
+            "connect-src 'self'",
+            "frame-ancestors 'self'",
+            "base-uri 'self'",
+            "form-action 'self'"
+        );
+
+        header('Content-Security-Policy: ' . implode('; ', $csp_directives));
+
+        // X-Content-Type-Options
+        header('X-Content-Type-Options: nosniff');
+
+        // X-Frame-Options
+        header('X-Frame-Options: SAMEORIGIN');
+
+        // X-XSS-Protection (legacy browsers)
+        header('X-XSS-Protection: 1; mode=block');
+
+        // Referrer-Policy
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+
+        // Permissions-Policy (formerly Feature-Policy)
+        $permissions = array(
+            'geolocation=(self)',
+            'microphone=()',
+            'camera=()',
+            'payment=()',
+            'usb=()',
+            'magnetometer=()',
+            'gyroscope=()',
+            'accelerometer=()'
+        );
+        header('Permissions-Policy: ' . implode(', ', $permissions));
     }
 }
 
