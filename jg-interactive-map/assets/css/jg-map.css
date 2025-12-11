@@ -518,59 +518,46 @@
   user-select: none;
 }
 
-/* Sponsored pin animation - INTENSE golden shine like real metal */
+/* Sponsored pin animation - Gold shine passing through the pin */
 .jg-pin-marker--promo .jg-pin-svg-wrapper {
-  animation: pin-shine-gold 2.5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.9))
+          drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3));
 }
 
-@keyframes pin-shine-gold {
+.jg-pin-marker--promo .jg-pin-svg-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -150%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: pin-shine-sweep 3s ease-in-out infinite;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+@keyframes pin-shine-sweep {
   0% {
-    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.8))
-            drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3))
-            drop-shadow(-20px 0 5px rgba(255, 215, 0, 0));
+    left: -150%;
   }
-  8% {
-    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.9))
-            drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3))
-            drop-shadow(-12px 0 15px rgba(255, 215, 0, 0.8))
-            drop-shadow(-12px 0 25px rgba(255, 255, 255, 0.4));
+  20% {
+    left: -150%;
   }
-  16% {
-    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 1))
-            drop-shadow(0 3px 10px rgba(0, 0, 0, 0.4))
-            drop-shadow(-5px 0 20px rgba(255, 215, 0, 1))
-            drop-shadow(-5px 0 35px rgba(255, 255, 255, 0.7))
-            drop-shadow(-5px 0 50px rgba(255, 215, 0, 0.6));
-  }
-  25% {
-    filter: drop-shadow(0 0 10px rgba(245, 158, 11, 1))
-            drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4))
-            drop-shadow(0 0 25px rgba(255, 215, 0, 1))
-            drop-shadow(0 0 40px rgba(255, 255, 255, 0.9))
-            drop-shadow(0 0 60px rgba(255, 215, 0, 0.8));
-  }
-  33% {
-    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 1))
-            drop-shadow(0 3px 10px rgba(0, 0, 0, 0.4))
-            drop-shadow(5px 0 20px rgba(255, 215, 0, 1))
-            drop-shadow(5px 0 35px rgba(255, 255, 255, 0.7))
-            drop-shadow(5px 0 50px rgba(255, 215, 0, 0.6));
-  }
-  42% {
-    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.9))
-            drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3))
-            drop-shadow(12px 0 15px rgba(255, 215, 0, 0.8))
-            drop-shadow(12px 0 25px rgba(255, 255, 255, 0.4));
-  }
-  50% {
-    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.8))
-            drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3))
-            drop-shadow(20px 0 5px rgba(255, 215, 0, 0));
+  40% {
+    left: 150%;
   }
   100% {
-    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.8))
-            drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3))
-            drop-shadow(20px 0 5px rgba(255, 215, 0, 0));
+    left: 150%;
   }
 }
 
@@ -601,7 +588,6 @@
   font-size: 28px;
   font-weight: 800;
   box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7), 0 4px 16px rgba(245, 158, 11, 0.5);
-  animation: pulse-gold 2s ease-in-out infinite;
 }
 
 .jg-pin.jg-pin--pending {

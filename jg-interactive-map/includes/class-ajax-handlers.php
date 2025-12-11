@@ -1216,6 +1216,9 @@ class JG_Map_Ajax_Handlers {
 
         JG_Map_Database::update_point($point_id, array('status' => 'publish'));
 
+        // Resolve any pending reports for this point
+        JG_Map_Database::resolve_reports($point_id, 'Punkt został zaakceptowany przez moderatora');
+
         // Log action
         JG_Map_Activity_Log::log(
             'approve_point',
@@ -1259,6 +1262,9 @@ class JG_Map_Ajax_Handlers {
         }
 
         JG_Map_Database::update_point($point_id, array('status' => 'trash'));
+
+        // Resolve any pending reports for this point
+        JG_Map_Database::resolve_reports($point_id, 'Punkt został odrzucony przez moderatora: ' . $reason);
 
         // Log action
         JG_Map_Activity_Log::log(
@@ -3082,6 +3088,13 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_error('Nieprawidłowa nazwa użytkownika lub hasło');
             exit;
         }
+
+        // Set authentication cookie for wp-admin access
+        wp_set_auth_cookie($user->ID, true, is_ssl());
+
+        // Set current user
+        wp_set_current_user($user->ID);
+        do_action('wp_login', $user->user_login, $user);
 
         // Check if email is verified
         $account_status = get_user_meta($user->ID, 'jg_map_account_status', true);

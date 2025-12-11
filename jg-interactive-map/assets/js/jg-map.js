@@ -596,9 +596,8 @@
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: 50,
-              spiderfyOnMaxZoom: true,
-              zoomToBoundsOnClick: true,
-              disableClusteringAtZoom: 16,
+              spiderfyOnMaxZoom: false,
+              zoomToBoundsOnClick: false,
               spiderfyDistanceMultiplier: 2,
               animate: true,
               animateAddingMarkers: true,
@@ -681,6 +680,80 @@
             });
 
             map.addLayer(cluster);
+
+            // Add cluster click handler to show list instead of zooming
+            cluster.on('clusterclick', function(e) {
+              var childMarkers = e.layer.getAllChildMarkers();
+
+              // Build list HTML
+              var listHTML = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+                '<h2 style="margin:0;font-size:20px;font-weight:600">Miejsca w tej lokalizacji (' + childMarkers.length + ')</h2>' +
+                '</div>' +
+                '<div class="jg-modal-body" style="padding:0;max-height:500px;overflow-y:auto">' +
+                '<div style="display:flex;flex-direction:column;gap:1px;background:#e5e5e5">';
+
+              childMarkers.forEach(function(marker) {
+                var opts = marker.options;
+                var pointId = opts.pointId || 0;
+                var title = opts.pointTitle || 'Bez nazwy';
+                var type = opts.pointType || 'zgloszenie';
+                var isPromo = opts.isPromo || false;
+
+                // Type icon and label
+                var typeIcon = '❗';
+                var typeLabel = 'Zgłoszenie';
+                if (isPromo) {
+                  typeIcon = '⭐';
+                  typeLabel = 'Sponsorowane';
+                } else if (type === 'miejsce') {
+                  typeIcon = '📍';
+                  typeLabel = 'Miejsce';
+                } else if (type === 'ciekawostka') {
+                  typeIcon = 'ℹ️';
+                  typeLabel = 'Ciekawostka';
+                }
+
+                listHTML += '<div class="jg-cluster-list-item" data-point-id="' + pointId + '" style="background:#fff;padding:16px 24px;cursor:pointer;transition:background 0.2s;border-left:4px solid ' + (isPromo ? '#fbbf24' : type === 'miejsce' ? '#8d2324' : type === 'ciekawostka' ? '#3b82f6' : '#ef4444') + '" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\'#fff\'">' +
+                  '<div style="display:flex;align-items:center;gap:12px">' +
+                  '<div style="font-size:24px">' + typeIcon + '</div>' +
+                  '<div style="flex:1">' +
+                  '<div style="font-weight:600;font-size:16px;color:#333;margin-bottom:4px">' + title + '</div>' +
+                  '<div style="font-size:13px;color:#666">' + typeLabel + '</div>' +
+                  '</div>' +
+                  '<div style="color:#8d2324;font-size:20px">→</div>' +
+                  '</div>' +
+                  '</div>';
+              });
+
+              listHTML += '</div></div>' +
+                '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;justify-content:flex-end;border-radius:0 0 8px 8px">' +
+                '<button class="jg-btn jg-btn--secondary" onclick="document.getElementById(\'jg-map-modal-view\').style.display=\'none\'" style="padding:10px 20px;background:#fff;color:#333;border:2px solid #ddd;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'#fff\'">Zamknij</button>' +
+                '</div>';
+
+              open(modalView, listHTML);
+
+              // Add click handlers to list items
+              setTimeout(function() {
+                var items = document.querySelectorAll('.jg-cluster-list-item');
+                items.forEach(function(item) {
+                  item.addEventListener('click', function() {
+                    var pointId = parseInt(this.getAttribute('data-point-id'));
+                    if (pointId) {
+                      // Find the marker and trigger its click event
+                      childMarkers.forEach(function(m) {
+                        if (m.options.pointId === pointId) {
+                          close(modalView);
+                          setTimeout(function() {
+                            m.fire('click');
+                          }, 100);
+                        }
+                      });
+                    }
+                  });
+                });
+              }, 100);
+            });
+
             clusterReady = true;
             console.log('[JG MAP] Cluster is now ready, pendingData:', pendingData ? pendingData.length : 0);
 
