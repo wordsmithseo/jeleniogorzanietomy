@@ -139,8 +139,14 @@ class JG_Map_Ajax_Handlers {
         if ($is_admin) {
             $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = 'pending'");
             $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
-            $pending_reports = $wpdb->get_var("SELECT COUNT(*) FROM $reports_table WHERE status = 'pending'");
-            $pending_count = intval($pending_points) + intval($pending_edits) + intval($pending_reports);
+            $pending_reports = $wpdb->get_var(
+                "SELECT COUNT(DISTINCT r.point_id)
+                 FROM $reports_table r
+                 INNER JOIN $table p ON r.point_id = p.id
+                 WHERE r.status = 'pending' AND p.status = 'publish'"
+            );
+            $pending_deletions = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE is_deletion_requested = 1 AND status = 'publish'");
+            $pending_count = intval($pending_points) + intval($pending_edits) + intval($pending_reports) + intval($pending_deletions);
         }
 
         wp_send_json_success(array(
