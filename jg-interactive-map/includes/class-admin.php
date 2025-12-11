@@ -209,7 +209,12 @@ class JG_Map_Admin {
 
         // Remove any existing count pattern like "(N)" from the title
         // This removes phantom notifications that WordPress might have added
-        $admin_title = preg_replace('/\s*\(\d+\)\s*/', ' ', $admin_title);
+        // Try multiple patterns to catch all variations
+        $admin_title = preg_replace('/\s*\(\d+\)\s*&lsaquo;/', ' &lsaquo;', $admin_title);
+        $admin_title = preg_replace('/\s*\(\d+\)/', '', $admin_title);
+
+        // Clean up any double spaces
+        $admin_title = preg_replace('/\s+/', ' ', $admin_title);
 
         // If we have events to show, add them to the title
         if (!empty($events) && $total_count > 0) {
@@ -223,11 +228,10 @@ class JG_Map_Admin {
             }
 
             // Modify the title: "Page Title: Event1, Event2 (3)"
-            $admin_title = str_replace(
-                $title . ' &lsaquo;',
-                $title . ': ' . $event_text . ' (' . $total_count . ') &lsaquo;',
-                $admin_title
-            );
+            // First remove the separator if it exists
+            $admin_title = str_replace(' &lsaquo;', '', $admin_title);
+            // Then rebuild with our format
+            $admin_title = $title . ': ' . $event_text . ' (' . $total_count . ') &lsaquo; ' . str_replace($title, '', trim($admin_title));
         }
 
         return $admin_title;
