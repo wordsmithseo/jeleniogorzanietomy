@@ -750,11 +750,11 @@ class JG_Map_Admin {
         $points_table = JG_Map_Database::get_points_table();
 
         $reports = $wpdb->get_results(
-            "SELECT r.*, p.title as point_title, COUNT(r2.id) as report_count
+            "SELECT r.*, p.title as point_title, p.status as point_status, COUNT(r2.id) as report_count
             FROM $reports_table r
             LEFT JOIN $points_table p ON r.point_id = p.id
             LEFT JOIN $reports_table r2 ON r.point_id = r2.point_id AND r2.status = 'pending'
-            WHERE r.status = 'pending'
+            WHERE r.status = 'pending' AND p.status = 'publish'
             GROUP BY r.point_id
             ORDER BY report_count DESC, r.created_at DESC",
             ARRAY_A
