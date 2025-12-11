@@ -604,11 +604,12 @@
               iconCreateFunction: function(clusterGroup) {
                 var childMarkers = clusterGroup.getAllChildMarkers();
 
-                // Count by type
+                // Count by type and check for moderation needs
                 var sponsored = 0;
                 var places = 0;
                 var curiosities = 0;
                 var events = 0;
+                var needsModeration = 0;
 
                 childMarkers.forEach(function(marker) {
                   var opts = marker.options;
@@ -620,6 +621,11 @@
                     curiosities++;
                   } else if (opts.pointType === 'zgloszenie') {
                     events++;
+                  }
+
+                  // Check if needs moderation
+                  if (opts.pointStatus === 'pending' || opts.hasReports || opts.isDeletionRequested || opts.isEdit) {
+                    needsModeration++;
                   }
                 });
 
@@ -667,13 +673,18 @@
 
                 html += '</div>';
 
+                // Add moderation alert badge if needed
+                if (needsModeration > 0) {
+                  html += '<div style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.3)">' + needsModeration + '</div>';
+                }
+
                 // Calculate icon size based on content
                 var width = 80;
                 var height = sponsored > 0 && hasBottom ? 90 : 50;
 
                 return L.divIcon({
                   html: html,
-                  className: 'jg-cluster-wrapper',
+                  className: 'jg-cluster-wrapper' + (needsModeration > 0 ? ' jg-cluster--needs-moderation' : ''),
                   iconSize: [width, height]
                 });
               }
@@ -698,6 +709,12 @@
                 var title = opts.pointTitle || 'Bez nazwy';
                 var type = opts.pointType || 'zgloszenie';
                 var isPromo = opts.isPromo || false;
+                var status = opts.pointStatus || 'publish';
+                var hasReports = opts.hasReports || false;
+                var reportsCount = opts.reportsCount || 0;
+                var isDeletionRequested = opts.isDeletionRequested || false;
+                var isEdit = opts.isEdit || false;
+                var isPending = status === 'pending';
 
                 // Type icon and label
                 var typeIcon = '❗';
@@ -713,11 +730,40 @@
                   typeLabel = 'Ciekawostka';
                 }
 
-                listHTML += '<div class="jg-cluster-list-item" data-point-id="' + pointId + '" style="background:#fff;padding:16px 24px;cursor:pointer;transition:background 0.2s;border-left:4px solid ' + (isPromo ? '#fbbf24' : type === 'miejsce' ? '#8d2324' : type === 'ciekawostka' ? '#3b82f6' : '#ef4444') + '" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\'#fff\'">' +
+                // Moderation status badges
+                var statusBadges = '';
+                if (isPending) {
+                  statusBadges += '<span style="display:inline-block;padding:2px 8px;background:#dc2626;color:#fff;border-radius:4px;font-size:11px;font-weight:600;margin-left:8px">Oczekuje</span>';
+                }
+                if (hasReports) {
+                  statusBadges += '<span style="display:inline-block;padding:2px 8px;background:#f59e0b;color:#fff;border-radius:4px;font-size:11px;font-weight:600;margin-left:8px">🚨 ' + reportsCount + ' zgł.</span>';
+                }
+                if (isDeletionRequested) {
+                  statusBadges += '<span style="display:inline-block;padding:2px 8px;background:#9333ea;color:#fff;border-radius:4px;font-size:11px;font-weight:600;margin-left:8px">✕ Prośba o usunięcie</span>';
+                }
+                if (isEdit) {
+                  statusBadges += '<span style="display:inline-block;padding:2px 8px;background:#8b5cf6;color:#fff;border-radius:4px;font-size:11px;font-weight:600;margin-left:8px">✏️ Edycja</span>';
+                }
+
+                // Border color based on priority
+                var borderColor = '#e5e5e5';
+                if (isPending || hasReports || isDeletionRequested || isEdit) {
+                  borderColor = '#dc2626'; // Red for items needing moderation
+                } else if (isPromo) {
+                  borderColor = '#fbbf24';
+                } else if (type === 'miejsce') {
+                  borderColor = '#8d2324';
+                } else if (type === 'ciekawostka') {
+                  borderColor = '#3b82f6';
+                } else {
+                  borderColor = '#ef4444';
+                }
+
+                listHTML += '<div class="jg-cluster-list-item" data-point-id="' + pointId + '" style="background:#fff;padding:16px 24px;cursor:pointer;transition:background 0.2s;border-left:4px solid ' + borderColor + '" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\'#fff\'">' +
                   '<div style="display:flex;align-items:center;gap:12px">' +
                   '<div style="font-size:24px">' + typeIcon + '</div>' +
                   '<div style="flex:1">' +
-                  '<div style="font-weight:600;font-size:16px;color:#333;margin-bottom:4px">' + title + '</div>' +
+                  '<div style="font-weight:600;font-size:16px;color:#333;margin-bottom:4px">' + title + statusBadges + '</div>' +
                   '<div style="font-size:13px;color:#666">' + typeLabel + '</div>' +
                   '</div>' +
                   '<div style="color:#8d2324;font-size:20px">→</div>' +
@@ -1662,11 +1708,18 @@
 
             if (isNaN(lat) || isNaN(lng)) return;
 
-            // Create marker with type info
+            // Create marker with type info and moderation status
             var markerOptions = {
               icon: iconFor(p),
               isPromo: !!p.sponsored,
-              pointType: p.type || 'unknown'
+              pointType: p.type || 'unknown',
+              pointId: p.id,
+              pointTitle: p.title || 'Bez nazwy',
+              pointStatus: p.status || 'publish',
+              hasReports: (p.reports_count || 0) > 0,
+              reportsCount: p.reports_count || 0,
+              isDeletionRequested: !!p.is_deletion_requested,
+              isEdit: p.has_pending_edit || false
             };
 
             var m = L.marker([lat, lng], markerOptions);
