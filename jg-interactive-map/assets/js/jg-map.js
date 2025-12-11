@@ -553,7 +553,7 @@
         zoomControl: true,
         scrollWheelZoom: true,
         minZoom: 12,
-        maxZoom: 18,
+        maxZoom: 19,
         maxBounds: bounds,
         maxBoundsViscosity: 1.0
       }).setView([lat, lng], zoom);
@@ -1428,8 +1428,8 @@
 
               // Wait for map to be ready, then zoom and show pulsing marker
               setTimeout(function() {
-                // Zoom to point
-                map.setView([point.lat, point.lng], 18, { animate: true });
+                // Zoom to point with maximum zoom level
+                map.setView([point.lat, point.lng], 19, { animate: true });
 
                 // Wait for zoom animation, then show pulsing marker
                 setTimeout(function() {
