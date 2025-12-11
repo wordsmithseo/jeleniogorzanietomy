@@ -564,13 +564,25 @@ class JG_Map_Ajax_Handlers {
         $title = sanitize_text_field($_POST['title'] ?? '');
         $type = sanitize_text_field($_POST['type'] ?? '');
         $content = wp_kses_post($_POST['content'] ?? '');
-        $website = sanitize_text_field($_POST['website'] ?? '');
-        $phone = sanitize_text_field($_POST['phone'] ?? '');
+        $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
+        $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
         $cta_enabled = isset($_POST['cta_enabled']) ? 1 : 0;
         $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
         if (empty($title)) {
             wp_send_json_error(array('message' => 'Tytuł jest wymagany'));
+            exit;
+        }
+
+        // Validate website URL if provided
+        if (!empty($website) && !filter_var($website, FILTER_VALIDATE_URL)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy format adresu strony internetowej'));
+            exit;
+        }
+
+        // Validate phone format if provided
+        if (!empty($phone) && !preg_match('/^[\d\s\+\-\(\)]+$/', $phone)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy format numeru telefonu'));
             exit;
         }
 
@@ -1297,6 +1309,13 @@ class JG_Map_Ajax_Handlers {
                     $movefile = wp_handle_upload($file, $upload_overrides);
 
                     if ($movefile && !isset($movefile['error'])) {
+                        // Verify MIME type for security
+                        $mime_check = $this->verify_image_mime_type($movefile['file']);
+                        if (!$mime_check['valid']) {
+                            @unlink($movefile['file']);
+                            return array('error' => $mime_check['error']);
+                        }
+
                         // Resize to 800x800 if needed
                         $resized_file = $this->resize_image_if_needed($movefile['file'], $MAX_DIMENSION);
 
@@ -1327,6 +1346,13 @@ class JG_Map_Ajax_Handlers {
                 $movefile = wp_handle_upload($files, $upload_overrides);
 
                 if ($movefile && !isset($movefile['error'])) {
+                    // Verify MIME type for security
+                    $mime_check = $this->verify_image_mime_type($movefile['file']);
+                    if (!$mime_check['valid']) {
+                        @unlink($movefile['file']);
+                        return array('error' => $mime_check['error']);
+                    }
+
                     // Resize to 800x800 if needed
                     $resized_file = $this->resize_image_if_needed($movefile['file'], $MAX_DIMENSION);
 
@@ -1353,6 +1379,115 @@ class JG_Map_Ajax_Handlers {
         }
 
         return array('images' => $images);
+    }
+
+    /**
+     * Check rate limiting to prevent abuse
+     */
+    private function check_rate_limit($action, $identifier, $max_attempts = 5, $timeframe = 900) {
+        $transient_key = 'jg_rate_limit_' . $action . '_' . md5($identifier);
+        $attempts = get_transient($transient_key);
+
+        if ($attempts !== false && $attempts >= $max_attempts) {
+            return array(
+                'allowed' => false,
+                'minutes_remaining' => ceil((900 - (time() - $attempts)) / 60)
+            );
+        }
+
+        // Increment or set attempts
+        if ($attempts === false) {
+            set_transient($transient_key, 1, $timeframe);
+        } else {
+            set_transient($transient_key, $attempts + 1, $timeframe);
+        }
+
+        return array('allowed' => true);
+    }
+
+    /**
+     * Validate password strength
+     */
+    private function validate_password_strength($password) {
+        // Minimum 12 characters
+        if (strlen($password) < 12) {
+            return array(
+                'valid' => false,
+                'error' => 'Hasło musi mieć co najmniej 12 znaków'
+            );
+        }
+
+        // Must contain uppercase letter
+        if (!preg_match('/[A-Z]/', $password)) {
+            return array(
+                'valid' => false,
+                'error' => 'Hasło musi zawierać co najmniej jedną wielką literę'
+            );
+        }
+
+        // Must contain lowercase letter
+        if (!preg_match('/[a-z]/', $password)) {
+            return array(
+                'valid' => false,
+                'error' => 'Hasło musi zawierać co najmniej jedną małą literę'
+            );
+        }
+
+        // Must contain digit
+        if (!preg_match('/[0-9]/', $password)) {
+            return array(
+                'valid' => false,
+                'error' => 'Hasło musi zawierać co najmniej jedną cyfrę'
+            );
+        }
+
+        return array('valid' => true);
+    }
+
+    /**
+     * Verify image MIME type for security
+     */
+    private function verify_image_mime_type($file_path) {
+        $allowed_mimes = array(
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp'
+        );
+
+        // Check with finfo (most reliable)
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $file_path);
+            finfo_close($finfo);
+
+            if (!in_array($mime, $allowed_mimes, true)) {
+                return array(
+                    'valid' => false,
+                    'error' => 'Nieprawidłowy typ pliku. Dozwolone są tylko obrazy (JPG, PNG, GIF, WebP)'
+                );
+            }
+        }
+
+        // Additional check with getimagesize
+        $image_info = @getimagesize($file_path);
+        if ($image_info === false) {
+            return array(
+                'valid' => false,
+                'error' => 'Plik nie jest prawidłowym obrazem'
+            );
+        }
+
+        // Verify MIME from getimagesize matches allowed types
+        if (!in_array($image_info['mime'], $allowed_mimes, true)) {
+            return array(
+                'valid' => false,
+                'error' => 'Nieprawidłowy typ obrazu'
+            );
+        }
+
+        return array('valid' => true);
     }
 
     /**
@@ -1442,16 +1577,35 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Get user IP address
+     * Get user IP address (with proper validation to prevent spoofing)
      */
     private function get_user_ip() {
-        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-            return sanitize_text_field($_SERVER['HTTP_CLIENT_IP']);
-        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            return sanitize_text_field($_SERVER['HTTP_X_FORWARDED_FOR']);
-        } else {
-            return sanitize_text_field($_SERVER['REMOTE_ADDR'] ?? '');
+        $ip = '';
+
+        // Check CloudFlare (if using CF)
+        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            $ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
         }
+        // Check X-Forwarded-For (take first IP in chain)
+        elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+            $ip = trim($ips[0]);
+        }
+        // Fallback to REMOTE_ADDR
+        else {
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        }
+
+        // Sanitize
+        $ip = sanitize_text_field($ip);
+
+        // Validate IP format
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            // If invalid, use REMOTE_ADDR as fallback
+            $ip = sanitize_text_field($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        }
+
+        return $ip;
     }
 
     /**
@@ -2851,6 +3005,14 @@ class JG_Map_Ajax_Handlers {
      * Login user via AJAX
      */
     public function login_user() {
+        // Rate limiting check
+        $ip = $this->get_user_ip();
+        $rate_check = $this->check_rate_limit('login', $ip, 5, 900);
+        if (!$rate_check['allowed']) {
+            wp_send_json_error('Zbyt wiele prób logowania. Spróbuj ponownie za 15 minut.');
+            exit;
+        }
+
         // Honeypot check - if filled, it's a bot
         $honeypot = isset($_POST['honeypot']) ? $_POST['honeypot'] : '';
         if (!empty($honeypot)) {
@@ -2911,6 +3073,14 @@ class JG_Map_Ajax_Handlers {
      * Register user via AJAX
      */
     public function register_user() {
+        // Rate limiting check
+        $ip = $this->get_user_ip();
+        $rate_check = $this->check_rate_limit('register', $ip, 3, 3600);
+        if (!$rate_check['allowed']) {
+            wp_send_json_error('Zbyt wiele prób rejestracji. Spróbuj ponownie za godzinę.');
+            exit;
+        }
+
         // Honeypot check - if filled, it's a bot
         $honeypot = isset($_POST['honeypot']) ? $_POST['honeypot'] : '';
         if (!empty($honeypot)) {
@@ -2942,6 +3112,13 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Validate password strength
+        $password_check = $this->validate_password_strength($password);
+        if (!$password_check['valid']) {
+            wp_send_json_error($password_check['error']);
+            exit;
+        }
+
         // Check if username exists
         if (username_exists($username)) {
             wp_send_json_error('Ta nazwa użytkownika jest już zajęta');
@@ -2965,6 +3142,7 @@ class JG_Map_Ajax_Handlers {
         // Generate activation key
         $activation_key = wp_generate_password(32, false);
         update_user_meta($user_id, 'jg_map_activation_key', $activation_key);
+        update_user_meta($user_id, 'jg_map_activation_key_time', time());
         update_user_meta($user_id, 'jg_map_account_status', 'pending');
 
         // Send activation email
@@ -2987,6 +3165,14 @@ class JG_Map_Ajax_Handlers {
     }
 
     public function forgot_password() {
+        // Rate limiting check
+        $ip = $this->get_user_ip();
+        $rate_check = $this->check_rate_limit('forgot_password', $ip, 3, 1800);
+        if (!$rate_check['allowed']) {
+            wp_send_json_error('Zbyt wiele prób resetowania hasła. Spróbuj ponownie za 30 minut.');
+            exit;
+        }
+
         $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
 
         if (empty($email)) {

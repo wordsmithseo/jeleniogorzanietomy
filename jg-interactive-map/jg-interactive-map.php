@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.0.1');
+define('JG_MAP_VERSION', '3.2.0');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -78,22 +78,32 @@ class JG_Interactive_Map {
         // Load text domain
         add_action('init', array($this, 'load_textdomain'));
 
-        // Set email sender name
+        // Set email sender name and address
         add_filter('wp_mail_from_name', array($this, 'set_email_from_name'));
+        add_filter('wp_mail_from', array($this, 'set_email_from'));
     }
 
     /**
-     * Set email sender name for all emails from this plugin
+     * Set email sender name for emails from this plugin
      */
     public function set_email_from_name($from_name) {
-        // Only modify emails from this plugin (check if we're in a plugin context)
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-        foreach ($backtrace as $trace) {
-            if (isset($trace['file']) && strpos($trace['file'], 'jg-interactive-map') !== false) {
-                return 'Jeleniogorzanie to my';
-            }
+        // Check if this is called from plugin context using a more efficient method
+        if (doing_filter('jg_map_email')) {
+            return 'Jeleniogorzanie to my';
         }
         return $from_name;
+    }
+
+    /**
+     * Set email sender address for emails from this plugin
+     */
+    public function set_email_from($from_email) {
+        // Check if this is called from plugin context
+        if (doing_filter('jg_map_email')) {
+            $domain = wp_parse_url(home_url(), PHP_URL_HOST);
+            return 'noreply@' . $domain;
+        }
+        return $from_email;
     }
 
     /**
