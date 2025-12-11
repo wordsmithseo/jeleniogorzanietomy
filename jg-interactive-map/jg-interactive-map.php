@@ -85,6 +85,12 @@ class JG_Interactive_Map {
 
         // Add security headers
         add_action('send_headers', array($this, 'add_security_headers'));
+
+        // SEO-friendly URLs for points
+        add_action('init', array($this, 'add_rewrite_rules'));
+        add_filter('query_vars', array($this, 'add_query_vars'));
+        add_action('template_redirect', array($this, 'handle_point_page'));
+        add_action('wp_head', array($this, 'add_point_meta_tags'));
     }
 
     /**
@@ -184,6 +190,280 @@ class JG_Interactive_Map {
             'accelerometer=()'
         );
         header('Permissions-Policy: ' . implode(', ', $permissions));
+    }
+
+    /**
+     * Add rewrite rules for SEO-friendly point URLs
+     */
+    public function add_rewrite_rules() {
+        add_rewrite_rule(
+            '^miejsce/([^/]+)/?$',
+            'index.php?jg_map_point=$matches[1]',
+            'top'
+        );
+    }
+
+    /**
+     * Add custom query vars
+     */
+    public function add_query_vars($vars) {
+        $vars[] = 'jg_map_point';
+        return $vars;
+    }
+
+    /**
+     * Handle single point page display
+     */
+    public function handle_point_page() {
+        $point_slug = get_query_var('jg_map_point');
+
+        if (empty($point_slug)) {
+            return;
+        }
+
+        // Get point by slug
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        $point = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT id, title, content, excerpt, lat, lng, type, status,
+                        author_id, is_promo, website, phone, images, created_at
+                 FROM $table
+                 WHERE LOWER(REPLACE(REPLACE(REPLACE(title, ' ', '-'), 'ł', 'l'), 'ą', 'a')) = %s
+                 AND status = 'publish'
+                 LIMIT 1",
+                strtolower($point_slug)
+            ),
+            ARRAY_A
+        );
+
+        if (!$point) {
+            global $wp_query;
+            $wp_query->set_404();
+            status_header(404);
+            get_template_part(404);
+            exit;
+        }
+
+        // Store point data for meta tags
+        global $jg_current_point;
+        $jg_current_point = $point;
+
+        // Render the point page
+        $this->render_point_page($point);
+        exit;
+    }
+
+    /**
+     * Render single point page
+     */
+    private function render_point_page($point) {
+        // Get site header
+        get_header();
+
+        $images = json_decode($point['images'], true) ?: array();
+        $first_image = !empty($images) ? $images[0] : '';
+
+        // Type labels
+        $type_labels = array(
+            'miejsce' => 'Miejsce',
+            'ciekawostka' => 'Ciekawostka',
+            'zgloszenie' => 'Zgłoszenie'
+        );
+        $type_label = isset($type_labels[$point['type']]) ? $type_labels[$point['type']] : 'Punkt';
+
+        ?>
+        <style>
+            .jg-single-point {
+                max-width: 1200px;
+                margin: 40px auto;
+                padding: 0 20px;
+            }
+            .jg-point-header {
+                margin-bottom: 30px;
+            }
+            .jg-point-type {
+                display: inline-block;
+                padding: 6px 12px;
+                background: <?php echo $point['is_promo'] ? '#fbbf24' : ($point['type'] === 'miejsce' ? '#8d2324' : ($point['type'] === 'ciekawostka' ? '#3b82f6' : '#ef4444')); ?>;
+                color: <?php echo $point['is_promo'] ? '#111' : '#fff'; ?>;
+                border-radius: 4px;
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 10px;
+            }
+            .jg-point-title {
+                font-size: 42px;
+                font-weight: 700;
+                margin: 0 0 15px 0;
+                color: #111;
+            }
+            .jg-point-meta {
+                color: #666;
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+            .jg-point-content {
+                font-size: 18px;
+                line-height: 1.7;
+                color: #333;
+                margin-bottom: 30px;
+            }
+            .jg-point-image {
+                width: 100%;
+                max-width: 800px;
+                height: auto;
+                border-radius: 8px;
+                margin-bottom: 30px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+            .jg-point-map {
+                width: 100%;
+                height: 400px;
+                border-radius: 8px;
+                margin-bottom: 30px;
+            }
+            .jg-point-cta {
+                margin-top: 30px;
+            }
+            .jg-point-cta a {
+                display: inline-block;
+                padding: 12px 24px;
+                background: #8d2324;
+                color: #fff;
+                text-decoration: none;
+                border-radius: 6px;
+                font-weight: 600;
+                transition: background 0.2s;
+            }
+            .jg-point-cta a:hover {
+                background: #a02829;
+            }
+        </style>
+
+        <div class="jg-single-point">
+            <div class="jg-point-header">
+                <span class="jg-point-type"><?php echo esc_html($type_label); ?></span>
+                <h1 class="jg-point-title"><?php echo esc_html($point['title']); ?></h1>
+                <div class="jg-point-meta">
+                    📍 <?php echo esc_html($point['lat']); ?>, <?php echo esc_html($point['lng']); ?>
+                    · 📅 <?php echo date('d.m.Y', strtotime($point['created_at'])); ?>
+                </div>
+            </div>
+
+            <?php if ($first_image): ?>
+                <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" class="jg-point-image">
+            <?php endif; ?>
+
+            <div class="jg-point-content">
+                <?php echo wp_kses_post($point['content']); ?>
+            </div>
+
+            <?php if (!empty($point['website']) || !empty($point['phone'])): ?>
+                <div class="jg-point-cta">
+                    <?php if (!empty($point['website'])): ?>
+                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener">
+                            🌐 Odwiedź stronę
+                        </a>
+                    <?php endif; ?>
+                    <?php if (!empty($point['phone'])): ?>
+                        <a href="tel:<?php echo esc_attr($point['phone']); ?>">
+                            📞 <?php echo esc_html($point['phone']); ?>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <div id="jg-point-map-<?php echo $point['id']; ?>" class="jg-point-map"></div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (typeof L !== 'undefined') {
+                        var map = L.map('jg-point-map-<?php echo $point['id']; ?>').setView([<?php echo $point['lat']; ?>, <?php echo $point['lng']; ?>], 16);
+                        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap'
+                        }).addTo(map);
+                        L.marker([<?php echo $point['lat']; ?>, <?php echo $point['lng']; ?>]).addTo(map);
+                    }
+                });
+            </script>
+        </div>
+
+        <?php
+        // Get site footer
+        get_footer();
+    }
+
+    /**
+     * Add SEO meta tags for point pages
+     */
+    public function add_point_meta_tags() {
+        global $jg_current_point;
+
+        if (empty($jg_current_point)) {
+            return;
+        }
+
+        // Check if search engines are discouraged
+        if (get_option('blog_public') == '0') {
+            echo '<meta name="robots" content="noindex, nofollow">' . "\n";
+            return;
+        }
+
+        $point = $jg_current_point;
+        $images = json_decode($point['images'], true) ?: array();
+        $first_image = !empty($images) ? $images[0] : '';
+        $description = !empty($point['excerpt']) ? $point['excerpt'] : wp_trim_words(strip_tags($point['content']), 30);
+        $url = home_url('/miejsce/' . $this->generate_slug($point['title']) . '/');
+
+        ?>
+        <meta name="description" content="<?php echo esc_attr($description); ?>">
+        <meta name="robots" content="index, follow">
+
+        <!-- Open Graph -->
+        <meta property="og:type" content="article">
+        <meta property="og:title" content="<?php echo esc_attr($point['title']); ?>">
+        <meta property="og:description" content="<?php echo esc_attr($description); ?>">
+        <meta property="og:url" content="<?php echo esc_url($url); ?>">
+        <?php if ($first_image): ?>
+        <meta property="og:image" content="<?php echo esc_url($first_image); ?>">
+        <?php endif; ?>
+        <meta property="og:site_name" content="<?php bloginfo('name'); ?>">
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="<?php echo esc_attr($point['title']); ?>">
+        <meta name="twitter:description" content="<?php echo esc_attr($description); ?>">
+        <?php if ($first_image): ?>
+        <meta name="twitter:image" content="<?php echo esc_url($first_image); ?>">
+        <?php endif; ?>
+
+        <!-- Geo tags -->
+        <meta name="geo.position" content="<?php echo esc_attr($point['lat'] . ';' . $point['lng']); ?>">
+        <meta name="ICBM" content="<?php echo esc_attr($point['lat'] . ', ' . $point['lng']); ?>">
+
+        <!-- Canonical URL -->
+        <link rel="canonical" href="<?php echo esc_url($url); ?>">
+        <?php
+    }
+
+    /**
+     * Generate slug from title
+     */
+    private function generate_slug($title) {
+        $slug = strtolower($title);
+
+        // Polish characters transliteration
+        $polish = array('ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż', 'Ą', 'Ć', 'Ę', 'Ł', 'Ń', 'Ó', 'Ś', 'Ź', 'Ż');
+        $latin = array('a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z', 'a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z');
+        $slug = str_replace($polish, $latin, $slug);
+
+        // Replace spaces and special characters with hyphens
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+        $slug = trim($slug, '-');
+
+        return $slug;
     }
 }
 
