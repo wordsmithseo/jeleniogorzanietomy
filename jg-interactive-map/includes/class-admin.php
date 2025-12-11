@@ -31,7 +31,7 @@ class JG_Map_Admin {
     private function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_bar_menu', array($this, 'add_admin_bar_notifications'), 100);
-        add_filter('admin_title', array($this, 'modify_admin_title'), 10, 2);
+        add_filter('admin_title', array($this, 'modify_admin_title'), 999, 2);
     }
 
     /**
@@ -207,14 +207,11 @@ class JG_Map_Admin {
             );
         }
 
-        // Remove any existing count pattern like "(N)" from the title
-        // This removes phantom notifications that WordPress might have added
-        // Try multiple patterns to catch all variations
-        $admin_title = preg_replace('/\s*\(\d+\)\s*&lsaquo;/', ' &lsaquo;', $admin_title);
-        $admin_title = preg_replace('/\s*\(\d+\)/', '', $admin_title);
+        // Get the site name (appears after &lsaquo; in the title)
+        $site_name = get_bloginfo('name');
 
-        // Clean up any double spaces
-        $admin_title = preg_replace('/\s+/', ' ', $admin_title);
+        // Build the new title from scratch
+        $new_title = $title;
 
         // If we have events to show, add them to the title
         if (!empty($events) && $total_count > 0) {
@@ -227,14 +224,12 @@ class JG_Map_Admin {
                 $event_text .= '...';
             }
 
-            // Modify the title: "Page Title: Event1, Event2 (3)"
-            // First remove the separator if it exists
-            $admin_title = str_replace(' &lsaquo;', '', $admin_title);
-            // Then rebuild with our format
-            $admin_title = $title . ': ' . $event_text . ' (' . $total_count . ') &lsaquo; ' . str_replace($title, '', trim($admin_title));
+            // Build title: "Page Title: Event1, Event2 (3)"
+            $new_title = $title . ': ' . $event_text . ' (' . $total_count . ')';
         }
 
-        return $admin_title;
+        // Rebuild the complete admin title
+        return $new_title . ' &lsaquo; ' . $site_name;
     }
 
     /**
