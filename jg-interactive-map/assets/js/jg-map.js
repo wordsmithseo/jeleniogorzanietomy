@@ -593,11 +593,11 @@
         setTimeout(function() {
           try {
             // Single cluster with grid layout showing types
-            // Small maxClusterRadius (20) ensures clusters break apart naturally at high zoom
-            // but still groups very close points together
+            // maxClusterRadius: 80 creates grids at default zoom, breaks apart naturally when zooming in
+            // At maximum zoom, only very close points (within 80px) remain clustered with click-to-list behavior
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
-              maxClusterRadius: 20,
+              maxClusterRadius: 80,
               spiderfyOnMaxZoom: false,
               zoomToBoundsOnClick: false,
               spiderfyDistanceMultiplier: 2,
