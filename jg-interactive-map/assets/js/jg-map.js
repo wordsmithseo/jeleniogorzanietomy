@@ -594,13 +594,16 @@
           try {
             // Single cluster with grid layout showing types
             // maxClusterRadius as function: breaks apart naturally when zooming in
-            // At high zoom (17+), only very close points (within 35px) cluster together
+            // At high zoom (17-18), small radius. At max zoom (19), larger to prevent breaking apart
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: function(zoom) {
-                // Small radius at high zoom for places very close together
-                // 35px = places in same building / very close vicinity
-                return (zoom >= 17) ? 35 : 80;
+                // zoom < 17: Normal clusters (80px radius)
+                // zoom 17-18: Special clusters (35px radius) - only very close places
+                // zoom 19: Special clusters (50px radius) - larger to prevent breaking apart but not too large
+                if (zoom >= 19) return 50;
+                if (zoom >= 17) return 35;
+                return 80;
               },
               spiderfyOnMaxZoom: false,
               zoomToBoundsOnClick: false,
