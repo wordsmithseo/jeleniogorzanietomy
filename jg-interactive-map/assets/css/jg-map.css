@@ -69,6 +69,29 @@
   transform: translateY(-2px);
 }
 
+/* Notification buttons with badges */
+.jg-top-bar-notif {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.jg-notif-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 #jg-top-bar-datetime {
   font-weight: 500;
   font-size: 15px;
@@ -519,7 +542,7 @@
   padding: 18px 32px;
   background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
   background-size: 200% 100%;
-  color: #ffffff;
+  color: #78350f;
   border: none;
   border-radius: 12px;
   cursor: pointer;
@@ -529,7 +552,7 @@
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
   box-shadow: 0 4px 0 #d97706, 0 6px 12px rgba(245, 158, 11, 0.4);
   transition: all 0.2s ease;
   position: relative;

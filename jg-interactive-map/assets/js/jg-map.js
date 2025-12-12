@@ -955,8 +955,8 @@
 
               var formHtml = '<header><h3>Dodaj nowe miejsce</h3><button class="jg-close" id="add-close">&times;</button></header>' +
                 '<form id="add-form" class="jg-grid cols-2">' +
-                '<input type="hidden" name="lat" value="' + lat + '">' +
-                '<input type="hidden" name="lng" value="' + lng + '">' +
+                '<input type="hidden" name="lat" id="add-lat-input" value="' + lat + '">' +
+                '<input type="hidden" name="lng" id="add-lng-input" value="' + lng + '">' +
                 limitsHtml +
                 '<label>Tytuł* <input name="title" required placeholder="Nazwa miejsca" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
                 '<label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
@@ -964,6 +964,7 @@
                 '<option value="ciekawostka">Ciekawostka</option>' +
                 '<option value="miejsce">Miejsce</option>' +
                 '</select></label>' +
+                '<label class="cols-2">📍 Adres (opcjonalnie - możesz też kliknąć na mapę) <div style="display:flex;gap:8px;margin-top:4px"><input type="text" name="address" id="add-address-input" placeholder="np. ul. 1 Maja 12, Jelenia Góra" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px"><button type="button" id="add-geocode-btn" class="jg-btn" style="padding:8px 16px;white-space:nowrap">Znajdź na mapie</button></div><div id="add-geocode-msg" style="font-size:11px;margin-top:4px"></div></label>' +
                 '<label class="cols-2">Opis <textarea name="content" rows="4" maxlength="200" id="add-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><div id="add-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">0 / 200 znaków</div></label>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
                 '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images[]" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
@@ -1042,6 +1043,82 @@
                     imagesPreview.style.display = 'none';
                   }
                 });
+              }
+
+              // Geocoding functionality
+              var geocodeBtn = qs('#add-geocode-btn', modalAdd);
+              var addressInput = qs('#add-address-input', modalAdd);
+              var latInput = qs('#add-lat-input', modalAdd);
+              var lngInput = qs('#add-lng-input', modalAdd);
+              var geocodeMsg = qs('#add-geocode-msg', modalAdd);
+
+              if (geocodeBtn && addressInput) {
+                geocodeBtn.onclick = function() {
+                  var address = addressInput.value.trim();
+                  if (!address) {
+                    geocodeMsg.textContent = 'Podaj adres';
+                    geocodeMsg.style.color = '#b91c1c';
+                    return;
+                  }
+
+                  geocodeMsg.textContent = 'Wyszukiwanie...';
+                  geocodeMsg.style.color = '#666';
+                  geocodeBtn.disabled = true;
+
+                  // Nominatim API for geocoding (free, OpenStreetMap)
+                  var apiUrl = 'https://nominatim.openstreetmap.org/search?format=json&q=' +
+                    encodeURIComponent(address) +
+                    '&countrycodes=pl&limit=1';
+
+                  fetch(apiUrl, {
+                    headers: {
+                      'Accept': 'application/json'
+                    }
+                  })
+                  .then(function(r) { return r.json(); })
+                  .then(function(data) {
+                    geocodeBtn.disabled = false;
+
+                    if (!data || data.length === 0) {
+                      geocodeMsg.textContent = '❌ Nie znaleziono adresu. Spróbuj innego formatu.';
+                      geocodeMsg.style.color = '#b91c1c';
+                      return;
+                    }
+
+                    var result = data[0];
+                    var foundLat = parseFloat(result.lat);
+                    var foundLng = parseFloat(result.lon);
+
+                    // Validate bounds (Jelenia Góra region)
+                    var minLat = 50.82;
+                    var maxLat = 50.96;
+                    var minLng = 15.62;
+                    var maxLng = 15.82;
+
+                    if (foundLat < minLat || foundLat > maxLat || foundLng < minLng || foundLng > maxLng) {
+                      geocodeMsg.textContent = '❌ Adres poza obszarem Jeleniej Góry. Podaj adres w granicach miasta.';
+                      geocodeMsg.style.color = '#b91c1c';
+                      return;
+                    }
+
+                    // Update coordinates
+                    latInput.value = foundLat;
+                    lngInput.value = foundLng;
+
+                    // Show success with found address
+                    var displayName = result.display_name || address;
+                    geocodeMsg.textContent = '✓ Znaleziono: ' + displayName.substring(0, 100);
+                    geocodeMsg.style.color = '#15803d';
+
+                    // Pan map to location
+                    map.setView([foundLat, foundLng], 17, { animate: true });
+                  })
+                  .catch(function(err) {
+                    geocodeBtn.disabled = false;
+                    geocodeMsg.textContent = '❌ Błąd wyszukiwania: ' + err.message;
+                    geocodeMsg.style.color = '#b91c1c';
+                  });
+                };
               }
 
           form.onsubmit = function(e) {
@@ -2509,6 +2586,8 @@
 
             var formHtml = '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header>' +
               '<form id="edit-form" class="jg-grid cols-2">' +
+              '<input type="hidden" name="lat" id="edit-lat-input" value="' + p.lat + '">' +
+              '<input type="hidden" name="lng" id="edit-lng-input" value="' + p.lng + '">' +
               limitsHtml +
               '<label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
               '<label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
@@ -2516,6 +2595,7 @@
               '<option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option>' +
               '<option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option>' +
               '</select></label>' +
+              '<label class="cols-2">📍 Adres <div style="display:flex;gap:8px;margin-top:4px"><input type="text" name="address" id="edit-address-input" value="' + esc(p.address || '') + '" placeholder="np. ul. 1 Maja 12, Jelenia Góra" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:8px"><button type="button" id="edit-geocode-btn" class="jg-btn" style="padding:8px 16px;white-space:nowrap">Znajdź na mapie</button></div><div id="edit-geocode-msg" style="font-size:11px;margin-top:4px;color:#666">Zmiana adresu zmieni położenie pinezki na mapie</div></label>' +
               '<label class="cols-2">Opis <textarea name="content" rows="6" maxlength="' + maxDescLength + '" id="edit-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea><div id="edit-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">' + currentDescLength + ' / ' + maxDescLength + ' znaków</div></label>' +
               sponsoredContactHtml +
               existingImagesHtml +
@@ -2599,6 +2679,82 @@
               imagesPreview.style.display = 'none';
             }
           });
+        }
+
+        // Geocoding functionality for edit form
+        var editGeocodeBtn = qs('#edit-geocode-btn', modalEdit);
+        var editAddressInput = qs('#edit-address-input', modalEdit);
+        var editLatInput = qs('#edit-lat-input', modalEdit);
+        var editLngInput = qs('#edit-lng-input', modalEdit);
+        var editGeocodeMsg = qs('#edit-geocode-msg', modalEdit);
+
+        if (editGeocodeBtn && editAddressInput) {
+          editGeocodeBtn.onclick = function() {
+            var address = editAddressInput.value.trim();
+            if (!address) {
+              editGeocodeMsg.textContent = 'Podaj adres';
+              editGeocodeMsg.style.color = '#b91c1c';
+              return;
+            }
+
+            editGeocodeMsg.textContent = 'Wyszukiwanie...';
+            editGeocodeMsg.style.color = '#666';
+            editGeocodeBtn.disabled = true;
+
+            // Nominatim API for geocoding
+            var apiUrl = 'https://nominatim.openstreetmap.org/search?format=json&q=' +
+              encodeURIComponent(address) +
+              '&countrycodes=pl&limit=1';
+
+            fetch(apiUrl, {
+              headers: {
+                'Accept': 'application/json'
+              }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              editGeocodeBtn.disabled = false;
+
+              if (!data || data.length === 0) {
+                editGeocodeMsg.textContent = '❌ Nie znaleziono adresu. Spróbuj innego formatu.';
+                editGeocodeMsg.style.color = '#b91c1c';
+                return;
+              }
+
+              var result = data[0];
+              var foundLat = parseFloat(result.lat);
+              var foundLng = parseFloat(result.lon);
+
+              // Validate bounds (Jelenia Góra region)
+              var minLat = 50.82;
+              var maxLat = 50.96;
+              var minLng = 15.62;
+              var maxLng = 15.82;
+
+              if (foundLat < minLat || foundLat > maxLat || foundLng < minLng || foundLng > maxLng) {
+                editGeocodeMsg.textContent = '❌ Adres poza obszarem Jeleniej Góry.';
+                editGeocodeMsg.style.color = '#b91c1c';
+                return;
+              }
+
+              // Update coordinates
+              editLatInput.value = foundLat;
+              editLngInput.value = foundLng;
+
+              // Show success
+              var displayName = result.display_name || address;
+              editGeocodeMsg.textContent = '✓ Znaleziono: ' + displayName.substring(0, 80);
+              editGeocodeMsg.style.color = '#15803d';
+
+              // Pan map to location
+              map.setView([foundLat, foundLng], 17, { animate: true });
+            })
+            .catch(function(err) {
+              editGeocodeBtn.disabled = false;
+              editGeocodeMsg.textContent = '❌ Błąd: ' + err.message;
+              editGeocodeMsg.style.color = '#b91c1c';
+            });
+          };
         }
 
         // CTA checkbox toggle for sponsored points
@@ -3203,7 +3359,13 @@
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
         }
 
-        var html = '<header><h3 class="jg-place-title">' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        // Address info
+        var addressInfo = '';
+        if (p.address && p.address.trim()) {
+          addressInfo = '<div style="margin:8px 0;padding:8px 12px;background:#f3f4f6;border-left:3px solid #8d2324;border-radius:4px;font-size:13px;color:#374151"><strong>📍 Adres:</strong> ' + esc(p.address) + '</div>';
+        }
+
+        var html = '<header><h3 class="jg-place-title">' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + addressInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim() });
 

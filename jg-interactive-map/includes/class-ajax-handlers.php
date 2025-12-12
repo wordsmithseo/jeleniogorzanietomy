@@ -277,6 +277,7 @@ class JG_Map_Ajax_Handlers {
                 'content' => $point['content'],
                 'lat' => floatval($point['lat']),
                 'lng' => floatval($point['lng']),
+                'address' => $point['address'] ?? '',
                 'type' => $point['type'],
                 'sponsored' => $is_sponsored,
                 'sponsored_until' => $sponsored_until,
@@ -459,6 +460,7 @@ class JG_Map_Ajax_Handlers {
         $lng = floatval($_POST['lng'] ?? 0);
         // Type already sanitized above for limit check
         $content = wp_kses_post($_POST['content'] ?? '');
+        $address = sanitize_text_field($_POST['address'] ?? '');
         $public_name = isset($_POST['public_name']);
 
         if (empty($title) || $lat === 0.0 || $lng === 0.0) {
@@ -504,6 +506,7 @@ class JG_Map_Ajax_Handlers {
             'excerpt' => wp_trim_words($content, 20),
             'lat' => $lat,
             'lng' => $lng,
+            'address' => $address,
             'type' => $type,
             'status' => 'pending',
             'report_status' => 'added',
@@ -570,6 +573,9 @@ class JG_Map_Ajax_Handlers {
         $title = sanitize_text_field($_POST['title'] ?? '');
         $type = sanitize_text_field($_POST['type'] ?? '');
         $content = wp_kses_post($_POST['content'] ?? '');
+        $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : null;
+        $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : null;
+        $address = sanitize_text_field($_POST['address'] ?? '');
         $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
         $cta_enabled = isset($_POST['cta_enabled']) ? 1 : 0;
@@ -650,6 +656,17 @@ class JG_Map_Ajax_Handlers {
                 'excerpt' => wp_trim_words($content, 20)
             );
 
+            // Update lat/lng if provided (from geocoding)
+            if ($lat !== null && $lng !== null) {
+                $update_data['lat'] = $lat;
+                $update_data['lng'] = $lng;
+            }
+
+            // Update address if provided
+            if (!empty($address)) {
+                $update_data['address'] = $address;
+            }
+
             // Add website, phone, and CTA if point is sponsored
             $is_sponsored = (bool)$point['is_promo'];
             if ($is_sponsored) {
@@ -680,6 +697,9 @@ class JG_Map_Ajax_Handlers {
                 'title' => $point['title'],
                 'type' => $point['type'],
                 'content' => $point['content'],
+                'lat' => $point['lat'],
+                'lng' => $point['lng'],
+                'address' => $point['address'] ?? '',
                 'images' => $point['images'] ?? '[]'
             );
 
@@ -689,6 +709,15 @@ class JG_Map_Ajax_Handlers {
                 'content' => $content,
                 'new_images' => json_encode($new_images) // Store new images separately for moderation
             );
+
+            // Add lat/lng/address if changed (from geocoding)
+            if ($lat !== null && $lng !== null) {
+                $new_values['lat'] = $lat;
+                $new_values['lng'] = $lng;
+            }
+            if (!empty($address)) {
+                $new_values['address'] = $address;
+            }
 
             // Add website, phone, and CTA if point is sponsored
             $is_sponsored = (bool)$point['is_promo'];
