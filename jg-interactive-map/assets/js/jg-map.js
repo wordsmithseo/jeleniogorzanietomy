@@ -3761,9 +3761,20 @@
             var html = '';
             results.forEach(function(point) {
               var iconClass = 'jg-search-result-icon--' + (point.sponsored ? 'sponsored' : point.type);
-              var icon = point.sponsored ? '⭐' :
-                         (point.type === 'miejsce' ? '📍' :
-                          point.type === 'ciekawostka' ? 'ℹ️' : '❗');
+
+              // Use colored dots instead of emoji
+              var icon = '';
+              if (point.sponsored) {
+                icon = '<div style="font-size:20px">⭐</div>';
+              } else {
+                var dotColor = '#888';
+                if (point.type === 'miejsce') {
+                  dotColor = '#0a5a28'; // Green
+                } else if (point.type === 'ciekawostka') {
+                  dotColor = '#1e3a8a'; // Blue
+                }
+                icon = '<div style="width:20px;height:20px;border-radius:50%;background:' + dotColor + '"></div>';
+              }
 
               var excerpt = point.excerpt || '';
               if (excerpt.length > 100) {
