@@ -594,19 +594,20 @@
           try {
             // Single cluster with grid layout showing types
             // maxClusterRadius as function: breaks apart naturally when zooming in
-            // At high zoom (17+), only EXTREMELY close points (within 5px) cluster together
+            // At high zoom (17+), only EXTREMELY close points (within 1px) cluster together
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: function(zoom) {
-                // Very small radius at high zoom - only truly overlapping locations cluster
-                // This prevents single-marker clusters
-                return (zoom >= 17) ? 5 : 80;
+                // Extremely small radius at high zoom - only truly overlapping locations cluster
+                // 1px = places must be almost exactly at same coordinates
+                return (zoom >= 17) ? 1 : 80;
               },
               spiderfyOnMaxZoom: false,
               zoomToBoundsOnClick: false,
               spiderfyDistanceMultiplier: 2,
               animate: true,
               animateAddingMarkers: true,
+              disableClusteringAtZoom: 20, // Never disable clustering (max zoom is 19)
               iconCreateFunction: function(clusterGroup) {
                 var childMarkers = clusterGroup.getAllChildMarkers();
 
