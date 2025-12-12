@@ -59,6 +59,24 @@ class JG_Map_Shortcode {
                 <label style="margin-left:auto"><input type="checkbox" data-promo> <?php _e('Tylko promocje', 'jg-map'); ?></label>
                 <div class="jg-search">
                     <input type="text" id="jg-search-input" placeholder="🔍 <?php _e('Szukaj miejsca...', 'jg-map'); ?>" />
+                    <button id="jg-search-btn" class="jg-search-btn" title="Szukaj">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Results Side Panel -->
+            <div id="jg-search-panel" class="jg-search-panel">
+                <div class="jg-search-panel-header">
+                    <h3 id="jg-search-panel-title">Wyniki wyszukiwania</h3>
+                    <span id="jg-search-panel-count" class="jg-search-count"></span>
+                </div>
+                <div id="jg-search-results" class="jg-search-results"></div>
+                <div class="jg-search-panel-footer">
+                    <button id="jg-search-close-btn" class="jg-btn jg-btn--secondary">Zakończ wyszukiwanie</button>
                 </div>
             </div>
 
