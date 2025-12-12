@@ -924,16 +924,20 @@
   color: #111;
 }
 
-/* Search highlighted sponsored pin - pulsing red border animation */
+/* Search highlighted sponsored pin - pulsing red stroke animation */
 @keyframes jg-pin-pulse {
   0%, 100% {
+    stroke-width: 2.5;
     opacity: 1;
-    transform: rotate(-45deg) scale(1);
   }
   50% {
-    opacity: 0.5;
-    transform: rotate(-45deg) scale(1.15);
+    stroke-width: 4;
+    opacity: 0.6;
   }
+}
+
+.jg-pin-pulse-stroke {
+  animation: jg-pin-pulse 1.5s ease-in-out infinite;
 }
 
 .jg-pin-marker--search-highlighted {

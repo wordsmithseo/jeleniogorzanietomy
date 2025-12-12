@@ -1175,6 +1175,16 @@
           '</filter>' +
           '</defs>';
 
+        // Add pulsing red outline for search highlighted - EXACT pin shape
+        if (isSearchHighlighted) {
+          svgPin += '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" ' +
+            'fill="none" ' +
+            'stroke="#8d2324" ' +
+            'stroke-width="2.5" ' +
+            'opacity="1" ' +
+            'class="jg-pin-pulse-stroke"/>';
+        }
+
         // Pin shape: rounded Google Maps style with smooth curves
         svgPin += '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" ' +
           'fill="url(#' + gradientId + ')" ' +
@@ -1225,25 +1235,8 @@
           centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">⭐</div>';
         }
 
-        // Add pulsing red border for search highlighted sponsored places
-        var pulsingBorder = '';
-        if (isSearchHighlighted) {
-          pulsingBorder = '<div class="jg-pin-pulse" style="' +
-            'position:absolute;' +
-            'top:-5px;' +
-            'left:-5px;' +
-            'right:-5px;' +
-            'bottom:-5px;' +
-            'border:3px solid #8d2324;' +
-            'border-radius:50% 50% 50% 0;' +
-            'transform:rotate(-45deg);' +
-            'animation:jg-pin-pulse 1.5s ease-in-out infinite;' +
-            'pointer-events:none;' +
-            '"></div>';
-        }
-
         var iconHtml = '<div class="jg-pin-svg-wrapper" style="position:relative;width:' + pinWidth + 'px;height:' + pinHeight + 'px;">' +
-          pulsingBorder + svgPin + centerContent + reportsHtml + deletionHtml + labelHtml +
+          svgPin + centerContent + reportsHtml + deletionHtml + labelHtml +
           '</div>';
 
         var className = 'jg-pin-marker';
