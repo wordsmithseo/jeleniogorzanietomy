@@ -459,6 +459,7 @@ class JG_Map_Ajax_Handlers {
         $lng = floatval($_POST['lng'] ?? 0);
         // Type already sanitized above for limit check
         $content = wp_kses_post($_POST['content'] ?? '');
+        $address = sanitize_text_field($_POST['address'] ?? '');
         $public_name = isset($_POST['public_name']);
 
         if (empty($title) || $lat === 0.0 || $lng === 0.0) {
@@ -504,6 +505,7 @@ class JG_Map_Ajax_Handlers {
             'excerpt' => wp_trim_words($content, 20),
             'lat' => $lat,
             'lng' => $lng,
+            'address' => $address,
             'type' => $type,
             'status' => 'pending',
             'report_status' => 'added',

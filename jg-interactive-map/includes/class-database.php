@@ -171,6 +171,12 @@ class JG_Map_Database {
         if (empty($cta_type)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN cta_type varchar(20) DEFAULT NULL AFTER cta_enabled");
         }
+
+        // Check if address column exists (for geocoding)
+        $address = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'address'");
+        if (empty($address)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN address varchar(500) DEFAULT NULL AFTER lng");
+        }
     }
 
     /**
