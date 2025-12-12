@@ -549,13 +549,19 @@
       var northEast = L.latLng(50.96, 15.82);
       var bounds = L.latLngBounds(southWest, northEast);
 
+      // Detect mobile device
+      var isMobile = window.innerWidth <= 768;
+
       var map = L.map(elMap, {
         zoomControl: true,
-        scrollWheelZoom: true,
+        scrollWheelZoom: !isMobile, // Disable scroll zoom on mobile
+        dragging: !isMobile, // Disable dragging on mobile to allow page scroll
         minZoom: 12,
         maxZoom: 19,
         maxBounds: bounds,
-        maxBoundsViscosity: 1.0
+        maxBoundsViscosity: 1.0,
+        tap: isMobile, // Enable tap on mobile
+        touchZoom: isMobile // Enable pinch zoom on mobile
       }).setView([lat, lng], zoom);
 
       // Enforce bounds strictly - reset view if user tries to go outside

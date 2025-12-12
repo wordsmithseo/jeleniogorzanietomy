@@ -241,7 +241,7 @@ class JG_Map_Enqueue {
                     }
                     ?>
                     <span class="jg-top-bar-user">
-                        Zalogowano jako: <strong><?php echo esc_html($current_user->display_name); ?></strong><?php echo $role_icon; ?>
+                        Zalogowano jako:&nbsp;<strong><?php echo esc_html($current_user->display_name); ?></strong><?php echo $role_icon; ?>
                     </span>
                     <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
                     <?php if ($is_admin) : ?>
