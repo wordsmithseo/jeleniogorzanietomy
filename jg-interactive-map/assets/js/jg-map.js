@@ -603,6 +603,7 @@
               spiderfyDistanceMultiplier: 2,
               animate: true,
               animateAddingMarkers: true,
+              singleMarkerMode: true,
               iconCreateFunction: function(clusterGroup) {
                 var childMarkers = clusterGroup.getAllChildMarkers();
 
@@ -694,10 +695,18 @@
 
             map.addLayer(cluster);
 
-            // Add cluster click handler to show list instead of zooming
+            // Add cluster click handler - spiderfy for lower zooms, show list at high zoom
             cluster.on('clusterclick', function(e) {
+              var currentZoom = map.getZoom();
               var childMarkers = e.layer.getAllChildMarkers();
 
+              // For lower zoom levels (< 18), use spiderfy to spread out markers with lines
+              if (currentZoom < 18) {
+                e.layer.spiderfy();
+                return;
+              }
+
+              // For high zoom (>= 18), show list of very close locations
               // Build list HTML
               var listHTML = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
                 '<h2 style="margin:0;font-size:20px;font-weight:600">Miejsca w tej lokalizacji (' + childMarkers.length + ')</h2>' +
@@ -710,6 +719,7 @@
                 var pointId = opts.pointId || 0;
                 var title = opts.pointTitle || 'Bez nazwy';
                 var type = opts.pointType || 'zgloszenie';
+                var excerpt = opts.pointExcerpt || '';
                 var isPromo = opts.isPromo || false;
                 var status = opts.pointStatus || 'publish';
                 var hasReports = opts.hasReports || false;
@@ -718,18 +728,26 @@
                 var isEdit = opts.isEdit || false;
                 var isPending = status === 'pending';
 
-                // Type icon and label
-                var typeIcon = '❗';
-                var typeLabel = 'Zgłoszenie';
+                // Truncate excerpt if too long
+                var maxExcerptLength = 80;
+                if (excerpt.length > maxExcerptLength) {
+                  excerpt = excerpt.substring(0, maxExcerptLength) + '...';
+                }
+
+                // Type icon - colored dot or star for sponsored
+                var typeIcon = '';
+                var dotColor = '#888'; // Default gray for zgloszenie
+
                 if (isPromo) {
-                  typeIcon = '⭐';
-                  typeLabel = 'Sponsorowane';
-                } else if (type === 'miejsce') {
-                  typeIcon = '📍';
-                  typeLabel = 'Miejsce';
-                } else if (type === 'ciekawostka') {
-                  typeIcon = 'ℹ️';
-                  typeLabel = 'Ciekawostka';
+                  typeIcon = '<div style="font-size:20px">⭐</div>';
+                } else {
+                  // Use colored dots matching cluster icons
+                  if (type === 'miejsce') {
+                    dotColor = '#0a5a28'; // Green
+                  } else if (type === 'ciekawostka') {
+                    dotColor = '#1e3a8a'; // Blue
+                  }
+                  typeIcon = '<div style="width:20px;height:20px;border-radius:50%;background:' + dotColor + '"></div>';
                 }
 
                 // Moderation status badges
@@ -763,10 +781,10 @@
 
                 listHTML += '<div class="jg-cluster-list-item" data-point-id="' + pointId + '" style="background:#fff;padding:16px 24px;cursor:pointer;transition:background 0.2s;border-left:4px solid ' + borderColor + '" onmouseover="this.style.background=\'#f9f9f9\'" onmouseout="this.style.background=\'#fff\'">' +
                   '<div style="display:flex;align-items:center;gap:12px">' +
-                  '<div style="font-size:24px">' + typeIcon + '</div>' +
+                  '<div>' + typeIcon + '</div>' +
                   '<div style="flex:1">' +
                   '<div style="font-weight:600;font-size:16px;color:#333;margin-bottom:4px">' + title + statusBadges + '</div>' +
-                  '<div style="font-size:13px;color:#666">' + typeLabel + '</div>' +
+                  '<div style="font-size:13px;color:#666">' + excerpt + '</div>' +
                   '</div>' +
                   '<div style="color:#8d2324;font-size:20px">→</div>' +
                   '</div>' +
@@ -1728,6 +1746,7 @@
               pointType: p.type || 'unknown',
               pointId: p.id,
               pointTitle: p.title || 'Bez nazwy',
+              pointExcerpt: p.excerpt || '',
               pointStatus: p.status || 'publish',
               hasReports: (p.reports_count || 0) > 0,
               reportsCount: p.reports_count || 0,
