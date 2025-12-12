@@ -594,12 +594,13 @@
           try {
             // Single cluster with grid layout showing types
             // maxClusterRadius as function: breaks apart naturally when zooming in
-            // At high zoom (18+), only very close points (within 20px) cluster together
+            // At high zoom (17+), only EXTREMELY close points (within 5px) cluster together
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: function(zoom) {
-                // Reduce cluster radius at higher zooms to prevent single-marker clusters
-                return (zoom >= 18) ? 20 : 80;
+                // Very small radius at high zoom - only truly overlapping locations cluster
+                // This prevents single-marker clusters
+                return (zoom >= 17) ? 5 : 80;
               },
               spiderfyOnMaxZoom: false,
               zoomToBoundsOnClick: false,
@@ -697,18 +698,20 @@
 
             map.addLayer(cluster);
 
-            // Add cluster click handler - spiderfy for lower zooms, show list at high zoom
+            // Add cluster click handler - spiderfy for normal clusters, list for special clusters
             cluster.on('clusterclick', function(e) {
               var currentZoom = map.getZoom();
               var childMarkers = e.layer.getAllChildMarkers();
 
-              // For lower zoom levels (< 18), use spiderfy to spread out markers with lines
-              if (currentZoom < 18) {
+              // For lower zoom levels (< 17), use spiderfy to spread out markers with lines
+              // These are normal clusters (80px radius)
+              if (currentZoom < 17) {
                 e.layer.spiderfy();
                 return;
               }
 
-              // For high zoom (>= 18), show list of very close locations
+              // For high zoom (>= 17), show list of extremely close locations
+              // These are special clusters (5px radius) - places practically on top of each other
               // Build list HTML
               var listHTML = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
                 '<h2 style="margin:0;font-size:20px;font-weight:600">Miejsca w tej lokalizacji (' + childMarkers.length + ')</h2>' +
