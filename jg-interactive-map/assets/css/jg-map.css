@@ -341,24 +341,23 @@
 /* Mobile responsive */
 @media (max-width: 768px) {
   .jg-search-panel {
+    position: static; /* Change from absolute to static - flows after filters */
     width: 100%;
-    max-height: 60%;
+    max-height: 0; /* Start collapsed */
     height: auto;
-    top: auto;
-    bottom: 0;
-    transform: translateY(100%);
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .jg-search-panel.active {
-    transform: translateY(0);
-    visibility: visible;
+    transform: none;
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out;
+    visibility: visible; /* Always visible in DOM flow */
     pointer-events: auto;
   }
 
+  .jg-search-panel.active {
+    max-height: 500px; /* Expand to show content */
+  }
+
   .jg-search-results {
-    max-height: 400px;
+    max-height: 300px;
   }
 }
 

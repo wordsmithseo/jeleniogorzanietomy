@@ -3817,6 +3817,18 @@
           // Zoom to point
           map.setView([point.lat, point.lng], 19, { animate: true });
 
+          // On mobile: close panel and scroll to map
+          if (window.innerWidth <= 768) {
+            setTimeout(function() {
+              closeSearchPanel();
+              // Scroll to map smoothly
+              var mapEl = document.getElementById('jg-map');
+              if (mapEl) {
+                mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }, 300); // Small delay to show selection
+          }
+
           // Wait for zoom, then show FAST pulsing circle
           setTimeout(function() {
             addFastPulsingMarker(point.lat, point.lng);
