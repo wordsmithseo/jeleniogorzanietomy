@@ -923,3 +923,19 @@
   border-color: #111;
   color: #111;
 }
+
+/* Search highlighted sponsored pin - pulsing red border animation */
+@keyframes jg-pin-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: rotate(-45deg) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: rotate(-45deg) scale(1.15);
+  }
+}
+
+.jg-pin-marker--search-highlighted {
+  z-index: 10000 !important;
+}
