@@ -593,17 +593,19 @@
         setTimeout(function() {
           try {
             // Single cluster with grid layout showing types
-            // maxClusterRadius: 80 creates grids at default zoom, breaks apart naturally when zooming in
-            // At maximum zoom, only very close points (within 80px) remain clustered with click-to-list behavior
+            // maxClusterRadius as function: breaks apart naturally when zooming in
+            // At high zoom (18+), only very close points (within 20px) cluster together
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
-              maxClusterRadius: 80,
+              maxClusterRadius: function(zoom) {
+                // Reduce cluster radius at higher zooms to prevent single-marker clusters
+                return (zoom >= 18) ? 20 : 80;
+              },
               spiderfyOnMaxZoom: false,
               zoomToBoundsOnClick: false,
               spiderfyDistanceMultiplier: 2,
               animate: true,
               animateAddingMarkers: true,
-              disableClusteringAtZoom: 19,
               iconCreateFunction: function(clusterGroup) {
                 var childMarkers = clusterGroup.getAllChildMarkers();
 
