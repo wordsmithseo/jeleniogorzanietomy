@@ -2655,80 +2655,189 @@
           });
         }
 
-        // Geocoding functionality for edit form
-        var editGeocodeBtn = qs('#edit-geocode-btn', modalEdit);
+        // ADDRESS AUTOCOMPLETE + FORWARD GEOCODING for edit form
+        var editCityInput = qs('#edit-city-input', modalEdit);
+        var editStreetInput = qs('#edit-street-input', modalEdit);
+        var editNumberInput = qs('#edit-number-input', modalEdit);
         var editAddressInput = qs('#edit-address-input', modalEdit);
         var editLatInput = qs('#edit-lat-input', modalEdit);
         var editLngInput = qs('#edit-lng-input', modalEdit);
         var editGeocodeMsg = qs('#edit-geocode-msg', modalEdit);
 
-        if (editGeocodeBtn && editAddressInput) {
-          editGeocodeBtn.onclick = function() {
-            var address = editAddressInput.value.trim();
-            if (!address) {
-              editGeocodeMsg.textContent = 'Podaj adres';
-              editGeocodeMsg.style.color = '#b91c1c';
+        var citySuggestions = qs('#edit-city-suggestions', modalEdit);
+        var streetSuggestions = qs('#edit-street-suggestions', modalEdit);
+
+        var geocodeTimeout = null;
+
+        // Helper: Update full address and geocode
+        function updateAddressAndGeocode() {
+          var city = editCityInput.value.trim();
+          var street = editStreetInput.value.trim();
+          var number = editNumberInput.value.trim();
+
+          var fullAddress = '';
+          if (street && number) {
+            fullAddress = street + ' ' + number + ', ' + city;
+          } else if (street) {
+            fullAddress = street + ', ' + city;
+          } else {
+            fullAddress = city;
+          }
+
+          editAddressInput.value = fullAddress;
+
+          // Debounced geocoding
+          clearTimeout(geocodeTimeout);
+          if (city) {
+            geocodeTimeout = setTimeout(function() {
+              forwardGeocode(fullAddress);
+            }, 500);
+          }
+        }
+
+        // Forward geocoding
+        function forwardGeocode(address) {
+          editGeocodeMsg.textContent = 'Szukanie współrzędnych...';
+          editGeocodeMsg.style.color = '#666';
+
+          var apiUrl = 'https://nominatim.openstreetmap.org/search?format=json&q=' +
+            encodeURIComponent(address) + '&countrycodes=pl&limit=1';
+
+          fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              if (data && data.length > 0) {
+                var result = data[0];
+                var lat = parseFloat(result.lat);
+                var lng = parseFloat(result.lon);
+
+                // Validate bounds
+                if (lat >= 50.82 && lat <= 50.96 && lng >= 15.62 && lng <= 15.82) {
+                  editLatInput.value = lat;
+                  editLngInput.value = lng;
+                  editGeocodeMsg.textContent = '✓ Lokalizacja zaktualizowana';
+                  editGeocodeMsg.style.color = '#15803d';
+                  map.setView([lat, lng], 17, { animate: true });
+                } else {
+                  editGeocodeMsg.textContent = '❌ Adres poza obszarem Jeleniej Góry';
+                  editGeocodeMsg.style.color = '#b91c1c';
+                }
+              } else {
+                editGeocodeMsg.textContent = '⚠️ Nie znaleziono dokładnej lokalizacji';
+                editGeocodeMsg.style.color = '#d97706';
+              }
+            })
+            .catch(function(err) {
+              console.error('[JG MAP] Geocoding error:', err);
+              editGeocodeMsg.textContent = '';
+            });
+        }
+
+        // City autocomplete
+        if (editCityInput && citySuggestions) {
+          editCityInput.addEventListener('input', function() {
+            var query = this.value.trim();
+            if (query.length < 2) {
+              citySuggestions.classList.remove('active');
               return;
             }
 
-            editGeocodeMsg.textContent = 'Wyszukiwanie...';
-            editGeocodeMsg.style.color = '#666';
-            editGeocodeBtn.disabled = true;
-
-            // Nominatim API for geocoding
+            // Search cities in bounds
             var apiUrl = 'https://nominatim.openstreetmap.org/search?format=json&q=' +
-              encodeURIComponent(address) +
-              '&countrycodes=pl&limit=1';
+              encodeURIComponent(query) + '&viewbox=15.62,50.96,15.82,50.82&bounded=1&featuretype=city&limit=5';
 
-            fetch(apiUrl, {
-              headers: {
-                'Accept': 'application/json'
-              }
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-              editGeocodeBtn.disabled = false;
+            fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                citySuggestions.innerHTML = '';
+                if (data && data.length > 0) {
+                  data.forEach(function(item) {
+                    var div = document.createElement('div');
+                    div.className = 'jg-autocomplete-item';
+                    div.textContent = item.display_name.split(',')[0];
+                    div.onclick = function() {
+                      editCityInput.value = this.textContent;
+                      citySuggestions.classList.remove('active');
+                      updateAddressAndGeocode();
+                    };
+                    citySuggestions.appendChild(div);
+                  });
+                  citySuggestions.classList.add('active');
+                } else {
+                  citySuggestions.classList.remove('active');
+                }
+              })
+              .catch(function(err) {
+                console.error('[JG MAP] City autocomplete error:', err);
+              });
+          });
 
-              if (!data || data.length === 0) {
-                editGeocodeMsg.textContent = '❌ Nie znaleziono adresu. Spróbuj innego formatu.';
-                editGeocodeMsg.style.color = '#b91c1c';
-                return;
-              }
+          editCityInput.addEventListener('change', updateAddressAndGeocode);
+          editCityInput.addEventListener('blur', function() {
+            setTimeout(function() { citySuggestions.classList.remove('active'); }, 200);
+          });
+        }
 
-              var result = data[0];
-              var foundLat = parseFloat(result.lat);
-              var foundLng = parseFloat(result.lon);
+        // Street autocomplete
+        if (editStreetInput && streetSuggestions) {
+          editStreetInput.addEventListener('input', function() {
+            var query = this.value.trim();
+            var city = editCityInput.value.trim();
+            if (query.length < 2 || !city) {
+              streetSuggestions.classList.remove('active');
+              return;
+            }
 
-              // Validate bounds (Jelenia Góra region)
-              var minLat = 50.82;
-              var maxLat = 50.96;
-              var minLng = 15.62;
-              var maxLng = 15.82;
+            var apiUrl = 'https://nominatim.openstreetmap.org/search?format=json&street=' +
+              encodeURIComponent(query) + '&city=' + encodeURIComponent(city) + '&countrycodes=pl&limit=5';
 
-              if (foundLat < minLat || foundLat > maxLat || foundLng < minLng || foundLng > maxLng) {
-                editGeocodeMsg.textContent = '❌ Adres poza obszarem Jeleniej Góry.';
-                editGeocodeMsg.style.color = '#b91c1c';
-                return;
-              }
+            fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                streetSuggestions.innerHTML = '';
+                if (data && data.length > 0) {
+                  var streets = {};
+                  data.forEach(function(item) {
+                    var addr = item.address || {};
+                    var street = addr.road || '';
+                    if (street) streets[street] = true;
+                  });
 
-              // Update coordinates
-              editLatInput.value = foundLat;
-              editLngInput.value = foundLng;
+                  Object.keys(streets).forEach(function(street) {
+                    var div = document.createElement('div');
+                    div.className = 'jg-autocomplete-item';
+                    div.textContent = street;
+                    div.onclick = function() {
+                      editStreetInput.value = this.textContent;
+                      streetSuggestions.classList.remove('active');
+                      updateAddressAndGeocode();
+                    };
+                    streetSuggestions.appendChild(div);
+                  });
 
-              // Show success
-              var displayName = result.display_name || address;
-              editGeocodeMsg.textContent = '✓ Znaleziono: ' + displayName.substring(0, 80);
-              editGeocodeMsg.style.color = '#15803d';
+                  if (Object.keys(streets).length > 0) {
+                    streetSuggestions.classList.add('active');
+                  } else {
+                    streetSuggestions.classList.remove('active');
+                  }
+                } else {
+                  streetSuggestions.classList.remove('active');
+                }
+              })
+              .catch(function(err) {
+                console.error('[JG MAP] Street autocomplete error:', err);
+              });
+          });
 
-              // Pan map to location
-              map.setView([foundLat, foundLng], 17, { animate: true });
-            })
-            .catch(function(err) {
-              editGeocodeBtn.disabled = false;
-              editGeocodeMsg.textContent = '❌ Błąd: ' + err.message;
-              editGeocodeMsg.style.color = '#b91c1c';
-            });
-          };
+          editStreetInput.addEventListener('change', updateAddressAndGeocode);
+          editStreetInput.addEventListener('blur', function() {
+            setTimeout(function() { streetSuggestions.classList.remove('active'); }, 200);
+          });
+        }
+
+        // Number input
+        if (editNumberInput) {
+          editNumberInput.addEventListener('change', updateAddressAndGeocode);
         }
 
         // CTA checkbox toggle for sponsored points
