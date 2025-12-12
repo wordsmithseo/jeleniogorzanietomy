@@ -603,7 +603,7 @@
               spiderfyDistanceMultiplier: 2,
               animate: true,
               animateAddingMarkers: true,
-              singleMarkerMode: true,
+              disableClusteringAtZoom: 19,
               iconCreateFunction: function(clusterGroup) {
                 var childMarkers = clusterGroup.getAllChildMarkers();
 
