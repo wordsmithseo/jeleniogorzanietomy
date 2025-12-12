@@ -177,11 +177,7 @@ class JG_Map_Enqueue {
      * Render custom top bar at the top of the page
      */
     public function render_top_bar() {
-        // Only render on pages with shortcode
-        global $post;
-        if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'jg_map')) {
-            return;
-        }
+        // Render on all pages
         ?>
         <!-- Custom Top Bar -->
         <div id="jg-custom-top-bar" class="jg-custom-top-bar">

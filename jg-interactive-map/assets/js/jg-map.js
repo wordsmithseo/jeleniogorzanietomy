@@ -1100,10 +1100,11 @@
         var isPending = !!p.is_pending;
         var isEdit = !!p.is_edit;
         var hasReports = (CFG.isAdmin && p.reports_count > 0);
+        var isSearchHighlighted = !!p.isSearchHighlighted;
 
-        // Pin sizes - much bigger for visibility! Sponsored even bigger
-        var pinHeight = sponsored ? 90 : 72;
-        var pinWidth = sponsored ? 60 : 48;
+        // Pin sizes - much bigger for visibility! Sponsored even bigger, search highlighted BIGGEST
+        var pinHeight = isSearchHighlighted ? 110 : (sponsored ? 90 : 72);
+        var pinWidth = isSearchHighlighted ? 73 : (sponsored ? 60 : 48);
 
         // Anchor at the bottom tip of the pin (where it points to the location)
         var anchor = [pinWidth / 2, pinHeight];
@@ -1224,12 +1225,30 @@
           centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">⭐</div>';
         }
 
+        // Add pulsing red border for search highlighted sponsored places
+        var pulsingBorder = '';
+        if (isSearchHighlighted) {
+          pulsingBorder = '<div class="jg-pin-pulse" style="' +
+            'position:absolute;' +
+            'top:-5px;' +
+            'left:-5px;' +
+            'right:-5px;' +
+            'bottom:-5px;' +
+            'border:3px solid #8d2324;' +
+            'border-radius:50% 50% 50% 0;' +
+            'transform:rotate(-45deg);' +
+            'animation:jg-pin-pulse 1.5s ease-in-out infinite;' +
+            'pointer-events:none;' +
+            '"></div>';
+        }
+
         var iconHtml = '<div class="jg-pin-svg-wrapper" style="position:relative;width:' + pinWidth + 'px;height:' + pinHeight + 'px;">' +
-          svgPin + centerContent + reportsHtml + deletionHtml + labelHtml +
+          pulsingBorder + svgPin + centerContent + reportsHtml + deletionHtml + labelHtml +
           '</div>';
 
         var className = 'jg-pin-marker';
         if (sponsored) className += ' jg-pin-marker--promo';
+        if (isSearchHighlighted) className += ' jg-pin-marker--search-highlighted';
 
         return L.divIcon({
           className: className,
@@ -3684,8 +3703,27 @@
         }
 
         // STEP 1: Get ALL sponsored points - they are ALWAYS visible (no filtering!)
+        // Mark sponsored points that match search query for highlighting
         var sponsoredPoints = (ALL || []).filter(function(p) {
-          return p.sponsored;
+          if (!p.sponsored) return false;
+
+          // Check if this sponsored place matches search query
+          if (searchQuery) {
+            var title = (p.title || '').toLowerCase();
+            var content = (p.content || '').toLowerCase();
+            var excerpt = (p.excerpt || '').toLowerCase();
+            if (title.indexOf(searchQuery) !== -1 ||
+                content.indexOf(searchQuery) !== -1 ||
+                excerpt.indexOf(searchQuery) !== -1) {
+              p.isSearchHighlighted = true; // Mark for highlighting
+            } else {
+              p.isSearchHighlighted = false;
+            }
+          } else {
+            p.isSearchHighlighted = false;
+          }
+
+          return true;
         });
 
         // STEP 2: Filter non-sponsored points based on search and type filters
