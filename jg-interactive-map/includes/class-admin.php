@@ -910,7 +910,7 @@ class JG_Map_Admin {
                         <tr>
                             <td><strong><?php echo esc_html($report['point_title']); ?></strong></td>
                             <td><span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px"><?php echo $report['report_count']; ?></span></td>
-                            <td><?php echo human_time_diff(strtotime($report['created_at']), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($report['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_reports=<?php echo $report['point_id']; ?>" class="button">Zobacz szczegóły</a>
                             </td>
@@ -1199,7 +1199,7 @@ class JG_Map_Admin {
                             <td><strong><?php echo esc_html($point['title']); ?></strong></td>
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
-                            <td><?php echo human_time_diff(strtotime($point['updated_at']), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['updated_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button button-small" target="_blank">Zobacz</a>
                                 <button class="button button-small button-primary jg-restore-point" data-id="<?php echo $point['id']; ?>">Przywróć</button>
@@ -1419,7 +1419,7 @@ class JG_Map_Admin {
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo $point['deletion_reason'] ? esc_html($point['deletion_reason']) : '<em>Brak powodu</em>'; ?></td>
-                            <td><?php echo human_time_diff(strtotime($point['deletion_requested_at']), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['deletion_requested_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button" target="_blank">Zobacz miejsce</a>
                                 <button class="button button-primary jg-approve-deletion" data-id="<?php echo $point['id']; ?>">Zatwierdź usunięcie</button>
