@@ -77,6 +77,7 @@
 
 .jg-wrap {
   position: relative;
+  overflow: hidden; /* Hide search panel when it's outside viewport */
 }
 
 .jg-map {
