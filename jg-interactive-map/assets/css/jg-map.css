@@ -69,6 +69,29 @@
   transform: translateY(-2px);
 }
 
+/* Notification buttons with badges */
+.jg-top-bar-notif {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.jg-notif-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 #jg-top-bar-datetime {
   font-weight: 500;
   font-size: 15px;

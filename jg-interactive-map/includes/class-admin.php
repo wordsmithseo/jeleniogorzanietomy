@@ -224,8 +224,8 @@ class JG_Map_Admin {
                 $event_text .= '...';
             }
 
-            // Build title: "Page Title: Event1, Event2 (3)"
-            $new_title = $title . ': ' . $event_text . ' (' . $total_count . ')';
+            // Build title: "Page Title: Event1, Event2..." (without count)
+            $new_title = $title . ': ' . $event_text;
         }
 
         // Rebuild the complete admin title

@@ -233,17 +233,74 @@ class JG_Map_Enqueue {
                     $current_user = wp_get_current_user();
                     $is_admin = current_user_can('manage_options');
                     $is_moderator = current_user_can('jg_map_moderate');
+
+                    // Check if user has sponsored places
+                    global $wpdb;
+                    $points_table = JG_Map_Database::get_points_table();
+                    $has_sponsored = $wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM $points_table WHERE author_id = %d AND is_promo = 1 AND status = 'publish'",
+                        $current_user->ID
+                    )) > 0;
+
                     $role_icon = '';
                     if ($is_admin) {
                         $role_icon = '<span style="color:#fbbf24;font-size:16px;margin-left:4px" title="Administrator">⭐</span>';
                     } elseif ($is_moderator) {
                         $role_icon = '<span style="color:#60a5fa;font-size:16px;margin-left:4px" title="Moderator">🛡️</span>';
                     }
+                    if ($has_sponsored) {
+                        $role_icon .= '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:#f59e0b;border-radius:50%;color:#fff;font-size:12px;margin-left:4px;font-weight:bold" title="Użytkownik sponsorowany">$</span>';
+                    }
+
+                    // Get moderation notifications count for admins/moderators
+                    $mod_notifications = array();
+                    if ($is_admin || $is_moderator) {
+                        $history_table = JG_Map_Database::get_history_table();
+                        $reports_table = JG_Map_Database::get_reports_table();
+
+                        $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'");
+                        $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending' AND action_type = 'edit'");
+                        $pending_reports = $wpdb->get_var("SELECT COUNT(DISTINCT point_id) FROM $reports_table WHERE status = 'pending'");
+                        $pending_deletions = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = 1");
+
+                        if ($pending_points > 0) {
+                            $mod_notifications[] = array(
+                                'icon' => '📝',
+                                'label' => 'Moderacja',
+                                'count' => $pending_points + $pending_edits,
+                                'url' => admin_url('admin.php?page=jg-map-moderation')
+                            );
+                        }
+                        if ($pending_reports > 0) {
+                            $mod_notifications[] = array(
+                                'icon' => '🚨',
+                                'label' => 'Zgłoszenia',
+                                'count' => $pending_reports,
+                                'url' => admin_url('admin.php?page=jg-map-reports')
+                            );
+                        }
+                        if ($pending_deletions > 0) {
+                            $mod_notifications[] = array(
+                                'icon' => '🗑️',
+                                'label' => 'Usunięcia',
+                                'count' => $pending_deletions,
+                                'url' => admin_url('admin.php?page=jg-map-deletions')
+                            );
+                        }
+                    }
                     ?>
                     <span class="jg-top-bar-user">
                         Zalogowano jako:&nbsp;<strong><?php echo esc_html($current_user->display_name); ?></strong><?php echo $role_icon; ?>
                     </span>
                     <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
+
+                    <?php foreach ($mod_notifications as $notif) : ?>
+                        <a href="<?php echo esc_url($notif['url']); ?>" class="jg-top-bar-btn jg-top-bar-notif">
+                            <span><?php echo $notif['icon']; ?> <?php echo esc_html($notif['label']); ?></span>
+                            <span class="jg-notif-badge"><?php echo $notif['count']; ?></span>
+                        </a>
+                    <?php endforeach; ?>
+
                     <?php if ($is_admin) : ?>
                         <a href="<?php echo admin_url(); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin">⚙️ Panel administratora</a>
                     <?php endif; ?>
