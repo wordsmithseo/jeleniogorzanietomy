@@ -30,6 +30,7 @@ class JG_Map_Enqueue {
      */
     private function __construct() {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_topbar_css'), 5); // Earlier priority
 
         // Hide admin bar for non-admins
         add_action('after_setup_theme', array($this, 'hide_admin_bar_for_users'));
@@ -51,6 +52,54 @@ class JG_Map_Enqueue {
      */
     public function hide_admin_bar_for_users() {
         show_admin_bar(false);
+    }
+
+    /**
+     * Enqueue top bar CSS and minimal JS on ALL pages
+     */
+    public function enqueue_topbar_css() {
+        // Load plugin CSS on all pages for top bar styling
+        wp_enqueue_style(
+            'jg-map-topbar',
+            JG_MAP_PLUGIN_URL . 'assets/css/jg-map.css',
+            array(),
+            JG_MAP_VERSION
+        );
+
+        // Inline script for clock - no external JS needed for basic functionality
+        $inline_script = "
+        (function() {
+            function updateDateTime() {
+                var el = document.getElementById('jg-top-bar-datetime');
+                if (!el) return;
+
+                var now = new Date();
+                var days = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+                var dayName = days[now.getDay()];
+
+                var day = String(now.getDate()).padStart(2, '0');
+                var month = String(now.getMonth() + 1).padStart(2, '0');
+                var year = now.getFullYear();
+
+                var hours = String(now.getHours()).padStart(2, '0');
+                var minutes = String(now.getMinutes()).padStart(2, '0');
+                var seconds = String(now.getSeconds()).padStart(2, '0');
+
+                el.textContent = dayName + ', ' + day + '.' + month + '.' + year + ' • ' + hours + ':' + minutes + ':' + seconds;
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    updateDateTime();
+                    setInterval(updateDateTime, 1000);
+                });
+            } else {
+                updateDateTime();
+                setInterval(updateDateTime, 1000);
+            }
+        })();
+        ";
+        wp_add_inline_script('jquery', $inline_script);
     }
 
     /**
@@ -86,13 +135,7 @@ class JG_Map_Enqueue {
             '1.5.3'
         );
 
-        // Plugin CSS
-        wp_enqueue_style(
-            'jg-map-style',
-            JG_MAP_PLUGIN_URL . 'assets/css/jg-map.css',
-            array(),
-            JG_MAP_VERSION
-        );
+        // Plugin CSS is already loaded globally via enqueue_topbar_css()
 
         // Leaflet JS
         wp_enqueue_script(
