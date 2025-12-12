@@ -1159,3 +1159,39 @@
 .jg-pin-marker--search-highlighted {
   z-index: 10000 !important;
 }
+
+/* Autocomplete list for address fields */
+.jg-autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: none;
+}
+
+.jg-autocomplete-list.active {
+  display: block;
+}
+
+.jg-autocomplete-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.15s;
+}
+
+.jg-autocomplete-item:hover {
+  background: #f3f4f6;
+}
+
+.jg-autocomplete-item:last-child {
+  border-bottom: none;
+}
