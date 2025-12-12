@@ -1100,11 +1100,10 @@
         var isPending = !!p.is_pending;
         var isEdit = !!p.is_edit;
         var hasReports = (CFG.isAdmin && p.reports_count > 0);
-        var isSearchHighlighted = !!p.isSearchHighlighted;
 
-        // Pin sizes - much bigger for visibility! Sponsored even bigger, search highlighted BIGGEST
-        var pinHeight = isSearchHighlighted ? 110 : (sponsored ? 90 : 72);
-        var pinWidth = isSearchHighlighted ? 73 : (sponsored ? 60 : 48);
+        // Pin sizes - much bigger for visibility! Sponsored even bigger
+        var pinHeight = sponsored ? 90 : 72;
+        var pinWidth = sponsored ? 60 : 48;
 
         // Anchor at the bottom tip of the pin (where it points to the location)
         var anchor = [pinWidth / 2, pinHeight];
@@ -1175,16 +1174,6 @@
           '</filter>' +
           '</defs>';
 
-        // Add pulsing red outline for search highlighted - EXACT pin shape
-        if (isSearchHighlighted) {
-          svgPin += '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" ' +
-            'fill="none" ' +
-            'stroke="#8d2324" ' +
-            'stroke-width="2.5" ' +
-            'opacity="1" ' +
-            'class="jg-pin-pulse-stroke"/>';
-        }
-
         // Pin shape: rounded Google Maps style with smooth curves
         svgPin += '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" ' +
           'fill="url(#' + gradientId + ')" ' +
@@ -1241,7 +1230,6 @@
 
         var className = 'jg-pin-marker';
         if (sponsored) className += ' jg-pin-marker--promo';
-        if (isSearchHighlighted) className += ' jg-pin-marker--search-highlighted';
 
         return L.divIcon({
           className: className,
@@ -3680,7 +3668,6 @@
       function apply(skipFitBounds) {
         var enabled = {};
         var promoOnly = false;
-        var searchQuery = '';
 
         if (elFilters) {
           elFilters.querySelectorAll('input[data-type]').forEach(function(cb) {
@@ -3688,38 +3675,14 @@
           });
           var pr = elFilters.querySelector('input[data-promo]');
           promoOnly = !!(pr && pr.checked);
-
-          var searchInput = document.getElementById('jg-search-input');
-          if (searchInput) {
-            searchQuery = searchInput.value.toLowerCase().trim();
-          }
         }
 
         // STEP 1: Get ALL sponsored points - they are ALWAYS visible (no filtering!)
-        // Mark sponsored points that match search query for highlighting
         var sponsoredPoints = (ALL || []).filter(function(p) {
-          if (!p.sponsored) return false;
-
-          // Check if this sponsored place matches search query
-          if (searchQuery) {
-            var title = (p.title || '').toLowerCase();
-            var content = (p.content || '').toLowerCase();
-            var excerpt = (p.excerpt || '').toLowerCase();
-            if (title.indexOf(searchQuery) !== -1 ||
-                content.indexOf(searchQuery) !== -1 ||
-                excerpt.indexOf(searchQuery) !== -1) {
-              p.isSearchHighlighted = true; // Mark for highlighting
-            } else {
-              p.isSearchHighlighted = false;
-            }
-          } else {
-            p.isSearchHighlighted = false;
-          }
-
-          return true;
+          return p.sponsored;
         });
 
-        // STEP 2: Filter non-sponsored points based on search and type filters
+        // STEP 2: Filter non-sponsored points based on type filters only
         var nonSponsoredPoints = (ALL || []).filter(function(p) {
           // Skip sponsored points - they're already in sponsoredPoints array
           if (p.sponsored) return false;
@@ -3727,21 +3690,7 @@
           // Promo only mode - hide all non-sponsored
           if (promoOnly) return false;
 
-          // Search filter
-          if (searchQuery) {
-            var title = (p.title || '').toLowerCase();
-            var content = (p.content || '').toLowerCase();
-            var excerpt = (p.excerpt || '').toLowerCase();
-            if (title.indexOf(searchQuery) === -1 &&
-                content.indexOf(searchQuery) === -1 &&
-                excerpt.indexOf(searchQuery) === -1) {
-              return false;
-            }
-            // If search query matches, show the point (ignore type filters during search)
-            return true;
-          }
-
-          // Type filters (only apply when no search query)
+          // Type filters
           // If no filters are enabled, hide all non-sponsored points
           if (Object.keys(enabled).length === 0) {
             return false;
@@ -3759,21 +3708,165 @@
         console.log('[JG MAP FILTER] Non-sponsored (filtered):', nonSponsoredPoints.length);
         console.log('[JG MAP FILTER] Final list:', list.length);
         console.log('[JG MAP FILTER] Enabled filters:', Object.keys(enabled).length > 0 ? Object.keys(enabled) : 'NONE');
-        console.log('[JG MAP FILTER] Search query:', searchQuery || 'NONE');
 
         pendingData = list;
         draw(list, skipFitBounds);
       }
 
-      // Setup search input listener - wait for DOM
+      // ====================================
+      // NEW SEARCH FUNCTIONALITY with Side Panel
+      // ====================================
       setTimeout(function() {
         var searchInput = document.getElementById('jg-search-input');
-        if (searchInput) {
-          searchInput.addEventListener('input', function() {
-            apply(true); // Skip fitBounds on filter change
+        var searchBtn = document.getElementById('jg-search-btn');
+        var searchPanel = document.getElementById('jg-search-panel');
+        var searchResults = document.getElementById('jg-search-results');
+        var searchCount = document.getElementById('jg-search-panel-count');
+        var searchCloseBtn = document.getElementById('jg-search-close-btn');
+
+        // Perform search and show results in side panel
+        function performSearch() {
+          var query = searchInput.value.toLowerCase().trim();
+
+          if (!query) {
+            closeSearchPanel();
+            return;
+          }
+
+          console.log('[JG SEARCH] Searching for:', query);
+
+          // Search through ALL points
+          var results = (ALL || []).filter(function(p) {
+            var title = (p.title || '').toLowerCase();
+            var content = (p.content || '').toLowerCase();
+            var excerpt = (p.excerpt || '').toLowerCase();
+            return title.indexOf(query) !== -1 ||
+                   content.indexOf(query) !== -1 ||
+                   excerpt.indexOf(query) !== -1;
           });
-        } else {
-          console.error('[JG MAP] Search input not found!');
+
+          console.log('[JG SEARCH] Found', results.length, 'results');
+
+          // Update panel count
+          searchCount.textContent = results.length + (results.length === 1 ? ' wynik' : ' wyników');
+
+          // Build results HTML
+          if (results.length === 0) {
+            searchResults.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#6b7280">' +
+              '<div style="font-size:48px;margin-bottom:12px">🔍</div>' +
+              '<div style="font-size:16px;font-weight:600;margin-bottom:8px">Brak wyników</div>' +
+              '<div style="font-size:14px">Spróbuj wyszukać czegość innego</div>' +
+              '</div>';
+          } else {
+            var html = '';
+            results.forEach(function(point) {
+              var iconClass = 'jg-search-result-icon--' + (point.sponsored ? 'sponsored' : point.type);
+              var icon = point.sponsored ? '⭐' :
+                         (point.type === 'miejsce' ? '📍' :
+                          point.type === 'ciekawostka' ? 'ℹ️' : '❗');
+
+              var excerpt = point.excerpt || '';
+              if (excerpt.length > 100) {
+                excerpt = excerpt.substring(0, 100) + '...';
+              }
+
+              html += '<div class="jg-search-result-item" data-point-id="' + point.id + '">' +
+                '<div class="jg-search-result-icon ' + iconClass + '">' + icon + '</div>' +
+                '<div class="jg-search-result-content">' +
+                '<div class="jg-search-result-title">' + esc(point.title || 'Bez nazwy') + '</div>' +
+                (excerpt ? '<div class="jg-search-result-excerpt">' + esc(excerpt) + '</div>' : '') +
+                '</div>' +
+                '</div>';
+            });
+            searchResults.innerHTML = html;
+
+            // Add click handlers to results
+            setTimeout(function() {
+              var items = document.querySelectorAll('.jg-search-result-item');
+              items.forEach(function(item) {
+                item.addEventListener('click', function() {
+                  var pointId = parseInt(this.getAttribute('data-point-id'));
+                  var point = results.find(function(p) { return p.id === pointId; });
+                  if (point) {
+                    zoomToSearchResult(point);
+                  }
+                });
+              });
+            }, 50);
+          }
+
+          // Open panel
+          searchPanel.classList.add('active');
+        }
+
+        // Zoom to search result with fast pulsing circle
+        function zoomToSearchResult(point) {
+          console.log('[JG SEARCH] Zooming to:', point.title);
+
+          // Zoom to point
+          map.setView([point.lat, point.lng], 19, { animate: true });
+
+          // Wait for zoom, then show FAST pulsing circle
+          setTimeout(function() {
+            addFastPulsingMarker(point.lat, point.lng);
+          }, 600);
+        }
+
+        // Add fast pulsing red circle (1.5s total, faster pulses)
+        function addFastPulsingMarker(lat, lng) {
+          var pulsingCircle = L.circle([lat, lng], {
+            color: '#ef4444',
+            fillColor: '#ef4444',
+            fillOpacity: 0.3,
+            radius: 12,
+            weight: 3
+          }).addTo(map);
+
+          var pulseCount = 0;
+          var maxPulses = 6; // 6 fast pulses over 1.5s
+          var pulseInterval = setInterval(function() {
+            pulseCount++;
+
+            // Toggle opacity for pulse effect (faster)
+            if (pulseCount % 2 === 0) {
+              pulsingCircle.setStyle({ fillOpacity: 0.3, opacity: 1 });
+            } else {
+              pulsingCircle.setStyle({ fillOpacity: 0.1, opacity: 0.4 });
+            }
+
+            // Remove after 1.5 seconds
+            if (pulseCount >= maxPulses) {
+              clearInterval(pulseInterval);
+              setTimeout(function() {
+                map.removeLayer(pulsingCircle);
+              }, 250);
+            }
+          }, 250); // Fast pulse every 250ms
+        }
+
+        // Close search panel
+        function closeSearchPanel() {
+          searchPanel.classList.remove('active');
+          searchInput.value = '';
+          searchResults.innerHTML = '';
+        }
+
+        // Event listeners
+        if (searchBtn) {
+          searchBtn.addEventListener('click', performSearch);
+        }
+
+        if (searchInput) {
+          searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              performSearch();
+            }
+          });
+        }
+
+        if (searchCloseBtn) {
+          searchCloseBtn.addEventListener('click', closeSearchPanel);
         }
       }, 500);
 
