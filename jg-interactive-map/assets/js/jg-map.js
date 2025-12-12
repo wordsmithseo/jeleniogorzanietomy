@@ -594,13 +594,13 @@
           try {
             // Single cluster with grid layout showing types
             // maxClusterRadius as function: breaks apart naturally when zooming in
-            // At high zoom (17+), only EXTREMELY close points (within 1px) cluster together
+            // At high zoom (17+), only very close points (within 35px) cluster together
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: function(zoom) {
-                // Extremely small radius at high zoom - only truly overlapping locations cluster
-                // 1px = places must be almost exactly at same coordinates
-                return (zoom >= 17) ? 1 : 80;
+                // Small radius at high zoom for places very close together
+                // 35px = places in same building / very close vicinity
+                return (zoom >= 17) ? 35 : 80;
               },
               spiderfyOnMaxZoom: false,
               zoomToBoundsOnClick: false,
