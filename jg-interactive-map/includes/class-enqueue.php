@@ -265,9 +265,17 @@ class JG_Map_Enqueue {
 
                         if ($pending_points > 0) {
                             $mod_notifications[] = array(
+                                'icon' => '➕',
+                                'label' => 'Nowe miejsca',
+                                'count' => $pending_points,
+                                'url' => admin_url('admin.php?page=jg-map-moderation')
+                            );
+                        }
+                        if ($pending_edits > 0) {
+                            $mod_notifications[] = array(
                                 'icon' => '📝',
-                                'label' => 'Moderacja',
-                                'count' => $pending_points + $pending_edits,
+                                'label' => 'Edycje',
+                                'count' => $pending_edits,
                                 'url' => admin_url('admin.php?page=jg-map-moderation')
                             );
                         }
