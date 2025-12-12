@@ -3359,7 +3359,13 @@
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
         }
 
-        var html = '<header><h3 class="jg-place-title">' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        // Address info
+        var addressInfo = '';
+        if (p.address && p.address.trim()) {
+          addressInfo = '<div style="margin:8px 0;padding:8px 12px;background:#f3f4f6;border-left:3px solid #8d2324;border-radius:4px;font-size:13px;color:#374151"><strong>📍 Adres:</strong> ' + esc(p.address) + '</div>';
+        }
+
+        var html = '<header><h3 class="jg-place-title">' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + addressInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim() });
 

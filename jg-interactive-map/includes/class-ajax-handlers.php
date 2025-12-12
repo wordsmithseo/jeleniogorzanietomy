@@ -277,6 +277,7 @@ class JG_Map_Ajax_Handlers {
                 'content' => $point['content'],
                 'lat' => floatval($point['lat']),
                 'lng' => floatval($point['lng']),
+                'address' => $point['address'] ?? '',
                 'type' => $point['type'],
                 'sponsored' => $is_sponsored,
                 'sponsored_until' => $sponsored_until,
