@@ -3761,9 +3761,20 @@
             var html = '';
             results.forEach(function(point) {
               var iconClass = 'jg-search-result-icon--' + (point.sponsored ? 'sponsored' : point.type);
-              var icon = point.sponsored ? '⭐' :
-                         (point.type === 'miejsce' ? '📍' :
-                          point.type === 'ciekawostka' ? 'ℹ️' : '❗');
+
+              // Use colored dots instead of emoji
+              var icon = '';
+              if (point.sponsored) {
+                icon = '<div style="font-size:20px">⭐</div>';
+              } else {
+                var dotColor = '#888';
+                if (point.type === 'miejsce') {
+                  dotColor = '#0a5a28'; // Green
+                } else if (point.type === 'ciekawostka') {
+                  dotColor = '#1e3a8a'; // Blue
+                }
+                icon = '<div style="width:20px;height:20px;border-radius:50%;background:' + dotColor + '"></div>';
+              }
 
               var excerpt = point.excerpt || '';
               if (excerpt.length > 100) {
@@ -3805,6 +3816,18 @@
 
           // Zoom to point
           map.setView([point.lat, point.lng], 19, { animate: true });
+
+          // On mobile: close panel and scroll to map
+          if (window.innerWidth <= 768) {
+            setTimeout(function() {
+              closeSearchPanel();
+              // Scroll to map smoothly
+              var mapEl = document.getElementById('jg-map');
+              if (mapEl) {
+                mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }, 300); // Small delay to show selection
+          }
 
           // Wait for zoom, then show FAST pulsing circle
           setTimeout(function() {
