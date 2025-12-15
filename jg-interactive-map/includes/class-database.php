@@ -242,6 +242,12 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
+        // Flush WordPress object cache to ensure fresh data
+        wp_cache_flush();
+
+        // Disable MySQL query cache for this session
+        $wpdb->query('SET SESSION query_cache_type = OFF');
+
         $status_condition = $include_pending
             ? "status IN ('publish', 'pending', 'edit')"
             : "status = 'publish'";
