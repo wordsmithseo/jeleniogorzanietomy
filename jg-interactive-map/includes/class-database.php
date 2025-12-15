@@ -117,6 +117,10 @@ class JG_Map_Database {
 
         // Create upload directory for map images
         self::create_upload_directory();
+
+        // Create activity log table
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
+        JG_Map_Activity_Log::create_table();
     }
 
     /**
@@ -125,6 +129,10 @@ class JG_Map_Database {
     public static function check_and_update_schema() {
         global $wpdb;
         $table = self::get_points_table();
+
+        // Ensure activity log table exists (for existing installations)
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
+        JG_Map_Activity_Log::create_table();
 
         // Check if promo_until column exists
         $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'promo_until'");

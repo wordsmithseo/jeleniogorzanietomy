@@ -98,6 +98,86 @@ class JG_Map_Enqueue {
                 setInterval(updateDateTime, 1000);
             }
         })();
+
+        // Real-time notifications for custom top bar (admins/moderators only)
+        <?php if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('jg_map_moderate'))): ?>
+        (function($) {
+            // Enqueue Heartbeat for real-time updates
+            if (typeof wp !== 'undefined' && wp.heartbeat) {
+                wp.heartbeat.interval(15);
+            }
+
+            // Send request for notification updates
+            $(document).on('heartbeat-send', function(e, data) {
+                data.jg_map_check_notifications = true;
+            });
+
+            // Process heartbeat response and update custom top bar
+            $(document).on('heartbeat-tick', function(e, data) {
+                if (!data.jg_map_notifications) return;
+
+                var counts = data.jg_map_notifications;
+                console.log('[JG MAP TOPBAR] Notification update:', counts);
+
+                // Update custom top bar notifications
+                var container = $('#jg-top-bar-notifications');
+                if (!container.length) return;
+
+                var notifications = [];
+
+                if (counts.points > 0) {
+                    notifications.push({
+                        icon: '➕',
+                        label: 'Nowe miejsca',
+                        type: 'nowe miejsca',
+                        count: counts.points,
+                        url: '<?php echo admin_url('admin.php?page=jg-map-moderation'); ?>'
+                    });
+                }
+
+                if (counts.edits > 0) {
+                    notifications.push({
+                        icon: '📝',
+                        label: 'Edycje',
+                        type: 'edycje',
+                        count: counts.edits,
+                        url: '<?php echo admin_url('admin.php?page=jg-map-moderation'); ?>'
+                    });
+                }
+
+                if (counts.reports > 0) {
+                    notifications.push({
+                        icon: '🚨',
+                        label: 'Zgłoszenia',
+                        type: 'zgłoszenia',
+                        count: counts.reports,
+                        url: '<?php echo admin_url('admin.php?page=jg-map-reports'); ?>'
+                    });
+                }
+
+                if (counts.deletions > 0) {
+                    notifications.push({
+                        icon: '🗑️',
+                        label: 'Usunięcia',
+                        type: 'usunięcia',
+                        count: counts.deletions,
+                        url: '<?php echo admin_url('admin.php?page=jg-map-deletions'); ?>'
+                    });
+                }
+
+                // Rebuild notifications HTML
+                var html = '';
+                notifications.forEach(function(notif) {
+                    html += '<a href=\"' + notif.url + '\" class=\"jg-top-bar-btn jg-top-bar-notif\" data-type=\"' + notif.type + '\">';
+                    html += '<span>' + notif.icon + ' ' + notif.label + '</span>';
+                    html += '<span class=\"jg-notif-badge\">' + notif.count + '</span>';
+                    html += '</a>';
+                });
+
+                container.html(html);
+            });
+        })(jQuery);
+        <?php endif; ?>
         ";
         wp_add_inline_script('jquery', $inline_script);
     }
@@ -318,10 +398,32 @@ class JG_Map_Enqueue {
                         $history_table = JG_Map_Database::get_history_table();
                         $reports_table = JG_Map_Database::get_reports_table();
 
-                        $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'");
-                        $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending' AND action_type = 'edit'");
-                        $pending_reports = $wpdb->get_var("SELECT COUNT(DISTINCT point_id) FROM $reports_table WHERE status = 'pending'");
-                        $pending_deletions = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = 1");
+                        // Disable caching
+                        $wpdb->query('SET SESSION query_cache_type = OFF');
+
+                        $pending_points = $wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(*) FROM $points_table WHERE status = %s",
+                            'pending'
+                        ));
+                        $pending_edits = $wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(*) FROM $history_table WHERE status = %s AND action_type = %s",
+                            'pending',
+                            'edit'
+                        ));
+                        // FIX: This query was counting reports for deleted/trashed points!
+                        $pending_reports = $wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(DISTINCT r.point_id)
+                             FROM $reports_table r
+                             INNER JOIN $points_table p ON r.point_id = p.id
+                             WHERE r.status = %s AND p.status = %s",
+                            'pending',
+                            'publish'
+                        ));
+                        $pending_deletions = $wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = %d AND status = %s",
+                            1,
+                            'publish'
+                        ));
 
                         if ($pending_points > 0) {
                             $mod_notifications[] = array(
@@ -362,12 +464,15 @@ class JG_Map_Enqueue {
                     </span>
                     <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
 
-                    <?php foreach ($mod_notifications as $notif) : ?>
-                        <a href="<?php echo esc_url($notif['url']); ?>" class="jg-top-bar-btn jg-top-bar-notif">
-                            <span><?php echo $notif['icon']; ?> <?php echo esc_html($notif['label']); ?></span>
-                            <span class="jg-notif-badge"><?php echo $notif['count']; ?></span>
-                        </a>
-                    <?php endforeach; ?>
+                    <!-- Notifications container for real-time updates -->
+                    <div id="jg-top-bar-notifications">
+                        <?php foreach ($mod_notifications as $notif) : ?>
+                            <a href="<?php echo esc_url($notif['url']); ?>" class="jg-top-bar-btn jg-top-bar-notif" data-type="<?php echo esc_attr(strtolower($notif['label'])); ?>">
+                                <span><?php echo $notif['icon']; ?> <?php echo esc_html($notif['label']); ?></span>
+                                <span class="jg-notif-badge"><?php echo $notif['count']; ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
 
                     <?php if ($is_admin) : ?>
                         <a href="<?php echo admin_url(); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin">⚙️ Panel administratora</a>
