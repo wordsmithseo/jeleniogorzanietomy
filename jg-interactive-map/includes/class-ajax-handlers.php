@@ -219,57 +219,63 @@ class JG_Map_Ajax_Handlers {
             $status_label = $this->get_status_label($point['status']);
             $report_status_label = $this->get_report_status_label($point['report_status']);
 
-            // Check if pending or edit
-            $is_pending = ($point['status'] === 'pending');
-
-            // Get pending edit or deletion history
+            // Check if pending or edit - ONLY for admins/moderators
+            $is_pending = false;
             $edit_info = null;
             $deletion_info = null;
-            $pending_history = JG_Map_Database::get_pending_history($point['id']);
+            $is_edit = false;
+            $is_deletion_requested = false;
 
-            if ($pending_history) {
-                $old_values = json_decode($pending_history['old_values'], true);
-                $new_values = json_decode($pending_history['new_values'], true);
+            if ($is_admin) {
+                $is_pending = ($point['status'] === 'pending');
 
-                if ($pending_history['action_type'] === 'edit') {
-                    // Parse new images if present
-                    $new_images = array();
-                    if (isset($new_values['new_images'])) {
-                        $new_images_data = json_decode($new_values['new_images'], true);
-                        if (is_array($new_images_data)) {
-                            $new_images = $new_images_data;
+                // Get pending edit or deletion history
+                $pending_history = JG_Map_Database::get_pending_history($point['id']);
+
+                if ($pending_history) {
+                    $old_values = json_decode($pending_history['old_values'], true);
+                    $new_values = json_decode($pending_history['new_values'], true);
+
+                    if ($pending_history['action_type'] === 'edit') {
+                        // Parse new images if present
+                        $new_images = array();
+                        if (isset($new_values['new_images'])) {
+                            $new_images_data = json_decode($new_values['new_images'], true);
+                            if (is_array($new_images_data)) {
+                                $new_images = $new_images_data;
+                            }
                         }
-                    }
 
-                    $edit_info = array(
-                        'history_id' => intval($pending_history['id']),
-                        'prev_title' => $old_values['title'] ?? '',
-                        'prev_type' => $old_values['type'] ?? '',
-                        'prev_content' => $old_values['content'] ?? '',
-                        'new_title' => $new_values['title'] ?? '',
-                        'new_type' => $new_values['type'] ?? '',
-                        'new_content' => $new_values['content'] ?? '',
-                        'prev_website' => $old_values['website'] ?? null,
-                        'new_website' => $new_values['website'] ?? null,
-                        'prev_phone' => $old_values['phone'] ?? null,
-                        'new_phone' => $new_values['phone'] ?? null,
-                        'prev_cta_enabled' => $old_values['cta_enabled'] ?? null,
-                        'new_cta_enabled' => $new_values['cta_enabled'] ?? null,
-                        'prev_cta_type' => $old_values['cta_type'] ?? null,
-                        'new_cta_type' => $new_values['cta_type'] ?? null,
-                        'new_images' => $new_images,
-                        'edited_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
-                    );
-                } else if ($pending_history['action_type'] === 'delete_request') {
-                    $deletion_info = array(
-                        'history_id' => intval($pending_history['id']),
-                        'reason' => $new_values['reason'] ?? '',
-                        'requested_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
-                    );
+                        $edit_info = array(
+                            'history_id' => intval($pending_history['id']),
+                            'prev_title' => $old_values['title'] ?? '',
+                            'prev_type' => $old_values['type'] ?? '',
+                            'prev_content' => $old_values['content'] ?? '',
+                            'new_title' => $new_values['title'] ?? '',
+                            'new_type' => $new_values['type'] ?? '',
+                            'new_content' => $new_values['content'] ?? '',
+                            'prev_website' => $old_values['website'] ?? null,
+                            'new_website' => $new_values['website'] ?? null,
+                            'prev_phone' => $old_values['phone'] ?? null,
+                            'new_phone' => $new_values['phone'] ?? null,
+                            'prev_cta_enabled' => $old_values['cta_enabled'] ?? null,
+                            'new_cta_enabled' => $new_values['cta_enabled'] ?? null,
+                            'prev_cta_type' => $old_values['cta_type'] ?? null,
+                            'new_cta_type' => $new_values['cta_type'] ?? null,
+                            'new_images' => $new_images,
+                            'edited_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
+                        );
+                    } else if ($pending_history['action_type'] === 'delete_request') {
+                        $deletion_info = array(
+                            'history_id' => intval($pending_history['id']),
+                            'reason' => $new_values['reason'] ?? '',
+                            'requested_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
+                        );
+                    }
                 }
+                $is_edit = ($edit_info !== null);
+                $is_deletion_requested = ($deletion_info !== null);
             }
-            $is_edit = ($edit_info !== null);
-            $is_deletion_requested = ($deletion_info !== null);
 
             $result[] = array(
                 'id' => intval($point['id']),
@@ -928,6 +934,9 @@ class JG_Map_Ajax_Handlers {
         $email = $user ? $user->user_email : '';
 
         JG_Map_Database::add_report($point_id, $user_id, $email, $reason);
+
+        // Flush cache to ensure fresh data on next request
+        wp_cache_flush();
 
         // Notify admin
         $this->notify_admin_new_report($point_id);
