@@ -45,10 +45,8 @@ class JG_Map_Enqueue {
         add_action('template_redirect', array($this, 'handle_email_activation'));
         add_action('template_redirect', array($this, 'handle_password_reset'));
 
-        // Modify CSP to allow Nominatim reverse geocoding - multiple hooks for reliability
+        // Modify CSP to allow Nominatim reverse geocoding
         add_filter('wp_headers', array($this, 'modify_csp_headers'), 999);
-        add_action('send_headers', array($this, 'send_csp_header'), 999);
-        add_action('wp_head', array($this, 'add_csp_meta_tag'), 1);
     }
 
     /**
@@ -766,6 +764,9 @@ class JG_Map_Enqueue {
 
     /**
      * Modify CSP headers to allow Nominatim reverse geocoding
+     * Note: This only works if CSP is set via WordPress wp_headers filter
+     * If CSP is set by server (nginx/Apache) or other plugin with higher priority,
+     * manual configuration is required
      */
     public function modify_csp_headers($headers) {
         // Check if CSP header is set
@@ -775,57 +776,22 @@ class JG_Map_Enqueue {
 
             // Check if connect-src exists
             if (strpos($csp, 'connect-src') !== false) {
-                // Add nominatim to existing connect-src
-                $csp = preg_replace(
-                    '/(connect-src[^;]*)(;|$)/',
-                    '$1 https://nominatim.openstreetmap.org$2',
-                    $csp
-                );
+                // Add nominatim to existing connect-src (only if not already present)
+                if (strpos($csp, 'nominatim.openstreetmap.org') === false) {
+                    $csp = preg_replace(
+                        '/(connect-src[^;]*)(;|$)/',
+                        '$1 https://nominatim.openstreetmap.org$2',
+                        $csp
+                    );
+                }
             } else {
-                // Add new connect-src directive
-                $csp .= '; connect-src https://nominatim.openstreetmap.org';
+                // Add new connect-src directive with self and nominatim
+                $csp .= '; connect-src \'self\' https://nominatim.openstreetmap.org';
             }
 
             $headers['Content-Security-Policy'] = $csp;
         }
 
         return $headers;
-    }
-
-    /**
-     * Send CSP header directly via send_headers action
-     */
-    public function send_csp_header() {
-        // Get existing CSP headers
-        $headers = headers_list();
-        $has_csp = false;
-
-        foreach ($headers as $header) {
-            if (stripos($header, 'Content-Security-Policy:') === 0) {
-                $has_csp = true;
-                break;
-            }
-        }
-
-        // If CSP exists, we can't easily modify it here
-        // The meta tag approach will handle it
-        if (!$has_csp) {
-            // No CSP set, we can add our own minimal one
-            header('Content-Security-Policy: connect-src \'self\' https://nominatim.openstreetmap.org');
-        }
-    }
-
-    /**
-     * Add CSP meta tag to head as fallback
-     * This ensures nominatim is allowed even if headers are set by server/other plugins
-     */
-    public function add_csp_meta_tag() {
-        // Only on map pages
-        global $post;
-        if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'jg_map')) {
-            // This meta tag will merge with existing CSP policy
-            echo '<meta http-equiv="Content-Security-Policy" content="connect-src https://nominatim.openstreetmap.org">';
-            echo "\n";
-        }
     }
 }
