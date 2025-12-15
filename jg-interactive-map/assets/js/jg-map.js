@@ -1051,18 +1051,23 @@
               var addressDisplay = qs('#add-address-display', modalAdd);
 
               if (addressDisplay && addressInput) {
+                console.log('[JG MAP] Starting reverse geocoding for:', lat, lng);
+
                 // Use backend proxy to bypass CSP restrictions
                 var formData = new FormData();
                 formData.append('action', 'jg_reverse_geocode');
                 formData.append('lat', lat);
                 formData.append('lng', lng);
 
-                fetch(JG_MAP_VARS.ajax_url, {
+                fetch(CFG.ajax, {
                   method: 'POST',
-                  body: formData
+                  body: formData,
+                  credentials: 'same-origin'
                 })
                 .then(function(r) { return r.json(); })
                 .then(function(response) {
+                  console.log('[JG MAP] Reverse geocoding response:', response);
+
                   if (response.success && response.data && response.data.display_name) {
                     var data = response.data;
                     // Build address from parts
@@ -1080,9 +1085,11 @@
                       fullAddress = city;
                     }
 
+                    console.log('[JG MAP] Address resolved:', fullAddress);
                     addressInput.value = fullAddress;
                     addressDisplay.innerHTML = '<strong>📍 Adres:</strong> ' + esc(fullAddress);
                   } else {
+                    console.warn('[JG MAP] No address found in response');
                     addressDisplay.innerHTML = '<strong>📍 Adres:</strong> Nie znaleziono adresu dla tej lokalizacji';
                     addressInput.value = '';
                   }
