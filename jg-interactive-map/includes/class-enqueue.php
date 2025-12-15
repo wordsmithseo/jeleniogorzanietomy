@@ -66,6 +66,11 @@ class JG_Map_Enqueue {
             JG_MAP_VERSION
         );
 
+        // Load Heartbeat for real-time updates (admins/moderators only)
+        if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('jg_map_moderate'))) {
+            wp_enqueue_script('heartbeat');
+        }
+
         // Inline script for clock - no external JS needed for basic functionality
         $inline_script = "
         (function() {
@@ -102,26 +107,37 @@ class JG_Map_Enqueue {
         // Real-time notifications for custom top bar (admins/moderators only)
         <?php if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('jg_map_moderate'))): ?>
         (function($) {
-            // Enqueue Heartbeat for real-time updates
-            if (typeof wp !== 'undefined' && wp.heartbeat) {
-                wp.heartbeat.interval(15);
-            }
+            console.log('[JG MAP TOPBAR] Real-time notifications initialized');
 
-            // Send request for notification updates
-            $(document).on('heartbeat-send', function(e, data) {
-                data.jg_map_check_notifications = true;
-            });
+            // Global function to refresh notifications immediately
+            window.jgRefreshNotifications = function() {
+                console.log('[JG MAP TOPBAR] Manual refresh requested');
+                $.ajax({
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'POST',
+                    data: {
+                        action: 'jg_get_notification_counts',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            updateNotifications(response.data);
+                        }
+                    },
+                    error: function() {
+                        console.error('[JG MAP TOPBAR] Failed to refresh notifications');
+                    }
+                });
+            };
 
-            // Process heartbeat response and update custom top bar
-            $(document).on('heartbeat-tick', function(e, data) {
-                if (!data.jg_map_notifications) return;
+            function updateNotifications(counts) {
+                console.log('[JG MAP TOPBAR] Updating notifications:', counts);
 
-                var counts = data.jg_map_notifications;
-                console.log('[JG MAP TOPBAR] Notification update:', counts);
-
-                // Update custom top bar notifications
                 var container = $('#jg-top-bar-notifications');
-                if (!container.length) return;
+                if (!container.length) {
+                    console.warn('[JG MAP TOPBAR] Container not found');
+                    return;
+                }
 
                 var notifications = [];
 
@@ -175,7 +191,33 @@ class JG_Map_Enqueue {
                 });
 
                 container.html(html);
-            });
+            }
+
+            // Heartbeat for periodic updates
+            if (typeof wp !== 'undefined' && wp.heartbeat) {
+                wp.heartbeat.interval(15);
+
+                // Send request for notification updates
+                $(document).on('heartbeat-send', function(e, data) {
+                    data.jg_map_check_notifications = true;
+                });
+
+                // Process heartbeat response
+                $(document).on('heartbeat-tick', function(e, data) {
+                    if (!data.jg_map_notifications) return;
+                    updateNotifications(data.jg_map_notifications);
+                });
+            }
+
+            // Initial load - refresh after 1 second
+            setTimeout(function() {
+                window.jgRefreshNotifications();
+            }, 1000);
+
+            // Refresh every 10 seconds as backup
+            setInterval(function() {
+                window.jgRefreshNotifications();
+            }, 10000);
         })(jQuery);
         <?php endif; ?>
         ";

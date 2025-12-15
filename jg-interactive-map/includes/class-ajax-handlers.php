@@ -81,6 +81,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_set_user_photo_limit', array($this, 'admin_set_user_photo_limit'), 1);
         add_action('wp_ajax_jg_admin_reset_user_photo_limit', array($this, 'admin_reset_user_photo_limit'), 1);
         add_action('wp_ajax_jg_delete_image', array($this, 'delete_image'), 1);
+        add_action('wp_ajax_jg_get_notification_counts', array($this, 'get_notification_counts'), 1);
     }
 
     /**
@@ -3338,5 +3339,60 @@ class JG_Map_Ajax_Handlers {
         wp_mail($email, $subject, $message, $headers);
 
         wp_send_json_success('Link do resetowania hasła został wysłany na Twój adres email.');
+    }
+
+    /**
+     * Get notification counts for admins/moderators (real-time updates)
+     */
+    public function get_notification_counts() {
+        $this->verify_nonce();
+
+        // Only for admins and moderators
+        if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
+            wp_send_json_error(array('message' => 'Brak uprawnień'));
+            exit;
+        }
+
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+        $reports_table = JG_Map_Database::get_reports_table();
+        $history_table = JG_Map_Database::get_history_table();
+
+        // Ensure history table exists
+        JG_Map_Database::ensure_history_table();
+
+        // Disable caching
+        $wpdb->query('SET SESSION query_cache_type = OFF');
+
+        $pending_points = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $points_table WHERE status = %s",
+            'pending'
+        ));
+        $pending_edits = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $history_table WHERE status = %s AND action_type = %s",
+            'pending',
+            'edit'
+        ));
+        $pending_reports = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT r.point_id)
+             FROM $reports_table r
+             INNER JOIN $points_table p ON r.point_id = p.id
+             WHERE r.status = %s AND p.status = %s",
+            'pending',
+            'publish'
+        ));
+        $pending_deletions = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = %d AND status = %s",
+            1,
+            'publish'
+        ));
+
+        wp_send_json_success(array(
+            'points' => intval($pending_points),
+            'edits' => intval($pending_edits),
+            'reports' => intval($pending_reports),
+            'deletions' => intval($pending_deletions),
+            'total' => intval($pending_points) + intval($pending_edits) + intval($pending_reports) + intval($pending_deletions)
+        ));
     }
 }

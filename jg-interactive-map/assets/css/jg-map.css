@@ -69,6 +69,17 @@
   transform: translateY(-2px);
 }
 
+/* Notification container */
+#jg-top-bar-notifications {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+#jg-top-bar-notifications:empty {
+  display: none;
+}
+
 /* Notification buttons with badges */
 .jg-top-bar-notif {
   display: flex;
