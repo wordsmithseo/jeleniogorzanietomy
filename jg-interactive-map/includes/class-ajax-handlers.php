@@ -1042,6 +1042,10 @@ class JG_Map_Ajax_Handlers {
         // Resolve reports
         JG_Map_Database::resolve_reports($point_id, $reason);
 
+        // Clear object cache to refresh admin bar notifications
+        wp_cache_delete('jg_map_pending_counts');
+        wp_cache_flush();
+
         // Log action
         $point = JG_Map_Database::get_point($point_id);
         JG_Map_Activity_Log::log(
@@ -1145,6 +1149,10 @@ class JG_Map_Ajax_Handlers {
 
         // Resolve reports
         JG_Map_Database::resolve_reports($point_id, 'Miejsce zostało edytowane przez moderatora');
+
+        // Clear object cache to refresh admin bar notifications
+        wp_cache_delete('jg_map_pending_counts');
+        wp_cache_flush();
 
         wp_send_json_success(array('message' => 'Miejsce edytowane i zgłoszenia zamknięte'));
     }
@@ -1254,6 +1262,10 @@ class JG_Map_Ajax_Handlers {
         // Resolve any pending reports for this point
         JG_Map_Database::resolve_reports($point_id, 'Punkt został zaakceptowany przez moderatora');
 
+        // Clear object cache to refresh admin bar notifications
+        wp_cache_delete('jg_map_pending_counts');
+        wp_cache_flush();
+
         // Log action
         JG_Map_Activity_Log::log(
             'approve_point',
@@ -1300,6 +1312,10 @@ class JG_Map_Ajax_Handlers {
 
         // Resolve any pending reports for this point
         JG_Map_Database::resolve_reports($point_id, 'Punkt został odrzucony przez moderatora: ' . $reason);
+
+        // Clear object cache to refresh admin bar notifications
+        wp_cache_delete('jg_map_pending_counts');
+        wp_cache_flush();
 
         // Log action
         JG_Map_Activity_Log::log(
@@ -2014,6 +2030,10 @@ class JG_Map_Ajax_Handlers {
         // Approve history
         JG_Map_Database::approve_history($history_id, get_current_user_id());
 
+        // Clear object cache to refresh admin bar notifications
+        wp_cache_delete('jg_map_pending_counts');
+        wp_cache_flush();
+
         // Notify author
         $point = JG_Map_Database::get_point($history['point_id']);
         $author = get_userdata($point['author_id']);
@@ -2060,6 +2080,10 @@ class JG_Map_Ajax_Handlers {
 
         // Reject history
         JG_Map_Database::reject_history($history_id, get_current_user_id());
+
+        // Clear object cache to refresh admin bar notifications
+        wp_cache_delete('jg_map_pending_counts');
+        wp_cache_flush();
 
         // Notify author
         $point = JG_Map_Database::get_point($history['point_id']);
@@ -2165,6 +2189,10 @@ class JG_Map_Ajax_Handlers {
             JG_Map_Database::approve_history($history_id, get_current_user_id());
         }
 
+        // Clear object cache to refresh admin bar notifications
+        wp_cache_delete('jg_map_pending_counts');
+        wp_cache_flush();
+
         // Notify author
         $author = get_userdata($point['author_id']);
         if ($author && $author->user_email) {
@@ -2237,6 +2265,10 @@ class JG_Map_Ajax_Handlers {
         if ($history_id) {
             JG_Map_Database::reject_history($history_id, get_current_user_id());
         }
+
+        // Clear object cache to refresh admin bar notifications
+        wp_cache_delete('jg_map_pending_counts');
+        wp_cache_flush();
 
         // Notify author
         $point = JG_Map_Database::get_point($point_id);

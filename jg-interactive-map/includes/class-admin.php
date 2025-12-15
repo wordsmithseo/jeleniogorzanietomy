@@ -51,16 +51,31 @@ class JG_Map_Admin {
         // Ensure history table exists
         JG_Map_Database::ensure_history_table();
 
-        // Count pending items
-        $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'");
-        $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
-        $pending_reports = $wpdb->get_var(
+        // Disable caching for these queries to ensure fresh data
+        $wpdb->query('SET SESSION query_cache_type = OFF');
+
+        // Count pending items with WPDB suppress filter to bypass cache
+        $pending_points = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $points_table WHERE status = %s",
+            'pending'
+        ));
+        $pending_edits = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $history_table WHERE status = %s",
+            'pending'
+        ));
+        $pending_reports = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(DISTINCT r.point_id)
              FROM $reports_table r
              INNER JOIN $points_table p ON r.point_id = p.id
-             WHERE r.status = 'pending' AND p.status = 'publish'"
-        );
-        $pending_deletions = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = 1 AND status = 'publish'");
+             WHERE r.status = %s AND p.status = %s",
+            'pending',
+            'publish'
+        ));
+        $pending_deletions = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = %d AND status = %s",
+            1,
+            'publish'
+        ));
 
         $total_pending = intval($pending_points) + intval($pending_edits) + intval($pending_reports) + intval($pending_deletions);
 
