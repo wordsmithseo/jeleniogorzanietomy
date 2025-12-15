@@ -1046,21 +1046,25 @@
                 });
               }
 
-              // REVERSE GEOCODING - fetch address from coordinates
+              // REVERSE GEOCODING - fetch address from coordinates via backend proxy
               var addressInput = qs('#add-address-input', modalAdd);
               var addressDisplay = qs('#add-address-display', modalAdd);
 
               if (addressDisplay && addressInput) {
-                // Nominatim reverse geocoding API
-                var reverseApiUrl = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' +
-                  lat + '&lon=' + lng + '&zoom=18&addressdetails=1';
+                // Use backend proxy to bypass CSP restrictions
+                var formData = new FormData();
+                formData.append('action', 'jg_reverse_geocode');
+                formData.append('lat', lat);
+                formData.append('lng', lng);
 
-                fetch(reverseApiUrl, {
-                  headers: { 'Accept': 'application/json' }
+                fetch(JG_MAP_VARS.ajax_url, {
+                  method: 'POST',
+                  body: formData
                 })
                 .then(function(r) { return r.json(); })
-                .then(function(data) {
-                  if (data && data.display_name) {
+                .then(function(response) {
+                  if (response.success && response.data && response.data.display_name) {
+                    var data = response.data;
                     // Build address from parts
                     var addr = data.address || {};
                     var street = addr.road || '';
