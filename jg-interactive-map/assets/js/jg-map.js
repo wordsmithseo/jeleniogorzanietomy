@@ -959,7 +959,11 @@
                 '<input type="hidden" name="lng" id="add-lng-input" value="' + lng + '">' +
                 '<input type="hidden" name="address" id="add-address-input" value="">' +
                 limitsHtml +
-                '<div class="cols-2" id="add-address-display" style="padding:8px 12px;background:#f3f4f6;border-left:3px solid #8d2324;border-radius:4px;font-size:13px;color:#374151;margin-bottom:8px"><strong>📍 Wczytywanie adresu...</strong></div>' +
+                '<div class="cols-2" style="padding:8px 12px;background:#f0f9ff;border-left:3px solid #0284c7;border-radius:4px;font-size:13px;color:#0369a1;margin-bottom:8px"><strong>📍 Adres (opcjonalnie):</strong> Podaj dokładny adres aby pomóc użytkownikom znaleźć miejsce.</div>' +
+                '<label style="position:relative">Miasto <input type="text" name="city" id="add-city-input" value="Jelenia Góra" placeholder="Jelenia Góra" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off"><div id="add-city-suggestions" class="jg-autocomplete-list"></div></label>' +
+                '<label style="position:relative">Ulica <input type="text" name="street" id="add-street-input" value="" placeholder="Np. 1 Maja" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off"><div id="add-street-suggestions" class="jg-autocomplete-list"></div></label>' +
+                '<label>Numer <input type="text" name="number" id="add-number-input" value="" placeholder="12" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off"></label>' +
+                '<div id="add-geocode-msg" style="font-size:11px;color:#666;margin-top:4px"></div>' +
                 '<label>Tytuł* <input name="title" required placeholder="Nazwa miejsca" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
                 '<label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
                 '<option value="zgloszenie">Zgłoszenie</option>' +
@@ -1046,60 +1050,213 @@
                 });
               }
 
-              // REVERSE GEOCODING - fetch address from coordinates via backend proxy
-              var addressInput = qs('#add-address-input', modalAdd);
-              var addressDisplay = qs('#add-address-display', modalAdd);
+              // ADDRESS AUTOCOMPLETE - similar to edit form
+              var addCityInput = qs('#add-city-input', modalAdd);
+              var addStreetInput = qs('#add-street-input', modalAdd);
+              var addNumberInput = qs('#add-number-input', modalAdd);
+              var addAddressInput = qs('#add-address-input', modalAdd);
+              var addLatInput = qs('#add-lat-input', modalAdd);
+              var addLngInput = qs('#add-lng-input', modalAdd);
+              var addGeocodeMsg = qs('#add-geocode-msg', modalAdd);
 
-              if (addressDisplay && addressInput) {
-                console.log('[JG MAP] Starting reverse geocoding for:', lat, lng);
+              var addCitySuggestions = qs('#add-city-suggestions', modalAdd);
+              var addStreetSuggestions = qs('#add-street-suggestions', modalAdd);
 
-                // Use backend proxy to bypass CSP restrictions
+              var addGeocodeTimeout = null;
+
+              // Helper: Update full address and geocode
+              function updateAddAddressAndGeocode() {
+                var city = addCityInput.value.trim();
+                var street = addStreetInput.value.trim();
+                var number = addNumberInput.value.trim();
+
+                var fullAddress = '';
+                if (street && number) {
+                  fullAddress = street + ' ' + number + ', ' + city;
+                } else if (street) {
+                  fullAddress = street + ', ' + city;
+                } else {
+                  fullAddress = city;
+                }
+
+                addAddressInput.value = fullAddress;
+
+                // Debounced geocoding
+                clearTimeout(addGeocodeTimeout);
+                if (city) {
+                  addGeocodeTimeout = setTimeout(function() {
+                    forwardGeocodeAdd(fullAddress);
+                  }, 500);
+                }
+              }
+
+              // Forward geocoding for add form
+              function forwardGeocodeAdd(address) {
+                addGeocodeMsg.textContent = 'Szukanie współrzędnych...';
+                addGeocodeMsg.style.color = '#666';
+
                 var formData = new FormData();
-                formData.append('action', 'jg_reverse_geocode');
-                formData.append('lat', lat);
-                formData.append('lng', lng);
+                formData.append('action', 'jg_forward_geocode');
+                formData.append('address', address);
 
                 fetch(CFG.ajax, {
                   method: 'POST',
                   body: formData,
                   credentials: 'same-origin'
                 })
-                .then(function(r) { return r.json(); })
-                .then(function(response) {
-                  console.log('[JG MAP] Reverse geocoding response:', response);
+                  .then(function(r) { return r.json(); })
+                  .then(function(response) {
+                    if (response.success && response.data && response.data.length > 0) {
+                      var result = response.data[0];
+                      var lat = parseFloat(result.lat);
+                      var lng = parseFloat(result.lon);
 
-                  if (response.success && response.data && response.data.display_name) {
-                    var data = response.data;
-                    // Build address from parts
-                    var addr = data.address || {};
-                    var street = addr.road || '';
-                    var houseNumber = addr.house_number || '';
-                    var city = addr.city || addr.town || addr.village || 'Jelenia Góra';
-
-                    var fullAddress = '';
-                    if (street && houseNumber) {
-                      fullAddress = street + ' ' + houseNumber + ', ' + city;
-                    } else if (street) {
-                      fullAddress = street + ', ' + city;
+                      // Validate bounds
+                      if (lat >= 50.82 && lat <= 50.96 && lng >= 15.62 && lng <= 15.82) {
+                        addLatInput.value = lat;
+                        addLngInput.value = lng;
+                        addGeocodeMsg.textContent = '✓ Lokalizacja zaktualizowana';
+                        addGeocodeMsg.style.color = '#15803d';
+                        map.setView([lat, lng], 17, { animate: true });
+                      } else {
+                        addGeocodeMsg.textContent = '❌ Adres poza obszarem Jeleniej Góry';
+                        addGeocodeMsg.style.color = '#b91c1c';
+                      }
                     } else {
-                      fullAddress = city;
+                      addGeocodeMsg.textContent = '⚠️ Nie znaleziono dokładnej lokalizacji';
+                      addGeocodeMsg.style.color = '#d97706';
                     }
+                  })
+                  .catch(function(err) {
+                    console.error('[JG MAP] Geocoding error:', err);
+                    addGeocodeMsg.textContent = '';
+                  });
+              }
 
-                    console.log('[JG MAP] Address resolved:', fullAddress);
-                    addressInput.value = fullAddress;
-                    addressDisplay.innerHTML = '<strong>📍 Adres:</strong> ' + esc(fullAddress);
-                  } else {
-                    console.warn('[JG MAP] No address found in response');
-                    addressDisplay.innerHTML = '<strong>📍 Adres:</strong> Nie znaleziono adresu dla tej lokalizacji';
-                    addressInput.value = '';
+              // City autocomplete for add form
+              if (addCityInput && addCitySuggestions) {
+                addCityInput.addEventListener('input', function() {
+                  var query = this.value.trim();
+                  if (query.length < 2) {
+                    addCitySuggestions.classList.remove('active');
+                    return;
                   }
-                })
-                .catch(function(err) {
-                  console.error('[JG MAP] Reverse geocoding error:', err);
-                  addressDisplay.innerHTML = '<strong>📍 Adres:</strong> Błąd pobierania adresu';
-                  addressInput.value = '';
+
+                  // Get current map bounds
+                  var bounds = map.getBounds();
+                  var boundsStr = bounds.getWest() + ',' + bounds.getNorth() + ',' + bounds.getEast() + ',' + bounds.getSouth();
+
+                  var formData = new FormData();
+                  formData.append('action', 'jg_autocomplete_cities');
+                  formData.append('query', query);
+                  formData.append('bounds', boundsStr);
+
+                  fetch(CFG.ajax, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin'
+                  })
+                    .then(function(r) { return r.json(); })
+                    .then(function(response) {
+                      addCitySuggestions.innerHTML = '';
+                      if (response.success && response.data && response.data.length > 0) {
+                        response.data.forEach(function(item) {
+                          var div = document.createElement('div');
+                          div.className = 'jg-autocomplete-item';
+                          div.textContent = item.display_name.split(',')[0];
+                          div.onclick = function() {
+                            addCityInput.value = this.textContent;
+                            addCitySuggestions.classList.remove('active');
+                            updateAddAddressAndGeocode();
+                          };
+                          addCitySuggestions.appendChild(div);
+                        });
+                        addCitySuggestions.classList.add('active');
+                      } else {
+                        addCitySuggestions.classList.remove('active');
+                      }
+                    })
+                    .catch(function(err) {
+                      console.error('[JG MAP] City autocomplete error:', err);
+                    });
+                });
+
+                addCityInput.addEventListener('change', updateAddAddressAndGeocode);
+                addCityInput.addEventListener('blur', function() {
+                  setTimeout(function() { addCitySuggestions.classList.remove('active'); }, 200);
                 });
               }
+
+              // Street autocomplete for add form
+              if (addStreetInput && addStreetSuggestions) {
+                addStreetInput.addEventListener('input', function() {
+                  var query = this.value.trim();
+                  var city = addCityInput.value.trim();
+                  if (query.length < 2 || !city) {
+                    addStreetSuggestions.classList.remove('active');
+                    return;
+                  }
+
+                  var formData = new FormData();
+                  formData.append('action', 'jg_autocomplete_streets');
+                  formData.append('query', query);
+                  formData.append('city', city);
+
+                  fetch(CFG.ajax, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin'
+                  })
+                    .then(function(r) { return r.json(); })
+                    .then(function(response) {
+                      addStreetSuggestions.innerHTML = '';
+                      if (response.success && response.data && response.data.length > 0) {
+                        var streets = {};
+                        response.data.forEach(function(item) {
+                          var addr = item.address || {};
+                          var street = addr.road || '';
+                          if (street) streets[street] = true;
+                        });
+
+                        Object.keys(streets).forEach(function(street) {
+                          var div = document.createElement('div');
+                          div.className = 'jg-autocomplete-item';
+                          div.textContent = street;
+                          div.onclick = function() {
+                            addStreetInput.value = this.textContent;
+                            addStreetSuggestions.classList.remove('active');
+                            updateAddAddressAndGeocode();
+                          };
+                          addStreetSuggestions.appendChild(div);
+                        });
+
+                        if (Object.keys(streets).length > 0) {
+                          addStreetSuggestions.classList.add('active');
+                        } else {
+                          addStreetSuggestions.classList.remove('active');
+                        }
+                      } else {
+                        addStreetSuggestions.classList.remove('active');
+                      }
+                    })
+                    .catch(function(err) {
+                      console.error('[JG MAP] Street autocomplete error:', err);
+                    });
+                });
+
+                addStreetInput.addEventListener('change', updateAddAddressAndGeocode);
+                addStreetInput.addEventListener('blur', function() {
+                  setTimeout(function() { addStreetSuggestions.classList.remove('active'); }, 200);
+                });
+              }
+
+              // Number input for add form
+              if (addNumberInput) {
+                addNumberInput.addEventListener('change', updateAddAddressAndGeocode);
+              }
+
+              // Initialize address with "Jelenia Góra"
+              updateAddAddressAndGeocode();
 
           form.onsubmit = function(e) {
             e.preventDefault();
@@ -2730,19 +2887,24 @@
           }
         }
 
-        // Forward geocoding
+        // Forward geocoding - use backend proxy
         function forwardGeocode(address) {
           editGeocodeMsg.textContent = 'Szukanie współrzędnych...';
           editGeocodeMsg.style.color = '#666';
 
-          var apiUrl = 'https://nominatim.openstreetmap.org/search?format=json&q=' +
-            encodeURIComponent(address) + '&countrycodes=pl&limit=1';
+          var formData = new FormData();
+          formData.append('action', 'jg_forward_geocode');
+          formData.append('address', address);
 
-          fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
+          fetch(CFG.ajax, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+          })
             .then(function(r) { return r.json(); })
-            .then(function(data) {
-              if (data && data.length > 0) {
-                var result = data[0];
+            .then(function(response) {
+              if (response.success && response.data && response.data.length > 0) {
+                var result = response.data[0];
                 var lat = parseFloat(result.lat);
                 var lng = parseFloat(result.lon);
 
@@ -2768,7 +2930,7 @@
             });
         }
 
-        // City autocomplete
+        // City autocomplete - use backend proxy with dynamic map bounds
         if (editCityInput && citySuggestions) {
           editCityInput.addEventListener('input', function() {
             var query = this.value.trim();
@@ -2777,16 +2939,25 @@
               return;
             }
 
-            // Search cities in bounds
-            var apiUrl = 'https://nominatim.openstreetmap.org/search?format=json&q=' +
-              encodeURIComponent(query) + '&viewbox=15.62,50.96,15.82,50.82&bounded=1&featuretype=city&limit=5';
+            // Get current map bounds
+            var bounds = map.getBounds();
+            var boundsStr = bounds.getWest() + ',' + bounds.getNorth() + ',' + bounds.getEast() + ',' + bounds.getSouth();
 
-            fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
+            var formData = new FormData();
+            formData.append('action', 'jg_autocomplete_cities');
+            formData.append('query', query);
+            formData.append('bounds', boundsStr);
+
+            fetch(CFG.ajax, {
+              method: 'POST',
+              body: formData,
+              credentials: 'same-origin'
+            })
               .then(function(r) { return r.json(); })
-              .then(function(data) {
+              .then(function(response) {
                 citySuggestions.innerHTML = '';
-                if (data && data.length > 0) {
-                  data.forEach(function(item) {
+                if (response.success && response.data && response.data.length > 0) {
+                  response.data.forEach(function(item) {
                     var div = document.createElement('div');
                     div.className = 'jg-autocomplete-item';
                     div.textContent = item.display_name.split(',')[0];
@@ -2813,7 +2984,7 @@
           });
         }
 
-        // Street autocomplete
+        // Street autocomplete - use backend proxy
         if (editStreetInput && streetSuggestions) {
           editStreetInput.addEventListener('input', function() {
             var query = this.value.trim();
@@ -2823,16 +2994,22 @@
               return;
             }
 
-            var apiUrl = 'https://nominatim.openstreetmap.org/search?format=json&street=' +
-              encodeURIComponent(query) + '&city=' + encodeURIComponent(city) + '&countrycodes=pl&limit=5';
+            var formData = new FormData();
+            formData.append('action', 'jg_autocomplete_streets');
+            formData.append('query', query);
+            formData.append('city', city);
 
-            fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
+            fetch(CFG.ajax, {
+              method: 'POST',
+              body: formData,
+              credentials: 'same-origin'
+            })
               .then(function(r) { return r.json(); })
-              .then(function(data) {
+              .then(function(response) {
                 streetSuggestions.innerHTML = '';
-                if (data && data.length > 0) {
+                if (response.success && response.data && response.data.length > 0) {
                   var streets = {};
-                  data.forEach(function(item) {
+                  response.data.forEach(function(item) {
                     var addr = item.address || {};
                     var street = addr.road || '';
                     if (street) streets[street] = true;
