@@ -44,28 +44,39 @@ class JG_Map_Activity_Log {
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'");
 
         if ($table_exists != $table) {
-            $charset_collate = $wpdb->get_charset_collate();
-
-            $sql = "CREATE TABLE IF NOT EXISTS $table (
-                id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-                user_id bigint(20) UNSIGNED NOT NULL,
-                action varchar(100) NOT NULL,
-                object_type varchar(50) NOT NULL,
-                object_id bigint(20) UNSIGNED DEFAULT NULL,
-                description text,
-                ip_address varchar(100),
-                user_agent text,
-                created_at datetime DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                KEY user_id (user_id),
-                KEY action (action),
-                KEY object_type (object_type),
-                KEY created_at (created_at)
-            ) $charset_collate;";
-
-            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-            dbDelta($sql);
+            $this->create_table();
         }
+    }
+
+    /**
+     * Create activity log table
+     */
+    public static function create_table() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'jg_map_activity_log';
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE IF NOT EXISTS $table (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) UNSIGNED NOT NULL,
+            action varchar(100) NOT NULL,
+            object_type varchar(50) NOT NULL,
+            object_id bigint(20) UNSIGNED DEFAULT NULL,
+            description text,
+            ip_address varchar(100),
+            user_agent text,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY user_id (user_id),
+            KEY action (action),
+            KEY object_type (object_type),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+
+        error_log('[JG MAP] Activity log table created: ' . $table);
     }
 
     /**
