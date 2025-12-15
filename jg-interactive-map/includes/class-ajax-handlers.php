@@ -34,6 +34,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_points', array($this, 'get_points'));
         add_action('wp_ajax_jg_check_updates', array($this, 'check_updates'));
         add_action('wp_ajax_nopriv_jg_check_updates', array($this, 'check_updates'));
+        add_action('wp_ajax_jg_reverse_geocode', array($this, 'reverse_geocode'));
+        add_action('wp_ajax_nopriv_jg_reverse_geocode', array($this, 'reverse_geocode'));
         add_action('wp_ajax_nopriv_jg_map_login', array($this, 'login_user'));
         add_action('wp_ajax_nopriv_jg_map_register', array($this, 'register_user'));
         add_action('wp_ajax_nopriv_jg_map_forgot_password', array($this, 'forgot_password'));
@@ -3403,5 +3405,70 @@ class JG_Map_Ajax_Handlers {
             'deletions' => intval($pending_deletions),
             'total' => intval($pending_points) + intval($pending_edits) + intval($pending_reports) + intval($pending_deletions)
         ));
+    }
+
+    /**
+     * Reverse geocode proxy - bypass CSP restrictions
+     * Makes server-side request to Nominatim API
+     */
+    public function reverse_geocode() {
+        // Get lat/lng from request
+        $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : null;
+        $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : null;
+
+        if (!$lat || !$lng) {
+            wp_send_json_error(array('message' => 'Brak współrzędnych'));
+            return;
+        }
+
+        // Validate coordinates
+        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe współrzędne'));
+            return;
+        }
+
+        // Build Nominatim API URL
+        $url = sprintf(
+            'https://nominatim.openstreetmap.org/reverse?format=json&lat=%s&lon=%s&addressdetails=1',
+            $lat,
+            $lng
+        );
+
+        // Make server-side request (not subject to browser CSP)
+        $response = wp_remote_get($url, array(
+            'timeout' => 10,
+            'headers' => array(
+                'User-Agent' => 'JG-Map-Plugin/1.0 (WordPress)',
+            ),
+        ));
+
+        // Check for errors
+        if (is_wp_error($response)) {
+            wp_send_json_error(array(
+                'message' => 'Błąd połączenia z serwerem geokodowania',
+                'error' => $response->get_error_message()
+            ));
+            return;
+        }
+
+        $status_code = wp_remote_retrieve_response_code($response);
+        if ($status_code !== 200) {
+            wp_send_json_error(array(
+                'message' => 'Błąd serwera geokodowania',
+                'status' => $status_code
+            ));
+            return;
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if (!$data) {
+            wp_send_json_error(array('message' => 'Błąd przetwarzania odpowiedzi'));
+            return;
+        }
+
+        // Return the data
+        wp_send_json_success($data);
     }
 }
