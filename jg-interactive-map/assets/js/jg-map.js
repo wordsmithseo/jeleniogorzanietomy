@@ -1123,11 +1123,7 @@
               form.reset();
 
               // Immediate refresh for better UX
-              refreshData(true).then(function() {
-                // Refresh notifications count immediately
-                if (typeof window.jgRefreshNotifications === 'function') {
-                  window.jgRefreshNotifications();
-                }
+              refreshAll().then(function() {
                 msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
                 setTimeout(function() {
                   close(modalAdd);
@@ -1644,6 +1640,19 @@
         }
 
         return fetchAndProcessPoints();
+      }
+
+      // Export refreshData as global function for use by notification system
+      window.refreshData = refreshData;
+
+      // Helper function to refresh both map and notifications
+      function refreshAll() {
+        // Refresh notifications if function exists (for admins/moderators)
+        if (typeof window.jgRefreshNotifications === 'function') {
+          window.jgRefreshNotifications();
+        }
+        // Always refresh map data
+        return refreshData(true);
       }
 
       function fetchAndProcessPoints(version) {
@@ -2424,13 +2433,9 @@
             })
             .then(function(result) {
               close(modalReportsList);
-              return refreshData(true);
+              return refreshAll();
             })
             .then(function() {
-              // Refresh notifications count immediately
-              if (typeof window.jgRefreshNotifications === 'function') {
-                window.jgRefreshNotifications();
-              }
             })
             .catch(function(err) {
               handleMsg.textContent = err.message || 'Błąd';
@@ -2457,11 +2462,7 @@
             .then(function(result) {
               close(modalReportsList);
               close(modalView);
-              // Refresh notifications count immediately
-              if (typeof window.jgRefreshNotifications === 'function') {
-                window.jgRefreshNotifications();
-              }
-              return refreshData(true);
+              return refreshAll();
             })
             .then(function() {
             })
@@ -2907,11 +2908,7 @@
               if (fromReports) {
                 close(modalReportsList);
               }
-              refreshData(true).then(function() {
-                // Refresh notifications count immediately
-                if (typeof window.jgRefreshNotifications === 'function') {
-                  window.jgRefreshNotifications();
-                }
+              refreshAll().then(function() {
                 if (fromReports) {
                   alert('Miejsce edytowane i zgłoszenia zamknięte!');
                 } else {
@@ -2965,12 +2962,7 @@
               setTimeout(function() {
                 close(modalEdit);
                 close(modalView);
-                refreshData(true).then(function() {
-                  // Refresh notifications count immediately
-                  if (typeof window.jgRefreshNotifications === 'function') {
-                    window.jgRefreshNotifications();
-                  }
-                });
+                refreshAll();
               }, 1500);
             })
             .catch(function(err) {
@@ -3133,13 +3125,9 @@
             .then(function(result) {
               msg.textContent = 'Zapisano! Odświeżanie...';
               msg.style.color = '#15803d';
-              return refreshData(true);
+              return refreshAll();
             })
             .then(function() {
-              // Refresh notifications count immediately
-              if (typeof window.jgRefreshNotifications === 'function') {
-                window.jgRefreshNotifications();
-              }
               close(modalStatus);
               close(modalView);
               // Find and reopen the point to show updated state
@@ -3222,13 +3210,9 @@
             .then(function(result) {
               msg.textContent = 'Zapisano! Odświeżanie...';
               msg.style.color = '#15803d';
-              return refreshData(true);
+              return refreshAll();
             })
             .then(function() {
-              // Refresh notifications count immediately
-              if (typeof window.jgRefreshNotifications === 'function') {
-                window.jgRefreshNotifications();
-              }
               close(modalStatus);
               close(modalView);
               var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
@@ -3511,11 +3495,7 @@
               api('jg_delete_image', { point_id: pointId, image_index: imageIndex })
                 .then(function(result) {
                   close(modalView);
-                  refreshData(true).then(function() {
-                    // Refresh notifications count immediately
-                    if (typeof window.jgRefreshNotifications === 'function') {
-                      window.jgRefreshNotifications();
-                    }
+                  refreshAll().then(function() {
                     alert('Zdjęcie zostało usunięte');
                   });
                 })
@@ -3704,11 +3684,7 @@
               adminApprovePoint({ post_id: p.id })
                 .then(function() {
                   close(modalView);
-                  // Refresh notifications count immediately
-                  if (typeof window.jgRefreshNotifications === 'function') {
-                    window.jgRefreshNotifications();
-                  }
-                  return refreshData(true);
+                  return refreshAll();
                 })
                 .then(function() {
                   alert('Zaakceptowano i opublikowano!');
@@ -3732,11 +3708,7 @@
               adminRejectPoint({ post_id: p.id, reason: reason })
                 .then(function() {
                   close(modalView);
-                  // Refresh notifications count immediately
-                  if (typeof window.jgRefreshNotifications === 'function') {
-                    window.jgRefreshNotifications();
-                  }
-                  return refreshData(true);
+                  return refreshAll();
                 })
                 .then(function() {
                   alert('Odrzucono i przeniesiono do kosza.');
@@ -3764,13 +3736,9 @@
 
               adminToggleAuthor({ post_id: p.id })
                 .then(function(result) {
-                  return refreshData(true);
+                  return refreshAll();
                 })
                 .then(function() {
-                  // Refresh notifications count immediately
-                  if (typeof window.jgRefreshNotifications === 'function') {
-                    window.jgRefreshNotifications();
-                  }
                   close(modalView);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
@@ -3804,13 +3772,9 @@
 
               adminUpdateNote({ post_id: p.id, note: newNote })
                 .then(function(result) {
-                  return refreshData(true);
+                  return refreshAll();
                 })
                 .then(function() {
-                  // Refresh notifications count immediately
-                  if (typeof window.jgRefreshNotifications === 'function') {
-                    window.jgRefreshNotifications();
-                  }
                   close(modalView);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
@@ -3836,13 +3800,9 @@
 
               api('jg_admin_approve_edit', { history_id: p.edit_info.history_id })
                 .then(function(result) {
-                  return refreshData(true);
+                  return refreshAll();
                 })
                 .then(function() {
-                  // Refresh notifications count immediately
-                  if (typeof window.jgRefreshNotifications === 'function') {
-                    window.jgRefreshNotifications();
-                  }
                   close(modalView);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
@@ -3869,13 +3829,9 @@
 
               api('jg_admin_reject_edit', { history_id: p.edit_info.history_id, reason: reason })
                 .then(function(result) {
-                  return refreshData(true);
+                  return refreshAll();
                 })
                 .then(function() {
-                  // Refresh notifications count immediately
-                  if (typeof window.jgRefreshNotifications === 'function') {
-                    window.jgRefreshNotifications();
-                  }
                   close(modalView);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
@@ -3905,13 +3861,9 @@
 
               api('jg_admin_approve_deletion', { history_id: p.deletion_info.history_id })
                 .then(function(result) {
-                  return refreshData(true);
+                  return refreshAll();
                 })
                 .then(function() {
-                  // Refresh notifications count immediately
-                  if (typeof window.jgRefreshNotifications === 'function') {
-                    window.jgRefreshNotifications();
-                  }
                   close(modalView);
                   alert('Miejsce zostało usunięte');
                 })
@@ -3933,13 +3885,9 @@
 
               api('jg_admin_reject_deletion', { history_id: p.deletion_info.history_id, reason: reason })
                 .then(function(result) {
-                  return refreshData(true);
+                  return refreshAll();
                 })
                 .then(function() {
-                  // Refresh notifications count immediately
-                  if (typeof window.jgRefreshNotifications === 'function') {
-                    window.jgRefreshNotifications();
-                  }
                   close(modalView);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
@@ -3966,13 +3914,9 @@
               adminDeletePoint({ post_id: p.id })
                 .then(function() {
                   close(modalView);
-                  return refreshData(true);
+                  return refreshAll();
                 })
                 .then(function() {
-                  // Refresh notifications count immediately
-                  if (typeof window.jgRefreshNotifications === 'function') {
-                    window.jgRefreshNotifications();
-                  }
                   alert('Miejsce usunięte trwale!');
                 })
                 .catch(function(err) {

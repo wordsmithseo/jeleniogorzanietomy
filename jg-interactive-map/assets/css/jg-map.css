@@ -76,8 +76,14 @@
   gap: 16px;
 }
 
-#jg-top-bar-notifications:empty {
+/* Hide when empty - use both :empty and manual class for reliability */
+#jg-top-bar-notifications:empty,
+#jg-top-bar-notifications.jg-notifications-empty {
   display: none;
+  width: 0;
+  margin: 0;
+  padding: 0;
+  gap: 0;
 }
 
 /* Notification buttons with badges */

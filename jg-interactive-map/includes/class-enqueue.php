@@ -191,6 +191,13 @@ class JG_Map_Enqueue {
                 });
 
                 container.html(html);
+
+                // Add/remove empty class for proper spacing
+                if (notifications.length === 0) {
+                    container.addClass('jg-notifications-empty');
+                } else {
+                    container.removeClass('jg-notifications-empty');
+                }
             }
 
             // Heartbeat for periodic updates
@@ -507,7 +514,7 @@ class JG_Map_Enqueue {
                     <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
 
                     <!-- Notifications container for real-time updates -->
-                    <div id="jg-top-bar-notifications">
+                    <div id="jg-top-bar-notifications"<?php echo empty($mod_notifications) ? ' class="jg-notifications-empty"' : ''; ?>>
                         <?php foreach ($mod_notifications as $notif) : ?>
                             <a href="<?php echo esc_url($notif['url']); ?>" class="jg-top-bar-btn jg-top-bar-notif" data-type="<?php echo esc_attr(strtolower($notif['label'])); ?>">
                                 <span><?php echo $notif['icon']; ?> <?php echo esc_html($notif['label']); ?></span>
