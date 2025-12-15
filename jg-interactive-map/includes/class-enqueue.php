@@ -189,6 +189,66 @@ class JG_Map_Enqueue {
                 )
             )
         );
+
+        // Add real-time updates for admins on map page
+        if (current_user_can('manage_options') || current_user_can('jg_map_moderate')) {
+            wp_enqueue_script('heartbeat');
+
+            $realtime_script = "
+            (function($) {
+                var lastCheckTime = Date.now();
+
+                console.log('[JG MAP REALTIME] Real-time updates enabled');
+
+                // Listen for reload request from Heartbeat
+                $(document).on('jg-map-reload-request', function() {
+                    console.log('[JG MAP REALTIME] Reload requested, calling refreshData()');
+                    // Call the global refreshData function from jg-map.js
+                    if (typeof window.refreshData === 'function') {
+                        window.refreshData(true).catch(function(err) {
+                            console.error('[JG MAP REALTIME] Refresh failed:', err);
+                        });
+                    } else {
+                        console.warn('[JG MAP REALTIME] refreshData function not found, will retry');
+                        // If not loaded yet, try again in a moment
+                        setTimeout(function() {
+                            if (typeof window.refreshData === 'function') {
+                                window.refreshData(true);
+                            }
+                        }, 1000);
+                    }
+                });
+
+                // Set Heartbeat interval to 15 seconds
+                if (typeof wp !== 'undefined' && wp.heartbeat) {
+                    wp.heartbeat.interval(15);
+                }
+
+                // Send request for map updates
+                $(document).on('heartbeat-send', function(e, data) {
+                    data.jg_map_check_updates = true;
+                    data.jg_map_last_check = lastCheckTime;
+                });
+
+                // Process heartbeat response
+                $(document).on('heartbeat-tick', function(e, data) {
+                    if (!data.jg_map_updates) return;
+
+                    var updates = data.jg_map_updates;
+                    console.log('[JG MAP] Heartbeat map update:', updates);
+
+                    // If there are new points, trigger reload
+                    if (updates.has_new_points) {
+                        console.log('[JG MAP] ' + updates.new_count + ' new points detected, triggering reload...');
+                        $(document).trigger('jg-map-reload-request');
+                        lastCheckTime = Date.now();
+                    }
+                });
+            })(jQuery);
+            ";
+
+            wp_add_inline_script('heartbeat', $realtime_script);
+        }
     }
 
     /**

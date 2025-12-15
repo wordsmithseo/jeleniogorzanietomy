@@ -2540,6 +2540,28 @@ class JG_Map_Admin {
             $response['jg_map_notifications'] = $this->get_pending_counts();
         }
 
+        // Check for map updates (new points)
+        if (!empty($data['jg_map_check_updates'])) {
+            global $wpdb;
+            $points_table = JG_Map_Database::get_points_table();
+            $last_check = !empty($data['jg_map_last_check']) ? intval($data['jg_map_last_check']) : 0;
+            $last_check_date = date('Y-m-d H:i:s', $last_check / 1000); // Convert JS timestamp to MySQL datetime
+
+            // Count new points since last check
+            $new_points = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $points_table
+                 WHERE created_at > %s
+                 AND status = 'publish'",
+                $last_check_date
+            ));
+
+            $response['jg_map_updates'] = array(
+                'has_new_points' => intval($new_points) > 0,
+                'new_count' => intval($new_points),
+                'last_check' => $last_check_date
+            );
+        }
+
         return $response;
     }
 
