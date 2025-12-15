@@ -66,9 +66,27 @@ class JG_Map_Enqueue {
             JG_MAP_VERSION
         );
 
-        // Load Heartbeat for real-time updates (admins/moderators only)
+        // Load Heartbeat and notifications script for admins/moderators only
         if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('jg_map_moderate'))) {
             wp_enqueue_script('heartbeat');
+
+            // Load notifications script with jQuery dependency - this loads BEFORE jg-map.js
+            wp_enqueue_script(
+                'jg-map-notifications',
+                JG_MAP_PLUGIN_URL . 'assets/js/jg-notifications.js',
+                array('jquery', 'heartbeat'),
+                JG_MAP_VERSION,
+                false // Load in header to ensure it's available before jg-map.js
+            );
+
+            // Localize script with config data
+            wp_localize_script('jg-map-notifications', 'jgNotificationsConfig', array(
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('jg_map_nonce'),
+                'moderationUrl' => admin_url('admin.php?page=jg-map-moderation'),
+                'reportsUrl' => admin_url('admin.php?page=jg-map-reports'),
+                'deletionsUrl' => admin_url('admin.php?page=jg-map-deletions')
+            ));
         }
 
         // Inline script for clock - no external JS needed for basic functionality
@@ -103,133 +121,6 @@ class JG_Map_Enqueue {
                 setInterval(updateDateTime, 1000);
             }
         })();
-
-        // Real-time notifications for custom top bar (admins/moderators only)
-        <?php if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('jg_map_moderate'))): ?>
-        (function($) {
-            console.log('[JG MAP TOPBAR] Real-time notifications initialized');
-
-            // Global function to refresh notifications immediately
-            window.jgRefreshNotifications = function() {
-                console.log('[JG MAP TOPBAR] Manual refresh requested');
-                return $.ajax({
-                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                    type: 'POST',
-                    data: {
-                        action: 'jg_get_notification_counts',
-                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            console.log('[JG MAP TOPBAR] Notification data received:', response.data);
-                            updateNotifications(response.data);
-                        } else {
-                            console.error('[JG MAP TOPBAR] Invalid response:', response);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('[JG MAP TOPBAR] Failed to refresh notifications:', error);
-                    }
-                });
-            };
-
-            function updateNotifications(counts) {
-                console.log('[JG MAP TOPBAR] Updating notifications:', counts);
-
-                var container = $('#jg-top-bar-notifications');
-                if (!container.length) {
-                    console.warn('[JG MAP TOPBAR] Container not found');
-                    return;
-                }
-
-                var notifications = [];
-
-                if (counts.points > 0) {
-                    notifications.push({
-                        icon: '➕',
-                        label: 'Nowe miejsca',
-                        type: 'nowe miejsca',
-                        count: counts.points,
-                        url: '<?php echo admin_url('admin.php?page=jg-map-moderation'); ?>'
-                    });
-                }
-
-                if (counts.edits > 0) {
-                    notifications.push({
-                        icon: '📝',
-                        label: 'Edycje',
-                        type: 'edycje',
-                        count: counts.edits,
-                        url: '<?php echo admin_url('admin.php?page=jg-map-moderation'); ?>'
-                    });
-                }
-
-                if (counts.reports > 0) {
-                    notifications.push({
-                        icon: '🚨',
-                        label: 'Zgłoszenia',
-                        type: 'zgłoszenia',
-                        count: counts.reports,
-                        url: '<?php echo admin_url('admin.php?page=jg-map-reports'); ?>'
-                    });
-                }
-
-                if (counts.deletions > 0) {
-                    notifications.push({
-                        icon: '🗑️',
-                        label: 'Usunięcia',
-                        type: 'usunięcia',
-                        count: counts.deletions,
-                        url: '<?php echo admin_url('admin.php?page=jg-map-deletions'); ?>'
-                    });
-                }
-
-                // Rebuild notifications HTML
-                var html = '';
-                notifications.forEach(function(notif) {
-                    html += '<a href=\"' + notif.url + '\" class=\"jg-top-bar-btn jg-top-bar-notif\" data-type=\"' + notif.type + '\">';
-                    html += '<span>' + notif.icon + ' ' + notif.label + '</span>';
-                    html += '<span class=\"jg-notif-badge\">' + notif.count + '</span>';
-                    html += '</a>';
-                });
-
-                container.html(html);
-
-                // Add/remove empty class for proper spacing
-                if (notifications.length === 0) {
-                    container.addClass('jg-notifications-empty');
-                } else {
-                    container.removeClass('jg-notifications-empty');
-                }
-            }
-
-            // Heartbeat for periodic updates
-            if (typeof wp !== 'undefined' && wp.heartbeat) {
-                wp.heartbeat.interval(15);
-
-                // Send request for notification updates
-                $(document).on('heartbeat-send', function(e, data) {
-                    data.jg_map_check_notifications = true;
-                });
-
-                // Process heartbeat response
-                $(document).on('heartbeat-tick', function(e, data) {
-                    if (!data.jg_map_notifications) return;
-                    updateNotifications(data.jg_map_notifications);
-                });
-            }
-
-            // Initial load - refresh after 1 second
-            setTimeout(function() {
-                window.jgRefreshNotifications();
-            }, 1000);
-
-            // Refresh every 10 seconds as backup
-            setInterval(function() {
-                window.jgRefreshNotifications();
-            }, 10000);
-        })(jQuery);
-        <?php endif; ?>
         ";
         wp_add_inline_script('jquery', $inline_script);
     }
@@ -288,10 +179,17 @@ class JG_Map_Enqueue {
         );
 
         // Plugin JS
+        $dependencies = array('jquery', 'leaflet', 'leaflet-markercluster');
+
+        // Add notifications script as dependency if user is admin/moderator
+        if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('jg_map_moderate'))) {
+            $dependencies[] = 'jg-map-notifications';
+        }
+
         wp_enqueue_script(
             'jg-map-script',
             JG_MAP_PLUGIN_URL . 'assets/js/jg-map.js',
-            array('jquery', 'leaflet', 'leaflet-markercluster'),
+            $dependencies,
             JG_MAP_VERSION,
             true
         );
