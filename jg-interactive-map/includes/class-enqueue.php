@@ -44,6 +44,9 @@ class JG_Map_Enqueue {
         // Handle email activation
         add_action('template_redirect', array($this, 'handle_email_activation'));
         add_action('template_redirect', array($this, 'handle_password_reset'));
+
+        // Modify CSP to allow Nominatim reverse geocoding
+        add_filter('wp_headers', array($this, 'modify_csp_headers'), 999);
     }
 
     /**
@@ -757,5 +760,33 @@ class JG_Map_Enqueue {
         </body>
         </html>
         <?php
+    }
+
+    /**
+     * Modify CSP headers to allow Nominatim reverse geocoding
+     */
+    public function modify_csp_headers($headers) {
+        // Check if CSP header is set
+        if (isset($headers['Content-Security-Policy'])) {
+            // Add nominatim.openstreetmap.org to connect-src directive
+            $csp = $headers['Content-Security-Policy'];
+
+            // Check if connect-src exists
+            if (strpos($csp, 'connect-src') !== false) {
+                // Add nominatim to existing connect-src
+                $csp = preg_replace(
+                    '/(connect-src[^;]*)(;|$)/',
+                    '$1 https://nominatim.openstreetmap.org$2',
+                    $csp
+                );
+            } else {
+                // Add new connect-src directive
+                $csp .= '; connect-src https://nominatim.openstreetmap.org';
+            }
+
+            $headers['Content-Security-Policy'] = $csp;
+        }
+
+        return $headers;
     }
 }
