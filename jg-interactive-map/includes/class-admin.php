@@ -32,6 +32,43 @@ class JG_Map_Admin {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_bar_menu', array($this, 'add_admin_bar_notifications'), 100);
         add_filter('admin_title', array($this, 'modify_admin_title'), 999, 2);
+
+        // Real-time notifications via Heartbeat API
+        add_filter('heartbeat_received', array($this, 'heartbeat_received'), 10, 2);
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_bar_script'));
+    }
+
+    /**
+     * Get map page URL
+     * Finds the page/post that contains the [jg_map] shortcode
+     */
+    private function get_map_page_url() {
+        // Check transient cache first
+        $cached_url = get_transient('jg_map_page_url');
+        if ($cached_url) {
+            return $cached_url;
+        }
+
+        global $wpdb;
+
+        // Search for page or post with [jg_map] shortcode
+        $page = $wpdb->get_var(
+            "SELECT ID FROM {$wpdb->posts}
+             WHERE post_content LIKE '%[jg_map%'
+             AND post_status = 'publish'
+             AND post_type IN ('page', 'post')
+             LIMIT 1"
+        );
+
+        if ($page) {
+            $url = get_permalink($page);
+            // Cache for 1 hour
+            set_transient('jg_map_page_url', $url, HOUR_IN_SECONDS);
+            return $url;
+        }
+
+        // Fallback to home URL
+        return home_url('/');
     }
 
     /**
@@ -76,6 +113,11 @@ class JG_Map_Admin {
             1,
             'publish'
         ));
+
+        // Debug logging (temporary - can be removed after fixing)
+        if (current_user_can('manage_options')) {
+            error_log('[JG MAP ADMIN BAR] Pending counts: points=' . $pending_points . ', edits=' . $pending_edits . ', reports=' . $pending_reports . ', deletions=' . $pending_deletions);
+        }
 
         $total_pending = intval($pending_points) + intval($pending_edits) + intval($pending_reports) + intval($pending_deletions);
 
@@ -927,7 +969,7 @@ class JG_Map_Admin {
                             <td><span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px"><?php echo $report['report_count']; ?></span></td>
                             <td><?php echo human_time_diff(strtotime(get_date_from_gmt($report['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
-                                <a href="<?php echo get_site_url(); ?>?jg_view_reports=<?php echo $report['point_id']; ?>" class="button">Zobacz szczegóły</a>
+                                <a href="<?php echo esc_url(add_query_arg('jg_view_reports', $report['point_id'], $this->get_map_page_url())); ?>" class="button">Zobacz szczegóły</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -2436,5 +2478,180 @@ class JG_Map_Admin {
             <?php endif; ?>
         </div>
         <?php
+    }
+
+    /**
+     * Get pending counts for real-time updates
+     */
+    private function get_pending_counts() {
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+        $reports_table = JG_Map_Database::get_reports_table();
+        $history_table = JG_Map_Database::get_history_table();
+
+        // Ensure history table exists
+        JG_Map_Database::ensure_history_table();
+
+        // Disable caching
+        $wpdb->query('SET SESSION query_cache_type = OFF');
+
+        $pending_points = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $points_table WHERE status = %s",
+            'pending'
+        ));
+        $pending_edits = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $history_table WHERE status = %s",
+            'pending'
+        ));
+        $pending_reports = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT r.point_id)
+             FROM $reports_table r
+             INNER JOIN $points_table p ON r.point_id = p.id
+             WHERE r.status = %s AND p.status = %s",
+            'pending',
+            'publish'
+        ));
+        $pending_deletions = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = %d AND status = %s",
+            1,
+            'publish'
+        ));
+
+        return array(
+            'points' => intval($pending_points),
+            'edits' => intval($pending_edits),
+            'reports' => intval($pending_reports),
+            'deletions' => intval($pending_deletions),
+            'total' => intval($pending_points) + intval($pending_edits) + intval($pending_reports) + intval($pending_deletions)
+        );
+    }
+
+    /**
+     * Heartbeat API handler for real-time notifications
+     */
+    public function heartbeat_received($response, $data) {
+        // Only for admins and moderators
+        if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
+            return $response;
+        }
+
+        // Check if our heartbeat request is present
+        if (!empty($data['jg_map_check_notifications'])) {
+            $response['jg_map_notifications'] = $this->get_pending_counts();
+        }
+
+        // Check for map updates (new points)
+        if (!empty($data['jg_map_check_updates'])) {
+            global $wpdb;
+            $points_table = JG_Map_Database::get_points_table();
+            $last_check = !empty($data['jg_map_last_check']) ? intval($data['jg_map_last_check']) : 0;
+            $last_check_date = date('Y-m-d H:i:s', $last_check / 1000); // Convert JS timestamp to MySQL datetime
+
+            // Count new points since last check
+            $new_points = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $points_table
+                 WHERE created_at > %s
+                 AND status = 'publish'",
+                $last_check_date
+            ));
+
+            $response['jg_map_updates'] = array(
+                'has_new_points' => intval($new_points) > 0,
+                'new_count' => intval($new_points),
+                'last_check' => $last_check_date
+            );
+        }
+
+        return $response;
+    }
+
+    /**
+     * Enqueue admin bar script for real-time updates
+     */
+    public function enqueue_admin_bar_script() {
+        // Only for admins and moderators
+        if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
+            return;
+        }
+
+        // Enqueue WordPress Heartbeat API
+        wp_enqueue_script('heartbeat');
+
+        // Add inline script for real-time notifications
+        $script = "
+        (function($) {
+            var lastTotal = 0;
+
+            // Set Heartbeat interval to 15 seconds (faster updates)
+            if (typeof wp !== 'undefined' && wp.heartbeat) {
+                wp.heartbeat.interval(15);
+            }
+
+            // Send data with each heartbeat
+            $(document).on('heartbeat-send', function(e, data) {
+                data.jg_map_check_notifications = true;
+            });
+
+            // Process heartbeat response
+            $(document).on('heartbeat-tick', function(e, data) {
+                if (!data.jg_map_notifications) return;
+
+                var counts = data.jg_map_notifications;
+                var total = counts.total;
+
+                console.log('[JG MAP] Heartbeat notification update:', counts);
+
+                // Update admin bar
+                var adminBarItem = $('#wp-admin-bar-jg-map-notifications');
+
+                if (total === 0) {
+                    // Remove notification if no pending items
+                    if (adminBarItem.length) {
+                        adminBarItem.fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    }
+                } else {
+                    if (adminBarItem.length) {
+                        // Update existing notification
+                        var badge = adminBarItem.find('> a > span').first();
+                        if (badge.length) {
+                            badge.text(total);
+                        }
+
+                        // Update child items
+                        $('#wp-admin-bar-jg-map-pending-points').toggle(counts.points > 0);
+                        $('#wp-admin-bar-jg-map-pending-points a').html('📍 ' + counts.points + ' nowych miejsc');
+
+                        $('#wp-admin-bar-jg-map-pending-edits').toggle(counts.edits > 0);
+                        $('#wp-admin-bar-jg-map-pending-edits a').html('✏️ ' + counts.edits + ' edycji do zatwierdzenia');
+
+                        $('#wp-admin-bar-jg-map-pending-reports').toggle(counts.reports > 0);
+                        $('#wp-admin-bar-jg-map-pending-reports a').html('🚨 ' + counts.reports + ' zgłoszeń');
+
+                        $('#wp-admin-bar-jg-map-pending-deletions').toggle(counts.deletions > 0);
+                        $('#wp-admin-bar-jg-map-pending-deletions a').html('🗑️ ' + counts.deletions + ' żądań usunięcia');
+                    } else {
+                        // Reload page to show notification
+                        if (lastTotal === 0) {
+                            location.reload();
+                        }
+                    }
+                }
+
+                // Show toast notification if count increased
+                if (total > lastTotal && lastTotal > 0) {
+                    if (typeof adminNotice !== 'undefined') {
+                        var increase = total - lastTotal;
+                        adminNotice('info', 'Nowe zadania do moderacji: +' + increase);
+                    }
+                }
+
+                lastTotal = total;
+            });
+        })(jQuery);
+        ";
+
+        wp_add_inline_script('heartbeat', $script);
     }
 }
