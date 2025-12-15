@@ -1647,12 +1647,23 @@
 
       // Helper function to refresh both map and notifications
       function refreshAll() {
-        // Refresh notifications if function exists (for admins/moderators)
-        if (typeof window.jgRefreshNotifications === 'function') {
-          window.jgRefreshNotifications();
-        }
-        // Always refresh map data
-        return refreshData(true);
+        console.log('[JG MAP] refreshAll() called - refreshing map and notifications');
+
+        // First refresh map data to get latest points
+        return refreshData(true).then(function() {
+          console.log('[JG MAP] Map data refreshed, now refreshing notifications');
+
+          // Then refresh notifications if function exists (for admins/moderators)
+          if (typeof window.jgRefreshNotifications === 'function') {
+            return window.jgRefreshNotifications().then(function() {
+              console.log('[JG MAP] Notifications refreshed successfully');
+            }).catch(function(err) {
+              console.error('[JG MAP] Failed to refresh notifications:', err);
+            });
+          }
+
+          return Promise.resolve();
+        });
       }
 
       function fetchAndProcessPoints(version) {

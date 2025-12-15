@@ -112,7 +112,7 @@ class JG_Map_Enqueue {
             // Global function to refresh notifications immediately
             window.jgRefreshNotifications = function() {
                 console.log('[JG MAP TOPBAR] Manual refresh requested');
-                $.ajax({
+                return $.ajax({
                     url: '<?php echo admin_url('admin-ajax.php'); ?>',
                     type: 'POST',
                     data: {
@@ -121,11 +121,14 @@ class JG_Map_Enqueue {
                     },
                     success: function(response) {
                         if (response.success) {
+                            console.log('[JG MAP TOPBAR] Notification data received:', response.data);
                             updateNotifications(response.data);
+                        } else {
+                            console.error('[JG MAP TOPBAR] Invalid response:', response);
                         }
                     },
-                    error: function() {
-                        console.error('[JG MAP TOPBAR] Failed to refresh notifications');
+                    error: function(xhr, status, error) {
+                        console.error('[JG MAP TOPBAR] Failed to refresh notifications:', error);
                     }
                 });
             };
