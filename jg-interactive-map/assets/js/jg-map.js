@@ -1255,8 +1255,51 @@
                 addNumberInput.addEventListener('change', updateAddAddressAndGeocode);
               }
 
-              // Initialize address with "Jelenia Góra"
-              updateAddAddressAndGeocode();
+              // AUTOMATIC REVERSE GEOCODING on modal open - fill city/street/number fields
+              console.log('[JG MAP] Starting automatic reverse geocoding for:', lat, lng);
+
+              var formData = new FormData();
+              formData.append('action', 'jg_reverse_geocode');
+              formData.append('lat', lat);
+              formData.append('lng', lng);
+
+              fetch(CFG.ajax, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+              })
+              .then(function(r) { return r.json(); })
+              .then(function(response) {
+                console.log('[JG MAP] Reverse geocoding response:', response);
+
+                if (response.success && response.data && response.data.display_name) {
+                  var data = response.data;
+                  var addr = data.address || {};
+
+                  // Fill fields with reverse geocoded data
+                  var city = addr.city || addr.town || addr.village || 'Jelenia Góra';
+                  var street = addr.road || '';
+                  var houseNumber = addr.house_number || '';
+
+                  addCityInput.value = city;
+                  if (street) addStreetInput.value = street;
+                  if (houseNumber) addNumberInput.value = houseNumber;
+
+                  // Update full address
+                  updateAddAddressAndGeocode();
+
+                  console.log('[JG MAP] Address auto-filled:', city, street, houseNumber);
+                } else {
+                  console.warn('[JG MAP] No address found, using default');
+                  // Keep default "Jelenia Góra"
+                  updateAddAddressAndGeocode();
+                }
+              })
+              .catch(function(err) {
+                console.error('[JG MAP] Reverse geocoding error:', err);
+                // Keep default "Jelenia Góra"
+                updateAddAddressAndGeocode();
+              });
 
           form.onsubmit = function(e) {
             e.preventDefault();
