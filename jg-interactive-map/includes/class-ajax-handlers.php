@@ -3563,6 +3563,7 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Make server-side request
+        error_log('[JG MAP] Requesting Photon API: ' . $url);
         $response = wp_remote_get($url, array(
             'timeout' => 3,
             'headers' => array(
@@ -3571,29 +3572,41 @@ class JG_Map_Ajax_Handlers {
         ));
 
         if (is_wp_error($response)) {
+            $error_msg = $response->get_error_message();
+            error_log('[JG MAP] Connection error: ' . $error_msg);
             wp_send_json_error(array(
                 'message' => 'Błąd połączenia',
-                'error' => $response->get_error_message()
+                'error' => $error_msg
             ));
             return;
         }
 
         $status_code = wp_remote_retrieve_response_code($response);
+        error_log('[JG MAP] Photon API response code: ' . $status_code);
         if ($status_code !== 200) {
             wp_send_json_error(array(
                 'message' => 'Błąd serwera',
-                'status' => $status_code
+                'status' => $status_code,
+                'url' => $url
             ));
             return;
         }
 
         $body = wp_remote_retrieve_body($response);
+        error_log('[JG MAP] Response body length: ' . strlen($body));
         $data = json_decode($body, true);
 
         if ($data === null || !isset($data['features'])) {
-            wp_send_json_error(array('message' => 'Błąd odpowiedzi'));
+            error_log('[JG MAP] JSON decode error or no features. Body: ' . substr($body, 0, 200));
+            wp_send_json_error(array(
+                'message' => 'Błąd odpowiedzi',
+                'json_error' => json_last_error_msg(),
+                'body_preview' => substr($body, 0, 100)
+            ));
             return;
         }
+
+        error_log('[JG MAP] Features found: ' . count($data['features']));
 
         // Convert Photon format to simple array
         $results = array();

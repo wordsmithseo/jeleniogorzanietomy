@@ -2751,6 +2751,10 @@
               .then(function(r) { return r.json(); })
               .then(function(response) {
                 console.log('[JG MAP] City autocomplete response:', response);
+                if (!response.success) {
+                  console.error('[JG MAP] Backend error message:', response.data ? response.data.message : 'Unknown');
+                  console.error('[JG MAP] Full backend error:', response.data);
+                }
                 citySuggestions.innerHTML = '';
                 if (response.success && response.data && response.data.length > 0) {
                   console.log('[JG MAP] Cities found:', response.data.length);
