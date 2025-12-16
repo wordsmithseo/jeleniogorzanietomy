@@ -3535,7 +3535,7 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Autocomplete cities within map bounds - using Photon (faster than Nominatim)
+     * Autocomplete cities within map bounds - using Nominatim
      */
     public function autocomplete_cities() {
         $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
@@ -3546,26 +3546,21 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Use Photon API (faster than Nominatim)
+        // Use Nominatim API with city search
         $url = sprintf(
-            'https://photon.komoot.io/api/?q=%s&limit=10',
+            'https://nominatim.openstreetmap.org/search?format=json&q=%s&addressdetails=1&limit=10',
             urlencode($query)
         );
 
-        // Add bbox if provided (format from frontend: "minLng,maxLat,maxLng,minLat")
+        // Add viewbox if provided (format from frontend: "minLng,maxLat,maxLng,minLat")
         if (!empty($bounds)) {
-            $parts = explode(',', $bounds);
-            if (count($parts) === 4) {
-                // Photon expects: minLng,minLat,maxLng,maxLat
-                $bbox = $parts[0] . ',' . $parts[3] . ',' . $parts[2] . ',' . $parts[1];
-                $url .= '&bbox=' . urlencode($bbox);
-            }
+            $url .= '&viewbox=' . urlencode($bounds) . '&bounded=1';
         }
 
         // Make server-side request
-        error_log('[JG MAP] Requesting Photon API: ' . $url);
+        error_log('[JG MAP] Requesting Nominatim API: ' . $url);
         $response = wp_remote_get($url, array(
-            'timeout' => 3,
+            'timeout' => 10,
             'headers' => array(
                 'User-Agent' => 'JG-Map-Plugin/1.0 (WordPress)',
             ),
@@ -3582,7 +3577,7 @@ class JG_Map_Ajax_Handlers {
         }
 
         $status_code = wp_remote_retrieve_response_code($response);
-        error_log('[JG MAP] Photon API response code: ' . $status_code);
+        error_log('[JG MAP] Nominatim API response code: ' . $status_code);
         if ($status_code !== 200) {
             wp_send_json_error(array(
                 'message' => 'Błąd serwera',
@@ -3596,44 +3591,36 @@ class JG_Map_Ajax_Handlers {
         error_log('[JG MAP] Response body length: ' . strlen($body));
         $data = json_decode($body, true);
 
-        if ($data === null || !isset($data['features'])) {
-            error_log('[JG MAP] JSON decode error or no features. Body: ' . substr($body, 0, 200));
+        if ($data === null) {
+            error_log('[JG MAP] JSON decode error. Body: ' . substr($body, 0, 200));
             wp_send_json_error(array(
                 'message' => 'Błąd odpowiedzi',
-                'json_error' => json_last_error_msg(),
-                'body_preview' => substr($body, 0, 100)
+                'json_error' => json_last_error_msg()
             ));
             return;
         }
 
-        error_log('[JG MAP] Features found: ' . count($data['features']));
+        error_log('[JG MAP] Results found: ' . count($data));
 
-        // Convert Photon format to simple array
+        // Extract unique cities from Nominatim results
         $results = array();
         $seen = array();
 
-        foreach ($data['features'] as $feature) {
-            $props = isset($feature['properties']) ? $feature['properties'] : array();
+        foreach ($data as $item) {
+            $address = isset($item['address']) ? $item['address'] : array();
 
-            // For cities, Photon uses "name" field and type "city" or city/town/village fields
+            // Try different city fields
             $city = '';
-
-            // Try city/town/village fields first
-            if (!empty($props['city'])) {
-                $city = $props['city'];
-            } elseif (!empty($props['town'])) {
-                $city = $props['town'];
-            } elseif (!empty($props['village'])) {
-                $city = $props['village'];
-            }
-
-            // If still empty, try name field for place types
-            if (empty($city) && !empty($props['name'])) {
-                $type = isset($props['type']) ? $props['type'] : '';
-                // Only use name for city-like types
-                if (in_array($type, array('city', 'town', 'village', 'suburb', 'other'))) {
-                    $city = $props['name'];
-                }
+            if (!empty($address['city'])) {
+                $city = $address['city'];
+            } elseif (!empty($address['town'])) {
+                $city = $address['town'];
+            } elseif (!empty($address['village'])) {
+                $city = $address['village'];
+            } elseif (!empty($item['display_name'])) {
+                // Use first part of display_name as fallback
+                $parts = explode(',', $item['display_name']);
+                $city = trim($parts[0]);
             }
 
             if (!empty($city) && !isset($seen[$city])) {
@@ -3642,11 +3629,12 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
+        error_log('[JG MAP] Unique cities extracted: ' . count($results));
         wp_send_json_success($results);
     }
 
     /**
-     * Autocomplete streets within selected city - using Photon
+     * Autocomplete streets within selected city - using Nominatim
      */
     public function autocomplete_streets() {
         $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
@@ -3662,15 +3650,15 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Photon with city filter
-        $searchQuery = $query . ', ' . $city;
+        // Nominatim street search
         $url = sprintf(
-            'https://photon.komoot.io/api/?q=%s&limit=20',
-            urlencode($searchQuery)
+            'https://nominatim.openstreetmap.org/search?format=json&street=%s&city=%s&countrycodes=pl&addressdetails=1&limit=20',
+            urlencode($query),
+            urlencode($city)
         );
 
         $response = wp_remote_get($url, array(
-            'timeout' => 3,
+            'timeout' => 10,
             'headers' => array(
                 'User-Agent' => 'JG-Map-Plugin/1.0 (WordPress)',
             ),
@@ -3696,7 +3684,7 @@ class JG_Map_Ajax_Handlers {
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
-        if ($data === null || !isset($data['features'])) {
+        if ($data === null) {
             wp_send_json_error(array('message' => 'Błąd odpowiedzi'));
             return;
         }
@@ -3705,22 +3693,9 @@ class JG_Map_Ajax_Handlers {
         $results = array();
         $seen = array();
 
-        foreach ($data['features'] as $feature) {
-            $props = isset($feature['properties']) ? $feature['properties'] : array();
-            $type = isset($props['type']) ? $props['type'] : '';
-
-            // Only process street-type features
-            if ($type !== 'street') {
-                continue;
-            }
-
-            // For streets, Photon uses "name" field
-            $street = '';
-            if (!empty($props['name'])) {
-                $street = $props['name'];
-            } elseif (!empty($props['street'])) {
-                $street = $props['street'];
-            }
+        foreach ($data as $item) {
+            $address = isset($item['address']) ? $item['address'] : array();
+            $street = isset($address['road']) ? $address['road'] : '';
 
             if (!empty($street) && !isset($seen[$street])) {
                 $results[] = array('address' => array('road' => $street));
@@ -3732,7 +3707,7 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Autocomplete house numbers - using Photon
+     * Autocomplete house numbers - using Nominatim
      */
     public function autocomplete_numbers() {
         $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
@@ -3744,15 +3719,15 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Photon search for this street
-        $searchQuery = $street . ', ' . $city;
+        // Nominatim search for addresses on this street
         $url = sprintf(
-            'https://photon.komoot.io/api/?q=%s&limit=50',
-            urlencode($searchQuery)
+            'https://nominatim.openstreetmap.org/search?format=json&street=%s&city=%s&countrycodes=pl&addressdetails=1&limit=50',
+            urlencode($street),
+            urlencode($city)
         );
 
         $response = wp_remote_get($url, array(
-            'timeout' => 3,
+            'timeout' => 10,
             'headers' => array(
                 'User-Agent' => 'JG-Map-Plugin/1.0 (WordPress)',
             ),
@@ -3778,7 +3753,7 @@ class JG_Map_Ajax_Handlers {
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
-        if ($data === null || !isset($data['features'])) {
+        if ($data === null) {
             wp_send_json_error(array('message' => 'Błąd odpowiedzi'));
             return;
         }
@@ -3787,21 +3762,11 @@ class JG_Map_Ajax_Handlers {
         $results = array();
         $seen = array();
 
-        foreach ($data['features'] as $feature) {
-            $props = isset($feature['properties']) ? $feature['properties'] : array();
-            $type = isset($props['type']) ? $props['type'] : '';
+        foreach ($data as $item) {
+            $address = isset($item['address']) ? $item['address'] : array();
+            $houseNumber = isset($address['house_number']) ? $address['house_number'] : '';
 
-            // Only process house-type features
-            if ($type !== 'house') {
-                continue;
-            }
-
-            $houseNumber = isset($props['housenumber']) ? $props['housenumber'] : '';
-            $featureStreet = isset($props['street']) ? $props['street'] : '';
-
-            // Verify street matches (Photon returns street field for houses)
-            if (!empty($houseNumber) && !isset($seen[$houseNumber]) &&
-                (empty($street) || strcasecmp($featureStreet, $street) === 0)) {
+            if (!empty($houseNumber) && !isset($seen[$houseNumber])) {
                 $results[] = array('address' => array('house_number' => $houseNumber));
                 $seen[$houseNumber] = true;
             }
