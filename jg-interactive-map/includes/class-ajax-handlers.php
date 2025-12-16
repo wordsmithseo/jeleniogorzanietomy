@@ -42,6 +42,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_autocomplete_cities', array($this, 'autocomplete_cities'));
         add_action('wp_ajax_jg_autocomplete_streets', array($this, 'autocomplete_streets'));
         add_action('wp_ajax_nopriv_jg_autocomplete_streets', array($this, 'autocomplete_streets'));
+        add_action('wp_ajax_jg_autocomplete_numbers', array($this, 'autocomplete_numbers'));
+        add_action('wp_ajax_nopriv_jg_autocomplete_numbers', array($this, 'autocomplete_numbers'));
         add_action('wp_ajax_nopriv_jg_map_login', array($this, 'login_user'));
         add_action('wp_ajax_nopriv_jg_map_register', array($this, 'register_user'));
         add_action('wp_ajax_nopriv_jg_map_forgot_password', array($this, 'forgot_password'));
@@ -3613,6 +3615,63 @@ class JG_Map_Ajax_Handlers {
         $url = sprintf(
             'https://nominatim.openstreetmap.org/search?format=json&street=%s&city=%s&countrycodes=pl&limit=5',
             urlencode($query),
+            urlencode($city)
+        );
+
+        // Make server-side request
+        $response = wp_remote_get($url, array(
+            'timeout' => 10,
+            'headers' => array(
+                'User-Agent' => 'JG-Map-Plugin/1.0 (WordPress)',
+            ),
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array(
+                'message' => 'Błąd połączenia z serwerem geokodowania',
+                'error' => $response->get_error_message()
+            ));
+            return;
+        }
+
+        $status_code = wp_remote_retrieve_response_code($response);
+        if ($status_code !== 200) {
+            wp_send_json_error(array(
+                'message' => 'Błąd serwera geokodowania',
+                'status' => $status_code
+            ));
+            return;
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if ($data === null) {
+            wp_send_json_error(array('message' => 'Błąd przetwarzania odpowiedzi'));
+            return;
+        }
+
+        // Return the data
+        wp_send_json_success($data);
+    }
+
+    /**
+     * Autocomplete house numbers for selected street and city
+     */
+    public function autocomplete_numbers() {
+        $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
+        $street = isset($_POST['street']) ? sanitize_text_field($_POST['street']) : '';
+        $city = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
+
+        if (empty($street) || empty($city)) {
+            wp_send_json_error(array('message' => 'Brak ulicy lub miasta'));
+            return;
+        }
+
+        // Build Nominatim API URL - search for addresses on this street
+        $url = sprintf(
+            'https://nominatim.openstreetmap.org/search?format=json&street=%s&city=%s&countrycodes=pl&limit=20',
+            urlencode($street),
             urlencode($city)
         );
 
