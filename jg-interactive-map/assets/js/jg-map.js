@@ -2719,7 +2719,7 @@
         if (editCityInput && citySuggestions) {
           editCityInput.addEventListener('input', function() {
             var query = this.value.trim();
-            if (query.length < 2) {
+            if (query.length < 1) {
               citySuggestions.classList.remove('active');
               return;
             }
@@ -2774,7 +2774,7 @@
           editStreetInput.addEventListener('input', function() {
             var query = this.value.trim();
             var city = editCityInput.value.trim();
-            if (query.length < 2 || !city) {
+            if (query.length < 1 || !city) {
               streetSuggestions.classList.remove('active');
               return;
             }

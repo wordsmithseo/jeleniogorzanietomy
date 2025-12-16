@@ -3535,31 +3535,36 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Autocomplete cities within map bounds
+     * Autocomplete cities within map bounds - using Photon (faster than Nominatim)
      */
     public function autocomplete_cities() {
         $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
         $bounds = isset($_POST['bounds']) ? sanitize_text_field($_POST['bounds']) : '';
 
-        if (empty($query) || strlen($query) < 2) {
+        if (empty($query) || strlen($query) < 1) {
             wp_send_json_error(array('message' => 'Zapytanie za krótkie'));
             return;
         }
 
-        // Build Nominatim API URL
+        // Use Photon API (faster than Nominatim)
         $url = sprintf(
-            'https://nominatim.openstreetmap.org/search?format=json&q=%s&featuretype=city&limit=5',
+            'https://photon.komoot.io/api/?q=%s&limit=10',
             urlencode($query)
         );
 
-        // Add bounds if provided (format: "minLng,maxLat,maxLng,minLat")
+        // Add bbox if provided (format from frontend: "minLng,maxLat,maxLng,minLat")
         if (!empty($bounds)) {
-            $url .= '&viewbox=' . urlencode($bounds) . '&bounded=1';
+            $parts = explode(',', $bounds);
+            if (count($parts) === 4) {
+                // Photon expects: minLng,minLat,maxLng,maxLat
+                $bbox = $parts[0] . ',' . $parts[3] . ',' . $parts[2] . ',' . $parts[1];
+                $url .= '&bbox=' . urlencode($bbox);
+            }
         }
 
         // Make server-side request
         $response = wp_remote_get($url, array(
-            'timeout' => 10,
+            'timeout' => 3,
             'headers' => array(
                 'User-Agent' => 'JG-Map-Plugin/1.0 (WordPress)',
             ),
@@ -3567,7 +3572,7 @@ class JG_Map_Ajax_Handlers {
 
         if (is_wp_error($response)) {
             wp_send_json_error(array(
-                'message' => 'Błąd połączenia z serwerem geokodowania',
+                'message' => 'Błąd połączenia',
                 'error' => $response->get_error_message()
             ));
             return;
@@ -3576,7 +3581,7 @@ class JG_Map_Ajax_Handlers {
         $status_code = wp_remote_retrieve_response_code($response);
         if ($status_code !== 200) {
             wp_send_json_error(array(
-                'message' => 'Błąd serwera geokodowania',
+                'message' => 'Błąd serwera',
                 'status' => $status_code
             ));
             return;
@@ -3585,23 +3590,40 @@ class JG_Map_Ajax_Handlers {
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
-        if ($data === null) {
-            wp_send_json_error(array('message' => 'Błąd przetwarzania odpowiedzi'));
+        if ($data === null || !isset($data['features'])) {
+            wp_send_json_error(array('message' => 'Błąd odpowiedzi'));
             return;
         }
 
-        // Return the data
-        wp_send_json_success($data);
+        // Convert Photon format to simple array
+        $results = array();
+        $seen = array();
+
+        foreach ($data['features'] as $feature) {
+            $props = isset($feature['properties']) ? $feature['properties'] : array();
+            $city = isset($props['city']) ? $props['city'] : '';
+
+            if (empty($city)) {
+                $city = isset($props['name']) ? $props['name'] : '';
+            }
+
+            if (!empty($city) && !isset($seen[$city])) {
+                $results[] = array('display_name' => $city);
+                $seen[$city] = true;
+            }
+        }
+
+        wp_send_json_success($results);
     }
 
     /**
-     * Autocomplete streets within selected city
+     * Autocomplete streets within selected city - using Photon
      */
     public function autocomplete_streets() {
         $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
         $city = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
 
-        if (empty($query) || strlen($query) < 2) {
+        if (empty($query) || strlen($query) < 1) {
             wp_send_json_error(array('message' => 'Zapytanie za krótkie'));
             return;
         }
@@ -3611,16 +3633,15 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Build Nominatim API URL
+        // Photon with city filter
+        $searchQuery = $query . ', ' . $city;
         $url = sprintf(
-            'https://nominatim.openstreetmap.org/search?format=json&street=%s&city=%s&countrycodes=pl&limit=5',
-            urlencode($query),
-            urlencode($city)
+            'https://photon.komoot.io/api/?q=%s&limit=20',
+            urlencode($searchQuery)
         );
 
-        // Make server-side request
         $response = wp_remote_get($url, array(
-            'timeout' => 10,
+            'timeout' => 3,
             'headers' => array(
                 'User-Agent' => 'JG-Map-Plugin/1.0 (WordPress)',
             ),
@@ -3628,7 +3649,7 @@ class JG_Map_Ajax_Handlers {
 
         if (is_wp_error($response)) {
             wp_send_json_error(array(
-                'message' => 'Błąd połączenia z serwerem geokodowania',
+                'message' => 'Błąd połączenia',
                 'error' => $response->get_error_message()
             ));
             return;
@@ -3637,7 +3658,7 @@ class JG_Map_Ajax_Handlers {
         $status_code = wp_remote_retrieve_response_code($response);
         if ($status_code !== 200) {
             wp_send_json_error(array(
-                'message' => 'Błąd serwera geokodowania',
+                'message' => 'Błąd serwera',
                 'status' => $status_code
             ));
             return;
@@ -3646,17 +3667,34 @@ class JG_Map_Ajax_Handlers {
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
-        if ($data === null) {
-            wp_send_json_error(array('message' => 'Błąd przetwarzania odpowiedzi'));
+        if ($data === null || !isset($data['features'])) {
+            wp_send_json_error(array('message' => 'Błąd odpowiedzi'));
             return;
         }
 
-        // Return the data
-        wp_send_json_success($data);
+        // Extract unique streets
+        $results = array();
+        $seen = array();
+
+        foreach ($data['features'] as $feature) {
+            $props = isset($feature['properties']) ? $feature['properties'] : array();
+            $street = isset($props['street']) ? $props['street'] : '';
+
+            if (empty($street) && isset($props['name'])) {
+                $street = $props['name'];
+            }
+
+            if (!empty($street) && !isset($seen[$street])) {
+                $results[] = array('address' => array('road' => $street));
+                $seen[$street] = true;
+            }
+        }
+
+        wp_send_json_success($results);
     }
 
     /**
-     * Autocomplete house numbers for selected street and city
+     * Autocomplete house numbers - using Photon
      */
     public function autocomplete_numbers() {
         $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
@@ -3668,16 +3706,15 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Build Nominatim API URL - search for addresses on this street
+        // Photon search for this street
+        $searchQuery = $street . ', ' . $city;
         $url = sprintf(
-            'https://nominatim.openstreetmap.org/search?format=json&street=%s&city=%s&countrycodes=pl&limit=20',
-            urlencode($street),
-            urlencode($city)
+            'https://photon.komoot.io/api/?q=%s&limit=50',
+            urlencode($searchQuery)
         );
 
-        // Make server-side request
         $response = wp_remote_get($url, array(
-            'timeout' => 10,
+            'timeout' => 3,
             'headers' => array(
                 'User-Agent' => 'JG-Map-Plugin/1.0 (WordPress)',
             ),
@@ -3685,7 +3722,7 @@ class JG_Map_Ajax_Handlers {
 
         if (is_wp_error($response)) {
             wp_send_json_error(array(
-                'message' => 'Błąd połączenia z serwerem geokodowania',
+                'message' => 'Błąd połączenia',
                 'error' => $response->get_error_message()
             ));
             return;
@@ -3694,7 +3731,7 @@ class JG_Map_Ajax_Handlers {
         $status_code = wp_remote_retrieve_response_code($response);
         if ($status_code !== 200) {
             wp_send_json_error(array(
-                'message' => 'Błąd serwera geokodowania',
+                'message' => 'Błąd serwera',
                 'status' => $status_code
             ));
             return;
@@ -3703,12 +3740,25 @@ class JG_Map_Ajax_Handlers {
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
-        if ($data === null) {
-            wp_send_json_error(array('message' => 'Błąd przetwarzania odpowiedzi'));
+        if ($data === null || !isset($data['features'])) {
+            wp_send_json_error(array('message' => 'Błąd odpowiedzi'));
             return;
         }
 
-        // Return the data
-        wp_send_json_success($data);
+        // Extract unique house numbers
+        $results = array();
+        $seen = array();
+
+        foreach ($data['features'] as $feature) {
+            $props = isset($feature['properties']) ? $feature['properties'] : array();
+            $houseNumber = isset($props['housenumber']) ? $props['housenumber'] : '';
+
+            if (!empty($houseNumber) && !isset($seen[$houseNumber])) {
+                $results[] = array('address' => array('house_number' => $houseNumber));
+                $seen[$houseNumber] = true;
+            }
+        }
+
+        wp_send_json_success($results);
     }
 }
