@@ -2597,11 +2597,10 @@
               '<option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option>' +
               '<option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option>' +
               '</select></label>' +
-              '<div class="cols-2" style="margin-bottom:12px"><strong>📍 Adres (zmiana adresu zmieni położenie pinezki):</strong></div>' +
+              '<div class="cols-2" style="margin-bottom:12px"><strong>📍 Adres:</strong></div>' +
               '<label style="position:relative">Miasto* <input type="text" name="city" id="edit-city-input" value="' + (function(){ var parts = (p.address || '').split(', '); return esc(parts[parts.length - 1] || 'Jelenia Góra'); })() + '" placeholder="Jelenia Góra" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off"><div id="edit-city-suggestions" class="jg-autocomplete-list"></div></label>' +
               '<label style="position:relative">Ulica <input type="text" name="street" id="edit-street-input" value="' + (function(){ var parts = (p.address || '').split(', '); if (parts.length >= 2) { var streetPart = parts[0].split(' '); streetPart.pop(); return esc(streetPart.join(' ')); } return ''; })() + '" placeholder="np. 1 Maja" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off"><div id="edit-street-suggestions" class="jg-autocomplete-list"></div></label>' +
               '<label style="position:relative">Numer <input type="text" name="number" id="edit-number-input" value="' + (function(){ var parts = (p.address || '').split(', '); if (parts.length >= 1) { var nums = parts[0].split(' '); return esc(nums[nums.length - 1] || ''); } return ''; })() + '" placeholder="12" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off"><div id="edit-number-suggestions" class="jg-autocomplete-list"></div></label>' +
-              '<div id="edit-geocode-msg" class="cols-2" style="font-size:11px;color:#666;margin-top:4px"></div>' +
               '<input type="hidden" name="address" id="edit-address-input" value="' + esc(p.address || '') + '">' +
               '<label class="cols-2">Opis <textarea name="content" rows="6" maxlength="' + maxDescLength + '" id="edit-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea><div id="edit-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">' + currentDescLength + ' / ' + maxDescLength + ' znaków</div></label>' +
               sponsoredContactHtml +
@@ -2688,23 +2687,18 @@
           });
         }
 
-        // ADDRESS AUTOCOMPLETE + FORWARD GEOCODING for edit form
+        // ADDRESS AUTOCOMPLETE for edit form
         var editCityInput = qs('#edit-city-input', modalEdit);
         var editStreetInput = qs('#edit-street-input', modalEdit);
         var editNumberInput = qs('#edit-number-input', modalEdit);
         var editAddressInput = qs('#edit-address-input', modalEdit);
-        var editLatInput = qs('#edit-lat-input', modalEdit);
-        var editLngInput = qs('#edit-lng-input', modalEdit);
-        var editGeocodeMsg = qs('#edit-geocode-msg', modalEdit);
 
         var citySuggestions = qs('#edit-city-suggestions', modalEdit);
         var streetSuggestions = qs('#edit-street-suggestions', modalEdit);
         var numberSuggestions = qs('#edit-number-suggestions', modalEdit);
 
-        var geocodeTimeout = null;
-
-        // Helper: Update full address and geocode
-        function updateAddressAndGeocode() {
+        // Helper: Update full address (NO GEOCODING during edit - only on approval!)
+        function updateAddress() {
           var city = editCityInput.value.trim();
           var street = editStreetInput.value.trim();
           var number = editNumberInput.value.trim();
@@ -2719,57 +2713,6 @@
           }
 
           editAddressInput.value = fullAddress;
-
-          // Debounced geocoding
-          clearTimeout(geocodeTimeout);
-          if (city) {
-            geocodeTimeout = setTimeout(function() {
-              forwardGeocode(fullAddress);
-            }, 500);
-          }
-        }
-
-        // Forward geocoding - use backend proxy
-        function forwardGeocode(address) {
-          editGeocodeMsg.textContent = 'Szukanie współrzędnych...';
-          editGeocodeMsg.style.color = '#666';
-
-          var formData = new FormData();
-          formData.append('action', 'jg_forward_geocode');
-          formData.append('address', address);
-
-          fetch(CFG.ajax, {
-            method: 'POST',
-            body: formData,
-            credentials: 'same-origin'
-          })
-            .then(function(r) { return r.json(); })
-            .then(function(response) {
-              if (response.success && response.data && response.data.length > 0) {
-                var result = response.data[0];
-                var lat = parseFloat(result.lat);
-                var lng = parseFloat(result.lon);
-
-                // Validate bounds
-                if (lat >= 50.82 && lat <= 50.96 && lng >= 15.62 && lng <= 15.82) {
-                  editLatInput.value = lat;
-                  editLngInput.value = lng;
-                  editGeocodeMsg.textContent = '✓ Lokalizacja zaktualizowana';
-                  editGeocodeMsg.style.color = '#15803d';
-                  map.setView([lat, lng], 17, { animate: true });
-                } else {
-                  editGeocodeMsg.textContent = '❌ Adres poza obszarem Jeleniej Góry';
-                  editGeocodeMsg.style.color = '#b91c1c';
-                }
-              } else {
-                editGeocodeMsg.textContent = '⚠️ Nie znaleziono dokładnej lokalizacji';
-                editGeocodeMsg.style.color = '#d97706';
-              }
-            })
-            .catch(function(err) {
-              console.error('[JG MAP] Geocoding error:', err);
-              editGeocodeMsg.textContent = '';
-            });
         }
 
         // City autocomplete - use backend proxy with dynamic map bounds
@@ -2806,7 +2749,7 @@
                     div.onclick = function() {
                       editCityInput.value = this.textContent;
                       citySuggestions.classList.remove('active');
-                      updateAddressAndGeocode();
+                      updateAddress();
                     };
                     citySuggestions.appendChild(div);
                   });
@@ -2820,7 +2763,7 @@
               });
           });
 
-          editCityInput.addEventListener('change', updateAddressAndGeocode);
+          editCityInput.addEventListener('change', updateAddress);
           editCityInput.addEventListener('blur', function() {
             setTimeout(function() { citySuggestions.classList.remove('active'); }, 200);
           });
@@ -2864,7 +2807,7 @@
                     div.onclick = function() {
                       editStreetInput.value = this.textContent;
                       streetSuggestions.classList.remove('active');
-                      updateAddressAndGeocode();
+                      updateAddress();
                     };
                     streetSuggestions.appendChild(div);
                   });
@@ -2883,7 +2826,7 @@
               });
           });
 
-          editStreetInput.addEventListener('change', updateAddressAndGeocode);
+          editStreetInput.addEventListener('change', updateAddress);
           editStreetInput.addEventListener('blur', function() {
             setTimeout(function() { streetSuggestions.classList.remove('active'); }, 200);
           });
@@ -2934,7 +2877,7 @@
                     div.onclick = function() {
                       editNumberInput.value = this.textContent;
                       numberSuggestions.classList.remove('active');
-                      updateAddressAndGeocode();
+                      updateAddress();
                     };
                     numberSuggestions.appendChild(div);
                   });
@@ -2953,7 +2896,7 @@
               });
           });
 
-          editNumberInput.addEventListener('change', updateAddressAndGeocode);
+          editNumberInput.addEventListener('change', updateAddress);
           editNumberInput.addEventListener('blur', function() {
             setTimeout(function() { numberSuggestions.classList.remove('active'); }, 200);
           });
