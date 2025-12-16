@@ -2600,7 +2600,7 @@
               '<div class="cols-2" style="margin-bottom:12px"><strong>📍 Adres (zmiana adresu zmieni położenie pinezki):</strong></div>' +
               '<label style="position:relative">Miasto* <input type="text" name="city" id="edit-city-input" value="' + (function(){ var parts = (p.address || '').split(', '); return esc(parts[parts.length - 1] || 'Jelenia Góra'); })() + '" placeholder="Jelenia Góra" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off"><div id="edit-city-suggestions" class="jg-autocomplete-list"></div></label>' +
               '<label style="position:relative">Ulica <input type="text" name="street" id="edit-street-input" value="' + (function(){ var parts = (p.address || '').split(', '); if (parts.length >= 2) { var streetPart = parts[0].split(' '); streetPart.pop(); return esc(streetPart.join(' ')); } return ''; })() + '" placeholder="np. 1 Maja" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off"><div id="edit-street-suggestions" class="jg-autocomplete-list"></div></label>' +
-              '<label>Numer <input type="text" name="number" id="edit-number-input" value="' + (function(){ var parts = (p.address || '').split(', '); if (parts.length >= 1) { var nums = parts[0].split(' '); return esc(nums[nums.length - 1] || ''); } return ''; })() + '" placeholder="12" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off"></label>' +
+              '<label style="position:relative">Numer <input type="text" name="number" id="edit-number-input" value="' + (function(){ var parts = (p.address || '').split(', '); if (parts.length >= 1) { var nums = parts[0].split(' '); return esc(nums[nums.length - 1] || ''); } return ''; })() + '" placeholder="12" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off"><div id="edit-number-suggestions" class="jg-autocomplete-list"></div></label>' +
               '<div id="edit-geocode-msg" class="cols-2" style="font-size:11px;color:#666;margin-top:4px"></div>' +
               '<input type="hidden" name="address" id="edit-address-input" value="' + esc(p.address || '') + '">' +
               '<label class="cols-2">Opis <textarea name="content" rows="6" maxlength="' + maxDescLength + '" id="edit-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea><div id="edit-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">' + currentDescLength + ' / ' + maxDescLength + ' znaków</div></label>' +
@@ -2699,6 +2699,7 @@
 
         var citySuggestions = qs('#edit-city-suggestions', modalEdit);
         var streetSuggestions = qs('#edit-street-suggestions', modalEdit);
+        var numberSuggestions = qs('#edit-number-suggestions', modalEdit);
 
         var geocodeTimeout = null;
 
@@ -2888,9 +2889,74 @@
           });
         }
 
-        // Number input
-        if (editNumberInput) {
+        // Number autocomplete - use backend proxy
+        if (editNumberInput && numberSuggestions) {
+          editNumberInput.addEventListener('input', function() {
+            var query = this.value.trim();
+            var street = editStreetInput.value.trim();
+            var city = editCityInput.value.trim();
+            if (!street || !city) {
+              numberSuggestions.classList.remove('active');
+              return;
+            }
+
+            var formData = new FormData();
+            formData.append('action', 'jg_autocomplete_numbers');
+            formData.append('query', query);
+            formData.append('street', street);
+            formData.append('city', city);
+
+            fetch(CFG.ajax, {
+              method: 'POST',
+              body: formData,
+              credentials: 'same-origin'
+            })
+              .then(function(r) { return r.json(); })
+              .then(function(response) {
+                numberSuggestions.innerHTML = '';
+                if (response.success && response.data && response.data.length > 0) {
+                  var numbers = {};
+                  response.data.forEach(function(item) {
+                    var addr = item.address || {};
+                    var houseNumber = addr.house_number || '';
+                    if (houseNumber) {
+                      // Filter by query if provided
+                      if (!query || houseNumber.toLowerCase().indexOf(query.toLowerCase()) === 0) {
+                        numbers[houseNumber] = true;
+                      }
+                    }
+                  });
+
+                  Object.keys(numbers).forEach(function(number) {
+                    var div = document.createElement('div');
+                    div.className = 'jg-autocomplete-item';
+                    div.textContent = number;
+                    div.onclick = function() {
+                      editNumberInput.value = this.textContent;
+                      numberSuggestions.classList.remove('active');
+                      updateAddressAndGeocode();
+                    };
+                    numberSuggestions.appendChild(div);
+                  });
+
+                  if (Object.keys(numbers).length > 0) {
+                    numberSuggestions.classList.add('active');
+                  } else {
+                    numberSuggestions.classList.remove('active');
+                  }
+                } else {
+                  numberSuggestions.classList.remove('active');
+                }
+              })
+              .catch(function(err) {
+                console.error('[JG MAP] Number autocomplete error:', err);
+              });
+          });
+
           editNumberInput.addEventListener('change', updateAddressAndGeocode);
+          editNumberInput.addEventListener('blur', function() {
+            setTimeout(function() { numberSuggestions.classList.remove('active'); }, 200);
+          });
         }
 
         // CTA checkbox toggle for sponsored points
