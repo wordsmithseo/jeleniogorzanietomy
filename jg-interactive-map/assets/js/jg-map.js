@@ -2688,6 +2688,7 @@
         }
 
         // ADDRESS AUTOCOMPLETE for edit form
+        console.log('[JG MAP] Initializing autocomplete for edit form');
         var editCityInput = qs('#edit-city-input', modalEdit);
         var editStreetInput = qs('#edit-street-input', modalEdit);
         var editNumberInput = qs('#edit-number-input', modalEdit);
@@ -2696,6 +2697,15 @@
         var citySuggestions = qs('#edit-city-suggestions', modalEdit);
         var streetSuggestions = qs('#edit-street-suggestions', modalEdit);
         var numberSuggestions = qs('#edit-number-suggestions', modalEdit);
+
+        console.log('[JG MAP] Edit form elements:', {
+          editCityInput: !!editCityInput,
+          editStreetInput: !!editStreetInput,
+          editNumberInput: !!editNumberInput,
+          citySuggestions: !!citySuggestions,
+          streetSuggestions: !!streetSuggestions,
+          numberSuggestions: !!numberSuggestions
+        });
 
         // Helper: Update full address (NO GEOCODING during edit - only on approval!)
         function updateAddress() {
@@ -2740,9 +2750,12 @@
             })
               .then(function(r) { return r.json(); })
               .then(function(response) {
+                console.log('[JG MAP] City autocomplete response:', response);
                 citySuggestions.innerHTML = '';
                 if (response.success && response.data && response.data.length > 0) {
+                  console.log('[JG MAP] Cities found:', response.data.length);
                   response.data.forEach(function(item) {
+                    console.log('[JG MAP] City item:', item);
                     var div = document.createElement('div');
                     div.className = 'jg-autocomplete-item';
                     div.textContent = item.display_name.split(',')[0];
@@ -2755,6 +2768,7 @@
                   });
                   citySuggestions.classList.add('active');
                 } else {
+                  console.log('[JG MAP] No cities or error:', response);
                   citySuggestions.classList.remove('active');
                 }
               })
