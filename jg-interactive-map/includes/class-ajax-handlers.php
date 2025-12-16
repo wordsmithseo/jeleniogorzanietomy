@@ -3601,10 +3601,26 @@ class JG_Map_Ajax_Handlers {
 
         foreach ($data['features'] as $feature) {
             $props = isset($feature['properties']) ? $feature['properties'] : array();
-            $city = isset($props['city']) ? $props['city'] : '';
 
-            if (empty($city)) {
-                $city = isset($props['name']) ? $props['name'] : '';
+            // For cities, Photon uses "name" field and type "city" or city/town/village fields
+            $city = '';
+
+            // Try city/town/village fields first
+            if (!empty($props['city'])) {
+                $city = $props['city'];
+            } elseif (!empty($props['town'])) {
+                $city = $props['town'];
+            } elseif (!empty($props['village'])) {
+                $city = $props['village'];
+            }
+
+            // If still empty, try name field for place types
+            if (empty($city) && !empty($props['name'])) {
+                $type = isset($props['type']) ? $props['type'] : '';
+                // Only use name for city-like types
+                if (in_array($type, array('city', 'town', 'village', 'suburb', 'other'))) {
+                    $city = $props['name'];
+                }
             }
 
             if (!empty($city) && !isset($seen[$city])) {
@@ -3678,10 +3694,19 @@ class JG_Map_Ajax_Handlers {
 
         foreach ($data['features'] as $feature) {
             $props = isset($feature['properties']) ? $feature['properties'] : array();
-            $street = isset($props['street']) ? $props['street'] : '';
+            $type = isset($props['type']) ? $props['type'] : '';
 
-            if (empty($street) && isset($props['name'])) {
+            // Only process street-type features
+            if ($type !== 'street') {
+                continue;
+            }
+
+            // For streets, Photon uses "name" field
+            $street = '';
+            if (!empty($props['name'])) {
                 $street = $props['name'];
+            } elseif (!empty($props['street'])) {
+                $street = $props['street'];
             }
 
             if (!empty($street) && !isset($seen[$street])) {
@@ -3751,9 +3776,19 @@ class JG_Map_Ajax_Handlers {
 
         foreach ($data['features'] as $feature) {
             $props = isset($feature['properties']) ? $feature['properties'] : array();
-            $houseNumber = isset($props['housenumber']) ? $props['housenumber'] : '';
+            $type = isset($props['type']) ? $props['type'] : '';
 
-            if (!empty($houseNumber) && !isset($seen[$houseNumber])) {
+            // Only process house-type features
+            if ($type !== 'house') {
+                continue;
+            }
+
+            $houseNumber = isset($props['housenumber']) ? $props['housenumber'] : '';
+            $featureStreet = isset($props['street']) ? $props['street'] : '';
+
+            // Verify street matches (Photon returns street field for houses)
+            if (!empty($houseNumber) && !isset($seen[$houseNumber]) &&
+                (empty($street) || strcasecmp($featureStreet, $street) === 0)) {
                 $results[] = array('address' => array('house_number' => $houseNumber));
                 $seen[$houseNumber] = true;
             }
