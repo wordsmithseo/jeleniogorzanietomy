@@ -1333,6 +1333,13 @@
             console.error('[JG MAP] API error:', errMsg, j);
             throw new Error(errMsg);
           }
+          // DEBUG: Log API response for jg_points to see if addresses are included
+          if (action === 'jg_points' && j.data) {
+            console.log('[JG MAP] API Response for jg_points - first 3 points:', j.data.slice(0, 3));
+            j.data.slice(0, 3).forEach(function(p, i) {
+              console.log('[JG MAP] Point ' + (i+1) + ' - ID:', p.id, 'Address:', p.address);
+            });
+          }
           return j.data;
         });
       }
