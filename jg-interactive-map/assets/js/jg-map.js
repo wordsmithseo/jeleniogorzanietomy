@@ -2763,10 +2763,13 @@
                     var div = document.createElement('div');
                     div.className = 'jg-autocomplete-item';
                     div.textContent = item.display_name.split(',')[0];
-                    div.onclick = function() {
+                    // Use mousedown instead of click to fire before blur
+                    div.onmousedown = function(e) {
+                      e.preventDefault(); // Prevent blur from firing
                       editCityInput.value = this.textContent;
                       citySuggestions.classList.remove('active');
                       updateAddress();
+                      editCityInput.focus(); // Return focus
                     };
                     citySuggestions.appendChild(div);
                   });
@@ -2783,7 +2786,7 @@
 
           editCityInput.addEventListener('change', updateAddress);
           editCityInput.addEventListener('blur', function() {
-            setTimeout(function() { citySuggestions.classList.remove('active'); }, 200);
+            setTimeout(function() { citySuggestions.classList.remove('active'); }, 300);
           });
         }
 
@@ -2809,8 +2812,10 @@
             })
               .then(function(r) { return r.json(); })
               .then(function(response) {
+                console.log('[JG MAP] Street autocomplete response:', response);
                 streetSuggestions.innerHTML = '';
                 if (response.success && response.data && response.data.length > 0) {
+                  console.log('[JG MAP] Streets found:', response.data.length);
                   var streets = {};
                   response.data.forEach(function(item) {
                     var addr = item.address || {};
@@ -2818,14 +2823,18 @@
                     if (street) streets[street] = true;
                   });
 
+                  console.log('[JG MAP] Unique streets:', Object.keys(streets).length);
                   Object.keys(streets).forEach(function(street) {
                     var div = document.createElement('div');
                     div.className = 'jg-autocomplete-item';
                     div.textContent = street;
-                    div.onclick = function() {
+                    // Use mousedown instead of click to fire before blur
+                    div.onmousedown = function(e) {
+                      e.preventDefault(); // Prevent blur from firing
                       editStreetInput.value = this.textContent;
                       streetSuggestions.classList.remove('active');
                       updateAddress();
+                      editStreetInput.focus(); // Return focus
                     };
                     streetSuggestions.appendChild(div);
                   });
@@ -2836,6 +2845,7 @@
                     streetSuggestions.classList.remove('active');
                   }
                 } else {
+                  console.log('[JG MAP] No streets or error:', response);
                   streetSuggestions.classList.remove('active');
                 }
               })
@@ -2846,7 +2856,7 @@
 
           editStreetInput.addEventListener('change', updateAddress);
           editStreetInput.addEventListener('blur', function() {
-            setTimeout(function() { streetSuggestions.classList.remove('active'); }, 200);
+            setTimeout(function() { streetSuggestions.classList.remove('active'); }, 300);
           });
         }
 
@@ -2874,8 +2884,10 @@
             })
               .then(function(r) { return r.json(); })
               .then(function(response) {
+                console.log('[JG MAP] Number autocomplete response:', response);
                 numberSuggestions.innerHTML = '';
                 if (response.success && response.data && response.data.length > 0) {
+                  console.log('[JG MAP] Numbers found:', response.data.length);
                   var numbers = {};
                   response.data.forEach(function(item) {
                     var addr = item.address || {};
@@ -2888,14 +2900,18 @@
                     }
                   });
 
+                  console.log('[JG MAP] Unique numbers after filter:', Object.keys(numbers).length);
                   Object.keys(numbers).forEach(function(number) {
                     var div = document.createElement('div');
                     div.className = 'jg-autocomplete-item';
                     div.textContent = number;
-                    div.onclick = function() {
+                    // Use mousedown instead of click to fire before blur
+                    div.onmousedown = function(e) {
+                      e.preventDefault(); // Prevent blur from firing
                       editNumberInput.value = this.textContent;
                       numberSuggestions.classList.remove('active');
                       updateAddress();
+                      editNumberInput.focus(); // Return focus
                     };
                     numberSuggestions.appendChild(div);
                   });
@@ -2906,6 +2922,7 @@
                     numberSuggestions.classList.remove('active');
                   }
                 } else {
+                  console.log('[JG MAP] No numbers or error:', response);
                   numberSuggestions.classList.remove('active');
                 }
               })
@@ -2916,7 +2933,7 @@
 
           editNumberInput.addEventListener('change', updateAddress);
           editNumberInput.addEventListener('blur', function() {
-            setTimeout(function() { numberSuggestions.classList.remove('active'); }, 200);
+            setTimeout(function() { numberSuggestions.classList.remove('active'); }, 300);
           });
         }
 
