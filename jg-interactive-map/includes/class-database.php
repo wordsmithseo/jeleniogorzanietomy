@@ -184,7 +184,11 @@ class JG_Map_Database {
         // Check if address column exists (for geocoding)
         $address = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'address'");
         if (empty($address)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN address varchar(500) DEFAULT NULL AFTER lng");
+            error_log('[JG MAP] Adding address column to database');
+            $result = $wpdb->query("ALTER TABLE $table ADD COLUMN address varchar(500) DEFAULT NULL AFTER lng");
+            error_log('[JG MAP] Address column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
+        } else {
+            error_log('[JG MAP] Address column already exists');
         }
     }
 
@@ -289,7 +293,12 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
-        $wpdb->insert($table, $data);
+        error_log('[JG MAP] insert_point - data: ' . print_r($data, true));
+        $result = $wpdb->insert($table, $data);
+        error_log('[JG MAP] insert_point - result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
+        if ($result === false) {
+            error_log('[JG MAP] insert_point - wpdb error: ' . $wpdb->last_error);
+        }
 
         return $wpdb->insert_id;
     }
