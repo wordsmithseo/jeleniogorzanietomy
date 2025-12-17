@@ -30,6 +30,9 @@ class JG_Map_Database {
         // Table for edit history
         $table_history = $wpdb->prefix . 'jg_map_history';
 
+        // Table for relevance votes
+        $table_relevance_votes = $wpdb->prefix . 'jg_map_relevance_votes';
+
         // Points table SQL
         $sql_points = "CREATE TABLE IF NOT EXISTS $table_points (
             id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -40,6 +43,7 @@ class JG_Map_Database {
             lng decimal(10, 6) NOT NULL,
             address varchar(500) DEFAULT NULL,
             type varchar(50) NOT NULL DEFAULT 'zgloszenie',
+            category varchar(100) DEFAULT NULL,
             status varchar(20) NOT NULL DEFAULT 'pending',
             report_status varchar(20) DEFAULT 'added',
             author_id bigint(20) UNSIGNED NOT NULL,
@@ -104,11 +108,24 @@ class JG_Map_Database {
             KEY status (status)
         ) $charset_collate;";
 
+        // Relevance votes table SQL (for "Nadal aktualne?" voting)
+        $sql_relevance_votes = "CREATE TABLE IF NOT EXISTS $table_relevance_votes (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            user_id bigint(20) UNSIGNED NOT NULL,
+            vote_type varchar(10) NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY user_point (user_id, point_id),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_points);
         dbDelta($sql_votes);
         dbDelta($sql_reports);
         dbDelta($sql_history);
+        dbDelta($sql_relevance_votes);
 
         // Set plugin version
         update_option('jg_map_db_version', JG_MAP_VERSION);
@@ -190,6 +207,14 @@ class JG_Map_Database {
         } else {
             error_log('[JG MAP] Address column already exists');
         }
+
+        // Check if category column exists (for report categories)
+        $category = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'category'");
+        if (empty($category)) {
+            error_log('[JG MAP] Adding category column to database');
+            $result = $wpdb->query("ALTER TABLE $table ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
+            error_log('[JG MAP] Category column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
+        }
     }
 
     /**
@@ -241,6 +266,14 @@ class JG_Map_Database {
     }
 
     /**
+     * Get relevance votes table name
+     */
+    public static function get_relevance_votes_table() {
+        global $wpdb;
+        return $wpdb->prefix . 'jg_map_relevance_votes';
+    }
+
+    /**
      * Get all published points
      */
     public static function get_published_points($include_pending = false) {
@@ -257,7 +290,7 @@ class JG_Map_Database {
             ? "status IN ('publish', 'pending', 'edit')"
             : "status = 'publish'";
 
-        $sql = "SELECT id, title, content, excerpt, lat, lng, type, status, report_status,
+        $sql = "SELECT id, title, content, excerpt, lat, lng, type, category, status, report_status,
                        author_id, author_hidden, is_deletion_requested, deletion_reason,
                        deletion_requested_at, is_promo, promo_until, website, phone,
                        cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
@@ -275,7 +308,7 @@ class JG_Map_Database {
 
         return $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT id, title, content, excerpt, lat, lng, type, status, report_status,
+                "SELECT id, title, content, excerpt, lat, lng, type, category, status, report_status,
                         author_id, author_hidden, is_deletion_requested, deletion_reason,
                         deletion_requested_at, is_promo, promo_until, website, phone,
                         cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
@@ -486,6 +519,74 @@ class JG_Map_Database {
             ),
             array('point_id' => $point_id, 'status' => 'pending')
         );
+    }
+
+    /**
+     * Get relevance votes count for a point (for "Nadal aktualne?" voting)
+     */
+    public static function get_relevance_votes_count($point_id) {
+        global $wpdb;
+        $table = self::get_relevance_votes_table();
+
+        $up = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE point_id = %d AND vote_type = 'up'",
+                $point_id
+            )
+        );
+
+        $down = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE point_id = %d AND vote_type = 'down'",
+                $point_id
+            )
+        );
+
+        return intval($up) - intval($down);
+    }
+
+    /**
+     * Get user's relevance vote for a point
+     */
+    public static function get_user_relevance_vote($point_id, $user_id) {
+        global $wpdb;
+        $table = self::get_relevance_votes_table();
+
+        return $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT vote_type FROM $table WHERE point_id = %d AND user_id = %d",
+                $point_id,
+                $user_id
+            )
+        );
+    }
+
+    /**
+     * Set user relevance vote
+     */
+    public static function set_relevance_vote($point_id, $user_id, $vote_type) {
+        global $wpdb;
+        $table = self::get_relevance_votes_table();
+
+        // Delete existing vote first
+        $wpdb->delete(
+            $table,
+            array('point_id' => $point_id, 'user_id' => $user_id)
+        );
+
+        // Insert new vote if not removing
+        if (!empty($vote_type)) {
+            $wpdb->insert(
+                $table,
+                array(
+                    'point_id' => $point_id,
+                    'user_id' => $user_id,
+                    'vote_type' => $vote_type
+                )
+            );
+        }
+
+        return true;
     }
 
     /**
