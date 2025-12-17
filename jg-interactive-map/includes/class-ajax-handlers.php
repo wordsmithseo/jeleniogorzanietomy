@@ -3546,19 +3546,15 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Use Nominatim API with city search
+        // Use Nominatim API with city search - ONLY search in Poland
         $url = sprintf(
-            'https://nominatim.openstreetmap.org/search?format=json&q=%s&addressdetails=1&limit=10',
+            'https://nominatim.openstreetmap.org/search?format=json&q=%s&addressdetails=1&countrycodes=pl&limit=50',
             urlencode($query)
         );
 
-        // Add viewbox if provided (format from frontend: "minLng,maxLat,maxLng,minLat")
-        if (!empty($bounds)) {
-            $url .= '&viewbox=' . urlencode($bounds) . '&bounded=1';
-        }
-
         // Make server-side request
         error_log('[JG MAP] Requesting Nominatim API: ' . $url);
+        error_log('[JG MAP] Bounds: ' . $bounds);
         $response = wp_remote_get($url, array(
             'timeout' => 10,
             'headers' => array(
@@ -3602,7 +3598,23 @@ class JG_Map_Ajax_Handlers {
 
         error_log('[JG MAP] Results found: ' . count($data));
 
-        // Extract unique cities from Nominatim results
+        // Parse bounds for server-side filtering
+        $boundsArray = null;
+        if (!empty($bounds)) {
+            $parts = explode(',', $bounds);
+            if (count($parts) === 4) {
+                // Format: "minLng,maxLat,maxLng,minLat"
+                $boundsArray = array(
+                    'minLng' => floatval($parts[0]),
+                    'maxLat' => floatval($parts[1]),
+                    'maxLng' => floatval($parts[2]),
+                    'minLat' => floatval($parts[3])
+                );
+                error_log('[JG MAP] Parsed bounds: ' . json_encode($boundsArray));
+            }
+        }
+
+        // Extract unique cities from Nominatim results and filter by bounds
         $results = array();
         $seen = array();
 
@@ -3617,16 +3629,31 @@ class JG_Map_Ajax_Handlers {
                 $city = $address['town'];
             } elseif (!empty($address['village'])) {
                 $city = $address['village'];
-            } elseif (!empty($item['display_name'])) {
-                // Use first part of display_name as fallback
-                $parts = explode(',', $item['display_name']);
-                $city = trim($parts[0]);
             }
 
-            if (!empty($city) && !isset($seen[$city])) {
-                $results[] = array('display_name' => $city);
-                $seen[$city] = true;
+            // Skip if no city found or already added
+            if (empty($city) || isset($seen[$city])) {
+                continue;
             }
+
+            // Filter by bounds if provided
+            if ($boundsArray !== null) {
+                $lat = isset($item['lat']) ? floatval($item['lat']) : null;
+                $lon = isset($item['lon']) ? floatval($item['lon']) : null;
+
+                if ($lat !== null && $lon !== null) {
+                    // Check if coordinates are within bounds
+                    if ($lat < $boundsArray['minLat'] || $lat > $boundsArray['maxLat'] ||
+                        $lon < $boundsArray['minLng'] || $lon > $boundsArray['maxLng']) {
+                        error_log('[JG MAP] Filtered out (out of bounds): ' . $city . ' (' . $lat . ',' . $lon . ')');
+                        continue;
+                    }
+                    error_log('[JG MAP] Accepted (in bounds): ' . $city . ' (' . $lat . ',' . $lon . ')');
+                }
+            }
+
+            $results[] = array('display_name' => $city);
+            $seen[$city] = true;
         }
 
         error_log('[JG MAP] Unique cities extracted: ' . count($results));
@@ -3650,13 +3677,14 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Nominatim street search
+        // Nominatim street search - use q parameter with street and city
+        $searchQuery = $query . ', ' . $city . ', Poland';
         $url = sprintf(
-            'https://nominatim.openstreetmap.org/search?format=json&street=%s&city=%s&countrycodes=pl&addressdetails=1&limit=20',
-            urlencode($query),
-            urlencode($city)
+            'https://nominatim.openstreetmap.org/search?format=json&q=%s&addressdetails=1&countrycodes=pl&limit=50',
+            urlencode($searchQuery)
         );
 
+        error_log('[JG MAP] Street search URL: ' . $url);
         $response = wp_remote_get($url, array(
             'timeout' => 10,
             'headers' => array(
@@ -3665,6 +3693,7 @@ class JG_Map_Ajax_Handlers {
         ));
 
         if (is_wp_error($response)) {
+            error_log('[JG MAP] Street search error: ' . $response->get_error_message());
             wp_send_json_error(array(
                 'message' => 'Błąd połączenia',
                 'error' => $response->get_error_message()
@@ -3674,6 +3703,7 @@ class JG_Map_Ajax_Handlers {
 
         $status_code = wp_remote_retrieve_response_code($response);
         if ($status_code !== 200) {
+            error_log('[JG MAP] Street search bad status: ' . $status_code);
             wp_send_json_error(array(
                 'message' => 'Błąd serwera',
                 'status' => $status_code
@@ -3685,24 +3715,38 @@ class JG_Map_Ajax_Handlers {
         $data = json_decode($body, true);
 
         if ($data === null) {
+            error_log('[JG MAP] Street search JSON error');
             wp_send_json_error(array('message' => 'Błąd odpowiedzi'));
             return;
         }
 
-        // Extract unique streets
+        error_log('[JG MAP] Street search results: ' . count($data));
+
+        // Extract unique streets that match the city
         $results = array();
         $seen = array();
 
         foreach ($data as $item) {
             $address = isset($item['address']) ? $item['address'] : array();
             $street = isset($address['road']) ? $address['road'] : '';
+            $itemCity = isset($address['city']) ? $address['city'] :
+                        (isset($address['town']) ? $address['town'] :
+                        (isset($address['village']) ? $address['village'] : ''));
 
+            // Only include streets from the specified city
             if (!empty($street) && !isset($seen[$street])) {
-                $results[] = array('address' => array('road' => $street));
-                $seen[$street] = true;
+                // Check if city matches (case insensitive)
+                if (empty($itemCity) || strcasecmp($itemCity, $city) === 0) {
+                    error_log('[JG MAP] Adding street: ' . $street . ' from city: ' . $itemCity);
+                    $results[] = array('address' => array('road' => $street));
+                    $seen[$street] = true;
+                } else {
+                    error_log('[JG MAP] Skipping street (wrong city): ' . $street . ' from ' . $itemCity . ' (expected ' . $city . ')');
+                }
             }
         }
 
+        error_log('[JG MAP] Unique streets extracted: ' . count($results));
         wp_send_json_success($results);
     }
 
@@ -3719,13 +3763,15 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Nominatim search for addresses on this street
+        // Nominatim search for addresses on this street - use full address query
+        $searchQuery = $street . ', ' . $city . ', Poland';
         $url = sprintf(
-            'https://nominatim.openstreetmap.org/search?format=json&street=%s&city=%s&countrycodes=pl&addressdetails=1&limit=50',
-            urlencode($street),
-            urlencode($city)
+            'https://nominatim.openstreetmap.org/search?format=json&q=%s&addressdetails=1&countrycodes=pl&limit=100',
+            urlencode($searchQuery)
         );
 
+        error_log('[JG MAP] Number search URL: ' . $url);
+        error_log('[JG MAP] Number search query: ' . $query);
         $response = wp_remote_get($url, array(
             'timeout' => 10,
             'headers' => array(
@@ -3734,6 +3780,7 @@ class JG_Map_Ajax_Handlers {
         ));
 
         if (is_wp_error($response)) {
+            error_log('[JG MAP] Number search error: ' . $response->get_error_message());
             wp_send_json_error(array(
                 'message' => 'Błąd połączenia',
                 'error' => $response->get_error_message()
@@ -3743,6 +3790,7 @@ class JG_Map_Ajax_Handlers {
 
         $status_code = wp_remote_retrieve_response_code($response);
         if ($status_code !== 200) {
+            error_log('[JG MAP] Number search bad status: ' . $status_code);
             wp_send_json_error(array(
                 'message' => 'Błąd serwera',
                 'status' => $status_code
@@ -3754,9 +3802,12 @@ class JG_Map_Ajax_Handlers {
         $data = json_decode($body, true);
 
         if ($data === null) {
+            error_log('[JG MAP] Number search JSON error');
             wp_send_json_error(array('message' => 'Błąd odpowiedzi'));
             return;
         }
+
+        error_log('[JG MAP] Number search results: ' . count($data));
 
         // Extract unique house numbers
         $results = array();
@@ -3765,11 +3816,30 @@ class JG_Map_Ajax_Handlers {
         foreach ($data as $item) {
             $address = isset($item['address']) ? $item['address'] : array();
             $houseNumber = isset($address['house_number']) ? $address['house_number'] : '';
+            $itemStreet = isset($address['road']) ? $address['road'] : '';
 
             if (!empty($houseNumber) && !isset($seen[$houseNumber])) {
-                $results[] = array('address' => array('house_number' => $houseNumber));
-                $seen[$houseNumber] = true;
+                // Verify street matches
+                if (empty($itemStreet) || strcasecmp($itemStreet, $street) === 0) {
+                    // Filter by query if provided
+                    if (empty($query) ||
+                        stripos($houseNumber, $query) === 0 ||
+                        $houseNumber === $query) {
+                        error_log('[JG MAP] Adding number: ' . $houseNumber . ' from street: ' . $itemStreet);
+                        $results[] = array('address' => array('house_number' => $houseNumber));
+                        $seen[$houseNumber] = true;
+                    }
+                } else {
+                    error_log('[JG MAP] Skipping number (wrong street): ' . $houseNumber . ' from ' . $itemStreet . ' (expected ' . $street . ')');
+                }
             }
+        }
+
+        error_log('[JG MAP] Unique numbers extracted: ' . count($results));
+
+        // If no results, log a message
+        if (count($results) === 0) {
+            error_log('[JG MAP] WARNING: No house numbers found for street: ' . $street . ' in city: ' . $city);
         }
 
         wp_send_json_success($results);
