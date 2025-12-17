@@ -2725,71 +2725,57 @@
           editAddressInput.value = fullAddress;
         }
 
-        // City autocomplete - use backend proxy with dynamic map bounds
+        // City autocomplete - IMMEDIATE suggestions
         if (editCityInput && citySuggestions) {
-          var citySearchTimeout = null;
-
           editCityInput.addEventListener('input', function() {
             var query = this.value.trim();
 
-            // Clear previous timeout
-            if (citySearchTimeout) {
-              clearTimeout(citySearchTimeout);
-            }
-
-            if (query.length < 2) {
+            if (query.length < 1) {
               citySuggestions.classList.remove('active');
               return;
             }
 
-            // Debounce to reduce API calls
-            citySearchTimeout = setTimeout(function() {
-              // Get current map bounds
-              var bounds = map.getBounds();
-              var boundsStr = bounds.getWest() + ',' + bounds.getNorth() + ',' + bounds.getEast() + ',' + bounds.getSouth();
+            // Get current map bounds
+            var bounds = map.getBounds();
+            var boundsStr = bounds.getWest() + ',' + bounds.getNorth() + ',' + bounds.getEast() + ',' + bounds.getSouth();
 
-              var formData = new FormData();
-              formData.append('action', 'jg_autocomplete_cities');
-              formData.append('query', query);
-              formData.append('bounds', boundsStr);
+            var formData = new FormData();
+            formData.append('action', 'jg_autocomplete_cities');
+            formData.append('query', query);
+            formData.append('bounds', boundsStr);
 
-              fetch(CFG.ajax, {
-                method: 'POST',
-                body: formData,
-                credentials: 'same-origin'
+            fetch(CFG.ajax, {
+              method: 'POST',
+              body: formData,
+              credentials: 'same-origin'
+            })
+              .then(function(r) { return r.json(); })
+              .then(function(response) {
+                console.log('[JG MAP] City autocomplete response:', response);
+                citySuggestions.innerHTML = '';
+                if (response.success && response.data && response.data.length > 0) {
+                  console.log('[JG MAP] Cities found:', response.data.length);
+                  response.data.forEach(function(item) {
+                    var div = document.createElement('div');
+                    div.className = 'jg-autocomplete-item';
+                    div.textContent = item.display_name;
+                    // Use mousedown instead of click to fire before blur
+                    div.onmousedown = function(e) {
+                      e.preventDefault();
+                      editCityInput.value = this.textContent;
+                      citySuggestions.classList.remove('active');
+                      updateAddress();
+                    };
+                    citySuggestions.appendChild(div);
+                  });
+                  citySuggestions.classList.add('active');
+                } else {
+                  citySuggestions.classList.remove('active');
+                }
               })
-                .then(function(r) { return r.json(); })
-                .then(function(response) {
-                  console.log('[JG MAP] City autocomplete response:', response);
-                  if (!response.success) {
-                    console.error('[JG MAP] Backend error message:', response.data ? response.data.message : 'Unknown');
-                    console.error('[JG MAP] Full backend error:', response.data);
-                  }
-                  citySuggestions.innerHTML = '';
-                  if (response.success && response.data && response.data.length > 0) {
-                    console.log('[JG MAP] Cities found:', response.data.length);
-                    response.data.forEach(function(item) {
-                      var div = document.createElement('div');
-                      div.className = 'jg-autocomplete-item';
-                      div.textContent = item.display_name;
-                      // Use mousedown instead of click to fire before blur
-                      div.onmousedown = function(e) {
-                        e.preventDefault(); // Prevent blur from firing
-                        editCityInput.value = this.textContent;
-                        citySuggestions.classList.remove('active');
-                        updateAddress();
-                      };
-                      citySuggestions.appendChild(div);
-                    });
-                    citySuggestions.classList.add('active');
-                  } else {
-                    citySuggestions.classList.remove('active');
-                  }
-                })
-                .catch(function(err) {
-                  console.error('[JG MAP] City autocomplete error:', err);
-                });
-            }, 500); // Wait 500ms after user stops typing
+              .catch(function(err) {
+                console.error('[JG MAP] City autocomplete error:', err);
+              });
           });
 
           editCityInput.addEventListener('change', updateAddress);
@@ -2798,78 +2784,67 @@
           });
         }
 
-        // Street autocomplete - use backend proxy
+        // Street autocomplete - IMMEDIATE suggestions
         if (editStreetInput && streetSuggestions) {
-          var streetSearchTimeout = null;
-
           editStreetInput.addEventListener('input', function() {
             var query = this.value.trim();
             var city = editCityInput.value.trim();
 
-            // Clear previous timeout
-            if (streetSearchTimeout) {
-              clearTimeout(streetSearchTimeout);
-            }
-
-            if (query.length < 2 || !city) {
+            if (query.length < 1 || !city) {
               streetSuggestions.classList.remove('active');
               return;
             }
 
-            // Debounce to reduce API calls
-            streetSearchTimeout = setTimeout(function() {
-              var formData = new FormData();
-              formData.append('action', 'jg_autocomplete_streets');
-              formData.append('query', query);
-              formData.append('city', city);
+            var formData = new FormData();
+            formData.append('action', 'jg_autocomplete_streets');
+            formData.append('query', query);
+            formData.append('city', city);
 
-              fetch(CFG.ajax, {
-                method: 'POST',
-                body: formData,
-                credentials: 'same-origin'
-              })
-                .then(function(r) { return r.json(); })
-                .then(function(response) {
-                  console.log('[JG MAP] Street autocomplete response:', response);
-                  streetSuggestions.innerHTML = '';
-                  if (response.success && response.data && response.data.length > 0) {
-                    console.log('[JG MAP] Streets found:', response.data.length);
-                    var streets = {};
-                    response.data.forEach(function(item) {
-                      var addr = item.address || {};
-                      var street = addr.road || '';
-                      if (street) streets[street] = true;
-                    });
+            fetch(CFG.ajax, {
+              method: 'POST',
+              body: formData,
+              credentials: 'same-origin'
+            })
+              .then(function(r) { return r.json(); })
+              .then(function(response) {
+                console.log('[JG MAP] Street autocomplete response:', response);
+                streetSuggestions.innerHTML = '';
+                if (response.success && response.data && response.data.length > 0) {
+                  console.log('[JG MAP] Streets found:', response.data.length);
+                  var streets = {};
+                  response.data.forEach(function(item) {
+                    var addr = item.address || {};
+                    var street = addr.road || '';
+                    if (street) streets[street] = true;
+                  });
 
-                    console.log('[JG MAP] Unique streets:', Object.keys(streets).length);
-                    Object.keys(streets).forEach(function(street) {
-                      var div = document.createElement('div');
-                      div.className = 'jg-autocomplete-item';
-                      div.textContent = street;
-                      // Use mousedown instead of click to fire before blur
-                      div.onmousedown = function(e) {
-                        e.preventDefault(); // Prevent blur from firing
-                        editStreetInput.value = this.textContent;
-                        streetSuggestions.classList.remove('active');
-                        updateAddress();
-                      };
-                      streetSuggestions.appendChild(div);
-                    });
-
-                    if (Object.keys(streets).length > 0) {
-                      streetSuggestions.classList.add('active');
-                    } else {
+                  console.log('[JG MAP] Unique streets:', Object.keys(streets).length);
+                  Object.keys(streets).forEach(function(street) {
+                    var div = document.createElement('div');
+                    div.className = 'jg-autocomplete-item';
+                    div.textContent = street;
+                    div.onmousedown = function(e) {
+                      e.preventDefault();
+                      editStreetInput.value = this.textContent;
                       streetSuggestions.classList.remove('active');
-                    }
+                      updateAddress();
+                    };
+                    streetSuggestions.appendChild(div);
+                  });
+
+                  if (Object.keys(streets).length > 0) {
+                    streetSuggestions.classList.add('active');
                   } else {
-                    console.log('[JG MAP] No streets or error:', response);
                     streetSuggestions.classList.remove('active');
                   }
-                })
-                .catch(function(err) {
-                  console.error('[JG MAP] Street autocomplete error:', err);
-                });
-            }, 500); // Wait 500ms after user stops typing
+                } else {
+                  console.log('[JG MAP] No streets or error:', response);
+                  streetSuggestions.classList.remove('active');
+                }
+              })
+              .catch(function(err) {
+                console.error('[JG MAP] Street autocomplete error:', err);
+              });
           });
 
           editStreetInput.addEventListener('change', updateAddress);
@@ -2878,85 +2853,74 @@
           });
         }
 
-        // Number autocomplete - use backend proxy
+        // Number autocomplete - IMMEDIATE suggestions
         if (editNumberInput && numberSuggestions) {
-          var numberSearchTimeout = null;
-
           editNumberInput.addEventListener('input', function() {
             var query = this.value.trim();
             var street = editStreetInput.value.trim();
             var city = editCityInput.value.trim();
-
-            // Clear previous timeout
-            if (numberSearchTimeout) {
-              clearTimeout(numberSearchTimeout);
-            }
 
             if (!street || !city) {
               numberSuggestions.classList.remove('active');
               return;
             }
 
-            // Debounce to reduce API calls
-            numberSearchTimeout = setTimeout(function() {
-              var formData = new FormData();
-              formData.append('action', 'jg_autocomplete_numbers');
-              formData.append('query', query);
-              formData.append('street', street);
-              formData.append('city', city);
+            var formData = new FormData();
+            formData.append('action', 'jg_autocomplete_numbers');
+            formData.append('query', query);
+            formData.append('street', street);
+            formData.append('city', city);
 
-              fetch(CFG.ajax, {
-                method: 'POST',
-                body: formData,
-                credentials: 'same-origin'
-              })
-                .then(function(r) { return r.json(); })
-                .then(function(response) {
-                  console.log('[JG MAP] Number autocomplete response:', response);
-                  numberSuggestions.innerHTML = '';
-                  if (response.success && response.data && response.data.length > 0) {
-                    console.log('[JG MAP] Numbers found:', response.data.length);
-                    var numbers = {};
-                    response.data.forEach(function(item) {
-                      var addr = item.address || {};
-                      var houseNumber = addr.house_number || '';
-                      if (houseNumber) {
-                        // Filter by query if provided
-                        if (!query || houseNumber.toLowerCase().indexOf(query.toLowerCase()) === 0) {
-                          numbers[houseNumber] = true;
-                        }
+            fetch(CFG.ajax, {
+              method: 'POST',
+              body: formData,
+              credentials: 'same-origin'
+            })
+              .then(function(r) { return r.json(); })
+              .then(function(response) {
+                console.log('[JG MAP] Number autocomplete response:', response);
+                numberSuggestions.innerHTML = '';
+                if (response.success && response.data && response.data.length > 0) {
+                  console.log('[JG MAP] Numbers found:', response.data.length);
+                  var numbers = {};
+                  response.data.forEach(function(item) {
+                    var addr = item.address || {};
+                    var houseNumber = addr.house_number || '';
+                    if (houseNumber) {
+                      // Filter by query if provided
+                      if (!query || houseNumber.toLowerCase().indexOf(query.toLowerCase()) === 0) {
+                        numbers[houseNumber] = true;
                       }
-                    });
-
-                    console.log('[JG MAP] Unique numbers after filter:', Object.keys(numbers).length);
-                    Object.keys(numbers).forEach(function(number) {
-                      var div = document.createElement('div');
-                      div.className = 'jg-autocomplete-item';
-                      div.textContent = number;
-                      // Use mousedown instead of click to fire before blur
-                      div.onmousedown = function(e) {
-                        e.preventDefault(); // Prevent blur from firing
-                        editNumberInput.value = this.textContent;
-                        numberSuggestions.classList.remove('active');
-                        updateAddress();
-                      };
-                      numberSuggestions.appendChild(div);
-                    });
-
-                    if (Object.keys(numbers).length > 0) {
-                      numberSuggestions.classList.add('active');
-                    } else {
-                      numberSuggestions.classList.remove('active');
                     }
+                  });
+
+                  console.log('[JG MAP] Unique numbers after filter:', Object.keys(numbers).length);
+                  Object.keys(numbers).forEach(function(number) {
+                    var div = document.createElement('div');
+                    div.className = 'jg-autocomplete-item';
+                    div.textContent = number;
+                    div.onmousedown = function(e) {
+                      e.preventDefault();
+                      editNumberInput.value = this.textContent;
+                      numberSuggestions.classList.remove('active');
+                      updateAddress();
+                    };
+                    numberSuggestions.appendChild(div);
+                  });
+
+                  if (Object.keys(numbers).length > 0) {
+                    numberSuggestions.classList.add('active');
                   } else {
-                    console.log('[JG MAP] No numbers or error:', response);
                     numberSuggestions.classList.remove('active');
                   }
-                })
-                .catch(function(err) {
-                  console.error('[JG MAP] Number autocomplete error:', err);
-                });
-            }, 500); // Wait 500ms after user stops typing
+                } else {
+                  console.log('[JG MAP] No numbers or error:', response);
+                  numberSuggestions.classList.remove('active');
+                }
+              })
+              .catch(function(err) {
+                console.error('[JG MAP] Number autocomplete error:', err);
+              });
           });
 
           editNumberInput.addEventListener('change', updateAddress);
@@ -3343,6 +3307,9 @@
       }
 
       function openDetails(p) {
+        console.log('[JG MAP] Opening details for point:', p);
+        console.log('[JG MAP] Point address:', p.address);
+
         var imgs = Array.isArray(p.images) ? p.images : [];
 
         // Check if user can delete images (admin/moderator or own place)
