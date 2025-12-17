@@ -255,7 +255,7 @@ class JG_Map_Database {
         $sql = "SELECT id, title, content, excerpt, lat, lng, type, status, report_status,
                        author_id, author_hidden, is_deletion_requested, deletion_reason,
                        deletion_requested_at, is_promo, promo_until, website, phone,
-                       cta_enabled, cta_type, admin_note, images, created_at, updated_at, ip_address
+                       cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
                 FROM $table WHERE $status_condition ORDER BY created_at DESC";
 
         return $wpdb->get_results($sql, ARRAY_A);
@@ -273,7 +273,7 @@ class JG_Map_Database {
                 "SELECT id, title, content, excerpt, lat, lng, type, status, report_status,
                         author_id, author_hidden, is_deletion_requested, deletion_reason,
                         deletion_requested_at, is_promo, promo_until, website, phone,
-                        cta_enabled, cta_type, admin_note, images, created_at, updated_at, ip_address
+                        cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
                  FROM $table WHERE id = %d",
                 $point_id
             ),
