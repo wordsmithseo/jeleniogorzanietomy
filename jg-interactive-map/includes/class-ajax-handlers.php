@@ -1033,6 +1033,32 @@ class JG_Map_Ajax_Handlers {
 
         $votes_count = JG_Map_Database::get_votes_count($point_id);
 
+        // Check if votes dropped to -100 or below - auto-report to moderation
+        if ($votes_count <= -100) {
+            // Check if already reported for this reason
+            $user_email = wp_get_current_user()->user_email;
+            $reason_text = 'Zgłoszenie z dużą dezaprobatą społeczności (automatyczne zgłoszenie: głosowanie wynosi ' . $votes_count . ')';
+
+            // Check if not already reported with this reason
+            global $wpdb;
+            $reports_table = JG_Map_Database::get_reports_table();
+            $existing_auto_report = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM $reports_table WHERE point_id = %d AND reason LIKE %s AND status = 'pending'",
+                    $point_id,
+                    '%Zgłoszenie z dużą dezaprobatą społeczności%'
+                )
+            );
+
+            if ($existing_auto_report == 0) {
+                // Auto-report to moderation
+                JG_Map_Database::add_report($point_id, $user_id, $user_email, $reason_text);
+
+                // Notify admin
+                $this->notify_admin_auto_negative_report($point_id, $votes_count);
+            }
+        }
+
         wp_send_json_success(array(
             'votes' => $votes_count,
             'my_vote' => $new_vote
@@ -1992,6 +2018,22 @@ class JG_Map_Ajax_Handlers {
         $message = "Miejsce zostało automatycznie zgłoszone do moderacji z powodu niskich głosów na aktualność:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
         $message .= "Głosy \"Nadal aktualne?\": {$relevance_votes_count}\n";
+        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
+
+        wp_mail($admin_email, $subject, $message);
+    }
+
+    /**
+     * Notify admin about auto-report due to negative votes
+     */
+    private function notify_admin_auto_negative_report($point_id, $votes_count) {
+        $admin_email = get_option('admin_email');
+        $point = JG_Map_Database::get_point($point_id);
+
+        $subject = 'Portal Jeleniogórzanie to my - Automatyczne zgłoszenie miejsca (duża dezaprobata)';
+        $message = "Miejsce zostało automatycznie zgłoszone do moderacji z powodu dużej dezaprobaty społeczności:\n\n";
+        $message .= "Tytuł: {$point['title']}\n";
+        $message .= "Liczba głosów: {$votes_count}\n";
         $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
 
         wp_mail($admin_email, $subject, $message);
