@@ -287,6 +287,8 @@ class JG_Map_Ajax_Handlers {
                 $is_deletion_requested = ($deletion_info !== null);
             }
 
+            error_log('[JG MAP] get_points - point #' . $point['id'] . ' address from DB: "' . ($point['address'] ?? 'NULL') . '"');
+
             $result[] = array(
                 'id' => intval($point['id']),
                 'title' => $point['title'],
@@ -479,6 +481,8 @@ class JG_Map_Ajax_Handlers {
         $content = wp_kses_post($_POST['content'] ?? '');
         $address = sanitize_text_field($_POST['address'] ?? '');
         $public_name = isset($_POST['public_name']);
+
+        error_log('[JG MAP] submit_point - address received: "' . $address . '"');
 
         if (empty($title) || $lat === 0.0 || $lng === 0.0) {
             wp_send_json_error(array('message' => 'Wypełnij wszystkie wymagane pola'));
