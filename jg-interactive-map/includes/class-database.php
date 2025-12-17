@@ -38,6 +38,7 @@ class JG_Map_Database {
             excerpt text,
             lat decimal(10, 6) NOT NULL,
             lng decimal(10, 6) NOT NULL,
+            address varchar(500) DEFAULT NULL,
             type varchar(50) NOT NULL DEFAULT 'zgloszenie',
             status varchar(20) NOT NULL DEFAULT 'pending',
             report_status varchar(20) DEFAULT 'added',
