@@ -1693,6 +1693,7 @@
               content: r.content || '',
               lat: +r.lat,
               lng: +r.lng,
+              address: r.address || '',
               type: r.type || 'zgloszenie',
               sponsored: !!r.sponsored,
               sponsored_until: r.sponsored_until || null,
