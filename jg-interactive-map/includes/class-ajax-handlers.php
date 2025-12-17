@@ -11,6 +11,52 @@ if (!defined('ABSPATH')) {
 class JG_Map_Ajax_Handlers {
 
     /**
+     * Report categories configuration
+     * Maps category keys to their display labels and group
+     */
+    public static function get_report_categories() {
+        return array(
+            // Zgłoszenie usterek infrastruktury
+            'dziura_w_jezdni' => array('label' => 'Dziura w jezdni', 'group' => 'infrastructure', 'icon' => '🕳️'),
+            'uszkodzone_chodniki' => array('label' => 'Uszkodzone chodniki', 'group' => 'infrastructure', 'icon' => '🚶'),
+            'znaki_drogowe' => array('label' => 'Brakujące lub zniszczone znaki drogowe', 'group' => 'infrastructure', 'icon' => '🚸'),
+            'oswietlenie' => array('label' => 'Awarie oświetlenia ulicznego', 'group' => 'infrastructure', 'icon' => '💡'),
+
+            // Porządek i bezpieczeństwo
+            'dzikie_wysypisko' => array('label' => 'Dzikie wysypisko śmieci', 'group' => 'safety', 'icon' => '🗑️'),
+            'przepelniony_kosz' => array('label' => 'Przepełniony kosz na śmieci', 'group' => 'safety', 'icon' => '♻️'),
+            'graffiti' => array('label' => 'Graffiti', 'group' => 'safety', 'icon' => '🎨'),
+            'sliski_chodnik' => array('label' => 'Śliski chodnik', 'group' => 'safety', 'icon' => '⚠️'),
+
+            // Zieleń i estetyka miasta
+            'nasadzenie_drzew' => array('label' => 'Potrzeba nasadzenia drzew', 'group' => 'greenery', 'icon' => '🌳'),
+            'nieprzycięta_gałąź' => array('label' => 'Nieprzycięta gałąź zagrażająca niebezpieczeństwu', 'group' => 'greenery', 'icon' => '🌿'),
+
+            // Transport i komunikacja
+            'brak_przejscia' => array('label' => 'Brak przejścia dla pieszych', 'group' => 'transport', 'icon' => '🚦'),
+            'przystanek_autobusowy' => array('label' => 'Potrzeba przystanku autobusowego', 'group' => 'transport', 'icon' => '🚏'),
+            'organizacja_ruchu' => array('label' => 'Problem z organizacją ruchu', 'group' => 'transport', 'icon' => '🚗'),
+            'korki' => array('label' => 'Powtarzające się korki', 'group' => 'transport', 'icon' => '🚙'),
+
+            // Inicjatywy społeczne i rozwojowe
+            'mala_infrastruktura' => array('label' => 'Propozycja nowych obiektów małej infrastruktury (ławki, place zabaw, stojaki rowerowe)', 'group' => 'initiatives', 'icon' => '🎪')
+        );
+    }
+
+    /**
+     * Get category groups for display
+     */
+    public static function get_category_groups() {
+        return array(
+            'infrastructure' => 'Zgłoszenie usterek infrastruktury',
+            'safety' => 'Porządek i bezpieczeństwo',
+            'greenery' => 'Zieleń i estetyka miasta',
+            'transport' => 'Transport i komunikacja',
+            'initiatives' => 'Inicjatywy społeczne i rozwojowe'
+        );
+    }
+
+    /**
      * Single instance
      */
     private static $instance = null;
@@ -52,6 +98,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
         add_action('wp_ajax_jg_update_point', array($this, 'update_point'));
         add_action('wp_ajax_jg_vote', array($this, 'vote'));
+        add_action('wp_ajax_jg_relevance_vote', array($this, 'relevance_vote'));
         add_action('wp_ajax_jg_report_point', array($this, 'report_point'));
         add_action('wp_ajax_jg_author_points', array($this, 'get_author_points'));
         add_action('wp_ajax_jg_request_deletion', array($this, 'request_deletion'));
@@ -196,6 +243,13 @@ class JG_Map_Ajax_Handlers {
                 $my_vote = JG_Map_Database::get_user_vote($point['id'], $current_user_id) ?: '';
             }
 
+            // Get relevance votes
+            $relevance_votes_count = JG_Map_Database::get_relevance_votes_count($point['id']);
+            $my_relevance_vote = '';
+            if ($current_user_id > 0) {
+                $my_relevance_vote = JG_Map_Database::get_user_relevance_vote($point['id'], $current_user_id) ?: '';
+            }
+
             // Get reports count
             $reports_count = 0;
             if ($is_admin) {
@@ -298,6 +352,7 @@ class JG_Map_Ajax_Handlers {
                 'lng' => floatval($point['lng']),
                 'address' => $point['address'] ?? '',
                 'type' => $point['type'],
+                'category' => $point['category'] ?? null,
                 'sponsored' => $is_sponsored,
                 'sponsored_until' => $sponsored_until,
                 'website' => $point['website'] ?? null,
@@ -314,6 +369,8 @@ class JG_Map_Ajax_Handlers {
                 'images' => $images,
                 'votes' => $votes_count,
                 'my_vote' => $my_vote,
+                'relevance_votes' => $relevance_votes_count,
+                'my_relevance_vote' => $my_relevance_vote,
                 'date' => array(
                     'raw' => $point['created_at'],
                     'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu'
@@ -481,12 +538,77 @@ class JG_Map_Ajax_Handlers {
         $content = wp_kses_post($_POST['content'] ?? '');
         $address = sanitize_text_field($_POST['address'] ?? '');
         $public_name = isset($_POST['public_name']);
+        $category = sanitize_text_field($_POST['category'] ?? '');
 
         error_log('[JG MAP] submit_point - address received: "' . $address . '"');
 
         if (empty($title) || $lat === 0.0 || $lng === 0.0) {
             wp_send_json_error(array('message' => 'Wypełnij wszystkie wymagane pola'));
             exit;
+        }
+
+        // Validate category for reports (zgłoszenie)
+        if ($type === 'zgloszenie') {
+            if (empty($category)) {
+                wp_send_json_error(array('message' => 'Wybór kategorii zgłoszenia jest wymagany'));
+                exit;
+            }
+
+            // Validate category exists
+            $valid_categories = array_keys(self::get_report_categories());
+            if (!in_array($category, $valid_categories)) {
+                wp_send_json_error(array('message' => 'Nieprawidłowa kategoria zgłoszenia'));
+                exit;
+            }
+
+            // Check for duplicate reports in the same location (within 50m radius) with same category
+            global $wpdb;
+            $table = JG_Map_Database::get_points_table();
+
+            // Haversine formula to find points within 50m
+            // Earth radius = 6371000 meters
+            $radius = 50; // meters
+            $lat_range = $radius / 111000; // 1 degree lat = ~111km
+            $lng_range = $radius / (111000 * cos(deg2rad($lat)));
+
+            $nearby_reports = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT id, title, category FROM $table
+                     WHERE type = 'zgloszenie'
+                     AND category = %s
+                     AND status IN ('publish', 'pending')
+                     AND lat BETWEEN %f AND %f
+                     AND lng BETWEEN %f AND %f
+                     AND (
+                         6371000 * 2 * ASIN(SQRT(
+                             POWER(SIN((%f - lat) * PI() / 180 / 2), 2) +
+                             COS(%f * PI() / 180) * COS(lat * PI() / 180) *
+                             POWER(SIN((%f - lng) * PI() / 180 / 2), 2)
+                         ))
+                     ) <= %f
+                     LIMIT 1",
+                    $category,
+                    $lat - $lat_range,
+                    $lat + $lat_range,
+                    $lng - $lng_range,
+                    $lng + $lng_range,
+                    $lat,
+                    $lat,
+                    $lng,
+                    $radius
+                ),
+                ARRAY_A
+            );
+
+            if (!empty($nearby_reports)) {
+                $categories = self::get_report_categories();
+                $category_label = $categories[$category]['label'] ?? $category;
+                wp_send_json_error(array(
+                    'message' => 'W tej lokalizacji jest już zgłoszone zdarzenie tego samego typu: "' . $category_label . '". Możesz na nie zagłosować zamiast dodawać nowe zgłoszenie.',
+                    'duplicate_point_id' => intval($nearby_reports[0]['id'])
+                ));
+                exit;
+            }
         }
 
         // Handle image uploads
@@ -521,7 +643,7 @@ class JG_Map_Ajax_Handlers {
         $ip_address = $this->get_user_ip();
 
         // Insert point
-        $point_id = JG_Map_Database::insert_point(array(
+        $point_data = array(
             'title' => $title,
             'content' => $content,
             'excerpt' => wp_trim_words($content, 20),
@@ -537,7 +659,14 @@ class JG_Map_Ajax_Handlers {
             'ip_address' => $ip_address,
             'created_at' => current_time('mysql', true),  // GMT time for consistency
             'updated_at' => current_time('mysql', true)   // GMT time for consistency
-        ));
+        );
+
+        // Add category if it's a report (zgłoszenie)
+        if ($type === 'zgloszenie' && !empty($category)) {
+            $point_data['category'] = $category;
+        }
+
+        $point_id = JG_Map_Database::insert_point($point_data);
 
         if ($point_id) {
             // Send email notification to admin
@@ -907,6 +1036,86 @@ class JG_Map_Ajax_Handlers {
         wp_send_json_success(array(
             'votes' => $votes_count,
             'my_vote' => $new_vote
+        ));
+    }
+
+    /**
+     * Vote on point relevance (Nadal aktualne?)
+     */
+    public function relevance_vote() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $user_id = get_current_user_id();
+
+        // Check if user is banned
+        if (self::is_user_banned($user_id)) {
+            wp_send_json_error(array('message' => 'Twoje konto zostało zbanowane'));
+            exit;
+        }
+
+        // Check if user has restriction for voting
+        if (self::has_user_restriction($user_id, 'voting')) {
+            wp_send_json_error(array('message' => 'Masz zablokowaną możliwość głosowania'));
+            exit;
+        }
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+        $direction = sanitize_text_field($_POST['dir'] ?? '');
+
+        if (!$point_id || !in_array($direction, array('up', 'down'))) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        // Get current vote
+        $current_vote = JG_Map_Database::get_user_relevance_vote($point_id, $user_id);
+
+        // Toggle vote
+        $new_vote = '';
+        if ($current_vote === $direction) {
+            $new_vote = ''; // Remove vote
+        } else {
+            $new_vote = $direction;
+        }
+
+        JG_Map_Database::set_relevance_vote($point_id, $user_id, $new_vote);
+
+        $relevance_votes_count = JG_Map_Database::get_relevance_votes_count($point_id);
+
+        // Check if relevance votes dropped to -100 or below - auto-report to moderation
+        if ($relevance_votes_count <= -100) {
+            // Check if already reported for this reason
+            $user_email = wp_get_current_user()->user_email;
+            $reason_text = 'Prawdopodobnie nieaktualne (automatyczne zgłoszenie: głosowanie "Nadal aktualne?" wynosi ' . $relevance_votes_count . ')';
+
+            // Check if not already reported with this reason
+            global $wpdb;
+            $reports_table = JG_Map_Database::get_reports_table();
+            $existing_auto_report = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM $reports_table WHERE point_id = %d AND reason LIKE %s AND status = 'pending'",
+                    $point_id,
+                    '%Prawdopodobnie nieaktualne (automatyczne zgłoszenie%'
+                )
+            );
+
+            if ($existing_auto_report == 0) {
+                // Auto-report to moderation
+                JG_Map_Database::add_report($point_id, $user_id, $user_email, $reason_text);
+
+                // Notify admin
+                $this->notify_admin_auto_report($point_id, $relevance_votes_count);
+            }
+        }
+
+        wp_send_json_success(array(
+            'relevance_votes' => $relevance_votes_count,
+            'my_relevance_vote' => $new_vote
         ));
     }
 
@@ -1767,6 +1976,22 @@ class JG_Map_Ajax_Handlers {
         $subject = 'Portal Jeleniogórzanie to my - Nowe zgłoszenie miejsca';
         $message = "Miejsce zostało zgłoszone:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
+        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
+
+        wp_mail($admin_email, $subject, $message);
+    }
+
+    /**
+     * Notify admin about auto-report due to low relevance votes
+     */
+    private function notify_admin_auto_report($point_id, $relevance_votes_count) {
+        $admin_email = get_option('admin_email');
+        $point = JG_Map_Database::get_point($point_id);
+
+        $subject = 'Portal Jeleniogórzanie to my - Automatyczne zgłoszenie miejsca (nieaktualne)';
+        $message = "Miejsce zostało automatycznie zgłoszone do moderacji z powodu niskich głosów na aktualność:\n\n";
+        $message .= "Tytuł: {$point['title']}\n";
+        $message .= "Głosy \"Nadal aktualne?\": {$relevance_votes_count}\n";
         $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
 
         wp_mail($admin_email, $subject, $message);

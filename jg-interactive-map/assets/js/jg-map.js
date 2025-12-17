@@ -961,10 +961,38 @@
                 limitsHtml +
                 '<div class="cols-2" id="add-address-display" style="padding:8px 12px;background:#f3f4f6;border-left:3px solid #8d2324;border-radius:4px;font-size:13px;color:#374151;margin-bottom:8px"><strong>📍 Wczytywanie adresu...</strong></div>' +
                 '<label>Tytuł* <input name="title" required placeholder="Nazwa miejsca" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
-                '<label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+                '<label>Typ* <select name="type" id="add-type-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
                 '<option value="zgloszenie">Zgłoszenie</option>' +
                 '<option value="ciekawostka">Ciekawostka</option>' +
                 '<option value="miejsce">Miejsce</option>' +
+                '</select></label>' +
+                '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+                '<option value="">-- Wybierz kategorię --</option>' +
+                '<optgroup label="Zgłoszenie usterek infrastruktury">' +
+                '<option value="dziura_w_jezdni">🕳️ Dziura w jezdni</option>' +
+                '<option value="uszkodzone_chodniki">🚶 Uszkodzone chodniki</option>' +
+                '<option value="znaki_drogowe">🚸 Brakujące lub zniszczone znaki drogowe</option>' +
+                '<option value="oswietlenie">💡 Awarie oświetlenia ulicznego</option>' +
+                '</optgroup>' +
+                '<optgroup label="Porządek i bezpieczeństwo">' +
+                '<option value="dzikie_wysypisko">🗑️ Dzikie wysypisko śmieci</option>' +
+                '<option value="przepelniony_kosz">♻️ Przepełniony kosz na śmieci</option>' +
+                '<option value="graffiti">🎨 Graffiti</option>' +
+                '<option value="sliski_chodnik">⚠️ Śliski chodnik</option>' +
+                '</optgroup>' +
+                '<optgroup label="Zieleń i estetyka miasta">' +
+                '<option value="nasadzenie_drzew">🌳 Potrzeba nasadzenia drzew</option>' +
+                '<option value="nieprzycięta_gałąź">🌿 Nieprzycięta gałąź zagrażająca niebezpieczeństwu</option>' +
+                '</optgroup>' +
+                '<optgroup label="Transport i komunikacja">' +
+                '<option value="brak_przejscia">🚦 Brak przejścia dla pieszych</option>' +
+                '<option value="przystanek_autobusowy">🚏 Potrzeba przystanku autobusowego</option>' +
+                '<option value="organizacja_ruchu">🚗 Problem z organizacją ruchu</option>' +
+                '<option value="korki">🚙 Powtarzające się korki</option>' +
+                '</optgroup>' +
+                '<optgroup label="Inicjatywy społeczne i rozwojowe">' +
+                '<option value="mala_infrastruktura">🎪 Propozycja nowych obiektów małej infrastruktury</option>' +
+                '</optgroup>' +
                 '</select></label>' +
                 '<label class="cols-2">Opis <textarea name="content" rows="4" maxlength="200" id="add-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><div id="add-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">0 / 200 znaków</div></label>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
@@ -1046,6 +1074,31 @@
                 });
               }
 
+              // Toggle category field based on type selection
+              var typeSelect = qs('#add-type-select', modalAdd);
+              var categoryField = qs('#add-category-field', modalAdd);
+              var categorySelect = qs('#add-category-select', modalAdd);
+
+              if (typeSelect && categoryField && categorySelect) {
+                // Function to toggle category field visibility
+                function toggleCategoryField() {
+                  if (typeSelect.value === 'zgloszenie') {
+                    categoryField.style.display = 'block';
+                    categorySelect.setAttribute('required', 'required');
+                  } else {
+                    categoryField.style.display = 'none';
+                    categorySelect.removeAttribute('required');
+                    categorySelect.value = '';
+                  }
+                }
+
+                // Initial toggle on page load (default is zgloszenie)
+                toggleCategoryField();
+
+                // Listen for changes
+                typeSelect.addEventListener('change', toggleCategoryField);
+              }
+
               // AUTOMATIC REVERSE GEOCODING - display address automatically
               var addressInput = qs('#add-address-input', modalAdd);
               var addressDisplay = qs('#add-address-display', modalAdd);
@@ -1122,6 +1175,16 @@
               } catch (_) {}
 
               if (!j || j.success === false) {
+                // Handle duplicate point error specially
+                if (j && j.data && j.data.duplicate_point_id) {
+                  var duplicatePointId = j.data.duplicate_point_id;
+                  msg.innerHTML = (j.data.message || 'Błąd') + ' <br><button style="margin-top:8px;padding:6px 12px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="' +
+                    'document.getElementById(\'jg-map-modal-add\').style.display=\'none\';' +
+                    'window.location.hash=\'#point-' + duplicatePointId + '\';' +
+                    '">Zobacz istniejące zgłoszenie</button>';
+                  msg.style.color = '#b91c1c';
+                  return;
+                }
                 throw new Error((j && j.data && j.data.message) || 'Błąd');
               }
 
