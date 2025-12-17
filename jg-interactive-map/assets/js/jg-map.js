@@ -1334,7 +1334,26 @@
 
         var labelHtml = '<span class="' + labelClass + '">' + esc(p.title || 'Bez nazwy') + suffix + '</span>';
 
-        // Star emoji ONLY for sponsored pins
+        // Category emoji mapping for reports
+        var categoryEmojis = {
+          'dziura_w_jezdni': '🕳️',
+          'uszkodzone_chodniki': '🚶',
+          'znaki_drogowe': '🚸',
+          'oswietlenie': '💡',
+          'dzikie_wysypisko': '🗑️',
+          'przepelniony_kosz': '♻️',
+          'graffiti': '🎨',
+          'sliski_chodnik': '⚠️',
+          'nasadzenie_drzew': '🌳',
+          'nieprzycięta_gałąź': '🌿',
+          'brak_przejscia': '🚦',
+          'przystanek_autobusowy': '🚏',
+          'organizacja_ruchu': '🚗',
+          'korki': '🚙',
+          'mala_infrastruktura': '🎪'
+        };
+
+        // Star emoji for sponsored pins, category emoji for reports, or nothing for others
         var centerContent = '';
         if (sponsored) {
           var emojiFontSize = 28;
@@ -1346,6 +1365,17 @@
             'filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));' +
             'z-index:2;';
           centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">⭐</div>';
+        } else if (p.type === 'zgloszenie' && p.category && categoryEmojis[p.category]) {
+          // Show category emoji for reports
+          var emojiFontSize = 22;
+          var emojiStyle = 'position:absolute;' +
+            'top:' + (pinHeight * 0.32) + 'px;' +
+            'left:50%;' +
+            'transform:translate(-50%,-50%);' +
+            'font-size:' + emojiFontSize + 'px;' +
+            'filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));' +
+            'z-index:2;';
+          centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">' + categoryEmojis[p.category] + '</div>';
         }
 
         var iconHtml = '<div class="jg-pin-svg-wrapper" style="position:relative;width:' + pinWidth + 'px;height:' + pinHeight + 'px;">' +
@@ -3325,6 +3355,34 @@
           voteHtml = '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>';
         }
 
+        // Community verification badge (based on votes)
+        var verificationBadge = '';
+        if (p.votes && !p.sponsored) {
+          if (+p.votes >= 10) {
+            verificationBadge = '<div style="padding:10px;background:#d1fae5;border:2px solid #10b981;border-radius:8px;margin:10px 0;text-align:center"><strong style="color:#065f46">✅ Zweryfikowane przez społeczność Jeleniej Góry</strong><div style="font-size:12px;color:#047857;margin-top:4px">To miejsce otrzymało pozytywną weryfikację od społeczności</div></div>';
+          } else if (+p.votes <= -10) {
+            verificationBadge = '<div style="padding:10px;background:#fee2e2;border:2px solid #ef4444;border-radius:8px;margin:10px 0;text-align:center"><strong style="color:#991b1b">⚠️ Nie zyskało weryfikacji społeczności Jeleniej Góry</strong><div style="font-size:12px;color:#b91c1c;margin-top:4px">To miejsce ma negatywną ocenę społeczności</div></div>';
+          }
+        }
+
+        // Relevance voting (Nadal aktualne?) - only for zgloszenie type
+        var relevanceVoteHtml = '';
+        if (p.type === 'zgloszenie' && !p.sponsored) {
+          var myRelevanceVote = p.my_relevance_vote || '';
+          var relevanceVotes = +p.relevance_votes || 0;
+          var relevanceColor = relevanceVotes >= 0 ? '#10b981' : '#ef4444';
+
+          relevanceVoteHtml = '<div style="margin:16px 0;padding:12px;background:#f9fafb;border:2px solid #e5e7eb;border-radius:8px">' +
+            '<div style="font-weight:600;margin-bottom:8px;color:#374151">Nadal aktualne?</div>' +
+            '<div style="display:flex;align-items:center;gap:8px">' +
+            '<button id="rel-up" class="jg-btn jg-btn--ghost" ' + (myRelevanceVote === 'up' ? 'style="background:#10b981;color:#fff"' : '') + '>👍 Tak</button>' +
+            '<span style="font-weight:700;font-size:18px;color:' + relevanceColor + ';min-width:40px;text-align:center">' + relevanceVotes + '</span>' +
+            '<button id="rel-down" class="jg-btn jg-btn--ghost" ' + (myRelevanceVote === 'down' ? 'style="background:#ef4444;color:#fff"' : '') + '>👎 Nie</button>' +
+            '</div>' +
+            '<div style="font-size:11px;color:#6b7280;margin-top:6px">Pomóż innym użytkownikom - oceń czy problem nadal istnieje</div>' +
+            '</div>';
+        }
+
         // Contact info for sponsored points
         var contactInfo = '';
         if (p.sponsored && (p.website || p.phone)) {
@@ -3365,7 +3423,7 @@
           addressInfo = '<div style="margin:8px 0;padding:8px 12px;background:#f3f4f6;border-left:3px solid #8d2324;border-radius:4px;font-size:13px;color:#374151"><strong>📍 Adres:</strong> ' + esc(p.address) + '</div>';
         }
 
-        var html = '<header><h3 class="jg-place-title">' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + addressInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var html = '<header><h3 class="jg-place-title">' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + addressInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + verificationBadge + voteHtml + relevanceVoteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim() });
 
@@ -3465,6 +3523,61 @@
 
             down.onclick = function() {
               doVote('down');
+            };
+          }
+
+          // Setup relevance voting handlers (Nadal aktualne?)
+          var relUp = qs('#rel-up', modalView);
+          var relDown = qs('#rel-down', modalView);
+
+          if (relUp && relDown) {
+            function doRelevanceVote(dir) {
+              if (!CFG.isLoggedIn) {
+                alert('Zaloguj się.');
+                return;
+              }
+
+              // Check if user is banned or has voting restriction
+              if (window.JG_USER_RESTRICTIONS) {
+                if (window.JG_USER_RESTRICTIONS.is_banned) {
+                  alert('Nie możesz głosować - Twoje konto jest zbanowane.');
+                  return;
+                }
+                if (window.JG_USER_RESTRICTIONS.restrictions && window.JG_USER_RESTRICTIONS.restrictions.indexOf('voting') !== -1) {
+                  alert('Nie możesz głosować - masz aktywną blokadę głosowania.');
+                  return;
+                }
+              }
+
+              relUp.disabled = relDown.disabled = true;
+
+              api('jg_relevance_vote', { post_id: p.id, dir: dir })
+                .then(function(d) {
+                  p.relevance_votes = +d.relevance_votes || 0;
+                  p.my_relevance_vote = d.my_relevance_vote || '';
+
+                  // Refresh the modal to show updated votes
+                  close(modalView);
+                  refreshAll().then(function() {
+                    // Reopen modal with updated data
+                    var updatedPoint = ALL.find(function(pt) { return pt.id === p.id; });
+                    if (updatedPoint) {
+                      openDetails(updatedPoint);
+                    }
+                  });
+                })
+                .catch(function(e) {
+                  alert((e && e.message) || 'Błąd');
+                  relUp.disabled = relDown.disabled = false;
+                });
+            }
+
+            relUp.onclick = function() {
+              doRelevanceVote('up');
+            };
+
+            relDown.onclick = function() {
+              doRelevanceVote('down');
             };
           }
         }
