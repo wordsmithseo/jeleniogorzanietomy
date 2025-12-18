@@ -232,6 +232,11 @@ class JG_Map_Database {
             error_log('[JG MAP] Adding category column to database');
             $result = $wpdb->query("ALTER TABLE $table ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
             error_log('[JG MAP] Category column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
+            if ($result === false) {
+                error_log('[JG MAP] Category column ADD FAILED - Error: ' . $wpdb->last_error);
+            }
+        } else {
+            error_log('[JG MAP] Category column already exists');
         }
     }
 

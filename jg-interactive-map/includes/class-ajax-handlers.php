@@ -342,6 +342,7 @@ class JG_Map_Ajax_Handlers {
             }
 
             error_log('[JG MAP] get_points - point #' . $point['id'] . ' address from DB: "' . ($point['address'] ?? 'NULL') . '"');
+            error_log('[JG MAP] get_points - point #' . $point['id'] . ' type: "' . $point['type'] . '", category from DB: "' . ($point['category'] ?? 'NULL') . '"');
 
             $result[] = array(
                 'id' => intval($point['id']),
