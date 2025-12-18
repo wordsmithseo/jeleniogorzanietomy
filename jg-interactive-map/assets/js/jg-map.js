@@ -1163,6 +1163,12 @@
             fd.append('action', 'jg_submit_point');
             fd.append('_ajax_nonce', CFG.nonce);
 
+            // DEBUG: Log FormData contents
+            console.log('[JG MAP DEBUG] Submitting form with data:');
+            for (var pair of fd.entries()) {
+              console.log('  ' + pair[0] + ':', pair[1]);
+            }
+
             fetch(CFG.ajax, {
               method: 'POST',
               body: fd,
