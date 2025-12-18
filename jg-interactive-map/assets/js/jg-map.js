@@ -1405,14 +1405,21 @@
             'z-index:2;';
           centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">⭐</div>';
         } else if (p.type === 'zgloszenie' && p.category && categoryEmojis[p.category]) {
-          // Show category emoji for reports
-          var emojiFontSize = 22;
+          // Show category emoji for reports with white background
+          var emojiFontSize = 20;
           var emojiStyle = 'position:absolute;' +
             'top:' + (pinHeight * 0.32) + 'px;' +
             'left:50%;' +
             'transform:translate(-50%,-50%);' +
             'font-size:' + emojiFontSize + 'px;' +
-            'filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));' +
+            'background:white;' +
+            'border-radius:50%;' +
+            'width:28px;' +
+            'height:28px;' +
+            'display:flex;' +
+            'align-items:center;' +
+            'justify-content:center;' +
+            'box-shadow:0 2px 4px rgba(0,0,0,0.3);' +
             'z-index:2;';
           centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">' + categoryEmojis[p.category] + '</div>';
         }
@@ -3506,13 +3513,13 @@
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
         }
 
-        // Address info
+        // Address info - prominent display
         var addressInfo = '';
         if (p.address && p.address.trim()) {
-          addressInfo = '<div style="margin:8px 0;padding:8px 12px;background:#f3f4f6;border-left:3px solid #8d2324;border-radius:4px;font-size:13px;color:#374151"><strong>📍 Adres:</strong> ' + esc(p.address) + '</div>';
+          addressInfo = '<div style="margin:12px 0;padding:12px 16px;background:linear-gradient(135deg,#f9fafb 0%,#f3f4f6 100%);border-left:4px solid #8d2324;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.05)"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin-bottom:4px;font-weight:600">📍 Lokalizacja</div><div style="font-size:15px;color:#111827;font-weight:500">' + esc(p.address) + '</div></div>';
         }
 
-        // Category info for reports
+        // Category info for reports - prominent card
         var categoryInfo = '';
 
         // DEBUG: Log modal category data
@@ -3544,10 +3551,24 @@
             'mala_infrastruktura': '🎪 Propozycja nowych obiektów małej infrastruktury'
           };
           var categoryLabel = categoryLabels[p.category] || p.category;
-          categoryInfo = '<div style="margin:8px 0;padding:8px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:13px;color:#374151"><strong>Kategoria:</strong> ' + categoryLabel + '</div>';
+          categoryInfo = '<div style="margin:12px 0;padding:14px 18px;background:linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%);border-left:4px solid #f59e0b;border-radius:8px;box-shadow:0 2px 6px rgba(245,158,11,0.15)"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#92400e;margin-bottom:6px;font-weight:600">Kategoria zgłoszenia</div><div style="font-size:16px;color:#78350f;font-weight:600">' + categoryLabel + '</div></div>';
         }
 
-        var html = '<header><h3 class="jg-place-title">' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + addressInfo + categoryInfo + '<div style="margin-bottom:10px">' + chip(p) + '</div>' + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + verificationBadge + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        // Status badge - prominent display for reports
+        var statusBadge = '';
+        if (p.type === 'zgloszenie' && p.report_status) {
+          var statusColors = {
+            'added': { bg: '#dbeafe', border: '#3b82f6', text: '#1e3a8a' },
+            'in_progress': { bg: '#fef3c7', border: '#f59e0b', text: '#78350f' },
+            'resolved': { bg: '#d1fae5', border: '#10b981', text: '#065f46' },
+            'rejected': { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' }
+          };
+          var colors = statusColors[p.report_status] || { bg: '#f3f4f6', border: '#6b7280', text: '#374151' };
+          var statusLabel = p.report_status_label || p.report_status;
+          statusBadge = '<div style="margin:12px 0;padding:10px 16px;background:' + colors.bg + ';border:2px solid ' + colors.border + ';border-radius:8px;text-align:center"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:' + colors.text + ';opacity:0.8;margin-bottom:4px;font-weight:600">Status zgłoszenia</div><div style="font-size:15px;color:' + colors.text + ';font-weight:700">' + esc(statusLabel) + '</div></div>';
+        }
+
+        var html = '<header><h3 class="jg-place-title">' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + statusBadge + categoryInfo + addressInfo + (p.sponsored ? ('<div style="margin-bottom:10px">' + chip(p) + '</div>') : '') + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + verificationBadge + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim() });
 
