@@ -391,6 +391,14 @@ class JG_Map_Ajax_Handlers {
             );
         }
 
+        // DEBUG: Log the actual $result array before sending to JavaScript
+        error_log('[JG MAP] get_points - About to send ' . count($result) . ' points to JavaScript');
+        foreach (array_slice($result, 0, 3) as $item) {
+            if ($item['type'] === 'zgloszenie') {
+                error_log('[JG MAP] get_points - FINAL RESULT ARRAY for point #' . $item['id'] . ': type="' . $item['type'] . '", category="' . ($item['category'] ?? 'NULL/MISSING') . '"');
+            }
+        }
+
         wp_send_json_success($result);
     }
 
