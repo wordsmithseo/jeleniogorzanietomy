@@ -25,10 +25,12 @@
         });
       }
 
-      // Clear localStorage cache
+      // Clear localStorage cache (both old and new versions)
       try {
         localStorage.removeItem('jg_map_cache');
         localStorage.removeItem('jg_map_cache_version');
+        localStorage.removeItem('jg_map_cache_v2');
+        localStorage.removeItem('jg_map_cache_version_v2');
       } catch (e) {
         console.error('[JG MAP] Failed to clear localStorage:', e);
       }
@@ -1689,8 +1691,9 @@
 
       var ALL = [];
       var lastModified = 0;
-      var CACHE_KEY = 'jg_map_cache';
-      var CACHE_VERSION_KEY = 'jg_map_cache_version';
+      // v2: Added category field for reports
+      var CACHE_KEY = 'jg_map_cache_v2';
+      var CACHE_VERSION_KEY = 'jg_map_cache_version_v2';
 
       // Try to load from cache
       function loadFromCache() {
@@ -2694,10 +2697,38 @@
               '<input type="hidden" name="lng" id="edit-lng-input" value="' + p.lng + '">' +
               limitsHtml +
               '<label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
-              '<label>Typ* <select name="type" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+              '<label>Typ* <select name="type" id="edit-type-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
               '<option value="zgloszenie"' + (p.type === 'zgloszenie' ? ' selected' : '') + '>Zgłoszenie</option>' +
               '<option value="ciekawostka"' + (p.type === 'ciekawostka' ? ' selected' : '') + '>Ciekawostka</option>' +
               '<option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option>' +
+              '</select></label>' +
+              '<label class="cols-2" id="edit-category-field" style="' + (p.type === 'zgloszenie' ? 'display:block' : 'display:none') + '"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="edit-category-select" ' + (p.type === 'zgloszenie' ? 'required' : '') + ' style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+              '<option value="">-- Wybierz kategorię --</option>' +
+              '<optgroup label="Zgłoszenie usterek infrastruktury">' +
+              '<option value="dziura_w_jezdni"' + (p.category === 'dziura_w_jezdni' ? ' selected' : '') + '>🕳️ Dziura w jezdni</option>' +
+              '<option value="uszkodzone_chodniki"' + (p.category === 'uszkodzone_chodniki' ? ' selected' : '') + '>🚶 Uszkodzone chodniki</option>' +
+              '<option value="znaki_drogowe"' + (p.category === 'znaki_drogowe' ? ' selected' : '') + '>🚸 Brakujące lub zniszczone znaki drogowe</option>' +
+              '<option value="oswietlenie"' + (p.category === 'oswietlenie' ? ' selected' : '') + '>💡 Awarie oświetlenia ulicznego</option>' +
+              '</optgroup>' +
+              '<optgroup label="Utrzymanie porządku i estetyki">' +
+              '<option value="dzikie_wysypisko"' + (p.category === 'dzikie_wysypisko' ? ' selected' : '') + '>🗑️ Dzikie wysypisko śmieci</option>' +
+              '<option value="przepelniony_kosz"' + (p.category === 'przepelniony_kosz' ? ' selected' : '') + '>♻️ Przepełniony kosz na śmieci</option>' +
+              '<option value="graffiti"' + (p.category === 'graffiti' ? ' selected' : '') + '>🎨 Graffiti</option>' +
+              '<option value="sliski_chodnik"' + (p.category === 'sliski_chodnik' ? ' selected' : '') + '>⚠️ Śliski chodnik (lód/liście)</option>' +
+              '</optgroup>' +
+              '<optgroup label="Zieleń miejska">' +
+              '<option value="nasadzenie_drzew"' + (p.category === 'nasadzenie_drzew' ? ' selected' : '') + '>🌳 Potrzeba nasadzenia drzew</option>' +
+              '<option value="nieprzycięta_gałąź"' + (p.category === 'nieprzycięta_gałąź' ? ' selected' : '') + '>🌿 Nieprzycięta gałąź zagrażająca niebezpieczeństwu</option>' +
+              '</optgroup>' +
+              '<optgroup label="Transport i komunikacja">' +
+              '<option value="brak_przejscia"' + (p.category === 'brak_przejscia' ? ' selected' : '') + '>🚦 Brak przejścia dla pieszych</option>' +
+              '<option value="przystanek_autobusowy"' + (p.category === 'przystanek_autobusowy' ? ' selected' : '') + '>🚏 Potrzeba przystanku autobusowego</option>' +
+              '<option value="organizacja_ruchu"' + (p.category === 'organizacja_ruchu' ? ' selected' : '') + '>🚗 Problem z organizacją ruchu</option>' +
+              '<option value="korki"' + (p.category === 'korki' ? ' selected' : '') + '>🚙 Powtarzające się korki</option>' +
+              '</optgroup>' +
+              '<optgroup label="Inicjatywy obywatelskie">' +
+              '<option value="mala_infrastruktura"' + (p.category === 'mala_infrastruktura' ? ' selected' : '') + '>🎪 Propozycja nowych obiektów małej infrastruktury (ławki, place zabaw, stojaki rowerowe)</option>' +
+              '</optgroup>' +
               '</select></label>' +
               '<input type="hidden" name="address" id="edit-address-input" value="' + esc(p.address || '') + '">' +
               '<label class="cols-2">Opis <textarea name="content" rows="6" maxlength="' + maxDescLength + '" id="edit-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea><div id="edit-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">' + currentDescLength + ' / ' + maxDescLength + ' znaków</div></label>' +
@@ -2783,6 +2814,28 @@
               imagesPreview.style.display = 'none';
             }
           });
+        }
+
+        // Toggle category field based on type selection in edit form
+        var editTypeSelect = qs('#edit-type-select', modalEdit);
+        var editCategoryField = qs('#edit-category-field', modalEdit);
+        var editCategorySelect = qs('#edit-category-select', modalEdit);
+
+        if (editTypeSelect && editCategoryField && editCategorySelect) {
+          function toggleEditCategoryField() {
+            if (editTypeSelect.value === 'zgloszenie') {
+              editCategoryField.style.display = 'block';
+              editCategorySelect.setAttribute('required', 'required');
+            } else {
+              editCategoryField.style.display = 'none';
+              editCategorySelect.removeAttribute('required');
+              editCategorySelect.value = ''; // Clear selection when hidden
+            }
+          }
+
+          editTypeSelect.addEventListener('change', toggleEditCategoryField);
+          // Call once to set initial state
+          toggleEditCategoryField();
         }
 
         // CTA checkbox toggle for sponsored points

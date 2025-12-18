@@ -723,6 +723,7 @@ class JG_Map_Ajax_Handlers {
         $title = sanitize_text_field($_POST['title'] ?? '');
         $type = sanitize_text_field($_POST['type'] ?? '');
         $content = wp_kses_post($_POST['content'] ?? '');
+        $category = sanitize_text_field($_POST['category'] ?? '');
         $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : null;
         $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : null;
         $address = sanitize_text_field($_POST['address'] ?? '');
@@ -734,6 +735,21 @@ class JG_Map_Ajax_Handlers {
         if (empty($title)) {
             wp_send_json_error(array('message' => 'Tytuł jest wymagany'));
             exit;
+        }
+
+        // Validate category for reports (zgłoszenie)
+        if ($type === 'zgloszenie') {
+            if (empty($category)) {
+                wp_send_json_error(array('message' => 'Wybór kategorii zgłoszenia jest wymagany'));
+                exit;
+            }
+
+            // Validate category exists
+            $valid_categories = array_keys(self::get_report_categories());
+            if (!in_array($category, $valid_categories)) {
+                wp_send_json_error(array('message' => 'Nieprawidłowa kategoria zgłoszenia'));
+                exit;
+            }
         }
 
         // Validate website URL if provided
@@ -806,6 +822,14 @@ class JG_Map_Ajax_Handlers {
                 'excerpt' => wp_trim_words($content, 20)
             );
 
+            // Add category if it's a report (zgłoszenie)
+            if ($type === 'zgloszenie' && !empty($category)) {
+                $update_data['category'] = $category;
+            } else {
+                // Clear category if changing from report to other type
+                $update_data['category'] = null;
+            }
+
             // Update lat/lng if provided (from geocoding)
             if ($lat !== null && $lng !== null) {
                 $update_data['lat'] = $lat;
@@ -846,6 +870,7 @@ class JG_Map_Ajax_Handlers {
             $old_values = array(
                 'title' => $point['title'],
                 'type' => $point['type'],
+                'category' => $point['category'] ?? '',
                 'content' => $point['content'],
                 'lat' => $point['lat'],
                 'lng' => $point['lng'],
@@ -856,6 +881,7 @@ class JG_Map_Ajax_Handlers {
             $new_values = array(
                 'title' => $title,
                 'type' => $type,
+                'category' => $category,
                 'content' => $content,
                 'new_images' => json_encode($new_images) // Store new images separately for moderation
             );
@@ -2279,6 +2305,16 @@ class JG_Map_Ajax_Handlers {
             'content' => $new_values['content'],
             'excerpt' => wp_trim_words($new_values['content'], 20)
         );
+
+        // Add category if present (for reports)
+        if (isset($new_values['category'])) {
+            if ($new_values['type'] === 'zgloszenie' && !empty($new_values['category'])) {
+                $update_data['category'] = $new_values['category'];
+            } else {
+                // Clear category if changing from report to other type
+                $update_data['category'] = null;
+            }
+        }
 
         // Add website, phone, and CTA if point is sponsored and they are in new_values
         $is_sponsored = (bool)$point['is_promo'];
