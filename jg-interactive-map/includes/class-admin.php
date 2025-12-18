@@ -642,6 +642,9 @@ class JG_Map_Admin {
                     if (old_values.type !== new_values.type) {
                         html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Typ</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + old_values.type + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + new_values.type + '</td></tr>';
                     }
+                    if (old_values.category !== undefined && new_values.category !== undefined && old_values.category !== new_values.category) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Kategoria</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.category || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.category || '(brak)') + '</td></tr>';
+                    }
                     if (old_values.content !== new_values.content) {
                         html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Opis</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee;max-width:300px;word-wrap:break-word">' + old_values.content + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5;max-width:300px;word-wrap:break-word">' + new_values.content + '</td></tr>';
                     }
