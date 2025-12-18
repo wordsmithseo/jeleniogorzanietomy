@@ -1471,6 +1471,22 @@
             j.data.slice(0, 3).forEach(function(p, i) {
               console.log('[JG MAP] Point ' + (i+1) + ' - ID:', p.id, 'Address:', p.address);
             });
+            // DEBUG: Log RAW JSON for zgłoszenia to check category field
+            console.log('[JG MAP DEBUG] ===== RAW JSON RESPONSE CHECK =====');
+            var zgloszenia = j.data.filter(function(p) { return p.type === 'zgloszenie'; });
+            console.log('[JG MAP DEBUG] Found ' + zgloszenia.length + ' zgłoszenia in response');
+            zgloszenia.slice(0, 3).forEach(function(p) {
+              console.log('[JG MAP DEBUG] RAW Zgłoszenie #' + p.id + ':', JSON.stringify({
+                id: p.id,
+                title: p.title,
+                type: p.type,
+                category: p.category,
+                has_category_key: ('category' in p),
+                category_value: p.category,
+                category_type: typeof p.category
+              }, null, 2));
+            });
+            console.log('[JG MAP DEBUG] =====================================');
           }
           return j.data;
         });
