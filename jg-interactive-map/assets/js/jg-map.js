@@ -31,6 +31,7 @@
         localStorage.removeItem('jg_map_cache_version');
         localStorage.removeItem('jg_map_cache_v2');
         localStorage.removeItem('jg_map_cache_version_v2');
+        // v3 will be used from now on, but clear old versions on page load
       } catch (e) {
         console.error('[JG MAP] Failed to clear localStorage:', e);
       }
@@ -1715,9 +1716,9 @@
 
       var ALL = [];
       var lastModified = 0;
-      // v2: Added category field for reports
-      var CACHE_KEY = 'jg_map_cache_v2';
-      var CACHE_VERSION_KEY = 'jg_map_cache_version_v2';
+      // v3: Fixed category field not being displayed (cache invalidation)
+      var CACHE_KEY = 'jg_map_cache_v3';
+      var CACHE_VERSION_KEY = 'jg_map_cache_version_v3';
 
       // Try to load from cache
       function loadFromCache() {
