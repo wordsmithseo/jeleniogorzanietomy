@@ -541,6 +541,8 @@ class JG_Map_Ajax_Handlers {
         $category = sanitize_text_field($_POST['category'] ?? '');
 
         error_log('[JG MAP] submit_point - address received: "' . $address . '"');
+        error_log('[JG MAP] submit_point - type: "' . $type . '", category received: "' . $category . '"');
+        error_log('[JG MAP] submit_point - $_POST data: ' . print_r($_POST, true));
 
         if (empty($title) || $lat === 0.0 || $lng === 0.0) {
             wp_send_json_error(array('message' => 'Wypełnij wszystkie wymagane pola'));
@@ -664,11 +666,20 @@ class JG_Map_Ajax_Handlers {
         // Add category if it's a report (zgłoszenie)
         if ($type === 'zgloszenie' && !empty($category)) {
             $point_data['category'] = $category;
+            error_log('[JG MAP] submit_point - Adding category to point_data: "' . $category . '"');
+        } else {
+            error_log('[JG MAP] submit_point - NOT adding category (type: "' . $type . '", category: "' . $category . '")');
         }
 
+        error_log('[JG MAP] submit_point - Final point_data before insert: ' . print_r($point_data, true));
         $point_id = JG_Map_Database::insert_point($point_data);
+        error_log('[JG MAP] submit_point - Insert result, point_id: ' . $point_id);
 
         if ($point_id) {
+            // Verify what was actually saved
+            $saved_point = JG_Map_Database::get_point($point_id);
+            error_log('[JG MAP] submit_point - Saved point data: ' . print_r($saved_point, true));
+
             // Send email notification to admin
             $this->notify_admin_new_point($point_id);
 
@@ -677,6 +688,7 @@ class JG_Map_Ajax_Handlers {
                 'point_id' => $point_id
             ));
         } else {
+            error_log('[JG MAP] submit_point - Insert FAILED');
             wp_send_json_error(array('message' => 'Błąd zapisu'));
         }
     }
