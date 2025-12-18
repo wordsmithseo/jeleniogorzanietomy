@@ -21,6 +21,16 @@ class JG_Map_Database {
         // Table for map points
         $table_points = $wpdb->prefix . 'jg_map_points';
 
+        // Check if category column exists, add it if it doesn't
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_points LIKE 'category'");
+        if (empty($column_exists)) {
+            error_log('[JG MAP] Adding category column to points table');
+            $wpdb->query("ALTER TABLE $table_points ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
+            error_log('[JG MAP] Category column added successfully');
+        } else {
+            error_log('[JG MAP] Category column already exists');
+        }
+
         // Table for votes
         $table_votes = $wpdb->prefix . 'jg_map_votes';
 
@@ -151,6 +161,14 @@ class JG_Map_Database {
         // Ensure activity log table exists (for existing installations)
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
         JG_Map_Activity_Log::create_table();
+
+        // Check if category column exists (added in v3.2.x for report categorization)
+        $category_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'category'");
+        if (empty($category_exists)) {
+            error_log('[JG MAP] Schema update: Adding category column');
+            $wpdb->query("ALTER TABLE $table ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
+            error_log('[JG MAP] Schema update: Category column added');
+        }
 
         // Check if promo_until column exists
         $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'promo_until'");
