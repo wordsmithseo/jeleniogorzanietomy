@@ -1743,9 +1743,9 @@
 
       var ALL = [];
       var lastModified = 0;
-      // v3: Fixed category field not being displayed (cache invalidation)
-      var CACHE_KEY = 'jg_map_cache_v3';
-      var CACHE_VERSION_KEY = 'jg_map_cache_version_v3';
+      // v4: Fixed category field being dropped in fetchAndProcessPoints mapping
+      var CACHE_KEY = 'jg_map_cache_v4';
+      var CACHE_VERSION_KEY = 'jg_map_cache_version_v4';
 
       // Try to load from cache
       function loadFromCache() {
@@ -1844,6 +1844,7 @@
               lng: +r.lng,
               address: r.address || '',
               type: r.type || 'zgloszenie',
+              category: r.category || null,
               sponsored: !!r.sponsored,
               sponsored_until: r.sponsored_until || null,
               website: r.website || null,
