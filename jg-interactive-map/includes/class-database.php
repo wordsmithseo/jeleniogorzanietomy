@@ -319,7 +319,17 @@ class JG_Map_Database {
                        cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
                 FROM $table WHERE $status_condition ORDER BY created_at DESC";
 
-        return $wpdb->get_results($sql, ARRAY_A);
+        $results = $wpdb->get_results($sql, ARRAY_A);
+
+        // DEBUG: Log raw SQL results for zgłoszenia with categories
+        error_log('[JG MAP] get_published_points - Retrieved ' . count($results) . ' points from database');
+        foreach ($results as $row) {
+            if ($row['type'] === 'zgloszenie') {
+                error_log('[JG MAP] get_published_points - RAW DB ROW for point #' . $row['id'] . ': type="' . $row['type'] . '", category="' . ($row['category'] ?? 'NULL/MISSING') . '"');
+            }
+        }
+
+        return $results;
     }
 
     /**
