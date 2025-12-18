@@ -1222,6 +1222,18 @@
       });
 
       function iconFor(p) {
+        // DEBUG: Log point data to check if category is present
+        if (p.type === 'zgloszenie') {
+          console.log('[JG MAP DEBUG] iconFor() - Zgłoszenie point:', {
+            id: p.id,
+            title: p.title,
+            type: p.type,
+            category: p.category,
+            has_category: !!p.category,
+            category_type: typeof p.category
+          });
+        }
+
         var sponsored = !!p.sponsored;
         var isPending = !!p.is_pending;
         var isEdit = !!p.is_edit;
@@ -1358,6 +1370,18 @@
 
         // Star emoji for sponsored pins, category emoji for reports, or nothing for others
         var centerContent = '';
+
+        // DEBUG: Log before emoji rendering
+        if (p.type === 'zgloszenie') {
+          console.log('[JG MAP DEBUG] iconFor() - Before emoji check:', {
+            sponsored: sponsored,
+            type: p.type,
+            category: p.category,
+            has_emoji: categoryEmojis[p.category],
+            circleColor: circleColor
+          });
+        }
+
         if (sponsored) {
           var emojiFontSize = 28;
           var emojiStyle = 'position:absolute;' +
@@ -3461,6 +3485,17 @@
 
         // Category info for reports
         var categoryInfo = '';
+
+        // DEBUG: Log modal category data
+        console.log('[JG MAP DEBUG] openDetails() - Category check:', {
+          id: p.id,
+          title: p.title,
+          type: p.type,
+          category: p.category,
+          has_category: !!p.category,
+          will_show_category: (p.type === 'zgloszenie' && p.category)
+        });
+
         if (p.type === 'zgloszenie' && p.category) {
           var categoryLabels = {
             'dziura_w_jezdni': '🕳️ Dziura w jezdni',
