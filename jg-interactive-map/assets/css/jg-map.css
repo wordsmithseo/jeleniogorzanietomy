@@ -400,18 +400,35 @@
     max-height: 300px;
   }
 
-  /* Modal header responsiveness - ensure close button is visible */
+  /* Modal adjustments for mobile */
+  .jg-modal {
+    position: relative;
+  }
+
+  /* Modal header - allow wrapping for badges but hide X from flex */
   .jg-modal header {
     flex-wrap: wrap;
     gap: 8px;
-    padding: 12px 10px;
+    padding: 12px 48px 12px 10px; /* Extra right padding for absolute X */
   }
 
-  /* Ensure close button stays visible and accessible */
+  /* Position close button absolutely in top-right corner on mobile */
   .jg-modal header .jg-close {
-    flex-shrink: 0;
-    min-width: 32px;
-    min-height: 32px;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-size: 28px;
+    color: #666;
+    margin: 0 !important;
   }
 }
 
