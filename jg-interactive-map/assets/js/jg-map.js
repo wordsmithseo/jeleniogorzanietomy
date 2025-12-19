@@ -47,6 +47,83 @@
   console.log('[JG MAP] Loader element:', loadingEl ? 'found' : 'NOT FOUND');
   console.log('[JG MAP] Loading started at', new Date(loadStartTime).toISOString());
 
+  // ====================================
+  // MESSAGE MODALS (Alert/Confirm replacements)
+  // ====================================
+  function showAlert(message) {
+    return new Promise(function(resolve) {
+      var modal = document.getElementById('jg-modal-alert');
+      if (!modal) {
+        // Fallback to native alert if modal not found
+        alert(message);
+        resolve();
+        return;
+      }
+
+      var contentEl = modal.querySelector('.jg-modal-message-content');
+      var buttonsEl = modal.querySelector('.jg-modal-message-buttons');
+
+      contentEl.innerHTML = message;
+      buttonsEl.innerHTML = '<button class="jg-btn" id="jg-alert-ok">OK</button>';
+
+      modal.style.display = 'flex';
+
+      var okBtn = document.getElementById('jg-alert-ok');
+      okBtn.onclick = function() {
+        modal.style.display = 'none';
+        resolve();
+      };
+
+      // Close on background click
+      modal.onclick = function(e) {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+          resolve();
+        }
+      };
+    });
+  }
+
+  function showConfirm(message) {
+    return new Promise(function(resolve) {
+      var modal = document.getElementById('jg-modal-alert');
+      if (!modal) {
+        // Fallback to native confirm if modal not found
+        resolve(confirm(message));
+        return;
+      }
+
+      var contentEl = modal.querySelector('.jg-modal-message-content');
+      var buttonsEl = modal.querySelector('.jg-modal-message-buttons');
+
+      contentEl.innerHTML = message;
+      buttonsEl.innerHTML = '<button class="jg-btn jg-btn--ghost" id="jg-confirm-no">Anuluj</button><button class="jg-btn" id="jg-confirm-yes">OK</button>';
+
+      modal.style.display = 'flex';
+
+      var yesBtn = document.getElementById('jg-confirm-yes');
+      var noBtn = document.getElementById('jg-confirm-no');
+
+      yesBtn.onclick = function() {
+        modal.style.display = 'none';
+        resolve(true);
+      };
+
+      noBtn.onclick = function() {
+        modal.style.display = 'none';
+        resolve(false);
+      };
+
+      // Close on background click = cancel
+      modal.onclick = function(e) {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+          resolve(false);
+        }
+      };
+    });
+  }
+
   function showError(msg) {
     console.error('[JG MAP]', msg);
     if (loadingEl) loadingEl.style.display = 'none';
@@ -211,12 +288,12 @@
             var passwordConfirm = document.getElementById('profile-password-confirm').value;
 
             if (!email) {
-              alert('Proszę wypełnić adres email');
+              showAlert('Proszę wypełnić adres email');
               return;
             }
 
             if (password && password !== passwordConfirm) {
-              alert('Hasła nie pasują do siebie');
+              showAlert('Hasła nie pasują do siebie');
               return;
             }
 
@@ -231,15 +308,16 @@
               },
               success: function(response) {
                 if (response.success) {
-                  alert('Profil został zaktualizowany');
-                  close(modalEdit);
-                  location.reload();
+                  showAlert('Profil został zaktualizowany').then(function() {
+                    close(modalEdit);
+                    location.reload();
+                  });
                 } else {
-                  alert(response.data || 'Wystąpił błąd podczas aktualizacji profilu');
+                  showAlert(response.data || 'Wystąpił błąd podczas aktualizacji profilu');
                 }
               },
               error: function() {
-                alert('Wystąpił błąd podczas komunikacji z serwerem');
+                showAlert('Wystąpił błąd podczas komunikacji z serwerem');
               }
             });
           });
@@ -292,7 +370,7 @@
             var honeypot = document.getElementById('login-website').value;
 
             if (!username || !password) {
-              alert('Proszę wypełnić wszystkie pola');
+              showAlert('Proszę wypełnić wszystkie pola');
               return;
             }
 
@@ -311,11 +389,11 @@
                   close(modalEdit);
                   location.reload();
                 } else {
-                  alert(response.data || 'Błąd logowania');
+                  showAlert(response.data || 'Błąd logowania');
                 }
               },
               error: function() {
-                alert('Wystąpił błąd podczas logowania');
+                showAlert('Wystąpił błąd podczas logowania');
               }
             });
           });
@@ -365,7 +443,7 @@
             var honeypot = document.getElementById('register-website').value;
 
             if (!username || !email || !password) {
-              alert('Proszę wypełnić wszystkie pola');
+              showAlert('Proszę wypełnić wszystkie pola');
               return;
             }
 
@@ -399,11 +477,11 @@
 
                   open(modalEdit, successHtml);
                 } else {
-                  alert(response.data || 'Błąd rejestracji');
+                  showAlert(response.data || 'Błąd rejestracji');
                 }
               },
               error: function() {
-                alert('Wystąpił błąd podczas rejestracji');
+                showAlert('Wystąpił błąd podczas rejestracji');
               }
             });
           });
@@ -436,14 +514,14 @@
           var email = document.getElementById('forgot-email').value;
 
           if (!email) {
-            alert('Proszę podać adres email');
+            showAlert('Proszę podać adres email');
             return;
           }
 
           // Validate email format
           var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(email)) {
-            alert('Proszę podać prawidłowy adres email');
+            showAlert('Proszę podać prawidłowy adres email');
             return;
           }
 
@@ -474,11 +552,11 @@
 
                 open(modalEdit, successHtml);
               } else {
-                alert(response.data || 'Nie znaleziono użytkownika z tym adresem email');
+                showAlert(response.data || 'Nie znaleziono użytkownika z tym adresem email');
               }
             },
             error: function() {
-              alert('Wystąpił błąd podczas wysyłania emaila');
+              showAlert('Wystąpił błąd podczas wysyłania emaila');
             }
           });
         });
@@ -895,7 +973,7 @@
         if (mapMoveDetected) return;
 
         if (map.getZoom() < MIN_ZOOM_FOR_ADD) {
-          alert('Przybliż mapę maksymalnie (zoom ' + MIN_ZOOM_FOR_ADD + '+)!');
+          showAlert('Przybliż mapę maksymalnie (zoom ' + MIN_ZOOM_FOR_ADD + '+)!');
           return;
         }
 
@@ -903,20 +981,22 @@
 
         mapClickTimeout = setTimeout(function() {
           if (!CFG.isLoggedIn) {
-            if (confirm('Musisz być zalogowany. Przejść do logowania?')) {
-              window.location.href = CFG.loginUrl;
-            }
+            showConfirm('Musisz być zalogowany. Przejść do logowania?').then(function(confirmed) {
+              if (confirmed) {
+                window.location.href = CFG.loginUrl;
+              }
+            });
             return;
           }
 
           // Check if user is banned or has add_places restriction
           if (window.JG_USER_RESTRICTIONS) {
             if (window.JG_USER_RESTRICTIONS.is_banned) {
-              alert('Nie możesz dodawać miejsc - Twoje konto jest zbanowane.');
+              showAlert('Nie możesz dodawać miejsc - Twoje konto jest zbanowane.');
               return;
             }
             if (window.JG_USER_RESTRICTIONS.restrictions && window.JG_USER_RESTRICTIONS.restrictions.indexOf('add_places') !== -1) {
-              alert('Nie możesz dodawać miejsc - masz aktywną blokadę dodawania miejsc.');
+              showAlert('Nie możesz dodawać miejsc - masz aktywną blokadę dodawania miejsc.');
               return;
             }
           }
@@ -924,7 +1004,7 @@
           var now = Date.now();
           if (lastSubmitTime > 0 && (now - lastSubmitTime) < FLOOD_DELAY) {
             var sec = Math.ceil((FLOOD_DELAY - (now - lastSubmitTime)) / 1000);
-            alert('Poczekaj jeszcze ' + sec + ' sekund.');
+            showAlert('Poczekaj jeszcze ' + sec + ' sekund.');
             return;
           }
 
@@ -1228,7 +1308,7 @@
           };
         })
         .catch(function(err) {
-          alert('Błąd pobierania limitów: ' + (err.message || 'Nieznany błąd'));
+          showAlert('Błąd pobierania limitów: ' + (err.message || 'Nieznany błąd'));
         });
         }, 200);
       });
@@ -2291,20 +2371,23 @@
         };
 
         qs('#btn-ban-permanent', modalAuthor).onclick = function() {
-          if (!confirm('Zbanować użytkownika ' + userName + ' permanentnie?')) return;
-          this.disabled = true;
-          msg.textContent = 'Banowanie...';
+          var self = this;
+          showConfirm('Zbanować użytkownika ' + userName + ' permanentnie?').then(function(confirmed) {
+            if (!confirmed) return;
+            self.disabled = true;
+            msg.textContent = 'Banowanie...';
 
-          api('jg_admin_ban_user', { user_id: userId, ban_type: 'permanent' })
-            .then(function(result) {
-              msg.textContent = 'Użytkownik zbanowany permanentnie!';
-              msg.style.color = '#15803d';
-            })
-            .catch(function(err) {
-              msg.textContent = 'Błąd: ' + (err.message || '?');
-              msg.style.color = '#b91c1c';
-              this.disabled = false;
-            }.bind(this));
+            api('jg_admin_ban_user', { user_id: userId, ban_type: 'permanent' })
+              .then(function(result) {
+                msg.textContent = 'Użytkownik zbanowany permanentnie!';
+                msg.style.color = '#15803d';
+              })
+              .catch(function(err) {
+                msg.textContent = 'Błąd: ' + (err.message || '?');
+                msg.style.color = '#b91c1c';
+                self.disabled = false;
+              });
+          });
         };
 
         qs('#btn-ban-temporary', modalAuthor).onclick = function() {
@@ -2313,7 +2396,7 @@
 
           var daysNum = parseInt(days);
           if (isNaN(daysNum) || daysNum < 1) {
-            alert('Podaj poprawną liczbę dni');
+            showAlert('Podaj poprawną liczbę dni');
             return;
           }
 
@@ -2333,27 +2416,30 @@
         };
 
         qs('#btn-unban', modalAuthor).onclick = function() {
-          if (!confirm('Usunąć ban dla użytkownika ' + userName + '?')) return;
-          this.disabled = true;
-          msg.textContent = 'Usuwanie banu...';
+          var self = this;
+          showConfirm('Usunąć ban dla użytkownika ' + userName + '?').then(function(confirmed) {
+            if (!confirmed) return;
+            self.disabled = true;
+            msg.textContent = 'Usuwanie banu...';
 
-          api('jg_admin_unban_user', { user_id: userId })
-            .then(function(result) {
-              msg.textContent = 'Ban usunięty!';
-              msg.style.color = '#15803d';
-              this.style.display = 'none';
-              // Refresh status
-              api('jg_get_user_restrictions', { user_id: userId })
-                .then(function(result) {
-                  var statusDiv = qs('#user-current-status', modalAuthor);
-                  statusDiv.innerHTML = '<strong>Aktualny status:</strong><br><span style="color:#10b981;font-weight:700">✓ Aktywny</span>';
-                });
-            }.bind(this))
-            .catch(function(err) {
-              msg.textContent = 'Błąd: ' + (err.message || '?');
-              msg.style.color = '#b91c1c';
-              this.disabled = false;
-            }.bind(this));
+            api('jg_admin_unban_user', { user_id: userId })
+              .then(function(result) {
+                msg.textContent = 'Ban usunięty!';
+                msg.style.color = '#15803d';
+                self.style.display = 'none';
+                // Refresh status
+                api('jg_get_user_restrictions', { user_id: userId })
+                  .then(function(result) {
+                    var statusDiv = qs('#user-current-status', modalAuthor);
+                    statusDiv.innerHTML = '<strong>Aktualny status:</strong><br><span style="color:#10b981;font-weight:700">✓ Aktywny</span>';
+                  });
+              })
+              .catch(function(err) {
+                msg.textContent = 'Błąd: ' + (err.message || '?');
+                msg.style.color = '#b91c1c';
+                self.disabled = false;
+              });
+          });
         };
 
         var banActions = {
@@ -2370,25 +2456,28 @@
             var btn = qs('#' + id, modalAuthor);
             if (btn) {
               btn.onclick = function() {
-                if (!confirm('Zablokować ' + action.label + ' dla użytkownika ' + userName + '?')) return;
-                this.disabled = true;
-                msg.textContent = 'Blokowanie...';
+                var self = this;
+                showConfirm('Zablokować ' + action.label + ' dla użytkownika ' + userName + '?').then(function(confirmed) {
+                  if (!confirmed) return;
+                  self.disabled = true;
+                  msg.textContent = 'Blokowanie...';
 
-                api('jg_admin_toggle_user_restriction', {
-                  user_id: userId,
-                  restriction_type: action.type
-                })
-                  .then(function(result) {
-                    msg.textContent = result.message || 'Zaktualizowano!';
-                    msg.style.color = '#15803d';
-                    btn.textContent = result.is_restricted ? 'Odblokuj ' + action.label : 'Blokuj ' + action.label;
-                    this.disabled = false;
-                  }.bind(this))
-                  .catch(function(err) {
-                    msg.textContent = 'Błąd: ' + (err.message || '?');
-                    msg.style.color = '#b91c1c';
-                    this.disabled = false;
-                  }.bind(this));
+                  api('jg_admin_toggle_user_restriction', {
+                    user_id: userId,
+                    restriction_type: action.type
+                  })
+                    .then(function(result) {
+                      msg.textContent = result.message || 'Zaktualizowano!';
+                      msg.style.color = '#15803d';
+                      btn.textContent = result.is_restricted ? 'Odblokuj ' + action.label : 'Blokuj ' + action.label;
+                      self.disabled = false;
+                    })
+                    .catch(function(err) {
+                      msg.textContent = 'Błąd: ' + (err.message || '?');
+                      msg.style.color = '#b91c1c';
+                      self.disabled = false;
+                    });
+                });
               };
             }
           })(btnId, banActions[btnId]);
@@ -2429,30 +2518,33 @@
 
         // Reset limits to default
         qs('#btn-reset-limits', modalAuthor).onclick = function() {
-          if (!confirm('Zresetować limity do domyślnych (5/5)?')) return;
+          var self = this;
+          showConfirm('Zresetować limity do domyślnych (5/5)?').then(function(confirmed) {
+            if (!confirmed) return;
 
-          this.disabled = true;
-          msg.textContent = 'Resetowanie...';
+            self.disabled = true;
+            msg.textContent = 'Resetowanie...';
 
-          api('jg_admin_set_user_limits', {
-            user_id: userId,
-            places_limit: 5,
-            reports_limit: 5
-          })
-            .then(function(result) {
-              qs('#ulimit-places', modalAuthor).textContent = '5';
-              qs('#ulimit-reports', modalAuthor).textContent = '5';
-              qs('#ulimit-places-input', modalAuthor).value = 5;
-              qs('#ulimit-reports-input', modalAuthor).value = 5;
-              msg.textContent = 'Limity zresetowane!';
-              msg.style.color = '#15803d';
-              this.disabled = false;
-            }.bind(this))
-            .catch(function(err) {
-              msg.textContent = 'Błąd: ' + (err.message || '?');
-              msg.style.color = '#b91c1c';
-              this.disabled = false;
-            }.bind(this));
+            api('jg_admin_set_user_limits', {
+              user_id: userId,
+              places_limit: 5,
+              reports_limit: 5
+            })
+              .then(function(result) {
+                qs('#ulimit-places', modalAuthor).textContent = '5';
+                qs('#ulimit-reports', modalAuthor).textContent = '5';
+                qs('#ulimit-places-input', modalAuthor).value = 5;
+                qs('#ulimit-reports-input', modalAuthor).value = 5;
+                msg.textContent = 'Limity zresetowane!';
+                msg.style.color = '#15803d';
+                self.disabled = false;
+              })
+              .catch(function(err) {
+                msg.textContent = 'Błąd: ' + (err.message || '?');
+                msg.style.color = '#b91c1c';
+                self.disabled = false;
+              });
+          });
         };
 
         // Set custom photo limit
@@ -2487,34 +2579,37 @@
 
         // Reset photo limit to default
         qs('#btn-reset-photo-limit', modalAuthor).onclick = function() {
-          if (!confirm('Zresetować miesięczny limit zdjęć do domyślnego (100MB)?')) return;
+          var self = this;
+          showConfirm('Zresetować miesięczny limit zdjęć do domyślnego (100MB)?').then(function(confirmed) {
+            if (!confirmed) return;
 
-          this.disabled = true;
-          msg.textContent = 'Resetowanie limitu zdjęć...';
+            self.disabled = true;
+            msg.textContent = 'Resetowanie limitu zdjęć...';
 
-          api('jg_admin_reset_user_photo_limit', {
-            user_id: userId
-          })
-            .then(function(result) {
-              qs('#uphoto-used', modalAuthor).textContent = result.used_mb;
-              qs('#uphoto-limit', modalAuthor).textContent = result.limit_mb;
-              qs('#uphoto-limit-input', modalAuthor).value = result.limit_mb;
-              msg.textContent = 'Limit zdjęć zresetowany do 100MB!';
-              msg.style.color = '#15803d';
-              this.disabled = false;
-            }.bind(this))
-            .catch(function(err) {
-              msg.textContent = 'Błąd: ' + (err.message || '?');
-              msg.style.color = '#b91c1c';
-              this.disabled = false;
-            }.bind(this));
+            api('jg_admin_reset_user_photo_limit', {
+              user_id: userId
+            })
+              .then(function(result) {
+                qs('#uphoto-used', modalAuthor).textContent = result.used_mb;
+                qs('#uphoto-limit', modalAuthor).textContent = result.limit_mb;
+                qs('#uphoto-limit-input', modalAuthor).value = result.limit_mb;
+                msg.textContent = 'Limit zdjęć zresetowany do 100MB!';
+                msg.style.color = '#15803d';
+                self.disabled = false;
+              })
+              .catch(function(err) {
+                msg.textContent = 'Błąd: ' + (err.message || '?');
+                msg.style.color = '#b91c1c';
+                self.disabled = false;
+              });
+          });
         };
       }
 
       function openReportModal(p) {
         // Check if user is logged in
         if (!CFG.isLoggedIn) {
-          alert('Musisz być zalogowany aby zgłosić miejsce');
+          showAlert('Musisz być zalogowany aby zgłosić miejsce');
           return;
         }
 
@@ -2606,27 +2701,30 @@
           var handleMsg = qs('#handle-msg', modalReportsList);
 
           qs('#btn-keep', modalReportsList).onclick = function() {
-            if (!confirm('Pozostawić miejsce? Zgłoszenia zostaną usunięte.')) return;
+            var self = this;
+            showConfirm('Pozostawić miejsce? Zgłoszenia zostaną usunięte.').then(function(confirmed) {
+              if (!confirmed) return;
 
-            this.disabled = true;
-            handleMsg.textContent = 'Przetwarzanie...';
+              self.disabled = true;
+              handleMsg.textContent = 'Przetwarzanie...';
 
-            handleReports({
-              post_id: p.id,
-              action_type: 'keep',
-              reason: reasonField.value
-            })
-            .then(function(result) {
-              close(modalReportsList);
-              return refreshAll();
-            })
-            .then(function() {
-            })
-            .catch(function(err) {
-              handleMsg.textContent = err.message || 'Błąd';
-              handleMsg.style.color = '#b91c1c';
-              this.disabled = false;
-            }.bind(this));
+              handleReports({
+                post_id: p.id,
+                action_type: 'keep',
+                reason: reasonField.value
+              })
+              .then(function(result) {
+                close(modalReportsList);
+                return refreshAll();
+              })
+              .then(function() {
+              })
+              .catch(function(err) {
+                handleMsg.textContent = err.message || 'Błąd';
+                handleMsg.style.color = '#b91c1c';
+                self.disabled = false;
+              });
+            });
           };
 
           qs('#btn-edit-place', modalReportsList).onclick = function() {
@@ -2634,28 +2732,31 @@
           };
 
           qs('#btn-remove', modalReportsList).onclick = function() {
-            if (!confirm('Usunąć miejsce?')) return;
+            var self = this;
+            showConfirm('Usunąć miejsce?').then(function(confirmed) {
+              if (!confirmed) return;
 
-            this.disabled = true;
-            handleMsg.textContent = 'Przetwarzanie...';
+              self.disabled = true;
+              handleMsg.textContent = 'Przetwarzanie...';
 
-            handleReports({
-              post_id: p.id,
-              action_type: 'remove',
-              reason: reasonField.value
-            })
-            .then(function(result) {
-              close(modalReportsList);
-              close(modalView);
-              return refreshAll();
-            })
-            .then(function() {
-            })
-            .catch(function(err) {
-              handleMsg.textContent = err.message || 'Błąd';
-              handleMsg.style.color = '#b91c1c';
-              this.disabled = false;
-            }.bind(this));
+              handleReports({
+                post_id: p.id,
+                action_type: 'remove',
+                reason: reasonField.value
+              })
+              .then(function(result) {
+                close(modalReportsList);
+                close(modalView);
+                return refreshAll();
+              })
+              .then(function() {
+              })
+              .catch(function(err) {
+                handleMsg.textContent = err.message || 'Błąd';
+                handleMsg.style.color = '#b91c1c';
+                self.disabled = false;
+              });
+            });
           };
 
         }).catch(function() {
@@ -2667,11 +2768,11 @@
         // Check if user is banned or has edit_places restriction (skip for admin editing from reports)
         if (!fromReports && window.JG_USER_RESTRICTIONS) {
           if (window.JG_USER_RESTRICTIONS.is_banned) {
-            alert('Nie możesz edytować miejsc - Twoje konto jest zbanowane.');
+            showAlert('Nie możesz edytować miejsc - Twoje konto jest zbanowane.');
             return;
           }
           if (window.JG_USER_RESTRICTIONS.restrictions && window.JG_USER_RESTRICTIONS.restrictions.indexOf('edit_places') !== -1) {
-            alert('Nie możesz edytować miejsc - masz aktywną blokadę edycji miejsc.');
+            showAlert('Nie możesz edytować miejsc - masz aktywną blokadę edycji miejsc.');
             return;
           }
         }
@@ -2955,9 +3056,9 @@
               }
               refreshAll().then(function() {
                 if (fromReports) {
-                  alert('Miejsce edytowane i zgłoszenia zamknięte!');
+                  showAlert('Miejsce edytowane i zgłoszenia zamknięte!');
                 } else {
-                  alert('Wysłano do moderacji. Zmiany będą widoczne po zaakceptowaniu.');
+                  showAlert('Wysłano do moderacji. Zmiany będą widoczne po zaakceptowaniu.');
                 }
               });
             }, 300);
@@ -2969,7 +3070,7 @@
         };
       })
       .catch(function(err) {
-        alert('Błąd podczas ładowania limitów: ' + (err.message || 'Nieznany błąd'));
+        showAlert('Błąd podczas ładowania limitów: ' + (err.message || 'Nieznany błąd'));
       });
       }
 
@@ -2990,30 +3091,32 @@
         form.onsubmit = function(e) {
           e.preventDefault();
 
-          if (!confirm('Czy na pewno chcesz zgłosić usunięcie tego miejsca?')) {
-            return;
-          }
+          showConfirm('Czy na pewno chcesz zgłosić usunięcie tego miejsca?').then(function(confirmed) {
+            if (!confirmed) {
+              return;
+            }
 
-          msg.textContent = 'Wysyłanie zgłoszenia...';
-          msg.style.color = '#666';
+            msg.textContent = 'Wysyłanie zgłoszenia...';
+            msg.style.color = '#666';
 
-          api('jg_request_deletion', {
-            post_id: p.id,
-            reason: form.reason.value.trim()
-          })
-            .then(function() {
-              msg.textContent = 'Zgłoszenie wysłane do moderacji!';
-              msg.style.color = '#15803d';
-              setTimeout(function() {
-                close(modalEdit);
-                close(modalView);
-                refreshAll();
-              }, 1500);
+            api('jg_request_deletion', {
+              post_id: p.id,
+              reason: form.reason.value.trim()
             })
-            .catch(function(err) {
-              msg.textContent = (err && err.message) || 'Błąd';
-              msg.style.color = '#b91c1c';
-            });
+              .then(function() {
+                msg.textContent = 'Zgłoszenie wysłane do moderacji!';
+                msg.style.color = '#15803d';
+                setTimeout(function() {
+                  close(modalEdit);
+                  close(modalView);
+                  refreshAll();
+                }, 1500);
+              })
+              .catch(function(err) {
+                msg.textContent = (err && err.message) || 'Błąd';
+                msg.style.color = '#b91c1c';
+              });
+          });
         };
       }
 
@@ -3565,7 +3668,7 @@
           };
           var colors = statusColors[p.report_status] || { bg: '#f3f4f6', border: '#6b7280', text: '#374151' };
           var statusLabel = p.report_status_label || p.report_status;
-          statusBadge = '<div style="font-size:1.5rem;padding:6px 14px;background:' + colors.bg + ';border:1px solid ' + colors.border + ';border-radius:8px;color:' + colors.text + ';font-weight:600;white-space:nowrap">' + esc(statusLabel) + '</div>';
+          statusBadge = '<div style="font-size:1rem;padding:6px 14px;background:' + colors.bg + ';border:1px solid ' + colors.border + ';border-radius:8px;color:' + colors.text + ';font-weight:600;white-space:nowrap">' + esc(statusLabel) + '</div>';
         }
 
         // Type badge for header (left side)
@@ -3581,7 +3684,7 @@
           'miejsce': { bg: '#f0fdf4', border: '#10b981', text: '#065f46' }
         };
         var tColors = typeColors[p.type] || { bg: '#f3f4f6', border: '#6b7280', text: '#374151' };
-        typeBadge = '<div style="font-size:1.5rem;padding:6px 14px;background:' + tColors.bg + ';border:1px solid ' + tColors.border + ';border-radius:8px;color:' + tColors.text + ';font-weight:600;white-space:nowrap">' + (typeLabels[p.type] || p.type) + '</div>';
+        typeBadge = '<div style="font-size:1rem;padding:6px 14px;background:' + tColors.bg + ';border:1px solid ' + tColors.border + ';border-radius:8px;color:' + tColors.text + ';font-weight:600;white-space:nowrap">' + (typeLabels[p.type] || p.type) + '</div>';
 
         // Category badge for header (next to type, only for zgloszenie)
         var categoryBadgeHeader = '';
@@ -3622,7 +3725,7 @@
           };
           var emoji = categoryEmoji[p.category] || '📌';
           var catLabel = categoryLabelsShort[p.category] || p.category;
-          categoryBadgeHeader = '<div style="font-size:1.5rem;padding:6px 14px;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;color:#78350f;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:8px"><span>' + emoji + '</span><span>' + catLabel + '</span></div>';
+          categoryBadgeHeader = '<div style="font-size:1rem;padding:6px 14px;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;color:#78350f;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:8px"><span>' + emoji + '</span><span>' + catLabel + '</span></div>';
         }
 
         // Remove large category card from body since it's now in header
@@ -3652,25 +3755,27 @@
               var pointId = this.getAttribute('data-point-id');
               var imageIndex = this.getAttribute('data-image-index');
 
-              if (!confirm('Czy na pewno chcesz usunąć to zdjęcie?')) {
-                return;
-              }
+              showConfirm('Czy na pewno chcesz usunąć to zdjęcie?').then(function(confirmed) {
+                if (!confirmed) {
+                  return;
+                }
 
-              btn.disabled = true;
-              btn.textContent = '...';
+                btn.disabled = true;
+                btn.textContent = '...';
 
-              api('jg_delete_image', { point_id: pointId, image_index: imageIndex })
-                .then(function(result) {
-                  close(modalView);
-                  refreshAll().then(function() {
-                    alert('Zdjęcie zostało usunięte');
+                api('jg_delete_image', { point_id: pointId, image_index: imageIndex })
+                  .then(function(result) {
+                    close(modalView);
+                    refreshAll().then(function() {
+                      showAlert('Zdjęcie zostało usunięte');
+                    });
+                  })
+                  .catch(function(err) {
+                    btn.disabled = false;
+                    btn.textContent = '×';
+                    showAlert('Błąd: ' + (err.message || 'Nie udało się usunąć zdjęcia'));
                   });
-                })
-                .catch(function(err) {
-                  btn.disabled = false;
-                  btn.textContent = '×';
-                  alert('Błąd: ' + (err.message || 'Nie udało się usunąć zdjęcia'));
-                });
+              });
             });
           });
         }
@@ -3691,18 +3796,18 @@
 
             function doVote(dir) {
               if (!CFG.isLoggedIn) {
-                alert('Zaloguj się.');
+                showAlert('Zaloguj się.');
                 return;
               }
 
               // Check if user is banned or has voting restriction
               if (window.JG_USER_RESTRICTIONS) {
                 if (window.JG_USER_RESTRICTIONS.is_banned) {
-                  alert('Nie możesz głosować - Twoje konto jest zbanowane.');
+                  showAlert('Nie możesz głosować - Twoje konto jest zbanowane.');
                   return;
                 }
                 if (window.JG_USER_RESTRICTIONS.restrictions && window.JG_USER_RESTRICTIONS.restrictions.indexOf('voting') !== -1) {
-                  alert('Nie możesz głosować - masz aktywną blokadę głosowania.');
+                  showAlert('Nie możesz głosować - masz aktywną blokadę głosowania.');
                   return;
                 }
               }
@@ -3715,7 +3820,7 @@
                   refresh(p.votes, p.my_vote);
                 })
                 .catch(function(e) {
-                  alert((e && e.message) || 'Błąd');
+                  showAlert((e && e.message) || 'Błąd');
                 })
                 .finally(function() {
                   up.disabled = down.disabled = false;
@@ -3764,7 +3869,7 @@
                 })
                 .catch(function(err) {
                   console.error('[JG MAP] Failed to copy link:', err);
-                  alert('Nie udało się skopiować linku');
+                  showAlert('Nie udało się skopiować linku');
                 });
             } else {
               // Fallback for older browsers
@@ -3782,7 +3887,7 @@
                 }, 2000);
               } catch (err) {
                 console.error('[JG MAP] Failed to copy link (fallback):', err);
-                alert('Nie udało się skopiować linku');
+                showAlert('Nie udało się skopiować linku');
               }
               document.body.removeChild(tempInput);
             }
@@ -3844,23 +3949,25 @@
 
           if (btnApprove) {
             btnApprove.onclick = function() {
-              if (!confirm('Zaakceptować?')) return;
-              btnApprove.disabled = true;
-              btnApprove.textContent = 'Akceptowanie...';
+              showConfirm('Zaakceptować?').then(function(confirmed) {
+                if (!confirmed) return;
+                btnApprove.disabled = true;
+                btnApprove.textContent = 'Akceptowanie...';
 
-              adminApprovePoint({ post_id: p.id })
-                .then(function() {
-                  close(modalView);
-                  return refreshAll();
-                })
-                .then(function() {
-                  alert('Zaakceptowano i opublikowano!');
-                })
-                .catch(function(err) {
-                  alert('Błąd: ' + (err.message || '?'));
-                  btnApprove.disabled = false;
-                  btnApprove.textContent = '✓ Akceptuj';
-                });
+                adminApprovePoint({ post_id: p.id })
+                  .then(function() {
+                    close(modalView);
+                    return refreshAll();
+                  })
+                  .then(function() {
+                    showAlert('Zaakceptowano i opublikowano!');
+                  })
+                  .catch(function(err) {
+                    showAlert('Błąd: ' + (err.message || '?'));
+                    btnApprove.disabled = false;
+                    btnApprove.textContent = '✓ Akceptuj';
+                  });
+              });
             };
           }
 
@@ -3878,10 +3985,10 @@
                   return refreshAll();
                 })
                 .then(function() {
-                  alert('Odrzucono i przeniesiono do kosza.');
+                  showAlert('Odrzucono i przeniesiono do kosza.');
                 })
                 .catch(function(err) {
-                  alert('Błąd: ' + (err.message || '?'));
+                  showAlert('Błąd: ' + (err.message || '?'));
                   btnReject.disabled = false;
                   btnReject.textContent = '✗ Odrzuć';
                 });
@@ -3897,28 +4004,30 @@
 
           if (btnAuthor) {
             btnAuthor.onclick = function() {
-              if (!confirm((p.author_hidden ? 'Ujawnić' : 'Ukryć') + ' autora?')) return;
-              btnAuthor.disabled = true;
-              btnAuthor.textContent = 'Zapisywanie...';
+              showConfirm((p.author_hidden ? 'Ujawnić' : 'Ukryć') + ' autora?').then(function(confirmed) {
+                if (!confirmed) return;
+                btnAuthor.disabled = true;
+                btnAuthor.textContent = 'Zapisywanie...';
 
-              adminToggleAuthor({ post_id: p.id })
-                .then(function(result) {
-                  return refreshAll();
-                })
-                .then(function() {
-                  close(modalView);
-                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
-                  if (updatedPoint) {
-                    setTimeout(function() {
-                      openDetails(updatedPoint);
-                    }, 200);
-                  }
-                })
-                .catch(function(err) {
-                  alert('Błąd: ' + (err.message || '?'));
-                  btnAuthor.disabled = false;
-                  btnAuthor.textContent = p.author_hidden ? 'Ujawnij autora' : 'Ukryj autora';
-                });
+                adminToggleAuthor({ post_id: p.id })
+                  .then(function(result) {
+                    return refreshAll();
+                  })
+                  .then(function() {
+                    close(modalView);
+                    var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                    if (updatedPoint) {
+                      setTimeout(function() {
+                        openDetails(updatedPoint);
+                      }, 200);
+                    }
+                  })
+                  .catch(function(err) {
+                    showAlert('Błąd: ' + (err.message || '?'));
+                    btnAuthor.disabled = false;
+                    btnAuthor.textContent = p.author_hidden ? 'Ujawnij autora' : 'Ukryj autora';
+                  });
+              });
             };
           }
 
@@ -3951,7 +4060,7 @@
                   }
                 })
                 .catch(function(err) {
-                  alert('Błąd: ' + (err.message || '?'));
+                  showAlert('Błąd: ' + (err.message || '?'));
                   btnNote.disabled = false;
                   btnNote.textContent = p.admin_note ? 'Edytuj notatkę' : 'Dodaj notatkę';
                 });
@@ -3960,29 +4069,31 @@
 
           if (btnApproveEdit) {
             btnApproveEdit.onclick = function() {
-              if (!confirm('Zaakceptować edycję?')) return;
+              showConfirm('Zaakceptować edycję?').then(function(confirmed) {
+                if (!confirmed) return;
 
-              btnApproveEdit.disabled = true;
-              btnApproveEdit.textContent = 'Akceptowanie...';
+                btnApproveEdit.disabled = true;
+                btnApproveEdit.textContent = 'Akceptowanie...';
 
-              api('jg_admin_approve_edit', { history_id: p.edit_info.history_id })
-                .then(function(result) {
-                  return refreshAll();
-                })
-                .then(function() {
-                  close(modalView);
-                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
-                  if (updatedPoint) {
-                    setTimeout(function() {
-                      openDetails(updatedPoint);
-                    }, 200);
-                  }
-                })
-                .catch(function(err) {
-                  alert('Błąd: ' + (err.message || '?'));
-                  btnApproveEdit.disabled = false;
-                  btnApproveEdit.textContent = '✓ Akceptuj edycję';
-                });
+                api('jg_admin_approve_edit', { history_id: p.edit_info.history_id })
+                  .then(function(result) {
+                    return refreshAll();
+                  })
+                  .then(function() {
+                    close(modalView);
+                    var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                    if (updatedPoint) {
+                      setTimeout(function() {
+                        openDetails(updatedPoint);
+                      }, 200);
+                    }
+                  })
+                  .catch(function(err) {
+                    showAlert('Błąd: ' + (err.message || '?'));
+                    btnApproveEdit.disabled = false;
+                    btnApproveEdit.textContent = '✓ Akceptuj edycję';
+                  });
+              });
             };
           }
 
@@ -4008,7 +4119,7 @@
                   }
                 })
                 .catch(function(err) {
-                  alert('Błąd: ' + (err.message || '?'));
+                  showAlert('Błąd: ' + (err.message || '?'));
                   btnRejectEdit.disabled = false;
                   btnRejectEdit.textContent = '✗ Odrzuć edycję';
                 });
@@ -4021,24 +4132,26 @@
 
           if (btnApproveDeletion) {
             btnApproveDeletion.onclick = function() {
-              if (!confirm('Zatwierdzić usunięcie miejsca? Miejsca nie będzie można przywrócić!')) return;
+              showConfirm('Zatwierdzić usunięcie miejsca? Miejsca nie będzie można przywrócić!').then(function(confirmed) {
+                if (!confirmed) return;
 
-              btnApproveDeletion.disabled = true;
-              btnApproveDeletion.textContent = 'Usuwanie...';
+                btnApproveDeletion.disabled = true;
+                btnApproveDeletion.textContent = 'Usuwanie...';
 
-              api('jg_admin_approve_deletion', { history_id: p.deletion_info.history_id })
-                .then(function(result) {
-                  return refreshAll();
-                })
-                .then(function() {
-                  close(modalView);
-                  alert('Miejsce zostało usunięte');
-                })
-                .catch(function(err) {
-                  alert('Błąd: ' + (err.message || '?'));
-                  btnApproveDeletion.disabled = false;
-                  btnApproveDeletion.textContent = '✓ Zatwierdź usunięcie';
-                });
+                api('jg_admin_approve_deletion', { history_id: p.deletion_info.history_id })
+                  .then(function(result) {
+                    return refreshAll();
+                  })
+                  .then(function() {
+                    close(modalView);
+                    showAlert('Miejsce zostało usunięte');
+                  })
+                  .catch(function(err) {
+                    showAlert('Błąd: ' + (err.message || '?'));
+                    btnApproveDeletion.disabled = false;
+                    btnApproveDeletion.textContent = '✓ Zatwierdź usunięcie';
+                  });
+              });
             };
           }
 
@@ -4064,7 +4177,7 @@
                   }
                 })
                 .catch(function(err) {
-                  alert('Błąd: ' + (err.message || '?'));
+                  showAlert('Błąd: ' + (err.message || '?'));
                   btnRejectDeletion.disabled = false;
                   btnRejectDeletion.textContent = '✗ Odrzuć usunięcie';
                 });
@@ -4073,24 +4186,26 @@
 
           if (btnDelete) {
             btnDelete.onclick = function() {
-              if (!confirm('NA PEWNO usunąć to miejsce? Tej operacji nie można cofnąć!')) return;
+              showConfirm('NA PEWNO usunąć to miejsce? Tej operacji nie można cofnąć!').then(function(confirmed) {
+                if (!confirmed) return;
 
-              btnDelete.disabled = true;
-              btnDelete.textContent = 'Usuwanie...';
+                btnDelete.disabled = true;
+                btnDelete.textContent = 'Usuwanie...';
 
-              adminDeletePoint({ post_id: p.id })
-                .then(function() {
-                  close(modalView);
-                  return refreshAll();
-                })
-                .then(function() {
-                  alert('Miejsce usunięte trwale!');
-                })
-                .catch(function(err) {
-                  alert('Błąd: ' + (err.message || '?'));
-                  btnDelete.disabled = false;
-                  btnDelete.textContent = '🗑️ Usuń miejsce';
-                });
+                adminDeletePoint({ post_id: p.id })
+                  .then(function() {
+                    close(modalView);
+                    return refreshAll();
+                  })
+                  .then(function() {
+                    showAlert('Miejsce usunięte trwale!');
+                  })
+                  .catch(function(err) {
+                    showAlert('Błąd: ' + (err.message || '?'));
+                    btnDelete.disabled = false;
+                    btnDelete.textContent = '🗑️ Usuń miejsce';
+                  });
+              });
             };
           }
         }
@@ -4099,6 +4214,7 @@
       function apply(skipFitBounds) {
         var enabled = {};
         var promoOnly = false;
+        var myPlacesOnly = false;
 
         if (elFilters) {
           elFilters.querySelectorAll('input[data-type]').forEach(function(cb) {
@@ -4106,10 +4222,16 @@
           });
           var pr = elFilters.querySelector('input[data-promo]');
           promoOnly = !!(pr && pr.checked);
+          var myPlaces = elFilters.querySelector('input[data-my-places]');
+          myPlacesOnly = !!(myPlaces && myPlaces.checked);
         }
 
         // STEP 1: Get ALL sponsored points - they are ALWAYS visible (no filtering!)
         var sponsoredPoints = (ALL || []).filter(function(p) {
+          // If "My Places" filter is active, check ownership even for sponsored
+          if (myPlacesOnly) {
+            return p.sponsored && (+CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id);
+          }
           return p.sponsored;
         });
 
@@ -4120,6 +4242,16 @@
 
           // Promo only mode - hide all non-sponsored
           if (promoOnly) return false;
+
+          // My Places filter - show only user's own places
+          if (myPlacesOnly) {
+            if (!CFG.currentUserId || +CFG.currentUserId <= 0) {
+              return false; // Not logged in
+            }
+            if (+CFG.currentUserId !== +p.author_id) {
+              return false; // Not user's place
+            }
+          }
 
           // Type filters
           // If no filters are enabled, hide all non-sponsored points
