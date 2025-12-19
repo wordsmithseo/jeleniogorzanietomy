@@ -1774,18 +1774,27 @@ class JG_Map_Ajax_Handlers {
      */
     private function check_rate_limit($action, $identifier, $max_attempts = 5, $timeframe = 900) {
         $transient_key = 'jg_rate_limit_' . $action . '_' . md5($identifier);
+        $transient_time_key = 'jg_rate_limit_time_' . $action . '_' . md5($identifier);
+
         $attempts = get_transient($transient_key);
+        $first_attempt_time = get_transient($transient_time_key);
 
         if ($attempts !== false && $attempts >= $max_attempts) {
+            // Calculate actual time remaining
+            $elapsed_time = time() - $first_attempt_time;
+            $time_remaining = max(0, $timeframe - $elapsed_time);
+            $minutes_remaining = ceil($time_remaining / 60);
+
             return array(
                 'allowed' => false,
-                'minutes_remaining' => ceil((900 - (time() - $attempts)) / 60)
+                'minutes_remaining' => $minutes_remaining
             );
         }
 
         // Increment or set attempts
         if ($attempts === false) {
             set_transient($transient_key, 1, $timeframe);
+            set_transient($transient_time_key, time(), $timeframe);
         } else {
             set_transient($transient_key, $attempts + 1, $timeframe);
         }
@@ -3467,14 +3476,6 @@ class JG_Map_Ajax_Handlers {
      * Login user via AJAX
      */
     public function login_user() {
-        // Rate limiting check
-        $ip = $this->get_user_ip();
-        $rate_check = $this->check_rate_limit('login', $ip, 5, 900);
-        if (!$rate_check['allowed']) {
-            wp_send_json_error('Zbyt wiele prób logowania. Spróbuj ponownie za 15 minut.');
-            exit;
-        }
-
         // Honeypot check - if filled, it's a bot
         $honeypot = isset($_POST['honeypot']) ? $_POST['honeypot'] : '';
         if (!empty($honeypot)) {
@@ -3485,6 +3486,30 @@ class JG_Map_Ajax_Handlers {
 
         $username = isset($_POST['username']) ? sanitize_text_field($_POST['username']) : '';
         $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+        // Check if user exists and is admin/moderator - they bypass rate limiting
+        $user_check = get_user_by('login', $username);
+        if (!$user_check) {
+            $user_check = get_user_by('email', $username);
+        }
+
+        $bypass_rate_limit = false;
+        if ($user_check) {
+            $is_admin = user_can($user_check->ID, 'manage_options');
+            $is_moderator = user_can($user_check->ID, 'jg_map_moderate');
+            $bypass_rate_limit = $is_admin || $is_moderator;
+        }
+
+        // Rate limiting check (skip for admins and moderators)
+        if (!$bypass_rate_limit) {
+            $ip = $this->get_user_ip();
+            $rate_check = $this->check_rate_limit('login', $ip, 5, 900);
+            if (!$rate_check['allowed']) {
+                $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 15;
+                wp_send_json_error('Zbyt wiele prób logowania. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
+                exit;
+            }
+        }
 
         if (empty($username) || empty($password)) {
             wp_send_json_error('Proszę wypełnić wszystkie pola');

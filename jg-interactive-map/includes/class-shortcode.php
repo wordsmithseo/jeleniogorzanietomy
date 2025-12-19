@@ -56,6 +56,7 @@ class JG_Map_Shortcode {
                 <label><input type="checkbox" data-type="zgloszenie" checked> <?php _e('Zgłoszenia', 'jg-map'); ?></label>
                 <label><input type="checkbox" data-type="ciekawostka" checked> <?php _e('Ciekawostki', 'jg-map'); ?></label>
                 <label><input type="checkbox" data-type="miejsce" checked> <?php _e('Miejsca', 'jg-map'); ?></label>
+                <label><input type="checkbox" data-my-places> <?php _e('Moje miejsca', 'jg-map'); ?></label>
                 <label style="margin-left:auto"><input type="checkbox" data-promo> <?php _e('Tylko promocje', 'jg-map'); ?></label>
                 <div class="jg-search">
                     <input type="text" id="jg-search-input" placeholder="🔍 <?php _e('Szukaj miejsca...', 'jg-map'); ?>" />
@@ -105,6 +106,14 @@ class JG_Map_Shortcode {
             <div id="jg-map-modal-author" class="jg-modal-bg"><div class="jg-modal"></div></div>
             <div id="jg-map-modal-status" class="jg-modal-bg"><div class="jg-modal"></div></div>
             <div id="jg-map-lightbox" class="jg-modal-bg"><div class="jg-lightbox"></div></div>
+
+            <!-- Message Modals (for alert/confirm replacements) -->
+            <div id="jg-modal-alert" class="jg-modal-bg" style="z-index:99999">
+                <div class="jg-modal jg-modal-message" style="max-width:500px">
+                    <div class="jg-modal-message-content"></div>
+                    <div class="jg-modal-message-buttons"></div>
+                </div>
+            </div>
         </div>
         <?php
         return ob_get_clean();
