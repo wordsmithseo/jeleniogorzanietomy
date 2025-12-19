@@ -458,11 +458,11 @@
 /* Place content/description - improved readability */
 .jg-place-content,
 .jg-place-excerpt {
-  font-size: 1.0625rem !important; /* 17px - slightly larger for better readability */
-  line-height: 1.7 !important; /* More breathing room */
+  font-size: 1.125rem !important; /* 18px - larger for better readability */
+  line-height: 1.8 !important; /* More breathing room */
   color: #374151 !important; /* Softer black for less eye strain */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-  margin: 0.75rem 0 !important; /* 12px vertical spacing */
+  margin: 1rem 0 !important; /* 16px vertical spacing */
 }
 
 /* Override all text elements inside place content */
@@ -471,15 +471,15 @@
 .jg-place-content div,
 .jg-place-content span,
 .jg-place-excerpt {
-  font-size: 1.0625rem !important; /* 17px */
-  line-height: 1.7 !important;
+  font-size: 1.125rem !important; /* 18px */
+  line-height: 1.8 !important;
   color: #374151 !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .jg-place-content p,
 .jg-place-excerpt {
-  margin-bottom: 0.875rem !important; /* 14px between paragraphs */
+  margin-bottom: 1rem !important; /* 16px between paragraphs */
 }
 
 .jg-place-content p:last-child {
