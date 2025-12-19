@@ -1,10 +1,186 @@
 /**
  * JG Interactive Map - Frontend JavaScript
- * Version: 3.0.0
+ * Version: 3.4.0
+ */
+
+// @ts-check
+// Enable TypeScript-style type checking in VS Code without compilation
+
+/**
+ * @typedef {Object} Point
+ * @property {number} id - Unique point ID
+ * @property {string} title - Point title
+ * @property {string} excerpt - Short description
+ * @property {string} content - Full HTML content
+ * @property {number} lat - Latitude
+ * @property {number} lng - Longitude
+ * @property {string} address - Full address
+ * @property {string} type - Point type: 'zgloszenie' | 'ciekawostka' | 'miejsce'
+ * @property {string|null} category - Category for zgłoszenia (CRITICAL: must be preserved in mapping)
+ * @property {boolean} sponsored - Is sponsored
+ * @property {string|null} sponsored_until - Sponsorship end date
+ * @property {string|null} website - Website URL
+ * @property {string|null} phone - Phone number
+ * @property {boolean} cta_enabled - Call-to-action enabled
+ * @property {string|null} cta_type - CTA type
+ * @property {string} status - Status
+ * @property {string} status_label - Human-readable status
+ * @property {string} report_status - Report status
+ * @property {string} report_status_label - Human-readable report status
+ * @property {number} author_id - Author user ID
+ * @property {string} author_name - Author name
+ * @property {boolean} author_hidden - Author hidden flag
+ * @property {Array<string>} images - Image URLs
+ * @property {number} votes - Vote count
+ * @property {string} my_vote - Current user's vote
+ * @property {string|null} date - Date string
+ * @property {string|null} admin - Admin info
+ * @property {string} admin_note - Admin note
+ * @property {boolean} is_pending - Pending approval
+ * @property {boolean} is_edit - Is edit request
+ * @property {Object|null} edit_info - Edit information
+ * @property {boolean} is_deletion_requested - Deletion requested
+ * @property {Object|null} deletion_info - Deletion info
+ * @property {number} reports_count - Number of reports
+ */
+
+/**
+ * @typedef {Object} APIResponse
+ * @property {boolean} success - Request success status
+ * @property {Array<Point>} data - Array of points
+ * @property {string} [message] - Optional message
  */
 
 (function($) {
   'use strict';
+
+  // ============================================================================
+  // DEBUG MODE - Global debugging system
+  // ============================================================================
+  // Enable: localStorage.setItem('jg_debug', 'true'); location.reload();
+  // Disable: localStorage.removeItem('jg_debug'); location.reload();
+  // ============================================================================
+
+  var JG_DEBUG = (localStorage.getItem('jg_debug') === 'true');
+
+  if (JG_DEBUG) {
+    console.log('%c[JG MAP] 🐛 DEBUG MODE ENABLED', 'background: #f59e0b; color: white; padding: 4px 8px; border-radius: 3px; font-weight: bold');
+    console.log('%c[JG MAP] To disable: localStorage.removeItem("jg_debug"); location.reload();', 'color: #6b7280');
+  }
+
+  /**
+   * Debug logging - only logs when JG_DEBUG is enabled
+   * @param {string} message - Log message
+   * @param {*} [data] - Optional data to log
+   */
+  function debugLog(message, data) {
+    if (JG_DEBUG) {
+      if (arguments.length > 1) {
+        debugLog(' ' + message, data);
+      } else {
+        debugLog(' ' + message);
+      }
+    }
+  }
+
+  /**
+   * Always-on error logging (even when debug mode is off)
+   * @param {string} message - Error message
+   * @param {*} [data] - Optional error data
+   */
+  function errorLog(message, data) {
+    if (arguments.length > 1) {
+      console.error('[JG MAP ERROR] ' + message, data);
+    } else {
+      console.error('[JG MAP ERROR] ' + message);
+    }
+  }
+
+  // ============================================================================
+  // RUNTIME VALIDATION - Catch data integrity issues
+  // ============================================================================
+
+  /**
+   * Validates Point object structure
+   * @param {any} obj - Object to validate
+   * @param {string} context - Where validation is called from
+   * @returns {Point} - Validated point
+   * @throws {Error} - If validation fails
+   */
+  function validatePoint(obj, context) {
+    // Critical fields that MUST exist
+    var criticalFields = ['id', 'title', 'lat', 'lng', 'type'];
+
+    // Fields that should exist for zgłoszenia
+    var reportFields = ['category'];
+
+    var missing = criticalFields.filter(function(field) {
+      return !(field in obj);
+    });
+
+    if (missing.length > 0) {
+      errorLog('❌ VALIDATION FAILED in ' + context + ' - Missing critical fields: ' + missing.join(', '), obj);
+      throw new Error('[JG MAP VALIDATION] Invalid Point in ' + context + ': missing ' + missing.join(', '));
+    }
+
+    // Check category for zgłoszenia
+    if (obj.type === 'zgloszenie' && !('category' in obj)) {
+      errorLog('⚠️ WARNING in ' + context + ' - Zgłoszenie missing category field!', obj);
+      console.warn('[JG MAP VALIDATION] Zgłoszenie #' + obj.id + ' is missing category field - this will cause display issues!');
+    }
+
+    debugLog('✅ Point validated in ' + context + ' (id: ' + obj.id + ', type: ' + obj.type + ', category: ' + (obj.category || 'none') + ')');
+
+    return obj;
+  }
+
+  /**
+   * Validates API response structure
+   * @param {any} response - API response to validate
+   * @param {string} endpoint - API endpoint name
+   * @returns {APIResponse} - Validated response
+   * @throws {Error} - If validation fails
+   */
+  function validateAPIResponse(response, endpoint) {
+    if (!response) {
+      errorLog('❌ API VALIDATION FAILED - No response from ' + endpoint);
+      throw new Error('[JG MAP API] No response from ' + endpoint);
+    }
+
+    if (!response.success) {
+      errorLog('❌ API VALIDATION FAILED - success=false from ' + endpoint, response);
+      throw new Error('[JG MAP API] Request failed: ' + (response.message || 'Unknown error'));
+    }
+
+    if (!Array.isArray(response.data)) {
+      errorLog('❌ API VALIDATION FAILED - data is not an array from ' + endpoint, {
+        dataType: typeof response.data,
+        data: response.data
+      });
+      throw new Error('[JG MAP API] Response data is not an array (got ' + typeof response.data + ')');
+    }
+
+    // Sample first item to check structure
+    if (response.data.length > 0) {
+      var sample = response.data[0];
+      var expectedFields = ['id', 'title', 'type', 'lat', 'lng'];
+      var missing = expectedFields.filter(function(f) { return !(f in sample); });
+
+      if (missing.length > 0) {
+        errorLog('❌ API VALIDATION FAILED - Sample item missing fields from ' + endpoint, {
+          missingFields: missing,
+          sampleItem: sample
+        });
+        throw new Error('[JG MAP API] Invalid data structure from ' + endpoint + ': missing ' + missing.join(', '));
+      }
+
+      debugLog('✅ API response validated from ' + endpoint + ' (' + response.data.length + ' items)');
+    } else {
+      debugLog('✅ API response validated from ' + endpoint + ' (0 items - empty dataset)');
+    }
+
+    return response;
+  }
 
   // Unregister Service Worker to fix caching issues
   if ('serviceWorker' in navigator) {
@@ -33,7 +209,7 @@
         localStorage.removeItem('jg_map_cache_version_v2');
         // v3 will be used from now on, but clear old versions on page load
       } catch (e) {
-        console.error('[JG MAP] Failed to clear localStorage:', e);
+        errorLog('Failed to clear localStorage:', e);
       }
     });
   }
@@ -44,11 +220,11 @@
   var loadStartTime = Date.now(); // Track when loading started
   var minLoadingTime = 500; // Minimum time to show loader (ms)
 
-  console.log('[JG MAP] Loader element:', loadingEl ? 'found' : 'NOT FOUND');
-  console.log('[JG MAP] Loading started at', new Date(loadStartTime).toISOString());
+  debugLog('Loader element: ' + (loadingEl ? 'found' : 'NOT FOUND'));
+  debugLog('Loading started at ' + new Date(loadStartTime).toISOString());
 
   function showError(msg) {
-    console.error('[JG MAP]', msg);
+    errorLog(msg);
     if (loadingEl) loadingEl.style.display = 'none';
     if (errorEl) errorEl.style.display = 'block';
     if (errorMsg) errorMsg.textContent = msg;
@@ -58,22 +234,22 @@
     var elapsed = Date.now() - loadStartTime;
     var remaining = minLoadingTime - elapsed;
 
-    console.log('[JG MAP] hideLoading() called, elapsed:', elapsed + 'ms');
+    debugLog(' hideLoading() called, elapsed:', elapsed + 'ms');
 
     if (remaining > 0) {
-      console.log('[JG MAP] Delaying hide by', remaining + 'ms for better UX');
+      debugLog(' Delaying hide by', remaining + 'ms for better UX');
       setTimeout(function() {
         if (loadingEl) {
           loadingEl.style.display = 'none';
-          console.log('[JG MAP] Loader hidden after delay');
+          debugLog(' Loader hidden after delay');
         }
       }, remaining);
     } else {
       if (loadingEl) {
         loadingEl.style.display = 'none';
-        console.log('[JG MAP] Loader hidden immediately');
+        debugLog(' Loader hidden immediately');
       } else {
-        console.log('[JG MAP] Loader element not found!');
+        debugLog(' Loader element not found!');
       }
     }
   }
@@ -839,7 +1015,7 @@
             });
 
             clusterReady = true;
-            console.log('[JG MAP] Cluster is now ready, pendingData:', pendingData ? pendingData.length : 0);
+            debugLog(' Cluster is now ready, pendingData:', pendingData ? pendingData.length : 0);
 
             // Clean up any old markers
             if (markers.length > 0) {
@@ -854,11 +1030,11 @@
 
             // Process pending data if any (regardless of markers)
             if (pendingData && pendingData.length > 0) {
-              console.log('[JG MAP] Processing pending data:', pendingData.length, 'points');
+              debugLog(' Processing pending data:', pendingData.length, 'points');
               setTimeout(function() { draw(pendingData); }, 300);
             }
           } catch (e) {
-            console.error('[JG MAP] Błąd tworzenia clustera:', e);
+            errorLog(' Błąd tworzenia clustera:', e);
             clusterReady = false;
           }
         }, 800);
@@ -1107,7 +1283,7 @@
               var addressDisplay = qs('#add-address-display', modalAdd);
 
               if (addressDisplay && addressInput) {
-                console.log('[JG MAP] Starting automatic reverse geocoding for:', lat, lng);
+                debugLog(' Starting automatic reverse geocoding for:', lat, lng);
 
                 var formData = new FormData();
                 formData.append('action', 'jg_reverse_geocode');
@@ -1121,7 +1297,7 @@
                 })
                 .then(function(r) { return r.json(); })
                 .then(function(response) {
-                  console.log('[JG MAP] Reverse geocoding response:', response);
+                  debugLog(' Reverse geocoding response:', response);
 
                   if (response.success && response.data && response.data.display_name) {
                     var data = response.data;
@@ -1139,17 +1315,17 @@
                       fullAddress = city;
                     }
 
-                    console.log('[JG MAP] Address resolved:', fullAddress);
+                    debugLog(' Address resolved:', fullAddress);
                     addressInput.value = fullAddress;
                     addressDisplay.innerHTML = '<strong>📍 Adres:</strong> ' + esc(fullAddress);
                   } else {
-                    console.warn('[JG MAP] No address found in response');
+                    debugLog(' No address found in response');
                     addressDisplay.innerHTML = '<strong>📍 Adres:</strong> Nie znaleziono adresu dla tej lokalizacji';
                     addressInput.value = '';
                   }
                 })
                 .catch(function(err) {
-                  console.error('[JG MAP] Reverse geocoding error:', err);
+                  errorLog(' Reverse geocoding error:', err);
                   addressDisplay.innerHTML = '<strong>📍 Adres:</strong> Błąd pobierania adresu';
                   addressInput.value = '';
                 });
@@ -1164,15 +1340,15 @@
             fd.append('_ajax_nonce', CFG.nonce);
 
             // DEBUG: Log FormData contents (more compatible approach)
-            console.log('[JG MAP DEBUG] ===== SUBMITTING FORM =====');
-            console.log('[JG MAP DEBUG] Form action: jg_submit_point');
+            debugLog(' ===== SUBMITTING FORM =====');
+            debugLog(' Form action: jg_submit_point');
             var formDataObj = {};
             fd.forEach(function(value, key) {
               formDataObj[key] = value;
-              console.log('[JG MAP DEBUG]   ' + key + ': ' + value);
+              debugLog('   ' + key + ': ' + value);
             });
-            console.log('[JG MAP DEBUG] FormData object:', formDataObj);
-            console.log('[JG MAP DEBUG] =============================');
+            debugLog(' FormData object:', formDataObj);
+            debugLog(' =============================');
 
             fetch(CFG.ajax, {
               method: 'POST',
@@ -1215,7 +1391,7 @@
                   close(modalAdd);
                 }, 800);
               }).catch(function(err) {
-                console.error('[JG MAP] Błąd odświeżania:', err);
+                errorLog(' Błąd odświeżania:', err);
                 setTimeout(function() {
                   close(modalAdd);
                 }, 1000);
@@ -1236,7 +1412,7 @@
       function iconFor(p) {
         // DEBUG: Log point data to check if category is present
         if (p.type === 'zgloszenie') {
-          console.log('[JG MAP DEBUG] iconFor() - Zgłoszenie point:', {
+          debugLog(' iconFor() - Zgłoszenie point:', {
             id: p.id,
             title: p.title,
             type: p.type,
@@ -1385,7 +1561,7 @@
 
         // DEBUG: Log before emoji rendering
         if (p.type === 'zgloszenie') {
-          console.log('[JG MAP DEBUG] iconFor() - Before emoji check:', {
+          debugLog(' iconFor() - Before emoji check:', {
             sponsored: sponsored,
             type: p.type,
             category: p.category,
@@ -1464,37 +1640,36 @@
           try {
             j = JSON.parse(t);
           } catch (e) {
-            console.error('[JG MAP] JSON parse error:', e);
-            console.error('[JG MAP] Raw response:', t);
+            errorLog('JSON parse error:', e);
+            errorLog('Raw response:', t);
           }
           if (!j || j.success === false) {
             var errMsg = (j && j.data && (j.data.message || j.data.error)) || 'Błąd';
-            console.error('[JG MAP] API error:', errMsg, j);
+            errorLog('API error:', errMsg);
             throw new Error(errMsg);
           }
-          // DEBUG: Log API response for jg_points to see if addresses are included
-          if (action === 'jg_points' && j.data) {
-            console.log('[JG MAP] API Response for jg_points - first 3 points:', j.data.slice(0, 3));
-            j.data.slice(0, 3).forEach(function(p, i) {
-              console.log('[JG MAP] Point ' + (i+1) + ' - ID:', p.id, 'Address:', p.address);
-            });
-            // DEBUG: Log RAW JSON for zgłoszenia to check category field
-            console.log('[JG MAP DEBUG] ===== RAW JSON RESPONSE CHECK =====');
-            var zgloszenia = j.data.filter(function(p) { return p.type === 'zgloszenie'; });
-            console.log('[JG MAP DEBUG] Found ' + zgloszenia.length + ' zgłoszenia in response');
-            zgloszenia.slice(0, 3).forEach(function(p) {
-              console.log('[JG MAP DEBUG] RAW Zgłoszenie #' + p.id + ':', JSON.stringify({
-                id: p.id,
-                title: p.title,
-                type: p.type,
-                category: p.category,
-                has_category_key: ('category' in p),
-                category_value: p.category,
-                category_type: typeof p.category
-              }, null, 2));
-            });
-            console.log('[JG MAP DEBUG] =====================================');
+
+          // Validate API response for jg_points action
+          if (action === 'jg_points') {
+            debugLog('Received API response from jg_points (' + (j.data ? j.data.length : 0) + ' items)');
+
+            // Validate response structure
+            validateAPIResponse(j, 'jg_points');
+
+            // Debug log sample items
+            if (j.data && j.data.length > 0) {
+              debugLog('Sample points from API:', j.data.slice(0, 3).map(function(p) {
+                return {
+                  id: p.id,
+                  title: p.title,
+                  type: p.type,
+                  category: p.category,
+                  address: p.address
+                };
+              }));
+            }
           }
+
           return j.data;
         });
       }
@@ -1644,7 +1819,7 @@
             window.JG_USER_RESTRICTIONS = result;
           })
           .catch(function(e) {
-            console.error('[JG MAP] Failed to check restrictions:', e);
+            errorLog(' Failed to check restrictions:', e);
           });
       }
 
@@ -1666,7 +1841,7 @@
           }
 
           if (pointId && ALL && ALL.length > 0) {
-            console.log('[JG MAP] Deep link detected, point_id:', pointId);
+            debugLog(' Deep link detected, point_id:', pointId);
 
             // Find the point with this ID
             var point = ALL.find(function(p) {
@@ -1674,7 +1849,7 @@
             });
 
             if (point) {
-              console.log('[JG MAP] Found point:', point.title);
+              debugLog(' Found point:', point.title);
 
               // Wait for map to be ready, then zoom and show pulsing marker
               setTimeout(function() {
@@ -1686,7 +1861,7 @@
                   // Add pulsing red circle around the point
                   // After animation completes (4 seconds), open modal
                   addPulsingMarker(point.lat, point.lng, function() {
-                    console.log('[JG MAP] Pulsing animation complete, opening modal');
+                    debugLog(' Pulsing animation complete, opening modal');
 
                     // Open modal after animation - use openDetails, not viewPoint!
                     openDetails(point);
@@ -1700,11 +1875,11 @@
                 }, 800); // Wait for zoom animation
               }, 1200); // Wait for cluster animation to complete
             } else {
-              console.warn('[JG MAP] Point not found with id:', pointId);
+              debugLog(' Point not found with id:', pointId);
             }
           }
         } catch (e) {
-          console.error('[JG MAP] Deep link error:', e);
+          errorLog(' Deep link error:', e);
         }
       }
 
@@ -1765,7 +1940,7 @@
             return data;
           }
         } catch (e) {
-          console.error('[JG MAP] Cache load error:', e);
+          errorLog(' Cache load error:', e);
         }
         return null;
       }
@@ -1777,7 +1952,7 @@
           localStorage.setItem(CACHE_VERSION_KEY, version.toString());
           lastModified = version;
         } catch (e) {
-          console.error('[JG MAP] Cache save error:', e);
+          errorLog(' Cache save error:', e);
         }
       }
 
@@ -1819,18 +1994,18 @@
 
       // Helper function to refresh both map and notifications
       function refreshAll() {
-        console.log('[JG MAP] refreshAll() called - refreshing map and notifications');
+        debugLog(' refreshAll() called - refreshing map and notifications');
 
         // First refresh map data to get latest points
         return refreshData(true).then(function() {
-          console.log('[JG MAP] Map data refreshed, now refreshing notifications');
+          debugLog(' Map data refreshed, now refreshing notifications');
 
           // Then refresh notifications if function exists (for admins/moderators)
           if (typeof window.jgRefreshNotifications === 'function') {
             return window.jgRefreshNotifications().then(function() {
-              console.log('[JG MAP] Notifications refreshed successfully');
+              debugLog(' Notifications refreshed successfully');
             }).catch(function(err) {
-              console.error('[JG MAP] Failed to refresh notifications:', err);
+              errorLog(' Failed to refresh notifications:', err);
             });
           }
 
@@ -1841,8 +2016,11 @@
       function fetchAndProcessPoints(version) {
         return fetchPoints().then(function(data) {
 
+          debugLog('Processing ' + (data ? data.length : 0) + ' points from API...');
+
           ALL = (data || []).map(function(r) {
-            return {
+            /** @type {Point} */
+            var point = {
               id: r.id,
               title: r.title || '',
               excerpt: r.excerpt || '',
@@ -1878,7 +2056,12 @@
               deletion_info: r.deletion_info || null,
               reports_count: +(r.reports_count || 0)
             };
+
+            // Validate each point - will throw error if critical fields missing
+            return validatePoint(point, 'fetchAndProcessPoints:map');
           });
+
+          debugLog('✅ Successfully processed and validated ' + ALL.length + ' points');
 
           // Always save to cache with current timestamp
           var cacheVersion = version || Date.now();
@@ -1933,10 +2116,10 @@
       var isInitialLoad = true; // Track if this is the first load
 
       function draw(list, skipFitBounds) {
-        console.log('[JG MAP] draw() called with', list ? list.length : 0, 'points, clusterReady:', clusterReady);
+        debugLog(' draw() called with', list ? list.length : 0, 'points, clusterReady:', clusterReady);
 
         if (!list || list.length === 0) {
-          console.log('[JG MAP] No data to draw, showing map anyway');
+          debugLog(' No data to draw, showing map anyway');
           showMap();
           hideLoading();
           return;
@@ -1944,18 +2127,18 @@
 
         // Wait for cluster to be ready (created in map.whenReady)
         if (!clusterReady || !cluster) {
-          console.log('[JG MAP] Cluster not ready, storing', list.length, 'points in pendingData');
+          debugLog(' Cluster not ready, storing', list.length, 'points in pendingData');
           pendingData = list;
           return;
         }
 
-        console.log('[JG MAP] Cluster ready, drawing', list.length, 'markers');
+        debugLog(' Cluster ready, drawing', list.length, 'markers');
 
         // Clear cluster layers
         try {
           cluster.clearLayers();
         } catch (e) {
-          console.error('[JG MAP] Błąd czyszczenia clustera:', e);
+          errorLog(' Błąd czyszczenia clustera:', e);
         }
 
         // Clear any markers that were added directly to map (not in cluster)
@@ -2025,18 +2208,18 @@
 
             newMarkers.push(m);
           } catch (e) {
-            console.error('[JG MAP] Błąd dodawania markera:', e);
+            errorLog(' Błąd dodawania markera:', e);
           }
         });
 
         // Add all markers at once to cluster (reduces animation flicker)
         if (clusterReady && cluster && newMarkers.length > 0) {
           cluster.addLayers(newMarkers);
-          console.log('[JG MAP] Added', newMarkers.length, 'markers to cluster');
+          debugLog(' Added', newMarkers.length, 'markers to cluster');
         } else if (newMarkers.length > 0) {
           // DON'T add markers directly to map - wait for cluster to be ready
           // This prevents duplicate markers (one on map, one in cluster)
-          console.log('[JG MAP] Cluster not ready, not adding markers yet');
+          debugLog(' Cluster not ready, not adding markers yet');
         }
 
 
@@ -2056,14 +2239,14 @@
 
               isInitialLoad = false;
             } catch (e) {
-              console.error('[JG MAP] Błąd fitBounds:', e);
+              errorLog(' Błąd fitBounds:', e);
             }
 
             // Wait for cluster animation to complete before showing map
             setTimeout(function() {
               showMap();
               hideLoading();
-              console.log('[JG MAP] Map shown after cluster animation');
+              debugLog(' Map shown after cluster animation');
             }, 600);
           }, 400);
         } else {
@@ -2071,7 +2254,7 @@
           setTimeout(function() {
             showMap();
             hideLoading();
-            console.log('[JG MAP] Map shown after cluster animation');
+            debugLog(' Map shown after cluster animation');
           }, 600);
         }
       }
@@ -3030,7 +3213,7 @@
             var day = String(d.getDate()).padStart(2, '0');
             promoDateValue = year + '-' + month + '-' + day;
           } catch (e) {
-            console.error('Error parsing promo date:', e);
+            errorLog('Error parsing promo date:', e);
           }
         }
 
@@ -3276,8 +3459,8 @@
       }
 
       function openDetails(p) {
-        console.log('[JG MAP] Opening details for point:', p);
-        console.log('[JG MAP] Point address:', p.address);
+        debugLog(' Opening details for point:', p);
+        debugLog(' Point address:', p.address);
 
         var imgs = Array.isArray(p.images) ? p.images : [];
 
@@ -3523,7 +3706,7 @@
         var categoryInfo = '';
 
         // DEBUG: Log modal category data
-        console.log('[JG MAP DEBUG] openDetails() - Category check:', {
+        debugLog(' openDetails() - Category check:', {
           id: p.id,
           title: p.title,
           type: p.type,
@@ -3763,7 +3946,7 @@
                   }, 2000);
                 })
                 .catch(function(err) {
-                  console.error('[JG MAP] Failed to copy link:', err);
+                  errorLog(' Failed to copy link:', err);
                   alert('Nie udało się skopiować linku');
                 });
             } else {
@@ -3781,7 +3964,7 @@
                   copyLinkBtn.style.background = '';
                 }, 2000);
               } catch (err) {
-                console.error('[JG MAP] Failed to copy link (fallback):', err);
+                errorLog(' Failed to copy link (fallback):', err);
                 alert('Nie udało się skopiować linku');
               }
               document.body.removeChild(tempInput);
@@ -4134,11 +4317,11 @@
         var list = sponsoredPoints.concat(nonSponsoredPoints);
 
         // Debug logging
-        console.log('[JG MAP FILTER] Total points:', (ALL || []).length);
-        console.log('[JG MAP FILTER] Sponsored (always visible):', sponsoredPoints.length);
-        console.log('[JG MAP FILTER] Non-sponsored (filtered):', nonSponsoredPoints.length);
-        console.log('[JG MAP FILTER] Final list:', list.length);
-        console.log('[JG MAP FILTER] Enabled filters:', Object.keys(enabled).length > 0 ? Object.keys(enabled) : 'NONE');
+        debugLog(' Total points:', (ALL || []).length);
+        debugLog(' Sponsored (always visible):', sponsoredPoints.length);
+        debugLog(' Non-sponsored (filtered):', nonSponsoredPoints.length);
+        debugLog(' Final list:', list.length);
+        debugLog(' Enabled filters:', Object.keys(enabled).length > 0 ? Object.keys(enabled) : 'NONE');
 
         pendingData = list;
         draw(list, skipFitBounds);
@@ -4164,7 +4347,7 @@
             return;
           }
 
-          console.log('[JG SEARCH] Searching for:', query);
+          debugLog(' Searching for:', query);
 
           // Search through ALL points
           var results = (ALL || []).filter(function(p) {
@@ -4176,7 +4359,7 @@
                    excerpt.indexOf(query) !== -1;
           });
 
-          console.log('[JG SEARCH] Found', results.length, 'results');
+          debugLog(' Found', results.length, 'results');
 
           // Update panel count
           searchCount.textContent = results.length + (results.length === 1 ? ' wynik' : ' wyników');
@@ -4243,7 +4426,7 @@
 
         // Zoom to search result with fast pulsing circle
         function zoomToSearchResult(point) {
-          console.log('[JG SEARCH] Zooming to:', point.title);
+          debugLog(' Zooming to:', point.title);
 
           // Zoom to point
           map.setView([point.lat, point.lng], 19, { animate: true });
@@ -4334,14 +4517,14 @@
             });
           });
         } else {
-          console.error('[JG MAP] Filter container not found!');
+          errorLog(' Filter container not found!');
         }
       }, 500);
 
       // Load from cache first for instant display, then check for updates
       var cachedData = loadFromCache();
       if (cachedData && cachedData.length > 0) {
-        console.log('[JG MAP] Loaded ' + cachedData.length + ' points from cache');
+        debugLog(' Loaded ' + cachedData.length + ' points from cache');
         ALL = cachedData;
         apply(false); // Apply cached data immediately with fitBounds
         // Don't call hideLoading() here - let draw() handle it when cluster is ready
@@ -4354,11 +4537,11 @@
 
         // Then check for updates in background
         refreshData(false).catch(function(err) {
-          console.error('[JG MAP] Background update failed:', err);
+          errorLog(' Background update failed:', err);
         });
       } else {
         // No cache, fetch fresh data
-        console.log('[JG MAP] No cache, fetching fresh data');
+        debugLog(' No cache, fetching fresh data');
         refreshData(true)
           .then(function() {
             checkUserRestrictions();
@@ -4374,7 +4557,7 @@
 
         refreshData(false).then(function() {
         }).catch(function(err) {
-          console.error('[JG MAP] Auto-refresh error:', err);
+          errorLog(' Auto-refresh error:', err);
         });
       }, 15000); // 15 seconds
 
