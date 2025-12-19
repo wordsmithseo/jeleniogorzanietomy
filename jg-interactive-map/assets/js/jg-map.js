@@ -3513,10 +3513,10 @@
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
         }
 
-        // Address info - prominent display
+        // Address info - simple, below main content
         var addressInfo = '';
         if (p.address && p.address.trim()) {
-          addressInfo = '<div style="margin:12px 0;padding:12px 16px;background:linear-gradient(135deg,#f9fafb 0%,#f3f4f6 100%);border-left:4px solid #8d2324;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.05)"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#6b7280;margin-bottom:4px;font-weight:600">📍 Lokalizacja</div><div style="font-size:15px;color:#111827;font-weight:500">' + esc(p.address) + '</div></div>';
+          addressInfo = '<div style="margin:16px 0 8px 0;padding:0;font-size:13px;color:#6b7280"><span style="font-weight:500;color:#374151">📍</span> ' + esc(p.address) + '</div>';
         }
 
         // Category info for reports - prominent card
@@ -3565,10 +3565,25 @@
           };
           var colors = statusColors[p.report_status] || { bg: '#f3f4f6', border: '#6b7280', text: '#374151' };
           var statusLabel = p.report_status_label || p.report_status;
-          statusBadge = '<div style="margin:12px 0;padding:10px 16px;background:' + colors.bg + ';border:2px solid ' + colors.border + ';border-radius:8px;text-align:center"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:' + colors.text + ';opacity:0.8;margin-bottom:4px;font-weight:600">Status zgłoszenia</div><div style="font-size:15px;color:' + colors.text + ';font-weight:700">' + esc(statusLabel) + '</div></div>';
+          statusBadge = '<div style="font-size:11px;padding:4px 10px;background:' + colors.bg + ';border:1px solid ' + colors.border + ';border-radius:6px;color:' + colors.text + ';font-weight:700;white-space:nowrap">' + esc(statusLabel) + '</div>';
         }
 
-        var html = '<header><h3 class="jg-place-title">' + esc(p.title || 'Szczegóły') + '</h3><button class="jg-close" id="dlg-close">&times;</button></header><div class="jg-grid" style="overflow:auto">' + dateInfo + statusBadge + categoryInfo + addressInfo + (p.sponsored ? ('<div style="margin-bottom:10px">' + chip(p) + '</div>') : '') + reportsWarning + editInfo + deletionInfo + adminNote + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + contactInfo + ctaButton + verificationBadge + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        // Type badge for header
+        var typeBadge = '';
+        var typeLabels = {
+          'zgloszenie': 'Zgłoszenie',
+          'ciekawostka': 'Ciekawostka',
+          'miejsce': 'Miejsce'
+        };
+        var typeColors = {
+          'zgloszenie': { bg: '#fef2f2', border: '#dc2626', text: '#7f1d1d' },
+          'ciekawostka': { bg: '#eff6ff', border: '#3b82f6', text: '#1e40af' },
+          'miejsce': { bg: '#f0fdf4', border: '#10b981', text: '#065f46' }
+        };
+        var tColors = typeColors[p.type] || { bg: '#f3f4f6', border: '#6b7280', text: '#374151' };
+        typeBadge = '<div style="font-size:11px;padding:4px 10px;background:' + tColors.bg + ';border:1px solid ' + tColors.border + ';border-radius:6px;color:' + tColors.text + ';font-weight:700;white-space:nowrap">' + (typeLabels[p.type] || p.type) + '</div>';
+
+        var html = '<header style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:8px;flex:1">' + typeBadge + '<h3 class="jg-place-title" style="margin:0;flex:1">' + esc(p.title || 'Szczegóły') + '</h3>' + statusBadge + '</div><button class="jg-close" id="dlg-close" style="margin:0">&times;</button></header><div class="jg-grid" style="overflow:auto;padding:20px">' + dateInfo + categoryInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + (p.sponsored ? ('<div style="margin-bottom:10px">' + chip(p) + '</div>') : '') + contactInfo + ctaButton + verificationBadge + reportsWarning + editInfo + deletionInfo + adminNote + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim() });
 
