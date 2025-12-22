@@ -220,6 +220,9 @@ class JG_Map_Ajax_Handlers {
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $current_user_id = get_current_user_id();
 
+        // DEBUG: Log admin status
+        error_log('[JG MAP DEBUG] get_points - is_admin: ' . ($is_admin ? 'true' : 'false') . ', user_id: ' . $current_user_id);
+
         $points = JG_Map_Database::get_published_points($is_admin);
         $result = array();
 
@@ -254,6 +257,10 @@ class JG_Map_Ajax_Handlers {
             $reports_count = 0;
             if ($is_admin) {
                 $reports_count = JG_Map_Database::get_reports_count($point['id']);
+                // DEBUG: Log reports count
+                if ($reports_count > 0) {
+                    error_log('[JG MAP DEBUG] get_points - Point #' . $point['id'] . ' (' . $point['title'] . ') has ' . $reports_count . ' reports');
+                }
             }
 
             // Check if sponsored expired
