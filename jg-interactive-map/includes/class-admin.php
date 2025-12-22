@@ -467,13 +467,17 @@ class JG_Map_Admin {
      * Render places page - unified moderation interface
      */
     public function render_places_page() {
-        // Handle search
+        // Handle search and filters
         $search = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
         $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
+        $my_places_only = isset($_GET['my_places']) && $_GET['my_places'] === '1';
+
+        // Get current user ID for filtering
+        $current_user_id = $my_places_only ? get_current_user_id() : 0;
 
         // Get places with status
-        $places = JG_Map_Database::get_all_places_with_status($search, $status_filter);
-        $counts = JG_Map_Database::get_places_count_by_status();
+        $places = JG_Map_Database::get_all_places_with_status($search, $status_filter, $current_user_id);
+        $counts = JG_Map_Database::get_places_count_by_status($current_user_id);
 
         // Group places by display status
         $grouped_places = array(
@@ -498,14 +502,20 @@ class JG_Map_Admin {
             <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
                 <form method="get" action="">
                     <input type="hidden" name="page" value="jg-map-places">
-                    <div style="display:flex;gap:10px;align-items:center">
+                    <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
                         <input type="text" name="search" value="<?php echo esc_attr($search); ?>"
                                placeholder="Szukaj po nazwie, treści, adresie lub autorze..."
                                style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:4px">
                         <button type="submit" class="button button-primary">🔍 Szukaj</button>
-                        <?php if ($search || $status_filter): ?>
+                        <?php if ($search || $status_filter || $my_places_only): ?>
                             <a href="?page=jg-map-places" class="button">✕ Wyczyść</a>
                         <?php endif; ?>
+                    </div>
+                    <div style="display:flex;gap:15px;align-items:center">
+                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+                            <input type="checkbox" name="my_places" value="1" <?php checked($my_places_only, true); ?>>
+                            <span>Tylko moje miejsca</span>
+                        </label>
                     </div>
                 </form>
             </div>
@@ -882,10 +892,7 @@ class JG_Map_Admin {
             switch ($action) {
                 case 'details':
                     // Link that zooms to place on map and opens modal
-                    $details_url = add_query_arg(array(
-                        'jg_zoom_to' => $point_id,
-                        'jg_open_modal' => $point_id
-                    ), $map_url);
+                    $details_url = add_query_arg('jg_view_point', $point_id, $map_url);
                     $buttons .= sprintf(
                         '<a href="%s" class="button" target="_blank">🔍 Szczegóły</a>',
                         esc_url($details_url)

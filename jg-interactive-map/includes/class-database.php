@@ -795,7 +795,7 @@ class JG_Map_Database {
      * Get all places with their extended status and priority
      * Returns places grouped by their moderation status with priority levels
      */
-    public static function get_all_places_with_status($search = '', $status_filter = '') {
+    public static function get_all_places_with_status($search = '', $status_filter = '', $user_id = 0) {
         global $wpdb;
 
         $points_table = self::get_points_table();
@@ -804,6 +804,11 @@ class JG_Map_Database {
 
         // Base query - get all places except trash
         $where_conditions = array("p.status != 'trash'");
+
+        // Add user filter if provided
+        if (!empty($user_id)) {
+            $where_conditions[] = $wpdb->prepare("p.author_id = %d", $user_id);
+        }
 
         // Add search filter if provided
         if (!empty($search)) {
@@ -889,8 +894,8 @@ class JG_Map_Database {
     /**
      * Get count of places by display status
      */
-    public static function get_places_count_by_status() {
-        $places = self::get_all_places_with_status();
+    public static function get_places_count_by_status($user_id = 0) {
+        $places = self::get_all_places_with_status('', '', $user_id);
 
         $counts = array(
             'reported' => 0,
