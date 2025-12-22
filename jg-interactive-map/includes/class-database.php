@@ -62,7 +62,15 @@ class JG_Map_Database {
             promo_until datetime DEFAULT NULL,
             admin_note text,
             images longtext,
+            website varchar(255) DEFAULT NULL,
+            phone varchar(50) DEFAULT NULL,
+            cta_enabled tinyint(1) DEFAULT 0,
+            cta_type varchar(20) DEFAULT NULL,
+            is_deletion_requested tinyint(1) DEFAULT 0,
+            deletion_reason text DEFAULT NULL,
+            deletion_requested_at datetime DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            approved_at datetime DEFAULT NULL,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             ip_address varchar(100),
             PRIMARY KEY (id),
@@ -237,6 +245,19 @@ class JG_Map_Database {
             }
         } else {
             error_log('[JG MAP] Category column already exists');
+        }
+
+        // Check if approved_at column exists (for tracking approval date)
+        $approved_at = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'approved_at'");
+        if (empty($approved_at)) {
+            error_log('[JG MAP] Adding approved_at column to database');
+            $result = $wpdb->query("ALTER TABLE $table ADD COLUMN approved_at datetime DEFAULT NULL AFTER created_at");
+            error_log('[JG MAP] approved_at column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
+            if ($result === false) {
+                error_log('[JG MAP] approved_at column ADD FAILED - Error: ' . $wpdb->last_error);
+            }
+        } else {
+            error_log('[JG MAP] approved_at column already exists');
         }
     }
 
@@ -768,5 +789,124 @@ class JG_Map_Database {
             ),
             array('id' => $history_id)
         );
+    }
+
+    /**
+     * Get all places with their extended status and priority
+     * Returns places grouped by their moderation status with priority levels
+     */
+    public static function get_all_places_with_status($search = '', $status_filter = '') {
+        global $wpdb;
+
+        $points_table = self::get_points_table();
+        $reports_table = self::get_reports_table();
+        $history_table = self::get_history_table();
+
+        // Base query - get all places except trash
+        $where_conditions = array("p.status != 'trash'");
+
+        // Add search filter if provided
+        if (!empty($search)) {
+            $search_term = '%' . $wpdb->esc_like($search) . '%';
+            $where_conditions[] = $wpdb->prepare(
+                "(p.title LIKE %s OR p.content LIKE %s OR p.address LIKE %s OR u.display_name LIKE %s)",
+                $search_term, $search_term, $search_term, $search_term
+            );
+        }
+
+        $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
+
+        $query = "
+            SELECT
+                p.*,
+                u.display_name as author_name,
+                u.user_email as author_email,
+                (SELECT COUNT(*) FROM $reports_table r
+                 WHERE r.point_id = p.id AND r.status = 'pending') as pending_reports_count,
+                (SELECT COUNT(*) FROM $history_table h
+                 WHERE h.point_id = p.id AND h.status = 'pending') as pending_edits_count,
+                (SELECT created_at FROM $history_table h
+                 WHERE h.point_id = p.id AND h.status = 'pending'
+                 ORDER BY created_at DESC LIMIT 1) as latest_edit_date
+            FROM $points_table p
+            LEFT JOIN {$wpdb->users} u ON p.author_id = u.ID
+            $where_clause
+        ";
+
+        $places = $wpdb->get_results($query, ARRAY_A);
+
+        // Process each place to determine its display status and priority
+        $processed_places = array();
+        foreach ($places as $place) {
+            // Determine display status and priority
+            if ($place['pending_reports_count'] > 0 && $place['status'] === 'publish') {
+                $place['display_status'] = 'reported';
+                $place['display_status_label'] = 'Zgłoszone do sprawdzenia przez moderację';
+                $place['priority'] = 3;
+            } elseif ($place['status'] === 'pending') {
+                $place['display_status'] = 'new_pending';
+                $place['display_status_label'] = 'Nowe miejsce czekające na zatwierdzenie';
+                $place['priority'] = 2;
+            } elseif ($place['pending_edits_count'] > 0 && $place['status'] === 'publish') {
+                $place['display_status'] = 'edit_pending';
+                $place['display_status_label'] = 'Oczekuje na zatwierdzenie edycji';
+                $place['priority'] = 2;
+            } elseif ($place['is_deletion_requested'] == 1 && $place['status'] === 'publish') {
+                $place['display_status'] = 'deletion_pending';
+                $place['display_status_label'] = 'Oczekuje na usunięcie';
+                $place['priority'] = 1;
+            } elseif ($place['status'] === 'publish') {
+                $place['display_status'] = 'published';
+                $place['display_status_label'] = 'Opublikowane';
+                $place['priority'] = 1;
+            } else {
+                // Fallback for any other status
+                $place['display_status'] = 'other';
+                $place['display_status_label'] = 'Inny status';
+                $place['priority'] = 0;
+            }
+
+            // Filter by status if specified
+            if (!empty($status_filter) && $place['display_status'] !== $status_filter) {
+                continue;
+            }
+
+            $processed_places[] = $place;
+        }
+
+        // Sort by priority (descending) and then by created_at (descending)
+        usort($processed_places, function($a, $b) {
+            if ($a['priority'] != $b['priority']) {
+                return $b['priority'] - $a['priority']; // Higher priority first
+            }
+            // Within same priority, newer first
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
+
+        return $processed_places;
+    }
+
+    /**
+     * Get count of places by display status
+     */
+    public static function get_places_count_by_status() {
+        $places = self::get_all_places_with_status();
+
+        $counts = array(
+            'reported' => 0,
+            'new_pending' => 0,
+            'edit_pending' => 0,
+            'deletion_pending' => 0,
+            'published' => 0,
+            'total' => count($places)
+        );
+
+        foreach ($places as $place) {
+            if (isset($counts[$place['display_status']])) {
+                $counts[$place['display_status']]++;
+            }
+        }
+
+        return $counts;
     }
 }

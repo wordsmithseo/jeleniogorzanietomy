@@ -139,6 +139,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_reset_user_photo_limit', array($this, 'admin_reset_user_photo_limit'), 1);
         add_action('wp_ajax_jg_delete_image', array($this, 'delete_image'), 1);
         add_action('wp_ajax_jg_get_notification_counts', array($this, 'get_notification_counts'), 1);
+        add_action('wp_ajax_jg_keep_reported_place', array($this, 'keep_reported_place'), 1);
     }
 
     /**
@@ -1464,6 +1465,47 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Keep reported place - resolve all reports as "kept" (admin only)
+     */
+    public function keep_reported_place() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['point_id'] ?? 0);
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Miejsce nie istnieje'));
+            exit;
+        }
+
+        // Notify reporters that place was kept
+        $this->notify_reporters_decision($point_id, 'pozostawione bez zmian', 'Moderator zdecydował o pozostawieniu miejsca');
+
+        // Resolve all pending reports
+        JG_Map_Database::resolve_reports($point_id, 'Miejsce pozostawione przez moderatora');
+
+        // Clear object cache to refresh admin bar notifications
+        wp_cache_delete('jg_map_pending_counts');
+        wp_cache_flush();
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'keep_reported_place',
+            'point',
+            $point_id,
+            sprintf('Pozostawiono zgłoszone miejsce: %s', $point['title'])
+        );
+
+        wp_send_json_success(array('message' => 'Miejsce zostało pozostawione, zgłoszenia odrzucone'));
+    }
+
+    /**
      * Toggle promo status (admin only)
      */
     public function admin_toggle_promo() {
@@ -1563,7 +1605,12 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        JG_Map_Database::update_point($point_id, array('status' => 'publish'));
+        // Update status to publish and set approved_at if this is first approval
+        $update_data = array('status' => 'publish');
+        if (empty($point['approved_at'])) {
+            $update_data['approved_at'] = current_time('mysql');
+        }
+        JG_Map_Database::update_point($point_id, $update_data);
 
         // Resolve any pending reports for this point
         JG_Map_Database::resolve_reports($point_id, 'Punkt został zaakceptowany przez moderatora');
