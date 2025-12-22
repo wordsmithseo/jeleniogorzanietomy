@@ -1364,6 +1364,17 @@
           });
         }
 
+        // DEBUG: Log reports count for points with reports
+        if (p.reports_count > 0) {
+          console.log('[JG MAP DEBUG] iconFor() - Point with reports:', {
+            id: p.id,
+            title: p.title,
+            reports_count: p.reports_count,
+            isAdmin: CFG.isAdmin,
+            hasReports_willBe: (CFG.isAdmin && p.reports_count > 0)
+          });
+        }
+
         var sponsored = !!p.sponsored;
         var isPending = !!p.is_pending;
         var isEdit = !!p.is_edit;
@@ -1958,6 +1969,17 @@
 
       function fetchAndProcessPoints(version) {
         return fetchPoints().then(function(data) {
+
+          // DEBUG: Log admin status and points with reports
+          console.log('[JG MAP DEBUG] fetchAndProcessPoints - isAdmin:', CFG.isAdmin);
+          var pointsWithReports = (data || []).filter(function(r) { return r.reports_count > 0; });
+          if (pointsWithReports.length > 0) {
+            console.log('[JG MAP DEBUG] fetchAndProcessPoints - Points with reports from API:', pointsWithReports.map(function(r) {
+              return { id: r.id, title: r.title, reports_count: r.reports_count };
+            }));
+          } else {
+            console.log('[JG MAP DEBUG] fetchAndProcessPoints - No points with reports found in API data');
+          }
 
           ALL = (data || []).map(function(r) {
             return {
