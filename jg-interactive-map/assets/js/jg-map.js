@@ -1708,10 +1708,57 @@
       // Check if URL contains ?point_id= or #point-123 and open that point
       function checkDeepLink() {
         try {
+          var urlParams = new URLSearchParams(window.location.search);
+
+          // Check for jg_view_reports parameter (from dashboard Reports) - HIGHEST PRIORITY
+          var viewReportsId = urlParams.get('jg_view_reports');
+          if (viewReportsId && CFG.isAdmin && ALL && ALL.length > 0) {
+            console.log('[JG MAP] jg_view_reports detected, point_id:', viewReportsId);
+            var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewReportsId); });
+            if (targetPoint) {
+              console.log('[JG MAP] Found reported point:', targetPoint.title);
+              // Zoom to max zoom level (19) to show point clearly
+              setTimeout(function() {
+                map.setView([targetPoint.lat, targetPoint.lng], 19, { animate: true });
+                // Wait for zoom, then open modal
+                setTimeout(function() {
+                  openDetails(targetPoint);
+                  // Remove parameter from URL
+                  var newUrl = window.location.pathname + window.location.search.replace(/[?&]jg_view_reports=\d+/, '').replace(/^\&/, '?');
+                  if (newUrl.endsWith('?')) newUrl = newUrl.slice(0, -1);
+                  window.history.replaceState({}, '', newUrl);
+                }, 800);
+              }, 100);
+              return; // Exit early
+            }
+          }
+
+          // Check for jg_view_point parameter (from dashboard Gallery)
+          var viewPointId = urlParams.get('jg_view_point');
+          if (viewPointId && ALL && ALL.length > 0) {
+            console.log('[JG MAP] jg_view_point detected, point_id:', viewPointId);
+            var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewPointId); });
+            if (targetPoint) {
+              console.log('[JG MAP] Found point:', targetPoint.title);
+              // Zoom to point with maximum zoom
+              setTimeout(function() {
+                map.setView([targetPoint.lat, targetPoint.lng], 18, { animate: true });
+                // Wait for zoom, then open modal
+                setTimeout(function() {
+                  openDetails(targetPoint);
+                  // Remove parameter from URL
+                  var newUrl = window.location.pathname + window.location.search.replace(/[?&]jg_view_point=\d+/, '').replace(/^\&/, '?');
+                  if (newUrl.endsWith('?')) newUrl = newUrl.slice(0, -1);
+                  window.history.replaceState({}, '', newUrl);
+                }, 800);
+              }, 100);
+              return; // Exit early
+            }
+          }
+
           var pointId = null;
 
           // Check query parameter ?point_id=123
-          var urlParams = new URLSearchParams(window.location.search);
           pointId = urlParams.get('point_id');
 
           // Check hash #point-123
@@ -1943,42 +1990,9 @@
 
           apply(true); // Skip fitBounds on refresh to preserve user's view
 
-          // Check if URL contains jg_view_point parameter (from dashboard Gallery)
-          var urlParams = new URLSearchParams(window.location.search);
-          var viewPointId = urlParams.get('jg_view_point');
-          if (viewPointId) {
-            // Find point by ID
-            var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewPointId); });
-            if (targetPoint) {
-              // Zoom to point with maximum zoom
-              map.setView([targetPoint.lat, targetPoint.lng], 18);
-              // Wait a bit for markers to render, then open modal
-              setTimeout(function() {
-                openDetails(targetPoint);
-              }, 500);
-              // Remove parameter from URL to avoid reopening on refresh
-              var newUrl = window.location.pathname + window.location.search.replace(/[?&]jg_view_point=\d+/, '').replace(/^\&/, '?');
-              window.history.replaceState({}, '', newUrl);
-            }
-          }
-
-          // Check if URL contains jg_view_reports parameter (from dashboard Reports)
-          var viewReportsId = urlParams.get('jg_view_reports');
-          if (viewReportsId && CFG.isAdmin) {
-            // Find point by ID
-            var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewReportsId); });
-            if (targetPoint) {
-              // Zoom to max zoom level (19) to show point clearly
-              map.setView([targetPoint.lat, targetPoint.lng], 19);
-              // Wait a bit for markers to render, then open modal
-              setTimeout(function() {
-                openDetails(targetPoint);
-              }, 500);
-              // Remove parameter from URL to avoid reopening on refresh
-              var newUrl = window.location.pathname + window.location.search.replace(/[?&]jg_view_reports=\d+/, '').replace(/^\&/, '?');
-              window.history.replaceState({}, '', newUrl);
-            }
-          }
+          // Deep link handling (jg_view_point, jg_view_reports, point_id, #point-123)
+          // is now done in checkDeepLink() which is called after data is loaded
+          // This ensures it works for both cached and fresh data
 
           return ALL;
         });
