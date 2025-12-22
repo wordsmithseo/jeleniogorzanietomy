@@ -307,7 +307,7 @@ class JG_Map_Admin {
             'jg-map',
             'Miejsca',
             'Miejsca',
-            'manage_options',
+            'read', // Allow all logged-in users to see their own places
             'jg-map-places',
             array($this, 'render_places_page')
         );
@@ -467,10 +467,16 @@ class JG_Map_Admin {
      * Render places page - unified moderation interface
      */
     public function render_places_page() {
+        // Check if user is admin
+        $is_admin = current_user_can('manage_options');
+
         // Handle search and filters
         $search = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
         $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
-        $my_places_only = isset($_GET['my_places']) && $_GET['my_places'] === '1';
+
+        // For regular users, always filter by their ID
+        // For admins, respect the my_places checkbox
+        $my_places_only = !$is_admin || (isset($_GET['my_places']) && $_GET['my_places'] === '1');
 
         // Get current user ID for filtering
         $current_user_id = $my_places_only ? get_current_user_id() : 0;
@@ -502,21 +508,27 @@ class JG_Map_Admin {
             <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
                 <form method="get" action="">
                     <input type="hidden" name="page" value="jg-map-places">
-                    <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+                    <div style="display:flex;gap:10px;align-items:center<?php echo $is_admin ? ';margin-bottom:10px' : ''; ?>">
                         <input type="text" name="search" value="<?php echo esc_attr($search); ?>"
-                               placeholder="Szukaj po nazwie, treści, adresie lub autorze..."
+                               placeholder="Szukaj po nazwie, treści, adresie<?php echo $is_admin ? ' lub autorze' : ''; ?>..."
                                style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:4px">
                         <button type="submit" class="button button-primary">🔍 Szukaj</button>
-                        <?php if ($search || $status_filter || $my_places_only): ?>
+                        <?php if ($search || $status_filter || ($is_admin && $my_places_only)): ?>
                             <a href="?page=jg-map-places" class="button">✕ Wyczyść</a>
                         <?php endif; ?>
                     </div>
+                    <?php if ($is_admin): ?>
                     <div style="display:flex;gap:15px;align-items:center">
                         <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
                             <input type="checkbox" name="my_places" value="1" <?php checked($my_places_only, true); ?>>
                             <span>Tylko moje miejsca</span>
                         </label>
                     </div>
+                    <?php else: ?>
+                    <p style="margin:10px 0 0 0;color:#666;font-size:13px">
+                        ℹ️ Widzisz tylko swoje miejsca
+                    </p>
+                    <?php endif; ?>
                 </form>
             </div>
 
@@ -604,7 +616,7 @@ class JG_Map_Admin {
                                 </thead>
                                 <tbody>
                                     <?php foreach ($section_places as $place):
-                                        $this->render_place_row($place, $config['actions']);
+                                        $this->render_place_row($place, $config['actions'], $is_admin);
                                     endforeach; ?>
                                 </tbody>
                             </table>
@@ -653,7 +665,7 @@ class JG_Map_Admin {
                     method: 'POST',
                     data: {
                         action: 'jg_admin_approve_point',
-                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
                         post_id: pointId
                     },
                     success: function(response) {
@@ -681,7 +693,7 @@ class JG_Map_Admin {
                     method: 'POST',
                     data: {
                         action: 'jg_admin_reject_point',
-                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
                         post_id: pointId
                     },
                     success: function(response) {
@@ -709,7 +721,7 @@ class JG_Map_Admin {
                     method: 'POST',
                     data: {
                         action: 'jg_admin_approve_edit',
-                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
                         history_id: historyId
                     },
                     success: function(response) {
@@ -737,7 +749,7 @@ class JG_Map_Admin {
                     method: 'POST',
                     data: {
                         action: 'jg_admin_reject_edit',
-                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
                         history_id: historyId
                     },
                     success: function(response) {
@@ -765,7 +777,7 @@ class JG_Map_Admin {
                     method: 'POST',
                     data: {
                         action: 'jg_keep_reported_place',
-                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
                         point_id: pointId
                     },
                     success: function(response) {
@@ -793,7 +805,7 @@ class JG_Map_Admin {
                     method: 'POST',
                     data: {
                         action: 'jg_admin_reject_deletion',
-                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
                         point_id: pointId
                     },
                     success: function(response) {
@@ -821,7 +833,7 @@ class JG_Map_Admin {
                     method: 'POST',
                     data: {
                         action: 'jg_admin_delete_point',
-                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
                         point_id: pointId
                     },
                     success: function(response) {
@@ -855,11 +867,16 @@ class JG_Map_Admin {
     /**
      * Render a single place row in the table
      */
-    private function render_place_row($place, $actions) {
+    private function render_place_row($place, $actions, $is_admin) {
         $author_name = !empty($place['author_name']) ? $place['author_name'] : 'Nieznany';
         $created_date = date('Y-m-d H:i', strtotime($place['created_at']));
         $approved_date = !empty($place['approved_at']) ? date('Y-m-d H:i', strtotime($place['approved_at'])) : '-';
         $is_sponsored = $place['is_promo'] == 1 ? '⭐ Tak' : 'Nie';
+
+        // For regular users, only show 'details' action
+        if (!$is_admin) {
+            $actions = array('details');
+        }
 
         ?>
         <tr>

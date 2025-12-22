@@ -1778,7 +1778,16 @@
             var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewPointId); });
             if (targetPoint) {
               console.log('[JG MAP] Found point:', targetPoint.title);
-              // Zoom to point with maximum zoom
+
+              // First scroll to map section
+              var mapSection = document.getElementById('mapa-start');
+              if (mapSection) {
+                var targetPosition = mapSection.getBoundingClientRect().top + window.pageYOffset - 80;
+                window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+                console.log('[JG MAP] Scrolling to map section');
+              }
+
+              // Wait for scroll, then zoom to point with maximum zoom
               setTimeout(function() {
                 map.setView([targetPoint.lat, targetPoint.lng], 18, { animate: true });
                 // Wait for zoom, then open modal
@@ -1789,7 +1798,7 @@
                   if (newUrl.endsWith('?')) newUrl = newUrl.slice(0, -1);
                   window.history.replaceState({}, '', newUrl);
                 }, 800);
-              }, 100);
+              }, 500);
               return; // Exit early
             }
           }
