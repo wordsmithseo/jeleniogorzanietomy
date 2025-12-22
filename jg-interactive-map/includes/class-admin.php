@@ -407,7 +407,7 @@ class JG_Map_Admin {
         $deletions = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE is_deletion_requested = 1");
 
         $reports_table = JG_Map_Database::get_reports_table();
-        $reports = $wpdb->get_var("SELECT COUNT(DISTINCT point_id) FROM $reports_table WHERE status = 'pending'");
+        $reports = $wpdb->get_var("SELECT COUNT(DISTINCT r.point_id) FROM $reports_table r INNER JOIN $table p ON r.point_id = p.id WHERE r.status = 'pending' AND p.status = 'publish'");
 
         // Ensure history table exists
         JG_Map_Database::ensure_history_table();
