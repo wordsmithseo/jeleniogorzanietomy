@@ -2029,14 +2029,11 @@
             // Find point by ID
             var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewReportsId); });
             if (targetPoint) {
-              // Zoom to point
-              map.setView([targetPoint.lat, targetPoint.lng], 18);
-              // Wait a bit for markers to render, then open reports modal
+              // Zoom to max zoom level (19) to show point clearly
+              map.setView([targetPoint.lat, targetPoint.lng], 19);
+              // Wait a bit for markers to render, then open modal
               setTimeout(function() {
                 openDetails(targetPoint);
-                setTimeout(function() {
-                  openReportsListModal(targetPoint);
-                }, 300);
               }, 500);
               // Remove parameter from URL to avoid reopening on refresh
               var newUrl = window.location.pathname + window.location.search.replace(/[?&]jg_view_reports=\d+/, '').replace(/^\&/, '?');
@@ -2682,23 +2679,27 @@
             f.reset();
 
             // Update marker appearance immediately if admin
-            if (CFG.isAdmin && cluster) {
-              var allMarkers = cluster.getAllChildMarkers();
-              for (var i = 0; i < allMarkers.length; i++) {
-                var marker = allMarkers[i];
-                if (marker.options.pointId === p.id) {
-                  // Update point data
-                  p.reports_count = (p.reports_count || 0) + 1;
+            if (CFG.isAdmin && cluster && cluster.getLayers) {
+              try {
+                var allMarkers = cluster.getLayers();
+                for (var i = 0; i < allMarkers.length; i++) {
+                  var marker = allMarkers[i];
+                  if (marker.options && marker.options.pointId === p.id) {
+                    // Update point data
+                    p.reports_count = (p.reports_count || 0) + 1;
 
-                  // Update marker options
-                  marker.options.hasReports = true;
-                  marker.options.reportsCount = p.reports_count;
+                    // Update marker options
+                    marker.options.hasReports = true;
+                    marker.options.reportsCount = p.reports_count;
 
-                  // Regenerate and update icon
-                  var newIcon = iconFor(p);
-                  marker.setIcon(newIcon);
-                  break;
+                    // Regenerate and update icon
+                    var newIcon = iconFor(p);
+                    marker.setIcon(newIcon);
+                    break;
+                  }
                 }
+              } catch (err) {
+                console.error('[JG MAP] Błąd aktualizacji markera:', err);
               }
             }
 
