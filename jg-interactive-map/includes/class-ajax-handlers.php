@@ -221,7 +221,16 @@ class JG_Map_Ajax_Handlers {
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $current_user_id = get_current_user_id();
 
+        // For admins: get all points (published + pending)
+        // For regular users: get published points + their own pending points
         $points = JG_Map_Database::get_published_points($is_admin);
+
+        // If regular user is logged in, add their pending points
+        if (!$is_admin && $current_user_id > 0) {
+            $user_pending_points = JG_Map_Database::get_user_pending_points($current_user_id);
+            $points = array_merge($points, $user_pending_points);
+        }
+
         $result = array();
 
         foreach ($points as $point) {
@@ -251,9 +260,10 @@ class JG_Map_Ajax_Handlers {
                 $my_relevance_vote = JG_Map_Database::get_user_relevance_vote($point['id'], $current_user_id) ?: '';
             }
 
-            // Get reports count
+            // Get reports count - for admins or place owner
             $reports_count = 0;
-            if ($is_admin) {
+            $is_own_place_temp = ($current_user_id > 0 && $current_user_id == $point['author_id']);
+            if ($is_admin || $is_own_place_temp) {
                 $reports_count = JG_Map_Database::get_reports_count($point['id']);
             }
 
@@ -284,14 +294,15 @@ class JG_Map_Ajax_Handlers {
             $status_label = $this->get_status_label($point['status']);
             $report_status_label = $this->get_report_status_label($point['report_status']);
 
-            // Check if pending or edit - ONLY for admins/moderators
+            // Check if pending or edit - for admins/moderators OR for place owner
             $is_pending = false;
             $edit_info = null;
             $deletion_info = null;
             $is_edit = false;
             $is_deletion_requested = false;
+            $is_own_place = ($current_user_id > 0 && $current_user_id == $point['author_id']);
 
-            if ($is_admin) {
+            if ($is_admin || $is_own_place) {
                 $is_pending = ($point['status'] === 'pending');
 
                 // Get pending edit or deletion history

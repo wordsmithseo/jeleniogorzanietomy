@@ -354,6 +354,31 @@ class JG_Map_Database {
     }
 
     /**
+     * Get user's pending points (for regular users to see their own pending places)
+     */
+    public static function get_user_pending_points($user_id) {
+        global $wpdb;
+        $table = self::get_points_table();
+
+        $sql = $wpdb->prepare(
+            "SELECT id, title, content, excerpt, lat, lng, type, category, status, report_status,
+                    author_id, author_hidden, is_deletion_requested, deletion_reason,
+                    deletion_requested_at, is_promo, promo_until, website, phone,
+                    cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
+             FROM $table
+             WHERE author_id = %d AND status = 'pending'
+             ORDER BY created_at DESC",
+            $user_id
+        );
+
+        $results = $wpdb->get_results($sql, ARRAY_A);
+
+        error_log('[JG MAP] get_user_pending_points - Retrieved ' . count($results) . ' pending points for user #' . $user_id);
+
+        return $results;
+    }
+
+    /**
      * Get point by ID
      */
     public static function get_point($point_id) {
