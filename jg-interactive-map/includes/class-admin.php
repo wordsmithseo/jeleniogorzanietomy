@@ -834,7 +834,7 @@ class JG_Map_Admin {
                     data: {
                         action: 'jg_admin_delete_point',
                         _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
-                        point_id: pointId
+                        post_id: pointId  // Changed from point_id to post_id
                     },
                     success: function(response) {
                         if (response.success) {
