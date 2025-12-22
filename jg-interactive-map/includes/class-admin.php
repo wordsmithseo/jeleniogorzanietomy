@@ -129,19 +129,19 @@ class JG_Map_Admin {
         $wp_admin_bar->add_node(array(
             'id' => 'jg-map-notifications',
             'title' => '<span style="background:#dc2626;color:#fff;padding:2px 6px;border-radius:10px;font-size:11px;font-weight:700;margin-right:4px">' . $total_pending . '</span> JG Map',
-            'href' => admin_url('admin.php?page=jg-map-moderation'),
+            'href' => admin_url('admin.php?page=jg-map-places'),
             'meta' => array(
                 'title' => 'JG Map - Oczekujące moderacje'
             )
         ));
 
-        // Add child nodes
+        // Add child nodes with links to specific sections
         if ($pending_points > 0) {
             $wp_admin_bar->add_node(array(
                 'parent' => 'jg-map-notifications',
                 'id' => 'jg-map-pending-points',
                 'title' => '📍 ' . $pending_points . ' nowych miejsc',
-                'href' => admin_url('admin.php?page=jg-map-moderation')
+                'href' => admin_url('admin.php?page=jg-map-places#section-new_pending')
             ));
         }
 
@@ -150,7 +150,7 @@ class JG_Map_Admin {
                 'parent' => 'jg-map-notifications',
                 'id' => 'jg-map-pending-edits',
                 'title' => '✏️ ' . $pending_edits . ' edycji do zatwierdzenia',
-                'href' => admin_url('admin.php?page=jg-map-moderation')
+                'href' => admin_url('admin.php?page=jg-map-places#section-edit_pending')
             ));
         }
 
@@ -159,7 +159,7 @@ class JG_Map_Admin {
                 'parent' => 'jg-map-notifications',
                 'id' => 'jg-map-pending-reports',
                 'title' => '🚨 ' . $pending_reports . ' zgłoszeń',
-                'href' => admin_url('admin.php?page=jg-map-reports')
+                'href' => admin_url('admin.php?page=jg-map-places#section-reported')
             ));
         }
 
@@ -168,7 +168,7 @@ class JG_Map_Admin {
                 'parent' => 'jg-map-notifications',
                 'id' => 'jg-map-pending-deletions',
                 'title' => '🗑️ ' . $pending_deletions . ' żądań usunięcia',
-                'href' => admin_url('admin.php?page=jg-map-deletions')
+                'href' => admin_url('admin.php?page=jg-map-places#section-deletion_pending')
             ));
         }
     }
@@ -305,20 +305,11 @@ class JG_Map_Admin {
 
         add_submenu_page(
             'jg-map',
-            'Dodane miejsca',
-            'Dodane miejsca',
+            'Miejsca',
+            'Miejsca',
             'manage_options',
-            'jg-map-moderation',
-            array($this, 'render_moderation_page')
-        );
-
-        add_submenu_page(
-            'jg-map',
-            'Zgłoszenia',
-            'Zgłoszenia',
-            'manage_options',
-            'jg-map-reports',
-            array($this, 'render_reports_page')
+            'jg-map-places',
+            array($this, 'render_places_page')
         );
 
         add_submenu_page(
@@ -328,24 +319,6 @@ class JG_Map_Admin {
             'manage_options',
             'jg-map-promos',
             array($this, 'render_promos_page')
-        );
-
-        add_submenu_page(
-            'jg-map',
-            'Żądania usunięcia',
-            'Żądania usunięcia',
-            'manage_options',
-            'jg-map-deletions',
-            array($this, 'render_deletions_page')
-        );
-
-        add_submenu_page(
-            'jg-map',
-            'Wszystkie miejsca',
-            'Wszystkie miejsca',
-            'manage_options',
-            'jg-map-all',
-            array($this, 'render_all_points_page')
         );
 
         add_submenu_page(
@@ -488,6 +461,517 @@ class JG_Map_Admin {
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Render places page - unified moderation interface
+     */
+    public function render_places_page() {
+        // Handle search
+        $search = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
+        $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
+
+        // Get places with status
+        $places = JG_Map_Database::get_all_places_with_status($search, $status_filter);
+        $counts = JG_Map_Database::get_places_count_by_status();
+
+        // Group places by display status
+        $grouped_places = array(
+            'reported' => array(),
+            'new_pending' => array(),
+            'edit_pending' => array(),
+            'deletion_pending' => array(),
+            'published' => array()
+        );
+
+        foreach ($places as $place) {
+            if (isset($grouped_places[$place['display_status']])) {
+                $grouped_places[$place['display_status']][] = $place;
+            }
+        }
+
+        ?>
+        <div class="wrap">
+            <h1>Zarządzanie miejscami</h1>
+
+            <!-- Search bar -->
+            <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                <form method="get" action="">
+                    <input type="hidden" name="page" value="jg-map-places">
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <input type="text" name="search" value="<?php echo esc_attr($search); ?>"
+                               placeholder="Szukaj po nazwie, treści, adresie lub autorze..."
+                               style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:4px">
+                        <button type="submit" class="button button-primary">🔍 Szukaj</button>
+                        <?php if ($search || $status_filter): ?>
+                            <a href="?page=jg-map-places" class="button">✕ Wyczyść</a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Statistics -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin:20px 0">
+                <div style="background:#dc2626;color:#fff;padding:20px;border-radius:8px;text-align:center">
+                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['reported']; ?></div>
+                    <div>🚨 Zgłoszone</div>
+                </div>
+                <div style="background:#f59e0b;color:#fff;padding:20px;border-radius:8px;text-align:center">
+                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['new_pending']; ?></div>
+                    <div>⏳ Nowe czekające</div>
+                </div>
+                <div style="background:#3b82f6;color:#fff;padding:20px;border-radius:8px;text-align:center">
+                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['edit_pending']; ?></div>
+                    <div>✏️ Edycje czekające</div>
+                </div>
+                <div style="background:#8b5cf6;color:#fff;padding:20px;border-radius:8px;text-align:center">
+                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['deletion_pending']; ?></div>
+                    <div>🗑️ Do usunięcia</div>
+                </div>
+                <div style="background:#10b981;color:#fff;padding:20px;border-radius:8px;text-align:center">
+                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['published']; ?></div>
+                    <div>✅ Opublikowane</div>
+                </div>
+            </div>
+
+            <?php
+            // Define sections with their configurations
+            $sections = array(
+                'reported' => array(
+                    'title' => '🚨 Zgłoszone do sprawdzenia przez moderację',
+                    'color' => '#dc2626',
+                    'actions' => array('details', 'delete', 'keep')
+                ),
+                'new_pending' => array(
+                    'title' => '⏳ Nowe miejsce czekające na zatwierdzenie',
+                    'color' => '#f59e0b',
+                    'actions' => array('details', 'approve', 'reject')
+                ),
+                'edit_pending' => array(
+                    'title' => '✏️ Oczekuje na zatwierdzenie edycji',
+                    'color' => '#3b82f6',
+                    'actions' => array('details', 'approve_edit', 'reject_edit')
+                ),
+                'deletion_pending' => array(
+                    'title' => '🗑️ Oczekuje na usunięcie',
+                    'color' => '#8b5cf6',
+                    'actions' => array('details', 'delete', 'keep_deletion')
+                ),
+                'published' => array(
+                    'title' => '✅ Opublikowane',
+                    'color' => '#10b981',
+                    'actions' => array('details', 'edit', 'delete_basic')
+                )
+            );
+
+            // Render each section
+            foreach ($sections as $status => $config) {
+                $section_places = $grouped_places[$status];
+                $section_count = count($section_places);
+
+                if ($section_count > 0 || !$search) { // Show section if has places or no search active
+                    ?>
+                    <div id="section-<?php echo esc_attr($status); ?>" style="margin:30px 0">
+                        <h2 style="color:<?php echo $config['color']; ?>">
+                            <?php echo $config['title']; ?>
+                            <span style="background:<?php echo $config['color']; ?>;color:#fff;padding:4px 12px;border-radius:12px;font-size:14px">
+                                <?php echo $section_count; ?>
+                            </span>
+                        </h2>
+
+                        <?php if ($section_count > 0): ?>
+                            <table class="wp-list-table widefat fixed striped">
+                                <thead>
+                                    <tr>
+                                        <th style="width:20%">Miejsce</th>
+                                        <th style="width:12%">Kto dodał</th>
+                                        <th style="width:12%">Data dodania</th>
+                                        <th style="width:12%">Data zatwierdzenia</th>
+                                        <th style="width:10%">Status</th>
+                                        <th style="width:8%">Sponsorowane</th>
+                                        <th style="width:26%">Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($section_places as $place):
+                                        $this->render_place_row($place, $config['actions']);
+                                    endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php else: ?>
+                            <p style="color:#666;font-style:italic">Brak miejsc w tej kategorii</p>
+                        <?php endif; ?>
+                    </div>
+                    <?php
+                }
+            }
+            ?>
+
+            <?php if (empty($places) && $search): ?>
+                <div style="text-align:center;padding:40px;background:#fff;border-radius:8px">
+                    <h3>Nie znaleziono miejsc</h3>
+                    <p>Spróbuj zmienić kryteria wyszukiwania</p>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <style>
+        .jg-action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .jg-action-buttons .button {
+            font-size: 12px;
+            padding: 4px 8px;
+            height: auto;
+            line-height: 1.4;
+        }
+        </style>
+
+        <script>
+        jQuery(document).ready(function($) {
+            // Approve new point
+            $('.jg-approve-point').on('click', function() {
+                if (!confirm('Czy na pewno chcesz zaakceptować to miejsce?')) return;
+
+                var pointId = $(this).data('point-id');
+                var $button = $(this);
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'jg_admin_approve_point',
+                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        post_id: pointId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Miejsce zostało zaakceptowane!');
+                            location.reload();
+                        } else {
+                            alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
+                        }
+                    },
+                    error: function() {
+                        alert('Błąd połączenia z serwerem');
+                    }
+                });
+            });
+
+            // Reject new point
+            $('.jg-reject-point').on('click', function() {
+                if (!confirm('Czy na pewno chcesz odrzucić to miejsce?')) return;
+
+                var pointId = $(this).data('point-id');
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'jg_admin_reject_point',
+                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        post_id: pointId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Miejsce zostało odrzucone!');
+                            location.reload();
+                        } else {
+                            alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
+                        }
+                    },
+                    error: function() {
+                        alert('Błąd połączenia z serwerem');
+                    }
+                });
+            });
+
+            // Approve edit
+            $('.jg-approve-edit').on('click', function() {
+                if (!confirm('Czy na pewno chcesz zaakceptować tę edycję?')) return;
+
+                var historyId = $(this).data('history-id');
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'jg_admin_approve_edit',
+                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        history_id: historyId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Edycja została zaakceptowana!');
+                            location.reload();
+                        } else {
+                            alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
+                        }
+                    },
+                    error: function() {
+                        alert('Błąd połączenia z serwerem');
+                    }
+                });
+            });
+
+            // Reject edit
+            $('.jg-reject-edit').on('click', function() {
+                if (!confirm('Czy na pewno chcesz odrzucić tę edycję?')) return;
+
+                var historyId = $(this).data('history-id');
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'jg_admin_reject_edit',
+                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        history_id: historyId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Edycja została odrzucona!');
+                            location.reload();
+                        } else {
+                            alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
+                        }
+                    },
+                    error: function() {
+                        alert('Błąd połączenia z serwerem');
+                    }
+                });
+            });
+
+            // Keep reported place (resolve all reports as "kept")
+            $('.jg-keep-reported').on('click', function() {
+                if (!confirm('Czy na pewno chcesz pozostawić to miejsce (odrzucić zgłoszenia)?')) return;
+
+                var pointId = $(this).data('point-id');
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'jg_keep_reported_place',
+                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        point_id: pointId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Miejsce zostało pozostawione, zgłoszenia odrzucone!');
+                            location.reload();
+                        } else {
+                            alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
+                        }
+                    },
+                    error: function() {
+                        alert('Błąd połączenia z serwerem');
+                    }
+                });
+            });
+
+            // Reject deletion request
+            $('.jg-reject-deletion').on('click', function() {
+                if (!confirm('Czy na pewno chcesz odrzucić żądanie usunięcia?')) return;
+
+                var pointId = $(this).data('point-id');
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'jg_admin_reject_deletion',
+                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        point_id: pointId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Żądanie usunięcia zostało odrzucone!');
+                            location.reload();
+                        } else {
+                            alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
+                        }
+                    },
+                    error: function() {
+                        alert('Błąd połączenia z serwerem');
+                    }
+                });
+            });
+
+            // Delete point (basic)
+            $('.jg-delete-point').on('click', function() {
+                if (!confirm('Czy na pewno chcesz przenieść to miejsce do kosza?')) return;
+
+                var pointId = $(this).data('point-id');
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'jg_admin_delete_point',
+                        nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        point_id: pointId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Miejsce zostało przeniesione do kosza!');
+                            location.reload();
+                        } else {
+                            alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
+                        }
+                    },
+                    error: function() {
+                        alert('Błąd połączenia z serwerem');
+                    }
+                });
+            });
+
+            // Scroll to section if URL has hash
+            if (window.location.hash) {
+                var hash = window.location.hash;
+                if ($(hash).length) {
+                    $('html, body').animate({
+                        scrollTop: $(hash).offset().top - 100
+                    }, 500);
+                }
+            }
+        });
+        </script>
+        <?php
+    }
+
+    /**
+     * Render a single place row in the table
+     */
+    private function render_place_row($place, $actions) {
+        $author_name = !empty($place['author_name']) ? $place['author_name'] : 'Nieznany';
+        $created_date = date('Y-m-d H:i', strtotime($place['created_at']));
+        $approved_date = !empty($place['approved_at']) ? date('Y-m-d H:i', strtotime($place['approved_at'])) : '-';
+        $is_sponsored = $place['is_promo'] == 1 ? '⭐ Tak' : 'Nie';
+
+        ?>
+        <tr>
+            <td><strong><?php echo esc_html($place['title']); ?></strong></td>
+            <td><?php echo esc_html($author_name); ?></td>
+            <td><?php echo esc_html($created_date); ?></td>
+            <td><?php echo esc_html($approved_date); ?></td>
+            <td><span style="font-size:11px;padding:3px 6px;background:#f3f4f6;border-radius:3px">
+                <?php echo esc_html($place['display_status_label']); ?>
+            </span></td>
+            <td><?php echo $is_sponsored; ?></td>
+            <td>
+                <div class="jg-action-buttons">
+                    <?php echo $this->render_place_actions($place, $actions); ?>
+                </div>
+            </td>
+        </tr>
+        <?php
+    }
+
+    /**
+     * Render action buttons for a place based on its status
+     */
+    private function render_place_actions($place, $allowed_actions) {
+        $buttons = '';
+        $point_id = $place['id'];
+        $map_url = $this->get_map_page_url();
+
+        foreach ($allowed_actions as $action) {
+            switch ($action) {
+                case 'details':
+                    // Link that zooms to place on map and opens modal
+                    $details_url = add_query_arg(array(
+                        'jg_zoom_to' => $point_id,
+                        'jg_open_modal' => $point_id
+                    ), $map_url);
+                    $buttons .= sprintf(
+                        '<a href="%s" class="button" target="_blank">🔍 Szczegóły</a>',
+                        esc_url($details_url)
+                    );
+                    break;
+
+                case 'approve':
+                    $buttons .= sprintf(
+                        '<button class="button button-primary jg-approve-point" data-point-id="%d">✓ Zaakceptuj</button>',
+                        $point_id
+                    );
+                    break;
+
+                case 'reject':
+                    $buttons .= sprintf(
+                        '<button class="button jg-reject-point" data-point-id="%d">✗ Odrzuć</button>',
+                        $point_id
+                    );
+                    break;
+
+                case 'approve_edit':
+                    // Get pending edit history ID
+                    $history = JG_Map_Database::get_pending_history($point_id);
+                    if ($history) {
+                        $buttons .= sprintf(
+                            '<button class="button button-primary jg-approve-edit" data-history-id="%d">✓ Zaakceptuj</button>',
+                            $history['id']
+                        );
+                    }
+                    break;
+
+                case 'reject_edit':
+                    $history = JG_Map_Database::get_pending_history($point_id);
+                    if ($history) {
+                        $buttons .= sprintf(
+                            '<button class="button jg-reject-edit" data-history-id="%d">✗ Odrzuć</button>',
+                            $history['id']
+                        );
+                    }
+                    break;
+
+                case 'delete':
+                    // For reported places - handle reports
+                    $reports_url = add_query_arg('jg_view_reports', $point_id, $map_url);
+                    $buttons .= sprintf(
+                        '<a href="%s" class="button" target="_blank">🗑️ Usuń</a>',
+                        esc_url($reports_url)
+                    );
+                    break;
+
+                case 'keep':
+                    // For reported places - keep the place
+                    $buttons .= sprintf(
+                        '<button class="button jg-keep-reported" data-point-id="%d">✓ Pozostaw</button>',
+                        $point_id
+                    );
+                    break;
+
+                case 'keep_deletion':
+                    // For deletion requests - reject deletion
+                    $buttons .= sprintf(
+                        '<button class="button jg-reject-deletion" data-point-id="%d">✓ Pozostaw</button>',
+                        $point_id
+                    );
+                    break;
+
+                case 'edit':
+                    $edit_url = add_query_arg(array(
+                        'jg_edit' => $point_id
+                    ), $map_url);
+                    $buttons .= sprintf(
+                        '<a href="%s" class="button" target="_blank">✏️ Edytuj</a>',
+                        esc_url($edit_url)
+                    );
+                    break;
+
+                case 'delete_basic':
+                    $buttons .= sprintf(
+                        '<button class="button jg-delete-point" data-point-id="%d">🗑️ Usuń</button>',
+                        $point_id
+                    );
+                    break;
+            }
+        }
+
+        return $buttons;
     }
 
     /**
