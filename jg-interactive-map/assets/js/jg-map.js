@@ -1352,29 +1352,6 @@
       });
 
       function iconFor(p) {
-        // DEBUG: Log point data to check if category is present
-        if (p.type === 'zgloszenie') {
-          console.log('[JG MAP DEBUG] iconFor() - Zgłoszenie point:', {
-            id: p.id,
-            title: p.title,
-            type: p.type,
-            category: p.category,
-            has_category: !!p.category,
-            category_type: typeof p.category
-          });
-        }
-
-        // DEBUG: Log reports count for points with reports
-        if (p.reports_count > 0) {
-          console.log('[JG MAP DEBUG] iconFor() - Point with reports:', {
-            id: p.id,
-            title: p.title,
-            reports_count: p.reports_count,
-            isAdmin: CFG.isAdmin,
-            hasReports_willBe: (CFG.isAdmin && p.reports_count > 0)
-          });
-        }
-
         var sponsored = !!p.sponsored;
         var isPending = !!p.is_pending;
         var isEdit = !!p.is_edit;
@@ -1511,17 +1488,6 @@
 
         // Star emoji for sponsored pins, category emoji for reports, or nothing for others
         var centerContent = '';
-
-        // DEBUG: Log before emoji rendering
-        if (p.type === 'zgloszenie') {
-          console.log('[JG MAP DEBUG] iconFor() - Before emoji check:', {
-            sponsored: sponsored,
-            type: p.type,
-            category: p.category,
-            has_emoji: categoryEmojis[p.category],
-            circleColor: circleColor
-          });
-        }
 
         if (sponsored) {
           var emojiFontSize = 28;
@@ -1879,9 +1845,9 @@
 
       var ALL = [];
       var lastModified = 0;
-      // v4: Fixed category field being dropped in fetchAndProcessPoints mapping
-      var CACHE_KEY = 'jg_map_cache_v4';
-      var CACHE_VERSION_KEY = 'jg_map_cache_version_v4';
+      // v5: Added reports_count field - invalidating cache to force reload
+      var CACHE_KEY = 'jg_map_cache_v5';
+      var CACHE_VERSION_KEY = 'jg_map_cache_version_v5';
 
       // Try to load from cache
       function loadFromCache() {
@@ -1969,17 +1935,6 @@
 
       function fetchAndProcessPoints(version) {
         return fetchPoints().then(function(data) {
-
-          // DEBUG: Log admin status and points with reports
-          console.log('[JG MAP DEBUG] fetchAndProcessPoints - isAdmin:', CFG.isAdmin);
-          var pointsWithReports = (data || []).filter(function(r) { return r.reports_count > 0; });
-          if (pointsWithReports.length > 0) {
-            console.log('[JG MAP DEBUG] fetchAndProcessPoints - Points with reports from API:', pointsWithReports.map(function(r) {
-              return { id: r.id, title: r.title, reports_count: r.reports_count };
-            }));
-          } else {
-            console.log('[JG MAP DEBUG] fetchAndProcessPoints - No points with reports found in API data');
-          }
 
           ALL = (data || []).map(function(r) {
             return {
