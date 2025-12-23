@@ -4576,19 +4576,21 @@
           });
       }
 
-      // Smart auto-refresh: Check for updates every 3 seconds for real-time synchronization
+      // Smart auto-refresh: FORCE refresh every 3 seconds for real-time synchronization
+      // Use force=true to bypass update check and always fetch fresh data
       var refreshInterval = setInterval(function() {
 
-        refreshData(false).then(function() {
+        refreshData(true).then(function() {
+          console.log('[JG MAP] Auto-refresh completed');
         }).catch(function(err) {
           console.error('[JG MAP] Auto-refresh error:', err);
         });
-      }, 3000); // 3 seconds - faster for real-time sync
+      }, 3000); // 3 seconds - FORCED refresh for real-time sync
 
       // Also check for updates when page becomes visible again
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
-          refreshData(false);
+          refreshData(true); // Force refresh when page becomes visible
         }
       });
 
