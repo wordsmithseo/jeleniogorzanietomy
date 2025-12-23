@@ -1024,6 +1024,7 @@ class JG_Map_Admin {
         );
 
         // Get edits with priority calculation (based on how old they are and number of reports on the point)
+        // ONLY get edits, not deletion requests (filter by action_type)
         $edits = $wpdb->get_results(
             "SELECT h.*, p.title as point_title,
             COUNT(r.id) as report_count,
@@ -1031,7 +1032,7 @@ class JG_Map_Admin {
             FROM $history_table h
             LEFT JOIN $table p ON h.point_id = p.id
             LEFT JOIN $reports_table r ON h.point_id = r.point_id AND r.status = 'pending'
-            WHERE h.status = 'pending'
+            WHERE h.status = 'pending' AND h.action_type = 'edit'
             GROUP BY h.id
             ORDER BY report_count DESC, hours_old DESC",
             ARRAY_A
@@ -3223,18 +3224,23 @@ class JG_Map_Admin {
                             badge.text(total);
                         }
 
-                        // Update child items
+                        // Update child items - preserve hrefs
                         $('#wp-admin-bar-jg-map-pending-points').toggle(counts.points > 0);
-                        $('#wp-admin-bar-jg-map-pending-points a').html('📍 ' + counts.points + ' nowych miejsc');
+                        $('#wp-admin-bar-jg-map-pending-points a').html('📍 ' + counts.points + ' nowych miejsc')
+                            .attr('href', '<?php echo admin_url('admin.php?page=jg-map-places#section-new_pending'); ?>');
 
                         $('#wp-admin-bar-jg-map-pending-edits').toggle(counts.edits > 0);
-                        $('#wp-admin-bar-jg-map-pending-edits a').html('✏️ ' + counts.edits + ' edycji do zatwierdzenia');
+                        $('#wp-admin-bar-jg-map-pending-edits a').html('✏️ ' + counts.edits + ' edycji do zatwierdzenia')
+                            .attr('href', '<?php echo admin_url('admin.php?page=jg-map-places#section-edit_pending'); ?>');
 
                         $('#wp-admin-bar-jg-map-pending-reports').toggle(counts.reports > 0);
-                        $('#wp-admin-bar-jg-map-pending-reports a').html('🚨 ' + counts.reports + ' zgłoszeń');
+                        $('#wp-admin-bar-jg-map-pending-reports a').html('🚨 ' + counts.reports + ' zgłoszeń')
+                            .attr('href', '<?php echo admin_url('admin.php?page=jg-map-places#section-reported'); ?>');
 
                         $('#wp-admin-bar-jg-map-pending-deletions').toggle(counts.deletions > 0);
-                        $('#wp-admin-bar-jg-map-pending-deletions a').html('🗑️ ' + counts.deletions + ' żądań usunięcia');
+                        $('#wp-admin-bar-jg-map-pending-deletions a').html('🗑️ ' + counts.deletions + ' żądań usunięcia')
+                            .attr('href', '<?php echo admin_url('admin.php?page=jg-map-places#section-deletion_pending'); ?>');
+
                     } else {
                         // Reload page to show notification
                         if (lastTotal === 0) {
