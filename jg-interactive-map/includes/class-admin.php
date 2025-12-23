@@ -323,15 +323,6 @@ class JG_Map_Admin {
 
         add_submenu_page(
             'jg-map',
-            'Kosz',
-            'Kosz',
-            'manage_options',
-            'jg-map-trash',
-            array($this, 'render_trash_page')
-        );
-
-        add_submenu_page(
-            'jg-map',
             'Galeria zdjęć',
             'Galeria zdjęć',
             'manage_options',
@@ -346,6 +337,15 @@ class JG_Map_Admin {
             'manage_options',
             'jg-map-users',
             array($this, 'render_users_page')
+        );
+
+        add_submenu_page(
+            'jg-map',
+            'Konserwacja',
+            'Konserwacja',
+            'manage_options',
+            'jg-map-maintenance',
+            array($this, 'render_maintenance_page')
         );
 
         add_submenu_page(
@@ -824,7 +824,7 @@ class JG_Map_Admin {
 
             // Delete point (basic)
             $('.jg-delete-point').on('click', function() {
-                if (!confirm('Czy na pewno chcesz przenieść to miejsce do kosza?')) return;
+                if (!confirm('Czy na pewno chcesz PERMANENTNIE usunąć to miejsce? Tej operacji nie można cofnąć!')) return;
 
                 var pointId = $(this).data('point-id');
 
@@ -838,7 +838,7 @@ class JG_Map_Admin {
                     },
                     success: function(response) {
                         if (response.success) {
-                            alert('Miejsce zostało przeniesione do kosza!');
+                            alert('Miejsce zostało usunięte!');
                             location.reload();
                         } else {
                             alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
@@ -1043,9 +1043,22 @@ class JG_Map_Admin {
 
             <?php if (!empty($edits)): ?>
             <h2>Edycje do zatwierdzenia (<?php echo count($edits); ?>)</h2>
+
+            <!-- Bulk actions -->
+            <div style="margin-bottom:10px;display:flex;gap:10px;align-items:center;">
+                <select id="bulk-action-edits" style="padding:5px;">
+                    <option value="">Akcje zbiorcze</option>
+                    <option value="approve">Zatwierdź zaznaczone</option>
+                    <option value="reject">Odrzuć zaznaczone</option>
+                </select>
+                <button id="apply-bulk-action-edits" class="button">Zastosuj</button>
+                <span id="bulk-selected-count-edits" style="margin-left:10px;color:#666;"></span>
+            </div>
+
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
+                        <th style="width:40px"><input type="checkbox" id="select-all-edits" /></th>
                         <th>Miejsce</th>
                         <th>Użytkownik</th>
                         <th>Zmiany</th>
@@ -1097,6 +1110,7 @@ class JG_Map_Admin {
                         }
                         ?>
                         <tr>
+                            <td><input type="checkbox" class="edit-checkbox" value="<?php echo $edit['id']; ?>" /></td>
                             <td>
                                 <strong><?php echo esc_html($edit['point_title']); ?></strong>
                                 <?php if ($priority): ?>
@@ -1247,15 +1261,122 @@ class JG_Map_Admin {
                         }
                     });
                 });
+
+                // Bulk actions for edits
+                var updateSelectedCount = function() {
+                    var count = $('.edit-checkbox:checked').length;
+                    $('#bulk-selected-count-edits').text(count > 0 ? '(' + count + ' zaznaczonych)' : '');
+                };
+
+                // Select all checkboxes
+                $('#select-all-edits').on('change', function() {
+                    $('.edit-checkbox').prop('checked', $(this).is(':checked'));
+                    updateSelectedCount();
+                });
+
+                // Update count when individual checkbox changes
+                $('.edit-checkbox').on('change', function() {
+                    updateSelectedCount();
+                    // Update "select all" checkbox state
+                    var total = $('.edit-checkbox').length;
+                    var checked = $('.edit-checkbox:checked').length;
+                    $('#select-all-edits').prop('checked', total > 0 && total === checked);
+                });
+
+                // Apply bulk action
+                $('#apply-bulk-action-edits').on('click', function() {
+                    var action = $('#bulk-action-edits').val();
+                    if (!action) {
+                        alert('Wybierz akcję');
+                        return;
+                    }
+
+                    var selectedIds = $('.edit-checkbox:checked').map(function() {
+                        return $(this).val();
+                    }).get();
+
+                    if (selectedIds.length === 0) {
+                        alert('Zaznacz przynajmniej jeden element');
+                        return;
+                    }
+
+                    var confirmMsg = action === 'approve'
+                        ? 'Czy na pewno chcesz zatwierdzić ' + selectedIds.length + ' edycji?'
+                        : 'Czy na pewno chcesz odrzucić ' + selectedIds.length + ' edycji?';
+
+                    if (!confirm(confirmMsg)) return;
+
+                    var reason = '';
+                    if (action === 'reject') {
+                        reason = prompt('Powód odrzucenia (zostanie wysłany do użytkownika):');
+                        if (reason === null) return;
+                    }
+
+                    var btn = $(this);
+                    btn.prop('disabled', true).text('Przetwarzam...');
+
+                    var processNext = function(index) {
+                        if (index >= selectedIds.length) {
+                            alert('Zakończono przetwarzanie!');
+                            location.reload();
+                            return;
+                        }
+
+                        var editId = selectedIds[index];
+                        var ajaxAction = action === 'approve' ? 'jg_admin_approve_edit' : 'jg_admin_reject_edit';
+                        var data = {
+                            action: ajaxAction,
+                            history_id: editId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        };
+
+                        if (action === 'reject') {
+                            data.reason = reason;
+                        }
+
+                        $.ajax({
+                            url: ajaxurl,
+                            method: 'POST',
+                            data: data,
+                            success: function(response) {
+                                if (response.success) {
+                                    processNext(index + 1);
+                                } else {
+                                    alert('Błąd przy przetwarzaniu ID ' + editId + ': ' + (response.data?.message || 'Nieznany błąd'));
+                                    btn.prop('disabled', false).text('Zastosuj');
+                                }
+                            },
+                            error: function() {
+                                alert('Błąd połączenia przy przetwarzaniu ID ' + editId);
+                                btn.prop('disabled', false).text('Zastosuj');
+                            }
+                        });
+                    };
+
+                    processNext(0);
+                });
             });
             </script>
             <?php endif; ?>
 
             <?php if (!empty($pending)): ?>
             <h2 style="margin-top:40px">Nowe miejsca do zatwierdzenia (<?php echo count($pending); ?>)</h2>
+
+            <!-- Bulk actions -->
+            <div style="margin-bottom:10px;display:flex;gap:10px;align-items:center;">
+                <select id="bulk-action-pending" style="padding:5px;">
+                    <option value="">Akcje zbiorcze</option>
+                    <option value="approve">Zatwierdź zaznaczone</option>
+                    <option value="reject">Odrzuć zaznaczone</option>
+                </select>
+                <button id="apply-bulk-action-pending" class="button">Zastosuj</button>
+                <span id="bulk-selected-count-pending" style="margin-left:10px;color:#666;"></span>
+            </div>
+
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
+                        <th style="width:40px"><input type="checkbox" id="select-all-pending" /></th>
                         <th>Tytuł</th>
                         <th>Typ</th>
                         <th>Autor</th>
@@ -1282,6 +1403,7 @@ class JG_Map_Admin {
                         }
                         ?>
                         <tr>
+                            <td><input type="checkbox" class="pending-checkbox" value="<?php echo $point['id']; ?>" /></td>
                             <td>
                                 <strong><?php echo esc_html($point['title']); ?></strong>
                                 <?php if ($priority): ?>
@@ -1428,6 +1550,99 @@ class JG_Map_Admin {
                             btn.prop('disabled', false).text('Odrzuć');
                         }
                     });
+                });
+
+                // Bulk actions for pending places
+                var updateSelectedCountPending = function() {
+                    var count = $('.pending-checkbox:checked').length;
+                    $('#bulk-selected-count-pending').text(count > 0 ? '(' + count + ' zaznaczonych)' : '');
+                };
+
+                // Select all checkboxes
+                $('#select-all-pending').on('change', function() {
+                    $('.pending-checkbox').prop('checked', $(this).is(':checked'));
+                    updateSelectedCountPending();
+                });
+
+                // Update count when individual checkbox changes
+                $('.pending-checkbox').on('change', function() {
+                    updateSelectedCountPending();
+                    var total = $('.pending-checkbox').length;
+                    var checked = $('.pending-checkbox:checked').length;
+                    $('#select-all-pending').prop('checked', total > 0 && total === checked);
+                });
+
+                // Apply bulk action
+                $('#apply-bulk-action-pending').on('click', function() {
+                    var action = $('#bulk-action-pending').val();
+                    if (!action) {
+                        alert('Wybierz akcję');
+                        return;
+                    }
+
+                    var selectedIds = $('.pending-checkbox:checked').map(function() {
+                        return $(this).val();
+                    }).get();
+
+                    if (selectedIds.length === 0) {
+                        alert('Zaznacz przynajmniej jeden element');
+                        return;
+                    }
+
+                    var confirmMsg = action === 'approve'
+                        ? 'Czy na pewno chcesz zatwierdzić ' + selectedIds.length + ' miejsc?'
+                        : 'Czy na pewno chcesz odrzucić ' + selectedIds.length + ' miejsc?';
+
+                    if (!confirm(confirmMsg)) return;
+
+                    var reason = '';
+                    if (action === 'reject') {
+                        reason = prompt('Powód odrzucenia (zostanie wysłany do użytkownika):');
+                        if (reason === null) return;
+                    }
+
+                    var btn = $(this);
+                    btn.prop('disabled', true).text('Przetwarzam...');
+
+                    var processNext = function(index) {
+                        if (index >= selectedIds.length) {
+                            alert('Zakończono przetwarzanie!');
+                            location.reload();
+                            return;
+                        }
+
+                        var pointId = selectedIds[index];
+                        var ajaxAction = action === 'approve' ? 'jg_admin_approve_point' : 'jg_admin_reject_point';
+                        var data = {
+                            action: ajaxAction,
+                            post_id: pointId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        };
+
+                        if (action === 'reject') {
+                            data.reason = reason;
+                        }
+
+                        $.ajax({
+                            url: ajaxurl,
+                            method: 'POST',
+                            data: data,
+                            success: function(response) {
+                                if (response.success) {
+                                    processNext(index + 1);
+                                } else {
+                                    alert('Błąd przy przetwarzaniu ID ' + pointId + ': ' + (response.data?.message || 'Nieznany błąd'));
+                                    btn.prop('disabled', false).text('Zastosuj');
+                                }
+                            },
+                            error: function() {
+                                alert('Błąd połączenia przy przetwarzaniu ID ' + pointId);
+                                btn.prop('disabled', false).text('Zastosuj');
+                            }
+                        });
+                    };
+
+                    processNext(0);
                 });
             });
             </script>
@@ -1726,128 +1941,6 @@ class JG_Map_Admin {
                 });
             });
             </script>
-        </div>
-        <?php
-    }
-
-    /**
-     * Render trash page
-     */
-    public function render_trash_page() {
-        global $wpdb;
-        $table = JG_Map_Database::get_points_table();
-
-        $points = $wpdb->get_results(
-            "SELECT * FROM $table WHERE status = 'trash' ORDER BY updated_at DESC LIMIT 100",
-            ARRAY_A
-        );
-
-        ?>
-        <div class="wrap">
-            <h1>Kosz (ostatnie 100 usuniętych miejsc)</h1>
-
-            <?php if (!empty($points)): ?>
-            <table class="wp-list-table widefat fixed striped">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Tytuł</th>
-                        <th>Typ</th>
-                        <th>Autor</th>
-                        <th>Data usunięcia</th>
-                        <th>Akcje</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($points as $point):
-                        $author = get_userdata($point['author_id']);
-                        ?>
-                        <tr>
-                            <td><?php echo $point['id']; ?></td>
-                            <td><strong><?php echo esc_html($point['title']); ?></strong></td>
-                            <td><?php echo esc_html($point['type']); ?></td>
-                            <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
-                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['updated_at'])), current_time('timestamp')); ?> temu</td>
-                            <td>
-                                <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button button-small" target="_blank">Zobacz</a>
-                                <button class="button button-small button-primary jg-restore-point" data-id="<?php echo $point['id']; ?>">Przywróć</button>
-                                <button class="button button-small jg-permanent-delete" data-id="<?php echo $point['id']; ?>" style="color:#b32d2e">Usuń na stałe</button>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-
-            <script>
-            jQuery(document).ready(function($) {
-                // Restore point
-                $('.jg-restore-point').on('click', function() {
-                    if (!confirm('Przywrócić to miejsce?')) return;
-
-                    var btn = $(this);
-                    var pointId = btn.data('id');
-                    btn.prop('disabled', true).text('Przywracanie...');
-
-                    $.ajax({
-                        url: ajaxurl,
-                        method: 'POST',
-                        data: {
-                            action: 'jg_admin_restore_point',
-                            post_id: pointId,
-                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                alert('Miejsce przywrócone!');
-                                location.reload();
-                            } else {
-                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
-                                btn.prop('disabled', false).text('Przywróć');
-                            }
-                        },
-                        error: function() {
-                            alert('Błąd połączenia');
-                            btn.prop('disabled', false).text('Przywróć');
-                        }
-                    });
-                });
-
-                // Permanent delete
-                $('.jg-permanent-delete').on('click', function() {
-                    if (!confirm('NA PEWNO PERMANENTNIE usunąć to miejsce? Tej operacji NIE MOŻNA cofnąć!')) return;
-
-                    var btn = $(this);
-                    var pointId = btn.data('id');
-                    btn.prop('disabled', true).text('Usuwanie...');
-
-                    $.ajax({
-                        url: ajaxurl,
-                        method: 'POST',
-                        data: {
-                            action: 'jg_admin_permanent_delete',
-                            post_id: pointId,
-                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                alert('Miejsce usunięte permanentnie!');
-                                location.reload();
-                            } else {
-                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
-                                btn.prop('disabled', false).text('Usuń na stałe');
-                            }
-                        },
-                        error: function() {
-                            alert('Błąd połączenia');
-                            btn.prop('disabled', false).text('Usuń na stałe');
-                        }
-                    });
-                });
-            });
-            </script>
-            <?php else: ?>
-            <p>Kosz jest pusty! 🎉</p>
-            <?php endif; ?>
         </div>
         <?php
     }
@@ -3164,5 +3257,110 @@ class JG_Map_Admin {
         ";
 
         wp_add_inline_script('heartbeat', $script);
+    }
+
+    /**
+     * Render maintenance page
+     */
+    public function render_maintenance_page() {
+        // Check if manual run was successful
+        if (isset($_GET['maintenance_done'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>Konserwacja bazy danych została uruchomiona pomyślnie!</p></div>';
+        }
+
+        // Get last maintenance info
+        $last_maintenance = get_option('jg_map_last_maintenance', null);
+        $next_scheduled = wp_next_scheduled(JG_Map_Maintenance::CRON_HOOK);
+
+        ?>
+        <div class="wrap">
+            <h1>🔧 Konserwacja bazy danych</h1>
+
+            <div style="background:#fff;padding:20px;border:1px solid #ccd0d4;border-radius:4px;margin-top:20px;">
+                <h2>Status automatycznej konserwacji</h2>
+
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Status crona:</th>
+                        <td>
+                            <?php if ($next_scheduled): ?>
+                                <span style="color:#15803d;font-weight:700;">✓ Aktywny</span>
+                            <?php else: ?>
+                                <span style="color:#dc2626;font-weight:700;">✗ Nieaktywny</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Następne uruchomienie:</th>
+                        <td>
+                            <?php if ($next_scheduled): ?>
+                                <?php echo date('Y-m-d H:i:s', $next_scheduled); ?> (za <?php echo human_time_diff($next_scheduled); ?>)
+                            <?php else: ?>
+                                Brak zaplanowanego uruchomienia
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Częstotliwość:</th>
+                        <td>Raz dziennie (codziennie o tej samej porze)</td>
+                    </tr>
+                </table>
+
+                <h3>Ostatnie uruchomienie</h3>
+                <?php if ($last_maintenance): ?>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">Data:</th>
+                            <td><?php echo $last_maintenance['time']; ?> (<?php echo human_time_diff(strtotime($last_maintenance['time']), current_time('timestamp')); ?> temu)</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Czas wykonania:</th>
+                            <td><?php echo $last_maintenance['execution_time']; ?> sekund</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Wyniki:</th>
+                            <td>
+                                <ul style="margin:0;padding-left:20px;">
+                                    <li>Usunięto <strong><?php echo $last_maintenance['results']['orphaned_votes']; ?></strong> osieroconych głosów</li>
+                                    <li>Usunięto <strong><?php echo $last_maintenance['results']['orphaned_reports']; ?></strong> osieroconych raportów</li>
+                                    <li>Usunięto <strong><?php echo $last_maintenance['results']['orphaned_history']; ?></strong> osieroconych wpisów historii</li>
+                                    <li>Znaleziono <strong><?php echo $last_maintenance['results']['invalid_coords']; ?></strong> miejsc z nieprawidłowymi współrzędnymi</li>
+                                    <li>Znaleziono <strong><?php echo $last_maintenance['results']['empty_content']; ?></strong> miejsc bez treści</li>
+                                    <li>Wyłączono <strong><?php echo $last_maintenance['results']['expired_sponsors']; ?></strong> wygasłych sponsorowanych miejsc</li>
+                                    <li>Usunięto <strong><?php echo $last_maintenance['results']['old_pending']; ?></strong> starych miejsc oczekujących (>30 dni)</li>
+                                    <li>Zoptymalizowano <strong><?php echo $last_maintenance['results']['tables_optimized']; ?></strong> tabel bazy danych</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </table>
+                <?php else: ?>
+                    <p style="color:#666;">Konserwacja nie była jeszcze uruchamiana.</p>
+                <?php endif; ?>
+
+                <h3>Zadania konserwacyjne</h3>
+                <p>Automatyczna konserwacja wykonuje następujące zadania:</p>
+                <ul style="padding-left:20px;">
+                    <li><strong>Czyszczenie osieroconych danych:</strong> Usuwanie głosów, raportów i historii dla usuniętych miejsc</li>
+                    <li><strong>Walidacja współrzędnych:</strong> Sprawdzanie miejsc z nieprawidłowymi współrzędnymi (poza Polską: lat 49-55, lng 14-24)</li>
+                    <li><strong>Walidacja treści:</strong> Oznaczanie miejsc bez tytułu lub opisu</li>
+                    <li><strong>Wyłączanie wygasłych sponsorowań:</strong> Automatyczne wyłączanie miejsc sponsorowanych po terminie</li>
+                    <li><strong>Czyszczenie starych pending:</strong> Usuwanie miejsc oczekujących dłużej niż 30 dni (z powiadomieniem autora)</li>
+                    <li><strong>Optymalizacja bazy:</strong> Czyszczenie cache i optymalizacja tabel MySQL</li>
+                </ul>
+
+                <h3>Ręczne uruchomienie</h3>
+                <p>Możesz ręcznie uruchomić konserwację w dowolnym momencie:</p>
+                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=jg-map-maintenance&jg_run_maintenance=1'), 'jg_maintenance'); ?>"
+                   class="button button-primary"
+                   onclick="return confirm('Czy na pewno chcesz uruchomić konserwację? Operacja może potrwać kilka sekund.');">
+                    🔧 Uruchom konserwację teraz
+                </a>
+
+                <p style="margin-top:20px;padding:15px;background:#fef3c7;border-left:4px solid #f59e0b;color:#92400e;">
+                    <strong>Uwaga:</strong> Ręczne uruchomienie konserwacji może chwilę potrwać. Strona zostanie automatycznie przeładowana po zakończeniu.
+                </p>
+            </div>
+        </div>
+        <?php
     }
 }

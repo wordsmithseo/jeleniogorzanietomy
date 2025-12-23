@@ -1355,6 +1355,7 @@
         var sponsored = !!p.sponsored;
         var isPending = !!p.is_pending;
         var isEdit = !!p.is_edit;
+        var isDeletionRequested = !!p.is_deletion_requested;
         var hasReports = (CFG.isAdmin && p.reports_count > 0);
 
         // Pin sizes - much bigger for visibility! Sponsored even bigger
@@ -1375,6 +1376,12 @@
           gradientMid = '#ef4444';
           gradientEnd = '#dc2626';
           circleColor = '#7f1d1d'; // Dark red
+        } else if (isDeletionRequested) {
+          // Orange gradient for deletion requested
+          gradientStart = '#ea580c';
+          gradientMid = '#f97316';
+          gradientEnd = '#ea580c';
+          circleColor = '#7c2d12'; // Dark orange
         } else if (isEdit) {
           // Purple gradient for edit
           gradientStart = '#9333ea';
@@ -1451,7 +1458,7 @@
 
         // Deletion request indicator
         var deletionHtml = '';
-        if (CFG.isAdmin && p.is_deletion_requested) {
+        if (p.is_deletion_requested) {
           deletionHtml = '<span class="jg-deletion-badge">✕</span>';
         }
 
@@ -1459,10 +1466,12 @@
         var labelClass = 'jg-marker-label';
         if (sponsored) labelClass += ' jg-marker-label--promo';
         if (isPending) labelClass += ' jg-marker-label--pending';
+        if (isDeletionRequested) labelClass += ' jg-marker-label--deletion';
         if (isEdit) labelClass += ' jg-marker-label--edit';
 
         var suffix = '';
-        if (isEdit) suffix = ' (edycja)';
+        if (isDeletionRequested) suffix = ' (do usunięcia)';
+        else if (isEdit) suffix = ' (edycja)';
         else if (isPending) suffix = ' (oczekuje)';
 
         var labelHtml = '<span class="' + labelClass + '">' + esc(p.title || 'Bez nazwy') + suffix + '</span>';
@@ -2054,6 +2063,8 @@
           console.log('[JG MAP] No data to draw, showing map anyway');
           showMap();
           hideLoading();
+          // Check for deep-linked point after map is ready
+          checkDeepLink();
           return;
         }
 
@@ -2179,6 +2190,8 @@
               showMap();
               hideLoading();
               console.log('[JG MAP] Map shown after cluster animation');
+              // Check for deep-linked point after map is fully ready
+              checkDeepLink();
             }, 600);
           }, 400);
         } else {
@@ -2187,6 +2200,8 @@
             showMap();
             hideLoading();
             console.log('[JG MAP] Map shown after cluster animation');
+            // Check for deep-linked point after map is fully ready
+            checkDeepLink();
           }, 600);
         }
       }
@@ -4542,8 +4557,7 @@
         // Check user restrictions
         checkUserRestrictions();
 
-        // Check for deep-linked point
-        checkDeepLink();
+        // Deep-linked point will be checked by draw() after map is fully ready
 
         // Then check for updates in background
         refreshData(false).catch(function(err) {
@@ -4555,21 +4569,21 @@
         refreshData(true)
           .then(function() {
             checkUserRestrictions();
-            checkDeepLink();
+            // Deep-linked point will be checked by draw() after map is fully ready
           })
           .catch(function(e) {
             showError('Nie udało się pobrać punktów: ' + (e.message || '?'));
           });
       }
 
-      // Smart auto-refresh: Check for updates every 15 seconds, only fetch if needed
+      // Smart auto-refresh: Check for updates every 3 seconds for real-time synchronization
       var refreshInterval = setInterval(function() {
 
         refreshData(false).then(function() {
         }).catch(function(err) {
           console.error('[JG MAP] Auto-refresh error:', err);
         });
-      }, 15000); // 15 seconds
+      }, 3000); // 3 seconds - faster for real-time sync
 
       // Also check for updates when page becomes visible again
       document.addEventListener('visibilitychange', function() {
