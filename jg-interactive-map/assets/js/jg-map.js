@@ -1356,7 +1356,9 @@
         var isPending = !!p.is_pending;
         var isEdit = !!p.is_edit;
         var isDeletionRequested = !!p.is_deletion_requested;
-        var hasReports = (CFG.isAdmin && p.reports_count > 0);
+        // Show reports counter for admins OR for the place owner
+        var isOwner = (CFG.currentUserId > 0 && p.author_id === CFG.currentUserId);
+        var hasReports = ((CFG.isAdmin || isOwner) && p.reports_count > 0);
 
         // Pin sizes - much bigger for visibility! Sponsored even bigger
         var pinHeight = sponsored ? 90 : 72;
