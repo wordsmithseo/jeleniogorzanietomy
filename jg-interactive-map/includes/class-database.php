@@ -430,18 +430,24 @@ class JG_Map_Database {
     }
 
     /**
-     * Delete point
+     * Delete point permanently (with related data)
      */
     public static function delete_point($point_id) {
         global $wpdb;
-        $table = self::get_points_table();
+        $points_table = self::get_points_table();
+        $votes_table = self::get_votes_table();
+        $reports_table = self::get_reports_table();
+        $history_table = self::get_history_table();
 
-        // Move to trash instead of permanently deleting
-        return $wpdb->update(
-            $table,
-            array('status' => 'trash'),
+        // Delete related data first
+        $wpdb->delete($votes_table, array('point_id' => $point_id), array('%d'));
+        $wpdb->delete($reports_table, array('point_id' => $point_id), array('%d'));
+        $wpdb->delete($history_table, array('point_id' => $point_id), array('%d'));
+
+        // Delete the point itself
+        return $wpdb->delete(
+            $points_table,
             array('id' => $point_id),
-            array('%s'),
             array('%d')
         );
     }
