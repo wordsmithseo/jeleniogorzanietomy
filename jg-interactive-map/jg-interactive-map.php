@@ -63,6 +63,7 @@ class JG_Interactive_Map {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-shortcode.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-ajax-handlers.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-admin.php';
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-maintenance.php';
     }
 
     /**
@@ -72,9 +73,13 @@ class JG_Interactive_Map {
         // Activation/Deactivation hooks
         register_activation_hook(__FILE__, array('JG_Map_Database', 'activate'));
         register_deactivation_hook(__FILE__, array('JG_Map_Database', 'deactivate'));
+        register_deactivation_hook(__FILE__, array('JG_Map_Maintenance', 'deactivate'));
 
         // Initialize components
         add_action('plugins_loaded', array($this, 'init_components'));
+
+        // Initialize maintenance cron
+        add_action('init', array('JG_Map_Maintenance', 'init'));
 
         // Load text domain
         add_action('init', array($this, 'load_textdomain'));

@@ -341,6 +341,15 @@ class JG_Map_Admin {
 
         add_submenu_page(
             'jg-map',
+            'Konserwacja',
+            'Konserwacja',
+            'manage_options',
+            'jg-map-maintenance',
+            array($this, 'render_maintenance_page')
+        );
+
+        add_submenu_page(
+            'jg-map',
             'Role użytkowników',
             'Role użytkowników',
             'manage_options',
@@ -3248,5 +3257,110 @@ class JG_Map_Admin {
         ";
 
         wp_add_inline_script('heartbeat', $script);
+    }
+
+    /**
+     * Render maintenance page
+     */
+    public function render_maintenance_page() {
+        // Check if manual run was successful
+        if (isset($_GET['maintenance_done'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>Konserwacja bazy danych została uruchomiona pomyślnie!</p></div>';
+        }
+
+        // Get last maintenance info
+        $last_maintenance = get_option('jg_map_last_maintenance', null);
+        $next_scheduled = wp_next_scheduled(JG_Map_Maintenance::CRON_HOOK);
+
+        ?>
+        <div class="wrap">
+            <h1>🔧 Konserwacja bazy danych</h1>
+
+            <div style="background:#fff;padding:20px;border:1px solid #ccd0d4;border-radius:4px;margin-top:20px;">
+                <h2>Status automatycznej konserwacji</h2>
+
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Status crona:</th>
+                        <td>
+                            <?php if ($next_scheduled): ?>
+                                <span style="color:#15803d;font-weight:700;">✓ Aktywny</span>
+                            <?php else: ?>
+                                <span style="color:#dc2626;font-weight:700;">✗ Nieaktywny</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Następne uruchomienie:</th>
+                        <td>
+                            <?php if ($next_scheduled): ?>
+                                <?php echo date('Y-m-d H:i:s', $next_scheduled); ?> (za <?php echo human_time_diff($next_scheduled); ?>)
+                            <?php else: ?>
+                                Brak zaplanowanego uruchomienia
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Częstotliwość:</th>
+                        <td>Raz dziennie (codziennie o tej samej porze)</td>
+                    </tr>
+                </table>
+
+                <h3>Ostatnie uruchomienie</h3>
+                <?php if ($last_maintenance): ?>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">Data:</th>
+                            <td><?php echo $last_maintenance['time']; ?> (<?php echo human_time_diff(strtotime($last_maintenance['time']), current_time('timestamp')); ?> temu)</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Czas wykonania:</th>
+                            <td><?php echo $last_maintenance['execution_time']; ?> sekund</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Wyniki:</th>
+                            <td>
+                                <ul style="margin:0;padding-left:20px;">
+                                    <li>Usunięto <strong><?php echo $last_maintenance['results']['orphaned_votes']; ?></strong> osieroconych głosów</li>
+                                    <li>Usunięto <strong><?php echo $last_maintenance['results']['orphaned_reports']; ?></strong> osieroconych raportów</li>
+                                    <li>Usunięto <strong><?php echo $last_maintenance['results']['orphaned_history']; ?></strong> osieroconych wpisów historii</li>
+                                    <li>Znaleziono <strong><?php echo $last_maintenance['results']['invalid_coords']; ?></strong> miejsc z nieprawidłowymi współrzędnymi</li>
+                                    <li>Znaleziono <strong><?php echo $last_maintenance['results']['empty_content']; ?></strong> miejsc bez treści</li>
+                                    <li>Wyłączono <strong><?php echo $last_maintenance['results']['expired_sponsors']; ?></strong> wygasłych sponsorowanych miejsc</li>
+                                    <li>Usunięto <strong><?php echo $last_maintenance['results']['old_pending']; ?></strong> starych miejsc oczekujących (>30 dni)</li>
+                                    <li>Zoptymalizowano <strong><?php echo $last_maintenance['results']['tables_optimized']; ?></strong> tabel bazy danych</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </table>
+                <?php else: ?>
+                    <p style="color:#666;">Konserwacja nie była jeszcze uruchamiana.</p>
+                <?php endif; ?>
+
+                <h3>Zadania konserwacyjne</h3>
+                <p>Automatyczna konserwacja wykonuje następujące zadania:</p>
+                <ul style="padding-left:20px;">
+                    <li><strong>Czyszczenie osieroconych danych:</strong> Usuwanie głosów, raportów i historii dla usuniętych miejsc</li>
+                    <li><strong>Walidacja współrzędnych:</strong> Sprawdzanie miejsc z nieprawidłowymi współrzędnymi (poza Polską: lat 49-55, lng 14-24)</li>
+                    <li><strong>Walidacja treści:</strong> Oznaczanie miejsc bez tytułu lub opisu</li>
+                    <li><strong>Wyłączanie wygasłych sponsorowań:</strong> Automatyczne wyłączanie miejsc sponsorowanych po terminie</li>
+                    <li><strong>Czyszczenie starych pending:</strong> Usuwanie miejsc oczekujących dłużej niż 30 dni (z powiadomieniem autora)</li>
+                    <li><strong>Optymalizacja bazy:</strong> Czyszczenie cache i optymalizacja tabel MySQL</li>
+                </ul>
+
+                <h3>Ręczne uruchomienie</h3>
+                <p>Możesz ręcznie uruchomić konserwację w dowolnym momencie:</p>
+                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=jg-map-maintenance&jg_run_maintenance=1'), 'jg_maintenance'); ?>"
+                   class="button button-primary"
+                   onclick="return confirm('Czy na pewno chcesz uruchomić konserwację? Operacja może potrwać kilka sekund.');">
+                    🔧 Uruchom konserwację teraz
+                </a>
+
+                <p style="margin-top:20px;padding:15px;background:#fef3c7;border-left:4px solid #f59e0b;color:#92400e;">
+                    <strong>Uwaga:</strong> Ręczne uruchomienie konserwacji może chwilę potrwać. Strona zostanie automatycznie przeładowana po zakończeniu.
+                </p>
+            </div>
+        </div>
+        <?php
     }
 }
