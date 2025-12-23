@@ -96,9 +96,11 @@ class JG_Map_Admin {
             "SELECT COUNT(*) FROM $points_table WHERE status = %s",
             'pending'
         ));
+        // ONLY count edits, not deletion requests
         $pending_edits = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $history_table WHERE status = %s",
-            'pending'
+            "SELECT COUNT(*) FROM $history_table WHERE status = %s AND action_type = %s",
+            'pending',
+            'edit'
         ));
         $pending_reports = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(DISTINCT r.point_id)
@@ -3104,9 +3106,11 @@ class JG_Map_Admin {
             "SELECT COUNT(*) FROM $points_table WHERE status = %s",
             'pending'
         ));
+        // ONLY count edits, not deletion requests
         $pending_edits = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $history_table WHERE status = %s",
-            'pending'
+            "SELECT COUNT(*) FROM $history_table WHERE status = %s AND action_type = %s",
+            'pending',
+            'edit'
         ));
         $pending_reports = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(DISTINCT r.point_id)

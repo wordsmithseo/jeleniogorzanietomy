@@ -1241,6 +1241,20 @@ class JG_Map_Ajax_Handlers {
 
         JG_Map_Database::add_report($point_id, $user_id, $email, $reason);
 
+        // Update point's report_status so users can see it's reported
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+        $wpdb->update(
+            $points_table,
+            array('report_status' => 'reported'),
+            array('id' => $point_id),
+            array('%s'),
+            array('%d')
+        );
+
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
+
         // Flush cache to ensure fresh data on next request
         wp_cache_flush();
 
@@ -2582,25 +2596,16 @@ class JG_Map_Ajax_Handlers {
             $this->decrement_daily_limit($author_id, 'reports');
         }
 
-        // Delete the point (move to trash)
-        JG_Map_Database::delete_point($point_id);
-
-        // Clear deletion request flags from point
-        $points_table = JG_Map_Database::get_points_table();
-        $wpdb->update(
-            $points_table,
-            array(
-                'is_deletion_requested' => 0,
-                'deletion_reason' => null,
-                'deletion_requested_at' => null
-            ),
-            array('id' => $point_id)
-        );
-
-        // Approve history if exists
+        // Approve history before deletion (if exists)
         if ($history_id) {
             JG_Map_Database::approve_history($history_id, get_current_user_id());
         }
+
+        // Delete the point permanently
+        JG_Map_Database::delete_point($point_id);
+
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
 
         // Clear object cache to refresh admin bar notifications
         wp_cache_delete('jg_map_pending_counts');
