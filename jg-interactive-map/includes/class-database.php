@@ -860,9 +860,9 @@ class JG_Map_Database {
                 (SELECT COUNT(*) FROM $reports_table r
                  WHERE r.point_id = p.id AND r.status = 'pending') as pending_reports_count,
                 (SELECT COUNT(*) FROM $history_table h
-                 WHERE h.point_id = p.id AND h.status = 'pending') as pending_edits_count,
+                 WHERE h.point_id = p.id AND h.status = 'pending' AND h.action_type = 'edit') as pending_edits_count,
                 (SELECT created_at FROM $history_table h
-                 WHERE h.point_id = p.id AND h.status = 'pending'
+                 WHERE h.point_id = p.id AND h.status = 'pending' AND h.action_type = 'edit'
                  ORDER BY created_at DESC LIMIT 1) as latest_edit_date
             FROM $points_table p
             LEFT JOIN {$wpdb->users} u ON p.author_id = u.ID
