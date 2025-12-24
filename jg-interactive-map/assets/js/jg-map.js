@@ -238,7 +238,7 @@
       }
 
       // Edit profile button handler
-      if (editProfileBtn) {
+      if (editProfileBtn && !editProfileBtn.jgHandlerAttached) {
         editProfileBtn.addEventListener('click', function() {
           var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
             '<h2 style="margin:0;font-size:20px;font-weight:600">Edycja profilu</h2>' +
@@ -322,6 +322,7 @@
             });
           });
         });
+        editProfileBtn.jgHandlerAttached = true;
       }
 
       // Open login modal function - reusable
@@ -412,13 +413,14 @@
 
       // Login button handler
       var loginBtn = document.getElementById('jg-login-btn');
-      if (loginBtn) {
+      if (loginBtn && !loginBtn.jgHandlerAttached) {
         loginBtn.addEventListener('click', openLoginModal);
+        loginBtn.jgHandlerAttached = true;
       }
 
       // Register button handler
       var registerBtn = document.getElementById('jg-register-btn');
-      if (registerBtn) {
+      if (registerBtn && !registerBtn.jgHandlerAttached) {
         registerBtn.addEventListener('click', function() {
           var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
             '<h2 style="margin:0;font-size:20px;font-weight:600">Rejestracja</h2>' +
@@ -514,6 +516,7 @@
             }
           });
         });
+        registerBtn.jgHandlerAttached = true;
       }
 
       // Forgot password modal function
