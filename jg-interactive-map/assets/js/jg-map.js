@@ -422,6 +422,23 @@
       var registerBtn = document.getElementById('jg-register-btn');
       if (registerBtn && !registerBtn.jgHandlerAttached) {
         registerBtn.addEventListener('click', function() {
+          // Check if registration is enabled
+          if (CFG.registrationEnabled === false) {
+            // Show disabled message modal
+            var disabledHtml = '<div class="jg-modal-header" style="background:#d97706;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+              '<h2 style="margin:0;font-size:20px;font-weight:600">⚠️ Rejestracja wyłączona</h2>' +
+              '</div>' +
+              '<div class="jg-modal-body" style="padding:24px;text-align:center">' +
+              '<p style="font-size:16px;line-height:1.6;color:#333;margin:20px 0">' + esc(CFG.registrationDisabledMessage || 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.') + '</p>' +
+              '</div>' +
+              '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:center;border-radius:0 0 8px 8px">' +
+              '<button class="jg-btn jg-btn--primary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'" style="padding:10px 24px;background:#d97706;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">OK, rozumiem</button>' +
+              '</div>';
+            open(modalEdit, disabledHtml);
+            return;
+          }
+
+          // Show registration form
           var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
             '<h2 style="margin:0;font-size:20px;font-weight:600">Rejestracja</h2>' +
             '</div>' +
