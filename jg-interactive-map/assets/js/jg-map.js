@@ -238,7 +238,7 @@
       }
 
       // Edit profile button handler
-      if (editProfileBtn) {
+      if (editProfileBtn && !editProfileBtn.jgHandlerAttached) {
         editProfileBtn.addEventListener('click', function() {
           var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
             '<h2 style="margin:0;font-size:20px;font-weight:600">Edycja profilu</h2>' +
@@ -322,6 +322,7 @@
             });
           });
         });
+        editProfileBtn.jgHandlerAttached = true;
       }
 
       // Open login modal function - reusable
@@ -412,14 +413,32 @@
 
       // Login button handler
       var loginBtn = document.getElementById('jg-login-btn');
-      if (loginBtn) {
+      if (loginBtn && !loginBtn.jgHandlerAttached) {
         loginBtn.addEventListener('click', openLoginModal);
+        loginBtn.jgHandlerAttached = true;
       }
 
       // Register button handler
       var registerBtn = document.getElementById('jg-register-btn');
-      if (registerBtn) {
+      if (registerBtn && !registerBtn.jgHandlerAttached) {
         registerBtn.addEventListener('click', function() {
+          // Check if registration is enabled
+          if (CFG.registrationEnabled === false) {
+            // Show disabled message modal
+            var disabledHtml = '<div class="jg-modal-header" style="background:#d97706;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+              '<h2 style="margin:0;font-size:20px;font-weight:600">⚠️ Rejestracja wyłączona</h2>' +
+              '</div>' +
+              '<div class="jg-modal-body" style="padding:24px;text-align:center">' +
+              '<p style="font-size:16px;line-height:1.6;color:#333;margin:20px 0">' + esc(CFG.registrationDisabledMessage || 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.') + '</p>' +
+              '</div>' +
+              '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:center;border-radius:0 0 8px 8px">' +
+              '<button class="jg-btn jg-btn--primary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'" style="padding:10px 24px;background:#d97706;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">OK, rozumiem</button>' +
+              '</div>';
+            open(modalEdit, disabledHtml);
+            return;
+          }
+
+          // Show registration form
           var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
             '<h2 style="margin:0;font-size:20px;font-weight:600">Rejestracja</h2>' +
             '</div>' +
@@ -514,6 +533,7 @@
             }
           });
         });
+        registerBtn.jgHandlerAttached = true;
       }
 
       // Forgot password modal function
@@ -4304,51 +4324,50 @@
           myPlacesOnly = !!(myPlaces && myPlaces.checked);
         }
 
-        // STEP 1: Get ALL sponsored points - they are ALWAYS visible (no filtering!)
-        var sponsoredPoints = (ALL || []).filter(function(p) {
-          // If "My Places" filter is active, check ownership even for sponsored
-          if (myPlacesOnly) {
-            return p.sponsored && (+CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id);
+        // Filter logic:
+        // 1. "Tylko sponsorowane" checkbox -> show ONLY sponsored
+        // 2. "Moje miejsca" checkbox -> show only user's places + ALL sponsored
+        // 3. Type filters (miejsca/ciekawostki/zgłoszenia) -> filter by type but sponsored are ALWAYS visible
+        // 4. No filters enabled -> show ALL points
+
+        var list = (ALL || []).filter(function(p) {
+          var isSponsored = !!p.sponsored;
+          var isUserPlace = (+CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id);
+
+          // CHECKBOX: "Tylko sponsorowane" - show ONLY sponsored
+          if (promoOnly) {
+            return isSponsored;
           }
-          return p.sponsored;
-        });
 
-        // STEP 2: Filter non-sponsored points based on type filters only
-        var nonSponsoredPoints = (ALL || []).filter(function(p) {
-          // Skip sponsored points - they're already in sponsoredPoints array
-          if (p.sponsored) return false;
-
-          // Promo only mode - hide all non-sponsored
-          if (promoOnly) return false;
-
-          // My Places filter - show only user's own places
+          // CHECKBOX: "Moje miejsca" - show only user's places + ALL sponsored
           if (myPlacesOnly) {
             if (!CFG.currentUserId || +CFG.currentUserId <= 0) {
-              return false; // Not logged in
+              return isSponsored; // Not logged in - show only sponsored
             }
-            if (+CFG.currentUserId !== +p.author_id) {
-              return false; // Not user's place
-            }
+            return isSponsored || isUserPlace; // Show sponsored OR user's places
           }
 
-          // Type filters
-          // If no filters are enabled, hide all non-sponsored points
-          if (Object.keys(enabled).length === 0) {
-            return false;
+          // TYPE FILTERS: Sponsored are ALWAYS visible, others filtered by type
+          if (isSponsored) {
+            return true; // Sponsored always visible (unless promoOnly/myPlacesOnly handled above)
           }
-          // Check if point type is in enabled filters
+
+          // For non-sponsored: check type filters
+          // If NO type filters enabled -> show ALL non-sponsored
+          if (Object.keys(enabled).length === 0) {
+            return true; // No filters = show everything
+          }
+
+          // If type filters enabled -> check if this point's type is enabled
           return !!enabled[p.type];
         });
 
-        // STEP 3: Combine sponsored + filtered non-sponsored points
-        var list = sponsoredPoints.concat(nonSponsoredPoints);
-
         // Debug logging
+        var sponsoredCount = list.filter(function(p) { return p.sponsored; }).length;
+        var nonSponsoredCount = list.length - sponsoredCount;
         console.log('[JG MAP FILTER] Total points:', (ALL || []).length);
-        console.log('[JG MAP FILTER] Sponsored (always visible):', sponsoredPoints.length);
-        console.log('[JG MAP FILTER] Non-sponsored (filtered):', nonSponsoredPoints.length);
-        console.log('[JG MAP FILTER] Final list:', list.length);
-        console.log('[JG MAP FILTER] Enabled filters:', Object.keys(enabled).length > 0 ? Object.keys(enabled) : 'NONE');
+        console.log('[JG MAP FILTER] Filtered list:', list.length, '(' + sponsoredCount + ' sponsored, ' + nonSponsoredCount + ' non-sponsored)');
+        console.log('[JG MAP FILTER] Active filters: promoOnly=' + promoOnly + ', myPlacesOnly=' + myPlacesOnly + ', types=' + JSON.stringify(Object.keys(enabled)));
 
         pendingData = list;
         draw(list, skipFitBounds);

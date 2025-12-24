@@ -89,7 +89,9 @@ class JG_Map_Enqueue {
             ));
         }
 
-        // Inline script for clock - no external JS needed for basic functionality
+        // Inline script for clock and top bar buttons - loads on ALL pages
+        $ajax_url = admin_url('admin-ajax.php');
+        $nonce = wp_create_nonce('jg_map_nonce');
         $inline_script = "
         (function() {
             function updateDateTime() {
@@ -111,14 +113,47 @@ class JG_Map_Enqueue {
                 el.textContent = dayName + ', ' + day + '.' + month + '.' + year + ' • ' + hours + ':' + minutes + ':' + seconds;
             }
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                    updateDateTime();
-                    setInterval(updateDateTime, 1000);
-                });
-            } else {
+            function initTopBarButtons() {
+                // Initialize clock
                 updateDateTime();
                 setInterval(updateDateTime, 1000);
+
+                // Initialize top bar buttons (for 404/Elementor pages where jg-map.js doesn't load)
+                // On pages with the map, jg-map.js will handle these buttons instead
+                var loginBtn = document.getElementById('jg-login-btn');
+                var registerBtn = document.getElementById('jg-register-btn');
+                var editProfileBtn = document.getElementById('jg-edit-profile-btn');
+
+                // Only attach if buttons exist and jg-map.js hasn't already handled them
+                if (loginBtn && !loginBtn.jgHandlerAttached) {
+                    loginBtn.addEventListener('click', function() {
+                        alert('Aby się zalogować, przejdź na stronę główną mapy.');
+                        window.location.href = '/';
+                    });
+                    loginBtn.jgHandlerAttached = true;
+                }
+
+                if (registerBtn && !registerBtn.jgHandlerAttached) {
+                    registerBtn.addEventListener('click', function() {
+                        alert('Aby się zarejestrować, przejdź na stronę główną mapy.');
+                        window.location.href = '/';
+                    });
+                    registerBtn.jgHandlerAttached = true;
+                }
+
+                if (editProfileBtn && !editProfileBtn.jgHandlerAttached) {
+                    editProfileBtn.addEventListener('click', function() {
+                        alert('Aby edytować profil, przejdź na stronę główną mapy.');
+                        window.location.href = '/';
+                    });
+                    editProfileBtn.jgHandlerAttached = true;
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initTopBarButtons);
+            } else {
+                initTopBarButtons();
             }
         })();
         ";
@@ -205,6 +240,8 @@ class JG_Map_Enqueue {
                 'isAdmin' => current_user_can('manage_options') || current_user_can('jg_map_moderate'),
                 'currentUserId' => get_current_user_id(),
                 'loginUrl' => wp_login_url(get_permalink()),
+                'registrationEnabled' => (bool) get_option('jg_map_registration_enabled', 1),
+                'registrationDisabledMessage' => get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.'),
                 'defaults' => array(
                     'lat' => 50.904,
                     'lng' => 15.734,

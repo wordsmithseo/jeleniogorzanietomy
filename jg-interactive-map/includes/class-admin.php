@@ -213,11 +213,11 @@ class JG_Map_Admin {
                 $events[] = $point['title'] ?: 'Bez nazwy';
             }
 
-            // Get pending edits
+            // Get pending edits (ONLY edits, not deletion requests)
             $pending_edits = $wpdb->get_results(
                 "SELECT p.title FROM $history_table h
                  LEFT JOIN $points_table p ON h.point_id = p.id
-                 WHERE h.status = 'pending'
+                 WHERE h.status = 'pending' AND h.action_type = 'edit'
                  ORDER BY h.created_at DESC LIMIT 5",
                 ARRAY_A
             );
@@ -226,7 +226,7 @@ class JG_Map_Admin {
             }
 
             $total_count = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'")
-                         + $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
+                         + $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending' AND action_type = 'edit'");
         }
         // Reports page - show report reasons
         elseif (strpos($screen->id, 'jg-map-reports') !== false) {
@@ -366,6 +366,15 @@ class JG_Map_Admin {
             'manage_options',
             'jg-map-activity-log',
             array($this, 'render_activity_log_page')
+        );
+
+        add_submenu_page(
+            'jg-map',
+            'Ustawienia',
+            'Ustawienia',
+            'manage_options',
+            'jg-map-settings',
+            array($this, 'render_settings_page')
         );
     }
 
@@ -3083,6 +3092,83 @@ class JG_Map_Admin {
             <?php else: ?>
             <p>Brak wpisów w activity log.</p>
             <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render settings page
+     */
+    public function render_settings_page() {
+        // Handle form submission
+        if (isset($_POST['jg_map_save_settings']) && check_admin_referer('jg_map_settings_nonce')) {
+            $registration_enabled = isset($_POST['jg_map_registration_enabled']) ? 1 : 0;
+            $registration_disabled_message = sanitize_textarea_field($_POST['jg_map_registration_disabled_message'] ?? '');
+
+            update_option('jg_map_registration_enabled', $registration_enabled);
+            update_option('jg_map_registration_disabled_message', $registration_disabled_message);
+
+            echo '<div class="notice notice-success is-dismissible"><p>Ustawienia zostały zapisane.</p></div>';
+        }
+
+        $registration_enabled = get_option('jg_map_registration_enabled', 1); // Enabled by default
+        $registration_disabled_message = get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
+        ?>
+        <div class="wrap">
+            <h1>Ustawienia JG Map</h1>
+
+            <form method="post" action="">
+                <?php wp_nonce_field('jg_map_settings_nonce'); ?>
+
+                <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);max-width:800px">
+                    <h2 style="margin-top:0">Rejestracja użytkowników</h2>
+
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="jg_map_registration_enabled">Rejestracja</label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox"
+                                           name="jg_map_registration_enabled"
+                                           id="jg_map_registration_enabled"
+                                           value="1"
+                                           <?php checked($registration_enabled, 1); ?>>
+                                    <strong>Włącz rejestrację nowych użytkowników</strong>
+                                </label>
+                                <p class="description">
+                                    Gdy wyłączone, przycisk "Zarejestruj" pokaże komunikat zamiast formularza rejestracji.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">
+                                <label for="jg_map_registration_disabled_message">Komunikat gdy wyłączona</label>
+                            </th>
+                            <td>
+                                <textarea name="jg_map_registration_disabled_message"
+                                          id="jg_map_registration_disabled_message"
+                                          rows="3"
+                                          class="large-text"
+                                          placeholder="Rejestracja jest obecnie wyłączona. Spróbuj ponownie później."><?php echo esc_textarea($registration_disabled_message); ?></textarea>
+                                <p class="description">
+                                    Ten komunikat zostanie wyświetlony użytkownikom gdy rejestracja jest wyłączona.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <p class="submit">
+                    <input type="submit"
+                           name="jg_map_save_settings"
+                           id="submit"
+                           class="button button-primary"
+                           value="Zapisz ustawienia">
+                </p>
+            </form>
         </div>
         <?php
     }
