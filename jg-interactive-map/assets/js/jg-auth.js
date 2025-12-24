@@ -5,6 +5,47 @@
 (function($) {
   'use strict';
 
+  // Ensure modal containers exist (create if missing)
+  function ensureModalsExist() {
+    // Check if edit modal exists
+    var modalEdit = document.getElementById('jg-map-modal-edit');
+    if (!modalEdit) {
+      // Create edit modal
+      modalEdit = document.createElement('div');
+      modalEdit.id = 'jg-map-modal-edit';
+      modalEdit.className = 'jg-modal-bg';
+      modalEdit.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999999;align-items:center;justify-content:center;';
+      modalEdit.innerHTML = '<div class="jg-modal" style="background:#fff;border-radius:8px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;position:relative;"></div>';
+      document.body.appendChild(modalEdit);
+
+      // Close on background click
+      modalEdit.addEventListener('click', function(e) {
+        if (e.target === modalEdit) {
+          modalEdit.style.display = 'none';
+        }
+      });
+    }
+
+    // Check if alert modal exists
+    var modalAlert = document.getElementById('jg-modal-alert');
+    if (!modalAlert) {
+      // Create alert modal
+      modalAlert = document.createElement('div');
+      modalAlert.id = 'jg-modal-alert';
+      modalAlert.className = 'jg-modal-message-bg';
+      modalAlert.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000000;align-items:center;justify-content:center;';
+      modalAlert.innerHTML = '<div class="jg-modal-message" style="background:#fff;border-radius:8px;max-width:400px;width:90%;padding:24px;"><div class="jg-modal-message-content" style="margin-bottom:20px;font-size:16px;line-height:1.5;"></div><div class="jg-modal-message-buttons" style="display:flex;gap:10px;justify-content:flex-end;"></div></div>';
+      document.body.appendChild(modalAlert);
+
+      // Close on background click
+      modalAlert.addEventListener('click', function(e) {
+        if (e.target === modalAlert) {
+          modalAlert.style.display = 'none';
+        }
+      });
+    }
+  }
+
   // Helper functions
   function esc(s) {
     s = String(s || '');
@@ -14,6 +55,7 @@
   }
 
   function showAlert(message) {
+    ensureModalsExist();
     return new Promise(function(resolve) {
       var modal = document.getElementById('jg-modal-alert');
       if (!modal) {
@@ -26,7 +68,7 @@
       var buttonsEl = modal.querySelector('.jg-modal-message-buttons');
 
       contentEl.innerHTML = message;
-      buttonsEl.innerHTML = '<button class="jg-btn" id="jg-alert-ok">OK</button>';
+      buttonsEl.innerHTML = '<button class="jg-btn" id="jg-alert-ok" style="padding:8px 16px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">OK</button>';
 
       modal.style.display = 'flex';
 
@@ -59,10 +101,11 @@
   }
 
   function openLoginModal() {
+    ensureModalsExist();
     var CFG = window.JG_AUTH_CFG || {};
     var modalEdit = document.getElementById('jg-map-modal-edit');
     if (!modalEdit) {
-      alert('Brak modala. Odśwież stronę.');
+      alert('Nie można otworzyć modala logowania.');
       return;
     }
 
@@ -145,6 +188,7 @@
   }
 
   function showForgotPasswordModal() {
+    ensureModalsExist();
     var CFG = window.JG_AUTH_CFG || {};
     var modalEdit = document.getElementById('jg-map-modal-edit');
     if (!modalEdit) return;
@@ -227,10 +271,11 @@
   }
 
   function openRegisterModal() {
+    ensureModalsExist();
     var CFG = window.JG_AUTH_CFG || {};
     var modalEdit = document.getElementById('jg-map-modal-edit');
     if (!modalEdit) {
-      alert('Brak modala. Odśwież stronę.');
+      alert('Nie można otworzyć modala rejestracji.');
       return;
     }
 
@@ -339,10 +384,11 @@
   }
 
   function openEditProfileModal() {
+    ensureModalsExist();
     var CFG = window.JG_AUTH_CFG || {};
     var modalEdit = document.getElementById('jg-map-modal-edit');
     if (!modalEdit) {
-      alert('Brak modala. Odśwież stronę.');
+      alert('Nie można otworzyć modala edycji profilu.');
       return;
     }
 
@@ -451,6 +497,20 @@
       editProfileBtn.jgHandlerAttached = true;
     }
   }
+
+  // Add Escape key handler to close modals
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var modalEdit = document.getElementById('jg-map-modal-edit');
+      var modalAlert = document.getElementById('jg-modal-alert');
+      if (modalEdit && modalEdit.style.display === 'flex') {
+        modalEdit.style.display = 'none';
+      }
+      if (modalAlert && modalAlert.style.display === 'flex') {
+        modalAlert.style.display = 'none';
+      }
+    }
+  });
 
   // Run on DOM ready
   if (document.readyState === 'loading') {
