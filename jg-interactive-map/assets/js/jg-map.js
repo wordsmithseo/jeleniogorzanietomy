@@ -423,7 +423,8 @@
       if (registerBtn && !registerBtn.jgHandlerAttached) {
         registerBtn.addEventListener('click', function() {
           // Check if registration is enabled - show simple alert if disabled
-          if (CFG.registrationEnabled === false) {
+          // Check for false, 0, and '0' to handle different data types
+          if (CFG.registrationEnabled === false || CFG.registrationEnabled === 0 || CFG.registrationEnabled === '0') {
             showAlert(CFG.registrationDisabledMessage || 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
             return;
           }

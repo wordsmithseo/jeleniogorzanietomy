@@ -273,8 +273,18 @@
   function openRegisterModal() {
     var CFG = window.JG_AUTH_CFG || {};
 
+    // Debug logging
+    console.log('[JG AUTH] Registration check:', {
+      registrationEnabled: CFG.registrationEnabled,
+      type: typeof CFG.registrationEnabled,
+      isFalse: CFG.registrationEnabled === false,
+      isFalsy: !CFG.registrationEnabled,
+      fullConfig: CFG
+    });
+
     // Check if registration is enabled - show simple alert if disabled
-    if (CFG.registrationEnabled === false) {
+    // Check for both false and 0 to handle different data types
+    if (CFG.registrationEnabled === false || CFG.registrationEnabled === 0 || CFG.registrationEnabled === '0') {
       showAlert(CFG.registrationDisabledMessage || 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
       return;
     }
