@@ -195,7 +195,8 @@ class JG_Map_Ajax_Handlers {
 
         if ($is_admin) {
             $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = 'pending'");
-            $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
+            // ONLY count edits, not deletion requests
+            $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending' AND action_type = 'edit'");
             $pending_reports = $wpdb->get_var(
                 "SELECT COUNT(DISTINCT r.point_id)
                  FROM $reports_table r
@@ -1638,6 +1639,9 @@ class JG_Map_Ajax_Handlers {
         // Resolve any pending reports for this point
         JG_Map_Database::resolve_reports($point_id, 'Punkt został zaakceptowany przez moderatora');
 
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
+
         // Clear object cache to refresh admin bar notifications
         wp_cache_delete('jg_map_pending_counts');
         wp_cache_flush();
@@ -1688,6 +1692,9 @@ class JG_Map_Ajax_Handlers {
 
         // Resolve any pending reports for this point
         JG_Map_Database::resolve_reports($point_id, 'Punkt został odrzucony przez moderatora: ' . $reason);
+
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
 
         // Clear object cache to refresh admin bar notifications
         wp_cache_delete('jg_map_pending_counts');
@@ -2457,6 +2464,9 @@ class JG_Map_Ajax_Handlers {
         // Approve history
         JG_Map_Database::approve_history($history_id, get_current_user_id());
 
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
+
         // Clear object cache to refresh admin bar notifications
         wp_cache_delete('jg_map_pending_counts');
         wp_cache_flush();
@@ -2507,6 +2517,9 @@ class JG_Map_Ajax_Handlers {
 
         // Reject history
         JG_Map_Database::reject_history($history_id, get_current_user_id());
+
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
 
         // Clear object cache to refresh admin bar notifications
         wp_cache_delete('jg_map_pending_counts');
@@ -2683,6 +2696,9 @@ class JG_Map_Ajax_Handlers {
         if ($history_id) {
             JG_Map_Database::reject_history($history_id, get_current_user_id());
         }
+
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
 
         // Clear object cache to refresh admin bar notifications
         wp_cache_delete('jg_map_pending_counts');
@@ -2883,13 +2899,20 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Move to trash
+        // Delete permanently
         $deleted = JG_Map_Database::delete_point($point_id);
 
         if ($deleted === false) {
             wp_send_json_error(array('message' => 'Błąd usuwania'));
             exit;
         }
+
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
+
+        // Clear object cache
+        wp_cache_delete('jg_map_pending_counts');
+        wp_cache_flush();
 
         wp_send_json_success(array('message' => 'Miejsce usunięte'));
     }

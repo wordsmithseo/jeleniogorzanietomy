@@ -213,11 +213,11 @@ class JG_Map_Admin {
                 $events[] = $point['title'] ?: 'Bez nazwy';
             }
 
-            // Get pending edits
+            // Get pending edits (ONLY edits, not deletion requests)
             $pending_edits = $wpdb->get_results(
                 "SELECT p.title FROM $history_table h
                  LEFT JOIN $points_table p ON h.point_id = p.id
-                 WHERE h.status = 'pending'
+                 WHERE h.status = 'pending' AND h.action_type = 'edit'
                  ORDER BY h.created_at DESC LIMIT 5",
                 ARRAY_A
             );
@@ -226,7 +226,7 @@ class JG_Map_Admin {
             }
 
             $total_count = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'")
-                         + $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
+                         + $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending' AND action_type = 'edit'");
         }
         // Reports page - show report reasons
         elseif (strpos($screen->id, 'jg-map-reports') !== false) {
