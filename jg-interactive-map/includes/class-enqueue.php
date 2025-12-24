@@ -89,9 +89,24 @@ class JG_Map_Enqueue {
             ));
         }
 
-        // Inline script for clock and top bar buttons - loads on ALL pages
-        $ajax_url = admin_url('admin-ajax.php');
-        $nonce = wp_create_nonce('jg_map_nonce');
+        // Load auth script on ALL pages for login/register buttons
+        wp_enqueue_script(
+            'jg-map-auth',
+            JG_MAP_PLUGIN_URL . 'assets/js/jg-auth.js',
+            array('jquery'),
+            JG_MAP_VERSION,
+            true // Load in footer
+        );
+
+        // Localize auth script with config
+        wp_localize_script('jg-map-auth', 'JG_AUTH_CFG', array(
+            'ajax' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('jg_map_nonce'),
+            'registrationEnabled' => (bool) get_option('jg_map_registration_enabled', 1),
+            'registrationDisabledMessage' => get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.')
+        ));
+
+        // Inline script for clock - loads on ALL pages
         $inline_script = "
         (function() {
             function updateDateTime() {
@@ -113,47 +128,15 @@ class JG_Map_Enqueue {
                 el.textContent = dayName + ', ' + day + '.' + month + '.' + year + ' • ' + hours + ':' + minutes + ':' + seconds;
             }
 
-            function initTopBarButtons() {
-                // Initialize clock
+            function initClock() {
                 updateDateTime();
                 setInterval(updateDateTime, 1000);
-
-                // Initialize top bar buttons (for 404/Elementor pages where jg-map.js doesn't load)
-                // On pages with the map, jg-map.js will handle these buttons instead
-                var loginBtn = document.getElementById('jg-login-btn');
-                var registerBtn = document.getElementById('jg-register-btn');
-                var editProfileBtn = document.getElementById('jg-edit-profile-btn');
-
-                // Only attach if buttons exist and jg-map.js hasn't already handled them
-                if (loginBtn && !loginBtn.jgHandlerAttached) {
-                    loginBtn.addEventListener('click', function() {
-                        alert('Aby się zalogować, przejdź na stronę główną mapy.');
-                        window.location.href = '/';
-                    });
-                    loginBtn.jgHandlerAttached = true;
-                }
-
-                if (registerBtn && !registerBtn.jgHandlerAttached) {
-                    registerBtn.addEventListener('click', function() {
-                        alert('Aby się zarejestrować, przejdź na stronę główną mapy.');
-                        window.location.href = '/';
-                    });
-                    registerBtn.jgHandlerAttached = true;
-                }
-
-                if (editProfileBtn && !editProfileBtn.jgHandlerAttached) {
-                    editProfileBtn.addEventListener('click', function() {
-                        alert('Aby edytować profil, przejdź na stronę główną mapy.');
-                        window.location.href = '/';
-                    });
-                    editProfileBtn.jgHandlerAttached = true;
-                }
             }
 
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initTopBarButtons);
+                document.addEventListener('DOMContentLoaded', initClock);
             } else {
-                initTopBarButtons();
+                initClock();
             }
         })();
         ";
