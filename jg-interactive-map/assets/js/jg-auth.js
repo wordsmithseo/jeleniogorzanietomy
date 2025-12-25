@@ -273,22 +273,34 @@
   function openRegisterModal() {
     var CFG = window.JG_AUTH_CFG || {};
 
-    // Debug logging
-    console.log('[JG AUTH] Registration check:', {
-      registrationEnabled: CFG.registrationEnabled,
-      type: typeof CFG.registrationEnabled,
-      isFalse: CFG.registrationEnabled === false,
-      isFalsy: !CFG.registrationEnabled,
-      fullConfig: CFG
+    // Check registration status on server (real-time check)
+    $.ajax({
+      url: CFG.ajax,
+      type: 'POST',
+      data: {
+        action: 'jg_check_registration_status'
+      },
+      success: function(response) {
+        if (response.success && response.data) {
+          if (!response.data.enabled) {
+            // Registration disabled - show alert
+            showAlert(response.data.message || 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
+            return;
+          }
+          // Registration enabled - show form
+          showRegisterForm();
+        } else {
+          showAlert('Wystąpił błąd podczas sprawdzania dostępności rejestracji.');
+        }
+      },
+      error: function() {
+        showAlert('Wystąpił błąd połączenia. Spróbuj ponownie później.');
+      }
     });
+  }
 
-    // Check if registration is enabled - show simple alert if disabled
-    // Treat any falsy value as disabled: false, 0, '0', '', null, undefined
-    if (!CFG.registrationEnabled || CFG.registrationEnabled === '0') {
-      showAlert(CFG.registrationDisabledMessage || 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
-      return;
-    }
-
+  function showRegisterForm() {
+    var CFG = window.JG_AUTH_CFG || {};
     ensureModalsExist();
     var modalEdit = document.getElementById('jg-map-modal-edit');
     if (!modalEdit) {
