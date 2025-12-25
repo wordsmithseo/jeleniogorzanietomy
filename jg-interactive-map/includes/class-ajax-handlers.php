@@ -2512,6 +2512,19 @@ class JG_Map_Ajax_Handlers {
             sprintf('Zaakceptowano edycję miejsca: %s', $point['title'])
         );
 
+        // Store updated point ID for real-time broadcast via Heartbeat
+        $updated_points = get_transient('jg_map_updated_points');
+        if (!is_array($updated_points)) {
+            $updated_points = array();
+        }
+        $updated_points[] = array(
+            'id' => $history['point_id'],
+            'timestamp' => time()
+        );
+        // Keep only last 100 updates
+        $updated_points = array_slice($updated_points, -100);
+        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+
         wp_send_json_success(array('message' => 'Edycja zaakceptowana'));
     }
 
@@ -2950,6 +2963,19 @@ class JG_Map_Ajax_Handlers {
         // Clear object cache
         wp_cache_delete('jg_map_pending_counts');
         wp_cache_flush();
+
+        // Store deleted point ID for real-time broadcast via Heartbeat
+        $deleted_points = get_transient('jg_map_deleted_points');
+        if (!is_array($deleted_points)) {
+            $deleted_points = array();
+        }
+        $deleted_points[] = array(
+            'id' => $point_id,
+            'timestamp' => time()
+        );
+        // Keep only last 100 deletions
+        $deleted_points = array_slice($deleted_points, -100);
+        set_transient('jg_map_deleted_points', $deleted_points, 300); // 5 minutes
 
         wp_send_json_success(array('message' => 'Miejsce usunięte'));
     }
