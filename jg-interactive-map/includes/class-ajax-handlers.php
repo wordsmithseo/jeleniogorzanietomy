@@ -3561,6 +3561,14 @@ class JG_Map_Ajax_Handlers {
      * Register user via AJAX
      */
     public function register_user() {
+        // Check if registration is enabled - server-side validation
+        $registration_enabled = get_option('jg_map_registration_enabled', 1);
+        if (!$registration_enabled || $registration_enabled === '0' || $registration_enabled === 0) {
+            $message = get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
+            wp_send_json_error($message);
+            exit;
+        }
+
         // Rate limiting check
         $ip = $this->get_user_ip();
         $rate_check = $this->check_rate_limit('register', $ip, 3, 3600);
