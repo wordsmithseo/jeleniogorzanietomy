@@ -93,6 +93,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_map_login', array($this, 'login_user'));
         add_action('wp_ajax_nopriv_jg_map_register', array($this, 'register_user'));
         add_action('wp_ajax_nopriv_jg_map_forgot_password', array($this, 'forgot_password'));
+        add_action('wp_ajax_jg_check_registration_status', array($this, 'check_registration_status'));
+        add_action('wp_ajax_nopriv_jg_check_registration_status', array($this, 'check_registration_status'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -3703,6 +3705,19 @@ class JG_Map_Ajax_Handlers {
         wp_mail($email, $subject, $message, $headers);
 
         wp_send_json_success('Link do resetowania hasła został wysłany na Twój adres email.');
+    }
+
+    /**
+     * Check registration status - returns current registration availability
+     */
+    public function check_registration_status() {
+        $enabled = get_option('jg_map_registration_enabled', 1);
+        $message = get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
+
+        wp_send_json_success(array(
+            'enabled' => (bool) $enabled,
+            'message' => $message
+        ));
     }
 
     /**

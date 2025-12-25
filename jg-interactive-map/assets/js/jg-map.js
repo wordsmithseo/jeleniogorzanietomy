@@ -422,13 +422,36 @@
       var registerBtn = document.getElementById('jg-register-btn');
       if (registerBtn && !registerBtn.jgHandlerAttached) {
         registerBtn.addEventListener('click', function() {
-          // Check if registration is enabled - show simple alert if disabled
-          // Treat any falsy value as disabled: false, 0, '0', '', null, undefined
-          if (!CFG.registrationEnabled || CFG.registrationEnabled === '0') {
-            showAlert(CFG.registrationDisabledMessage || 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
-            return;
-          }
+          // Check registration status on server (real-time check)
+          jQuery.ajax({
+            url: CFG.ajax,
+            type: 'POST',
+            data: {
+              action: 'jg_check_registration_status'
+            },
+            success: function(response) {
+              if (response.success && response.data) {
+                if (!response.data.enabled) {
+                  // Registration disabled - show alert
+                  showAlert(response.data.message || 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
+                  return;
+                }
+                // Registration enabled - show form
+                showRegistrationForm();
+              } else {
+                showAlert('Wystąpił błąd podczas sprawdzania dostępności rejestracji.');
+              }
+            },
+            error: function() {
+              showAlert('Wystąpił błąd połączenia. Spróbuj ponownie później.');
+            }
+          });
+        });
+        registerBtn.jgHandlerAttached = true;
+      }
 
+      // Registration form function
+      function showRegistrationForm() {
           // Show registration form
           var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
             '<h2 style="margin:0;font-size:20px;font-weight:600">Rejestracja</h2>' +
@@ -523,8 +546,6 @@
               submitRegistration();
             }
           });
-        });
-        registerBtn.jgHandlerAttached = true;
       }
 
       // Forgot password modal function
