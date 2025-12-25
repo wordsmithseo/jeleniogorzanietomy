@@ -270,6 +270,12 @@ class JG_Map_Ajax_Handlers {
                 $reports_count = JG_Map_Database::get_reports_count($point['id']);
             }
 
+            // Check if current user has reported this point
+            $user_has_reported = false;
+            if ($current_user_id > 0) {
+                $user_has_reported = JG_Map_Database::has_user_reported($point['id'], $current_user_id);
+            }
+
             // Check if sponsored expired
             $is_sponsored = (bool)$point['is_promo'];
             $sponsored_until = $point['promo_until'] ?? null;
@@ -402,7 +408,8 @@ class JG_Map_Ajax_Handlers {
                 'edit_info' => $edit_info,
                 'is_deletion_requested' => $is_deletion_requested,
                 'deletion_info' => $deletion_info,
-                'reports_count' => $reports_count
+                'reports_count' => $reports_count,
+                'user_has_reported' => $user_has_reported
             );
         }
 
@@ -1715,6 +1722,19 @@ class JG_Map_Ajax_Handlers {
         // Notify author
         $this->notify_author_rejected($point_id, $reason);
 
+        // Store rejected point ID for real-time broadcast via Heartbeat
+        $rejected_points = get_transient('jg_map_rejected_points');
+        if (!is_array($rejected_points)) {
+            $rejected_points = array();
+        }
+        $rejected_points[] = array(
+            'id' => $point_id,
+            'timestamp' => time()
+        );
+        // Keep only last 100 rejections
+        $rejected_points = array_slice($rejected_points, -100);
+        set_transient('jg_map_rejected_points', $rejected_points, 300); // 5 minutes
+
         wp_send_json_success(array('message' => 'Punkt odrzucony'));
     }
 
@@ -2635,6 +2655,19 @@ class JG_Map_Ajax_Handlers {
             $message = "Miejsce \"{$point['title']}\" zostało usunięte zgodnie z Twoim zgłoszeniem.";
             wp_mail($author->user_email, $subject, $message);
         }
+
+        // Store deleted point ID for real-time broadcast via Heartbeat
+        $deleted_points = get_transient('jg_map_deleted_points');
+        if (!is_array($deleted_points)) {
+            $deleted_points = array();
+        }
+        $deleted_points[] = array(
+            'id' => $point_id,
+            'timestamp' => time()
+        );
+        // Keep only last 100 deletions
+        $deleted_points = array_slice($deleted_points, -100);
+        set_transient('jg_map_deleted_points', $deleted_points, 300); // 5 minutes
 
         wp_send_json_success(array('message' => 'Miejsce usunięte'));
     }

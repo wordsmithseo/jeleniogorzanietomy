@@ -931,6 +931,13 @@
   opacity: 0.9 !important;
 }
 
+.jg-marker-label--reported {
+  background: rgba(254, 243, 199, 0.95) !important;
+  color: #713f12 !important;
+  border: 1px solid #ca8a04 !important;
+  opacity: 0.9 !important;
+}
+
 /* Admin Note */
 .jg-admin-note {
   background: #fef3c7;
