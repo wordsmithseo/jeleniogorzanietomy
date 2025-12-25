@@ -157,6 +157,13 @@ class JG_Map_Database {
         // Create activity log table
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
         JG_Map_Activity_Log::create_table();
+
+        // Add custom capabilities to administrator role
+        $admin = get_role('administrator');
+        if ($admin) {
+            $admin->add_cap('jg_map_moderate');
+            $admin->add_cap('jg_map_bypass_maintenance');
+        }
     }
 
     /**

@@ -1965,16 +1965,27 @@ class JG_Map_Admin {
         if (isset($_POST['jg_update_roles']) && check_admin_referer('jg_roles_update', 'jg_roles_nonce')) {
             $user_id = intval($_POST['user_id'] ?? 0);
             $action = sanitize_text_field($_POST['role_action'] ?? '');
+            $role_type = sanitize_text_field($_POST['role_type'] ?? 'moderator');
 
-            if ($user_id && in_array($action, array('add', 'remove'))) {
+            if ($user_id && in_array($action, array('add', 'remove')) && in_array($role_type, array('moderator', 'test_user'))) {
                 $user = get_userdata($user_id);
                 if ($user) {
-                    if ($action === 'add') {
-                        $user->add_cap('jg_map_moderate');
-                        echo '<div class="notice notice-success"><p>Uprawnienia moderatora dodane!</p></div>';
-                    } else {
-                        $user->remove_cap('jg_map_moderate');
-                        echo '<div class="notice notice-success"><p>Uprawnienia moderatora usunięte!</p></div>';
+                    if ($role_type === 'moderator') {
+                        if ($action === 'add') {
+                            $user->add_cap('jg_map_moderate');
+                            echo '<div class="notice notice-success"><p>Uprawnienia moderatora dodane!</p></div>';
+                        } else {
+                            $user->remove_cap('jg_map_moderate');
+                            echo '<div class="notice notice-success"><p>Uprawnienia moderatora usunięte!</p></div>';
+                        }
+                    } else { // test_user
+                        if ($action === 'add') {
+                            $user->add_cap('jg_map_bypass_maintenance');
+                            echo '<div class="notice notice-success"><p>Użytkownik oznaczony jako testowy!</p></div>';
+                        } else {
+                            $user->remove_cap('jg_map_bypass_maintenance');
+                            echo '<div class="notice notice-success"><p>Użytkownik przestał być testowym!</p></div>';
+                        }
                     }
                 }
             }
@@ -1992,9 +2003,10 @@ class JG_Map_Admin {
                 <ul>
                     <li><strong>Administrator</strong> - pełny dostęp do wszystkich funkcji pluginu</li>
                     <li><strong>Moderator JG Map</strong> - może moderować miejsca, zgłoszenia i edycje</li>
+                    <li><strong>Użytkownik testowy</strong> - może logować się pomimo trybu konserwacji w Elementorze</li>
                     <li><strong>Użytkownik</strong> - może dodawać i edytować swoje miejsca</li>
                 </ul>
-                <p><strong>Uwaga:</strong> Uprawnienia moderatora można nadać dowolnemu użytkownikowi. Administratorzy WordPress mają automatycznie wszystkie uprawnienia.</p>
+                <p><strong>Uwaga:</strong> Uprawnienia można nadać dowolnemu użytkownikowi. Administratorzy WordPress mają automatycznie wszystkie uprawnienia.</p>
             </div>
 
             <table class="wp-list-table widefat fixed striped">
@@ -2004,7 +2016,8 @@ class JG_Map_Admin {
                         <th>Nazwa użytkownika</th>
                         <th>Email</th>
                         <th>Rola WordPress</th>
-                        <th>Moderator JG Map</th>
+                        <th>Moderator</th>
+                        <th>Użytkownik testowy</th>
                         <th>Akcje</th>
                     </tr>
                 </thead>
@@ -2012,6 +2025,7 @@ class JG_Map_Admin {
                     <?php foreach ($users as $user):
                         $is_admin = user_can($user->ID, 'manage_options');
                         $is_moderator = user_can($user->ID, 'jg_map_moderate');
+                        $is_test_user = user_can($user->ID, 'jg_map_bypass_maintenance');
                         $roles = implode(', ', $user->roles);
                         ?>
                         <tr>
@@ -2021,29 +2035,55 @@ class JG_Map_Admin {
                             <td><?php echo esc_html(ucfirst($roles)); ?></td>
                             <td>
                                 <?php if ($is_admin): ?>
-                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px">✓ Administrator</span>
+                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">✓ Admin</span>
                                 <?php elseif ($is_moderator): ?>
-                                    <span style="background:#3b82f6;color:#fff;padding:4px 8px;border-radius:4px">✓ Moderator</span>
+                                    <span style="background:#3b82f6;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">✓ Tak</span>
                                 <?php else: ?>
-                                    <span style="background:#e5e7eb;color:#6b7280;padding:4px 8px;border-radius:4px">Brak</span>
+                                    <span style="background:#e5e7eb;color:#6b7280;padding:4px 8px;border-radius:4px;font-size:12px">Nie</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($is_admin): ?>
+                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">✓ Admin</span>
+                                <?php elseif ($is_test_user): ?>
+                                    <span style="background:#f59e0b;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">✓ Tak</span>
+                                <?php else: ?>
+                                    <span style="background:#e5e7eb;color:#6b7280;padding:4px 8px;border-radius:4px;font-size:12px">Nie</span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <?php if (!$is_admin): ?>
+                                    <!-- Moderator buttons -->
+                                    <form method="post" style="display:inline;margin-right:5px">
+                                        <?php wp_nonce_field('jg_roles_update', 'jg_roles_nonce'); ?>
+                                        <input type="hidden" name="user_id" value="<?php echo $user->ID; ?>">
+                                        <input type="hidden" name="jg_update_roles" value="1">
+                                        <input type="hidden" name="role_type" value="moderator">
+                                        <?php if ($is_moderator): ?>
+                                            <input type="hidden" name="role_action" value="remove">
+                                            <button type="submit" class="button button-small" title="Usuń uprawnienia moderatora">❌ Moderator</button>
+                                        <?php else: ?>
+                                            <input type="hidden" name="role_action" value="add">
+                                            <button type="submit" class="button button-small button-primary" title="Dodaj uprawnienia moderatora">➕ Moderator</button>
+                                        <?php endif; ?>
+                                    </form>
+
+                                    <!-- Test user buttons -->
                                     <form method="post" style="display:inline">
                                         <?php wp_nonce_field('jg_roles_update', 'jg_roles_nonce'); ?>
                                         <input type="hidden" name="user_id" value="<?php echo $user->ID; ?>">
                                         <input type="hidden" name="jg_update_roles" value="1">
-                                        <?php if ($is_moderator): ?>
+                                        <input type="hidden" name="role_type" value="test_user">
+                                        <?php if ($is_test_user): ?>
                                             <input type="hidden" name="role_action" value="remove">
-                                            <button type="submit" class="button button-small">Usuń moderatora</button>
+                                            <button type="submit" class="button button-small" title="Usuń status testowy">❌ Testowy</button>
                                         <?php else: ?>
                                             <input type="hidden" name="role_action" value="add">
-                                            <button type="submit" class="button button-small button-primary">Dodaj moderatora</button>
+                                            <button type="submit" class="button button-small button-primary" title="Oznacz jako użytkownika testowego">➕ Testowy</button>
                                         <?php endif; ?>
                                     </form>
                                 <?php else: ?>
-                                    <em style="color:#6b7280">Admin (nie można zmienić)</em>
+                                    <em style="color:#6b7280">Administrator (automatycznie)</em>
                                 <?php endif; ?>
                             </td>
                         </tr>
