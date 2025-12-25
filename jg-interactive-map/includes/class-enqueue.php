@@ -106,6 +106,21 @@ class JG_Map_Enqueue {
             'registrationDisabledMessage' => get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.')
         ));
 
+        // Load session monitor script on ALL pages (for logged in users)
+        wp_enqueue_script(
+            'jg-map-session-monitor',
+            JG_MAP_PLUGIN_URL . 'assets/js/jg-session-monitor.js',
+            array('jquery'),
+            JG_MAP_VERSION,
+            true // Load in footer
+        );
+
+        // Localize session monitor script
+        wp_localize_script('jg-map-session-monitor', 'JG_SESSION_CFG', array(
+            'ajax' => admin_url('admin-ajax.php'),
+            'isLoggedIn' => is_user_logged_in()
+        ));
+
         // Inline script for clock - loads on ALL pages
         $inline_script = "
         (function() {

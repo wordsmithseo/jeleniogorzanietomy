@@ -95,6 +95,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_map_forgot_password', array($this, 'forgot_password'));
         add_action('wp_ajax_jg_check_registration_status', array($this, 'check_registration_status'));
         add_action('wp_ajax_nopriv_jg_check_registration_status', array($this, 'check_registration_status'));
+        add_action('wp_ajax_jg_check_user_session_status', array($this, 'check_user_session_status'));
+        add_action('wp_ajax_jg_logout_user', array($this, 'logout_user'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -3714,6 +3716,62 @@ class JG_Map_Ajax_Handlers {
         wp_mail($email, $subject, $message, $headers);
 
         wp_send_json_success('Link do resetowania hasła został wysłany na Twój adres email.');
+    }
+
+    /**
+     * Check if current user should be logged out due to maintenance mode or permission changes
+     */
+    public function check_user_session_status() {
+        // Must be logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_success(array(
+                'should_logout' => false,
+                'reason' => 'not_logged_in'
+            ));
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        $is_admin = user_can($user_id, 'manage_options');
+        $is_moderator = user_can($user_id, 'jg_map_moderate');
+        $can_bypass_maintenance = user_can($user_id, 'jg_map_bypass_maintenance');
+
+        // Check if maintenance mode is active
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
+        $is_maintenance = ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon');
+
+        // Users who can bypass don't need to be logged out
+        if ($is_admin || $is_moderator || $can_bypass_maintenance) {
+            wp_send_json_success(array(
+                'should_logout' => false,
+                'reason' => 'has_permissions'
+            ));
+            return;
+        }
+
+        // Regular user during maintenance = should be logged out
+        if ($is_maintenance) {
+            wp_send_json_success(array(
+                'should_logout' => true,
+                'reason' => 'maintenance_mode',
+                'message' => 'Strona przechodzi w tryb konserwacji. Zapraszamy później. Przepraszamy za utrudnienia.'
+            ));
+            return;
+        }
+
+        // All good
+        wp_send_json_success(array(
+            'should_logout' => false,
+            'reason' => 'ok'
+        ));
+    }
+
+    /**
+     * Logout current user via AJAX
+     */
+    public function logout_user() {
+        wp_logout();
+        wp_send_json_success('Wylogowano pomyślnie');
     }
 
     /**
