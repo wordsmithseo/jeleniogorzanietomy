@@ -1391,6 +1391,8 @@
         // Show reports counter for admins OR for the place owner
         var isOwner = (CFG.currentUserId > 0 && p.author_id === CFG.currentUserId);
         var hasReports = ((CFG.isAdmin || isOwner) && p.reports_count > 0);
+        // Check if current user has reported this point (but is not admin and not owner)
+        var userHasReported = (!!p.user_has_reported && !CFG.isAdmin && !isOwner);
 
         // Pin sizes - much bigger for visibility! Sponsored even bigger
         var pinHeight = sponsored ? 90 : 72;
@@ -1404,7 +1406,13 @@
         var gradientStart, gradientMid, gradientEnd;
         var circleColor; // Color for the inner circle
 
-        if (isPending) {
+        if (userHasReported) {
+          // Yellow gradient for user-reported (reported to moderation)
+          gradientStart = '#ca8a04';
+          gradientMid = '#eab308';
+          gradientEnd = '#ca8a04';
+          circleColor = '#713f12'; // Dark yellow/brown
+        } else if (isPending) {
           // Red gradient for pending
           gradientStart = '#dc2626';
           gradientMid = '#ef4444';
@@ -1499,12 +1507,14 @@
         // Label for pin
         var labelClass = 'jg-marker-label';
         if (sponsored) labelClass += ' jg-marker-label--promo';
+        if (userHasReported) labelClass += ' jg-marker-label--reported';
         if (isPending) labelClass += ' jg-marker-label--pending';
         if (isDeletionRequested) labelClass += ' jg-marker-label--deletion';
         if (isEdit) labelClass += ' jg-marker-label--edit';
 
         var suffix = '';
-        if (isDeletionRequested) suffix = ' (do usunięcia)';
+        if (userHasReported) suffix = ' (zgłoszone do moderacji)';
+        else if (isDeletionRequested) suffix = ' (do usunięcia)';
         else if (isEdit) suffix = ' (edycja)';
         else if (isPending) suffix = ' (oczekuje)';
 
@@ -1529,7 +1539,7 @@
           'mala_infrastruktura': '🎪'
         };
 
-        // Star emoji for sponsored pins, category emoji for reports, or nothing for others
+        // Star emoji for sponsored pins, warning emoji for user-reported, category emoji for reports, or nothing for others
         var centerContent = '';
 
         if (sponsored) {
@@ -1542,6 +1552,24 @@
             'filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));' +
             'z-index:2;';
           centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">⭐</div>';
+        } else if (userHasReported) {
+          // Show warning emoji for user-reported places
+          var emojiFontSize = 24;
+          var emojiStyle = 'position:absolute;' +
+            'top:' + (pinHeight * 0.32) + 'px;' +
+            'left:50%;' +
+            'transform:translate(-50%,-50%);' +
+            'font-size:' + emojiFontSize + 'px;' +
+            'background:white;' +
+            'border-radius:50%;' +
+            'width:32px;' +
+            'height:32px;' +
+            'display:flex;' +
+            'align-items:center;' +
+            'justify-content:center;' +
+            'box-shadow:0 2px 4px rgba(0,0,0,0.3);' +
+            'z-index:2;';
+          centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">⚠️</div>';
         } else if (p.type === 'zgloszenie' && p.category && categoryEmojis[p.category]) {
           // Show category emoji for reports with white background
           var emojiFontSize = 20;
@@ -2011,6 +2039,31 @@
       // Export refreshData as global function for use by notification system
       window.refreshData = refreshData;
 
+      // Function to remove markers by point IDs (for real-time deletion)
+      function removeMarkersById(pointIds) {
+        if (!cluster || !pointIds || pointIds.length === 0) return;
+
+        console.log('[JG MAP] Removing markers for point IDs:', pointIds);
+
+        var markersToRemove = [];
+        var allMarkers = cluster.getLayers();
+
+        for (var i = 0; i < allMarkers.length; i++) {
+          var marker = allMarkers[i];
+          if (marker.options && marker.options.pointId && pointIds.indexOf(marker.options.pointId) !== -1) {
+            markersToRemove.push(marker);
+          }
+        }
+
+        if (markersToRemove.length > 0) {
+          console.log('[JG MAP] Removing', markersToRemove.length, 'markers from cluster');
+          cluster.removeLayers(markersToRemove);
+        }
+      }
+
+      // Export removeMarkersById as global function for use by Heartbeat
+      window.removeMarkersById = removeMarkersById;
+
       // Helper function to refresh both map and notifications
       function refreshAll() {
         console.log('[JG MAP] refreshAll() called - refreshing map and notifications');
@@ -2070,7 +2123,8 @@
               edit_info: r.edit_info || null,
               is_deletion_requested: !!r.is_deletion_requested,
               deletion_info: r.deletion_info || null,
-              reports_count: +(r.reports_count || 0)
+              reports_count: +(r.reports_count || 0),
+              user_has_reported: !!r.user_has_reported
             };
           });
 

@@ -3290,10 +3290,34 @@ class JG_Map_Admin {
                 $last_check_date
             ));
 
+            // Get rejected points since last check
+            $rejected_points = get_transient('jg_map_rejected_points');
+            $rejected_ids = array();
+            if (is_array($rejected_points)) {
+                foreach ($rejected_points as $rejected) {
+                    if ($rejected['timestamp'] >= ($last_check / 1000)) {
+                        $rejected_ids[] = intval($rejected['id']);
+                    }
+                }
+            }
+
+            // Get deleted points since last check
+            $deleted_points = get_transient('jg_map_deleted_points');
+            $deleted_ids = array();
+            if (is_array($deleted_points)) {
+                foreach ($deleted_points as $deleted) {
+                    if ($deleted['timestamp'] >= ($last_check / 1000)) {
+                        $deleted_ids[] = intval($deleted['id']);
+                    }
+                }
+            }
+
             $response['jg_map_updates'] = array(
                 'has_new_points' => intval($new_points) > 0,
                 'new_count' => intval($new_points),
-                'last_check' => $last_check_date
+                'last_check' => $last_check_date,
+                'rejected_points' => $rejected_ids,
+                'deleted_points' => $deleted_ids
             );
         }
 
