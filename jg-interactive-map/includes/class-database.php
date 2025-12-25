@@ -158,43 +158,7 @@ class JG_Map_Database {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
         JG_Map_Activity_Log::create_table();
 
-        // Create custom roles
-        self::create_roles();
-    }
-
-    /**
-     * Create custom roles for the plugin
-     */
-    public static function create_roles() {
-        // Get subscriber capabilities as base
-        $subscriber = get_role('subscriber');
-        $subscriber_caps = $subscriber ? $subscriber->capabilities : array('read' => true);
-
-        // Create Moderator role if it doesn't exist
-        if (!get_role('jg_map_moderator')) {
-            add_role(
-                'jg_map_moderator',
-                'Moderator Mapy',
-                array_merge($subscriber_caps, array(
-                    'jg_map_moderate' => true,  // Can moderate map submissions
-                    'read' => true
-                ))
-            );
-        }
-
-        // Create Test User role if it doesn't exist
-        if (!get_role('jg_map_test_user')) {
-            add_role(
-                'jg_map_test_user',
-                'Użytkownik testowy',
-                array_merge($subscriber_caps, array(
-                    'jg_map_bypass_maintenance' => true,  // Can bypass maintenance mode
-                    'read' => true
-                ))
-            );
-        }
-
-        // Add capabilities to existing administrator role
+        // Add custom capabilities to administrator role
         $admin = get_role('administrator');
         if ($admin) {
             $admin->add_cap('jg_map_moderate');
