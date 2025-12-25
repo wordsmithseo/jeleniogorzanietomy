@@ -3538,11 +3538,12 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Check Elementor maintenance mode for non-admin/moderator users
+        // Check Elementor maintenance mode for users without bypass permission
         $is_admin = user_can($user->ID, 'manage_options');
         $is_moderator = user_can($user->ID, 'jg_map_moderate');
+        $can_bypass_maintenance = user_can($user->ID, 'jg_map_bypass_maintenance');
 
-        if (!$is_admin && !$is_moderator) {
+        if (!$is_admin && !$is_moderator && !$can_bypass_maintenance) {
             $maintenance_mode = get_option('elementor_maintenance_mode_mode');
 
             if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
