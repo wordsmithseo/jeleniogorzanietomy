@@ -326,6 +326,13 @@ class JG_Map_Enqueue {
                     lastCheckTime = Date.now();
                 }
 
+                // Handle updated points (edit approved) - trigger full reload
+                if (updates.updated_points && updates.updated_points.length > 0) {
+                    console.log('[JG MAP] ' + updates.updated_points.length + ' points updated, triggering reload...');
+                    $(document).trigger('jg-map-reload-request');
+                    lastCheckTime = Date.now();
+                }
+
                 // If there are new points, trigger reload
                 if (updates.has_new_points) {
                     console.log('[JG MAP] ' + updates.new_count + ' new points detected, triggering reload...');

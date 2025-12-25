@@ -3265,17 +3265,15 @@ class JG_Map_Admin {
      * Heartbeat API handler for real-time notifications
      */
     public function heartbeat_received($response, $data) {
-        // Only for admins and moderators
-        if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
-            return $response;
-        }
-
-        // Check if our heartbeat request is present
+        // Check if our heartbeat request is present (only for admins/moderators)
         if (!empty($data['jg_map_check_notifications'])) {
-            $response['jg_map_notifications'] = $this->get_pending_counts();
+            // Only for admins and moderators
+            if (current_user_can('manage_options') || current_user_can('jg_map_moderate')) {
+                $response['jg_map_notifications'] = $this->get_pending_counts();
+            }
         }
 
-        // Check for map updates (new points)
+        // Check for map updates (for ALL users - admins, moderators, and regular users)
         if (!empty($data['jg_map_check_updates'])) {
             global $wpdb;
             $points_table = JG_Map_Database::get_points_table();
@@ -3312,12 +3310,24 @@ class JG_Map_Admin {
                 }
             }
 
+            // Get updated points since last check
+            $updated_points = get_transient('jg_map_updated_points');
+            $updated_ids = array();
+            if (is_array($updated_points)) {
+                foreach ($updated_points as $updated) {
+                    if ($updated['timestamp'] >= ($last_check / 1000)) {
+                        $updated_ids[] = intval($updated['id']);
+                    }
+                }
+            }
+
             $response['jg_map_updates'] = array(
                 'has_new_points' => intval($new_points) > 0,
                 'new_count' => intval($new_points),
                 'last_check' => $last_check_date,
                 'rejected_points' => $rejected_ids,
-                'deleted_points' => $deleted_ids
+                'deleted_points' => $deleted_ids,
+                'updated_points' => $updated_ids
             );
         }
 
