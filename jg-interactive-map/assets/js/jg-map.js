@@ -1394,9 +1394,17 @@
         // Check if current user has reported this point (but is not admin and not owner)
         var userHasReported = (!!p.user_has_reported && !CFG.isAdmin && !isOwner);
 
-        // Pin sizes - much bigger for visibility! Sponsored even bigger
-        var pinHeight = sponsored ? 90 : 72;
-        var pinWidth = sponsored ? 60 : 48;
+        // Pin sizes in rem for better scaling - converted to px based on root font-size
+        // Get root font size for rem to px conversion
+        var rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+
+        // Define sizes in rem (smaller than before for better UX)
+        var pinHeightRem = sponsored ? 4.5 : 3.5; // Sponsored: 4.5rem, Regular: 3.5rem
+        var pinWidthRem = sponsored ? 3 : 2.5;    // Sponsored: 3rem, Regular: 2.5rem
+
+        // Convert to pixels for actual rendering
+        var pinHeight = pinHeightRem * rootFontSize;
+        var pinWidth = pinWidthRem * rootFontSize;
 
         // Anchor at the bottom tip of the pin (where it points to the location)
         var anchor = [pinWidth / 2, pinHeight];

@@ -380,6 +380,32 @@
 
 /* Mobile responsive */
 @media (max-width: 768px) {
+  /* Top bar mobile responsive */
+  .jg-custom-top-bar {
+    padding: 8px 12px;
+    font-size: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .jg-top-bar-left,
+  .jg-top-bar-right {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Make buttons smaller on mobile */
+  .jg-top-bar-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* Reduce datetime font size on mobile */
+  #jg-top-bar-datetime {
+    font-size: 13px;
+  }
+
   .jg-search-panel {
     position: static; /* Change from absolute to static - flows after filters */
     width: 100%;
@@ -429,6 +455,63 @@
     font-size: 28px;
     color: #666;
     margin: 0 !important;
+  }
+}
+
+/* Stack top bar on very small screens */
+@media (max-width: 640px) {
+  .jg-custom-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .jg-top-bar-left,
+  .jg-top-bar-right {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .jg-top-bar-right {
+    flex-direction: column;
+  }
+
+  .jg-top-bar-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* User info on mobile - make it centered and smaller */
+  .jg-top-bar-user {
+    font-size: 13px;
+    text-align: center;
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 4px;
+  }
+
+  /* Notifications on mobile */
+  #jg-top-bar-notifications {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .jg-top-bar-notif {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Smaller notification badges on mobile */
+  .jg-notif-badge {
+    min-width: 18px;
+    height: 18px;
+    font-size: 11px;
+  }
+}
+
+/* Compact datetime on small mobile screens */
+@media (max-width: 480px) {
+  #jg-top-bar-datetime {
+    font-size: 12px;
   }
 }
 
