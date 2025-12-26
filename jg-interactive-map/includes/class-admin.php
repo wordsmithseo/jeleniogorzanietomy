@@ -1131,7 +1131,7 @@ class JG_Map_Admin {
                             </td>
                             <td><?php echo $user ? esc_html($user->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo implode(', ', $changes); ?></td>
-                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($edit['created_at'])), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime($edit['created_at'] . ' UTC'), time()); ?> temu</td>
                             <td>
                                 <button class="button jg-view-edit-details" data-edit='<?php echo esc_attr(json_encode($edit)); ?>'>Szczegóły</button>
                                 <button class="button button-primary jg-approve-edit" data-id="<?php echo $edit['id']; ?>">Zatwierdź</button>
@@ -1424,7 +1424,7 @@ class JG_Map_Admin {
                             </td>
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
-                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime($point['created_at'] . ' UTC'), time()); ?> temu</td>
                             <td>
                                 <button class="button jg-view-pending-details" data-point='<?php echo esc_attr(json_encode($point)); ?>'>Zobacz szczegóły</button>
                             </td>
@@ -1705,7 +1705,7 @@ class JG_Map_Admin {
                         <tr>
                             <td><strong><?php echo esc_html($report['point_title']); ?></strong></td>
                             <td><span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px"><?php echo $report['report_count']; ?></span></td>
-                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($report['created_at'])), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime($report['created_at'] . ' UTC'), time()); ?> temu</td>
                             <td>
                                 <a href="<?php echo esc_url(add_query_arg('jg_view_reports', $report['point_id'], $this->get_map_page_url())); ?>" class="button">Zobacz szczegóły</a>
                             </td>
@@ -1781,7 +1781,7 @@ class JG_Map_Admin {
                     <?php foreach ($promos as $promo):
                         $expired = false;
                         if ($promo['promo_until']) {
-                            $expired = strtotime($promo['promo_until']) < current_time('timestamp');
+                            $expired = strtotime($promo['promo_until']) < time();
                         }
                         ?>
                         <tr <?php echo $expired ? 'style="opacity:0.6"' : ''; ?>>
@@ -1906,7 +1906,7 @@ class JG_Map_Admin {
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo $point['is_promo'] ? '⭐' : '-'; ?></td>
-                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime($point['created_at'] . ' UTC'), time()); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button button-small">Zobacz</a>
                                 <button class="button button-small jg-delete-point" data-id="<?php echo $point['id']; ?>" style="color:#b32d2e">Usuń</button>
@@ -2132,7 +2132,7 @@ class JG_Map_Admin {
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo $point['deletion_reason'] ? esc_html($point['deletion_reason']) : '<em>Brak powodu</em>'; ?></td>
-                            <td><?php echo human_time_diff(strtotime($point['deletion_requested_at'] . ' UTC'), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime($point['deletion_requested_at'] . ' UTC'), time()); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button" target="_blank">Zobacz miejsce</a>
                                 <button class="button button-primary jg-approve-deletion" data-id="<?php echo $point['id']; ?>">Zatwierdź usunięcie</button>
@@ -2266,7 +2266,7 @@ class JG_Map_Admin {
                                 <p style="margin:0 0 8px;font-size:12px;color:#666">
                                     <strong><?php echo esc_html($point['type']); ?></strong> •
                                     <?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?> •
-                                    <?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu
+                                    <?php echo human_time_diff(strtotime($point['created_at'] . ' UTC'), time()); ?> temu
                                 </p>
                                 <div style="display:flex;gap:8px;flex-wrap:wrap">
                                     <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>"
@@ -3481,7 +3481,7 @@ class JG_Map_Admin {
                     <table class="form-table">
                         <tr>
                             <th scope="row">Data:</th>
-                            <td><?php echo $last_maintenance['time']; ?> (<?php echo human_time_diff(strtotime($last_maintenance['time']), current_time('timestamp')); ?> temu)</td>
+                            <td><?php echo $last_maintenance['time']; ?> (<?php echo human_time_diff(strtotime($last_maintenance['time']), time()); ?> temu)</td>
                         </tr>
                         <tr>
                             <th scope="row">Czas wykonania:</th>
