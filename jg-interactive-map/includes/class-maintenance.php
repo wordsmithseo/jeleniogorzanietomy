@@ -82,7 +82,7 @@ class JG_Map_Maintenance {
 
         // Store last run time
         update_option('jg_map_last_maintenance', array(
-            'time' => current_time('mysql'),
+            'time' => current_time('mysql', true),
             'results' => $results,
             'execution_time' => $execution_time
         ));
@@ -244,7 +244,7 @@ class JG_Map_Maintenance {
             WHERE is_promo = 1
               AND promo_until IS NOT NULL
               AND promo_until < %s
-        ", current_time('mysql')));
+        ", current_time('mysql', true)));
 
         if ($updated > 0) {
             error_log('[JG MAP MAINTENANCE] Disabled ' . $updated . ' expired sponsorships');

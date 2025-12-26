@@ -191,7 +191,7 @@ class JG_Map_Ajax_Handlers {
         $history_time = $wpdb->get_var("SELECT MAX(created_at) FROM $history_table");
 
         $timestamps = array_filter(array($points_time, $reports_time, $history_time));
-        $last_modified = empty($timestamps) ? current_time('mysql') : max($timestamps);
+        $last_modified = empty($timestamps) ? current_time('mysql', true) : max($timestamps);
 
         // Get counts for moderators
         $pending_count = 0;
