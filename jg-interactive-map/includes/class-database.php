@@ -607,7 +607,7 @@ class JG_Map_Database {
             array(
                 'status' => 'resolved',
                 'admin_decision' => $decision,
-                'resolved_at' => current_time('mysql')
+                'resolved_at' => current_time('mysql', true)  // GMT time
             ),
             array('point_id' => $point_id, 'status' => 'pending')
         );
@@ -804,7 +804,7 @@ class JG_Map_Database {
             $table,
             array(
                 'status' => 'approved',
-                'resolved_at' => current_time('mysql'),
+                'resolved_at' => current_time('mysql', true),  // GMT time
                 'resolved_by' => $admin_id
             ),
             array('id' => $history_id)
@@ -822,7 +822,7 @@ class JG_Map_Database {
             $table,
             array(
                 'status' => 'rejected',
-                'resolved_at' => current_time('mysql'),
+                'resolved_at' => current_time('mysql', true),  // GMT time
                 'resolved_by' => $admin_id
             ),
             array('id' => $history_id)

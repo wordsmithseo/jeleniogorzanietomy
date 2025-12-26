@@ -2132,7 +2132,7 @@ class JG_Map_Admin {
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo $point['deletion_reason'] ? esc_html($point['deletion_reason']) : '<em>Brak powodu</em>'; ?></td>
-                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['deletion_requested_at'])), current_time('timestamp')); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime($point['deletion_requested_at'] . ' UTC'), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button" target="_blank">Zobacz miejsce</a>
                                 <button class="button button-primary jg-approve-deletion" data-id="<?php echo $point['id']; ?>">Zatwierdź usunięcie</button>
