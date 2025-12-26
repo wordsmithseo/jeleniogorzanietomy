@@ -280,7 +280,7 @@ class JG_Map_Ajax_Handlers {
             $is_sponsored = (bool)$point['is_promo'];
             $sponsored_until = $point['promo_until'] ?? null;
             if ($is_sponsored && $sponsored_until) {
-                if (strtotime($sponsored_until) < current_time('timestamp')) {
+                if (strtotime($sponsored_until) < time()) {
                     // Sponsored expired, update DB
                     JG_Map_Database::update_point($point['id'], array('is_promo' => 0));
                     $is_sponsored = false;
@@ -348,13 +348,13 @@ class JG_Map_Ajax_Handlers {
                             'prev_cta_type' => $old_values['cta_type'] ?? null,
                             'new_cta_type' => $new_values['cta_type'] ?? null,
                             'new_images' => $new_images,
-                            'edited_at' => human_time_diff(strtotime($pending_history['created_at'] . ' UTC'), current_time('timestamp')) . ' temu'
+                            'edited_at' => human_time_diff(strtotime($pending_history['created_at'] . ' UTC'), time()) . ' temu'
                         );
                     } else if ($pending_history['action_type'] === 'delete_request') {
                         $deletion_info = array(
                             'history_id' => intval($pending_history['id']),
                             'reason' => $new_values['reason'] ?? '',
-                            'requested_at' => human_time_diff(strtotime($pending_history['created_at'] . ' UTC'), current_time('timestamp')) . ' temu'
+                            'requested_at' => human_time_diff(strtotime($pending_history['created_at'] . ' UTC'), time()) . ' temu'
                         );
                     }
                 }
@@ -395,7 +395,7 @@ class JG_Map_Ajax_Handlers {
                 'my_relevance_vote' => $my_relevance_vote,
                 'date' => array(
                     'raw' => $point['created_at'],
-                    'human' => human_time_diff(strtotime($point['created_at'] . ' UTC'), current_time('timestamp')) . ' temu'
+                    'human' => human_time_diff(strtotime($point['created_at'] . ' UTC'), time()) . ' temu'
                 ),
                 'admin' => $is_admin ? array(
                     'author_name_real' => $author ? $author->display_name : '',
@@ -1337,7 +1337,7 @@ class JG_Map_Ajax_Handlers {
             $formatted_reports[] = array(
                 'user_name' => $user_name,
                 'reason' => $report['reason'] ?: 'Brak powodu',
-                'date' => human_time_diff(strtotime($report['created_at'] . ' UTC'), current_time('timestamp')) . ' temu'
+                'date' => human_time_diff(strtotime($report['created_at'] . ' UTC'), time()) . ' temu'
             );
         }
 
@@ -2333,8 +2333,8 @@ class JG_Map_Ajax_Handlers {
                 'old_values' => $old_values,
                 'new_values' => $new_values,
                 'status' => $entry['status'],
-                'created_at' => human_time_diff(strtotime($entry['created_at'] . ' UTC'), current_time('timestamp')) . ' temu',
-                'resolved_at' => $entry['resolved_at'] ? human_time_diff(strtotime($entry['resolved_at'] . ' UTC'), current_time('timestamp')) . ' temu' : null
+                'created_at' => human_time_diff(strtotime($entry['created_at'] . ' UTC'), time()) . ' temu',
+                'resolved_at' => $entry['resolved_at'] ? human_time_diff(strtotime($entry['resolved_at'] . ' UTC'), time()) . ' temu' : null
             );
         }
 
@@ -3138,7 +3138,7 @@ class JG_Map_Ajax_Handlers {
 
         if ($ban_status === 'temporary') {
             $ban_until = get_user_meta($user_id, 'jg_map_ban_until', true);
-            if ($ban_until && strtotime($ban_until) > current_time('timestamp')) {
+            if ($ban_until && strtotime($ban_until) > time()) {
                 return true;
             } else {
                 // Ban expired, remove it
