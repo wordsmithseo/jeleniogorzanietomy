@@ -1035,7 +1035,7 @@ class JG_Map_Ajax_Handlers {
             array(
                 'is_deletion_requested' => 1,
                 'deletion_reason' => $reason,
-                'deletion_requested_at' => current_time('mysql')
+                'deletion_requested_at' => current_time('mysql', true)  // GMT time
             ),
             array('id' => $point_id)
         );
@@ -1643,7 +1643,7 @@ class JG_Map_Ajax_Handlers {
         // Update status to publish and set approved_at if this is first approval
         $update_data = array('status' => 'publish');
         if (empty($point['approved_at'])) {
-            $update_data['approved_at'] = current_time('mysql');
+            $update_data['approved_at'] = current_time('mysql', true);  // GMT time
         }
         JG_Map_Database::update_point($point_id, $update_data);
 
