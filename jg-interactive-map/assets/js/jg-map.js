@@ -708,7 +708,7 @@
       var map = L.map(elMap, {
         zoomControl: true,
         scrollWheelZoom: !isMobile, // Disable scroll zoom on mobile
-        dragging: true, // Always enable dragging - CSS touch-action ensures 2-finger requirement on mobile
+        dragging: !isMobile, // Start with dragging disabled on mobile
         minZoom: 12,
         maxZoom: 19,
         maxBounds: bounds,
@@ -716,6 +716,33 @@
         tap: isMobile, // Enable tap on mobile
         touchZoom: isMobile // Enable pinch zoom on mobile
       }).setView([lat, lng], zoom);
+
+      // Two-finger dragging on mobile: one finger scrolls page, two fingers pan map
+      if (isMobile) {
+        var mapContainer = elMap;
+
+        mapContainer.addEventListener('touchstart', function(e) {
+          if (e.touches.length === 1) {
+            // One finger - disable map dragging to allow page scroll
+            map.dragging.disable();
+          } else if (e.touches.length >= 2) {
+            // Two or more fingers - enable map dragging
+            map.dragging.enable();
+          }
+        }, { passive: true });
+
+        mapContainer.addEventListener('touchend', function(e) {
+          // When fingers are lifted, disable dragging
+          if (e.touches.length < 2) {
+            map.dragging.disable();
+          }
+        }, { passive: true });
+
+        mapContainer.addEventListener('touchcancel', function(e) {
+          // If touch is cancelled, disable dragging
+          map.dragging.disable();
+        }, { passive: true });
+      }
 
       // Enforce bounds strictly - reset view if user tries to go outside
       map.on('drag', function() {
