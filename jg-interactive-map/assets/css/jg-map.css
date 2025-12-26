@@ -748,6 +748,23 @@
   border-radius: 999px;
   font-weight: 700;
   margin-right: 6px;
+  font-size: 12px;
+}
+
+/* Responsive badge on mobile */
+@media (max-width: 768px) {
+  .jg-promo-tag {
+    font-size: 11px;
+    padding: 3px 6px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .jg-promo-tag {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
 }
 
 /* Voting */
@@ -873,15 +890,18 @@
 
 /* Animate only the SVG pin, not the label */
 .jg-pin-marker--promo .jg-pin-svg-wrapper svg {
-  animation: gold-pulse-brightness 2s ease-in-out infinite;
+  animation: gold-pulse-brightness 3s linear infinite;
 }
 
 @keyframes gold-pulse-brightness {
-  0%, 100% {
-    filter: brightness(1);
+  0% {
+    filter: brightness(1) saturate(1);
   }
   50% {
-    filter: brightness(1.8) saturate(0.7);
+    filter: brightness(1.6) saturate(0.8);
+  }
+  100% {
+    filter: brightness(1) saturate(1);
   }
 }
 
