@@ -132,11 +132,10 @@ class JG_Interactive_Map {
         JG_Map_Database::check_and_update_schema();
 
         // Set flag for one-time rewrite flush (will be executed in init hook)
-        if (!get_option('jg_map_rewrite_flushed_v6', false)) {
-            error_log('[JG MAP] Resetting flush counter for v6');
+        if (!get_option('jg_map_rewrite_flushed_v7', false)) {
             delete_option('jg_map_flush_count'); // Reset counter
             update_option('jg_map_needs_rewrite_flush', true);
-            update_option('jg_map_rewrite_flushed_v6', true);
+            update_option('jg_map_rewrite_flushed_v7', true);
         }
 
         JG_Map_Activity_Log::get_instance();
@@ -222,8 +221,6 @@ class JG_Interactive_Map {
      * Add rewrite rules for SEO-friendly point URLs
      */
     public function add_rewrite_rules() {
-        error_log('[JG MAP] add_rewrite_rules() called - adding rewrite rules');
-
         // Rewrite rules for all point types
         add_rewrite_rule(
             '^miejsce/([^/]+)/?$',
@@ -247,8 +244,6 @@ class JG_Interactive_Map {
             'index.php?jg_map_sitemap=1',
             'top'
         );
-
-        error_log('[JG MAP] All rewrite rules added successfully');
     }
 
     /**
@@ -266,33 +261,17 @@ class JG_Interactive_Map {
      * Runs on 'init' hook when $wp_rewrite is available
      */
     public function check_rewrite_flush() {
-        error_log('[JG MAP] check_rewrite_flush() called on init hook');
-
         // TEMPORARY: Aggressive flush until sitemap works
-        // Check if we need to force flush (max 3 times to avoid infinite loop)
         $flush_count = get_option('jg_map_flush_count', 0);
-        error_log('[JG MAP] Current flush count: ' . $flush_count);
 
         if ($flush_count < 3) {
-            error_log('[JG MAP] Aggressive flush #' . ($flush_count + 1) . ' - forcing rewrite rules flush');
-            flush_rewrite_rules(false); // soft flush
+            error_log('[JG MAP] Flush #' . ($flush_count + 1));
+            flush_rewrite_rules(false);
             update_option('jg_map_flush_count', $flush_count + 1);
-            error_log('[JG MAP] Rewrite rules flushed aggressively');
-
-            // Debug: Check if sitemap query var is registered
-            global $wp;
-            error_log('[JG MAP] Registered query vars: ' . print_r($wp->public_query_vars, true));
-
-            // Debug: Check rewrite rules
-            global $wp_rewrite;
-            error_log('[JG MAP] Sample rewrite rules: ' . print_r(array_slice($wp_rewrite->rules, 0, 10), true));
-        } else {
-            error_log('[JG MAP] Flush limit reached (3), skipping flush');
         }
 
         // Legacy flush check
         if (get_option('jg_map_needs_rewrite_flush', false)) {
-            error_log('[JG MAP] Legacy flush check - flushing rewrite rules');
             flush_rewrite_rules(false);
             delete_option('jg_map_needs_rewrite_flush');
         }
@@ -640,20 +619,20 @@ class JG_Interactive_Map {
      * Handle sitemap.xml generation
      */
     public function handle_sitemap() {
-        // Debug: Always log when this function is called
-        error_log('[JG MAP SITEMAP] handle_sitemap() called on URL: ' . $_SERVER['REQUEST_URI']);
-
-        $sitemap_var = get_query_var('jg_map_sitemap');
-        error_log('[JG MAP SITEMAP] query_var value: ' . var_export($sitemap_var, true));
-
-        // Debug: Check all query vars
-        global $wp_query;
-        error_log('[JG MAP SITEMAP] All query vars: ' . print_r($wp_query->query_vars, true));
-
-        if (!$sitemap_var) {
-            error_log('[JG MAP SITEMAP] Sitemap var is empty, exiting');
+        // ALTERNATIVE APPROACH: Check URL directly instead of relying on query_var
+        // This bypasses rewrite rule issues
+        if (!isset($_SERVER['REQUEST_URI'])) {
             return;
         }
+
+        $request_uri = $_SERVER['REQUEST_URI'];
+
+        // Check if this is a sitemap request (direct URL check)
+        if (strpos($request_uri, 'jg-map-sitemap.xml') === false) {
+            return;
+        }
+
+        error_log('[JG MAP SITEMAP] Generating sitemap for: ' . $request_uri);
 
         error_log('[JG MAP SITEMAP] Generating sitemap XML...');
 
