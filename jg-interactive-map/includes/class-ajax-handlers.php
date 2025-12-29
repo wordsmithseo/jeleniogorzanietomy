@@ -140,6 +140,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_set_user_photo_limit', array($this, 'admin_set_user_photo_limit'), 1);
         add_action('wp_ajax_jg_admin_reset_user_photo_limit', array($this, 'admin_reset_user_photo_limit'), 1);
         add_action('wp_ajax_jg_delete_image', array($this, 'delete_image'), 1);
+        add_action('wp_ajax_jg_set_featured_image', array($this, 'set_featured_image'), 1);
         add_action('wp_ajax_jg_get_notification_counts', array($this, 'get_notification_counts'), 1);
         add_action('wp_ajax_jg_keep_reported_place', array($this, 'keep_reported_place'), 1);
     }
@@ -411,6 +412,7 @@ class JG_Map_Ajax_Handlers {
                 'author_name' => $author_name,
                 'author_hidden' => (bool)$point['author_hidden'],
                 'images' => $images,
+                'featured_image_index' => intval($point['featured_image_index'] ?? 0),
                 'votes' => $votes_count,
                 'my_vote' => $my_vote,
                 'relevance_votes' => $relevance_votes_count,
@@ -3477,6 +3479,60 @@ class JG_Map_Ajax_Handlers {
         wp_send_json_success(array(
             'message' => 'Zdjęcie usunięte',
             'remaining_count' => count($images)
+        ));
+    }
+
+    /**
+     * Set featured image for point
+     * Admins/moderators can set for any point, users can only set for their own points
+     */
+    public function set_featured_image() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $user_id = get_current_user_id();
+        $point_id = intval($_POST['point_id'] ?? 0);
+        $image_index = intval($_POST['image_index'] ?? 0);
+
+        if (!$point_id || $image_index < 0) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        // Check permissions
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+        $is_author = (intval($point['author_id']) === $user_id);
+
+        if (!$is_admin && !$is_author) {
+            wp_send_json_error(array('message' => 'Brak uprawnień do edycji tego miejsca'));
+            exit;
+        }
+
+        // Verify image exists
+        $images = json_decode($point['images'] ?? '[]', true) ?: array();
+        if (!isset($images[$image_index])) {
+            wp_send_json_error(array('message' => 'Zdjęcie nie istnieje'));
+            exit;
+        }
+
+        // Update featured_image_index
+        JG_Map_Database::update_point($point_id, array(
+            'featured_image_index' => $image_index
+        ));
+
+        wp_send_json_success(array(
+            'message' => 'Wyróżniony obraz ustawiony',
+            'featured_image_index' => $image_index
         ));
     }
 

@@ -1638,15 +1638,16 @@
 
         if (sponsored) {
           var circleSize = 42; // Bigger for larger sponsored pins
-          var firstImage = (p.images && p.images.length > 0) ? p.images[0] : null;
+          var featuredIndex = p.featured_image_index || 0;
+          var featuredImage = (p.images && p.images.length > 0) ? p.images[featuredIndex] : null;
           var imageUrl = null;
 
           // Extract image URL from image object or string
-          if (firstImage) {
-            if (typeof firstImage === 'object') {
-              imageUrl = firstImage.thumb || firstImage.full;
+          if (featuredImage) {
+            if (typeof featuredImage === 'object') {
+              imageUrl = featuredImage.thumb || featuredImage.full;
             } else {
-              imageUrl = firstImage;
+              imageUrl = featuredImage;
             }
           }
 
@@ -2231,6 +2232,7 @@
               author_name: (r.author_name || ''),
               author_hidden: !!r.author_hidden,
               images: (r.images || []),
+              featured_image_index: +(r.featured_image_index || 0),
               votes: +(r.votes || 0),
               my_vote: (r.my_vote || ''),
               date: r.date || null,
@@ -3675,12 +3677,25 @@
           var thumbUrl = typeof img === 'object' ? (img.thumb || img.full) : img;
           var fullUrl = typeof img === 'object' ? (img.full || img.thumb) : img;
 
+          // Featured image indicator
+          var isFeatured = idx === (p.featured_image_index || 0);
+          var featuredStar = '';
+          if (canDeleteImages && imgs.length > 1) {
+            // Show star button for admin/author when there are multiple images
+            var starColor = isFeatured ? '#fbbf24' : '#fff';
+            var starOpacity = isFeatured ? '1' : '0.7';
+            featuredStar = '<button class="jg-set-featured-image" data-point-id="' + p.id + '" data-image-index="' + idx + '" ' +
+              'style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.6);color:' + starColor + ';border:none;border-radius:4px;width:28px;height:28px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;z-index:10;opacity:' + starOpacity + ';transition:all 0.2s" ' +
+              'title="' + (isFeatured ? 'Wyróżniony obraz' : 'Ustaw jako wyróżniony') + '">★</button>';
+          }
+
           var deleteBtn = '';
           if (canDeleteImages) {
             deleteBtn = '<button class="jg-delete-image" data-point-id="' + p.id + '" data-image-index="' + idx + '" style="position:absolute;top:4px;right:4px;background:rgba(220,38,38,0.9);color:#fff;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:10" title="Usuń zdjęcie">×</button>';
           }
 
-          return '<div style="position:relative;width:120px;height:120px;display:inline-block;margin:4px;border-radius:12px;overflow:hidden;border:2px solid #e5e7eb;box-shadow:0 2px 4px rgba(0,0,0,0.1)">' +
+          return '<div style="position:relative;width:120px;height:120px;display:inline-block;margin:4px;border-radius:12px;overflow:hidden;border:2px solid ' + (isFeatured ? '#fbbf24' : '#e5e7eb') + ';box-shadow:0 2px 4px rgba(0,0,0,0.1)">' +
+                 featuredStar +
                  deleteBtn +
                  '<img src="' + esc(thumbUrl) + '" data-full="' + esc(fullUrl) + '" alt="" loading="lazy" style="cursor:pointer;width:100%;height:100%;object-fit:cover">' +
                  '</div>';
@@ -4064,6 +4079,44 @@
                     showAlert('Błąd: ' + (err.message || 'Nie udało się usunąć zdjęcia'));
                   });
               });
+            });
+          });
+        }
+
+        // Setup featured image handlers (for admin/author)
+        if (canDeleteImages && imgs.length > 1) {
+          var featuredBtns = modalView.querySelectorAll('.jg-set-featured-image');
+          featuredBtns.forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var pointId = +this.getAttribute('data-point-id');
+              var imageIndex = +this.getAttribute('data-image-index');
+
+              btn.disabled = true;
+              btn.style.opacity = '0.5';
+
+              api('jg_set_featured_image', { point_id: pointId, image_index: imageIndex })
+                .then(function(result) {
+                  // Update local data
+                  var point = ALL.find(function(x) { return x.id === pointId; });
+                  if (point) {
+                    point.featured_image_index = imageIndex;
+                  }
+
+                  // Refresh modal to show new featured image
+                  close(modalView);
+                  refreshAll().then(function() {
+                    var updatedPoint = ALL.find(function(x) { return x.id === pointId; });
+                    if (updatedPoint) {
+                      openDetails(updatedPoint);
+                    }
+                  });
+                })
+                .catch(function(err) {
+                  btn.disabled = false;
+                  btn.style.opacity = '1';
+                  showAlert('Błąd: ' + (err.message || 'Nie udało się ustawić wyróżnionego obrazu'));
+                });
             });
           });
         }

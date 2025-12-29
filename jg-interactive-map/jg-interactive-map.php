@@ -340,7 +340,7 @@ class JG_Interactive_Map {
         $point = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT id, title, slug, content, excerpt, lat, lng, type, status,
-                        author_id, is_promo, website, phone, images, created_at
+                        author_id, is_promo, website, phone, images, featured_image_index, created_at
                  FROM $table
                  WHERE slug = %s AND status = 'publish'
                  LIMIT 1",
@@ -392,20 +392,26 @@ class JG_Interactive_Map {
 
         $images = json_decode($point['images'], true) ?: array();
 
-        // Get first image - ensure it's a full URL
+        // Get featured image (or first image as fallback) - ensure it's a full URL
         $first_image = '';
         if (!empty($images)) {
-            $img = $images[0];
-            // Support both old format (string URL) and new format (object with thumb/full)
-            if (is_array($img)) {
-                $first_image = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
-            } else {
-                $first_image = $img;
-            }
+            // Use featured image index if set, otherwise use first image (index 0)
+            $featured_index = isset($point['featured_image_index']) ? (int)$point['featured_image_index'] : 0;
+            $img_index = isset($images[$featured_index]) ? $featured_index : 0;
 
-            // Ensure absolute URL
-            if ($first_image && strpos($first_image, 'http') !== 0) {
-                $first_image = home_url($first_image);
+            if (isset($images[$img_index])) {
+                $img = $images[$img_index];
+                // Support both old format (string URL) and new format (object with thumb/full)
+                if (is_array($img)) {
+                    $first_image = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
+                } else {
+                    $first_image = $img;
+                }
+
+                // Ensure absolute URL
+                if ($first_image && strpos($first_image, 'http') !== 0) {
+                    $first_image = home_url($first_image);
+                }
             }
         }
 
@@ -558,20 +564,26 @@ class JG_Interactive_Map {
         $point = $jg_current_point;
         $images = json_decode($point['images'], true) ?: array();
 
-        // Get first image - ensure it's a full URL
+        // Get featured image (or first image as fallback) - ensure it's a full URL
         $first_image = '';
         if (!empty($images)) {
-            $img = $images[0];
-            // Support both old format (string URL) and new format (object with thumb/full)
-            if (is_array($img)) {
-                $first_image = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
-            } else {
-                $first_image = $img;
-            }
+            // Use featured image index if set, otherwise use first image (index 0)
+            $featured_index = isset($point['featured_image_index']) ? (int)$point['featured_image_index'] : 0;
+            $img_index = isset($images[$featured_index]) ? $featured_index : 0;
 
-            // Ensure absolute URL
-            if ($first_image && strpos($first_image, 'http') !== 0) {
-                $first_image = home_url($first_image);
+            if (isset($images[$img_index])) {
+                $img = $images[$img_index];
+                // Support both old format (string URL) and new format (object with thumb/full)
+                if (is_array($img)) {
+                    $first_image = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
+                } else {
+                    $first_image = $img;
+                }
+
+                // Ensure absolute URL
+                if ($first_image && strpos($first_image, 'http') !== 0) {
+                    $first_image = home_url($first_image);
+                }
             }
         }
 
