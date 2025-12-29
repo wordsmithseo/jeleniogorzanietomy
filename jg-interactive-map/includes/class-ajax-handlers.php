@@ -221,6 +221,13 @@ class JG_Map_Ajax_Handlers {
      * Get all points
      */
     public function get_points() {
+        // Force schema check and slug generation on first request (ensures backward compatibility)
+        static $schema_checked = false;
+        if (!$schema_checked) {
+            JG_Map_Database::check_and_update_schema();
+            $schema_checked = true;
+        }
+
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $current_user_id = get_current_user_id();
 
