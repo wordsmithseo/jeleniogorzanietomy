@@ -132,9 +132,11 @@ class JG_Interactive_Map {
         JG_Map_Database::check_and_update_schema();
 
         // Set flag for one-time rewrite flush (will be executed in init hook)
-        if (!get_option('jg_map_rewrite_flushed_v5', false)) {
+        if (!get_option('jg_map_rewrite_flushed_v6', false)) {
+            error_log('[JG MAP] Resetting flush counter for v6');
+            delete_option('jg_map_flush_count'); // Reset counter
             update_option('jg_map_needs_rewrite_flush', true);
-            update_option('jg_map_rewrite_flushed_v5', true);
+            update_option('jg_map_rewrite_flushed_v6', true);
         }
 
         JG_Map_Activity_Log::get_instance();
@@ -220,6 +222,8 @@ class JG_Interactive_Map {
      * Add rewrite rules for SEO-friendly point URLs
      */
     public function add_rewrite_rules() {
+        error_log('[JG MAP] add_rewrite_rules() called - adding rewrite rules');
+
         // Rewrite rules for all point types
         add_rewrite_rule(
             '^miejsce/([^/]+)/?$',
@@ -243,6 +247,8 @@ class JG_Interactive_Map {
             'index.php?jg_map_sitemap=1',
             'top'
         );
+
+        error_log('[JG MAP] All rewrite rules added successfully');
     }
 
     /**
@@ -260,9 +266,12 @@ class JG_Interactive_Map {
      * Runs on 'init' hook when $wp_rewrite is available
      */
     public function check_rewrite_flush() {
+        error_log('[JG MAP] check_rewrite_flush() called on init hook');
+
         // TEMPORARY: Aggressive flush until sitemap works
         // Check if we need to force flush (max 3 times to avoid infinite loop)
         $flush_count = get_option('jg_map_flush_count', 0);
+        error_log('[JG MAP] Current flush count: ' . $flush_count);
 
         if ($flush_count < 3) {
             error_log('[JG MAP] Aggressive flush #' . ($flush_count + 1) . ' - forcing rewrite rules flush');
@@ -273,6 +282,12 @@ class JG_Interactive_Map {
             // Debug: Check if sitemap query var is registered
             global $wp;
             error_log('[JG MAP] Registered query vars: ' . print_r($wp->public_query_vars, true));
+
+            // Debug: Check rewrite rules
+            global $wp_rewrite;
+            error_log('[JG MAP] Sample rewrite rules: ' . print_r(array_slice($wp_rewrite->rules, 0, 10), true));
+        } else {
+            error_log('[JG MAP] Flush limit reached (3), skipping flush');
         }
 
         // Legacy flush check
