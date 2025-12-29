@@ -47,6 +47,7 @@ class JG_Map_Database {
         $sql_points = "CREATE TABLE IF NOT EXISTS $table_points (
             id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             title varchar(255) NOT NULL,
+            slug varchar(255) DEFAULT NULL,
             content longtext,
             excerpt text,
             lat decimal(10, 6) NOT NULL,
@@ -74,6 +75,7 @@ class JG_Map_Database {
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             ip_address varchar(100),
             PRIMARY KEY (id),
+            UNIQUE KEY slug (slug),
             KEY author_id (author_id),
             KEY status (status),
             KEY type (type),
@@ -266,6 +268,79 @@ class JG_Map_Database {
         } else {
             error_log('[JG MAP] approved_at column already exists');
         }
+
+        // Check if slug column exists (for SEO-friendly URLs)
+        $slug = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'slug'");
+        if (empty($slug)) {
+            error_log('[JG MAP] Adding slug column to database');
+            $result = $wpdb->query("ALTER TABLE $table ADD COLUMN slug varchar(255) DEFAULT NULL AFTER title");
+            error_log('[JG MAP] slug column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
+            if ($result !== false) {
+                // Add unique index
+                $wpdb->query("ALTER TABLE $table ADD UNIQUE KEY slug (slug)");
+                error_log('[JG MAP] slug unique index added');
+
+                // Generate slugs for existing points
+                self::migrate_generate_slugs();
+            } else {
+                error_log('[JG MAP] slug column ADD FAILED - Error: ' . $wpdb->last_error);
+            }
+        } else {
+            error_log('[JG MAP] slug column already exists');
+
+            // Check if there are any points without slugs and generate them
+            $points_without_slugs = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE slug IS NULL OR slug = ''");
+            if ($points_without_slugs > 0) {
+                error_log('[JG MAP] Found ' . $points_without_slugs . ' points without slugs, generating...');
+                self::migrate_generate_slugs();
+            }
+        }
+    }
+
+    /**
+     * Migration: Generate slugs for all existing points that don't have them
+     */
+    public static function migrate_generate_slugs() {
+        global $wpdb;
+        $table = self::get_points_table();
+
+        error_log('[JG MAP] Starting slug migration...');
+
+        // Get all points without slugs
+        $points = $wpdb->get_results(
+            "SELECT id, title FROM $table WHERE slug IS NULL OR slug = '' ORDER BY id ASC",
+            ARRAY_A
+        );
+
+        $updated = 0;
+        $errors = 0;
+
+        foreach ($points as $point) {
+            if (empty($point['title'])) {
+                error_log('[JG MAP] Skipping point #' . $point['id'] . ' - no title');
+                continue;
+            }
+
+            $slug = self::generate_unique_slug($point['title'], $point['id']);
+
+            $result = $wpdb->update(
+                $table,
+                array('slug' => $slug),
+                array('id' => $point['id']),
+                array('%s'),
+                array('%d')
+            );
+
+            if ($result !== false) {
+                $updated++;
+                error_log('[JG MAP] Generated slug for point #' . $point['id'] . ': ' . $slug);
+            } else {
+                $errors++;
+                error_log('[JG MAP] Failed to generate slug for point #' . $point['id'] . ': ' . $wpdb->last_error);
+            }
+        }
+
+        error_log('[JG MAP] Slug migration complete: ' . $updated . ' updated, ' . $errors . ' errors');
     }
 
     /**
@@ -290,6 +365,76 @@ class JG_Map_Database {
     public static function deactivate() {
         // Optional: Clear scheduled tasks if any
         wp_clear_scheduled_hook('jg_map_cleanup');
+    }
+
+    /**
+     * Generate SEO-friendly slug from title
+     */
+    public static function generate_slug($title) {
+        $slug = strtolower($title);
+
+        // Polish characters transliteration
+        $polish = array('ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż', 'Ą', 'Ć', 'Ę', 'Ł', 'Ń', 'Ó', 'Ś', 'Ź', 'Ż');
+        $latin = array('a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z', 'a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z');
+        $slug = str_replace($polish, $latin, $slug);
+
+        // Replace spaces and special characters with hyphens
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+        $slug = trim($slug, '-');
+
+        // Limit length
+        $slug = substr($slug, 0, 200);
+
+        return $slug;
+    }
+
+    /**
+     * Generate unique slug for a point
+     */
+    public static function generate_unique_slug($title, $point_id = null) {
+        global $wpdb;
+        $table = self::get_points_table();
+
+        $base_slug = self::generate_slug($title);
+        $slug = $base_slug;
+        $counter = 2;
+
+        // Keep trying until we find a unique slug
+        while (true) {
+            // Check if slug exists (excluding current point if updating)
+            if ($point_id) {
+                $exists = $wpdb->get_var(
+                    $wpdb->prepare(
+                        "SELECT COUNT(*) FROM $table WHERE slug = %s AND id != %d",
+                        $slug,
+                        $point_id
+                    )
+                );
+            } else {
+                $exists = $wpdb->get_var(
+                    $wpdb->prepare(
+                        "SELECT COUNT(*) FROM $table WHERE slug = %s",
+                        $slug
+                    )
+                );
+            }
+
+            if ($exists == 0) {
+                return $slug;
+            }
+
+            // Slug exists, try with number suffix
+            $slug = $base_slug . '-' . $counter;
+            $counter++;
+
+            // Safety limit to prevent infinite loop
+            if ($counter > 1000) {
+                $slug = $base_slug . '-' . uniqid();
+                break;
+            }
+        }
+
+        return $slug;
     }
 
     /**
@@ -341,7 +486,7 @@ class JG_Map_Database {
             ? "status IN ('publish', 'pending', 'edit')"
             : "status = 'publish'";
 
-        $sql = "SELECT id, title, content, excerpt, lat, lng, type, category, status, report_status,
+        $sql = "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                        author_id, author_hidden, is_deletion_requested, deletion_reason,
                        deletion_requested_at, is_promo, promo_until, website, phone,
                        cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
@@ -368,7 +513,7 @@ class JG_Map_Database {
         $table = self::get_points_table();
 
         $sql = $wpdb->prepare(
-            "SELECT id, title, content, excerpt, lat, lng, type, category, status, report_status,
+            "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                     author_id, author_hidden, is_deletion_requested, deletion_reason,
                     deletion_requested_at, is_promo, promo_until, website, phone,
                     cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
@@ -394,7 +539,7 @@ class JG_Map_Database {
 
         return $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT id, title, content, excerpt, lat, lng, type, category, status, report_status,
+                "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                         author_id, author_hidden, is_deletion_requested, deletion_reason,
                         deletion_requested_at, is_promo, promo_until, website, phone,
                         cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
@@ -412,6 +557,12 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
+        // Auto-generate slug if not provided
+        if (empty($data['slug']) && !empty($data['title'])) {
+            $data['slug'] = self::generate_unique_slug($data['title']);
+            error_log('[JG MAP] insert_point - auto-generated slug: ' . $data['slug']);
+        }
+
         error_log('[JG MAP] insert_point - data: ' . print_r($data, true));
         $result = $wpdb->insert($table, $data);
         error_log('[JG MAP] insert_point - result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
@@ -428,6 +579,12 @@ class JG_Map_Database {
     public static function update_point($point_id, $data) {
         global $wpdb;
         $table = self::get_points_table();
+
+        // If title is being updated, regenerate slug if not explicitly provided
+        if (isset($data['title']) && empty($data['slug'])) {
+            $data['slug'] = self::generate_unique_slug($data['title'], $point_id);
+            error_log('[JG MAP] update_point - regenerated slug: ' . $data['slug']);
+        }
 
         return $wpdb->update(
             $table,
