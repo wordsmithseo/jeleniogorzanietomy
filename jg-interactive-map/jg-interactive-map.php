@@ -391,7 +391,23 @@ class JG_Interactive_Map {
         get_header();
 
         $images = json_decode($point['images'], true) ?: array();
-        $first_image = !empty($images) ? $images[0] : '';
+
+        // Get first image - ensure it's a full URL
+        $first_image = '';
+        if (!empty($images)) {
+            $img = $images[0];
+            // Support both old format (string URL) and new format (object with thumb/full)
+            if (is_array($img)) {
+                $first_image = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
+            } else {
+                $first_image = $img;
+            }
+
+            // Ensure absolute URL
+            if ($first_image && strpos($first_image, 'http') !== 0) {
+                $first_image = home_url($first_image);
+            }
+        }
 
         // Type labels
         $type_labels = array(
@@ -541,7 +557,24 @@ class JG_Interactive_Map {
 
         $point = $jg_current_point;
         $images = json_decode($point['images'], true) ?: array();
-        $first_image = !empty($images) ? $images[0] : '';
+
+        // Get first image - ensure it's a full URL
+        $first_image = '';
+        if (!empty($images)) {
+            $img = $images[0];
+            // Support both old format (string URL) and new format (object with thumb/full)
+            if (is_array($img)) {
+                $first_image = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
+            } else {
+                $first_image = $img;
+            }
+
+            // Ensure absolute URL
+            if ($first_image && strpos($first_image, 'http') !== 0) {
+                $first_image = home_url($first_image);
+            }
+        }
+
         $description = !empty($point['excerpt']) ? $point['excerpt'] : wp_trim_words(strip_tags($point['content']), 30);
 
         // Determine URL path based on point type
@@ -558,15 +591,19 @@ class JG_Interactive_Map {
         <meta name="description" content="<?php echo esc_attr($description); ?>">
         <meta name="robots" content="index, follow">
 
-        <!-- Open Graph -->
+        <!-- Open Graph / Facebook -->
         <meta property="og:type" content="article">
         <meta property="og:title" content="<?php echo esc_attr($point['title']); ?>">
         <meta property="og:description" content="<?php echo esc_attr($description); ?>">
         <meta property="og:url" content="<?php echo esc_url($url); ?>">
+        <meta property="og:site_name" content="<?php bloginfo('name'); ?>">
+        <meta property="og:locale" content="pl_PL">
         <?php if ($first_image): ?>
         <meta property="og:image" content="<?php echo esc_url($first_image); ?>">
+        <meta property="og:image:secure_url" content="<?php echo esc_url($first_image); ?>">
+        <meta property="og:image:alt" content="<?php echo esc_attr($point['title']); ?>">
+        <meta property="og:image:type" content="image/jpeg">
         <?php endif; ?>
-        <meta property="og:site_name" content="<?php bloginfo('name'); ?>">
 
         <!-- Twitter Card -->
         <meta name="twitter:card" content="summary_large_image">
@@ -574,6 +611,7 @@ class JG_Interactive_Map {
         <meta name="twitter:description" content="<?php echo esc_attr($description); ?>">
         <?php if ($first_image): ?>
         <meta name="twitter:image" content="<?php echo esc_url($first_image); ?>">
+        <meta name="twitter:image:alt" content="<?php echo esc_attr($point['title']); ?>">
         <?php endif; ?>
 
         <!-- Geo tags -->
