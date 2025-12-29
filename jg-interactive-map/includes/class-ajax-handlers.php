@@ -816,11 +816,22 @@ class JG_Map_Ajax_Handlers {
         $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
 
+        // Log incoming POST data for social media
+        error_log("[JG MAP] update_point - POST facebook_url: " . ($_POST['facebook_url'] ?? 'EMPTY'));
+        error_log("[JG MAP] update_point - POST instagram_url: " . ($_POST['instagram_url'] ?? 'EMPTY'));
+        error_log("[JG MAP] update_point - POST linkedin_url: " . ($_POST['linkedin_url'] ?? 'EMPTY'));
+        error_log("[JG MAP] update_point - POST tiktok_url: " . ($_POST['tiktok_url'] ?? 'EMPTY'));
+
         // Normalize social media URLs - accept full URLs, domain URLs, or profile names
         $facebook_url = !empty($_POST['facebook_url']) ? $this->normalize_social_url($_POST['facebook_url'], 'facebook') : '';
         $instagram_url = !empty($_POST['instagram_url']) ? $this->normalize_social_url($_POST['instagram_url'], 'instagram') : '';
         $linkedin_url = !empty($_POST['linkedin_url']) ? $this->normalize_social_url($_POST['linkedin_url'], 'linkedin') : '';
         $tiktok_url = !empty($_POST['tiktok_url']) ? $this->normalize_social_url($_POST['tiktok_url'], 'tiktok') : '';
+
+        error_log("[JG MAP] update_point - Normalized facebook_url: $facebook_url");
+        error_log("[JG MAP] update_point - Normalized instagram_url: $instagram_url");
+        error_log("[JG MAP] update_point - Normalized linkedin_url: $linkedin_url");
+        error_log("[JG MAP] update_point - Normalized tiktok_url: $tiktok_url");
 
         $cta_enabled = isset($_POST['cta_enabled']) ? 1 : 0;
         $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
@@ -4629,7 +4640,7 @@ class JG_Map_Ajax_Handlers {
     /**
      * Normalize social media URLs
      * Accepts: full URL, domain URL, or profile name
-     * Returns: full valid URL
+     * Returns: full valid URL or empty string
      */
     private function normalize_social_url($input, $platform) {
         if (empty($input)) {
@@ -4638,6 +4649,9 @@ class JG_Map_Ajax_Handlers {
 
         // Sanitize input
         $input = sanitize_text_field(trim($input));
+
+        // Log original input for debugging
+        error_log("[JG MAP] normalize_social_url - Platform: $platform, Input: $input");
 
         // Platform base URLs
         $base_urls = array(
@@ -4649,7 +4663,9 @@ class JG_Map_Ajax_Handlers {
 
         // Already a full URL starting with http(s)
         if (preg_match('/^https?:\/\//i', $input)) {
-            return esc_url_raw($input);
+            $result = esc_url_raw($input);
+            error_log("[JG MAP] normalize_social_url - Full URL detected, result: $result");
+            return $result;
         }
 
         // Remove @ if present (common for TikTok/Instagram)
@@ -4672,12 +4688,16 @@ class JG_Map_Ajax_Handlers {
         // LinkedIn company pages need different base
         if ($platform === 'linkedin' && stripos($input, 'company/') === 0) {
             $input = preg_replace('/^company\//i', '', $input);
-            return esc_url_raw('https://linkedin.com/company/' . $input);
+            $result = 'https://linkedin.com/company/' . urlencode($input);
+            error_log("[JG MAP] normalize_social_url - LinkedIn company, result: $result");
+            return $result;
         }
 
-        // Build full URL
-        $full_url = $base_urls[$platform] . $input;
+        // Build full URL - don't use esc_url_raw as it may strip valid social media URLs
+        $full_url = $base_urls[$platform] . urlencode($input);
 
-        return esc_url_raw($full_url);
+        error_log("[JG MAP] normalize_social_url - Built URL: $full_url");
+
+        return $full_url;
     }
 }

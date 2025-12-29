@@ -199,6 +199,9 @@
       var modalStatus = document.getElementById('jg-map-modal-status');
       var lightbox = document.getElementById('jg-map-lightbox');
 
+      // Stats modal refresh interval
+      var statsRefreshInterval = null;
+
       if (!elMap) {
         showError('Nie znaleziono #jg-map');
         return;
@@ -699,6 +702,13 @@
 
       function close(bg) {
         if (!bg) return;
+
+        // Clear stats refresh interval when closing stats modal
+        if (bg.id === 'jg-map-modal-report' && statsRefreshInterval) {
+          clearInterval(statsRefreshInterval);
+          statsRefreshInterval = null;
+        }
+
         var c = qs('.jg-modal, .jg-lightbox', bg);
         if (c) {
           c.className = c.className.replace(/\bjg-modal--\w+/g, '');
@@ -2893,7 +2903,10 @@
         });
       }
 
-      function openStatsModal(p) {
+      /**
+       * Render stats modal content (for real-time updates)
+       */
+      function renderStatsContent(p) {
         // Initialize stats object if not present (for new sponsored places)
         if (!p.stats) {
           p.stats = {
@@ -2985,14 +2998,73 @@
           '<div style="display:flex;justify-content:space-between"><div><div style="font-size:12px;color:#6b7280;margin-bottom:4px">🕐 Ostatnie wyświetlenie</div><div style="font-size:14px;font-weight:600;color:#374151">' + lastViewed + '</div></div></div>' +
           '</div></div>' +
 
-          '<div style="padding:12px;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:6px"><div style="font-size:12px;color:#1e40af"><strong>💡 Wskazówka:</strong> Statystyki pokazują rzeczywiste interakcje użytkowników z Twoją pinezką. Wykorzystaj te dane aby zoptymalizować treść i zwiększyć zaangażowanie.</div></div>' +
+          '<div style="padding:12px;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:6px"><div style="font-size:12px;color:#1e40af"><strong>💡 Wskazówka:</strong> Statystyki pokazują rzeczywiste interakcje użytkowników z Twoją pinezką. Wykorzystaj te dane aby zoptymalizować treść i zwiększyć zaangażowanie.<br><span id="stats-last-update" style="margin-top:4px;display:block;font-size:11px;opacity:0.7"></span></div></div>' +
           '</div>';
 
+        return modalHtml;
+      }
+
+      /**
+       * Open stats modal with real-time updates
+       */
+      function openStatsModal(p) {
+        var modalHtml = renderStatsContent(p);
         open(modalReport, modalHtml);
 
         qs('#stats-close', modalReport).onclick = function() {
+          // Clear interval when modal is closed
+          if (statsRefreshInterval) {
+            clearInterval(statsRefreshInterval);
+            statsRefreshInterval = null;
+          }
           close(modalReport);
         };
+
+        // Start real-time updates - refresh every 3 seconds
+        if (statsRefreshInterval) {
+          clearInterval(statsRefreshInterval);
+        }
+
+        statsRefreshInterval = setInterval(function() {
+          // Fetch updated stats
+          api('jg_points', {}).then(function(result) {
+            if (result && result.points) {
+              var updatedPoint = result.points.find(function(point) {
+                return point.id === p.id;
+              });
+
+              if (updatedPoint && updatedPoint.stats) {
+                // Update p.stats and p.images with new data
+                p.stats = updatedPoint.stats;
+                p.images = updatedPoint.images || p.images;
+
+                // Re-render modal content
+                var updatedHtml = renderStatsContent(p);
+
+                // Update only the content part (not the header)
+                var contentDiv = qs('.jg-modal-report > div:last-child', modalReport);
+                if (contentDiv) {
+                  // Extract content without header
+                  var tempDiv = document.createElement('div');
+                  tempDiv.innerHTML = updatedHtml;
+                  var newContent = tempDiv.querySelector('div:last-child');
+                  if (newContent) {
+                    contentDiv.innerHTML = newContent.innerHTML;
+
+                    // Update last update time
+                    var lastUpdateEl = qs('#stats-last-update', modalReport);
+                    if (lastUpdateEl) {
+                      var now = new Date();
+                      lastUpdateEl.textContent = 'Ostatnia aktualizacja: ' + now.toLocaleTimeString('pl-PL');
+                    }
+                  }
+                }
+              }
+            }
+          }).catch(function() {
+            // Silently ignore errors - don't disrupt UX
+          });
+        }, 3000); // Update every 3 seconds
       }
 
       function openReportModal(p) {
