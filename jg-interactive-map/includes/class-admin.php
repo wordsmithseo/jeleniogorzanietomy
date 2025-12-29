@@ -1106,6 +1106,18 @@ class JG_Map_Admin {
                         if (isset($old_values['cta_type']) && isset($new_values['cta_type']) && $old_values['cta_type'] !== $new_values['cta_type']) {
                             $changes[] = 'Typ CTA';
                         }
+                        if (isset($old_values['facebook_url']) && isset($new_values['facebook_url']) && $old_values['facebook_url'] !== $new_values['facebook_url']) {
+                            $changes[] = 'Facebook';
+                        }
+                        if (isset($old_values['instagram_url']) && isset($new_values['instagram_url']) && $old_values['instagram_url'] !== $new_values['instagram_url']) {
+                            $changes[] = 'Instagram';
+                        }
+                        if (isset($old_values['linkedin_url']) && isset($new_values['linkedin_url']) && $old_values['linkedin_url'] !== $new_values['linkedin_url']) {
+                            $changes[] = 'LinkedIn';
+                        }
+                        if (isset($old_values['tiktok_url']) && isset($new_values['tiktok_url']) && $old_values['tiktok_url'] !== $new_values['tiktok_url']) {
+                            $changes[] = 'TikTok';
+                        }
 
                         // Calculate priority badge
                         $report_count = intval($edit['report_count']);
@@ -1192,9 +1204,29 @@ class JG_Map_Admin {
                         html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>CTA włączone</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.cta_enabled ? 'Tak' : 'Nie') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.cta_enabled ? 'Tak' : 'Nie') + '</td></tr>';
                     }
                     if (old_values.cta_type !== undefined && new_values.cta_type !== undefined && old_values.cta_type !== new_values.cta_type) {
-                        var ctaTypeOld = old_values.cta_type === 'call' ? 'Zadzwoń teraz' : (old_values.cta_type === 'website' ? 'Wejdź na stronę' : '(brak)');
-                        var ctaTypeNew = new_values.cta_type === 'call' ? 'Zadzwoń teraz' : (new_values.cta_type === 'website' ? 'Wejdź na stronę' : '(brak)');
+                        var ctaTypeLabels = {
+                            'call': 'Zadzwoń teraz',
+                            'website': 'Wejdź na stronę',
+                            'facebook': 'Odwiedź nas na Facebooku',
+                            'instagram': 'Sprawdź nas na Instagramie',
+                            'linkedin': 'Zobacz nas na LinkedIn',
+                            'tiktok': 'Obserwuj nas na TikToku'
+                        };
+                        var ctaTypeOld = ctaTypeLabels[old_values.cta_type] || '(brak)';
+                        var ctaTypeNew = ctaTypeLabels[new_values.cta_type] || '(brak)';
                         html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Typ CTA</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + ctaTypeOld + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + ctaTypeNew + '</td></tr>';
+                    }
+                    if (old_values.facebook_url !== undefined && new_values.facebook_url !== undefined && old_values.facebook_url !== new_values.facebook_url) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Facebook</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.facebook_url || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.facebook_url || '(brak)') + '</td></tr>';
+                    }
+                    if (old_values.instagram_url !== undefined && new_values.instagram_url !== undefined && old_values.instagram_url !== new_values.instagram_url) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Instagram</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.instagram_url || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.instagram_url || '(brak)') + '</td></tr>';
+                    }
+                    if (old_values.linkedin_url !== undefined && new_values.linkedin_url !== undefined && old_values.linkedin_url !== new_values.linkedin_url) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>LinkedIn</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.linkedin_url || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.linkedin_url || '(brak)') + '</td></tr>';
+                    }
+                    if (old_values.tiktok_url !== undefined && new_values.tiktok_url !== undefined && old_values.tiktok_url !== new_values.tiktok_url) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>TikTok</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.tiktok_url || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.tiktok_url || '(brak)') + '</td></tr>';
                     }
                     html += '</table>';
 
