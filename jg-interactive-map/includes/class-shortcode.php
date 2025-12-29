@@ -82,7 +82,7 @@ class JG_Map_Shortcode {
             </div>
 
             <!-- Loader OUTSIDE map div so it's always visible -->
-            <div id="jg-map-loading" style="position:absolute;top:calc(50% + 40px);left:50%;transform:translate(-50%,-50%);z-index:10000;background:#fff;padding:30px 40px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15);pointer-events:none;">
+            <div id="jg-map-loading" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10000;background:#fff;padding:30px 40px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15);pointer-events:none;">
                 <div class="jg-spinner"></div>
                 <div style="margin-top:16px;font-size:16px;color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
             </div>

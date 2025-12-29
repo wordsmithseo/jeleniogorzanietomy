@@ -665,6 +665,8 @@
         // Update URL in browser address bar if opening point detail modal
         if (bg.id === 'jg-map-modal-view' && opts && opts.pointData) {
           var point = opts.pointData;
+          console.log('[JG MAP] Opening modal for point:', point.id, 'slug:', point.slug, 'type:', point.type);
+
           if (point.slug && point.type) {
             // Determine URL path based on point type
             var typePath = 'miejsce'; // default
@@ -675,7 +677,8 @@
             }
 
             var newUrl = '/' + typePath + '/' + point.slug + '/';
-            var fullUrl = window.location.origin + newUrl;
+
+            console.log('[JG MAP] Changing URL to:', newUrl);
 
             // Push state to browser history
             if (window.history && window.history.pushState) {
@@ -684,7 +687,12 @@
                 point.title || '',
                 newUrl
               );
+              console.log('[JG MAP] URL changed successfully');
+            } else {
+              console.error('[JG MAP] history.pushState not supported');
             }
+          } else {
+            console.warn('[JG MAP] Point missing slug or type:', point);
           }
         }
       }
@@ -1462,9 +1470,9 @@
         // Get root font size for rem to px conversion
         var rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
 
-        // Define sizes in rem (smaller than before for better UX)
-        var pinHeightRem = sponsored ? 4.5 : 3.5; // Sponsored: 4.5rem, Regular: 3.5rem
-        var pinWidthRem = sponsored ? 3 : 2.5;    // Sponsored: 3rem, Regular: 2.5rem
+        // Define sizes in rem - sponsored pins are bigger
+        var pinHeightRem = sponsored ? 5.2 : 3.5; // Sponsored: 5.2rem (bigger), Regular: 3.5rem
+        var pinWidthRem = sponsored ? 3.5 : 2.5;  // Sponsored: 3.5rem (bigger), Regular: 2.5rem
 
         // Convert to pixels for actual rendering
         var pinHeight = pinHeightRem * rootFontSize;
@@ -1503,11 +1511,11 @@
           gradientEnd = '#9333ea';
           circleColor = '#581c87'; // Dark purple
         } else if (sponsored) {
-          // Matte gold for sponsored - no gradient, solid color
-          gradientStart = '#d4af37';
-          gradientMid = '#d4af37';
-          gradientEnd = '#d4af37';
-          circleColor = '#f0e68c'; // Light gold for circle if no image
+          // Light matte gold for sponsored - brighter color
+          gradientStart = '#f4d03f';
+          gradientMid = '#f4d03f';
+          gradientEnd = '#f4d03f';
+          circleColor = '#fef3c7'; // Very light gold for circle if no image
         } else if (p.type === 'ciekawostka') {
           // Blue gradient for curiosities
           gradientStart = '#1e40af';
@@ -1540,10 +1548,10 @@
           '<stop offset="100%" style="stop-color:' + gradientEnd + ';stop-opacity:1" />' +
           '</linearGradient>';
 
-        // Add diagonal stripe pattern for sponsored pins
+        // Add fine diagonal stripe pattern for sponsored pins
         if (sponsored) {
-          svgPin += '<pattern id="stripe-' + gradientId + '" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">' +
-            '<rect width="4" height="8" fill="rgba(0,0,0,0.08)"/>' +
+          svgPin += '<pattern id="stripe-' + gradientId + '" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)">' +
+            '<rect width="1.5" height="4" fill="rgba(0,0,0,0.05)"/>' +
             '</pattern>';
         }
 
@@ -1629,7 +1637,7 @@
         var centerContent = '';
 
         if (sponsored) {
-          var circleSize = 36;
+          var circleSize = 42; // Bigger for larger sponsored pins
           var firstImage = (p.images && p.images.length > 0) ? p.images[0] : null;
           var imageUrl = null;
 
@@ -2008,29 +2016,41 @@
             if (point) {
               console.log('[JG MAP] Found point:', point.title);
 
-              // Wait for map to be ready, then zoom and show pulsing marker
+              // STEP 1: Scroll to map FIRST (before anything else)
+              var mapElement = document.getElementById('jg-map');
+              if (mapElement) {
+                mapElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                console.log('[JG MAP] Scrolling to map...');
+              }
+
+              // STEP 2: Wait for scroll and map to be ready, then zoom
               setTimeout(function() {
+                console.log('[JG MAP] Map ready, zooming to point...');
                 // Zoom to point with maximum zoom level
                 map.setView([point.lat, point.lng], 19, { animate: true });
 
-                // Wait for zoom animation, then show pulsing marker
+                // STEP 3: Wait for zoom animation, then show pulsing marker
                 setTimeout(function() {
+                  console.log('[JG MAP] Zoom complete, showing pulsing marker...');
                   // Add pulsing red circle around the point
-                  // After animation completes (4 seconds), open modal
                   addPulsingMarker(point.lat, point.lng, function() {
-                    console.log('[JG MAP] Pulsing animation complete, opening modal');
+                    console.log('[JG MAP] Pulsing animation complete, waiting 2 seconds...');
 
-                    // Open modal after animation - use openDetails, not viewPoint!
-                    openDetails(point);
+                    // STEP 4: Wait 2 seconds, then open modal
+                    setTimeout(function() {
+                      console.log('[JG MAP] Opening modal...');
+                      // Open modal after animation - use openDetails, not viewPoint!
+                      openDetails(point);
 
-                    // Clean URL (remove point_id parameter or hash) after modal opens
-                    if (history.replaceState) {
-                      var cleanUrl = window.location.origin + window.location.pathname;
-                      history.replaceState(null, '', cleanUrl);
-                    }
+                      // Clean URL (remove point_id parameter or hash) after modal opens
+                      if (history.replaceState) {
+                        var cleanUrl = window.location.origin + window.location.pathname;
+                        history.replaceState(null, '', cleanUrl);
+                      }
+                    }, 2000); // Wait 2 seconds after pulsing
                   });
                 }, 800); // Wait for zoom animation
-              }, 1200); // Wait for cluster animation to complete
+              }, 1500); // Wait for scroll animation + map load
             } else {
               console.warn('[JG MAP] Point not found with id:', pointId);
             }
