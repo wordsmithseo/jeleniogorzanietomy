@@ -133,10 +133,12 @@ class JG_Interactive_Map {
         // TEMPORARY FIX: Force flush rewrite rules NOW to fix sitemap and SEO URLs
         // This will run once and can be removed after deployment
         static $force_flushed = false;
-        if (!$force_flushed && !get_option('jg_map_rewrite_flushed_v3', false)) {
-            error_log('[JG MAP] FORCING rewrite rules flush (one-time fix v3)');
-            flush_rewrite_rules();
-            update_option('jg_map_rewrite_flushed_v3', true);
+        if (!$force_flushed && !get_option('jg_map_rewrite_flushed_v4', false)) {
+            error_log('[JG MAP] FORCING rewrite rules flush (one-time fix v4)');
+            // Add rewrite rules first
+            $this->add_rewrite_rules();
+            flush_rewrite_rules(false); // false = soft flush
+            update_option('jg_map_rewrite_flushed_v4', true);
             $force_flushed = true;
         }
 
