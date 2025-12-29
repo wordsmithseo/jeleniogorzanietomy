@@ -402,6 +402,10 @@ class JG_Map_Ajax_Handlers {
                 'sponsored_until' => $sponsored_until,
                 'website' => $point['website'] ?? null,
                 'phone' => $point['phone'] ?? null,
+                'facebook_url' => $point['facebook_url'] ?? null,
+                'instagram_url' => $point['instagram_url'] ?? null,
+                'linkedin_url' => $point['linkedin_url'] ?? null,
+                'tiktok_url' => $point['tiktok_url'] ?? null,
                 'cta_enabled' => (bool)($point['cta_enabled'] ?? 0),
                 'cta_type' => $point['cta_type'] ?? null,
                 'status' => $point['status'],
@@ -433,7 +437,13 @@ class JG_Map_Ajax_Handlers {
                 'is_deletion_requested' => $is_deletion_requested,
                 'deletion_info' => $deletion_info,
                 'reports_count' => $reports_count,
-                'user_has_reported' => $user_has_reported
+                'user_has_reported' => $user_has_reported,
+                'stats' => ($is_admin || $is_own_place) ? array(
+                    'views' => intval($point['stats_views'] ?? 0),
+                    'phone_clicks' => intval($point['stats_phone_clicks'] ?? 0),
+                    'website_clicks' => intval($point['stats_website_clicks'] ?? 0),
+                    'social_clicks' => json_decode($point['stats_social_clicks'] ?? '{}', true) ?: array()
+                ) : null
             );
         }
 

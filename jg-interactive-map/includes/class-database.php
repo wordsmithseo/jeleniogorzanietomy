@@ -340,6 +340,44 @@ class JG_Map_Database {
         } else {
             error_log('[JG MAP] featured_image_index column already exists');
         }
+
+        // Check if social media columns exist (for sponsored places)
+        $social_columns = array(
+            'facebook_url' => "ALTER TABLE $table ADD COLUMN facebook_url varchar(255) DEFAULT NULL AFTER phone",
+            'instagram_url' => "ALTER TABLE $table ADD COLUMN instagram_url varchar(255) DEFAULT NULL AFTER facebook_url",
+            'linkedin_url' => "ALTER TABLE $table ADD COLUMN linkedin_url varchar(255) DEFAULT NULL AFTER instagram_url",
+            'tiktok_url' => "ALTER TABLE $table ADD COLUMN tiktok_url varchar(255) DEFAULT NULL AFTER linkedin_url"
+        );
+
+        foreach ($social_columns as $column_name => $alter_query) {
+            $column_check = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE '$column_name'");
+            if (empty($column_check)) {
+                error_log("[JG MAP] Adding $column_name column to database");
+                $result = $wpdb->query($alter_query);
+                error_log("[JG MAP] $column_name column added, result: " . ($result !== false ? 'SUCCESS' : 'FAILED'));
+            } else {
+                error_log("[JG MAP] $column_name column already exists");
+            }
+        }
+
+        // Check if statistics columns exist (for analytics)
+        $stats_columns = array(
+            'stats_views' => "ALTER TABLE $table ADD COLUMN stats_views int DEFAULT 0 AFTER tiktok_url",
+            'stats_phone_clicks' => "ALTER TABLE $table ADD COLUMN stats_phone_clicks int DEFAULT 0 AFTER stats_views",
+            'stats_website_clicks' => "ALTER TABLE $table ADD COLUMN stats_website_clicks int DEFAULT 0 AFTER stats_phone_clicks",
+            'stats_social_clicks' => "ALTER TABLE $table ADD COLUMN stats_social_clicks longtext DEFAULT NULL AFTER stats_website_clicks"
+        );
+
+        foreach ($stats_columns as $column_name => $alter_query) {
+            $column_check = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE '$column_name'");
+            if (empty($column_check)) {
+                error_log("[JG MAP] Adding $column_name column to database");
+                $result = $wpdb->query($alter_query);
+                error_log("[JG MAP] $column_name column added, result: " . ($result !== false ? 'SUCCESS' : 'FAILED'));
+            } else {
+                error_log("[JG MAP] $column_name column already exists");
+            }
+        }
     }
 
     /**
@@ -534,7 +572,10 @@ class JG_Map_Database {
         $sql = "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                        author_id, author_hidden, is_deletion_requested, deletion_reason,
                        deletion_requested_at, is_promo, promo_until, website, phone,
-                       cta_enabled, cta_type, admin_note, images, featured_image_index, address, created_at, updated_at, ip_address
+                       cta_enabled, cta_type, admin_note, images, featured_image_index,
+                       facebook_url, instagram_url, linkedin_url, tiktok_url,
+                       stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
+                       address, created_at, updated_at, ip_address
                 FROM $table WHERE $status_condition ORDER BY created_at DESC";
 
         $results = $wpdb->get_results($sql, ARRAY_A);
@@ -561,7 +602,10 @@ class JG_Map_Database {
             "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                     author_id, author_hidden, is_deletion_requested, deletion_reason,
                     deletion_requested_at, is_promo, promo_until, website, phone,
-                    cta_enabled, cta_type, admin_note, images, featured_image_index, address, created_at, updated_at, ip_address
+                    cta_enabled, cta_type, admin_note, images, featured_image_index,
+                    facebook_url, instagram_url, linkedin_url, tiktok_url,
+                    stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
+                    address, created_at, updated_at, ip_address
              FROM $table
              WHERE author_id = %d AND status = 'pending'
              ORDER BY created_at DESC",
@@ -587,7 +631,10 @@ class JG_Map_Database {
                 "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                         author_id, author_hidden, is_deletion_requested, deletion_reason,
                         deletion_requested_at, is_promo, promo_until, website, phone,
-                        cta_enabled, cta_type, admin_note, images, featured_image_index, address, created_at, updated_at, ip_address
+                        cta_enabled, cta_type, admin_note, images, featured_image_index,
+                        facebook_url, instagram_url, linkedin_url, tiktok_url,
+                        stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
+                        address, created_at, updated_at, ip_address
                  FROM $table WHERE id = %d",
                 $point_id
             ),
