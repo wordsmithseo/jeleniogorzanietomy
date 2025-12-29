@@ -132,9 +132,10 @@ class JG_Interactive_Map {
         JG_Map_Database::check_and_update_schema();
 
         // Set flag for one-time rewrite flush (will be executed in init hook)
-        if (!get_option('jg_map_rewrite_flushed_v5', false)) {
+        if (!get_option('jg_map_rewrite_flushed_v7', false)) {
+            delete_option('jg_map_flush_count'); // Reset counter
             update_option('jg_map_needs_rewrite_flush', true);
-            update_option('jg_map_rewrite_flushed_v5', true);
+            update_option('jg_map_rewrite_flushed_v7', true);
         }
 
         JG_Map_Activity_Log::get_instance();
@@ -261,23 +262,16 @@ class JG_Interactive_Map {
      */
     public function check_rewrite_flush() {
         // TEMPORARY: Aggressive flush until sitemap works
-        // Check if we need to force flush (max 3 times to avoid infinite loop)
         $flush_count = get_option('jg_map_flush_count', 0);
 
         if ($flush_count < 3) {
-            error_log('[JG MAP] Aggressive flush #' . ($flush_count + 1) . ' - forcing rewrite rules flush');
-            flush_rewrite_rules(false); // soft flush
+            error_log('[JG MAP] Flush #' . ($flush_count + 1));
+            flush_rewrite_rules(false);
             update_option('jg_map_flush_count', $flush_count + 1);
-            error_log('[JG MAP] Rewrite rules flushed aggressively');
-
-            // Debug: Check if sitemap query var is registered
-            global $wp;
-            error_log('[JG MAP] Registered query vars: ' . print_r($wp->public_query_vars, true));
         }
 
         // Legacy flush check
         if (get_option('jg_map_needs_rewrite_flush', false)) {
-            error_log('[JG MAP] Legacy flush check - flushing rewrite rules');
             flush_rewrite_rules(false);
             delete_option('jg_map_needs_rewrite_flush');
         }
@@ -625,20 +619,20 @@ class JG_Interactive_Map {
      * Handle sitemap.xml generation
      */
     public function handle_sitemap() {
-        // Debug: Always log when this function is called
-        error_log('[JG MAP SITEMAP] handle_sitemap() called on URL: ' . $_SERVER['REQUEST_URI']);
-
-        $sitemap_var = get_query_var('jg_map_sitemap');
-        error_log('[JG MAP SITEMAP] query_var value: ' . var_export($sitemap_var, true));
-
-        // Debug: Check all query vars
-        global $wp_query;
-        error_log('[JG MAP SITEMAP] All query vars: ' . print_r($wp_query->query_vars, true));
-
-        if (!$sitemap_var) {
-            error_log('[JG MAP SITEMAP] Sitemap var is empty, exiting');
+        // ALTERNATIVE APPROACH: Check URL directly instead of relying on query_var
+        // This bypasses rewrite rule issues
+        if (!isset($_SERVER['REQUEST_URI'])) {
             return;
         }
+
+        $request_uri = $_SERVER['REQUEST_URI'];
+
+        // Check if this is a sitemap request (direct URL check)
+        if (strpos($request_uri, 'jg-map-sitemap.xml') === false) {
+            return;
+        }
+
+        error_log('[JG MAP SITEMAP] Generating sitemap for: ' . $request_uri);
 
         error_log('[JG MAP SITEMAP] Generating sitemap XML...');
 
