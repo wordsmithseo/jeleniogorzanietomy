@@ -2864,6 +2864,51 @@
         };
       }
 
+      function openStatsModal(p) {
+        if (!p.stats) {
+          showAlert('Brak danych statystycznych');
+          return;
+        }
+
+        var totalSocialClicks = 0;
+        var socialBreakdown = [];
+        if (p.stats.social_clicks) {
+          var platforms = {
+            facebook: { label: 'Facebook', color: '#1877f2', emoji: 'f' },
+            instagram: { label: 'Instagram', color: '#e1306c', emoji: '📷' },
+            linkedin: { label: 'LinkedIn', color: '#0077b5', emoji: 'in' },
+            tiktok: { label: 'TikTok', color: '#000', emoji: '🎵' }
+          };
+
+          for (var platform in platforms) {
+            var clicks = parseInt(p.stats.social_clicks[platform] || 0);
+            if (clicks > 0) {
+              totalSocialClicks += clicks;
+              socialBreakdown.push('<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:#f9fafb;border-radius:6px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:10px"><div style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:' + platforms[platform].color + ';color:#fff;border-radius:50%;font-size:14px">' + platforms[platform].emoji + '</div><strong>' + platforms[platform].label + '</strong></div><div style="font-size:18px;font-weight:600;color:#374151">' + clicks + '</div></div>');
+            }
+          }
+        }
+
+        var modalHtml = '<header><h3>📊 Statystyki pinezki</h3><button class="jg-close" id="stats-close">&times;</button></header>' +
+          '<div style="padding:20px">' +
+          '<div style="margin-bottom:24px"><h4 style="margin:0 0 16px 0;color:#374151;font-size:16px;font-weight:600">Przegląd ogólny</h4>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px">' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:12px;box-shadow:0 4px 12px rgba(102,126,234,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👁️ Wyświetlenia</div><div style="font-size:32px;font-weight:700">' + (p.stats.views || 0) + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">📞 Telefon</div><div style="font-size:32px;font-weight:700">' + (p.stats.phone_clicks || 0) + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);border-radius:12px;box-shadow:0 4px 12px rgba(79,172,254,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🌐 Strona WWW</div><div style="font-size:32px;font-weight:700">' + (p.stats.website_clicks || 0) + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);border-radius:12px;box-shadow:0 4px 12px rgba(67,233,123,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">📱 Social media</div><div style="font-size:32px;font-weight:700">' + totalSocialClicks + '</div></div>' +
+          '</div></div>' +
+          (socialBreakdown.length > 0 ? '<div><h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;font-weight:600">Szczegóły kliknięć social media</h4>' + socialBreakdown.join('') + '</div>' : '') +
+          '<div style="margin-top:24px;padding:12px;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:6px"><div style="font-size:12px;color:#1e40af"><strong>💡 Wskazówka:</strong> Statystyki pokazują liczbę interakcji użytkowników z Twoją pinezką. Wyświetlenia to liczba otwarć modalu, a kliknięcia to liczba użyć linków kontaktowych.</div></div>' +
+          '</div>';
+
+        open(modalReport, modalHtml);
+
+        qs('#stats-close', modalReport).onclick = function() {
+          close(modalReport);
+        };
+      }
+
       function openReportModal(p) {
         // Check if user is logged in
         if (!CFG.isLoggedIn) {
@@ -4063,7 +4108,13 @@
           sponsoredBadgeHeader = '<span class="jg-promo-tag">⭐ MIEJSCE SPONSOROWANE</span>';
         }
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + editInfo + deletionInfo + adminNote + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        // Stats button for sponsored places (owner + admins only)
+        var statsBtn = '';
+        if (p.sponsored && canEdit && p.stats) {
+          statsBtn = '<button id="btn-stats" class="jg-btn jg-btn--ghost">📊 Statystyki</button>';
+        }
+
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + editInfo + deletionInfo + adminNote + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
@@ -4217,6 +4268,12 @@
         };
 
         if (canEdit) {
+          // Stats button handler
+          var statsBtn = qs('#btn-stats', modalView);
+          if (statsBtn) statsBtn.onclick = function() {
+            openStatsModal(p);
+          };
+
           var editBtn = qs('#btn-edit', modalView);
           if (editBtn) editBtn.onclick = function() {
             openEditModal(p);
