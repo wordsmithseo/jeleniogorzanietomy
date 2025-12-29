@@ -368,6 +368,7 @@ class JG_Map_Ajax_Handlers {
             $result[] = array(
                 'id' => intval($point['id']),
                 'title' => $point['title'],
+                'slug' => $point['slug'] ?? '',
                 'excerpt' => $point['excerpt'],
                 'content' => $point['content'],
                 'lat' => floatval($point['lat']),

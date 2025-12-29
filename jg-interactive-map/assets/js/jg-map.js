@@ -1503,11 +1503,11 @@
           gradientEnd = '#9333ea';
           circleColor = '#581c87'; // Dark purple
         } else if (sponsored) {
-          // Gold gradient for sponsored
-          gradientStart = '#f59e0b';
-          gradientMid = '#fbbf24';
-          gradientEnd = '#f59e0b';
-          circleColor = null; // No circle, will use star emoji
+          // Matte gold for sponsored - no gradient, solid color
+          gradientStart = '#d4af37';
+          gradientMid = '#d4af37';
+          gradientEnd = '#d4af37';
+          circleColor = '#f0e68c'; // Light gold for circle if no image
         } else if (p.type === 'ciekawostka') {
           // Blue gradient for curiosities
           gradientStart = '#1e40af';
@@ -1532,14 +1532,22 @@
         // Build SVG pin shape with gradients and soft shadow
         var svgPin = '<svg width="' + pinWidth + '" height="' + pinHeight + '" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">';
 
-        // Define gradient and shadow filter
+        // Define gradient, pattern, and shadow filter
         svgPin += '<defs>' +
           '<linearGradient id="' + gradientId + '" x1="0%" y1="0%" x2="100%" y2="100%">' +
           '<stop offset="0%" style="stop-color:' + gradientStart + ';stop-opacity:1" />' +
           '<stop offset="50%" style="stop-color:' + gradientMid + ';stop-opacity:1" />' +
           '<stop offset="100%" style="stop-color:' + gradientEnd + ';stop-opacity:1" />' +
-          '</linearGradient>' +
-          '<filter id="soft-shadow-' + gradientId + '" x="-50%" y="-50%" width="200%" height="200%">' +
+          '</linearGradient>';
+
+        // Add diagonal stripe pattern for sponsored pins
+        if (sponsored) {
+          svgPin += '<pattern id="stripe-' + gradientId + '" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">' +
+            '<rect width="4" height="8" fill="rgba(0,0,0,0.08)"/>' +
+            '</pattern>';
+        }
+
+        svgPin += '<filter id="soft-shadow-' + gradientId + '" x="-50%" y="-50%" width="200%" height="200%">' +
           '<feGaussianBlur in="SourceAlpha" stdDeviation="3"/>' +
           '<feOffset dx="0" dy="3" result="offsetblur"/>' +
           '<feComponentTransfer>' +
@@ -1557,9 +1565,15 @@
           'fill="url(#' + gradientId + ')" ' +
           'filter="url(#soft-shadow-' + gradientId + ')"/>';
 
+        // Add diagonal stripe overlay for sponsored pins
+        if (sponsored) {
+          svgPin += '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" ' +
+            'fill="url(#stripe-' + gradientId + ')" opacity="1"/>';
+        }
+
         // Add inner circle (Google Maps style) - only for non-sponsored
         if (circleColor) {
-          svgPin += '<circle cx="16" cy="13" r="5.5" fill="' + circleColor + '"/>';
+          svgPin += '<circle cx="16" cy="16" r="5.5" fill="' + circleColor + '"/>';
         }
 
         svgPin += '</svg>';
@@ -1611,24 +1625,48 @@
           'mala_infrastruktura': '🎪'
         };
 
-        // Star emoji for sponsored pins, warning emoji for user-reported, category emoji for reports, or nothing for others
+        // Image or light gold circle for sponsored pins, warning emoji for user-reported, category emoji for reports, or nothing for others
         var centerContent = '';
 
         if (sponsored) {
-          var emojiFontSize = 28;
-          var emojiStyle = 'position:absolute;' +
-            'top:' + (pinHeight * 0.32) + 'px;' +
+          var circleSize = 36;
+          var firstImage = (p.images && p.images.length > 0) ? p.images[0] : null;
+          var imageUrl = null;
+
+          // Extract image URL from image object or string
+          if (firstImage) {
+            if (typeof firstImage === 'object') {
+              imageUrl = firstImage.thumb || firstImage.full;
+            } else {
+              imageUrl = firstImage;
+            }
+          }
+
+          var circleStyle = 'position:absolute;' +
+            'top:' + (pinHeight * 0.40) + 'px;' +
             'left:50%;' +
             'transform:translate(-50%,-50%);' +
-            'font-size:' + emojiFontSize + 'px;' +
-            'filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));' +
-            'z-index:2;';
-          centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">⭐</div>';
+            'width:' + circleSize + 'px;' +
+            'height:' + circleSize + 'px;' +
+            'border-radius:50%;' +
+            'box-shadow:0 2px 4px rgba(0,0,0,0.3);' +
+            'z-index:2;' +
+            'overflow:hidden;';
+
+          if (imageUrl) {
+            // Show first image in circle
+            centerContent = '<div style="' + circleStyle + 'background:#f0e68c;">' +
+              '<img src="' + esc(imageUrl) + '" style="width:100%;height:100%;object-fit:cover;" alt="">' +
+              '</div>';
+          } else {
+            // Show light gold circle if no image
+            centerContent = '<div style="' + circleStyle + 'background:#f0e68c;"></div>';
+          }
         } else if (userHasReported) {
           // Show warning emoji for user-reported places
           var emojiFontSize = 24;
           var emojiStyle = 'position:absolute;' +
-            'top:' + (pinHeight * 0.32) + 'px;' +
+            'top:' + (pinHeight * 0.40) + 'px;' +
             'left:50%;' +
             'transform:translate(-50%,-50%);' +
             'font-size:' + emojiFontSize + 'px;' +
@@ -1646,7 +1684,7 @@
           // Show category emoji for reports with white background
           var emojiFontSize = 20;
           var emojiStyle = 'position:absolute;' +
-            'top:' + (pinHeight * 0.32) + 'px;' +
+            'top:' + (pinHeight * 0.40) + 'px;' +
             'left:50%;' +
             'transform:translate(-50%,-50%);' +
             'font-size:' + emojiFontSize + 'px;' +

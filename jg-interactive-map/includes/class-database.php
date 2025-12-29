@@ -271,6 +271,7 @@ class JG_Map_Database {
 
         // Check if slug column exists (for SEO-friendly URLs)
         $slug = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'slug'");
+        $slug_was_added = false;
         if (empty($slug)) {
             error_log('[JG MAP] Adding slug column to database');
             $result = $wpdb->query("ALTER TABLE $table ADD COLUMN slug varchar(255) DEFAULT NULL AFTER title");
@@ -282,6 +283,9 @@ class JG_Map_Database {
 
                 // Generate slugs for existing points
                 self::migrate_generate_slugs();
+
+                // Mark that slug was added so we can flush rewrite rules
+                $slug_was_added = true;
             } else {
                 error_log('[JG MAP] slug column ADD FAILED - Error: ' . $wpdb->last_error);
             }
@@ -294,6 +298,12 @@ class JG_Map_Database {
                 error_log('[JG MAP] Found ' . $points_without_slugs . ' points without slugs, generating...');
                 self::migrate_generate_slugs();
             }
+        }
+
+        // Flush rewrite rules if slug column was just added
+        if ($slug_was_added) {
+            error_log('[JG MAP] Flushing rewrite rules after adding slug column');
+            flush_rewrite_rules();
         }
     }
 
