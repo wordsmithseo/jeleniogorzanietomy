@@ -4031,7 +4031,7 @@
           sponsoredBadgeHeader = '<span class="jg-promo-tag">⭐ MIEJSCE SPONSOROWANE</span>';
         }
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + editInfo + deletionInfo + adminNote + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-copy-link" class="jg-btn jg-btn--ghost">📎 Kopiuj link</button><button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + editInfo + deletionInfo + adminNote + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
@@ -4140,59 +4140,6 @@
         qs('#btn-report', modalView).onclick = function() {
           openReportModal(p);
         };
-
-        // Copy link button handler
-        var copyLinkBtn = qs('#btn-copy-link', modalView);
-        if (copyLinkBtn) {
-          copyLinkBtn.onclick = function() {
-            // Generate SEO-friendly URL with point name
-            var slug = (p.title || 'bez-nazwy')
-              .toLowerCase()
-              .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e')
-              .replace(/ł/g, 'l').replace(/ń/g, 'n').replace(/ó/g, 'o')
-              .replace(/ś/g, 's').replace(/ź/g, 'z').replace(/ż/g, 'z')
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/^-+|-+$/g, '');
-            var pointUrl = window.location.origin + '/miejsce/' + slug + '/';
-
-            // Copy to clipboard
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(pointUrl)
-                .then(function() {
-                  // Show success message
-                  copyLinkBtn.textContent = '✓ Skopiowano!';
-                  copyLinkBtn.style.background = '#15803d';
-                  setTimeout(function() {
-                    copyLinkBtn.textContent = '📎 Kopiuj link';
-                    copyLinkBtn.style.background = '';
-                  }, 2000);
-                })
-                .catch(function(err) {
-                  console.error('[JG MAP] Failed to copy link:', err);
-                  showAlert('Nie udało się skopiować linku');
-                });
-            } else {
-              // Fallback for older browsers
-              var tempInput = document.createElement('input');
-              tempInput.value = pointUrl;
-              document.body.appendChild(tempInput);
-              tempInput.select();
-              try {
-                document.execCommand('copy');
-                copyLinkBtn.textContent = '✓ Skopiowano!';
-                copyLinkBtn.style.background = '#15803d';
-                setTimeout(function() {
-                  copyLinkBtn.textContent = '📎 Kopiuj link';
-                  copyLinkBtn.style.background = '';
-                }, 2000);
-              } catch (err) {
-                console.error('[JG MAP] Failed to copy link (fallback):', err);
-                showAlert('Nie udało się skopiować linku');
-              }
-              document.body.removeChild(tempInput);
-            }
-          };
-        }
 
         if (canEdit) {
           var editBtn = qs('#btn-edit', modalView);

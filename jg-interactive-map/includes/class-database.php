@@ -304,6 +304,8 @@ class JG_Map_Database {
         if ($slug_was_added) {
             error_log('[JG MAP] Flushing rewrite rules after adding slug column');
             flush_rewrite_rules();
+            // Set option to flush again on next page load (ensures it works)
+            update_option('jg_map_needs_rewrite_flush', true);
         }
     }
 

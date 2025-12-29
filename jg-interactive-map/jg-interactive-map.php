@@ -130,6 +130,13 @@ class JG_Interactive_Map {
         // Check and update database schema on every load (only runs if needed)
         JG_Map_Database::check_and_update_schema();
 
+        // Force flush rewrite rules if needed (for SEO URLs and sitemap)
+        if (get_option('jg_map_needs_rewrite_flush', false)) {
+            flush_rewrite_rules();
+            delete_option('jg_map_needs_rewrite_flush');
+            error_log('[JG MAP] Rewrite rules flushed via option flag');
+        }
+
         JG_Map_Activity_Log::get_instance();
         JG_Map_Enqueue::get_instance();
         JG_Map_Shortcode::get_instance();
@@ -154,6 +161,8 @@ class JG_Interactive_Map {
     public function flush_rewrite_rules_on_activation() {
         $this->add_rewrite_rules();
         flush_rewrite_rules();
+        // Set option to ensure flush on next page load
+        update_option('jg_map_needs_rewrite_flush', true);
     }
 
     /**
