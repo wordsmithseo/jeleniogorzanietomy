@@ -72,6 +72,7 @@ class JG_Interactive_Map {
     private function init_hooks() {
         // Activation/Deactivation hooks
         register_activation_hook(__FILE__, array('JG_Map_Database', 'activate'));
+        register_activation_hook(__FILE__, array($this, 'flush_rewrite_rules_on_activation'));
         register_deactivation_hook(__FILE__, array('JG_Map_Database', 'deactivate'));
         register_deactivation_hook(__FILE__, array('JG_Map_Maintenance', 'deactivate'));
 
@@ -95,6 +96,7 @@ class JG_Interactive_Map {
         add_action('init', array($this, 'add_rewrite_rules'));
         add_filter('query_vars', array($this, 'add_query_vars'));
         add_action('template_redirect', array($this, 'handle_point_page'));
+        add_action('template_redirect', array($this, 'handle_sitemap'));
         add_action('wp_head', array($this, 'add_point_meta_tags'));
     }
 
@@ -144,6 +146,14 @@ class JG_Interactive_Map {
             false,
             dirname(JG_MAP_PLUGIN_BASENAME) . '/languages'
         );
+    }
+
+    /**
+     * Flush rewrite rules on plugin activation
+     */
+    public function flush_rewrite_rules_on_activation() {
+        $this->add_rewrite_rules();
+        flush_rewrite_rules();
     }
 
     /**
@@ -201,9 +211,27 @@ class JG_Interactive_Map {
      * Add rewrite rules for SEO-friendly point URLs
      */
     public function add_rewrite_rules() {
+        // Rewrite rules for all point types
         add_rewrite_rule(
             '^miejsce/([^/]+)/?$',
-            'index.php?jg_map_point=$matches[1]',
+            'index.php?jg_map_point=$matches[1]&jg_map_type=miejsce',
+            'top'
+        );
+        add_rewrite_rule(
+            '^ciekawostka/([^/]+)/?$',
+            'index.php?jg_map_point=$matches[1]&jg_map_type=ciekawostka',
+            'top'
+        );
+        add_rewrite_rule(
+            '^zgloszenie/([^/]+)/?$',
+            'index.php?jg_map_point=$matches[1]&jg_map_type=zgloszenie',
+            'top'
+        );
+
+        // Sitemap for places
+        add_rewrite_rule(
+            '^jg-map-sitemap\.xml$',
+            'index.php?jg_map_sitemap=1',
             'top'
         );
     }
@@ -213,6 +241,8 @@ class JG_Interactive_Map {
      */
     public function add_query_vars($vars) {
         $vars[] = 'jg_map_point';
+        $vars[] = 'jg_map_type';
+        $vars[] = 'jg_map_sitemap';
         return $vars;
     }
 
@@ -272,19 +302,18 @@ class JG_Interactive_Map {
             return;
         }
 
-        // Get point by slug
+        // Get point by slug from database
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
         $point = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT id, title, content, excerpt, lat, lng, type, status,
+                "SELECT id, title, slug, content, excerpt, lat, lng, type, status,
                         author_id, is_promo, website, phone, images, created_at
                  FROM $table
-                 WHERE LOWER(REPLACE(REPLACE(REPLACE(title, ' ', '-'), 'ł', 'l'), 'ą', 'a')) = %s
-                 AND status = 'publish'
+                 WHERE slug = %s AND status = 'publish'
                  LIMIT 1",
-                strtolower($point_slug)
+                $point_slug
             ),
             ARRAY_A
         );
@@ -483,7 +512,16 @@ class JG_Interactive_Map {
         $images = json_decode($point['images'], true) ?: array();
         $first_image = !empty($images) ? $images[0] : '';
         $description = !empty($point['excerpt']) ? $point['excerpt'] : wp_trim_words(strip_tags($point['content']), 30);
-        $url = home_url('/miejsce/' . $this->generate_slug($point['title']) . '/');
+
+        // Determine URL path based on point type
+        $type_path = 'miejsce'; // default
+        if ($point['type'] === 'ciekawostka') {
+            $type_path = 'ciekawostka';
+        } elseif ($point['type'] === 'zgloszenie') {
+            $type_path = 'zgloszenie';
+        }
+
+        $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
 
         ?>
         <meta name="description" content="<?php echo esc_attr($description); ?>">
@@ -547,21 +585,56 @@ class JG_Interactive_Map {
     }
 
     /**
-     * Generate slug from title
+     * Handle sitemap.xml generation
      */
-    private function generate_slug($title) {
-        $slug = strtolower($title);
+    public function handle_sitemap() {
+        if (!get_query_var('jg_map_sitemap')) {
+            return;
+        }
 
-        // Polish characters transliteration
-        $polish = array('ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż', 'Ą', 'Ć', 'Ę', 'Ł', 'Ń', 'Ó', 'Ś', 'Ź', 'Ż');
-        $latin = array('a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z', 'a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z');
-        $slug = str_replace($polish, $latin, $slug);
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
 
-        // Replace spaces and special characters with hyphens
-        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
-        $slug = trim($slug, '-');
+        // Get all published points with slug
+        $points = $wpdb->get_results(
+            "SELECT id, title, slug, type, updated_at
+             FROM $table
+             WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''
+             ORDER BY updated_at DESC",
+            ARRAY_A
+        );
 
-        return $slug;
+        // Set headers for XML
+        header('Content-Type: application/xml; charset=utf-8');
+        header('X-Robots-Tag: noindex, follow');
+
+        echo '<?xml version="1.0" encoding="UTF-8"?>';
+        echo "\n";
+        ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+<?php foreach ($points as $point):
+    // Determine URL path based on point type
+    $type_path = 'miejsce'; // default
+    if ($point['type'] === 'ciekawostka') {
+        $type_path = 'ciekawostka';
+    } elseif ($point['type'] === 'zgloszenie') {
+        $type_path = 'zgloszenie';
+    }
+
+    $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
+    $lastmod = date('Y-m-d', strtotime($point['updated_at']));
+?>
+    <url>
+        <loc><?php echo esc_url($url); ?></loc>
+        <lastmod><?php echo $lastmod; ?></lastmod>
+        <changefreq>weekly</changefreq>
+        <priority><?php echo $point['type'] === 'miejsce' ? '0.8' : '0.6'; ?></priority>
+    </url>
+<?php endforeach; ?>
+</urlset>
+        <?php
+        exit;
     }
 }
 
