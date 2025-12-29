@@ -2231,6 +2231,7 @@
               author_name: (r.author_name || ''),
               author_hidden: !!r.author_hidden,
               images: (r.images || []),
+              featured_image_index: +(r.featured_image_index || 0),
               votes: +(r.votes || 0),
               my_vote: (r.my_vote || ''),
               date: r.date || null,

@@ -330,6 +330,16 @@ class JG_Map_Database {
         } else {
             error_log('[JG MAP] relevance_votes table already exists');
         }
+
+        // Check if featured_image_index column exists (for OG/social media featured image)
+        $featured_image_index = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'featured_image_index'");
+        if (empty($featured_image_index)) {
+            error_log('[JG MAP] Adding featured_image_index column to database');
+            $result = $wpdb->query("ALTER TABLE $table ADD COLUMN featured_image_index int DEFAULT 0 AFTER images");
+            error_log('[JG MAP] featured_image_index column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
+        } else {
+            error_log('[JG MAP] featured_image_index column already exists');
+        }
     }
 
     /**
@@ -524,7 +534,7 @@ class JG_Map_Database {
         $sql = "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                        author_id, author_hidden, is_deletion_requested, deletion_reason,
                        deletion_requested_at, is_promo, promo_until, website, phone,
-                       cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
+                       cta_enabled, cta_type, admin_note, images, featured_image_index, address, created_at, updated_at, ip_address
                 FROM $table WHERE $status_condition ORDER BY created_at DESC";
 
         $results = $wpdb->get_results($sql, ARRAY_A);
@@ -551,7 +561,7 @@ class JG_Map_Database {
             "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                     author_id, author_hidden, is_deletion_requested, deletion_reason,
                     deletion_requested_at, is_promo, promo_until, website, phone,
-                    cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
+                    cta_enabled, cta_type, admin_note, images, featured_image_index, address, created_at, updated_at, ip_address
              FROM $table
              WHERE author_id = %d AND status = 'pending'
              ORDER BY created_at DESC",
@@ -577,7 +587,7 @@ class JG_Map_Database {
                 "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                         author_id, author_hidden, is_deletion_requested, deletion_reason,
                         deletion_requested_at, is_promo, promo_until, website, phone,
-                        cta_enabled, cta_type, admin_note, images, address, created_at, updated_at, ip_address
+                        cta_enabled, cta_type, admin_note, images, featured_image_index, address, created_at, updated_at, ip_address
                  FROM $table WHERE id = %d",
                 $point_id
             ),

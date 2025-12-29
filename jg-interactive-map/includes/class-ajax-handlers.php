@@ -411,6 +411,7 @@ class JG_Map_Ajax_Handlers {
                 'author_name' => $author_name,
                 'author_hidden' => (bool)$point['author_hidden'],
                 'images' => $images,
+                'featured_image_index' => intval($point['featured_image_index'] ?? 0),
                 'votes' => $votes_count,
                 'my_vote' => $my_vote,
                 'relevance_votes' => $relevance_votes_count,
