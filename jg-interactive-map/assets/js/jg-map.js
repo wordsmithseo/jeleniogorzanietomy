@@ -2864,6 +2864,126 @@
         };
       }
 
+      /**
+       * Track statistics for sponsored pins
+       */
+      function trackStat(pointId, actionType, extraData) {
+        if (!pointId) return;
+
+        var data = {
+          action: 'jg_track_stat',
+          point_id: pointId,
+          action_type: actionType
+        };
+
+        // Add extra data (platform for social, image_index for gallery)
+        if (extraData) {
+          for (var key in extraData) {
+            data[key] = extraData[key];
+          }
+        }
+
+        // Send async request (fire and forget)
+        fetch(CFG.ajaxUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(data)
+        }).catch(function() {
+          // Silently ignore errors - tracking should not disrupt UX
+        });
+      }
+
+      function openStatsModal(p) {
+        if (!p.stats) {
+          showAlert('Brak danych statystycznych');
+          return;
+        }
+
+        var totalSocialClicks = 0;
+        var socialBreakdown = [];
+        if (p.stats.social_clicks) {
+          var platforms = {
+            facebook: { label: 'Facebook', color: '#1877f2', emoji: 'f' },
+            instagram: { label: 'Instagram', color: '#e1306c', emoji: '📷' },
+            linkedin: { label: 'LinkedIn', color: '#0077b5', emoji: 'in' },
+            tiktok: { label: 'TikTok', color: '#000', emoji: '🎵' }
+          };
+
+          for (var platform in platforms) {
+            var clicks = parseInt(p.stats.social_clicks[platform] || 0);
+            if (clicks > 0) {
+              totalSocialClicks += clicks;
+              socialBreakdown.push('<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:#f9fafb;border-radius:6px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:10px"><div style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:' + platforms[platform].color + ';color:#fff;border-radius:50%;font-size:14px">' + platforms[platform].emoji + '</div><strong>' + platforms[platform].label + '</strong></div><div style="font-size:18px;font-weight:600;color:#374151">' + clicks + '</div></div>');
+            }
+          }
+        }
+
+        // Gallery clicks breakdown
+        var galleryBreakdown = [];
+        var totalGalleryClicks = 0;
+        if (p.stats.gallery_clicks && p.images && p.images.length > 0) {
+          for (var i = 0; i < p.images.length; i++) {
+            var imgClicks = parseInt(p.stats.gallery_clicks[i] || 0);
+            totalGalleryClicks += imgClicks;
+            if (imgClicks > 0) {
+              var imgThumb = p.images[i].thumbnail || p.images[i].url;
+              galleryBreakdown.push('<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:#f9fafb;border-radius:6px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:10px"><img src="' + esc(imgThumb) + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px" alt=""><span>Zdjęcie #' + (i + 1) + '</span></div><div style="font-size:18px;font-weight:600;color:#374151">' + imgClicks + '</div></div>');
+            }
+          }
+        }
+
+        // Format dates
+        var firstViewed = p.stats.first_viewed ? new Date(p.stats.first_viewed).toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Brak danych';
+        var lastViewed = p.stats.last_viewed ? new Date(p.stats.last_viewed).toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Brak danych';
+
+        // Format average time spent
+        var avgTimeSpent = p.stats.avg_time_spent || 0;
+        var timeFormatted = avgTimeSpent > 0 ? Math.floor(avgTimeSpent / 60) + ' min ' + (avgTimeSpent % 60) + ' sek' : '0 sek';
+
+        var modalHtml = '<header><h3>📊 Statystyki pinezki</h3><button class="jg-close" id="stats-close">&times;</button></header>' +
+          '<div style="padding:20px;max-height:70vh;overflow-y:auto">' +
+
+          // Main metrics
+          '<div style="margin-bottom:24px"><h4 style="margin:0 0 16px 0;color:#374151;font-size:16px;font-weight:600">Kluczowe wskaźniki</h4>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px">' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:12px;box-shadow:0 4px 12px rgba(102,126,234,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👁️ Wyświetlenia</div><div style="font-size:32px;font-weight:700">' + (p.stats.views || 0) + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👥 Unikalni</div><div style="font-size:32px;font-weight:700">' + (p.stats.unique_visitors || 0) + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #fa709a 0%, #fee140 100%);border-radius:12px;box-shadow:0 4px 12px rgba(250,112,154,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">⏱️ Śr. czas</div><div style="font-size:20px;font-weight:700">' + timeFormatted + '</div></div>' +
+          '</div></div>' +
+
+          // Interaction metrics
+          '<div style="margin-bottom:24px"><h4 style="margin:0 0 16px 0;color:#374151;font-size:16px;font-weight:600">Interakcje użytkowników</h4>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px">' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">📞 Telefon</div><div style="font-size:32px;font-weight:700">' + (p.stats.phone_clicks || 0) + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);border-radius:12px;box-shadow:0 4px 12px rgba(79,172,254,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🌐 Strona WWW</div><div style="font-size:32px;font-weight:700">' + (p.stats.website_clicks || 0) + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);border-radius:12px;box-shadow:0 4px 12px rgba(67,233,123,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">📱 Social media</div><div style="font-size:32px;font-weight:700">' + totalSocialClicks + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #ffa751 0%, #ffe259 100%);border-radius:12px;box-shadow:0 4px 12px rgba(255,167,81,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🎯 CTA</div><div style="font-size:32px;font-weight:700">' + (p.stats.cta_clicks || 0) + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);border-radius:12px;box-shadow:0 4px 12px rgba(168,237,234,0.3);color:#333"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🖼️ Galeria</div><div style="font-size:32px;font-weight:700">' + totalGalleryClicks + '</div></div>' +
+          '</div></div>' +
+
+          // Social media breakdown
+          (socialBreakdown.length > 0 ? '<div style="margin-bottom:24px"><h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;font-weight:600">Szczegóły kliknięć social media</h4>' + socialBreakdown.join('') + '</div>' : '') +
+
+          // Gallery breakdown
+          (galleryBreakdown.length > 0 ? '<div style="margin-bottom:24px"><h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;font-weight:600">Najpopularniejsze zdjęcia</h4>' + galleryBreakdown.join('') + '</div>' : '') +
+
+          // Timeline
+          '<div style="margin-bottom:24px"><h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;font-weight:600">Linia czasu</h4>' +
+          '<div style="background:#f9fafb;border-radius:8px;padding:16px">' +
+          '<div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb"><div><div style="font-size:12px;color:#6b7280;margin-bottom:4px">📅 Pierwsze wyświetlenie</div><div style="font-size:14px;font-weight:600;color:#374151">' + firstViewed + '</div></div></div>' +
+          '<div style="display:flex;justify-content:space-between"><div><div style="font-size:12px;color:#6b7280;margin-bottom:4px">🕐 Ostatnie wyświetlenie</div><div style="font-size:14px;font-weight:600;color:#374151">' + lastViewed + '</div></div></div>' +
+          '</div></div>' +
+
+          '<div style="padding:12px;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:6px"><div style="font-size:12px;color:#1e40af"><strong>💡 Wskazówka:</strong> Statystyki pokazują rzeczywiste interakcje użytkowników z Twoją pinezką. Wykorzystaj te dane aby zoptymalizować treść i zwiększyć zaangażowanie.</div></div>' +
+          '</div>';
+
+        open(modalReport, modalHtml);
+
+        qs('#stats-close', modalReport).onclick = function() {
+          close(modalReport);
+        };
+      }
+
       function openReportModal(p) {
         // Check if user is logged in
         if (!CFG.isLoggedIn) {
@@ -3110,6 +3230,11 @@
                 '<strong style="display:block;margin-bottom:12px;color:#92400e">📋 Dane kontaktowe (punkt sponsorowany)</strong>' +
                 '<label style="display:block;margin-bottom:8px">🌐 Strona internetowa <input type="text" name="website" id="edit-website-input" value="' + esc(p.website || '') + '" placeholder="np. jeleniagora.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
                 '<label style="display:block;margin-bottom:16px">📞 Telefon <input type="text" name="phone" id="edit-phone-input" value="' + esc(p.phone || '') + '" placeholder="np. 123 456 789" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '<strong style="display:block;margin:16px 0 8px;color:#92400e">📱 Media społecznościowe</strong>' +
+                '<label style="display:block;margin-bottom:8px">Facebook <input type="text" name="facebook_url" id="edit-facebook-input" value="' + esc(p.facebook_url || '') + '" placeholder="np. facebook.com/twojstrona" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '<label style="display:block;margin-bottom:8px">Instagram <input type="text" name="instagram_url" id="edit-instagram-input" value="' + esc(p.instagram_url || '') + '" placeholder="np. instagram.com/twojprofil" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '<label style="display:block;margin-bottom:8px">LinkedIn <input type="text" name="linkedin_url" id="edit-linkedin-input" value="' + esc(p.linkedin_url || '') + '" placeholder="np. linkedin.com/company/twojafirma" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '<label style="display:block;margin-bottom:16px">TikTok <input type="text" name="tiktok_url" id="edit-tiktok-input" value="' + esc(p.tiktok_url || '') + '" placeholder="np. tiktok.com/@twojprofil" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
                 '<div style="border-top:2px solid #f59e0b;padding-top:12px;margin-top:12px">' +
                 '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer">' +
                 '<input type="checkbox" name="cta_enabled" id="edit-cta-enabled-checkbox" value="1" ' + (p.cta_enabled ? 'checked' : '') + ' style="width:20px;height:20px">' +
@@ -3881,7 +4006,7 @@
 
         // Contact info for sponsored points
         var contactInfo = '';
-        if (p.sponsored && (p.website || p.phone)) {
+        if (p.sponsored && (p.website || p.phone || p.facebook_url || p.instagram_url || p.linkedin_url || p.tiktok_url)) {
           var contactItems = [];
           if (p.website) {
             var websiteUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
@@ -3890,6 +4015,30 @@
           if (p.phone) {
             contactItems.push('<div><strong>📞 Telefon:</strong> <a href="tel:' + esc(p.phone) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.phone) + '</a></div>');
           }
+
+          // Social media icons with authentic SVG logos
+          var socialIcons = [];
+          if (p.facebook_url) {
+            var fbUrl = p.facebook_url.startsWith('http') ? p.facebook_url : 'https://' + p.facebook_url;
+            socialIcons.push('<a href="' + esc(fbUrl) + '" target="_blank" rel="noopener" data-social="facebook" data-point-id="' + p.id + '" class="jg-social-link" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;background:#1877f2;color:#fff;border-radius:50%;text-decoration:none;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 2px 8px rgba(24,119,242,0.3)" title="Facebook" onmouseover="this.style.transform=\'scale(1.1)\';this.style.boxShadow=\'0 4px 12px rgba(24,119,242,0.5)\'" onmouseout="this.style.transform=\'scale(1)\';this.style.boxShadow=\'0 2px 8px rgba(24,119,242,0.3)\'"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>');
+          }
+          if (p.instagram_url) {
+            var igUrl = p.instagram_url.startsWith('http') ? p.instagram_url : 'https://' + p.instagram_url;
+            socialIcons.push('<a href="' + esc(igUrl) + '" target="_blank" rel="noopener" data-social="instagram" data-point-id="' + p.id + '" class="jg-social-link" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;background:linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);color:#fff;border-radius:50%;text-decoration:none;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 2px 8px rgba(225,48,108,0.3)" title="Instagram" onmouseover="this.style.transform=\'scale(1.1)\';this.style.boxShadow=\'0 4px 12px rgba(225,48,108,0.5)\'" onmouseout="this.style.transform=\'scale(1)\';this.style.boxShadow=\'0 2px 8px rgba(225,48,108,0.3)\'"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>');
+          }
+          if (p.linkedin_url) {
+            var liUrl = p.linkedin_url.startsWith('http') ? p.linkedin_url : 'https://' + p.linkedin_url;
+            socialIcons.push('<a href="' + esc(liUrl) + '" target="_blank" rel="noopener" data-social="linkedin" data-point-id="' + p.id + '" class="jg-social-link" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;background:#0077b5;color:#fff;border-radius:50%;text-decoration:none;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 2px 8px rgba(0,119,181,0.3)" title="LinkedIn" onmouseover="this.style.transform=\'scale(1.1)\';this.style.boxShadow=\'0 4px 12px rgba(0,119,181,0.5)\'" onmouseout="this.style.transform=\'scale(1)\';this.style.boxShadow=\'0 2px 8px rgba(0,119,181,0.3)\'"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>');
+          }
+          if (p.tiktok_url) {
+            var ttUrl = p.tiktok_url.startsWith('http') ? p.tiktok_url : 'https://' + p.tiktok_url;
+            socialIcons.push('<a href="' + esc(ttUrl) + '" target="_blank" rel="noopener" data-social="tiktok" data-point-id="' + p.id + '" class="jg-social-link" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;background:#000;color:#fff;border-radius:50%;text-decoration:none;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.3)" title="TikTok" onmouseover="this.style.transform=\'scale(1.1)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.5)\'" onmouseout="this.style.transform=\'scale(1)\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.3)\'"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg></a>');
+          }
+
+          if (socialIcons.length > 0) {
+            contactItems.push('<div style="margin-top:8px"><strong>📱 Social media:</strong></div><div style="display:flex;gap:10px;margin-top:8px">' + socialIcons.join('') + '</div>');
+          }
+
           if (contactItems.length > 0) {
             contactInfo = '<div style="margin-top:10px;padding:12px;background:#fef3c7;border-radius:8px;border:2px solid #f59e0b">' + contactItems.join('') + '</div>';
           }
@@ -4034,9 +4183,20 @@
           sponsoredBadgeHeader = '<span class="jg-promo-tag">⭐ MIEJSCE SPONSOROWANE</span>';
         }
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + editInfo + deletionInfo + adminNote + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        // Stats button for sponsored places (owner + admins only)
+        var statsBtn = '';
+        if (p.sponsored && canEdit && p.stats) {
+          statsBtn = '<button id="btn-stats" class="jg-btn jg-btn--ghost">📊 Statystyki</button>';
+        }
+
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + editInfo + deletionInfo + adminNote + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
+
+        // Track view for sponsored pins
+        if (p.sponsored) {
+          trackStat(p.id, 'view');
+        }
 
         qs('#dlg-close', modalView).onclick = function() {
           close(modalView);
@@ -4044,9 +4204,15 @@
 
         var g = qs('.jg-gallery', modalView);
         if (g) {
-          g.querySelectorAll('img').forEach(function(img) {
+          g.querySelectorAll('img').forEach(function(img, idx) {
             img.addEventListener('click', function() {
               var fullUrl = this.getAttribute('data-full') || this.src;
+
+              // Track gallery click for sponsored pins
+              if (p.sponsored) {
+                trackStat(p.id, 'gallery_click', { image_index: idx });
+              }
+
               openLightbox(fullUrl);
             });
           });
@@ -4126,6 +4292,44 @@
           });
         }
 
+        // Track clicks on contact links for sponsored pins
+        if (p.sponsored) {
+          // Track phone clicks
+          var phoneLinks = modalView.querySelectorAll('a[href^="tel:"]');
+          phoneLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+              trackStat(p.id, 'phone_click');
+            });
+          });
+
+          // Track website clicks (excluding social media)
+          var websiteLinks = modalView.querySelectorAll('a[href^="http"]:not(.jg-social-link):not(.jg-btn-cta-sponsored)');
+          websiteLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+              trackStat(p.id, 'website_click');
+            });
+          });
+
+          // Track social media clicks
+          var socialLinks = modalView.querySelectorAll('.jg-social-link');
+          socialLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+              var platform = this.getAttribute('data-social');
+              if (platform) {
+                trackStat(p.id, 'social_click', { platform: platform });
+              }
+            });
+          });
+
+          // Track CTA button clicks
+          var ctaBtn = modalView.querySelector('.jg-btn-cta-sponsored');
+          if (ctaBtn) {
+            ctaBtn.addEventListener('click', function() {
+              trackStat(p.id, 'cta_click');
+            });
+          }
+        }
+
         // Setup voting handlers only if not promo
         if (!p.sponsored) {
           var cnt = qs('#v-cnt', modalView);
@@ -4188,6 +4392,12 @@
         };
 
         if (canEdit) {
+          // Stats button handler
+          var statsBtn = qs('#btn-stats', modalView);
+          if (statsBtn) statsBtn.onclick = function() {
+            openStatsModal(p);
+          };
+
           var editBtn = qs('#btn-edit', modalView);
           if (editBtn) editBtn.onclick = function() {
             openEditModal(p);

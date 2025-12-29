@@ -340,7 +340,8 @@ class JG_Interactive_Map {
         $point = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT id, title, slug, content, excerpt, lat, lng, type, status,
-                        author_id, is_promo, website, phone, images, featured_image_index, created_at
+                        author_id, is_promo, website, phone, images, featured_image_index,
+                        facebook_url, instagram_url, linkedin_url, tiktok_url, created_at
                  FROM $table
                  WHERE slug = %s AND status = 'publish'
                  LIMIT 1",
