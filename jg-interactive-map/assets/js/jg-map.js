@@ -3886,7 +3886,7 @@
 
         // Contact info for sponsored points
         var contactInfo = '';
-        if (p.sponsored && (p.website || p.phone)) {
+        if (p.sponsored && (p.website || p.phone || p.facebook_url || p.instagram_url || p.linkedin_url || p.tiktok_url)) {
           var contactItems = [];
           if (p.website) {
             var websiteUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
@@ -3895,6 +3895,30 @@
           if (p.phone) {
             contactItems.push('<div><strong>📞 Telefon:</strong> <a href="tel:' + esc(p.phone) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.phone) + '</a></div>');
           }
+
+          // Social media icons
+          var socialIcons = [];
+          if (p.facebook_url) {
+            var fbUrl = p.facebook_url.startsWith('http') ? p.facebook_url : 'https://' + p.facebook_url;
+            socialIcons.push('<a href="' + esc(fbUrl) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;background:#1877f2;color:#fff;border-radius:50%;text-decoration:none;font-size:20px;transition:transform 0.2s" title="Facebook" onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'scale(1)\'">f</a>');
+          }
+          if (p.instagram_url) {
+            var igUrl = p.instagram_url.startsWith('http') ? p.instagram_url : 'https://' + p.instagram_url;
+            socialIcons.push('<a href="' + esc(igUrl) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;background:linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);color:#fff;border-radius:50%;text-decoration:none;font-size:20px;transition:transform 0.2s" title="Instagram" onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'scale(1)\'">📷</a>');
+          }
+          if (p.linkedin_url) {
+            var liUrl = p.linkedin_url.startsWith('http') ? p.linkedin_url : 'https://' + p.linkedin_url;
+            socialIcons.push('<a href="' + esc(liUrl) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;background:#0077b5;color:#fff;border-radius:50%;text-decoration:none;font-size:20px;transition:transform 0.2s" title="LinkedIn" onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'scale(1)\'">in</a>');
+          }
+          if (p.tiktok_url) {
+            var ttUrl = p.tiktok_url.startsWith('http') ? p.tiktok_url : 'https://' + p.tiktok_url;
+            socialIcons.push('<a href="' + esc(ttUrl) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;background:#000;color:#fff;border-radius:50%;text-decoration:none;font-size:20px;transition:transform 0.2s" title="TikTok" onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'scale(1)\'">🎵</a>');
+          }
+
+          if (socialIcons.length > 0) {
+            contactItems.push('<div style="margin-top:8px"><strong>📱 Social media:</strong></div><div style="display:flex;gap:10px;margin-top:8px">' + socialIcons.join('') + '</div>');
+          }
+
           if (contactItems.length > 0) {
             contactInfo = '<div style="margin-top:10px;padding:12px;background:#fef3c7;border-radius:8px;border:2px solid #f59e0b">' + contactItems.join('') + '</div>';
           }
