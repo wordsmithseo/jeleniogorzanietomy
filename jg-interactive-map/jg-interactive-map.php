@@ -94,6 +94,7 @@ class JG_Interactive_Map {
 
         // SEO-friendly URLs for points
         add_action('init', array($this, 'add_rewrite_rules'));
+        add_action('init', array($this, 'check_rewrite_flush'), 999); // Run late to ensure rewrite rules are added first
         add_filter('query_vars', array($this, 'add_query_vars'));
         add_action('template_redirect', array($this, 'handle_point_page'));
         add_action('template_redirect', array($this, 'handle_sitemap'));
@@ -130,23 +131,10 @@ class JG_Interactive_Map {
         // Check and update database schema on every load (only runs if needed)
         JG_Map_Database::check_and_update_schema();
 
-        // TEMPORARY FIX: Force flush rewrite rules NOW to fix sitemap and SEO URLs
-        // This will run once and can be removed after deployment
-        static $force_flushed = false;
-        if (!$force_flushed && !get_option('jg_map_rewrite_flushed_v4', false)) {
-            error_log('[JG MAP] FORCING rewrite rules flush (one-time fix v4)');
-            // Add rewrite rules first
-            $this->add_rewrite_rules();
-            flush_rewrite_rules(false); // false = soft flush
-            update_option('jg_map_rewrite_flushed_v4', true);
-            $force_flushed = true;
-        }
-
-        // Force flush rewrite rules if needed (for SEO URLs and sitemap)
-        if (get_option('jg_map_needs_rewrite_flush', false)) {
-            flush_rewrite_rules();
-            delete_option('jg_map_needs_rewrite_flush');
-            error_log('[JG MAP] Rewrite rules flushed via option flag');
+        // Set flag for one-time rewrite flush (will be executed in init hook)
+        if (!get_option('jg_map_rewrite_flushed_v5', false)) {
+            update_option('jg_map_needs_rewrite_flush', true);
+            update_option('jg_map_rewrite_flushed_v5', true);
         }
 
         JG_Map_Activity_Log::get_instance();
@@ -265,6 +253,19 @@ class JG_Interactive_Map {
         $vars[] = 'jg_map_type';
         $vars[] = 'jg_map_sitemap';
         return $vars;
+    }
+
+    /**
+     * Check and flush rewrite rules if needed
+     * Runs on 'init' hook when $wp_rewrite is available
+     */
+    public function check_rewrite_flush() {
+        if (get_option('jg_map_needs_rewrite_flush', false)) {
+            error_log('[JG MAP] Flushing rewrite rules on init hook');
+            flush_rewrite_rules(false); // soft flush
+            delete_option('jg_map_needs_rewrite_flush');
+            error_log('[JG MAP] Rewrite rules flushed successfully');
+        }
     }
 
     /**
