@@ -713,6 +713,7 @@ class JG_Map_Ajax_Handlers {
             'author_id' => $user_id,
             'author_hidden' => !$public_name,
             'images' => json_encode($images),
+            'featured_image_index' => !empty($images) ? 0 : null, // Auto-set first image as featured
             'ip_address' => $ip_address,
             'created_at' => current_time('mysql', true),  // GMT time for consistency
             'updated_at' => current_time('mysql', true)   // GMT time for consistency
@@ -920,6 +921,7 @@ class JG_Map_Ajax_Handlers {
             // Add new images to existing images
             if (!empty($new_images)) {
                 $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
+                $had_no_images = empty($existing_images);
                 $all_images = array_merge($existing_images, $new_images);
 
                 // Limit based on sponsored status - 12 for sponsored, 6 for regular
@@ -927,6 +929,11 @@ class JG_Map_Ajax_Handlers {
                 $all_images = array_slice($all_images, 0, $max_images);
 
                 $update_data['images'] = json_encode($all_images);
+
+                // If this is first image being added, set it as featured
+                if ($had_no_images) {
+                    $update_data['featured_image_index'] = 0;
+                }
             }
 
             JG_Map_Database::update_point($point_id, $update_data);
@@ -3468,17 +3475,47 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Get current featured image index
+        $current_featured = isset($point['featured_image_index']) ? (int)$point['featured_image_index'] : 0;
+
         // Remove image from array
         array_splice($images, $image_index, 1);
 
-        // Update point with new images array
-        JG_Map_Database::update_point($point_id, array(
+        // Update featured_image_index based on deletion
+        $new_featured_index = $current_featured;
+
+        if ($image_index === $current_featured) {
+            // Deleted image was featured - set first image as new featured
+            $new_featured_index = 0;
+        } elseif ($image_index < $current_featured) {
+            // Deleted image was before featured - shift featured index down
+            $new_featured_index = $current_featured - 1;
+        }
+        // else: deleted image was after featured - no change needed
+
+        // Ensure featured index is within bounds (shouldn't happen, but safety check)
+        if ($new_featured_index >= count($images)) {
+            $new_featured_index = max(0, count($images) - 1);
+        }
+
+        // Update point with new images array and adjusted featured index
+        $update_data = array(
             'images' => json_encode($images)
-        ));
+        );
+
+        if (!empty($images)) {
+            $update_data['featured_image_index'] = $new_featured_index;
+        } else {
+            // No images left - clear featured index
+            $update_data['featured_image_index'] = null;
+        }
+
+        JG_Map_Database::update_point($point_id, $update_data);
 
         wp_send_json_success(array(
             'message' => 'Zdjęcie usunięte',
-            'remaining_count' => count($images)
+            'remaining_count' => count($images),
+            'new_featured_index' => $update_data['featured_image_index']
         ));
     }
 
