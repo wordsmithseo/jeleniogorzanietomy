@@ -365,7 +365,13 @@ class JG_Map_Database {
             'stats_views' => "ALTER TABLE $table ADD COLUMN stats_views int DEFAULT 0 AFTER tiktok_url",
             'stats_phone_clicks' => "ALTER TABLE $table ADD COLUMN stats_phone_clicks int DEFAULT 0 AFTER stats_views",
             'stats_website_clicks' => "ALTER TABLE $table ADD COLUMN stats_website_clicks int DEFAULT 0 AFTER stats_phone_clicks",
-            'stats_social_clicks' => "ALTER TABLE $table ADD COLUMN stats_social_clicks longtext DEFAULT NULL AFTER stats_website_clicks"
+            'stats_social_clicks' => "ALTER TABLE $table ADD COLUMN stats_social_clicks longtext DEFAULT NULL AFTER stats_website_clicks",
+            'stats_cta_clicks' => "ALTER TABLE $table ADD COLUMN stats_cta_clicks int DEFAULT 0 AFTER stats_social_clicks",
+            'stats_gallery_clicks' => "ALTER TABLE $table ADD COLUMN stats_gallery_clicks longtext DEFAULT NULL AFTER stats_cta_clicks",
+            'stats_first_viewed' => "ALTER TABLE $table ADD COLUMN stats_first_viewed datetime DEFAULT NULL AFTER stats_gallery_clicks",
+            'stats_last_viewed' => "ALTER TABLE $table ADD COLUMN stats_last_viewed datetime DEFAULT NULL AFTER stats_first_viewed",
+            'stats_unique_visitors' => "ALTER TABLE $table ADD COLUMN stats_unique_visitors int DEFAULT 0 AFTER stats_last_viewed",
+            'stats_avg_time_spent' => "ALTER TABLE $table ADD COLUMN stats_avg_time_spent int DEFAULT 0 AFTER stats_unique_visitors"
         );
 
         foreach ($stats_columns as $column_name => $alter_query) {
@@ -575,6 +581,8 @@ class JG_Map_Database {
                        cta_enabled, cta_type, admin_note, images, featured_image_index,
                        facebook_url, instagram_url, linkedin_url, tiktok_url,
                        stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
+                       stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
+                       stats_unique_visitors, stats_avg_time_spent,
                        address, created_at, updated_at, ip_address
                 FROM $table WHERE $status_condition ORDER BY created_at DESC";
 
@@ -605,6 +613,8 @@ class JG_Map_Database {
                     cta_enabled, cta_type, admin_note, images, featured_image_index,
                     facebook_url, instagram_url, linkedin_url, tiktok_url,
                     stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
+                    stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
+                    stats_unique_visitors, stats_avg_time_spent,
                     address, created_at, updated_at, ip_address
              FROM $table
              WHERE author_id = %d AND status = 'pending'
@@ -634,6 +644,8 @@ class JG_Map_Database {
                         cta_enabled, cta_type, admin_note, images, featured_image_index,
                         facebook_url, instagram_url, linkedin_url, tiktok_url,
                         stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
+                        stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
+                        stats_unique_visitors, stats_avg_time_spent,
                         address, created_at, updated_at, ip_address
                  FROM $table WHERE id = %d",
                 $point_id

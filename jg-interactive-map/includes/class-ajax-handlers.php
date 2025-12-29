@@ -97,6 +97,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_check_registration_status', array($this, 'check_registration_status'));
         add_action('wp_ajax_jg_check_user_session_status', array($this, 'check_user_session_status'));
         add_action('wp_ajax_jg_logout_user', array($this, 'logout_user'));
+        add_action('wp_ajax_jg_track_stat', array($this, 'track_stat'));
+        add_action('wp_ajax_nopriv_jg_track_stat', array($this, 'track_stat'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -442,7 +444,13 @@ class JG_Map_Ajax_Handlers {
                     'views' => intval($point['stats_views'] ?? 0),
                     'phone_clicks' => intval($point['stats_phone_clicks'] ?? 0),
                     'website_clicks' => intval($point['stats_website_clicks'] ?? 0),
-                    'social_clicks' => json_decode($point['stats_social_clicks'] ?? '{}', true) ?: array()
+                    'social_clicks' => json_decode($point['stats_social_clicks'] ?? '{}', true) ?: array(),
+                    'cta_clicks' => intval($point['stats_cta_clicks'] ?? 0),
+                    'gallery_clicks' => json_decode($point['stats_gallery_clicks'] ?? '{}', true) ?: array(),
+                    'first_viewed' => $point['stats_first_viewed'] ?? null,
+                    'last_viewed' => $point['stats_last_viewed'] ?? null,
+                    'unique_visitors' => intval($point['stats_unique_visitors'] ?? 0),
+                    'avg_time_spent' => intval($point['stats_avg_time_spent'] ?? 0)
                 ) : null
             );
         }
@@ -4470,5 +4478,148 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success($results);
+    }
+
+    /**
+     * Track statistics for sponsored pins
+     * Tracks: views, phone_clicks, website_clicks, social_clicks, cta_clicks, gallery_clicks
+     */
+    public function track_stat() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'jg_map_points';
+
+        // Get parameters
+        $point_id = isset($_POST['point_id']) ? intval($_POST['point_id']) : 0;
+        $action_type = isset($_POST['action_type']) ? sanitize_text_field($_POST['action_type']) : '';
+        $platform = isset($_POST['platform']) ? sanitize_text_field($_POST['platform']) : '';
+        $image_index = isset($_POST['image_index']) ? intval($_POST['image_index']) : -1;
+
+        if (!$point_id || !$action_type) {
+            wp_send_json_error(array('message' => 'Brak wymaganych parametrów'));
+            return;
+        }
+
+        // Check if point exists and is sponsored
+        $point = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, is_promo, stats_first_viewed, stats_social_clicks, stats_gallery_clicks FROM $table WHERE id = %d",
+            $point_id
+        ), ARRAY_A);
+
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Nie znaleziono pinezki'));
+            return;
+        }
+
+        // Only track stats for sponsored/promo places
+        if (!$point['is_promo']) {
+            wp_send_json_success(array('message' => 'Tracking disabled for non-sponsored places'));
+            return;
+        }
+
+        $current_time = current_time('mysql');
+        $updated = false;
+
+        switch ($action_type) {
+            case 'view':
+                // Increment view counter
+                $wpdb->query($wpdb->prepare(
+                    "UPDATE $table SET stats_views = stats_views + 1, stats_last_viewed = %s WHERE id = %d",
+                    $current_time,
+                    $point_id
+                ));
+
+                // Set first_viewed if not set
+                if (empty($point['stats_first_viewed'])) {
+                    $wpdb->query($wpdb->prepare(
+                        "UPDATE $table SET stats_first_viewed = %s WHERE id = %d",
+                        $current_time,
+                        $point_id
+                    ));
+                }
+                $updated = true;
+                break;
+
+            case 'phone_click':
+                $wpdb->query($wpdb->prepare(
+                    "UPDATE $table SET stats_phone_clicks = stats_phone_clicks + 1 WHERE id = %d",
+                    $point_id
+                ));
+                $updated = true;
+                break;
+
+            case 'website_click':
+                $wpdb->query($wpdb->prepare(
+                    "UPDATE $table SET stats_website_clicks = stats_website_clicks + 1 WHERE id = %d",
+                    $point_id
+                ));
+                $updated = true;
+                break;
+
+            case 'social_click':
+                if (!$platform) {
+                    wp_send_json_error(array('message' => 'Brak platformy dla social_click'));
+                    return;
+                }
+
+                // Get current social_clicks JSON
+                $social_clicks = json_decode($point['stats_social_clicks'] ?: '{}', true);
+                if (!is_array($social_clicks)) {
+                    $social_clicks = array();
+                }
+
+                // Increment platform counter
+                $social_clicks[$platform] = isset($social_clicks[$platform]) ? $social_clicks[$platform] + 1 : 1;
+
+                // Update database
+                $wpdb->query($wpdb->prepare(
+                    "UPDATE $table SET stats_social_clicks = %s WHERE id = %d",
+                    json_encode($social_clicks),
+                    $point_id
+                ));
+                $updated = true;
+                break;
+
+            case 'cta_click':
+                $wpdb->query($wpdb->prepare(
+                    "UPDATE $table SET stats_cta_clicks = stats_cta_clicks + 1 WHERE id = %d",
+                    $point_id
+                ));
+                $updated = true;
+                break;
+
+            case 'gallery_click':
+                if ($image_index < 0) {
+                    wp_send_json_error(array('message' => 'Brak indeksu zdjęcia'));
+                    return;
+                }
+
+                // Get current gallery_clicks JSON
+                $gallery_clicks = json_decode($point['stats_gallery_clicks'] ?: '{}', true);
+                if (!is_array($gallery_clicks)) {
+                    $gallery_clicks = array();
+                }
+
+                // Increment image counter
+                $gallery_clicks[$image_index] = isset($gallery_clicks[$image_index]) ? $gallery_clicks[$image_index] + 1 : 1;
+
+                // Update database
+                $wpdb->query($wpdb->prepare(
+                    "UPDATE $table SET stats_gallery_clicks = %s WHERE id = %d",
+                    json_encode($gallery_clicks),
+                    $point_id
+                ));
+                $updated = true;
+                break;
+
+            default:
+                wp_send_json_error(array('message' => 'Nieznany typ akcji: ' . $action_type));
+                return;
+        }
+
+        if ($updated) {
+            wp_send_json_success(array('message' => 'Statystyka zapisana'));
+        } else {
+            wp_send_json_error(array('message' => 'Nie udało się zapisać statystyki'));
+        }
     }
 }
