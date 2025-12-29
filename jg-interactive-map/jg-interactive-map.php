@@ -684,7 +684,10 @@ class JG_Interactive_Map {
 
         error_log('[JG MAP SITEMAP] Generating sitemap for: ' . $request_uri);
 
-        error_log('[JG MAP SITEMAP] Generating sitemap XML...');
+        // Clean all output buffers to prevent any content before headers
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
 
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
@@ -698,9 +701,16 @@ class JG_Interactive_Map {
             ARRAY_A
         );
 
-        // Set headers for XML
-        header('Content-Type: application/xml; charset=utf-8');
-        header('X-Robots-Tag: noindex, follow');
+        // Set HTTP status code explicitly
+        status_header(200);
+
+        // Set headers for XML sitemap
+        nocache_headers();
+        header('Content-Type: application/xml; charset=UTF-8');
+        header('X-Robots-Tag: index, follow');
+
+        // Start output buffering to capture the entire XML
+        ob_start();
 
         echo '<?xml version="1.0" encoding="UTF-8"?>';
         echo "\n";
@@ -728,6 +738,12 @@ class JG_Interactive_Map {
 <?php endforeach; ?>
 </urlset>
         <?php
+        $xml_content = ob_get_clean();
+
+        // Set Content-Length header for better compatibility
+        header('Content-Length: ' . strlen($xml_content));
+
+        echo $xml_content;
         exit;
     }
 }

@@ -4068,6 +4068,11 @@
 
                 api('jg_delete_image', { point_id: pointId, image_index: imageIndex })
                   .then(function(result) {
+                    // Update local point data with new featured index
+                    var point = ALL.find(function(x) { return x.id === +pointId; });
+                    if (point && result.new_featured_index !== undefined) {
+                      point.featured_image_index = result.new_featured_index;
+                    }
                     close(modalView);
                     refreshAll().then(function() {
                       showAlert('Zdjęcie zostało usunięte');
