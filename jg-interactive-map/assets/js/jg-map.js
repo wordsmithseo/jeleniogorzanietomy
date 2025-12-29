@@ -2894,9 +2894,20 @@
       }
 
       function openStatsModal(p) {
+        // Initialize stats object if not present (for new sponsored places)
         if (!p.stats) {
-          showAlert('Brak danych statystycznych');
-          return;
+          p.stats = {
+            views: 0,
+            phone_clicks: 0,
+            website_clicks: 0,
+            social_clicks: {},
+            cta_clicks: 0,
+            gallery_clicks: {},
+            first_viewed: null,
+            last_viewed: null,
+            unique_visitors: 0,
+            avg_time_spent: 0
+          };
         }
 
         var totalSocialClicks = 0;
@@ -3251,6 +3262,22 @@
                 '<input type="radio" name="cta_type" value="website" ' + (p.cta_type === 'website' ? 'checked' : '') + ' style="width:18px;height:18px">' +
                 '<div><strong>🌐 Wejdź na naszą stronę</strong></div>' +
                 '</label>' +
+                '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #d97706;border-radius:6px;cursor:pointer">' +
+                '<input type="radio" name="cta_type" value="facebook" ' + (p.cta_type === 'facebook' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+                '<div><strong>📘 Odwiedź nas na Facebooku</strong></div>' +
+                '</label>' +
+                '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #d97706;border-radius:6px;cursor:pointer">' +
+                '<input type="radio" name="cta_type" value="instagram" ' + (p.cta_type === 'instagram' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+                '<div><strong>📷 Sprawdź nas na Instagramie</strong></div>' +
+                '</label>' +
+                '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #d97706;border-radius:6px;cursor:pointer">' +
+                '<input type="radio" name="cta_type" value="linkedin" ' + (p.cta_type === 'linkedin' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+                '<div><strong>💼 Zobacz nas na LinkedIn</strong></div>' +
+                '</label>' +
+                '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #d97706;border-radius:6px;cursor:pointer">' +
+                '<input type="radio" name="cta_type" value="tiktok" ' + (p.cta_type === 'tiktok' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+                '<div><strong>🎵 Obserwuj nas na TikToku</strong></div>' +
+                '</label>' +
                 '</div>' +
                 '</div>' +
                 '</div>' +
@@ -3584,6 +3611,22 @@
           '<input type="radio" name="cta_type" value="website" ' + (p.cta_type === 'website' ? 'checked' : '') + ' style="width:18px;height:18px">' +
           '<div><strong>🌐 Wejdź na naszą stronę</strong> <span style="color:#666;font-size:12px">(wymaga strony internetowej)</span></div>' +
           '</label>' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #cbd5e1;border-radius:6px;cursor:pointer">' +
+          '<input type="radio" name="cta_type" value="facebook" ' + (p.cta_type === 'facebook' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+          '<div><strong>📘 Odwiedź nas na Facebooku</strong> <span style="color:#666;font-size:12px">(wymaga profilu Facebook)</span></div>' +
+          '</label>' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #cbd5e1;border-radius:6px;cursor:pointer">' +
+          '<input type="radio" name="cta_type" value="instagram" ' + (p.cta_type === 'instagram' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+          '<div><strong>📷 Sprawdź nas na Instagramie</strong> <span style="color:#666;font-size:12px">(wymaga profilu Instagram)</span></div>' +
+          '</label>' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #cbd5e1;border-radius:6px;cursor:pointer">' +
+          '<input type="radio" name="cta_type" value="linkedin" ' + (p.cta_type === 'linkedin' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+          '<div><strong>💼 Zobacz nas na LinkedIn</strong> <span style="color:#666;font-size:12px">(wymaga profilu LinkedIn)</span></div>' +
+          '</label>' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:2px solid #cbd5e1;border-radius:6px;cursor:pointer">' +
+          '<input type="radio" name="cta_type" value="tiktok" ' + (p.cta_type === 'tiktok' ? 'checked' : '') + ' style="width:18px;height:18px">' +
+          '<div><strong>🎵 Obserwuj nas na TikToku</strong> <span style="color:#666;font-size:12px">(wymaga profilu TikTok)</span></div>' +
+          '</label>' +
           '</div>' +
           '</div>' +
           '</div>' +
@@ -3884,7 +3927,14 @@
 
           // Show CTA type changes if present (for sponsored points)
           if (p.edit_info.prev_cta_type !== undefined && p.edit_info.new_cta_type !== undefined && p.edit_info.prev_cta_type !== p.edit_info.new_cta_type) {
-            var ctaTypeLabels = { call: '📞 Zadzwoń teraz', website: '🌐 Wejdź na stronę' };
+            var ctaTypeLabels = {
+              call: '📞 Zadzwoń teraz',
+              website: '🌐 Wejdź na stronę',
+              facebook: '📘 Odwiedź nas na Facebooku',
+              instagram: '📷 Sprawdź nas na Instagramie',
+              linkedin: '💼 Zobacz nas na LinkedIn',
+              tiktok: '🎵 Obserwuj nas na TikToku'
+            };
             var prevType = ctaTypeLabels[p.edit_info.prev_cta_type] || '(brak)';
             var newType = ctaTypeLabels[p.edit_info.new_cta_type] || '(brak)';
             changes.push('<div><strong>🎯 Typ CTA:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + prevType + '</span><br><span style="color:#16a34a">→ ' + newType + '</span></div>');
@@ -4046,13 +4096,59 @@
 
         // CTA button for sponsored points - single beautiful button with gold gradient
         var ctaButton = '';
-        if (p.sponsored && p.cta_enabled) {
-          // Priority: website > phone (if both exist, show website)
-          if (p.website) {
-            var websiteUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
-            ctaButton = '<a href="' + esc(websiteUrl) + '" target="_blank" rel="noopener" class="jg-btn-cta-sponsored">🌟 Zobacz Więcej 🌟</a>';
-          } else if (p.phone) {
-            ctaButton = '<a href="tel:' + esc(p.phone) + '" class="jg-btn-cta-sponsored">📞 Zadzwoń Teraz 📞</a>';
+        if (p.sponsored && p.cta_enabled && p.cta_type) {
+          var ctaUrl = '';
+          var ctaText = '';
+          var ctaIcon = '';
+
+          switch (p.cta_type) {
+            case 'call':
+              if (p.phone) {
+                ctaUrl = 'tel:' + esc(p.phone);
+                ctaText = 'Zadzwoń Teraz';
+                ctaIcon = '📞';
+              }
+              break;
+            case 'website':
+              if (p.website) {
+                ctaUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
+                ctaText = 'Zobacz Więcej';
+                ctaIcon = '🌟';
+              }
+              break;
+            case 'facebook':
+              if (p.facebook_url) {
+                ctaUrl = p.facebook_url.startsWith('http') ? p.facebook_url : 'https://' + p.facebook_url;
+                ctaText = 'Odwiedź nas na Facebooku';
+                ctaIcon = '📘';
+              }
+              break;
+            case 'instagram':
+              if (p.instagram_url) {
+                ctaUrl = p.instagram_url.startsWith('http') ? p.instagram_url : 'https://' + p.instagram_url;
+                ctaText = 'Sprawdź nas na Instagramie';
+                ctaIcon = '📷';
+              }
+              break;
+            case 'linkedin':
+              if (p.linkedin_url) {
+                ctaUrl = p.linkedin_url.startsWith('http') ? p.linkedin_url : 'https://' + p.linkedin_url;
+                ctaText = 'Zobacz nas na LinkedIn';
+                ctaIcon = '💼';
+              }
+              break;
+            case 'tiktok':
+              if (p.tiktok_url) {
+                ctaUrl = p.tiktok_url.startsWith('http') ? p.tiktok_url : 'https://' + p.tiktok_url;
+                ctaText = 'Obserwuj nas na TikToku';
+                ctaIcon = '🎵';
+              }
+              break;
+          }
+
+          if (ctaUrl) {
+            var targetAttr = (p.cta_type === 'call') ? '' : ' target="_blank" rel="noopener"';
+            ctaButton = '<a href="' + ctaUrl + '"' + targetAttr + ' class="jg-btn-cta-sponsored">' + ctaIcon + ' ' + ctaText + ' ' + ctaIcon + '</a>';
           }
         }
 
@@ -4185,7 +4281,7 @@
 
         // Stats button for sponsored places (owner + admins only)
         var statsBtn = '';
-        if (p.sponsored && canEdit && p.stats) {
+        if (p.sponsored && canEdit) {
           statsBtn = '<button id="btn-stats" class="jg-btn jg-btn--ghost">📊 Statystyki</button>';
         }
 

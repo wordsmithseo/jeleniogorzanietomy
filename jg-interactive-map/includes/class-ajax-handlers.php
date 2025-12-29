@@ -815,10 +815,13 @@ class JG_Map_Ajax_Handlers {
         $address = sanitize_text_field($_POST['address'] ?? '');
         $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
-        $facebook_url = !empty($_POST['facebook_url']) ? esc_url_raw($_POST['facebook_url']) : '';
-        $instagram_url = !empty($_POST['instagram_url']) ? esc_url_raw($_POST['instagram_url']) : '';
-        $linkedin_url = !empty($_POST['linkedin_url']) ? esc_url_raw($_POST['linkedin_url']) : '';
-        $tiktok_url = !empty($_POST['tiktok_url']) ? esc_url_raw($_POST['tiktok_url']) : '';
+
+        // Normalize social media URLs - accept full URLs, domain URLs, or profile names
+        $facebook_url = !empty($_POST['facebook_url']) ? $this->normalize_social_url($_POST['facebook_url'], 'facebook') : '';
+        $instagram_url = !empty($_POST['instagram_url']) ? $this->normalize_social_url($_POST['instagram_url'], 'instagram') : '';
+        $linkedin_url = !empty($_POST['linkedin_url']) ? $this->normalize_social_url($_POST['linkedin_url'], 'linkedin') : '';
+        $tiktok_url = !empty($_POST['tiktok_url']) ? $this->normalize_social_url($_POST['tiktok_url'], 'tiktok') : '';
+
         $cta_enabled = isset($_POST['cta_enabled']) ? 1 : 0;
         $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
@@ -4621,5 +4624,60 @@ class JG_Map_Ajax_Handlers {
         } else {
             wp_send_json_error(array('message' => 'Nie udało się zapisać statystyki'));
         }
+    }
+
+    /**
+     * Normalize social media URLs
+     * Accepts: full URL, domain URL, or profile name
+     * Returns: full valid URL
+     */
+    private function normalize_social_url($input, $platform) {
+        if (empty($input)) {
+            return '';
+        }
+
+        // Sanitize input
+        $input = sanitize_text_field(trim($input));
+
+        // Platform base URLs
+        $base_urls = array(
+            'facebook' => 'https://facebook.com/',
+            'instagram' => 'https://instagram.com/',
+            'linkedin' => 'https://linkedin.com/in/',
+            'tiktok' => 'https://tiktok.com/@'
+        );
+
+        // Already a full URL starting with http(s)
+        if (preg_match('/^https?:\/\//i', $input)) {
+            return esc_url_raw($input);
+        }
+
+        // Remove @ if present (common for TikTok/Instagram)
+        $input = ltrim($input, '@');
+
+        // Remove domain if user pasted it
+        $patterns = array(
+            'facebook' => array('facebook.com/', 'fb.com/', 'fb.me/', 'm.facebook.com/'),
+            'instagram' => array('instagram.com/', 'instagr.am/', 'm.instagram.com/'),
+            'linkedin' => array('linkedin.com/in/', 'linkedin.com/company/', 'lnkd.in/'),
+            'tiktok' => array('tiktok.com/@', 'tiktok.com/', 'vm.tiktok.com/')
+        );
+
+        if (isset($patterns[$platform])) {
+            foreach ($patterns[$platform] as $pattern) {
+                $input = preg_replace('/^' . preg_quote($pattern, '/') . '/i', '', $input);
+            }
+        }
+
+        // LinkedIn company pages need different base
+        if ($platform === 'linkedin' && stripos($input, 'company/') === 0) {
+            $input = preg_replace('/^company\//i', '', $input);
+            return esc_url_raw('https://linkedin.com/company/' . $input);
+        }
+
+        // Build full URL
+        $full_url = $base_urls[$platform] . $input;
+
+        return esc_url_raw($full_url);
     }
 }
