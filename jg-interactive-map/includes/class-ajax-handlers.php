@@ -224,8 +224,21 @@ class JG_Map_Ajax_Handlers {
         // Force schema check and slug generation on first request (ensures backward compatibility)
         static $schema_checked = false;
         if (!$schema_checked) {
+            error_log('[JG MAP AJAX] Calling check_and_update_schema()...');
             JG_Map_Database::check_and_update_schema();
             $schema_checked = true;
+
+            // Debug: Check if slug column exists and how many points have slugs
+            global $wpdb;
+            $table = $wpdb->prefix . 'jg_map_points';
+            $slug_column_check = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'slug'");
+            error_log('[JG MAP AJAX] Slug column exists: ' . (empty($slug_column_check) ? 'NO' : 'YES'));
+
+            if (!empty($slug_column_check)) {
+                $points_with_slugs = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE slug IS NOT NULL AND slug != ''");
+                $total_points = $wpdb->get_var("SELECT COUNT(*) FROM $table");
+                error_log('[JG MAP AJAX] Points with slugs: ' . $points_with_slugs . ' / ' . $total_points);
+            }
         }
 
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
@@ -371,6 +384,7 @@ class JG_Map_Ajax_Handlers {
 
             error_log('[JG MAP] get_points - point #' . $point['id'] . ' address from DB: "' . ($point['address'] ?? 'NULL') . '"');
             error_log('[JG MAP] get_points - point #' . $point['id'] . ' type: "' . $point['type'] . '", category from DB: "' . ($point['category'] ?? 'NULL') . '"');
+            error_log('[JG MAP] get_points - point #' . $point['id'] . ' slug from DB: "' . ($point['slug'] ?? 'NULL/MISSING') . '"');
 
             $result[] = array(
                 'id' => intval($point['id']),

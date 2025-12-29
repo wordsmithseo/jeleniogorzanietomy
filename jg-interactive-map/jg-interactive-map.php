@@ -130,6 +130,16 @@ class JG_Interactive_Map {
         // Check and update database schema on every load (only runs if needed)
         JG_Map_Database::check_and_update_schema();
 
+        // TEMPORARY FIX: Force flush rewrite rules NOW to fix sitemap and SEO URLs
+        // This will run once and can be removed after deployment
+        static $force_flushed = false;
+        if (!$force_flushed && !get_option('jg_map_rewrite_flushed_v2', false)) {
+            error_log('[JG MAP] FORCING rewrite rules flush (one-time fix)');
+            flush_rewrite_rules();
+            update_option('jg_map_rewrite_flushed_v2', true);
+            $force_flushed = true;
+        }
+
         // Force flush rewrite rules if needed (for SEO URLs and sitemap)
         if (get_option('jg_map_needs_rewrite_flush', false)) {
             flush_rewrite_rules();
@@ -597,9 +607,14 @@ class JG_Interactive_Map {
      * Handle sitemap.xml generation
      */
     public function handle_sitemap() {
-        if (!get_query_var('jg_map_sitemap')) {
+        $sitemap_var = get_query_var('jg_map_sitemap');
+        error_log('[JG MAP SITEMAP] handle_sitemap() called, query_var value: ' . var_export($sitemap_var, true));
+
+        if (!$sitemap_var) {
             return;
         }
+
+        error_log('[JG MAP SITEMAP] Generating sitemap XML...');
 
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
