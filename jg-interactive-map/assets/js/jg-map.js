@@ -1638,15 +1638,16 @@
 
         if (sponsored) {
           var circleSize = 42; // Bigger for larger sponsored pins
-          var firstImage = (p.images && p.images.length > 0) ? p.images[0] : null;
+          var featuredIndex = p.featured_image_index || 0;
+          var featuredImage = (p.images && p.images.length > 0) ? p.images[featuredIndex] : null;
           var imageUrl = null;
 
           // Extract image URL from image object or string
-          if (firstImage) {
-            if (typeof firstImage === 'object') {
-              imageUrl = firstImage.thumb || firstImage.full;
+          if (featuredImage) {
+            if (typeof featuredImage === 'object') {
+              imageUrl = featuredImage.thumb || featuredImage.full;
             } else {
-              imageUrl = firstImage;
+              imageUrl = featuredImage;
             }
           }
 
