@@ -1968,15 +1968,8 @@
             if (targetPoint) {
               console.log('[JG MAP] Found point:', targetPoint.title);
 
-              // First scroll to map section
-              var mapSection = document.getElementById('mapa-start');
-              if (mapSection) {
-                var targetPosition = mapSection.getBoundingClientRect().top + window.pageYOffset - 80;
-                window.scrollTo({ top: targetPosition, behavior: 'smooth' });
-                console.log('[JG MAP] Scrolling to map section');
-              }
-
-              // Wait for scroll, then zoom to point with maximum zoom
+              // Map is already scrolled to by earlyScrollCheck()
+              // Wait for map to be ready, then zoom to point with maximum zoom
               setTimeout(function() {
                 map.setView([targetPoint.lat, targetPoint.lng], 18, { animate: true });
                 // Wait for zoom, then open modal
@@ -1987,7 +1980,7 @@
                   if (newUrl.endsWith('?')) newUrl = newUrl.slice(0, -1);
                   window.history.replaceState({}, '', newUrl);
                 }, 800);
-              }, 500);
+              }, 300);
               return; // Exit early
             }
           }
@@ -2016,14 +2009,8 @@
             if (point) {
               console.log('[JG MAP] Found point:', point.title);
 
-              // STEP 1: Scroll to map FIRST (before anything else)
-              var mapElement = document.getElementById('jg-map');
-              if (mapElement) {
-                mapElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                console.log('[JG MAP] Scrolling to map...');
-              }
-
-              // STEP 2: Wait for scroll and map to be ready, then zoom
+              // STEP 1: Map is already scrolled to by earlyScrollCheck()
+              // STEP 2: Wait for map to be ready, then zoom
               setTimeout(function() {
                 console.log('[JG MAP] Map ready, zooming to point...');
                 // Zoom to point with maximum zoom level
@@ -2050,7 +2037,7 @@
                     }, 2000); // Wait 2 seconds after pulsing
                   });
                 }, 800); // Wait for zoom animation
-              }, 1500); // Wait for scroll animation + map load
+              }, 300); // Map is already loaded and scrolled, just wait for initialization
             } else {
               console.warn('[JG MAP] Point not found with id:', pointId);
             }
@@ -4716,6 +4703,37 @@
           console.error('[JG MAP] Filter container not found!');
         }
       }, 500);
+
+      // EARLY CHECK: If there's a deep link, scroll to map FIRST before loading anything
+      (function earlyScrollCheck() {
+        try {
+          var urlParams = new URLSearchParams(window.location.search);
+          var hasDeepLink = false;
+
+          // Check for any deep link parameters
+          if (urlParams.get('jg_view_reports') ||
+              urlParams.get('jg_view_point') ||
+              urlParams.get('point_id') ||
+              window.location.hash.match(/^#point-(\d+)$/)) {
+            hasDeepLink = true;
+          }
+
+          if (hasDeepLink) {
+            console.log('[JG MAP] Deep link detected, scrolling to map FIRST before loading');
+            var mapSection = document.getElementById('mapa-start');
+            if (!mapSection) {
+              mapSection = document.getElementById('jg-map-wrap');
+            }
+            if (mapSection) {
+              var targetPosition = mapSection.getBoundingClientRect().top + window.pageYOffset - 80;
+              window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+              console.log('[JG MAP] Scrolled to map section before initialization');
+            }
+          }
+        } catch (e) {
+          console.error('[JG MAP] Early scroll check error:', e);
+        }
+      })();
 
       // Load from cache first for instant display, then check for updates
       var cachedData = loadFromCache();
