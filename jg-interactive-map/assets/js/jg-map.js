@@ -2222,6 +2222,7 @@
             return {
               id: r.id,
               title: r.title || '',
+              slug: r.slug || '',
               excerpt: r.excerpt || '',
               content: r.content || '',
               lat: +r.lat,

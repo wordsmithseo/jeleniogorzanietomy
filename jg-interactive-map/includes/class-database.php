@@ -307,6 +307,29 @@ class JG_Map_Database {
             // Set option to flush again on next page load (ensures it works)
             update_option('jg_map_needs_rewrite_flush', true);
         }
+
+        // Check if relevance_votes table exists (for "Nadal aktualne?" voting)
+        $table_relevance_votes = $wpdb->prefix . 'jg_map_relevance_votes';
+        $relevance_table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_relevance_votes'");
+        if ($relevance_table_exists != $table_relevance_votes) {
+            error_log('[JG MAP] Creating relevance_votes table');
+            $charset_collate = $wpdb->get_charset_collate();
+            $sql_relevance_votes = "CREATE TABLE IF NOT EXISTS $table_relevance_votes (
+                id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                point_id bigint(20) UNSIGNED NOT NULL,
+                user_id bigint(20) UNSIGNED NOT NULL,
+                vote_type varchar(10) NOT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY user_point (user_id, point_id),
+                KEY point_id (point_id)
+            ) $charset_collate;";
+            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+            dbDelta($sql_relevance_votes);
+            error_log('[JG MAP] relevance_votes table created');
+        } else {
+            error_log('[JG MAP] relevance_votes table already exists');
+        }
     }
 
     /**
