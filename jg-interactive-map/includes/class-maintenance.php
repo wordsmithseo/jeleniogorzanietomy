@@ -57,7 +57,6 @@ class JG_Map_Maintenance {
         $start_time = microtime(true);
         $results = array();
 
-        error_log('[JG MAP MAINTENANCE] Starting daily maintenance tasks...');
 
         // 1. Clean orphaned data
         $results['orphaned_votes'] = self::clean_orphaned_votes();
@@ -71,6 +70,7 @@ class JG_Map_Maintenance {
         // 3. Clean outdated data
         $results['expired_sponsors'] = self::disable_expired_sponsorships();
         $results['old_pending'] = self::clean_old_pending_points();
+        $results['old_deleted'] = self::clean_old_deleted_points();
 
         // 4. Optimize database
         $results['cache_cleared'] = self::clear_caches();
@@ -78,7 +78,6 @@ class JG_Map_Maintenance {
 
         $execution_time = round(microtime(true) - $start_time, 2);
 
-        error_log('[JG MAP MAINTENANCE] Completed in ' . $execution_time . 's. Results: ' . json_encode($results));
 
         // Store last run time
         update_option('jg_map_last_maintenance', array(
@@ -104,7 +103,6 @@ class JG_Map_Maintenance {
             WHERE p.id IS NULL
         ");
 
-        error_log('[JG MAP MAINTENANCE] Cleaned ' . $deleted . ' orphaned votes');
         return $deleted;
     }
 
@@ -122,7 +120,6 @@ class JG_Map_Maintenance {
             WHERE p.id IS NULL
         ");
 
-        error_log('[JG MAP MAINTENANCE] Cleaned ' . $deleted . ' orphaned reports');
         return $deleted;
     }
 
@@ -140,7 +137,6 @@ class JG_Map_Maintenance {
             WHERE p.id IS NULL
         ");
 
-        error_log('[JG MAP MAINTENANCE] Cleaned ' . $deleted . ' orphaned history entries');
         return $deleted;
     }
 
@@ -165,10 +161,8 @@ class JG_Map_Maintenance {
         $count = count($invalid_points);
 
         if ($count > 0) {
-            error_log('[JG MAP MAINTENANCE] Found ' . $count . ' points with invalid coordinates');
 
             foreach ($invalid_points as $point) {
-                error_log('[JG MAP MAINTENANCE] Invalid coords - Point #' . $point->id . ' "' . $point->title . '": lat=' . $point->lat . ', lng=' . $point->lng);
 
                 // Add admin note about invalid coordinates
                 $current_note = $wpdb->get_var($wpdb->prepare(
@@ -207,10 +201,8 @@ class JG_Map_Maintenance {
         $count = count($empty_points);
 
         if ($count > 0) {
-            error_log('[JG MAP MAINTENANCE] Found ' . $count . ' points with empty content');
 
             foreach ($empty_points as $point) {
-                error_log('[JG MAP MAINTENANCE] Empty content - Point #' . $point->id);
 
                 // Add admin note
                 $current_note = $wpdb->get_var($wpdb->prepare(
@@ -247,7 +239,6 @@ class JG_Map_Maintenance {
         ", current_time('mysql')));
 
         if ($updated > 0) {
-            error_log('[JG MAP MAINTENANCE] Disabled ' . $updated . ' expired sponsorships');
         }
 
         return $updated;
@@ -271,11 +262,9 @@ class JG_Map_Maintenance {
         $count = count($old_points);
 
         if ($count > 0) {
-            error_log('[JG MAP MAINTENANCE] Found ' . $count . ' old pending points (>30 days)');
 
             foreach ($old_points as $point) {
                 // Log before deletion
-                error_log('[JG MAP MAINTENANCE] Deleting old pending point #' . $point->id . ' "' . $point->title . '" (created: ' . $point->created_at . ')');
 
                 // Send notification to author
                 $user = get_userdata($point->author_id);
@@ -298,11 +287,30 @@ class JG_Map_Maintenance {
     }
 
     /**
+     * Clean old deleted/trash points (older than 90 days)
+     */
+    private static function clean_old_deleted_points() {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        // Permanently delete points marked as deleted/trash older than 90 days
+        $deleted = $wpdb->query($wpdb->prepare("
+            DELETE FROM $table
+            WHERE status IN ('trash', 'deleted', 'draft')
+              AND updated_at < %s
+        ", date('Y-m-d H:i:s', strtotime('-90 days'))));
+
+        if ($deleted > 0) {
+        }
+
+        return $deleted;
+    }
+
+    /**
      * Clear WordPress caches
      */
     private static function clear_caches() {
         wp_cache_flush();
-        error_log('[JG MAP MAINTENANCE] Cleared WordPress cache');
         return true;
     }
 
@@ -328,7 +336,6 @@ class JG_Map_Maintenance {
             }
         }
 
-        error_log('[JG MAP MAINTENANCE] Optimized ' . $optimized . ' database tables');
         return $optimized;
     }
 

@@ -385,9 +385,6 @@ class JG_Map_Ajax_Handlers {
                 $is_deletion_requested = ($deletion_info !== null);
             }
 
-            error_log('[JG MAP] get_points - point #' . $point['id'] . ' address from DB: "' . ($point['address'] ?? 'NULL') . '"');
-            error_log('[JG MAP] get_points - point #' . $point['id'] . ' type: "' . $point['type'] . '", category from DB: "' . ($point['category'] ?? 'NULL') . '"');
-            error_log('[JG MAP] get_points - point #' . $point['id'] . ' slug from DB: "' . ($point['slug'] ?? 'NULL/MISSING') . '"');
 
             $result[] = array(
                 'id' => intval($point['id']),
@@ -456,10 +453,8 @@ class JG_Map_Ajax_Handlers {
         }
 
         // DEBUG: Log the actual $result array before sending to JavaScript
-        error_log('[JG MAP] get_points - About to send ' . count($result) . ' points to JavaScript');
         foreach (array_slice($result, 0, 3) as $item) {
             if ($item['type'] === 'zgloszenie') {
-                error_log('[JG MAP] get_points - FINAL RESULT ARRAY for point #' . $item['id'] . ': type="' . $item['type'] . '", category="' . ($item['category'] ?? 'NULL/MISSING') . '"');
             }
         }
 
@@ -613,9 +608,6 @@ class JG_Map_Ajax_Handlers {
         $public_name = isset($_POST['public_name']);
         $category = sanitize_text_field($_POST['category'] ?? '');
 
-        error_log('[JG MAP] submit_point - address received: "' . $address . '"');
-        error_log('[JG MAP] submit_point - type: "' . $type . '", category received: "' . $category . '"');
-        error_log('[JG MAP] submit_point - $_POST data: ' . print_r($_POST, true));
 
         if (empty($title) || $lat === 0.0 || $lng === 0.0) {
             wp_send_json_error(array('message' => 'Wypełnij wszystkie wymagane pola'));
@@ -740,19 +732,14 @@ class JG_Map_Ajax_Handlers {
         // Add category if it's a report (zgłoszenie)
         if ($type === 'zgloszenie' && !empty($category)) {
             $point_data['category'] = $category;
-            error_log('[JG MAP] submit_point - Adding category to point_data: "' . $category . '"');
         } else {
-            error_log('[JG MAP] submit_point - NOT adding category (type: "' . $type . '", category: "' . $category . '")');
         }
 
-        error_log('[JG MAP] submit_point - Final point_data before insert: ' . print_r($point_data, true));
         $point_id = JG_Map_Database::insert_point($point_data);
-        error_log('[JG MAP] submit_point - Insert result, point_id: ' . $point_id);
 
         if ($point_id) {
             // Verify what was actually saved
             $saved_point = JG_Map_Database::get_point($point_id);
-            error_log('[JG MAP] submit_point - Saved point data: ' . print_r($saved_point, true));
 
             // Send email notification to admin
             $this->notify_admin_new_point($point_id);
@@ -762,7 +749,6 @@ class JG_Map_Ajax_Handlers {
                 'point_id' => $point_id
             ));
         } else {
-            error_log('[JG MAP] submit_point - Insert FAILED');
             wp_send_json_error(array('message' => 'Błąd zapisu'));
         }
     }
@@ -4191,8 +4177,6 @@ class JG_Map_Ajax_Handlers {
         );
 
         // Make server-side request
-        error_log('[JG MAP] Requesting Nominatim API: ' . $url);
-        error_log('[JG MAP] Bounds: ' . $bounds);
         $response = wp_remote_get($url, array(
             'timeout' => 10,
             'headers' => array(
@@ -4202,7 +4186,6 @@ class JG_Map_Ajax_Handlers {
 
         if (is_wp_error($response)) {
             $error_msg = $response->get_error_message();
-            error_log('[JG MAP] Connection error: ' . $error_msg);
             wp_send_json_error(array(
                 'message' => 'Błąd połączenia',
                 'error' => $error_msg
@@ -4211,7 +4194,6 @@ class JG_Map_Ajax_Handlers {
         }
 
         $status_code = wp_remote_retrieve_response_code($response);
-        error_log('[JG MAP] Nominatim API response code: ' . $status_code);
         if ($status_code !== 200) {
             wp_send_json_error(array(
                 'message' => 'Błąd serwera',
@@ -4222,11 +4204,9 @@ class JG_Map_Ajax_Handlers {
         }
 
         $body = wp_remote_retrieve_body($response);
-        error_log('[JG MAP] Response body length: ' . strlen($body));
         $data = json_decode($body, true);
 
         if ($data === null) {
-            error_log('[JG MAP] JSON decode error. Body: ' . substr($body, 0, 200));
             wp_send_json_error(array(
                 'message' => 'Błąd odpowiedzi',
                 'json_error' => json_last_error_msg()
@@ -4234,7 +4214,6 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        error_log('[JG MAP] Results found: ' . count($data));
 
         // Parse bounds for server-side filtering
         $boundsArray = null;
@@ -4248,7 +4227,6 @@ class JG_Map_Ajax_Handlers {
                     'maxLng' => floatval($parts[2]),
                     'minLat' => floatval($parts[3])
                 );
-                error_log('[JG MAP] Parsed bounds: ' . json_encode($boundsArray));
             }
         }
 
@@ -4283,10 +4261,8 @@ class JG_Map_Ajax_Handlers {
                     // Check if coordinates are within bounds
                     if ($lat < $boundsArray['minLat'] || $lat > $boundsArray['maxLat'] ||
                         $lon < $boundsArray['minLng'] || $lon > $boundsArray['maxLng']) {
-                        error_log('[JG MAP] Filtered out (out of bounds): ' . $city . ' (' . $lat . ',' . $lon . ')');
                         continue;
                     }
-                    error_log('[JG MAP] Accepted (in bounds): ' . $city . ' (' . $lat . ',' . $lon . ')');
                 }
             }
 
@@ -4294,7 +4270,6 @@ class JG_Map_Ajax_Handlers {
             $seen[$city] = true;
         }
 
-        error_log('[JG MAP] Unique cities extracted: ' . count($results));
         wp_send_json_success($results);
     }
 
@@ -4322,7 +4297,6 @@ class JG_Map_Ajax_Handlers {
             urlencode($searchQuery)
         );
 
-        error_log('[JG MAP] Street search URL: ' . $url);
         $response = wp_remote_get($url, array(
             'timeout' => 10,
             'headers' => array(
@@ -4331,7 +4305,6 @@ class JG_Map_Ajax_Handlers {
         ));
 
         if (is_wp_error($response)) {
-            error_log('[JG MAP] Street search error: ' . $response->get_error_message());
             wp_send_json_error(array(
                 'message' => 'Błąd połączenia',
                 'error' => $response->get_error_message()
@@ -4341,7 +4314,6 @@ class JG_Map_Ajax_Handlers {
 
         $status_code = wp_remote_retrieve_response_code($response);
         if ($status_code !== 200) {
-            error_log('[JG MAP] Street search bad status: ' . $status_code);
             wp_send_json_error(array(
                 'message' => 'Błąd serwera',
                 'status' => $status_code
@@ -4353,12 +4325,10 @@ class JG_Map_Ajax_Handlers {
         $data = json_decode($body, true);
 
         if ($data === null) {
-            error_log('[JG MAP] Street search JSON error');
             wp_send_json_error(array('message' => 'Błąd odpowiedzi'));
             return;
         }
 
-        error_log('[JG MAP] Street search results: ' . count($data));
 
         // Extract unique streets that match the city
         $results = array();
@@ -4375,16 +4345,13 @@ class JG_Map_Ajax_Handlers {
             if (!empty($street) && !isset($seen[$street])) {
                 // Check if city matches (case insensitive)
                 if (empty($itemCity) || strcasecmp($itemCity, $city) === 0) {
-                    error_log('[JG MAP] Adding street: ' . $street . ' from city: ' . $itemCity);
                     $results[] = array('address' => array('road' => $street));
                     $seen[$street] = true;
                 } else {
-                    error_log('[JG MAP] Skipping street (wrong city): ' . $street . ' from ' . $itemCity . ' (expected ' . $city . ')');
                 }
             }
         }
 
-        error_log('[JG MAP] Unique streets extracted: ' . count($results));
         wp_send_json_success($results);
     }
 
@@ -4408,8 +4375,6 @@ class JG_Map_Ajax_Handlers {
             urlencode($searchQuery)
         );
 
-        error_log('[JG MAP] Number search URL: ' . $url);
-        error_log('[JG MAP] Number search query: ' . $query);
         $response = wp_remote_get($url, array(
             'timeout' => 10,
             'headers' => array(
@@ -4418,7 +4383,6 @@ class JG_Map_Ajax_Handlers {
         ));
 
         if (is_wp_error($response)) {
-            error_log('[JG MAP] Number search error: ' . $response->get_error_message());
             wp_send_json_error(array(
                 'message' => 'Błąd połączenia',
                 'error' => $response->get_error_message()
@@ -4428,7 +4392,6 @@ class JG_Map_Ajax_Handlers {
 
         $status_code = wp_remote_retrieve_response_code($response);
         if ($status_code !== 200) {
-            error_log('[JG MAP] Number search bad status: ' . $status_code);
             wp_send_json_error(array(
                 'message' => 'Błąd serwera',
                 'status' => $status_code
@@ -4440,12 +4403,10 @@ class JG_Map_Ajax_Handlers {
         $data = json_decode($body, true);
 
         if ($data === null) {
-            error_log('[JG MAP] Number search JSON error');
             wp_send_json_error(array('message' => 'Błąd odpowiedzi'));
             return;
         }
 
-        error_log('[JG MAP] Number search results: ' . count($data));
 
         // Extract unique house numbers
         $results = array();
@@ -4463,21 +4424,17 @@ class JG_Map_Ajax_Handlers {
                     if (empty($query) ||
                         stripos($houseNumber, $query) === 0 ||
                         $houseNumber === $query) {
-                        error_log('[JG MAP] Adding number: ' . $houseNumber . ' from street: ' . $itemStreet);
                         $results[] = array('address' => array('house_number' => $houseNumber));
                         $seen[$houseNumber] = true;
                     }
                 } else {
-                    error_log('[JG MAP] Skipping number (wrong street): ' . $houseNumber . ' from ' . $itemStreet . ' (expected ' . $street . ')');
                 }
             }
         }
 
-        error_log('[JG MAP] Unique numbers extracted: ' . count($results));
 
         // If no results, log a message
         if (count($results) === 0) {
-            error_log('[JG MAP] WARNING: No house numbers found for street: ' . $street . ' in city: ' . $city);
         }
 
         wp_send_json_success($results);
@@ -4491,17 +4448,12 @@ class JG_Map_Ajax_Handlers {
         global $wpdb;
         $table = $wpdb->prefix . 'jg_map_points';
 
-        // Get parameters
         $point_id = isset($_POST['point_id']) ? intval($_POST['point_id']) : 0;
         $action_type = isset($_POST['action_type']) ? sanitize_text_field($_POST['action_type']) : '';
         $platform = isset($_POST['platform']) ? sanitize_text_field($_POST['platform']) : '';
         $image_index = isset($_POST['image_index']) ? intval($_POST['image_index']) : -1;
 
-        // DEBUG: Log request
-        error_log('[TRACKING DEBUG] track_stat called - point_id: ' . $point_id . ', action: ' . $action_type);
-
         if (!$point_id || !$action_type) {
-            error_log('[TRACKING DEBUG] ERROR - missing parameters');
             wp_send_json_error(array('message' => 'Brak wymaganych parametrów'));
             return;
         }
@@ -4513,57 +4465,50 @@ class JG_Map_Ajax_Handlers {
         ), ARRAY_A);
 
         if (!$point) {
-            error_log('[TRACKING DEBUG] ERROR - point not found');
             wp_send_json_error(array('message' => 'Nie znaleziono pinezki'));
             return;
         }
 
-        error_log('[TRACKING DEBUG] Point found - is_promo: ' . $point['is_promo']);
-
         // Only track stats for sponsored/promo places
         if (!$point['is_promo']) {
-            error_log('[TRACKING DEBUG] Point is not sponsored, skipping tracking');
             wp_send_json_success(array('message' => 'Tracking disabled for non-sponsored places'));
             return;
         }
 
         $current_time = current_time('mysql');
-        $updated = false;
+        $result = false;
 
         switch ($action_type) {
             case 'view':
-                // Increment view counter
-                $wpdb->query($wpdb->prepare(
-                    "UPDATE $table SET stats_views = stats_views + 1, stats_last_viewed = %s WHERE id = %d",
+                // Increment view counter and update last viewed
+                $result = $wpdb->query($wpdb->prepare(
+                    "UPDATE $table SET stats_views = COALESCE(stats_views, 0) + 1, stats_last_viewed = %s WHERE id = %d",
                     $current_time,
                     $point_id
                 ));
 
                 // Set first_viewed if not set
-                if (empty($point['stats_first_viewed'])) {
+                if ($result !== false && empty($point['stats_first_viewed'])) {
                     $wpdb->query($wpdb->prepare(
                         "UPDATE $table SET stats_first_viewed = %s WHERE id = %d",
                         $current_time,
                         $point_id
                     ));
                 }
-                $updated = true;
                 break;
 
             case 'phone_click':
-                $wpdb->query($wpdb->prepare(
-                    "UPDATE $table SET stats_phone_clicks = stats_phone_clicks + 1 WHERE id = %d",
+                $result = $wpdb->query($wpdb->prepare(
+                    "UPDATE $table SET stats_phone_clicks = COALESCE(stats_phone_clicks, 0) + 1 WHERE id = %d",
                     $point_id
                 ));
-                $updated = true;
                 break;
 
             case 'website_click':
-                $wpdb->query($wpdb->prepare(
-                    "UPDATE $table SET stats_website_clicks = stats_website_clicks + 1 WHERE id = %d",
+                $result = $wpdb->query($wpdb->prepare(
+                    "UPDATE $table SET stats_website_clicks = COALESCE(stats_website_clicks, 0) + 1 WHERE id = %d",
                     $point_id
                 ));
-                $updated = true;
                 break;
 
             case 'social_click':
@@ -4572,30 +4517,25 @@ class JG_Map_Ajax_Handlers {
                     return;
                 }
 
-                // Get current social_clicks JSON
                 $social_clicks = json_decode($point['stats_social_clicks'] ?: '{}', true);
                 if (!is_array($social_clicks)) {
                     $social_clicks = array();
                 }
 
-                // Increment platform counter
                 $social_clicks[$platform] = isset($social_clicks[$platform]) ? $social_clicks[$platform] + 1 : 1;
 
-                // Update database
-                $wpdb->query($wpdb->prepare(
+                $result = $wpdb->query($wpdb->prepare(
                     "UPDATE $table SET stats_social_clicks = %s WHERE id = %d",
                     json_encode($social_clicks),
                     $point_id
                 ));
-                $updated = true;
                 break;
 
             case 'cta_click':
-                $wpdb->query($wpdb->prepare(
-                    "UPDATE $table SET stats_cta_clicks = stats_cta_clicks + 1 WHERE id = %d",
+                $result = $wpdb->query($wpdb->prepare(
+                    "UPDATE $table SET stats_cta_clicks = COALESCE(stats_cta_clicks, 0) + 1 WHERE id = %d",
                     $point_id
                 ));
-                $updated = true;
                 break;
 
             case 'gallery_click':
@@ -4604,22 +4544,18 @@ class JG_Map_Ajax_Handlers {
                     return;
                 }
 
-                // Get current gallery_clicks JSON
                 $gallery_clicks = json_decode($point['stats_gallery_clicks'] ?: '{}', true);
                 if (!is_array($gallery_clicks)) {
                     $gallery_clicks = array();
                 }
 
-                // Increment image counter
                 $gallery_clicks[$image_index] = isset($gallery_clicks[$image_index]) ? $gallery_clicks[$image_index] + 1 : 1;
 
-                // Update database
-                $wpdb->query($wpdb->prepare(
+                $result = $wpdb->query($wpdb->prepare(
                     "UPDATE $table SET stats_gallery_clicks = %s WHERE id = %d",
                     json_encode($gallery_clicks),
                     $point_id
                 ));
-                $updated = true;
                 break;
 
             default:
@@ -4627,12 +4563,10 @@ class JG_Map_Ajax_Handlers {
                 return;
         }
 
-        if ($updated) {
-            error_log('[TRACKING DEBUG] SUCCESS - stat recorded for action: ' . $action_type);
-            wp_send_json_success(array('message' => 'Statystyka zapisana'));
+        if ($result !== false) {
+            wp_send_json_success(array('message' => 'Statystyka zapisana', 'rows_affected' => $result));
         } else {
-            error_log('[TRACKING DEBUG] ERROR - stat not recorded');
-            wp_send_json_error(array('message' => 'Nie udało się zapisać statystyki'));
+            wp_send_json_error(array('message' => 'Błąd zapisu: ' . $wpdb->last_error));
         }
     }
 
