@@ -175,6 +175,16 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
+        // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
+        // Schema version tracks which columns have been added
+        $current_schema_version = '3.3.5'; // Update this when adding new columns
+        $cached_schema_version = get_option('jg_map_schema_version', '0');
+
+        // Only run schema check if version has changed
+        if ($cached_schema_version === $current_schema_version) {
+            return; // Schema is up to date, skip all checks
+        }
+
         // Ensure activity log table exists (for existing installations)
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
         JG_Map_Activity_Log::create_table();
@@ -384,6 +394,10 @@ class JG_Map_Database {
                 error_log("[JG MAP] $column_name column already exists");
             }
         }
+
+        // Cache the schema version to avoid running these checks on every page load
+        update_option('jg_map_schema_version', $current_schema_version);
+        error_log('[JG MAP] Schema check completed and cached at version: ' . $current_schema_version);
     }
 
     /**
