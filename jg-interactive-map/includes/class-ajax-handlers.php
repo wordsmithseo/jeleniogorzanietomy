@@ -4497,7 +4497,11 @@ class JG_Map_Ajax_Handlers {
         $platform = isset($_POST['platform']) ? sanitize_text_field($_POST['platform']) : '';
         $image_index = isset($_POST['image_index']) ? intval($_POST['image_index']) : -1;
 
+        // DEBUG: Log request
+        error_log('[TRACKING DEBUG] track_stat called - point_id: ' . $point_id . ', action: ' . $action_type);
+
         if (!$point_id || !$action_type) {
+            error_log('[TRACKING DEBUG] ERROR - missing parameters');
             wp_send_json_error(array('message' => 'Brak wymaganych parametrów'));
             return;
         }
@@ -4509,12 +4513,16 @@ class JG_Map_Ajax_Handlers {
         ), ARRAY_A);
 
         if (!$point) {
+            error_log('[TRACKING DEBUG] ERROR - point not found');
             wp_send_json_error(array('message' => 'Nie znaleziono pinezki'));
             return;
         }
 
+        error_log('[TRACKING DEBUG] Point found - is_promo: ' . $point['is_promo']);
+
         // Only track stats for sponsored/promo places
         if (!$point['is_promo']) {
+            error_log('[TRACKING DEBUG] Point is not sponsored, skipping tracking');
             wp_send_json_success(array('message' => 'Tracking disabled for non-sponsored places'));
             return;
         }
@@ -4620,8 +4628,10 @@ class JG_Map_Ajax_Handlers {
         }
 
         if ($updated) {
+            error_log('[TRACKING DEBUG] SUCCESS - stat recorded for action: ' . $action_type);
             wp_send_json_success(array('message' => 'Statystyka zapisana'));
         } else {
+            error_log('[TRACKING DEBUG] ERROR - stat not recorded');
             wp_send_json_error(array('message' => 'Nie udało się zapisać statystyki'));
         }
     }

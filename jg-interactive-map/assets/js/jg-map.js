@@ -2881,8 +2881,18 @@
       function trackStat(pointId, actionType, extraData, pointOwnerId) {
         if (!pointId) return;
 
+        // DEBUG: Log tracking attempt
+        console.log('[TRACKING DEBUG] Attempt:', {
+          pointId: pointId,
+          actionType: actionType,
+          currentUserId: CFG.currentUserId,
+          pointOwnerId: pointOwnerId,
+          willSkip: (CFG.currentUserId && pointOwnerId && CFG.currentUserId === pointOwnerId)
+        });
+
         // Don't track owner's own interactions
         if (CFG.currentUserId && pointOwnerId && CFG.currentUserId === pointOwnerId) {
+          console.log('[TRACKING DEBUG] Skipped - user is owner');
           return; // Silently skip tracking for owner
         }
 
@@ -2899,6 +2909,8 @@
           }
         }
 
+        console.log('[TRACKING DEBUG] Sending:', data);
+
         // Send async request (fire and forget)
         fetch(CFG.ajax, {
           method: 'POST',
@@ -2908,8 +2920,11 @@
         .then(function(response) {
           return response.json();
         })
+        .then(function(result) {
+          console.log('[TRACKING DEBUG] Response:', result);
+        })
         .catch(function(error) {
-          // Silently fail - tracking errors shouldn't affect user experience
+          console.error('[TRACKING DEBUG] Error:', error);
         });
       }
 
@@ -4371,9 +4386,20 @@
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
+        // DEBUG: Check if point is sponsored
+        console.log('[TRACKING DEBUG] Point opened:', {
+          id: p.id,
+          title: p.title,
+          sponsored: p.sponsored,
+          author_id: p.author_id,
+          currentUserId: CFG.currentUserId
+        });
+
         // Track view for sponsored pins
         if (p.sponsored) {
           trackStat(p.id, 'view', null, p.author_id);
+        } else {
+          console.log('[TRACKING DEBUG] NOT tracking - point is not sponsored');
         }
 
         qs('#dlg-close', modalView).onclick = function() {
