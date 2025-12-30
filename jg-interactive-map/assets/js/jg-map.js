@@ -2882,12 +2882,9 @@
         if (!pointId) return;
 
         // Don't track owner's own interactions
-        if (CFG.userId && pointOwnerId && CFG.userId === pointOwnerId) {
-          console.log('[JG MAP] Skipping tracking - user is owner');
-          return;
+        if (CFG.currentUserId && pointOwnerId && CFG.currentUserId === pointOwnerId) {
+          return; // Silently skip tracking for owner
         }
-
-        console.log('[JG MAP] Tracking:', actionType, 'for point:', pointId);
 
         var data = {
           action: 'jg_track_stat',
@@ -2902,9 +2899,6 @@
           }
         }
 
-        console.log('[JG MAP] Sending tracking data:', data);
-        console.log('[JG MAP] AJAX URL:', CFG.ajax);
-
         // Send async request (fire and forget)
         fetch(CFG.ajax, {
           method: 'POST',
@@ -2912,21 +2906,10 @@
           body: new URLSearchParams(data)
         })
         .then(function(response) {
-          console.log('[JG MAP] Response status:', response.status, response.statusText);
-          return response.text(); // Get raw text first
-        })
-        .then(function(text) {
-          console.log('[JG MAP] Raw response:', text);
-          try {
-            var result = JSON.parse(text);
-            console.log('[JG MAP] Tracking response:', result);
-          } catch (e) {
-            console.error('[JG MAP] JSON parse failed. Raw response:', text);
-            console.error('[JG MAP] Parse error:', e);
-          }
+          return response.json();
         })
         .catch(function(error) {
-          console.error('[JG MAP] Tracking error:', error);
+          // Silently fail - tracking errors shouldn't affect user experience
         });
       }
 
