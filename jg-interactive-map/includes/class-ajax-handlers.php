@@ -994,6 +994,22 @@ class JG_Map_Ajax_Handlers {
 
             JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values);
 
+            // Invalidate map cache to trigger refresh for all users (especially moderators)
+            update_option('jg_map_last_modified', time());
+
+            // Store updated point ID for real-time broadcast via Heartbeat
+            $updated_points = get_transient('jg_map_updated_points');
+            if (!is_array($updated_points)) {
+                $updated_points = array();
+            }
+            $updated_points[] = array(
+                'id' => $point_id,
+                'timestamp' => time()
+            );
+            // Keep only last 100 updates
+            $updated_points = array_slice($updated_points, -100);
+            set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+
             // Notify admin
             $this->notify_admin_edit($point_id);
 
@@ -1080,6 +1096,22 @@ class JG_Map_Ajax_Handlers {
             ),
             array('id' => $point_id)
         );
+
+        // Invalidate map cache to trigger refresh for all users (especially moderators)
+        update_option('jg_map_last_modified', time());
+
+        // Store updated point ID for real-time broadcast via Heartbeat
+        $updated_points = get_transient('jg_map_updated_points');
+        if (!is_array($updated_points)) {
+            $updated_points = array();
+        }
+        $updated_points[] = array(
+            'id' => $point_id,
+            'timestamp' => time()
+        );
+        // Keep only last 100 updates
+        $updated_points = array_slice($updated_points, -100);
+        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
 
         // Notify admin
         $admin_email = get_option('admin_email');
@@ -1425,9 +1457,27 @@ class JG_Map_Ajax_Handlers {
         // Resolve reports
         JG_Map_Database::resolve_reports($point_id, $reason);
 
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
+
         // Clear object cache to refresh admin bar notifications
         wp_cache_delete('jg_map_pending_counts');
         wp_cache_flush();
+
+        // Store updated point ID for real-time broadcast via Heartbeat (unless removed)
+        if ($action_type !== 'remove') {
+            $updated_points = get_transient('jg_map_updated_points');
+            if (!is_array($updated_points)) {
+                $updated_points = array();
+            }
+            $updated_points[] = array(
+                'id' => $point_id,
+                'timestamp' => time()
+            );
+            // Keep only last 100 updates
+            $updated_points = array_slice($updated_points, -100);
+            set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+        }
 
         // Log action
         $point = JG_Map_Database::get_point($point_id);
@@ -1533,9 +1583,25 @@ class JG_Map_Ajax_Handlers {
         // Resolve reports
         JG_Map_Database::resolve_reports($point_id, 'Miejsce zostało edytowane przez moderatora');
 
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
+
         // Clear object cache to refresh admin bar notifications
         wp_cache_delete('jg_map_pending_counts');
         wp_cache_flush();
+
+        // Store updated point ID for real-time broadcast via Heartbeat
+        $updated_points = get_transient('jg_map_updated_points');
+        if (!is_array($updated_points)) {
+            $updated_points = array();
+        }
+        $updated_points[] = array(
+            'id' => $point_id,
+            'timestamp' => time()
+        );
+        // Keep only last 100 updates
+        $updated_points = array_slice($updated_points, -100);
+        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
 
         wp_send_json_success(array('message' => 'Miejsce edytowane i zgłoszenia zamknięte'));
     }
@@ -1566,9 +1632,25 @@ class JG_Map_Ajax_Handlers {
         // Resolve all pending reports
         JG_Map_Database::resolve_reports($point_id, 'Miejsce pozostawione przez moderatora');
 
+        // Invalidate map cache to trigger refresh for all users
+        update_option('jg_map_last_modified', time());
+
         // Clear object cache to refresh admin bar notifications
         wp_cache_delete('jg_map_pending_counts');
         wp_cache_flush();
+
+        // Store updated point ID for real-time broadcast via Heartbeat
+        $updated_points = get_transient('jg_map_updated_points');
+        if (!is_array($updated_points)) {
+            $updated_points = array();
+        }
+        $updated_points[] = array(
+            'id' => $point_id,
+            'timestamp' => time()
+        );
+        // Keep only last 100 updates
+        $updated_points = array_slice($updated_points, -100);
+        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
 
         // Log action
         JG_Map_Activity_Log::log(
@@ -2584,6 +2666,19 @@ class JG_Map_Ajax_Handlers {
         wp_cache_delete('jg_map_pending_counts');
         wp_cache_flush();
 
+        // Store updated point ID for real-time broadcast via Heartbeat
+        $updated_points = get_transient('jg_map_updated_points');
+        if (!is_array($updated_points)) {
+            $updated_points = array();
+        }
+        $updated_points[] = array(
+            'id' => $history['point_id'],
+            'timestamp' => time()
+        );
+        // Keep only last 100 updates
+        $updated_points = array_slice($updated_points, -100);
+        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+
         // Notify author
         $point = JG_Map_Database::get_point($history['point_id']);
         $author = get_userdata($point['author_id']);
@@ -2775,6 +2870,19 @@ class JG_Map_Ajax_Handlers {
         // Clear object cache to refresh admin bar notifications
         wp_cache_delete('jg_map_pending_counts');
         wp_cache_flush();
+
+        // Store updated point ID for real-time broadcast via Heartbeat
+        $updated_points = get_transient('jg_map_updated_points');
+        if (!is_array($updated_points)) {
+            $updated_points = array();
+        }
+        $updated_points[] = array(
+            'id' => $point_id,
+            'timestamp' => time()
+        );
+        // Keep only last 100 updates
+        $updated_points = array_slice($updated_points, -100);
+        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
 
         // Notify author
         $point = JG_Map_Database::get_point($point_id);

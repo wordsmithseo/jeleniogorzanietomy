@@ -3313,10 +3313,17 @@ class JG_Map_Admin {
             $last_check_date = date('Y-m-d H:i:s', $last_check / 1000); // Convert JS timestamp to MySQL datetime
 
             // Count new points since last check
+            // Include both newly created published points AND newly approved points
             $new_points = $wpdb->get_var($wpdb->prepare(
                 "SELECT COUNT(*) FROM $points_table
-                 WHERE created_at > %s
-                 AND status = 'publish'",
+                 WHERE status = 'publish'
+                 AND (
+                    created_at > %s
+                    OR approved_at > %s
+                    OR updated_at > %s
+                 )",
+                $last_check_date,
+                $last_check_date,
                 $last_check_date
             ));
 
