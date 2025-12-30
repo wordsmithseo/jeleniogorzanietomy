@@ -44,8 +44,6 @@
   var loadStartTime = Date.now(); // Track when loading started
   var minLoadingTime = 500; // Minimum time to show loader (ms)
 
-  console.log('[JG MAP] Loader element:', loadingEl ? 'found' : 'NOT FOUND');
-  console.log('[JG MAP] Loading started at', new Date(loadStartTime).toISOString());
 
   // ====================================
   // MESSAGE MODALS (Alert/Confirm replacements)
@@ -135,22 +133,17 @@
     var elapsed = Date.now() - loadStartTime;
     var remaining = minLoadingTime - elapsed;
 
-    console.log('[JG MAP] hideLoading() called, elapsed:', elapsed + 'ms');
 
     if (remaining > 0) {
-      console.log('[JG MAP] Delaying hide by', remaining + 'ms for better UX');
       setTimeout(function() {
         if (loadingEl) {
           loadingEl.style.display = 'none';
-          console.log('[JG MAP] Loader hidden after delay');
         }
       }, remaining);
     } else {
       if (loadingEl) {
         loadingEl.style.display = 'none';
-        console.log('[JG MAP] Loader hidden immediately');
       } else {
-        console.log('[JG MAP] Loader element not found!');
       }
     }
   }
@@ -668,7 +661,6 @@
         // Update URL in browser address bar if opening point detail modal
         if (bg.id === 'jg-map-modal-view' && opts && opts.pointData) {
           var point = opts.pointData;
-          console.log('[JG MAP] Opening modal for point:', point.id, 'slug:', point.slug, 'type:', point.type);
 
           if (point.slug && point.type) {
             // Determine URL path based on point type
@@ -681,7 +673,6 @@
 
             var newUrl = '/' + typePath + '/' + point.slug + '/';
 
-            console.log('[JG MAP] Changing URL to:', newUrl);
 
             // Push state to browser history
             if (window.history && window.history.pushState) {
@@ -690,7 +681,6 @@
                 point.title || '',
                 newUrl
               );
-              console.log('[JG MAP] URL changed successfully');
             } else {
               console.error('[JG MAP] history.pushState not supported');
             }
@@ -1071,7 +1061,6 @@
             });
 
             clusterReady = true;
-            console.log('[JG MAP] Cluster is now ready, pendingData:', pendingData ? pendingData.length : 0);
 
             // Clean up any old markers
             if (markers.length > 0) {
@@ -1086,7 +1075,6 @@
 
             // Process pending data if any (regardless of markers)
             if (pendingData && pendingData.length > 0) {
-              console.log('[JG MAP] Processing pending data:', pendingData.length, 'points');
               setTimeout(function() { draw(pendingData); }, 300);
             }
           } catch (e) {
@@ -1339,7 +1327,6 @@
               var addressDisplay = qs('#add-address-display', modalAdd);
 
               if (addressDisplay && addressInput) {
-                console.log('[JG MAP] Starting automatic reverse geocoding for:', lat, lng);
 
                 var formData = new FormData();
                 formData.append('action', 'jg_reverse_geocode');
@@ -1353,7 +1340,6 @@
                 })
                 .then(function(r) { return r.json(); })
                 .then(function(response) {
-                  console.log('[JG MAP] Reverse geocoding response:', response);
 
                   if (response.success && response.data && response.data.display_name) {
                     var data = response.data;
@@ -1371,7 +1357,6 @@
                       fullAddress = city;
                     }
 
-                    console.log('[JG MAP] Address resolved:', fullAddress);
                     addressInput.value = fullAddress;
                     addressDisplay.innerHTML = '<strong>📍 Adres:</strong> ' + esc(fullAddress);
                   } else {
@@ -1396,15 +1381,10 @@
             fd.append('_ajax_nonce', CFG.nonce);
 
             // DEBUG: Log FormData contents (more compatible approach)
-            console.log('[JG MAP DEBUG] ===== SUBMITTING FORM =====');
-            console.log('[JG MAP DEBUG] Form action: jg_submit_point');
             var formDataObj = {};
             fd.forEach(function(value, key) {
               formDataObj[key] = value;
-              console.log('[JG MAP DEBUG]   ' + key + ': ' + value);
             });
-            console.log('[JG MAP DEBUG] FormData object:', formDataObj);
-            console.log('[JG MAP DEBUG] =============================');
 
             fetch(CFG.ajax, {
               method: 'POST',
@@ -1769,16 +1749,11 @@
           }
           // DEBUG: Log API response for jg_points to see if addresses are included
           if (action === 'jg_points' && j.data) {
-            console.log('[JG MAP] API Response for jg_points - first 3 points:', j.data.slice(0, 3));
             j.data.slice(0, 3).forEach(function(p, i) {
-              console.log('[JG MAP] Point ' + (i+1) + ' - ID:', p.id, 'Address:', p.address);
             });
             // DEBUG: Log RAW JSON for zgłoszenia to check category field
-            console.log('[JG MAP DEBUG] ===== RAW JSON RESPONSE CHECK =====');
             var zgloszenia = j.data.filter(function(p) { return p.type === 'zgloszenie'; });
-            console.log('[JG MAP DEBUG] Found ' + zgloszenia.length + ' zgłoszenia in response');
             zgloszenia.slice(0, 3).forEach(function(p) {
-              console.log('[JG MAP DEBUG] RAW Zgłoszenie #' + p.id + ':', JSON.stringify({
                 id: p.id,
                 title: p.title,
                 type: p.type,
@@ -1788,7 +1763,6 @@
                 category_type: typeof p.category
               }, null, 2));
             });
-            console.log('[JG MAP DEBUG] =====================================');
           }
           return j.data;
         });
@@ -1951,10 +1925,8 @@
           // Check for jg_view_reports parameter (from dashboard Reports) - HIGHEST PRIORITY
           var viewReportsId = urlParams.get('jg_view_reports');
           if (viewReportsId && CFG.isAdmin && ALL && ALL.length > 0) {
-            console.log('[JG MAP] jg_view_reports detected, point_id:', viewReportsId);
             var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewReportsId); });
             if (targetPoint) {
-              console.log('[JG MAP] Found reported point:', targetPoint.title);
               // Zoom to max zoom level (19) to show point clearly
               setTimeout(function() {
                 map.setView([targetPoint.lat, targetPoint.lng], 19, { animate: true });
@@ -1974,10 +1946,8 @@
           // Check for jg_view_point parameter (from dashboard Gallery)
           var viewPointId = urlParams.get('jg_view_point');
           if (viewPointId && ALL && ALL.length > 0) {
-            console.log('[JG MAP] jg_view_point detected, point_id:', viewPointId);
             var targetPoint = ALL.find(function(p) { return p.id === parseInt(viewPointId); });
             if (targetPoint) {
-              console.log('[JG MAP] Found point:', targetPoint.title);
 
               // Map is already scrolled to by earlyScrollCheck()
               // Wait for map to be ready, then zoom to point with maximum zoom
@@ -2010,7 +1980,6 @@
           }
 
           if (pointId && ALL && ALL.length > 0) {
-            console.log('[JG MAP] Deep link detected, point_id:', pointId);
 
             // Find the point with this ID
             var point = ALL.find(function(p) {
@@ -2018,25 +1987,20 @@
             });
 
             if (point) {
-              console.log('[JG MAP] Found point:', point.title);
 
               // STEP 1: Map is already scrolled to by earlyScrollCheck()
               // STEP 2: Wait for map to be ready, then zoom
               setTimeout(function() {
-                console.log('[JG MAP] Map ready, zooming to point...');
                 // Zoom to point with maximum zoom level
                 map.setView([point.lat, point.lng], 19, { animate: true });
 
                 // STEP 3: Wait for zoom animation, then show pulsing marker
                 setTimeout(function() {
-                  console.log('[JG MAP] Zoom complete, showing pulsing marker...');
                   // Add pulsing red circle around the point
                   addPulsingMarker(point.lat, point.lng, function() {
-                    console.log('[JG MAP] Pulsing animation complete, waiting 2 seconds...');
 
                     // STEP 4: Wait 2 seconds, then open modal
                     setTimeout(function() {
-                      console.log('[JG MAP] Opening modal...');
                       // Open modal after animation - use openDetails, not viewPoint!
                       openDetails(point);
 
@@ -2171,7 +2135,6 @@
       function removeMarkersById(pointIds) {
         if (!cluster || !pointIds || pointIds.length === 0) return;
 
-        console.log('[JG MAP] Removing markers for point IDs:', pointIds);
 
         var markersToRemove = [];
         var allMarkers = cluster.getLayers();
@@ -2184,7 +2147,6 @@
         }
 
         if (markersToRemove.length > 0) {
-          console.log('[JG MAP] Removing', markersToRemove.length, 'markers from cluster');
           cluster.removeLayers(markersToRemove);
         }
       }
@@ -2194,16 +2156,13 @@
 
       // Helper function to refresh both map and notifications
       function refreshAll() {
-        console.log('[JG MAP] refreshAll() called - refreshing map and notifications');
 
         // First refresh map data to get latest points
         return refreshData(true).then(function() {
-          console.log('[JG MAP] Map data refreshed, now refreshing notifications');
 
           // Then refresh notifications if function exists (for admins/moderators)
           if (typeof window.jgRefreshNotifications === 'function') {
             return window.jgRefreshNotifications().then(function() {
-              console.log('[JG MAP] Notifications refreshed successfully');
             }).catch(function(err) {
               console.error('[JG MAP] Failed to refresh notifications:', err);
             });
@@ -2275,10 +2234,8 @@
       var isInitialLoad = true; // Track if this is the first load
 
       function draw(list, skipFitBounds) {
-        console.log('[JG MAP] draw() called with', list ? list.length : 0, 'points, clusterReady:', clusterReady);
 
         if (!list || list.length === 0) {
-          console.log('[JG MAP] No data to draw, showing map anyway');
           showMap();
           hideLoading();
           // Check for deep-linked point after map is ready
@@ -2288,12 +2245,10 @@
 
         // Wait for cluster to be ready (created in map.whenReady)
         if (!clusterReady || !cluster) {
-          console.log('[JG MAP] Cluster not ready, storing', list.length, 'points in pendingData');
           pendingData = list;
           return;
         }
 
-        console.log('[JG MAP] Cluster ready, drawing', list.length, 'markers');
 
         // Clear cluster layers
         try {
@@ -2376,11 +2331,9 @@
         // Add all markers at once to cluster (reduces animation flicker)
         if (clusterReady && cluster && newMarkers.length > 0) {
           cluster.addLayers(newMarkers);
-          console.log('[JG MAP] Added', newMarkers.length, 'markers to cluster');
         } else if (newMarkers.length > 0) {
           // DON'T add markers directly to map - wait for cluster to be ready
           // This prevents duplicate markers (one on map, one in cluster)
-          console.log('[JG MAP] Cluster not ready, not adding markers yet');
         }
 
 
@@ -2407,7 +2360,6 @@
             setTimeout(function() {
               showMap();
               hideLoading();
-              console.log('[JG MAP] Map shown after cluster animation');
               // Check for deep-linked point after map is fully ready
               checkDeepLink();
             }, 600);
@@ -2417,7 +2369,6 @@
           setTimeout(function() {
             showMap();
             hideLoading();
-            console.log('[JG MAP] Map shown after cluster animation');
             // Check for deep-linked point after map is fully ready
             checkDeepLink();
           }, 600);
@@ -2881,19 +2832,9 @@
       function trackStat(pointId, actionType, extraData, pointOwnerId) {
         if (!pointId) return;
 
-        // DEBUG: Log tracking attempt
-        console.log('[TRACKING DEBUG] Attempt:', {
-          pointId: pointId,
-          actionType: actionType,
-          currentUserId: CFG.currentUserId,
-          pointOwnerId: pointOwnerId,
-          willSkip: (CFG.currentUserId && pointOwnerId && CFG.currentUserId === pointOwnerId)
-        });
-
         // Don't track owner's own interactions
-        if (CFG.currentUserId && pointOwnerId && CFG.currentUserId === pointOwnerId) {
-          console.log('[TRACKING DEBUG] Skipped - user is owner');
-          return; // Silently skip tracking for owner
+        if (CFG.currentUserId && pointOwnerId && parseInt(CFG.currentUserId) === parseInt(pointOwnerId)) {
+          return;
         }
 
         var data = {
@@ -2902,29 +2843,18 @@
           action_type: actionType
         };
 
-        // Add extra data (platform for social, image_index for gallery)
         if (extraData) {
           for (var key in extraData) {
             data[key] = extraData[key];
           }
         }
 
-        console.log('[TRACKING DEBUG] Sending:', data);
-
-        // Send async request (fire and forget)
         fetch(CFG.ajax, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams(data)
-        })
-        .then(function(response) {
-          return response.json();
-        })
-        .then(function(result) {
-          console.log('[TRACKING DEBUG] Response:', result);
-        })
-        .catch(function(error) {
-          console.error('[TRACKING DEBUG] Error:', error);
+        }).catch(function() {
+          // Silent fail
         });
       }
 
@@ -3928,8 +3858,6 @@
       }
 
       function openDetails(p) {
-        console.log('[JG MAP] Opening details for point:', p);
-        console.log('[JG MAP] Point address:', p.address);
 
         var imgs = Array.isArray(p.images) ? p.images : [];
 
@@ -4265,7 +4193,6 @@
         var categoryInfo = '';
 
         // DEBUG: Log modal category data
-        console.log('[JG MAP DEBUG] openDetails() - Category check:', {
           id: p.id,
           title: p.title,
           type: p.type,
@@ -4386,20 +4313,9 @@
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
-        // DEBUG: Check if point is sponsored
-        console.log('[TRACKING DEBUG] Point opened:', {
-          id: p.id,
-          title: p.title,
-          sponsored: p.sponsored,
-          author_id: p.author_id,
-          currentUserId: CFG.currentUserId
-        });
-
         // Track view for sponsored pins
         if (p.sponsored) {
           trackStat(p.id, 'view', null, p.author_id);
-        } else {
-          console.log('[TRACKING DEBUG] NOT tracking - point is not sponsored');
         }
 
         qs('#dlg-close', modalView).onclick = function() {
@@ -4974,9 +4890,6 @@
         // Debug logging
         var sponsoredCount = list.filter(function(p) { return p.sponsored; }).length;
         var nonSponsoredCount = list.length - sponsoredCount;
-        console.log('[JG MAP FILTER] Total points:', (ALL || []).length);
-        console.log('[JG MAP FILTER] Filtered list:', list.length, '(' + sponsoredCount + ' sponsored, ' + nonSponsoredCount + ' non-sponsored)');
-        console.log('[JG MAP FILTER] Active filters: promoOnly=' + promoOnly + ', myPlacesOnly=' + myPlacesOnly + ', types=' + JSON.stringify(Object.keys(enabled)));
 
         pendingData = list;
         draw(list, skipFitBounds);
@@ -5191,7 +5104,6 @@
           }
 
           if (hasDeepLink) {
-            console.log('[JG MAP] Deep link detected, scrolling to map FIRST before loading');
             var mapSection = document.getElementById('mapa-start');
             if (!mapSection) {
               mapSection = document.getElementById('jg-map-wrap');
@@ -5199,7 +5111,6 @@
             if (mapSection) {
               var targetPosition = mapSection.getBoundingClientRect().top + window.pageYOffset - 80;
               window.scrollTo({ top: targetPosition, behavior: 'smooth' });
-              console.log('[JG MAP] Scrolled to map section before initialization');
             }
           }
         } catch (e) {
@@ -5210,7 +5121,6 @@
       // Load from cache first for instant display, then check for updates
       var cachedData = loadFromCache();
       if (cachedData && cachedData.length > 0) {
-        console.log('[JG MAP] Loaded ' + cachedData.length + ' points from cache');
         ALL = cachedData;
         apply(false); // Apply cached data immediately with fitBounds
         // Don't call hideLoading() here - let draw() handle it when cluster is ready
@@ -5226,7 +5136,6 @@
         });
       } else {
         // No cache, fetch fresh data
-        console.log('[JG MAP] No cache, fetching fresh data');
         refreshData(true)
           .then(function() {
             checkUserRestrictions();
@@ -5237,21 +5146,18 @@
           });
       }
 
-      // Smart auto-refresh: FORCE refresh every 3 seconds for real-time synchronization
-      // Use force=true to bypass update check and always fetch fresh data
+      // Smart auto-refresh: Check for updates every 30 seconds
+      // Only fetches new data if changes detected (efficient)
       var refreshInterval = setInterval(function() {
-
-        refreshData(true).then(function() {
-          console.log('[JG MAP] Auto-refresh completed');
-        }).catch(function(err) {
-          console.error('[JG MAP] Auto-refresh error:', err);
+        refreshData(false).catch(function() {
+          // Silent fail
         });
-      }, 3000); // 3 seconds - FORCED refresh for real-time sync
+      }, 30000); // 30 seconds - smart refresh with change detection
 
-      // Also check for updates when page becomes visible again
+      // Check for updates when page becomes visible
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
-          refreshData(true); // Force refresh when page becomes visible
+          refreshData(false);
         }
       });
 

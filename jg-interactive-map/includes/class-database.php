@@ -24,11 +24,8 @@ class JG_Map_Database {
         // Check if category column exists, add it if it doesn't
         $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_points LIKE 'category'");
         if (empty($column_exists)) {
-            error_log('[JG MAP] Adding category column to points table');
             $wpdb->query("ALTER TABLE $table_points ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
-            error_log('[JG MAP] Category column added successfully');
         } else {
-            error_log('[JG MAP] Category column already exists');
         }
 
         // Table for votes
@@ -192,9 +189,7 @@ class JG_Map_Database {
         // Check if category column exists (added in v3.2.x for report categorization)
         $category_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'category'");
         if (empty($category_exists)) {
-            error_log('[JG MAP] Schema update: Adding category column');
             $wpdb->query("ALTER TABLE $table ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
-            error_log('[JG MAP] Schema update: Category column added');
         }
 
         // Check if promo_until column exists
@@ -246,50 +241,36 @@ class JG_Map_Database {
         // Check if address column exists (for geocoding)
         $address = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'address'");
         if (empty($address)) {
-            error_log('[JG MAP] Adding address column to database');
             $result = $wpdb->query("ALTER TABLE $table ADD COLUMN address varchar(500) DEFAULT NULL AFTER lng");
-            error_log('[JG MAP] Address column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
         } else {
-            error_log('[JG MAP] Address column already exists');
         }
 
         // Check if category column exists (for report categories)
         $category = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'category'");
         if (empty($category)) {
-            error_log('[JG MAP] Adding category column to database');
             $result = $wpdb->query("ALTER TABLE $table ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
-            error_log('[JG MAP] Category column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
             if ($result === false) {
-                error_log('[JG MAP] Category column ADD FAILED - Error: ' . $wpdb->last_error);
             }
         } else {
-            error_log('[JG MAP] Category column already exists');
         }
 
         // Check if approved_at column exists (for tracking approval date)
         $approved_at = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'approved_at'");
         if (empty($approved_at)) {
-            error_log('[JG MAP] Adding approved_at column to database');
             $result = $wpdb->query("ALTER TABLE $table ADD COLUMN approved_at datetime DEFAULT NULL AFTER created_at");
-            error_log('[JG MAP] approved_at column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
             if ($result === false) {
-                error_log('[JG MAP] approved_at column ADD FAILED - Error: ' . $wpdb->last_error);
             }
         } else {
-            error_log('[JG MAP] approved_at column already exists');
         }
 
         // Check if slug column exists (for SEO-friendly URLs)
         $slug = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'slug'");
         $slug_was_added = false;
         if (empty($slug)) {
-            error_log('[JG MAP] Adding slug column to database');
             $result = $wpdb->query("ALTER TABLE $table ADD COLUMN slug varchar(255) DEFAULT NULL AFTER title");
-            error_log('[JG MAP] slug column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
             if ($result !== false) {
                 // Add unique index
                 $wpdb->query("ALTER TABLE $table ADD UNIQUE KEY slug (slug)");
-                error_log('[JG MAP] slug unique index added');
 
                 // Generate slugs for existing points
                 self::migrate_generate_slugs();
@@ -297,22 +278,18 @@ class JG_Map_Database {
                 // Mark that slug was added so we can flush rewrite rules
                 $slug_was_added = true;
             } else {
-                error_log('[JG MAP] slug column ADD FAILED - Error: ' . $wpdb->last_error);
             }
         } else {
-            error_log('[JG MAP] slug column already exists');
 
             // Check if there are any points without slugs and generate them
             $points_without_slugs = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE slug IS NULL OR slug = ''");
             if ($points_without_slugs > 0) {
-                error_log('[JG MAP] Found ' . $points_without_slugs . ' points without slugs, generating...');
                 self::migrate_generate_slugs();
             }
         }
 
         // Flush rewrite rules if slug column was just added
         if ($slug_was_added) {
-            error_log('[JG MAP] Flushing rewrite rules after adding slug column');
             flush_rewrite_rules();
             // Set option to flush again on next page load (ensures it works)
             update_option('jg_map_needs_rewrite_flush', true);
@@ -322,7 +299,6 @@ class JG_Map_Database {
         $table_relevance_votes = $wpdb->prefix . 'jg_map_relevance_votes';
         $relevance_table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_relevance_votes'");
         if ($relevance_table_exists != $table_relevance_votes) {
-            error_log('[JG MAP] Creating relevance_votes table');
             $charset_collate = $wpdb->get_charset_collate();
             $sql_relevance_votes = "CREATE TABLE IF NOT EXISTS $table_relevance_votes (
                 id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -336,19 +312,14 @@ class JG_Map_Database {
             ) $charset_collate;";
             require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
             dbDelta($sql_relevance_votes);
-            error_log('[JG MAP] relevance_votes table created');
         } else {
-            error_log('[JG MAP] relevance_votes table already exists');
         }
 
         // Check if featured_image_index column exists (for OG/social media featured image)
         $featured_image_index = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'featured_image_index'");
         if (empty($featured_image_index)) {
-            error_log('[JG MAP] Adding featured_image_index column to database');
             $result = $wpdb->query("ALTER TABLE $table ADD COLUMN featured_image_index int DEFAULT 0 AFTER images");
-            error_log('[JG MAP] featured_image_index column added, result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
         } else {
-            error_log('[JG MAP] featured_image_index column already exists');
         }
 
         // Check if social media columns exist (for sponsored places)
@@ -362,11 +333,8 @@ class JG_Map_Database {
         foreach ($social_columns as $column_name => $alter_query) {
             $column_check = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE '$column_name'");
             if (empty($column_check)) {
-                error_log("[JG MAP] Adding $column_name column to database");
                 $result = $wpdb->query($alter_query);
-                error_log("[JG MAP] $column_name column added, result: " . ($result !== false ? 'SUCCESS' : 'FAILED'));
             } else {
-                error_log("[JG MAP] $column_name column already exists");
             }
         }
 
@@ -387,17 +355,13 @@ class JG_Map_Database {
         foreach ($stats_columns as $column_name => $alter_query) {
             $column_check = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE '$column_name'");
             if (empty($column_check)) {
-                error_log("[JG MAP] Adding $column_name column to database");
                 $result = $wpdb->query($alter_query);
-                error_log("[JG MAP] $column_name column added, result: " . ($result !== false ? 'SUCCESS' : 'FAILED'));
             } else {
-                error_log("[JG MAP] $column_name column already exists");
             }
         }
 
         // Cache the schema version to avoid running these checks on every page load
         update_option('jg_map_schema_version', $current_schema_version);
-        error_log('[JG MAP] Schema check completed and cached at version: ' . $current_schema_version);
     }
 
     /**
@@ -407,7 +371,6 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
-        error_log('[JG MAP] Starting slug migration...');
 
         // Get all points without slugs
         $points = $wpdb->get_results(
@@ -420,7 +383,6 @@ class JG_Map_Database {
 
         foreach ($points as $point) {
             if (empty($point['title'])) {
-                error_log('[JG MAP] Skipping point #' . $point['id'] . ' - no title');
                 continue;
             }
 
@@ -436,14 +398,11 @@ class JG_Map_Database {
 
             if ($result !== false) {
                 $updated++;
-                error_log('[JG MAP] Generated slug for point #' . $point['id'] . ': ' . $slug);
             } else {
                 $errors++;
-                error_log('[JG MAP] Failed to generate slug for point #' . $point['id'] . ': ' . $wpdb->last_error);
             }
         }
 
-        error_log('[JG MAP] Slug migration complete: ' . $updated . ' updated, ' . $errors . ' errors');
     }
 
     /**
@@ -603,10 +562,8 @@ class JG_Map_Database {
         $results = $wpdb->get_results($sql, ARRAY_A);
 
         // DEBUG: Log raw SQL results for zgłoszenia with categories
-        error_log('[JG MAP] get_published_points - Retrieved ' . count($results) . ' points from database');
         foreach ($results as $row) {
             if ($row['type'] === 'zgloszenie') {
-                error_log('[JG MAP] get_published_points - RAW DB ROW for point #' . $row['id'] . ': type="' . $row['type'] . '", category="' . ($row['category'] ?? 'NULL/MISSING') . '"');
             }
         }
 
@@ -638,7 +595,6 @@ class JG_Map_Database {
 
         $results = $wpdb->get_results($sql, ARRAY_A);
 
-        error_log('[JG MAP] get_user_pending_points - Retrieved ' . count($results) . ' pending points for user #' . $user_id);
 
         return $results;
     }
@@ -678,14 +634,10 @@ class JG_Map_Database {
         // Auto-generate slug if not provided
         if (empty($data['slug']) && !empty($data['title'])) {
             $data['slug'] = self::generate_unique_slug($data['title']);
-            error_log('[JG MAP] insert_point - auto-generated slug: ' . $data['slug']);
         }
 
-        error_log('[JG MAP] insert_point - data: ' . print_r($data, true));
         $result = $wpdb->insert($table, $data);
-        error_log('[JG MAP] insert_point - result: ' . ($result !== false ? 'SUCCESS' : 'FAILED'));
         if ($result === false) {
-            error_log('[JG MAP] insert_point - wpdb error: ' . $wpdb->last_error);
         }
 
         return $wpdb->insert_id;
@@ -701,7 +653,6 @@ class JG_Map_Database {
         // If title is being updated, regenerate slug if not explicitly provided
         if (isset($data['title']) && empty($data['slug'])) {
             $data['slug'] = self::generate_unique_slug($data['title'], $point_id);
-            error_log('[JG MAP] update_point - regenerated slug: ' . $data['slug']);
         }
 
         return $wpdb->update(
