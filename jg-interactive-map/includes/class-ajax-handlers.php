@@ -193,13 +193,7 @@ class JG_Map_Ajax_Handlers {
         $reports_time = $wpdb->get_var("SELECT MAX(created_at) FROM $reports_table");
         $history_time = $wpdb->get_var("SELECT MAX(created_at) FROM $history_table");
 
-        // Also check stats_last_viewed to detect statistics updates
-        // Suppress errors in case column doesn't exist yet
-        $wpdb->suppress_errors();
-        $stats_time = $wpdb->get_var("SELECT MAX(stats_last_viewed) FROM $table WHERE stats_last_viewed IS NOT NULL");
-        $wpdb->show_errors();
-
-        $timestamps = array_filter(array($points_time, $reports_time, $history_time, $stats_time));
+        $timestamps = array_filter(array($points_time, $reports_time, $history_time));
         $last_modified = empty($timestamps) ? current_time('mysql') : max($timestamps);
 
         // Get counts for moderators
@@ -4426,24 +4420,11 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Check if stats columns exist - if not, force schema update
-        $wpdb->suppress_errors();
-        $stats_column_check = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'stats_views'");
-        $wpdb->show_errors();
-
-        if (empty($stats_column_check)) {
-            // Stats columns don't exist - force schema update by clearing cache
-            delete_option('jg_map_schema_version');
-            JG_Map_Database::check_and_update_schema();
-        }
-
         // Check if point exists and is sponsored
-        $wpdb->suppress_errors();
         $point = $wpdb->get_row($wpdb->prepare(
             "SELECT id, is_promo, stats_first_viewed, stats_social_clicks, stats_gallery_clicks FROM $table WHERE id = %d",
             $point_id
         ), ARRAY_A);
-        $wpdb->show_errors();
 
         if (!$point) {
             wp_send_json_error(array('message' => 'Nie znaleziono pinezki'));
