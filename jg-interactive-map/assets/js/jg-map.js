@@ -5124,13 +5124,14 @@
           });
       }
 
-      // Smart auto-refresh: Check for updates every 30 seconds
-      // Only fetches new data if changes detected (efficient)
+      // Smart auto-refresh: Different intervals for admins vs regular users
+      // Admins need faster updates for moderation (5s), users can wait longer (30s)
+      var refreshIntervalTime = CFG.isAdmin ? 5000 : 30000;
       var refreshInterval = setInterval(function() {
         refreshData(false).catch(function() {
           // Silent fail
         });
-      }, 30000); // 30 seconds - smart refresh with change detection
+      }, refreshIntervalTime);
 
       // Check for updates when page becomes visible
       document.addEventListener('visibilitychange', function() {
