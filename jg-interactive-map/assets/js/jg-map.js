@@ -1747,22 +1747,9 @@
             console.error('[JG MAP] API error:', errMsg, j);
             throw new Error(errMsg);
           }
-          // DEBUG: Log API response for jg_points to see if addresses are included
+          // Process response data
           if (action === 'jg_points' && j.data) {
-            j.data.slice(0, 3).forEach(function(p, i) {
-            });
-            // DEBUG: Log RAW JSON for zgłoszenia to check category field
-            var zgloszenia = j.data.filter(function(p) { return p.type === 'zgloszenie'; });
-            zgloszenia.slice(0, 3).forEach(function(p) {
-                id: p.id,
-                title: p.title,
-                type: p.type,
-                category: p.category,
-                has_category_key: ('category' in p),
-                category_value: p.category,
-                category_type: typeof p.category
-              }, null, 2));
-            });
+            // Data received successfully
           }
           return j.data;
         });
@@ -4191,15 +4178,6 @@
 
         // Category info for reports - prominent card
         var categoryInfo = '';
-
-        // DEBUG: Log modal category data
-          id: p.id,
-          title: p.title,
-          type: p.type,
-          category: p.category,
-          has_category: !!p.category,
-          will_show_category: (p.type === 'zgloszenie' && p.category)
-        });
 
         if (p.type === 'zgloszenie' && p.category) {
           var categoryLabels = {
