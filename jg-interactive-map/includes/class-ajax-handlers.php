@@ -4508,7 +4508,10 @@ class JG_Map_Ajax_Handlers {
         $platform = isset($_POST['platform']) ? sanitize_text_field($_POST['platform']) : '';
         $image_index = isset($_POST['image_index']) ? intval($_POST['image_index']) : -1;
 
+        error_log('[JG MAP] track_stat called - point_id: ' . $point_id . ', action: ' . $action_type . ', platform: ' . $platform);
+
         if (!$point_id || !$action_type) {
+            error_log('[JG MAP] track_stat ERROR - missing parameters');
             wp_send_json_error(array('message' => 'Brak wymaganych parametrów'));
             return;
         }
@@ -4520,12 +4523,16 @@ class JG_Map_Ajax_Handlers {
         ), ARRAY_A);
 
         if (!$point) {
+            error_log('[JG MAP] track_stat ERROR - point not found');
             wp_send_json_error(array('message' => 'Nie znaleziono pinezki'));
             return;
         }
 
+        error_log('[JG MAP] track_stat - point found, is_promo: ' . $point['is_promo']);
+
         // Only track stats for sponsored/promo places
         if (!$point['is_promo']) {
+            error_log('[JG MAP] track_stat - not a sponsored place, skipping');
             wp_send_json_success(array('message' => 'Tracking disabled for non-sponsored places'));
             return;
         }
@@ -4533,14 +4540,17 @@ class JG_Map_Ajax_Handlers {
         $current_time = current_time('mysql');
         $updated = false;
 
+        error_log('[JG MAP] track_stat - processing action: ' . $action_type);
+
         switch ($action_type) {
             case 'view':
                 // Increment view counter
-                $wpdb->query($wpdb->prepare(
+                $result = $wpdb->query($wpdb->prepare(
                     "UPDATE $table SET stats_views = stats_views + 1, stats_last_viewed = %s WHERE id = %d",
                     $current_time,
                     $point_id
                 ));
+                error_log('[JG MAP] track_stat - view update result: ' . $result . ', wpdb error: ' . $wpdb->last_error);
 
                 // Set first_viewed if not set
                 if (empty($point['stats_first_viewed'])) {
@@ -4631,8 +4641,10 @@ class JG_Map_Ajax_Handlers {
         }
 
         if ($updated) {
+            error_log('[JG MAP] track_stat SUCCESS - stat recorded');
             wp_send_json_success(array('message' => 'Statystyka zapisana'));
         } else {
+            error_log('[JG MAP] track_stat ERROR - stat not recorded');
             wp_send_json_error(array('message' => 'Nie udało się zapisać statystyki'));
         }
     }
