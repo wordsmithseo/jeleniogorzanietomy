@@ -4893,7 +4893,6 @@
             return;
           }
 
-          console.log('[JG SEARCH] Searching for:', query);
 
           // Search through ALL points
           var results = (ALL || []).filter(function(p) {
@@ -4905,7 +4904,6 @@
                    excerpt.indexOf(query) !== -1;
           });
 
-          console.log('[JG SEARCH] Found', results.length, 'results');
 
           // Update panel count
           searchCount.textContent = results.length + (results.length === 1 ? ' wynik' : ' wyników');
@@ -4972,7 +4970,6 @@
 
         // Zoom to search result with fast pulsing circle
         function zoomToSearchResult(point) {
-          console.log('[JG SEARCH] Zooming to:', point.title);
 
           // Zoom to point
           map.setView([point.lat, point.lng], 19, { animate: true });
@@ -5124,13 +5121,14 @@
           });
       }
 
-      // Smart auto-refresh: Check for updates every 30 seconds
-      // Only fetches new data if changes detected (efficient)
+      // Smart auto-refresh: Different intervals for admins vs regular users
+      // Admins need faster updates for moderation (5s), users can wait longer (30s)
+      var refreshIntervalTime = CFG.isAdmin ? 5000 : 30000;
       var refreshInterval = setInterval(function() {
         refreshData(false).catch(function() {
           // Silent fail
         });
-      }, 30000); // 30 seconds - smart refresh with change detection
+      }, refreshIntervalTime);
 
       // Check for updates when page becomes visible
       document.addEventListener('visibilitychange', function() {
