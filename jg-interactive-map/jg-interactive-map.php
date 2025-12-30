@@ -128,6 +128,11 @@ class JG_Interactive_Map {
      * Initialize plugin components
      */
     public function init_components() {
+        // Allow admins to force schema update via URL parameter (for debugging)
+        if (isset($_GET['jg_force_schema_update']) && current_user_can('manage_options')) {
+            delete_option('jg_map_schema_version');
+        }
+
         // Check and update database schema on every load (only runs if needed)
         JG_Map_Database::check_and_update_schema();
 

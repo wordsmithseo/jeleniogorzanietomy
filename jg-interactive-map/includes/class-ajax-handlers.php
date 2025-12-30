@@ -193,7 +193,13 @@ class JG_Map_Ajax_Handlers {
         $reports_time = $wpdb->get_var("SELECT MAX(created_at) FROM $reports_table");
         $history_time = $wpdb->get_var("SELECT MAX(created_at) FROM $history_table");
 
-        $timestamps = array_filter(array($points_time, $reports_time, $history_time));
+        // Also check stats_last_viewed to detect statistics updates
+        // Suppress errors in case column doesn't exist yet
+        $wpdb->suppress_errors();
+        $stats_time = $wpdb->get_var("SELECT MAX(stats_last_viewed) FROM $table WHERE stats_last_viewed IS NOT NULL");
+        $wpdb->show_errors();
+
+        $timestamps = array_filter(array($points_time, $reports_time, $history_time, $stats_time));
         $last_modified = empty($timestamps) ? current_time('mysql') : max($timestamps);
 
         // Get counts for moderators
@@ -227,21 +233,8 @@ class JG_Map_Ajax_Handlers {
         // Force schema check and slug generation on first request (ensures backward compatibility)
         static $schema_checked = false;
         if (!$schema_checked) {
-            error_log('[JG MAP AJAX] Calling check_and_update_schema()...');
             JG_Map_Database::check_and_update_schema();
             $schema_checked = true;
-
-            // Debug: Check if slug column exists and how many points have slugs
-            global $wpdb;
-            $table = $wpdb->prefix . 'jg_map_points';
-            $slug_column_check = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'slug'");
-            error_log('[JG MAP AJAX] Slug column exists: ' . (empty($slug_column_check) ? 'NO' : 'YES'));
-
-            if (!empty($slug_column_check)) {
-                $points_with_slugs = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE slug IS NOT NULL AND slug != ''");
-                $total_points = $wpdb->get_var("SELECT COUNT(*) FROM $table");
-                error_log('[JG MAP AJAX] Points with slugs: ' . $points_with_slugs . ' / ' . $total_points);
-            }
         }
 
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
@@ -2399,31 +2392,20 @@ class JG_Map_Ajax_Handlers {
      * Approve edit (admin only)
      */
     public function admin_approve_edit() {
-        // LOG 1: Function called - THIS IS THE FIRST LOG IN THE METHOD
-        error_log('===== JG MAP EDIT APPROVE START ===== Function called!');
-        error_log('===== JG MAP: Backtrace: ' . wp_debug_backtrace_summary());
-        error_log('POST data: ' . print_r($_POST, true));
-        error_log('REQUEST data: ' . print_r($_REQUEST, true));
-        error_log('User ID: ' . get_current_user_id());
-        error_log('Is AJAX: ' . (defined('DOING_AJAX') && DOING_AJAX ? 'YES' : 'NO'));
-
         try {
             $this->verify_nonce();
         } catch (Exception $e) {
-            error_log('===== JG MAP: Nonce verification failed with exception: ' . $e->getMessage());
             throw $e;
         }
 
         try {
             $this->check_admin();
         } catch (Exception $e) {
-            error_log('===== JG MAP: Admin check failed with exception: ' . $e->getMessage());
             throw $e;
         }
 
         $history_id = intval($_POST['history_id'] ?? 0);
 
-        error_log('JG MAP EDIT APPROVE: Received request - history_id=' . $history_id);
 
         if (!$history_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -2435,19 +2417,15 @@ class JG_Map_Ajax_Handlers {
         $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
 
         if (!$history) {
-            error_log('JG MAP EDIT APPROVE: History not found - history_id=' . $history_id);
             wp_send_json_error(array('message' => 'Historia nie istnieje'));
             exit;
         }
 
-        error_log('JG MAP EDIT APPROVE: History found - point_id=' . $history['point_id'] . ', action_type=' . $history['action_type'] . ', status=' . $history['status']);
 
         $new_values = json_decode($history['new_values'], true);
 
-        error_log('JG MAP EDIT APPROVE: New values - ' . json_encode($new_values));
 
         if (!$new_values || !isset($new_values['title'])) {
-            error_log('JG MAP EDIT APPROVE: Invalid new_values');
             wp_send_json_error(array('message' => 'Nieprawidłowe dane edycji'));
             exit;
         }
@@ -2457,14 +2435,11 @@ class JG_Map_Ajax_Handlers {
 
         // First check directly in database
         $point_check = $wpdb->get_row($wpdb->prepare("SELECT * FROM $points_table WHERE id = %d", $history['point_id']), ARRAY_A);
-        error_log('JG MAP EDIT APPROVE: Direct DB check - ' . ($point_check ? 'exists (id=' . $point_check['id'] . ', status=' . $point_check['status'] . ')' : 'NOT FOUND'));
 
         // Then use helper function
         $point = JG_Map_Database::get_point($history['point_id']);
-        error_log('JG MAP EDIT APPROVE: get_point() result - ' . ($point ? 'found (status=' . $point['status'] . ')' : 'NULL'));
 
         if (!$point && !$point_check) {
-            error_log('JG MAP EDIT APPROVE: FATAL - Point does not exist in database at all!');
             wp_send_json_error(array(
                 'message' => 'Punkt nie istnieje',
                 'debug' => array(
@@ -2480,7 +2455,6 @@ class JG_Map_Ajax_Handlers {
         // Use point_check if get_point failed
         if (!$point) {
             $point = $point_check;
-            error_log('JG MAP EDIT APPROVE: Using direct DB result instead of get_point()');
         }
 
         // Prepare update data
@@ -2915,7 +2889,6 @@ class JG_Map_Ajax_Handlers {
         $cta_enabled = intval($_POST['cta_enabled'] ?? 0);
         $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
-        error_log('JG MAP SPONSORED: Received request - point_id=' . $point_id . ', is_sponsored=' . $is_sponsored . ', sponsored_until=' . $sponsored_until . ', website=' . $website . ', phone=' . $phone . ', cta_enabled=' . $cta_enabled . ', cta_type=' . $cta_type);
 
         if (!$point_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -2934,7 +2907,6 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        error_log('JG MAP SPONSORED: Point before update - is_promo=' . $point['is_promo'] . ', promo_until=' . ($point['promo_until'] ?? 'null'));
 
         // Map sponsored naming to promo in database
         $sponsored_until_value = null;
@@ -2961,16 +2933,12 @@ class JG_Map_Ajax_Handlers {
             array('%d')         // format for where
         );
 
-        error_log('JG MAP SPONSORED: Update result - ' . ($update_result !== false ? 'success (rows=' . $update_result . ')' : 'failed'));
-        error_log('JG MAP SPONSORED: Last query - ' . $wpdb->last_query);
         if ($wpdb->last_error) {
-            error_log('JG MAP SPONSORED: DB Error - ' . $wpdb->last_error);
         }
 
         // Get updated point to return current state
         $updated_point = JG_Map_Database::get_point($point_id);
 
-        error_log('JG MAP SPONSORED: Point after update - is_promo=' . var_export($updated_point['is_promo'], true) . ' (type: ' . gettype($updated_point['is_promo']) . '), promo_until=' . var_export($updated_point['promo_until'] ?? null, true));
 
         wp_send_json_success(array(
             'message' => 'Sponsorowanie zaktualizowane',
@@ -4458,11 +4426,24 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
+        // Check if stats columns exist - if not, force schema update
+        $wpdb->suppress_errors();
+        $stats_column_check = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'stats_views'");
+        $wpdb->show_errors();
+
+        if (empty($stats_column_check)) {
+            // Stats columns don't exist - force schema update by clearing cache
+            delete_option('jg_map_schema_version');
+            JG_Map_Database::check_and_update_schema();
+        }
+
         // Check if point exists and is sponsored
+        $wpdb->suppress_errors();
         $point = $wpdb->get_row($wpdb->prepare(
             "SELECT id, is_promo, stats_first_viewed, stats_social_clicks, stats_gallery_clicks FROM $table WHERE id = %d",
             $point_id
         ), ARRAY_A);
+        $wpdb->show_errors();
 
         if (!$point) {
             wp_send_json_error(array('message' => 'Nie znaleziono pinezki'));
