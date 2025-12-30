@@ -2903,18 +2903,27 @@
         }
 
         console.log('[JG MAP] Sending tracking data:', data);
+        console.log('[JG MAP] AJAX URL:', CFG.ajax);
 
         // Send async request (fire and forget)
-        fetch(CFG.ajaxUrl, {
+        fetch(CFG.ajax, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams(data)
         })
         .then(function(response) {
-          return response.json();
+          console.log('[JG MAP] Response status:', response.status, response.statusText);
+          return response.text(); // Get raw text first
         })
-        .then(function(result) {
-          console.log('[JG MAP] Tracking response:', result);
+        .then(function(text) {
+          console.log('[JG MAP] Raw response:', text);
+          try {
+            var result = JSON.parse(text);
+            console.log('[JG MAP] Tracking response:', result);
+          } catch (e) {
+            console.error('[JG MAP] JSON parse failed. Raw response:', text);
+            console.error('[JG MAP] Parse error:', e);
+          }
         })
         .catch(function(error) {
           console.error('[JG MAP] Tracking error:', error);
