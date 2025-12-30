@@ -816,22 +816,11 @@ class JG_Map_Ajax_Handlers {
         $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
 
-        // Log incoming POST data for social media
-        error_log("[JG MAP] update_point - POST facebook_url: " . ($_POST['facebook_url'] ?? 'EMPTY'));
-        error_log("[JG MAP] update_point - POST instagram_url: " . ($_POST['instagram_url'] ?? 'EMPTY'));
-        error_log("[JG MAP] update_point - POST linkedin_url: " . ($_POST['linkedin_url'] ?? 'EMPTY'));
-        error_log("[JG MAP] update_point - POST tiktok_url: " . ($_POST['tiktok_url'] ?? 'EMPTY'));
-
         // Normalize social media URLs - accept full URLs, domain URLs, or profile names
         $facebook_url = !empty($_POST['facebook_url']) ? $this->normalize_social_url($_POST['facebook_url'], 'facebook') : '';
         $instagram_url = !empty($_POST['instagram_url']) ? $this->normalize_social_url($_POST['instagram_url'], 'instagram') : '';
         $linkedin_url = !empty($_POST['linkedin_url']) ? $this->normalize_social_url($_POST['linkedin_url'], 'linkedin') : '';
         $tiktok_url = !empty($_POST['tiktok_url']) ? $this->normalize_social_url($_POST['tiktok_url'], 'tiktok') : '';
-
-        error_log("[JG MAP] update_point - Normalized facebook_url: $facebook_url");
-        error_log("[JG MAP] update_point - Normalized instagram_url: $instagram_url");
-        error_log("[JG MAP] update_point - Normalized linkedin_url: $linkedin_url");
-        error_log("[JG MAP] update_point - Normalized tiktok_url: $tiktok_url");
 
         $cta_enabled = isset($_POST['cta_enabled']) ? 1 : 0;
         $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
@@ -4508,10 +4497,7 @@ class JG_Map_Ajax_Handlers {
         $platform = isset($_POST['platform']) ? sanitize_text_field($_POST['platform']) : '';
         $image_index = isset($_POST['image_index']) ? intval($_POST['image_index']) : -1;
 
-        error_log('[JG MAP] track_stat called - point_id: ' . $point_id . ', action: ' . $action_type . ', platform: ' . $platform);
-
         if (!$point_id || !$action_type) {
-            error_log('[JG MAP] track_stat ERROR - missing parameters');
             wp_send_json_error(array('message' => 'Brak wymaganych parametrów'));
             return;
         }
@@ -4523,16 +4509,12 @@ class JG_Map_Ajax_Handlers {
         ), ARRAY_A);
 
         if (!$point) {
-            error_log('[JG MAP] track_stat ERROR - point not found');
             wp_send_json_error(array('message' => 'Nie znaleziono pinezki'));
             return;
         }
 
-        error_log('[JG MAP] track_stat - point found, is_promo: ' . $point['is_promo']);
-
         // Only track stats for sponsored/promo places
         if (!$point['is_promo']) {
-            error_log('[JG MAP] track_stat - not a sponsored place, skipping');
             wp_send_json_success(array('message' => 'Tracking disabled for non-sponsored places'));
             return;
         }
@@ -4540,17 +4522,14 @@ class JG_Map_Ajax_Handlers {
         $current_time = current_time('mysql');
         $updated = false;
 
-        error_log('[JG MAP] track_stat - processing action: ' . $action_type);
-
         switch ($action_type) {
             case 'view':
                 // Increment view counter
-                $result = $wpdb->query($wpdb->prepare(
+                $wpdb->query($wpdb->prepare(
                     "UPDATE $table SET stats_views = stats_views + 1, stats_last_viewed = %s WHERE id = %d",
                     $current_time,
                     $point_id
                 ));
-                error_log('[JG MAP] track_stat - view update result: ' . $result . ', wpdb error: ' . $wpdb->last_error);
 
                 // Set first_viewed if not set
                 if (empty($point['stats_first_viewed'])) {
@@ -4641,10 +4620,8 @@ class JG_Map_Ajax_Handlers {
         }
 
         if ($updated) {
-            error_log('[JG MAP] track_stat SUCCESS - stat recorded');
             wp_send_json_success(array('message' => 'Statystyka zapisana'));
         } else {
-            error_log('[JG MAP] track_stat ERROR - stat not recorded');
             wp_send_json_error(array('message' => 'Nie udało się zapisać statystyki'));
         }
     }
@@ -4662,9 +4639,6 @@ class JG_Map_Ajax_Handlers {
         // Sanitize input
         $input = sanitize_text_field(trim($input));
 
-        // Log original input for debugging
-        error_log("[JG MAP] normalize_social_url - Platform: $platform, Input: $input");
-
         // Platform base URLs
         $base_urls = array(
             'facebook' => 'https://facebook.com/',
@@ -4675,9 +4649,7 @@ class JG_Map_Ajax_Handlers {
 
         // Already a full URL starting with http(s)
         if (preg_match('/^https?:\/\//i', $input)) {
-            $result = esc_url_raw($input);
-            error_log("[JG MAP] normalize_social_url - Full URL detected, result: $result");
-            return $result;
+            return esc_url_raw($input);
         }
 
         // Remove @ if present (common for TikTok/Instagram)
@@ -4700,16 +4672,10 @@ class JG_Map_Ajax_Handlers {
         // LinkedIn company pages need different base
         if ($platform === 'linkedin' && stripos($input, 'company/') === 0) {
             $input = preg_replace('/^company\//i', '', $input);
-            $result = 'https://linkedin.com/company/' . urlencode($input);
-            error_log("[JG MAP] normalize_social_url - LinkedIn company, result: $result");
-            return $result;
+            return 'https://linkedin.com/company/' . urlencode($input);
         }
 
         // Build full URL - don't use esc_url_raw as it may strip valid social media URLs
-        $full_url = $base_urls[$platform] . urlencode($input);
-
-        error_log("[JG MAP] normalize_social_url - Built URL: $full_url");
-
-        return $full_url;
+        return $base_urls[$platform] . urlencode($input);
     }
 }
