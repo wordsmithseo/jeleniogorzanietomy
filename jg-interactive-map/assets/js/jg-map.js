@@ -2876,9 +2876,18 @@
 
       /**
        * Track statistics for sponsored pins
+       * Excludes tracking for point owner
        */
-      function trackStat(pointId, actionType, extraData) {
+      function trackStat(pointId, actionType, extraData, pointOwnerId) {
         if (!pointId) return;
+
+        // Don't track owner's own interactions
+        if (CFG.userId && pointOwnerId && CFG.userId === pointOwnerId) {
+          console.log('[JG MAP] Skipping tracking - user is owner');
+          return;
+        }
+
+        console.log('[JG MAP] Tracking:', actionType, 'for point:', pointId);
 
         var data = {
           action: 'jg_track_stat',
@@ -2893,13 +2902,22 @@
           }
         }
 
+        console.log('[JG MAP] Sending tracking data:', data);
+
         // Send async request (fire and forget)
         fetch(CFG.ajaxUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams(data)
-        }).catch(function() {
-          // Silently ignore errors - tracking should not disrupt UX
+        })
+        .then(function(response) {
+          return response.json();
+        })
+        .then(function(result) {
+          console.log('[JG MAP] Tracking response:', result);
+        })
+        .catch(function(error) {
+          console.error('[JG MAP] Tracking error:', error);
         });
       }
 
@@ -4363,7 +4381,7 @@
 
         // Track view for sponsored pins
         if (p.sponsored) {
-          trackStat(p.id, 'view');
+          trackStat(p.id, 'view', null, p.author_id);
         }
 
         qs('#dlg-close', modalView).onclick = function() {
@@ -4378,7 +4396,7 @@
 
               // Track gallery click for sponsored pins
               if (p.sponsored) {
-                trackStat(p.id, 'gallery_click', { image_index: idx });
+                trackStat(p.id, 'gallery_click', { image_index: idx }, p.author_id);
               }
 
               openLightbox(fullUrl);
@@ -4466,7 +4484,7 @@
           var phoneLinks = modalView.querySelectorAll('a[href^="tel:"]');
           phoneLinks.forEach(function(link) {
             link.addEventListener('click', function() {
-              trackStat(p.id, 'phone_click');
+              trackStat(p.id, 'phone_click', null, p.author_id);
             });
           });
 
@@ -4474,7 +4492,7 @@
           var websiteLinks = modalView.querySelectorAll('a[href^="http"]:not(.jg-social-link):not(.jg-btn-cta-sponsored)');
           websiteLinks.forEach(function(link) {
             link.addEventListener('click', function() {
-              trackStat(p.id, 'website_click');
+              trackStat(p.id, 'website_click', null, p.author_id);
             });
           });
 
@@ -4484,7 +4502,7 @@
             link.addEventListener('click', function() {
               var platform = this.getAttribute('data-social');
               if (platform) {
-                trackStat(p.id, 'social_click', { platform: platform });
+                trackStat(p.id, 'social_click', { platform: platform }, p.author_id);
               }
             });
           });
@@ -4493,7 +4511,7 @@
           var ctaBtn = modalView.querySelector('.jg-btn-cta-sponsored');
           if (ctaBtn) {
             ctaBtn.addEventListener('click', function() {
-              trackStat(p.id, 'cta_click');
+              trackStat(p.id, 'cta_click', null, p.author_id);
             });
           }
         }
