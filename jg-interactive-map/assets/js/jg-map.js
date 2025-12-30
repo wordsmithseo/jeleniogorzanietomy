@@ -1456,6 +1456,13 @@
         // Check if current user has reported this point (but is not admin and not owner)
         var userHasReported = (!!p.user_has_reported && !CFG.isAdmin && !isOwner);
 
+        // For place owner with pending place: show "pending" state, NOT reports counter
+        // (even if there are reports, pending is more important for owner)
+        var showPendingForOwner = (isOwner && isPending && !CFG.isAdmin);
+        if (showPendingForOwner) {
+          hasReports = false; // Don't show reports counter for owner's pending place
+        }
+
         // Pin sizes in rem for better scaling - converted to px based on root font-size
         // Get root font size for rem to px conversion
         var rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -1472,34 +1479,46 @@
         var anchor = [pinWidth / 2, pinHeight];
 
         // Determine gradient colors and circle color based on type and state
+        // PRIORITY ORDER (highest to lowest):
+        // 1. userHasReported (user zgłosił cudze miejsce) - yellow
+        // 2. hasReports (miejsce ma zgłoszenia) - orange/red badge on existing color
+        // 3. isEdit (pending edit) - purple
+        // 4. isDeletionRequested (pending deletion) - orange
+        // 5. isPending (owner's pending place) - red
         var gradientId = 'gradient-' + (p.id || Math.random());
         var gradientStart, gradientMid, gradientEnd;
         var circleColor; // Color for the inner circle
 
         if (userHasReported) {
-          // Yellow gradient for user-reported (reported to moderation)
+          // Yellow gradient for user-reported (user zgłosił CUDZE miejsce do moderacji)
           gradientStart = '#ca8a04';
           gradientMid = '#eab308';
           gradientEnd = '#ca8a04';
           circleColor = '#713f12'; // Dark yellow/brown
-        } else if (isPending) {
-          // Red gradient for pending
+        } else if (hasReports && CFG.isAdmin) {
+          // Red/orange gradient for places with reports (ONLY for admins, owners see pending state instead)
           gradientStart = '#dc2626';
           gradientMid = '#ef4444';
           gradientEnd = '#dc2626';
           circleColor = '#7f1d1d'; // Dark red
+        } else if (isEdit) {
+          // Purple gradient for pending edit (higher priority than deletion)
+          gradientStart = '#9333ea';
+          gradientMid = '#a855f7';
+          gradientEnd = '#9333ea';
+          circleColor = '#581c87'; // Dark purple
         } else if (isDeletionRequested) {
           // Orange gradient for deletion requested
           gradientStart = '#ea580c';
           gradientMid = '#f97316';
           gradientEnd = '#ea580c';
           circleColor = '#7c2d12'; // Dark orange
-        } else if (isEdit) {
-          // Purple gradient for edit
-          gradientStart = '#9333ea';
-          gradientMid = '#a855f7';
-          gradientEnd = '#9333ea';
-          circleColor = '#581c87'; // Dark purple
+        } else if (isPending) {
+          // Red gradient for pending (owner's own pending place OR admin viewing pending)
+          gradientStart = '#dc2626';
+          gradientMid = '#ef4444';
+          gradientEnd = '#dc2626';
+          circleColor = '#7f1d1d'; // Dark red
         } else if (sponsored) {
           // Light matte gold for sponsored - brighter color
           gradientStart = '#f4d03f';
@@ -1588,19 +1607,33 @@
           deletionHtml = '<span class="jg-deletion-badge">✕</span>';
         }
 
-        // Label for pin
+        // Label for pin - apply states in priority order
         var labelClass = 'jg-marker-label';
         if (sponsored) labelClass += ' jg-marker-label--promo';
         if (userHasReported) labelClass += ' jg-marker-label--reported';
-        if (isPending) labelClass += ' jg-marker-label--pending';
-        if (isDeletionRequested) labelClass += ' jg-marker-label--deletion';
-        if (isEdit) labelClass += ' jg-marker-label--edit';
+        else if (hasReports && CFG.isAdmin) labelClass += ' jg-marker-label--reported';
+        else if (isEdit) labelClass += ' jg-marker-label--edit';
+        else if (isDeletionRequested) labelClass += ' jg-marker-label--deletion';
+        else if (isPending) labelClass += ' jg-marker-label--pending';
 
+        // Suffix text - priority order (highest priority first)
         var suffix = '';
-        if (userHasReported) suffix = ' (zgłoszone do moderacji)';
-        else if (isDeletionRequested) suffix = ' (do usunięcia)';
-        else if (isEdit) suffix = ' (edycja)';
-        else if (isPending) suffix = ' (oczekuje)';
+        if (userHasReported) {
+          suffix = ' (zgłoszone do moderacji)';
+        } else if (hasReports && CFG.isAdmin) {
+          suffix = ' (' + p.reports_count + ' zgł.)';
+        } else if (isEdit) {
+          suffix = ' (edycja)';
+        } else if (isDeletionRequested) {
+          suffix = ' (do usunięcia)';
+        } else if (isPending) {
+          // For owner's pending place: special message
+          if (showPendingForOwner) {
+            suffix = ' (zgłoszone do moderacji)';
+          } else {
+            suffix = ' (oczekuje)';
+          }
+        }
 
         var labelHtml = '<span class="' + labelClass + '">' + esc(p.title || 'Bez nazwy') + suffix + '</span>';
 
