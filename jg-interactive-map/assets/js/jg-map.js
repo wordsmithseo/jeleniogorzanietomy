@@ -6033,8 +6033,8 @@
       }
 
       function goToLocationAndOpenModal(lat, lng) {
-        // Fly to location
-        map.flyTo([lat, lng], 16, {
+        // Fly to location with maximum zoom (19)
+        map.flyTo([lat, lng], 19, {
           duration: 1.5
         });
 
