@@ -5292,22 +5292,13 @@
 
       // Create sync status indicator
       function createSyncStatusIndicator() {
-        // Ensure map container has position relative for absolute positioning
-        if ($(elMap).css('position') === 'static') {
-          $(elMap).css('position', 'relative');
-        }
-
         var indicator = $('<div>')
           .attr('id', 'jg-sync-status')
           .css({
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
             padding: '8px 16px',
             borderRadius: '8px',
             fontSize: '13px',
             fontWeight: '600',
-            zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
@@ -5315,10 +5306,13 @@
             boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
             background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
             color: '#92400e',
-            border: '1px solid #fbbf24'
+            border: '1px solid #fbbf24',
+            whiteSpace: 'nowrap',
+            marginLeft: 'auto'
           });
 
-        $(elMap).append(indicator);
+        // Add to filters bar, after search field
+        $('#jg-map-filters').append(indicator);
         return indicator;
       }
 

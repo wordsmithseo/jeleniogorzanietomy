@@ -448,7 +448,7 @@ class JG_Map_Enqueue {
                                 'icon' => '➕',
                                 'label' => 'Nowe miejsca',
                                 'count' => $pending_points,
-                                'url' => admin_url('admin.php?page=jg-map-moderation')
+                                'url' => admin_url('admin.php?page=jg-map-places&status=new_pending')
                             );
                         }
                         if ($pending_edits > 0) {
@@ -456,7 +456,7 @@ class JG_Map_Enqueue {
                                 'icon' => '📝',
                                 'label' => 'Edycje',
                                 'count' => $pending_edits,
-                                'url' => admin_url('admin.php?page=jg-map-moderation')
+                                'url' => admin_url('admin.php?page=jg-map-places&status=edit_pending')
                             );
                         }
                         if ($pending_reports > 0) {
@@ -464,7 +464,7 @@ class JG_Map_Enqueue {
                                 'icon' => '🚨',
                                 'label' => 'Zgłoszenia',
                                 'count' => $pending_reports,
-                                'url' => admin_url('admin.php?page=jg-map-reports')
+                                'url' => admin_url('admin.php?page=jg-map-places&status=reported')
                             );
                         }
                         if ($pending_deletions > 0) {
@@ -472,7 +472,7 @@ class JG_Map_Enqueue {
                                 'icon' => '🗑️',
                                 'label' => 'Usunięcia',
                                 'count' => $pending_deletions,
-                                'url' => admin_url('admin.php?page=jg-map-deletions')
+                                'url' => admin_url('admin.php?page=jg-map-places&status=deletion_pending')
                             );
                         }
                     }
