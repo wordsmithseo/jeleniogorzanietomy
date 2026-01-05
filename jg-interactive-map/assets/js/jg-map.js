@@ -4099,6 +4099,82 @@
 
           adminData.push('<div><strong>Status:</strong> ' + esc(p.status) + '</div>');
 
+          // ZAKOLEJKOWANE ZMIANY MODERACYJNE - pokazuje wszystkie pending changes
+          var pendingChanges = [];
+          var pendingCount = 0;
+
+          // 1. Pending punkt (nowe miejsce czeka na akceptację)
+          if (p.is_pending) {
+            pendingCount++;
+            pendingChanges.push(
+              '<div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;border-radius:6px;margin-bottom:8px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px">' +
+              '<div style="flex:1">' +
+              '<div style="font-weight:700;color:#92400e;margin-bottom:4px">➕ Nowe miejsce oczekuje</div>' +
+              '<div style="font-size:13px;color:#78350f">Status: <strong>pending</strong> - miejsce musi być zaakceptowane przez moderatora</div>' +
+              '</div>' +
+              '<div style="display:flex;gap:6px;flex-shrink:0">' +
+              '<button class="jg-btn" id="btn-approve-point" style="background:#15803d;padding:8px 12px;font-size:13px;white-space:nowrap">✓ Akceptuj</button>' +
+              '<button class="jg-btn" id="btn-reject-point" style="background:#b91c1c;padding:8px 12px;font-size:13px;white-space:nowrap">✗ Odrzuć</button>' +
+              '</div></div></div>'
+            );
+          }
+
+          // 2. Pending edycja
+          if (p.is_edit && p.edit_info) {
+            pendingCount++;
+            var editedAt = p.edit_info.edited_at || 'niedawno';
+            pendingChanges.push(
+              '<div style="background:#faf5ff;border-left:4px solid #9333ea;padding:12px;border-radius:6px;margin-bottom:8px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px">' +
+              '<div style="flex:1">' +
+              '<div style="font-weight:700;color:#6b21a8;margin-bottom:4px">📝 Edycja oczekuje</div>' +
+              '<div style="font-size:13px;color:#7e22ce">Edytowano: <strong>' + esc(editedAt) + '</strong></div>' +
+              '</div>' +
+              '<div style="display:flex;gap:6px;flex-shrink:0">' +
+              '<button class="jg-btn" id="btn-approve-edit" style="background:#15803d;padding:8px 12px;font-size:13px;white-space:nowrap">✓ Akceptuj edycję</button>' +
+              '<button class="jg-btn" id="btn-reject-edit" style="background:#b91c1c;padding:8px 12px;font-size:13px;white-space:nowrap">✗ Odrzuć edycję</button>' +
+              '</div></div></div>'
+            );
+          }
+
+          // 3. Pending usunięcie
+          if (p.is_deletion_requested && p.deletion_info) {
+            pendingCount++;
+            var deletionReason = p.deletion_info.reason || '(brak powodu)';
+            var requestedAt = p.deletion_info.requested_at || 'niedawno';
+            pendingChanges.push(
+              '<div style="background:#fee2e2;border-left:4px solid #dc2626;padding:12px;border-radius:6px;margin-bottom:8px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px">' +
+              '<div style="flex:1">' +
+              '<div style="font-weight:700;color:#991b1b;margin-bottom:4px">🗑️ Prośba o usunięcie</div>' +
+              '<div style="font-size:13px;color:#b91c1c">Zgłoszono: <strong>' + esc(requestedAt) + '</strong></div>' +
+              '<div style="font-size:12px;color:#7f1d1d;margin-top:4px;font-style:italic">' + esc(deletionReason) + '</div>' +
+              '</div>' +
+              '<div style="display:flex;gap:6px;flex-shrink:0">' +
+              '<button class="jg-btn" id="btn-approve-deletion" style="background:#15803d;padding:8px 12px;font-size:13px;white-space:nowrap">✓ Zatwierdź usunięcie</button>' +
+              '<button class="jg-btn" id="btn-reject-deletion" style="background:#b91c1c;padding:8px 12px;font-size:13px;white-space:nowrap">✗ Odrzuć usunięcie</button>' +
+              '</div></div></div>'
+            );
+          }
+
+          // Buduj sekcję zmian moderacyjnych jeśli są jakieś zmiany
+          var moderationQueue = '';
+          if (pendingCount > 0) {
+            var countBadge = pendingCount === 1
+              ? '<span style="background:#dc2626;color:#fff;padding:4px 10px;border-radius:12px;font-size:13px;font-weight:700">1 zmiana oczekuje</span>'
+              : '<span style="background:#dc2626;color:#fff;padding:4px 10px;border-radius:12px;font-size:13px;font-weight:700">' + pendingCount + ' zmiany oczekują</span>';
+
+            moderationQueue = '<div style="background:#f9fafb;border:2px solid #dc2626;border-radius:8px;padding:16px;margin:16px 0">' +
+              '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">' +
+              '<div style="font-size:16px;font-weight:700;color:#1f2937">⚠️ Zakolejkowane zmiany moderacyjne</div>' +
+              countBadge +
+              '</div>' +
+              '<div style="font-size:13px;color:#6b7280;margin-bottom:12px">Poniżej znajdują się wszystkie oczekujące zmiany dla tego miejsca. Po rozwiązaniu każdej zmiany zniknie ona z listy.</div>' +
+              pendingChanges.join('') +
+              '</div>';
+          }
+
           // Show sponsored until date for admins
           if (p.sponsored && p.sponsored_until) {
             var sponsoredDate = new Date(p.sponsored_until);
@@ -4108,22 +4184,13 @@
             adminData.push('<div style="color:#f59e0b;font-weight:700">⭐ Sponsorowane bezterminowo</div>');
           }
 
+          // Dodaj sekcję zmian moderacyjnych do panelu admina
+          if (moderationQueue) {
+            adminData.push(moderationQueue);
+          }
+
+          // Kontrolki administracyjne (bez duplikatów pending buttons - są w moderationQueue)
           var controls = '<div class="jg-admin-controls">';
-
-          if (p.is_pending) {
-            controls += '<button class="jg-btn" id="btn-approve-point" style="background:#15803d">✓ Akceptuj</button>';
-            controls += '<button class="jg-btn" id="btn-reject-point" style="background:#b91c1c">✗ Odrzuć</button>';
-          }
-
-          if (p.is_edit && p.edit_info) {
-            controls += '<button class="jg-btn" id="btn-approve-edit" style="background:#15803d">✓ Akceptuj edycję</button>';
-            controls += '<button class="jg-btn" id="btn-reject-edit" style="background:#b91c1c">✗ Odrzuć edycję</button>';
-          }
-
-          if (p.is_deletion_requested && p.deletion_info) {
-            controls += '<button class="jg-btn" id="btn-approve-deletion" style="background:#15803d">✓ Zatwierdź usunięcie</button>';
-            controls += '<button class="jg-btn" id="btn-reject-deletion" style="background:#b91c1c">✗ Odrzuć usunięcie</button>';
-          }
 
           controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-sponsored">' + (p.sponsored ? 'Usuń sponsorowanie' : 'Sponsorowane') + '</button>';
           controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-author">' + (p.author_hidden ? 'Ujawnij' : 'Ukryj') + ' autora</button>';
