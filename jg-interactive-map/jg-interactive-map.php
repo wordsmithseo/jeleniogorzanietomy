@@ -59,6 +59,7 @@ class JG_Interactive_Map {
     private function load_dependencies() {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-database.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-sync-manager.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-enqueue.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-shortcode.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-ajax-handlers.php';
@@ -144,6 +145,7 @@ class JG_Interactive_Map {
         }
 
         JG_Map_Activity_Log::get_instance();
+        JG_Map_Sync_Manager::get_instance();
         JG_Map_Enqueue::get_instance();
         JG_Map_Shortcode::get_instance();
         JG_Map_Ajax_Handlers::get_instance();

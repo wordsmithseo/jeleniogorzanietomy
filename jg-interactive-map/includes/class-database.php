@@ -157,6 +157,10 @@ class JG_Map_Database {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
         JG_Map_Activity_Log::create_table();
 
+        // Create sync queue table
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-sync-manager.php';
+        JG_Map_Sync_Manager::create_table();
+
         // Add custom capabilities to administrator role
         $admin = get_role('administrator');
         if ($admin) {
@@ -174,7 +178,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.3.6'; // Updated for stats columns + social media fields
+        $current_schema_version = '3.3.7'; // Updated for sync queue table
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -185,6 +189,10 @@ class JG_Map_Database {
         // Ensure activity log table exists (for existing installations)
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
         JG_Map_Activity_Log::create_table();
+
+        // Ensure sync queue table exists (for existing installations)
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-sync-manager.php';
+        JG_Map_Sync_Manager::create_table();
 
         // Check if category column exists (added in v3.2.x for report categorization)
         $category_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'category'");
