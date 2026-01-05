@@ -3878,7 +3878,44 @@
       }
 
       function openDetails(p) {
+        // CRITICAL: Validate point exists before opening modal
+        // Prevents showing deleted points when user hasn't refreshed yet
+        $.ajax({
+          url: CFG.ajax,
+          type: 'POST',
+          data: {
+            action: 'jg_check_point_exists',
+            _ajax_nonce: CFG.nonce,
+            point_id: p.id
+          },
+          success: function(response) {
+            if (!response.success || !response.data.exists) {
+              // Point has been deleted - show message instead of modal
+              showMessage(
+                'To miejsce zostało usunięte',
+                'Miejsce "' + esc(p.title || 'Bez tytułu') + '" zostało usunięte przez moderatora i nie jest już dostępne.',
+                [
+                  { text: 'OK, rozumiem', className: 'jg-btn jg-btn--primary', callback: function() {
+                    // Refresh map to remove deleted point
+                    refreshData(false);
+                  }}
+                ]
+              );
+              return;
+            }
 
+            // Point exists - proceed with opening modal
+            openDetailsModalContent(p);
+          },
+          error: function() {
+            // Network error - assume point exists (fail-safe)
+            console.warn('[JG MAP] Could not validate point existence - opening anyway');
+            openDetailsModalContent(p);
+          }
+        });
+      }
+
+      function openDetailsModalContent(p) {
         var imgs = Array.isArray(p.images) ? p.images : [];
 
         // Check if user can delete images (admin/moderator or own place)
@@ -5299,6 +5336,15 @@
 
         // Initial status
         updateSyncStatus(false, 'Łączenie...');
+
+        // CRITICAL: Trigger IMMEDIATE first heartbeat tick (don't wait 15 seconds!)
+        // This ensures sync check happens instantly on page load
+        setTimeout(function() {
+          if (typeof wp !== 'undefined' && wp.heartbeat) {
+            console.log('[JG MAP SYNC] Forcing immediate first heartbeat tick');
+            wp.heartbeat.connectNow();
+          }
+        }, 100); // Small delay to ensure everything is initialized
 
         console.log('[JG MAP SYNC] Real-time synchronization initialized successfully');
       } else {
