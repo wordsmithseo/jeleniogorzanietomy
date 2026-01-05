@@ -5288,6 +5288,7 @@
       var lastSyncCheck = Math.floor(Date.now() / 1000);
       var syncOnline = false;
       var syncStatusIndicator = null;
+      var syncCompletedTimeout = null;
 
       // Create sync status indicator
       function createSyncStatusIndicator() {
@@ -5297,52 +5298,85 @@
             position: 'fixed',
             top: '60px',
             right: '20px',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '13px',
             fontWeight: '600',
             zIndex: 10000,
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '8px',
             transition: 'all 0.3s ease',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+            boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+            color: '#92400e',
+            border: '1px solid #fbbf24'
           });
 
         $('body').append(indicator);
         return indicator;
       }
 
-      function updateSyncStatus(online, message) {
+      function updateSyncStatus(state) {
         if (!syncStatusIndicator) {
           syncStatusIndicator = createSyncStatusIndicator();
         }
 
-        syncOnline = online;
-
-        if (online) {
-          syncStatusIndicator
-            .css({
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: '#fff'
-            })
-            .html('<span style="width: 8px; height: 8px; border-radius: 50%; background: #fff; display: inline-block; animation: pulse-dot 2s infinite;"></span>' +
-                  '<span>Synchronizacja: Online</span>');
-        } else {
-          syncStatusIndicator
-            .css({
-              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-              color: '#fff'
-            })
-            .html('<span style="width: 8px; height: 8px; border-radius: 50%; background: #fff; display: inline-block;"></span>' +
-                  '<span>Synchronizacja: ' + (message || 'Offline') + '</span>');
+        // Clear any pending "completed" timeout
+        if (syncCompletedTimeout) {
+          clearTimeout(syncCompletedTimeout);
+          syncCompletedTimeout = null;
         }
+
+        var dot = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #92400e; display: inline-block;"></span>';
+        var text = '';
+
+        if (state === 'online') {
+          syncOnline = true;
+          dot = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #16a34a; display: inline-block; animation: pulse-dot 2s infinite;"></span>';
+          text = '<span>Synchronizacja: <strong>Online</strong></span>';
+        } else if (state === 'syncing') {
+          dot = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block; animation: pulse-dot 1s infinite;"></span>';
+          text = '<span>Synchronizacja: <strong>W trakcie<span class="jg-sync-dots"></span></strong></span>';
+
+          // Animate dots
+          var dotsElem = null;
+          setTimeout(function() {
+            dotsElem = syncStatusIndicator.find('.jg-sync-dots');
+            if (dotsElem.length) {
+              var dotCount = 0;
+              var dotsInterval = setInterval(function() {
+                if (!syncStatusIndicator.find('.jg-sync-dots').length) {
+                  clearInterval(dotsInterval);
+                  return;
+                }
+                dotCount = (dotCount + 1) % 4;
+                dotsElem.text('.'.repeat(dotCount));
+              }, 400);
+            }
+          }, 50);
+        } else if (state === 'completed') {
+          dot = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #16a34a; display: inline-block;"></span>';
+          text = '<span>Synchronizacja: <strong>Ukończona</strong></span>';
+
+          // Return to "online" after 3 seconds
+          syncCompletedTimeout = setTimeout(function() {
+            updateSyncStatus('online');
+          }, 3000);
+        } else {
+          // offline or error
+          syncOnline = false;
+          dot = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #dc2626; display: inline-block;"></span>';
+          text = '<span>Synchronizacja: <strong>' + (state || 'Offline') + '</strong></span>';
+        }
+
+        syncStatusIndicator.html(dot + text);
       }
 
-      // Add CSS animation for pulse dot
-      if (!$('#jg-sync-pulse-animation').length) {
-        $('<style id="jg-sync-pulse-animation">')
-          .text('@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }')
+      // Add CSS animations
+      if (!$('#jg-sync-animations').length) {
+        $('<style id="jg-sync-animations">')
+          .text('@keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.85); } }')
           .appendTo('head');
       }
 
@@ -5370,9 +5404,6 @@
           var syncData = data.jg_map_sync;
           console.log('[JG MAP SYNC] Heartbeat tick received:', syncData);
 
-          // Update online status
-          updateSyncStatus(true);
-
           // Update last check timestamp
           lastSyncCheck = syncData.server_time || Math.floor(Date.now() / 1000);
 
@@ -5380,9 +5411,15 @@
           if (syncData.new_points > 0 || (syncData.sync_events && syncData.sync_events.length > 0)) {
             console.log('[JG MAP SYNC] Changes detected! New points:', syncData.new_points, 'Events:', syncData.sync_events ? syncData.sync_events.length : 0);
 
+            // Show "syncing" status
+            updateSyncStatus('syncing');
+
             // INSTANT refresh - no delay!
             refreshData(false).then(function() {
               console.log('[JG MAP SYNC] Map refreshed successfully');
+
+              // Show "completed" status
+              updateSyncStatus('completed');
 
               // Show subtle notification
               var notification = $('<div>')
@@ -5408,7 +5445,11 @@
               }, 3000);
             }).catch(function(err) {
               console.error('[JG MAP SYNC] Refresh failed:', err);
+              updateSyncStatus('online'); // Return to online on error
             });
+          } else {
+            // No changes, just update to online
+            updateSyncStatus('online');
           }
 
           // Update pending counts for admins
@@ -5421,11 +5462,11 @@
         // Handle connection errors
         $(document).on('heartbeat-error.jgMapSync', function() {
           console.warn('[JG MAP SYNC] Heartbeat error - connection lost');
-          updateSyncStatus(false, 'Błąd połączenia');
+          updateSyncStatus('Błąd połączenia');
         });
 
         // Initial status
-        updateSyncStatus(false, 'Łączenie...');
+        updateSyncStatus('Łączenie...');
 
         // CRITICAL: Trigger IMMEDIATE first heartbeat tick (don't wait 15 seconds!)
         // This ensures sync check happens instantly on page load
@@ -5439,7 +5480,7 @@
         console.log('[JG MAP SYNC] Real-time synchronization initialized successfully');
       } else {
         console.warn('[JG MAP SYNC] WordPress Heartbeat API not available - falling back to polling');
-        updateSyncStatus(false, 'Brak Heartbeat API');
+        updateSyncStatus('Brak Heartbeat API');
 
         // Fallback: Polling every 10 seconds if heartbeat not available
         setInterval(function() {
@@ -5454,6 +5495,411 @@
           refreshData(false);
         }
       });
+
+      // ========================================================================
+      // FLOATING ACTION BUTTON (FAB) - Quick Add Place
+      // ========================================================================
+
+      var fabExpanded = false;
+      var fabContainer = null;
+
+      function createFAB() {
+        // Main container
+        fabContainer = $('<div>')
+          .attr('id', 'jg-fab-container')
+          .css({
+            position: 'fixed',
+            bottom: '30px',
+            right: '30px',
+            zIndex: 9998,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: '12px'
+          });
+
+        // Menu items container (hidden by default)
+        var menuContainer = $('<div>')
+          .attr('id', 'jg-fab-menu')
+          .css({
+            display: 'none',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: '10px',
+            marginBottom: '8px'
+          });
+
+        // Menu item: Add by address
+        var addressOption = $('<div>')
+          .addClass('jg-fab-menu-item')
+          .css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            opacity: 0,
+            transform: 'translateY(10px)',
+            transition: 'all 0.3s ease'
+          })
+          .html(
+            '<span style="background: #fff; padding: 10px 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 14px; font-weight: 600; color: #1f2937; white-space: nowrap;">📍 Po adresie</span>' +
+            '<div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"><span style="color: #fff; font-size: 20px;">📍</span></div>'
+          )
+          .on('click', function() {
+            showAddressInput();
+          });
+
+        // Menu item: Add by coordinates
+        var coordsOption = $('<div>')
+          .addClass('jg-fab-menu-item')
+          .css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            opacity: 0,
+            transform: 'translateY(10px)',
+            transition: 'all 0.3s ease'
+          })
+          .html(
+            '<span style="background: #fff; padding: 10px 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 14px; font-weight: 600; color: #1f2937; white-space: nowrap;">🎯 Po koordynatach</span>' +
+            '<div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"><span style="color: #fff; font-size: 20px;">🎯</span></div>'
+          )
+          .on('click', function() {
+            showCoordsInput();
+          });
+
+        menuContainer.append(addressOption, coordsOption);
+
+        // Main FAB button
+        var fabButton = $('<button>')
+          .attr('id', 'jg-fab-button')
+          .css({
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(220, 38, 38, 0.4)',
+            transition: 'all 0.3s ease',
+            outline: 'none'
+          })
+          .html('<span style="color: #fff; font-size: 28px; font-weight: 300; transition: transform 0.3s ease;">+</span>')
+          .on('mouseenter', function() {
+            $(this).css({
+              transform: 'scale(1.1)',
+              boxShadow: '0 6px 16px rgba(220, 38, 38, 0.5)'
+            });
+          })
+          .on('mouseleave', function() {
+            $(this).css({
+              transform: 'scale(1)',
+              boxShadow: '0 4px 12px rgba(220, 38, 38, 0.4)'
+            });
+          })
+          .on('click', function() {
+            toggleFAB();
+          });
+
+        fabContainer.append(menuContainer, fabButton);
+        $('body').append(fabContainer);
+      }
+
+      function toggleFAB() {
+        fabExpanded = !fabExpanded;
+        var menu = $('#jg-fab-menu');
+        var plusIcon = $('#jg-fab-button span');
+
+        if (fabExpanded) {
+          // Expand
+          menu.css('display', 'flex');
+          setTimeout(function() {
+            menu.find('.jg-fab-menu-item').each(function(i) {
+              var item = $(this);
+              setTimeout(function() {
+                item.css({
+                  opacity: 1,
+                  transform: 'translateY(0)'
+                });
+              }, i * 50);
+            });
+          }, 10);
+          plusIcon.css('transform', 'rotate(45deg)');
+        } else {
+          // Collapse
+          menu.find('.jg-fab-menu-item').css({
+            opacity: 0,
+            transform: 'translateY(10px)'
+          });
+          setTimeout(function() {
+            menu.css('display', 'none');
+          }, 300);
+          plusIcon.css('transform', 'rotate(0deg)');
+        }
+      }
+
+      function showAddressInput() {
+        // Close FAB menu
+        toggleFAB();
+
+        // Create input overlay
+        var overlay = $('<div>')
+          .attr('id', 'jg-fab-input-overlay')
+          .css({
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          })
+          .on('click', function(e) {
+            if (e.target === this) {
+              $(this).remove();
+            }
+          });
+
+        var inputBox = $('<div>')
+          .css({
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+            minWidth: '400px',
+            maxWidth: '90%'
+          });
+
+        var title = $('<h3>')
+          .css({
+            margin: '0 0 16px 0',
+            fontSize: '18px',
+            fontWeight: '700',
+            color: '#1f2937'
+          })
+          .text('📍 Dodaj miejsce po adresie');
+
+        var input = $('<input>')
+          .attr({
+            type: 'text',
+            placeholder: 'np. ul. 1 Maja 14, Jelenia Góra'
+          })
+          .css({
+            width: '100%',
+            padding: '12px',
+            fontSize: '14px',
+            border: '2px solid #e5e7eb',
+            borderRadius: '8px',
+            outline: 'none',
+            fontFamily: 'inherit',
+            boxSizing: 'border-box'
+          })
+          .on('focus', function() {
+            $(this).css('border-color', '#dc2626');
+          })
+          .on('blur', function() {
+            $(this).css('border-color', '#e5e7eb');
+          })
+          .on('keydown', function(e) {
+            if (e.key === 'Enter') {
+              var address = $(this).val().trim();
+              if (address) {
+                geocodeAddress(address);
+                overlay.remove();
+              }
+            } else if (e.key === 'Escape') {
+              overlay.remove();
+            }
+          });
+
+        var hint = $('<p>')
+          .css({
+            margin: '8px 0 0 0',
+            fontSize: '12px',
+            color: '#6b7280'
+          })
+          .text('Wpisz adres i naciśnij Enter');
+
+        inputBox.append(title, input, hint);
+        overlay.append(inputBox);
+        $('body').append(overlay);
+
+        // Focus input after a short delay
+        setTimeout(function() {
+          input.focus();
+        }, 100);
+      }
+
+      function showCoordsInput() {
+        // Close FAB menu
+        toggleFAB();
+
+        // Create input overlay
+        var overlay = $('<div>')
+          .attr('id', 'jg-fab-input-overlay')
+          .css({
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          })
+          .on('click', function(e) {
+            if (e.target === this) {
+              $(this).remove();
+            }
+          });
+
+        var inputBox = $('<div>')
+          .css({
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+            minWidth: '400px',
+            maxWidth: '90%'
+          });
+
+        var title = $('<h3>')
+          .css({
+            margin: '0 0 16px 0',
+            fontSize: '18px',
+            fontWeight: '700',
+            color: '#1f2937'
+          })
+          .text('🎯 Dodaj miejsce po koordynatach');
+
+        var input = $('<input>')
+          .attr({
+            type: 'text',
+            placeholder: 'np. 50.9029, 15.7277 lub 50.9029, 15.7277'
+          })
+          .css({
+            width: '100%',
+            padding: '12px',
+            fontSize: '14px',
+            border: '2px solid #e5e7eb',
+            borderRadius: '8px',
+            outline: 'none',
+            fontFamily: 'inherit',
+            boxSizing: 'border-box'
+          })
+          .on('focus', function() {
+            $(this).css('border-color', '#dc2626');
+          })
+          .on('blur', function() {
+            $(this).css('border-color', '#e5e7eb');
+          })
+          .on('keydown', function(e) {
+            if (e.key === 'Enter') {
+              var coords = $(this).val().trim();
+              if (coords) {
+                parseAndGoToCoords(coords);
+                overlay.remove();
+              }
+            } else if (e.key === 'Escape') {
+              overlay.remove();
+            }
+          });
+
+        var hint = $('<p>')
+          .css({
+            margin: '8px 0 0 0',
+            fontSize: '12px',
+            color: '#6b7280'
+          })
+          .text('Wpisz współrzędne (szerokość, długość) i naciśnij Enter');
+
+        inputBox.append(title, input, hint);
+        overlay.append(inputBox);
+        $('body').append(overlay);
+
+        // Focus input after a short delay
+        setTimeout(function() {
+          input.focus();
+        }, 100);
+      }
+
+      function geocodeAddress(address) {
+        // Use Nominatim for geocoding (free, no API key needed)
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(address + ', Jelenia Góra, Poland') + '&limit=1';
+
+        $.ajax({
+          url: url,
+          type: 'GET',
+          success: function(results) {
+            if (results && results.length > 0) {
+              var lat = parseFloat(results[0].lat);
+              var lng = parseFloat(results[0].lon);
+              goToLocationAndOpenModal(lat, lng);
+            } else {
+              showMessage('Nie znaleziono adresu. Spróbuj ponownie.', 'error');
+            }
+          },
+          error: function() {
+            showMessage('Błąd podczas wyszukiwania adresu. Spróbuj ponownie.', 'error');
+          }
+        });
+      }
+
+      function parseAndGoToCoords(coordsStr) {
+        // Parse coordinates from string (supports various formats)
+        // Examples: "50.9029, 15.7277" or "50.9029 15.7277" or "50.9029,15.7277"
+        var parts = coordsStr.replace(/\s+/g, ' ').replace(/,/g, ' ').split(' ').filter(function(p) { return p; });
+
+        if (parts.length !== 2) {
+          showMessage('Nieprawidłowy format współrzędnych. Użyj formatu: szerokość, długość', 'error');
+          return;
+        }
+
+        var lat = parseFloat(parts[0]);
+        var lng = parseFloat(parts[1]);
+
+        if (isNaN(lat) || isNaN(lng)) {
+          showMessage('Nieprawidłowe współrzędne. Użyj liczb dziesiętnych.', 'error');
+          return;
+        }
+
+        // Validate coordinates are in reasonable range
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          showMessage('Współrzędne poza zakresem. Szerokość: -90 do 90, Długość: -180 do 180', 'error');
+          return;
+        }
+
+        goToLocationAndOpenModal(lat, lng);
+      }
+
+      function goToLocationAndOpenModal(lat, lng) {
+        // Fly to location
+        map.flyTo([lat, lng], 16, {
+          duration: 1.5
+        });
+
+        // Wait for animation to complete, then trigger map click to open add modal
+        setTimeout(function() {
+          // Simulate map click at the coordinates
+          map.fire('click', {
+            latlng: L.latLng(lat, lng),
+            layerPoint: map.latLngToLayerPoint(L.latLng(lat, lng)),
+            containerPoint: map.latLngToContainerPoint(L.latLng(lat, lng))
+          });
+        }, 1600);
+      }
+
+      // Create FAB on init
+      createFAB();
 
     } catch (e) {
       showError('Błąd: ' + e.message);
