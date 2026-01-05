@@ -484,6 +484,7 @@ class JG_Map_Ajax_Handlers {
                 'edit_info' => $edit_info,
                 'is_deletion_requested' => $is_deletion_requested,
                 'deletion_info' => $deletion_info,
+                'is_own_place' => $is_own_place,
                 'reports_count' => $reports_count,
                 'user_has_reported' => $user_has_reported,
                 'stats' => ($is_admin || $is_own_place) ? array(

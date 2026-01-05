@@ -122,6 +122,61 @@
     });
   }
 
+  function showRejectReasonModal(message) {
+    return new Promise(function(resolve) {
+      var modal = document.getElementById('jg-modal-alert');
+      if (!modal) {
+        // Fallback to native prompt if modal not found
+        resolve(prompt(message));
+        return;
+      }
+
+      var contentEl = modal.querySelector('.jg-modal-message-content');
+      var buttonsEl = modal.querySelector('.jg-modal-message-buttons');
+
+      contentEl.innerHTML = '<div style="margin-bottom:12px;font-weight:600">' + message + '</div>' +
+        '<textarea id="jg-reject-reason-textarea" style="width:100%;min-height:100px;padding:10px;border:2px solid #ddd;border-radius:6px;font-size:14px;font-family:inherit;resize:vertical" placeholder="Wpisz uzasadnienie odrzucenia (zostanie wysłane do autora)..."></textarea>';
+      buttonsEl.innerHTML = '<button class="jg-btn jg-btn--ghost" id="jg-confirm-no">Anuluj</button><button class="jg-btn jg-btn--danger" id="jg-confirm-yes">Odrzuć</button>';
+
+      modal.style.display = 'flex';
+
+      var textarea = document.getElementById('jg-reject-reason-textarea');
+      var yesBtn = document.getElementById('jg-confirm-yes');
+      var noBtn = document.getElementById('jg-confirm-no');
+
+      // Focus textarea after a brief delay
+      setTimeout(function() {
+        if (textarea) textarea.focus();
+      }, 100);
+
+      yesBtn.onclick = function() {
+        var reason = textarea.value.trim();
+        modal.style.display = 'none';
+        resolve(reason || '');
+      };
+
+      noBtn.onclick = function() {
+        modal.style.display = 'none';
+        resolve(null);
+      };
+
+      // Close on background click = cancel
+      modal.onclick = function(e) {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+          resolve(null);
+        }
+      };
+
+      // Allow Enter with Ctrl/Cmd to submit
+      textarea.onkeydown = function(e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          yesBtn.onclick();
+        }
+      };
+    });
+  }
+
   function showError(msg) {
     console.error('[JG MAP]', msg);
     if (loadingEl) loadingEl.style.display = 'none';
@@ -4734,24 +4789,26 @@
 
           if (btnReject) {
             btnReject.onclick = function() {
-              var reason = prompt('Powód odrzucenia (zostanie wysłany do autora):');
-              if (reason === null) return;
+              showRejectReasonModal('Powód odrzucenia miejsca')
+                .then(function(reason) {
+                  if (reason === null) return;
 
-              btnReject.disabled = true;
-              btnReject.textContent = 'Odrzucanie...';
+                  btnReject.disabled = true;
+                  btnReject.textContent = 'Odrzucanie...';
 
-              adminRejectPoint({ post_id: p.id, reason: reason })
-                .then(function() {
-                  close(modalView);
-                  return refreshAll();
-                })
-                .then(function() {
-                  showAlert('Odrzucono i przeniesiono do kosza.');
-                })
-                .catch(function(err) {
-                  showAlert('Błąd: ' + (err.message || '?'));
-                  btnReject.disabled = false;
-                  btnReject.textContent = '✗ Odrzuć';
+                  adminRejectPoint({ post_id: p.id, reason: reason })
+                    .then(function() {
+                      close(modalView);
+                      return refreshAll();
+                    })
+                    .then(function() {
+                      showAlert('Odrzucono i przeniesiono do kosza.');
+                    })
+                    .catch(function(err) {
+                      showAlert('Błąd: ' + (err.message || '?'));
+                      btnReject.disabled = false;
+                      btnReject.textContent = '✗ Odrzuć';
+                    });
                 });
             };
           }
@@ -4860,29 +4917,31 @@
 
           if (btnRejectEdit) {
             btnRejectEdit.onclick = function() {
-              var reason = prompt('Powód odrzucenia edycji (zostanie wysłany do autora):');
-              if (reason === null) return;
+              showRejectReasonModal('Powód odrzucenia edycji')
+                .then(function(reason) {
+                  if (reason === null) return;
 
-              btnRejectEdit.disabled = true;
-              btnRejectEdit.textContent = 'Odrzucanie...';
+                  btnRejectEdit.disabled = true;
+                  btnRejectEdit.textContent = 'Odrzucanie...';
 
-              api('jg_admin_reject_edit', { history_id: p.edit_info.history_id, reason: reason })
-                .then(function(result) {
-                  return refreshAll();
-                })
-                .then(function() {
-                  close(modalView);
-                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
-                  if (updatedPoint) {
-                    setTimeout(function() {
-                      openDetails(updatedPoint);
-                    }, 200);
-                  }
-                })
-                .catch(function(err) {
-                  showAlert('Błąd: ' + (err.message || '?'));
-                  btnRejectEdit.disabled = false;
-                  btnRejectEdit.textContent = '✗ Odrzuć edycję';
+                  api('jg_admin_reject_edit', { history_id: p.edit_info.history_id, reason: reason })
+                    .then(function(result) {
+                      return refreshAll();
+                    })
+                    .then(function() {
+                      close(modalView);
+                      var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                      if (updatedPoint) {
+                        setTimeout(function() {
+                          openDetails(updatedPoint);
+                        }, 200);
+                      }
+                    })
+                    .catch(function(err) {
+                      showAlert('Błąd: ' + (err.message || '?'));
+                      btnRejectEdit.disabled = false;
+                      btnRejectEdit.textContent = '✗ Odrzuć edycję';
+                    });
                 });
             };
           }
@@ -4918,29 +4977,31 @@
 
           if (btnRejectDeletion) {
             btnRejectDeletion.onclick = function() {
-              var reason = prompt('Powód odrzucenia zgłoszenia usunięcia (zostanie wysłany do autora):');
-              if (reason === null) return;
+              showRejectReasonModal('Powód odrzucenia zgłoszenia usunięcia')
+                .then(function(reason) {
+                  if (reason === null) return;
 
-              btnRejectDeletion.disabled = true;
-              btnRejectDeletion.textContent = 'Odrzucanie...';
+                  btnRejectDeletion.disabled = true;
+                  btnRejectDeletion.textContent = 'Odrzucanie...';
 
-              api('jg_admin_reject_deletion', { history_id: p.deletion_info.history_id, reason: reason })
-                .then(function(result) {
-                  return refreshAll();
-                })
-                .then(function() {
-                  close(modalView);
-                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
-                  if (updatedPoint) {
-                    setTimeout(function() {
-                      openDetails(updatedPoint);
-                    }, 200);
-                  }
-                })
-                .catch(function(err) {
-                  showAlert('Błąd: ' + (err.message || '?'));
-                  btnRejectDeletion.disabled = false;
-                  btnRejectDeletion.textContent = '✗ Odrzuć usunięcie';
+                  api('jg_admin_reject_deletion', { history_id: p.deletion_info.history_id, reason: reason })
+                    .then(function(result) {
+                      return refreshAll();
+                    })
+                    .then(function() {
+                      close(modalView);
+                      var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                      if (updatedPoint) {
+                        setTimeout(function() {
+                          openDetails(updatedPoint);
+                        }, 200);
+                      }
+                    })
+                    .catch(function(err) {
+                      showAlert('Błąd: ' + (err.message || '?'));
+                      btnRejectDeletion.disabled = false;
+                      btnRejectDeletion.textContent = '✗ Odrzuć usunięcie';
+                    });
                 });
             };
           }
