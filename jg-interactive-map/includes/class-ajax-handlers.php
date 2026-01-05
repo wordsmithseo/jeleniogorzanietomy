@@ -994,21 +994,12 @@ class JG_Map_Ajax_Handlers {
 
             JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values);
 
-            // Invalidate map cache to trigger refresh for all users (especially moderators)
-            update_option('jg_map_last_modified', time());
-
-            // Store updated point ID for real-time broadcast via Heartbeat
-            $updated_points = get_transient('jg_map_updated_points');
-            if (!is_array($updated_points)) {
-                $updated_points = array();
-            }
-            $updated_points[] = array(
-                'id' => $point_id,
-                'timestamp' => time()
-            );
-            // Keep only last 100 updates
-            $updated_points = array_slice($updated_points, -100);
-            set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+            // Queue sync event via dedicated sync manager
+            JG_Map_Sync_Manager::get_instance()->queue_edit_submitted($point_id, array(
+                'user_id' => $user_id,
+                'old_values' => $old_values,
+                'new_values' => $new_values
+            ));
 
             // Notify admin
             $this->notify_admin_edit($point_id);
@@ -1097,21 +1088,12 @@ class JG_Map_Ajax_Handlers {
             array('id' => $point_id)
         );
 
-        // Invalidate map cache to trigger refresh for all users (especially moderators)
-        update_option('jg_map_last_modified', time());
-
-        // Store updated point ID for real-time broadcast via Heartbeat
-        $updated_points = get_transient('jg_map_updated_points');
-        if (!is_array($updated_points)) {
-            $updated_points = array();
-        }
-        $updated_points[] = array(
-            'id' => $point_id,
-            'timestamp' => time()
-        );
-        // Keep only last 100 updates
-        $updated_points = array_slice($updated_points, -100);
-        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_deletion_requested($point_id, array(
+            'reason' => $reason,
+            'user_id' => $user_id,
+            'point_title' => $point['title']
+        ));
 
         // Notify admin
         $admin_email = get_option('admin_email');
@@ -1337,11 +1319,11 @@ class JG_Map_Ajax_Handlers {
             array('%d')
         );
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Flush cache to ensure fresh data on next request
-        wp_cache_flush();
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_report_added($point_id, array(
+            'user_id' => $user_id,
+            'reason' => $reason
+        ));
 
         // Notify admin
         $this->notify_admin_new_report($point_id);
@@ -1457,26 +1439,17 @@ class JG_Map_Ajax_Handlers {
         // Resolve reports
         JG_Map_Database::resolve_reports($point_id, $reason);
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Clear object cache to refresh admin bar notifications
-        wp_cache_delete('jg_map_pending_counts');
-        wp_cache_flush();
-
-        // Store updated point ID for real-time broadcast via Heartbeat (unless removed)
-        if ($action_type !== 'remove') {
-            $updated_points = get_transient('jg_map_updated_points');
-            if (!is_array($updated_points)) {
-                $updated_points = array();
-            }
-            $updated_points[] = array(
-                'id' => $point_id,
-                'timestamp' => time()
-            );
-            // Keep only last 100 updates
-            $updated_points = array_slice($updated_points, -100);
-            set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+        // Queue sync event via dedicated sync manager
+        if ($action_type === 'remove') {
+            JG_Map_Sync_Manager::get_instance()->queue_point_deleted($point_id, array(
+                'reason' => $reason,
+                'via_reports' => true
+            ));
+        } else {
+            JG_Map_Sync_Manager::get_instance()->queue_report_resolved($point_id, array(
+                'action_type' => $action_type,
+                'reason' => $reason
+            ));
         }
 
         // Log action
@@ -1583,25 +1556,11 @@ class JG_Map_Ajax_Handlers {
         // Resolve reports
         JG_Map_Database::resolve_reports($point_id, 'Miejsce zostało edytowane przez moderatora');
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Clear object cache to refresh admin bar notifications
-        wp_cache_delete('jg_map_pending_counts');
-        wp_cache_flush();
-
-        // Store updated point ID for real-time broadcast via Heartbeat
-        $updated_points = get_transient('jg_map_updated_points');
-        if (!is_array($updated_points)) {
-            $updated_points = array();
-        }
-        $updated_points[] = array(
-            'id' => $point_id,
-            'timestamp' => time()
-        );
-        // Keep only last 100 updates
-        $updated_points = array_slice($updated_points, -100);
-        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_report_resolved($point_id, array(
+            'admin_edited' => true,
+            'title' => $title
+        ));
 
         wp_send_json_success(array('message' => 'Miejsce edytowane i zgłoszenia zamknięte'));
     }
@@ -1632,25 +1591,11 @@ class JG_Map_Ajax_Handlers {
         // Resolve all pending reports
         JG_Map_Database::resolve_reports($point_id, 'Miejsce pozostawione przez moderatora');
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Clear object cache to refresh admin bar notifications
-        wp_cache_delete('jg_map_pending_counts');
-        wp_cache_flush();
-
-        // Store updated point ID for real-time broadcast via Heartbeat
-        $updated_points = get_transient('jg_map_updated_points');
-        if (!is_array($updated_points)) {
-            $updated_points = array();
-        }
-        $updated_points[] = array(
-            'id' => $point_id,
-            'timestamp' => time()
-        );
-        // Keep only last 100 updates
-        $updated_points = array_slice($updated_points, -100);
-        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_report_resolved($point_id, array(
+            'action' => 'kept',
+            'point_title' => $point['title']
+        ));
 
         // Log action
         JG_Map_Activity_Log::log(
@@ -1773,12 +1718,11 @@ class JG_Map_Ajax_Handlers {
         // Resolve any pending reports for this point
         JG_Map_Database::resolve_reports($point_id, 'Punkt został zaakceptowany przez moderatora');
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Clear object cache to refresh admin bar notifications
-        wp_cache_delete('jg_map_pending_counts');
-        wp_cache_flush();
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_point_approved($point_id, array(
+            'point_title' => $point['title'],
+            'point_type' => $point['type']
+        ));
 
         // Log action
         JG_Map_Activity_Log::log(
@@ -1827,12 +1771,12 @@ class JG_Map_Ajax_Handlers {
         // Resolve any pending reports for this point
         JG_Map_Database::resolve_reports($point_id, 'Punkt został odrzucony przez moderatora: ' . $reason);
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Clear object cache to refresh admin bar notifications
-        wp_cache_delete('jg_map_pending_counts');
-        wp_cache_flush();
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_point_deleted($point_id, array(
+            'reason' => $reason,
+            'point_title' => $point['title'],
+            'rejected' => true
+        ));
 
         // Log action
         JG_Map_Activity_Log::log(
@@ -2592,13 +2536,6 @@ class JG_Map_Ajax_Handlers {
         // Approve history
         JG_Map_Database::approve_history($history_id, get_current_user_id());
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Clear object cache to refresh admin bar notifications
-        wp_cache_delete('jg_map_pending_counts');
-        wp_cache_flush();
-
         // Notify author
         $point = JG_Map_Database::get_point($history['point_id']);
         $author = get_userdata($point['author_id']);
@@ -2608,6 +2545,12 @@ class JG_Map_Ajax_Handlers {
             wp_mail($author->user_email, $subject, $message);
         }
 
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_edit_approved($history['point_id'], array(
+            'history_id' => $history_id,
+            'point_title' => $point['title']
+        ));
+
         // Log action
         JG_Map_Activity_Log::log(
             'approve_edit',
@@ -2615,19 +2558,6 @@ class JG_Map_Ajax_Handlers {
             $history_id,
             sprintf('Zaakceptowano edycję miejsca: %s', $point['title'])
         );
-
-        // Store updated point ID for real-time broadcast via Heartbeat
-        $updated_points = get_transient('jg_map_updated_points');
-        if (!is_array($updated_points)) {
-            $updated_points = array();
-        }
-        $updated_points[] = array(
-            'id' => $history['point_id'],
-            'timestamp' => time()
-        );
-        // Keep only last 100 updates
-        $updated_points = array_slice($updated_points, -100);
-        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
 
         wp_send_json_success(array('message' => 'Edycja zaakceptowana'));
     }
@@ -2659,25 +2589,11 @@ class JG_Map_Ajax_Handlers {
         // Reject history
         JG_Map_Database::reject_history($history_id, get_current_user_id());
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Clear object cache to refresh admin bar notifications
-        wp_cache_delete('jg_map_pending_counts');
-        wp_cache_flush();
-
-        // Store updated point ID for real-time broadcast via Heartbeat
-        $updated_points = get_transient('jg_map_updated_points');
-        if (!is_array($updated_points)) {
-            $updated_points = array();
-        }
-        $updated_points[] = array(
-            'id' => $history['point_id'],
-            'timestamp' => time()
-        );
-        // Keep only last 100 updates
-        $updated_points = array_slice($updated_points, -100);
-        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_edit_rejected($history['point_id'], array(
+            'history_id' => $history_id,
+            'reason' => $reason
+        ));
 
         // Notify author
         $point = JG_Map_Database::get_point($history['point_id']);
@@ -2771,12 +2687,11 @@ class JG_Map_Ajax_Handlers {
         // Delete the point permanently
         JG_Map_Database::delete_point($point_id);
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Clear object cache to refresh admin bar notifications
-        wp_cache_delete('jg_map_pending_counts');
-        wp_cache_flush();
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_deletion_approved($point_id, array(
+            'point_title' => $point['title'],
+            'user_requested' => true
+        ));
 
         // Notify author
         $author = get_userdata($point['author_id']);
@@ -2785,19 +2700,6 @@ class JG_Map_Ajax_Handlers {
             $message = "Miejsce \"{$point['title']}\" zostało usunięte zgodnie z Twoim zgłoszeniem.";
             wp_mail($author->user_email, $subject, $message);
         }
-
-        // Store deleted point ID for real-time broadcast via Heartbeat
-        $deleted_points = get_transient('jg_map_deleted_points');
-        if (!is_array($deleted_points)) {
-            $deleted_points = array();
-        }
-        $deleted_points[] = array(
-            'id' => $point_id,
-            'timestamp' => time()
-        );
-        // Keep only last 100 deletions
-        $deleted_points = array_slice($deleted_points, -100);
-        set_transient('jg_map_deleted_points', $deleted_points, 300); // 5 minutes
 
         wp_send_json_success(array('message' => 'Miejsce usunięte'));
     }
@@ -2864,25 +2766,11 @@ class JG_Map_Ajax_Handlers {
             JG_Map_Database::reject_history($history_id, get_current_user_id());
         }
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Clear object cache to refresh admin bar notifications
-        wp_cache_delete('jg_map_pending_counts');
-        wp_cache_flush();
-
-        // Store updated point ID for real-time broadcast via Heartbeat
-        $updated_points = get_transient('jg_map_updated_points');
-        if (!is_array($updated_points)) {
-            $updated_points = array();
-        }
-        $updated_points[] = array(
-            'id' => $point_id,
-            'timestamp' => time()
-        );
-        // Keep only last 100 updates
-        $updated_points = array_slice($updated_points, -100);
-        set_transient('jg_map_updated_points', $updated_points, 300); // 5 minutes
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_deletion_rejected($point_id, array(
+            'reason' => $reason,
+            'history_id' => $history_id
+        ));
 
         // Notify author
         $point = JG_Map_Database::get_point($point_id);
@@ -3081,25 +2969,11 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Invalidate map cache to trigger refresh for all users
-        update_option('jg_map_last_modified', time());
-
-        // Clear object cache
-        wp_cache_delete('jg_map_pending_counts');
-        wp_cache_flush();
-
-        // Store deleted point ID for real-time broadcast via Heartbeat
-        $deleted_points = get_transient('jg_map_deleted_points');
-        if (!is_array($deleted_points)) {
-            $deleted_points = array();
-        }
-        $deleted_points[] = array(
-            'id' => $point_id,
-            'timestamp' => time()
-        );
-        // Keep only last 100 deletions
-        $deleted_points = array_slice($deleted_points, -100);
-        set_transient('jg_map_deleted_points', $deleted_points, 300); // 5 minutes
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_point_deleted($point_id, array(
+            'admin_deleted' => true,
+            'point_title' => $point['title']
+        ));
 
         wp_send_json_success(array('message' => 'Miejsce usunięte'));
     }
