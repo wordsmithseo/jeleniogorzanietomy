@@ -5792,27 +5792,23 @@
         function searchAddressSuggestions(query, container) {
           console.log('[JG FAB] Searching for:', query);
 
-          // Add context of Jelenia Góra if not already in query
-          var searchQuery = query;
-          if (query.toLowerCase().indexOf('jelenia') === -1 && query.toLowerCase().indexOf('góra') === -1) {
-            searchQuery = query + ', Jelenia Góra, Poland';
-          }
-
-          var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(searchQuery) + '&limit=5&addressdetails=1';
-
-          console.log('[JG FAB] URL:', url);
-
+          // Use backend proxy endpoint to avoid CSP issues
           $.ajax({
-            url: url,
-            type: 'GET',
-            headers: {
-              'User-Agent': 'JG-Interactive-Map/1.0'
+            url: CFG.ajax,
+            type: 'POST',
+            data: {
+              action: 'jg_search_address',
+              _ajax_nonce: CFG.nonce,
+              query: query
             },
-            success: function(results) {
-              console.log('[JG FAB] Got results:', results);
+            success: function(response) {
+              console.log('[JG FAB] Got response:', response);
               container.empty();
 
-              if (results && results.length > 0) {
+              if (response.success && response.data && response.data.length > 0) {
+                var results = response.data;
+                console.log('[JG FAB] Processing', results.length, 'results');
+
                 results.forEach(function(result) {
                   var displayName = result.display_name;
 
@@ -5866,12 +5862,15 @@
 
                 container.show();
               } else {
-                console.log('[JG FAB] No results found');
+                console.log('[JG FAB] No results found or empty response');
                 container.hide();
               }
             },
             error: function(xhr, status, error) {
-              console.error('[JG FAB] Error fetching suggestions:', status, error);
+              console.error('[JG FAB] AJAX Error:', status, error);
+              if (xhr.responseJSON) {
+                console.error('[JG FAB] Error response:', xhr.responseJSON);
+              }
               container.hide();
             }
           });
