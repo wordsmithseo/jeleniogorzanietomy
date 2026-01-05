@@ -92,6 +92,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_autocomplete_streets', array($this, 'autocomplete_streets'));
         add_action('wp_ajax_jg_autocomplete_numbers', array($this, 'autocomplete_numbers'));
         add_action('wp_ajax_nopriv_jg_autocomplete_numbers', array($this, 'autocomplete_numbers'));
+        add_action('wp_ajax_jg_search_address', array($this, 'search_address'));
+        add_action('wp_ajax_nopriv_jg_search_address', array($this, 'search_address'));
         add_action('wp_ajax_nopriv_jg_map_login', array($this, 'login_user'));
         add_action('wp_ajax_nopriv_jg_map_register', array($this, 'register_user'));
         add_action('wp_ajax_nopriv_jg_map_forgot_password', array($this, 'forgot_password'));
@@ -4421,6 +4423,67 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success($results);
+    }
+
+    /**
+     * Search address (autocomplete for FAB)
+     * Returns multiple results for autocomplete suggestions
+     */
+    public function search_address() {
+        $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
+
+        if (empty($query) || strlen($query) < 3) {
+            wp_send_json_error(array('message' => 'Zapytanie za krótkie (min. 3 znaki)'));
+            return;
+        }
+
+        // Add context of Jelenia Góra if not already in query
+        $searchQuery = $query;
+        if (stripos($query, 'jelenia') === false && stripos($query, 'góra') === false) {
+            $searchQuery = $query . ', Jelenia Góra, Poland';
+        }
+
+        // Build Nominatim API URL
+        $url = sprintf(
+            'https://nominatim.openstreetmap.org/search?format=json&q=%s&limit=5&addressdetails=1',
+            urlencode($searchQuery)
+        );
+
+        // Make server-side request with proper headers
+        $response = wp_remote_get($url, array(
+            'timeout' => 10,
+            'headers' => array(
+                'User-Agent' => 'JG-Interactive-Map/1.0 (WordPress)',
+            ),
+        ));
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(array(
+                'message' => 'Błąd połączenia z serwerem geokodowania',
+                'error' => $response->get_error_message()
+            ));
+            return;
+        }
+
+        $status_code = wp_remote_retrieve_response_code($response);
+        if ($status_code !== 200) {
+            wp_send_json_error(array(
+                'message' => 'Błąd serwera geokodowania',
+                'status' => $status_code
+            ));
+            return;
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if ($data === null) {
+            wp_send_json_error(array('message' => 'Błąd parsowania odpowiedzi'));
+            return;
+        }
+
+        // Return results directly - JavaScript will handle display
+        wp_send_json_success($data);
     }
 
     /**
