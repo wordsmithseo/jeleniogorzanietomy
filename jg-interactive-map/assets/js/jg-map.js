@@ -5498,6 +5498,10 @@
             flexDirection: 'column',
             alignItems: 'flex-end',
             gap: '12px'
+          })
+          .on('click', function(e) {
+            // Prevent map click event
+            e.stopPropagation();
           });
 
         // Menu items container (hidden by default)
@@ -5527,7 +5531,8 @@
             '<span style="background: #fff; padding: 10px 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 14px; font-weight: 600; color: #1f2937; white-space: nowrap;">📍 Po adresie</span>' +
             '<div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"><span style="color: #fff; font-size: 20px;">📍</span></div>'
           )
-          .on('click', function() {
+          .on('click', function(e) {
+            e.stopPropagation();
             showAddressInput();
           });
 
@@ -5547,7 +5552,8 @@
             '<span style="background: #fff; padding: 10px 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 14px; font-weight: 600; color: #1f2937; white-space: nowrap;">🎯 Po koordynatach</span>' +
             '<div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"><span style="color: #fff; font-size: 20px;">🎯</span></div>'
           )
-          .on('click', function() {
+          .on('click', function(e) {
+            e.stopPropagation();
             showCoordsInput();
           });
 
@@ -5583,7 +5589,8 @@
               boxShadow: '0 4px 12px rgba(220, 38, 38, 0.4)'
             });
           })
-          .on('click', function() {
+          .on('click', function(e) {
+            e.stopPropagation();
             toggleFAB();
           });
 
@@ -5723,14 +5730,17 @@
 
         input.on('input', function() {
           var query = $(this).val().trim();
+          console.log('[JG FAB] Input changed, query length:', query.length, 'value:', query);
 
           if (searchTimeout) clearTimeout(searchTimeout);
 
           if (query.length < 3) {
+            console.log('[JG FAB] Query too short, hiding suggestions');
             suggestionsList.hide().empty();
             return;
           }
 
+          console.log('[JG FAB] Scheduling search in 300ms');
           // Debounce search by 300ms
           searchTimeout = setTimeout(function() {
             searchAddressSuggestions(query, suggestionsList);
@@ -5780,6 +5790,8 @@
 
         // Search suggestions function
         function searchAddressSuggestions(query, container) {
+          console.log('[JG FAB] Searching for:', query);
+
           // Add context of Jelenia Góra if not already in query
           var searchQuery = query;
           if (query.toLowerCase().indexOf('jelenia') === -1 && query.toLowerCase().indexOf('góra') === -1) {
@@ -5788,10 +5800,16 @@
 
           var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(searchQuery) + '&limit=5&addressdetails=1';
 
+          console.log('[JG FAB] URL:', url);
+
           $.ajax({
             url: url,
             type: 'GET',
+            headers: {
+              'User-Agent': 'JG-Interactive-Map/1.0'
+            },
             success: function(results) {
+              console.log('[JG FAB] Got results:', results);
               container.empty();
 
               if (results && results.length > 0) {
@@ -5848,10 +5866,12 @@
 
                 container.show();
               } else {
+                console.log('[JG FAB] No results found');
                 container.hide();
               }
             },
-            error: function() {
+            error: function(xhr, status, error) {
+              console.error('[JG FAB] Error fetching suggestions:', status, error);
               container.hide();
             }
           });
