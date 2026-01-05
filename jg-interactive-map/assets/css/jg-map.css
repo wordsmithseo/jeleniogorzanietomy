@@ -238,164 +238,6 @@
   transform: scale(0.95);
 }
 
-/* Responsive filters - Better spacing on narrow screens */
-@media (max-width: 1024px) {
-  .jg-filters {
-    gap: 10px;
-    padding: 10px 12px;
-  }
-
-  .jg-filters label {
-    padding: 6px 10px;
-    gap: 6px;
-    font-size: 14px;
-  }
-}
-
-/* Tablet responsive - More compact layout */
-@media (max-width: 768px) {
-  .jg-filters {
-    gap: 8px;
-    padding: 8px 10px;
-  }
-
-  .jg-filters label {
-    padding: 6px 8px;
-    font-size: 13px;
-    gap: 5px;
-  }
-
-  .jg-filters input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-  }
-
-  .jg-search {
-    min-width: 150px;
-    max-width: 250px;
-  }
-
-  .jg-search input {
-    padding: 8px 40px 8px 12px;
-    font-size: 13px;
-  }
-
-  .jg-search-btn {
-    width: 32px;
-    height: 32px;
-  }
-
-  .jg-search-btn svg {
-    width: 16px;
-    height: 16px;
-  }
-}
-
-/* Mobile responsive - Circular notification icons */
-@media (max-width: 640px) {
-  .jg-filters {
-    gap: 10px;
-    padding: 12px;
-    justify-content: center;
-  }
-
-  .jg-filters label {
-    padding: 0;
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 50%;
-    justify-content: center;
-    position: relative;
-    background: #fff;
-    border: 2px solid #e5e7eb;
-    transition: all 0.2s;
-  }
-
-  .jg-filters label:hover {
-    background: #fff;
-    border-color: #8d2324;
-    transform: scale(1.05);
-  }
-
-  .jg-filters label:has(input:checked) {
-    background: #8d2324;
-    border-color: #8d2324;
-  }
-
-  .jg-filters label:has(input:checked):hover {
-    background: #a02829;
-    border-color: #a02829;
-  }
-
-  /* Hide checkbox input */
-  .jg-filters input[type="checkbox"] {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  /* Hide text, show only as tooltip on hover */
-  .jg-filters label {
-    font-size: 0;
-  }
-
-  .jg-filters label::before {
-    font-size: 20px;
-  }
-
-  /* Add icon indicators for each filter type */
-  .jg-filters label:has([data-type="zgloszenie"])::before {
-    content: "🚨";
-  }
-
-  .jg-filters label:has([data-type="ciekawostka"])::before {
-    content: "ℹ️";
-  }
-
-  .jg-filters label:has([data-type="miejsce"])::before {
-    content: "📍";
-  }
-
-  .jg-filters label:has([data-my-places])::before {
-    content: "👤";
-  }
-
-  .jg-filters label:has([data-promo])::before {
-    content: "⭐";
-    margin-left: 0;
-  }
-
-  /* Full width search on mobile */
-  .jg-search {
-    flex: 1 1 100%;
-    max-width: 100%;
-    min-width: 100%;
-    order: -1;
-    margin-bottom: 8px;
-  }
-
-  .jg-search input {
-    width: 100%;
-  }
-}
-
-/* Very small mobile - Stack everything vertically */
-@media (max-width: 480px) {
-  .jg-filters {
-    gap: 8px;
-    padding: 10px;
-  }
-
-  .jg-filters label {
-    min-width: 40px;
-    min-height: 40px;
-  }
-
-  .jg-filters label::before {
-    font-size: 18px;
-  }
-}
-
 /* Search Results Side Panel */
 .jg-search-panel {
   position: absolute;
@@ -536,6 +378,50 @@
   width: 100%;
 }
 
+/* Responsive navbar - Better spacing on narrow monitors (laptops) */
+@media (max-width: 1280px) {
+  .jg-custom-top-bar {
+    padding: 10px 16px;
+    gap: 10px;
+  }
+
+  .jg-top-bar-left,
+  .jg-top-bar-right {
+    gap: 12px;
+  }
+
+  .jg-top-bar-btn {
+    padding: 7px 14px;
+    font-size: 14px;
+  }
+}
+
+/* Tablet responsive - More compact layout */
+@media (max-width: 1024px) {
+  .jg-custom-top-bar {
+    padding: 8px 14px;
+    gap: 8px;
+  }
+
+  .jg-top-bar-left,
+  .jg-top-bar-right {
+    gap: 10px;
+  }
+
+  .jg-top-bar-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .jg-top-bar-user {
+    font-size: 14px;
+  }
+
+  #jg-top-bar-datetime {
+    font-size: 14px;
+  }
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   /* Top bar mobile responsive */
@@ -647,22 +533,77 @@
     margin-bottom: 4px;
   }
 
-  /* Notifications on mobile */
+  /* Notifications on mobile - Circular icons with badges */
   #jg-top-bar-notifications {
     width: 100%;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: center;
+    gap: 12px;
+    order: -1;
+    margin-bottom: 8px;
   }
 
   .jg-top-bar-notif {
-    width: 100%;
-    justify-content: space-between;
+    width: auto;
+    min-width: 50px;
+    min-height: 50px;
+    border-radius: 50%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
   }
 
-  /* Smaller notification badges on mobile */
-  .jg-notif-badge {
-    min-width: 18px;
-    height: 18px;
+  .jg-top-bar-notif:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  /* Hide text labels, show only icons */
+  .jg-top-bar-notif span:first-child {
+    font-size: 0;
+    line-height: 0;
+  }
+
+  /* Show only emoji by setting font-size to 24px for emoji characters */
+  .jg-top-bar-notif span:first-child::before {
+    font-size: 24px;
+    line-height: 1;
+    display: inline-block;
+  }
+
+  /* Extract emoji for each notification type */
+  .jg-top-bar-notif[data-type*="nowe"] span:first-child::before {
+    content: "➕";
+  }
+
+  .jg-top-bar-notif[data-type*="edycje"] span:first-child::before {
+    content: "📝";
+  }
+
+  .jg-top-bar-notif[data-type*="zgłoszenia"] span:first-child::before {
+    content: "🚨";
+  }
+
+  .jg-top-bar-notif[data-type*="usunięcia"] span:first-child::before {
+    content: "🗑️";
+  }
+
+  /* Position badge absolutely in top-right corner of circle */
+  .jg-top-bar-notif .jg-notif-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 20px;
+    height: 20px;
     font-size: 11px;
+    background: #ef4444;
+    border: 2px solid #8d2324;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   }
 }
 
