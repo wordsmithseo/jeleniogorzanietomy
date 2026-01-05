@@ -5420,29 +5420,6 @@
 
               // Show "completed" status
               updateSyncStatus('completed');
-
-              // Show subtle notification
-              var notification = $('<div>')
-                .css({
-                  position: 'fixed',
-                  top: '100px',
-                  right: '20px',
-                  padding: '12px 16px',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                  color: '#fff',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  zIndex: 9999,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                  animation: 'slideInRight 0.3s ease'
-                })
-                .text('✓ Mapa zaktualizowana')
-                .appendTo('body');
-
-              setTimeout(function() {
-                notification.fadeOut(300, function() { $(this).remove(); });
-              }, 3000);
             }).catch(function(err) {
               console.error('[JG MAP SYNC] Refresh failed:', err);
               updateSyncStatus('online'); // Return to online on error
@@ -5504,11 +5481,16 @@
       var fabContainer = null;
 
       function createFAB() {
+        // Ensure map container has position relative for absolute positioning
+        if ($(elMap).css('position') === 'static') {
+          $(elMap).css('position', 'relative');
+        }
+
         // Main container
         fabContainer = $('<div>')
           .attr('id', 'jg-fab-container')
           .css({
-            position: 'fixed',
+            position: 'absolute',
             bottom: '30px',
             right: '30px',
             zIndex: 9998,
@@ -5606,7 +5588,7 @@
           });
 
         fabContainer.append(menuContainer, fabButton);
-        $('body').append(fabContainer);
+        $(elMap).append(fabContainer);
       }
 
       function toggleFAB() {
@@ -5667,14 +5649,15 @@
             }
           });
 
-        var inputBox = $('<div>')
+        var inputWrapper = $('<div>')
           .css({
             background: '#fff',
             borderRadius: '12px',
             padding: '24px',
             boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
             minWidth: '400px',
-            maxWidth: '90%'
+            maxWidth: '90%',
+            position: 'relative'
           });
 
         var title = $('<h3>')
@@ -5686,10 +5669,16 @@
           })
           .text('📍 Dodaj miejsce po adresie');
 
+        var inputContainer = $('<div>')
+          .css({
+            position: 'relative'
+          });
+
         var input = $('<input>')
           .attr({
             type: 'text',
-            placeholder: 'np. ul. 1 Maja 14, Jelenia Góra'
+            placeholder: 'np. ul. 1 Maja 14, Jelenia Góra',
+            autocomplete: 'off'
           })
           .css({
             width: '100%',
@@ -5704,20 +5693,77 @@
           .on('focus', function() {
             $(this).css('border-color', '#dc2626');
           })
-          .on('blur', function() {
-            $(this).css('border-color', '#e5e7eb');
-          })
-          .on('keydown', function(e) {
-            if (e.key === 'Enter') {
+          .on('blur', function(e) {
+            setTimeout(function() {
+              $(e.target).css('border-color', '#e5e7eb');
+              suggestionsList.hide();
+            }, 200);
+          });
+
+        // Suggestions dropdown
+        var suggestionsList = $('<div>')
+          .css({
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            background: '#fff',
+            border: '2px solid #dc2626',
+            borderTop: 'none',
+            borderRadius: '0 0 8px 8px',
+            maxHeight: '200px',
+            overflowY: 'auto',
+            zIndex: 10001,
+            display: 'none',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          });
+
+        var searchTimeout = null;
+        var selectedSuggestion = null;
+
+        input.on('input', function() {
+          var query = $(this).val().trim();
+
+          if (searchTimeout) clearTimeout(searchTimeout);
+
+          if (query.length < 3) {
+            suggestionsList.hide().empty();
+            return;
+          }
+
+          // Debounce search by 300ms
+          searchTimeout = setTimeout(function() {
+            searchAddressSuggestions(query, suggestionsList);
+          }, 300);
+        });
+
+        input.on('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedSuggestion) {
+              // Use selected suggestion
+              var lat = selectedSuggestion.lat;
+              var lng = selectedSuggestion.lon;
+              goToLocationAndOpenModal(lat, lng);
+              overlay.remove();
+            } else {
+              // Geocode what user typed
               var address = $(this).val().trim();
               if (address) {
                 geocodeAddress(address);
                 overlay.remove();
               }
-            } else if (e.key === 'Escape') {
-              overlay.remove();
             }
-          });
+          } else if (e.key === 'Escape') {
+            overlay.remove();
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            var items = suggestionsList.find('.suggestion-item');
+            if (items.length > 0) {
+              items.first().focus();
+            }
+          }
+        });
 
         var hint = $('<p>')
           .css({
@@ -5725,11 +5771,91 @@
             fontSize: '12px',
             color: '#6b7280'
           })
-          .text('Wpisz adres i naciśnij Enter');
+          .text('Zacznij pisać aby zobaczyć podpowiedzi, lub naciśnij Enter');
 
-        inputBox.append(title, input, hint);
-        overlay.append(inputBox);
+        inputContainer.append(input, suggestionsList);
+        inputWrapper.append(title, inputContainer, hint);
+        overlay.append(inputWrapper);
         $('body').append(overlay);
+
+        // Search suggestions function
+        function searchAddressSuggestions(query, container) {
+          // Add context of Jelenia Góra if not already in query
+          var searchQuery = query;
+          if (query.toLowerCase().indexOf('jelenia') === -1 && query.toLowerCase().indexOf('góra') === -1) {
+            searchQuery = query + ', Jelenia Góra, Poland';
+          }
+
+          var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(searchQuery) + '&limit=5&addressdetails=1';
+
+          $.ajax({
+            url: url,
+            type: 'GET',
+            success: function(results) {
+              container.empty();
+
+              if (results && results.length > 0) {
+                results.forEach(function(result) {
+                  var displayName = result.display_name;
+
+                  var item = $('<div>')
+                    .addClass('suggestion-item')
+                    .attr('tabindex', '0')
+                    .css({
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      color: '#374151',
+                      borderBottom: '1px solid #f3f4f6',
+                      transition: 'background 0.2s'
+                    })
+                    .text(displayName)
+                    .on('mouseenter', function() {
+                      $(this).css('background', '#fef3c7');
+                      selectedSuggestion = result;
+                    })
+                    .on('mouseleave', function() {
+                      $(this).css('background', '#fff');
+                    })
+                    .on('click', function() {
+                      var lat = parseFloat(result.lat);
+                      var lng = parseFloat(result.lon);
+                      goToLocationAndOpenModal(lat, lng);
+                      overlay.remove();
+                    })
+                    .on('keydown', function(e) {
+                      if (e.key === 'Enter') {
+                        $(this).click();
+                      } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        var next = $(this).next('.suggestion-item');
+                        if (next.length > 0) {
+                          next.focus();
+                        }
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        var prev = $(this).prev('.suggestion-item');
+                        if (prev.length > 0) {
+                          prev.focus();
+                        } else {
+                          input.focus();
+                        }
+                      }
+                    });
+
+                  container.append(item);
+                });
+
+                container.show();
+              } else {
+                container.hide();
+              }
+            },
+            error: function() {
+              container.hide();
+            }
+          });
+        }
 
         // Focus input after a short delay
         setTimeout(function() {
@@ -5834,7 +5960,13 @@
 
       function geocodeAddress(address) {
         // Use Nominatim for geocoding (free, no API key needed)
-        var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(address + ', Jelenia Góra, Poland') + '&limit=1';
+        // Add context of Jelenia Góra if not already in query
+        var searchQuery = address;
+        if (address.toLowerCase().indexOf('jelenia') === -1 && address.toLowerCase().indexOf('góra') === -1) {
+          searchQuery = address + ', Jelenia Góra, Poland';
+        }
+
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(searchQuery) + '&limit=1';
 
         $.ajax({
           url: url,
@@ -5845,7 +5977,7 @@
               var lng = parseFloat(results[0].lon);
               goToLocationAndOpenModal(lat, lng);
             } else {
-              showMessage('Nie znaleziono adresu. Spróbuj ponownie.', 'error');
+              showMessage('Nie znaleziono adresu "' + address + '". Spróbuj ponownie z pełniejszym adresem.', 'error');
             }
           },
           error: function() {
