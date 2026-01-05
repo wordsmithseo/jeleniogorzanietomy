@@ -83,9 +83,9 @@ class JG_Map_Enqueue {
             wp_localize_script('jg-map-notifications', 'jgNotificationsConfig', array(
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('jg_map_nonce'),
-                'moderationUrl' => admin_url('admin.php?page=jg-map-moderation'),
-                'reportsUrl' => admin_url('admin.php?page=jg-map-reports'),
-                'deletionsUrl' => admin_url('admin.php?page=jg-map-deletions')
+                'moderationUrl' => admin_url('admin.php?page=jg-map-places&status=new_pending'),
+                'reportsUrl' => admin_url('admin.php?page=jg-map-places&status=reported'),
+                'deletionsUrl' => admin_url('admin.php?page=jg-map-places&status=deletion_pending')
             ));
         }
 
