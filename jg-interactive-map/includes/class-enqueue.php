@@ -211,8 +211,11 @@ class JG_Map_Enqueue {
             true
         );
 
-        // Plugin JS
-        $dependencies = array('jquery', 'leaflet', 'leaflet-markercluster');
+        // WordPress Heartbeat for real-time sync (ALL users need this for map updates)
+        wp_enqueue_script('heartbeat');
+
+        // Plugin JS - CRITICAL: Add 'heartbeat' as dependency for real-time sync
+        $dependencies = array('jquery', 'leaflet', 'leaflet-markercluster', 'heartbeat');
 
         // Add notifications script as dependency if user is admin/moderator
         if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('jg_map_moderate'))) {
