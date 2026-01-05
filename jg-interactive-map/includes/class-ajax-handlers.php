@@ -430,8 +430,8 @@ class JG_Map_Ajax_Handlers {
                     }
                 }
 
-                $is_edit = ($edit_info !== null);
-                $is_deletion_requested = ($deletion_info !== null);
+                $is_edit = ($edit_info !== null && (!isset($edit_info['status']) || $edit_info['status'] !== 'rejected'));
+                $is_deletion_requested = ($deletion_info !== null && (!isset($deletion_info['status']) || $deletion_info['status'] !== 'rejected'));
             }
 
 
