@@ -3975,6 +3975,29 @@
             var typeLabels = { zgloszenie: 'Zgłoszenie', ciekawostka: 'Ciekawostka', miejsce: 'Miejsce' };
             changes.push('<div><strong>Typ:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (typeLabels[p.edit_info.prev_type] || p.edit_info.prev_type) + '</span><br><span style="color:#16a34a">→ ' + (typeLabels[p.edit_info.new_type] || p.edit_info.new_type) + '</span></div>');
           }
+          // Show category changes (for reports)
+          if (p.edit_info.prev_category !== undefined && p.edit_info.new_category !== undefined && p.edit_info.prev_category !== p.edit_info.new_category) {
+            var categoryLabels = {
+              'dziura_w_jezdni': '🕳️ Dziura w jezdni',
+              'uszkodzone_chodniki': '🚶 Uszkodzone chodniki',
+              'znaki_drogowe': '🚸 Brakujące lub zniszczone znaki drogowe',
+              'oswietlenie': '💡 Awarie oświetlenia ulicznego',
+              'dzikie_wysypisko': '🗑️ Dzikie wysypisko śmieci',
+              'przepelniony_kosz': '♻️ Przepełniony kosz na śmieci',
+              'graffiti': '🎨 Graffiti',
+              'sliski_chodnik': '⚠️ Śliski chodnik',
+              'nasadzenie_drzew': '🌳 Potrzeba nasadzenia drzew',
+              'nieprzycięta_gałąź': '🌿 Nieprzycięta gałąź',
+              'brak_przejscia': '🚦 Brak przejścia dla pieszych',
+              'przystanek_autobusowy': '🚏 Potrzeba przystanku autobusowego',
+              'organizacja_ruchu': '🚗 Problem z organizacją ruchu',
+              'korki': '🚙 Powtarzające się korki',
+              'mala_infrastruktura': '🎪 Propozycja nowych obiektów małej infrastruktury'
+            };
+            var prevCategory = p.edit_info.prev_category ? (categoryLabels[p.edit_info.prev_category] || p.edit_info.prev_category) : '(brak)';
+            var newCategory = p.edit_info.new_category ? (categoryLabels[p.edit_info.new_category] || p.edit_info.new_category) : '(brak)';
+            changes.push('<div><strong>Kategoria zgłoszenia:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + prevCategory + '</span><br><span style="color:#16a34a">→ ' + newCategory + '</span></div>');
+          }
           if (p.edit_info.prev_content !== p.edit_info.new_content) {
             var prevContentText = p.edit_info.prev_content.replace(/<\/?[^>]+(>|$)/g, '');
             var newContentText = p.edit_info.new_content.replace(/<\/?[^>]+(>|$)/g, '');
