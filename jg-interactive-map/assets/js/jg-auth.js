@@ -318,8 +318,8 @@
       '<input type="text" id="register-website" name="website" tabindex="-1" autocomplete="off">' +
       '</div>' +
       '<div class="jg-form-group" style="margin-bottom:20px">' +
-      '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nazwa użytkownika</label>' +
-      '<input type="text" id="register-username" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
+      '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nazwa użytkownika (max 60 znaków)</label>' +
+      '<input type="text" id="register-username" class="jg-input" required maxlength="60" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
       '</div>' +
       '<div class="jg-form-group" style="margin-bottom:20px">' +
       '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Adres email</label>' +

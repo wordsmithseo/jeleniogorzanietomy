@@ -178,7 +178,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.3.7'; // Updated for sync queue table
+        $current_schema_version = '3.3.8'; // Updated for rejection_reason in history table
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -366,6 +366,13 @@ class JG_Map_Database {
                 $result = $wpdb->query($alter_query);
             } else {
             }
+        }
+
+        // Check if rejection_reason column exists in history table (for moderation transparency)
+        $table_history = self::get_history_table();
+        $rejection_reason = $wpdb->get_results("SHOW COLUMNS FROM $table_history LIKE 'rejection_reason'");
+        if (empty($rejection_reason)) {
+            $wpdb->query("ALTER TABLE $table_history ADD COLUMN rejection_reason text DEFAULT NULL AFTER resolved_by");
         }
 
         // Cache the schema version to avoid running these checks on every page load
@@ -1000,10 +1007,33 @@ class JG_Map_Database {
         return $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT id, point_id, user_id, action_type, old_values, new_values,
-                        status, created_at, resolved_at, resolved_by
+                        status, created_at, resolved_at, resolved_by, rejection_reason
                  FROM $table WHERE point_id = %d AND status = 'pending'
                  ORDER BY created_at ASC",
                 $point_id
+            ),
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Get recently rejected history for a point (for showing rejection reasons to authors)
+     */
+    public static function get_rejected_history($point_id, $days = 30) {
+        global $wpdb;
+        $table = self::get_history_table();
+
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, point_id, user_id, action_type, old_values, new_values,
+                        status, created_at, resolved_at, resolved_by, rejection_reason
+                 FROM $table
+                 WHERE point_id = %d
+                 AND status = 'rejected'
+                 AND resolved_at > DATE_SUB(NOW(), INTERVAL %d DAY)
+                 ORDER BY resolved_at DESC",
+                $point_id,
+                $days
             ),
             ARRAY_A
         );
@@ -1019,7 +1049,7 @@ class JG_Map_Database {
         return $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT id, point_id, user_id, action_type, old_values, new_values,
-                        status, created_at, resolved_at, resolved_by
+                        status, created_at, resolved_at, resolved_by, rejection_reason
                  FROM $table WHERE point_id = %d ORDER BY created_at DESC",
                 $point_id
             ),
@@ -1048,17 +1078,24 @@ class JG_Map_Database {
     /**
      * Reject history entry
      */
-    public static function reject_history($history_id, $admin_id) {
+    public static function reject_history($history_id, $admin_id, $rejection_reason = '') {
         global $wpdb;
         $table = self::get_history_table();
 
+        $update_data = array(
+            'status' => 'rejected',
+            'resolved_at' => current_time('mysql', true),  // GMT time
+            'resolved_by' => $admin_id
+        );
+
+        // Add rejection reason if provided
+        if (!empty($rejection_reason)) {
+            $update_data['rejection_reason'] = $rejection_reason;
+        }
+
         return $wpdb->update(
             $table,
-            array(
-                'status' => 'rejected',
-                'resolved_at' => current_time('mysql', true),  // GMT time
-                'resolved_by' => $admin_id
-            ),
+            $update_data,
             array('id' => $history_id)
         );
     }

@@ -404,6 +404,32 @@ class JG_Map_Ajax_Handlers {
                         }
                     }
                 }
+
+                // For place owners, also get recently rejected history to show rejection reasons
+                if ($is_own_place) {
+                    $rejected_histories = JG_Map_Database::get_rejected_history($point['id'], 30);
+                    if (!empty($rejected_histories)) {
+                        foreach ($rejected_histories as $rejected_history) {
+                            $rejection_reason = $rejected_history['rejection_reason'] ?? '';
+                            if (empty($rejection_reason)) continue; // Skip if no reason provided
+
+                            if ($rejected_history['action_type'] === 'edit' && $edit_info === null) {
+                                $edit_info = array(
+                                    'status' => 'rejected',
+                                    'rejection_reason' => $rejection_reason,
+                                    'rejected_at' => human_time_diff(strtotime($rejected_history['resolved_at'] . ' UTC'), time()) . ' temu'
+                                );
+                            } else if ($rejected_history['action_type'] === 'delete_request' && $deletion_info === null) {
+                                $deletion_info = array(
+                                    'status' => 'rejected',
+                                    'rejection_reason' => $rejection_reason,
+                                    'rejected_at' => human_time_diff(strtotime($rejected_history['resolved_at'] . ' UTC'), time()) . ' temu'
+                                );
+                            }
+                        }
+                    }
+                }
+
                 $is_edit = ($edit_info !== null);
                 $is_deletion_requested = ($deletion_info !== null);
             }
@@ -2627,8 +2653,8 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Reject history
-        JG_Map_Database::reject_history($history_id, get_current_user_id());
+        // Reject history with reason
+        JG_Map_Database::reject_history($history_id, get_current_user_id(), $reason);
 
         // Queue sync event via dedicated sync manager
         JG_Map_Sync_Manager::get_instance()->queue_edit_rejected($history['point_id'], array(
@@ -2802,9 +2828,9 @@ class JG_Map_Ajax_Handlers {
             array('id' => $point_id)
         );
 
-        // Reject history if exists
+        // Reject history if exists with reason
         if ($history_id) {
-            JG_Map_Database::reject_history($history_id, get_current_user_id());
+            JG_Map_Database::reject_history($history_id, get_current_user_id(), $reason);
         }
 
         // Queue sync event via dedicated sync manager

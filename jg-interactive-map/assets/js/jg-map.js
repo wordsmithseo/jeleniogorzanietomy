@@ -1900,7 +1900,7 @@
             }
 
             bannerHtml += '</div>';
-            bannerHtml += '<button id="jg-ban-banner-close" style="background:rgba(255,255,255,0.2);color:#fff;border:2px solid #fff;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:14px;white-space:nowrap;">Zamknij</button>';
+            bannerHtml += '<a href="mailto:odwolania@jeleniogorzanietomy.pl?subject=Odwołanie od decyzji moderacyjnej" style="background:rgba(255,255,255,0.2);color:#fff;border:2px solid #fff;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:14px;white-space:nowrap;text-decoration:none;display:inline-block;">📧 Odwołaj się</a>';
             bannerHtml += '</div>';
             bannerHtml += '</div>';
 
@@ -1912,22 +1912,6 @@
             var bannerEl = document.createElement('div');
             bannerEl.innerHTML = bannerHtml;
             document.body.insertBefore(bannerEl.firstChild, document.body.firstChild);
-
-            // Add close button handler
-            var closeBtn = document.getElementById('jg-ban-banner-close');
-            if (closeBtn) {
-              closeBtn.addEventListener('click', function() {
-                var banner = document.getElementById('jg-ban-banner');
-                if (banner) {
-                  banner.style.transition = 'all 0.3s ease';
-                  banner.style.opacity = '0';
-                  banner.style.transform = 'translateY(-100%)';
-                  setTimeout(function() {
-                    banner.remove();
-                  }, 300);
-                }
-              });
-            }
 
             // Store restrictions globally so we can check them before actions
             window.JG_USER_RESTRICTIONS = result;
@@ -4064,6 +4048,14 @@
           }
         }
 
+        // Show rejection reason to place owner (not admin)
+        if (!CFG.isAdmin && p.is_own_place && p.is_edit && p.edit_info && p.edit_info.status === 'rejected' && p.edit_info.rejection_reason) {
+          editInfo = '<div style="background:#fef2f2;border:2px solid #ef4444;border-radius:8px;padding:12px;margin:16px 0">' +
+            '<div style="font-weight:700;margin-bottom:8px;color:#991b1b">❌ Twoja edycja została odrzucona (' + esc(p.edit_info.rejected_at) + ')</div>' +
+            '<div style="background:#fff;padding:10px;border-radius:6px;border-left:4px solid #ef4444"><strong>Uzasadnienie moderatora:</strong><br>' + esc(p.edit_info.rejection_reason) + '</div>' +
+            '</div>';
+        }
+
         // Deletion request info
         var deletionInfo = '';
         if (CFG.isAdmin && p.is_deletion_requested && p.deletion_info) {
@@ -4075,6 +4067,14 @@
           }
 
           deletionInfo += '</div>';
+        }
+
+        // Show deletion rejection reason to place owner (not admin)
+        if (!CFG.isAdmin && p.is_own_place && p.is_deletion_requested && p.deletion_info && p.deletion_info.status === 'rejected' && p.deletion_info.rejection_reason) {
+          deletionInfo = '<div style="background:#fef2f2;border:2px solid #ef4444;border-radius:8px;padding:12px;margin:16px 0">' +
+            '<div style="font-weight:700;margin-bottom:8px;color:#991b1b">❌ Twoje zgłoszenie usunięcia zostało odrzucone (' + esc(p.deletion_info.rejected_at) + ')</div>' +
+            '<div style="background:#fff;padding:10px;border-radius:6px;border-left:4px solid #ef4444"><strong>Uzasadnienie moderatora:</strong><br>' + esc(p.deletion_info.rejection_reason) + '</div>' +
+            '</div>';
         }
 
         var reportsWarning = '';
@@ -5308,6 +5308,7 @@
             color: '#92400e',
             border: '1px solid #fbbf24',
             whiteSpace: 'nowrap',
+            minWidth: '220px',
             marginLeft: 'auto'
           });
 
