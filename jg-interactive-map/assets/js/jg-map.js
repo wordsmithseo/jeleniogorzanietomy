@@ -1900,7 +1900,7 @@
             }
 
             bannerHtml += '</div>';
-            bannerHtml += '<button id="jg-ban-banner-close" style="background:rgba(255,255,255,0.2);color:#fff;border:2px solid #fff;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:14px;white-space:nowrap;">Zamknij</button>';
+            bannerHtml += '<a href="mailto:odwolania@jeleniogorzanietomy.pl?subject=Odwołanie od decyzji moderacyjnej" style="background:rgba(255,255,255,0.2);color:#fff;border:2px solid #fff;border-radius:6px;padding:8px 16px;cursor:pointer;font-weight:700;font-size:14px;white-space:nowrap;text-decoration:none;display:inline-block;">📧 Odwołaj się</a>';
             bannerHtml += '</div>';
             bannerHtml += '</div>';
 
@@ -1912,22 +1912,6 @@
             var bannerEl = document.createElement('div');
             bannerEl.innerHTML = bannerHtml;
             document.body.insertBefore(bannerEl.firstChild, document.body.firstChild);
-
-            // Add close button handler
-            var closeBtn = document.getElementById('jg-ban-banner-close');
-            if (closeBtn) {
-              closeBtn.addEventListener('click', function() {
-                var banner = document.getElementById('jg-ban-banner');
-                if (banner) {
-                  banner.style.transition = 'all 0.3s ease';
-                  banner.style.opacity = '0';
-                  banner.style.transform = 'translateY(-100%)';
-                  setTimeout(function() {
-                    banner.remove();
-                  }, 300);
-                }
-              });
-            }
 
             // Store restrictions globally so we can check them before actions
             window.JG_USER_RESTRICTIONS = result;
@@ -5308,6 +5292,7 @@
             color: '#92400e',
             border: '1px solid #fbbf24',
             whiteSpace: 'nowrap',
+            minWidth: '220px',
             marginLeft: 'auto'
           });
 
