@@ -5292,17 +5292,22 @@
 
       // Create sync status indicator
       function createSyncStatusIndicator() {
+        // Ensure map container has position relative for absolute positioning
+        if ($(elMap).css('position') === 'static') {
+          $(elMap).css('position', 'relative');
+        }
+
         var indicator = $('<div>')
           .attr('id', 'jg-sync-status')
           .css({
-            position: 'fixed',
-            top: '60px',
-            right: '20px',
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
             padding: '8px 16px',
             borderRadius: '8px',
             fontSize: '13px',
             fontWeight: '600',
-            zIndex: 10000,
+            zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
@@ -5313,7 +5318,7 @@
             border: '1px solid #fbbf24'
           });
 
-        $('body').append(indicator);
+        $(elMap).append(indicator);
         return indicator;
       }
 
@@ -5479,6 +5484,7 @@
 
       var fabExpanded = false;
       var fabContainer = null;
+      var fabToggling = false;
 
       function createFAB() {
         // Ensure map container has position relative for absolute positioning
@@ -5501,6 +5507,21 @@
           })
           .on('click', function(e) {
             // Prevent map click event
+            e.stopPropagation();
+            e.preventDefault();
+          })
+          .on('wheel', function(e) {
+            // Prevent zoom on scroll wheel over FAB
+            e.stopPropagation();
+            e.preventDefault();
+          })
+          .on('dblclick', function(e) {
+            // Prevent double-click zoom
+            e.stopPropagation();
+            e.preventDefault();
+          })
+          .on('mousedown', function(e) {
+            // Prevent any map interaction
             e.stopPropagation();
           });
 
@@ -5599,6 +5620,12 @@
       }
 
       function toggleFAB() {
+        // Prevent rapid toggling that could cause zoom
+        if (fabToggling) {
+          return;
+        }
+
+        fabToggling = true;
         fabExpanded = !fabExpanded;
         var menu = $('#jg-fab-menu');
         var plusIcon = $('#jg-fab-button span');
@@ -5618,6 +5645,11 @@
             });
           }, 10);
           plusIcon.css('transform', 'rotate(45deg)');
+
+          // Allow next toggle after animation
+          setTimeout(function() {
+            fabToggling = false;
+          }, 200);
         } else {
           // Collapse
           menu.find('.jg-fab-menu-item').css({
@@ -5626,6 +5658,7 @@
           });
           setTimeout(function() {
             menu.css('display', 'none');
+            fabToggling = false;
           }, 300);
           plusIcon.css('transform', 'rotate(0deg)');
         }
@@ -6169,6 +6202,53 @@
             qs('#add-cancel', modalAdd).onclick = function() {
               close(modalAdd);
             };
+
+            // Perform reverse geocoding to populate address
+            var addressInput = qs('#add-address-input', modalAdd);
+            var addressDisplay = qs('#add-address-display', modalAdd);
+
+            if (addressDisplay && addressInput) {
+              var formData = new FormData();
+              formData.append('action', 'jg_reverse_geocode');
+              formData.append('lat', latFixed);
+              formData.append('lng', lngFixed);
+
+              fetch(CFG.ajax, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+              })
+              .then(function(r) { return r.json(); })
+              .then(function(response) {
+                if (response.success && response.data && response.data.display_name) {
+                  var data = response.data;
+                  var addr = data.address || {};
+                  var street = addr.road || '';
+                  var houseNumber = addr.house_number || '';
+                  var city = addr.city || addr.town || addr.village || 'Jelenia Góra';
+
+                  var fullAddress = '';
+                  if (street && houseNumber) {
+                    fullAddress = street + ' ' + houseNumber + ', ' + city;
+                  } else if (street) {
+                    fullAddress = street + ', ' + city;
+                  } else {
+                    fullAddress = city;
+                  }
+
+                  addressDisplay.innerHTML = '<strong>📍 ' + fullAddress + '</strong>';
+                  addressInput.value = fullAddress;
+                } else {
+                  addressDisplay.innerHTML = '<strong>📍 Nie udało się odczytać adresu. Współrzędne: ' + latFixed + ', ' + lngFixed + '</strong>';
+                  addressInput.value = latFixed + ', ' + lngFixed;
+                }
+              })
+              .catch(function(err) {
+                console.error('[JG FAB] Reverse geocoding error:', err);
+                addressDisplay.innerHTML = '<strong>📍 Błąd pobierania adresu. Współrzędne: ' + latFixed + ', ' + lngFixed + '</strong>';
+                addressInput.value = latFixed + ', ' + lngFixed;
+              });
+            }
 
             // Rest of the modal setup logic will be handled by existing code
           })
