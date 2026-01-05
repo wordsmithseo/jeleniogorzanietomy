@@ -353,50 +353,53 @@ class JG_Map_Ajax_Handlers {
             if ($is_admin || $is_own_place) {
                 $is_pending = ($point['status'] === 'pending');
 
-                // Get pending edit or deletion history
-                $pending_history = JG_Map_Database::get_pending_history($point['id']);
+                // Get ALL pending history entries (can be multiple: edit + deletion)
+                $pending_histories = JG_Map_Database::get_pending_history($point['id']);
 
-                if ($pending_history) {
-                    $old_values = json_decode($pending_history['old_values'], true);
-                    $new_values = json_decode($pending_history['new_values'], true);
+                // Loop through all pending changes and populate edit_info and/or deletion_info
+                if (!empty($pending_histories)) {
+                    foreach ($pending_histories as $pending_history) {
+                        $old_values = json_decode($pending_history['old_values'], true);
+                        $new_values = json_decode($pending_history['new_values'], true);
 
-                    if ($pending_history['action_type'] === 'edit') {
-                        // Parse new images if present
-                        $new_images = array();
-                        if (isset($new_values['new_images'])) {
-                            $new_images_data = json_decode($new_values['new_images'], true);
-                            if (is_array($new_images_data)) {
-                                $new_images = $new_images_data;
+                        if ($pending_history['action_type'] === 'edit') {
+                            // Parse new images if present
+                            $new_images = array();
+                            if (isset($new_values['new_images'])) {
+                                $new_images_data = json_decode($new_values['new_images'], true);
+                                if (is_array($new_images_data)) {
+                                    $new_images = $new_images_data;
+                                }
                             }
-                        }
 
-                        $edit_info = array(
-                            'history_id' => intval($pending_history['id']),
-                            'prev_title' => $old_values['title'] ?? '',
-                            'prev_type' => $old_values['type'] ?? '',
-                            'prev_category' => $old_values['category'] ?? null,
-                            'prev_content' => $old_values['content'] ?? '',
-                            'new_title' => $new_values['title'] ?? '',
-                            'new_type' => $new_values['type'] ?? '',
-                            'new_category' => $new_values['category'] ?? null,
-                            'new_content' => $new_values['content'] ?? '',
-                            'prev_website' => $old_values['website'] ?? null,
-                            'new_website' => $new_values['website'] ?? null,
-                            'prev_phone' => $old_values['phone'] ?? null,
-                            'new_phone' => $new_values['phone'] ?? null,
-                            'prev_cta_enabled' => $old_values['cta_enabled'] ?? null,
-                            'new_cta_enabled' => $new_values['cta_enabled'] ?? null,
-                            'prev_cta_type' => $old_values['cta_type'] ?? null,
-                            'new_cta_type' => $new_values['cta_type'] ?? null,
-                            'new_images' => $new_images,
-                            'edited_at' => human_time_diff(strtotime($pending_history['created_at'] . ' UTC'), time()) . ' temu'
-                        );
-                    } else if ($pending_history['action_type'] === 'delete_request') {
-                        $deletion_info = array(
-                            'history_id' => intval($pending_history['id']),
-                            'reason' => $new_values['reason'] ?? '',
-                            'requested_at' => human_time_diff(strtotime($pending_history['created_at'] . ' UTC'), time()) . ' temu'
-                        );
+                            $edit_info = array(
+                                'history_id' => intval($pending_history['id']),
+                                'prev_title' => $old_values['title'] ?? '',
+                                'prev_type' => $old_values['type'] ?? '',
+                                'prev_category' => $old_values['category'] ?? null,
+                                'prev_content' => $old_values['content'] ?? '',
+                                'new_title' => $new_values['title'] ?? '',
+                                'new_type' => $new_values['type'] ?? '',
+                                'new_category' => $new_values['category'] ?? null,
+                                'new_content' => $new_values['content'] ?? '',
+                                'prev_website' => $old_values['website'] ?? null,
+                                'new_website' => $new_values['website'] ?? null,
+                                'prev_phone' => $old_values['phone'] ?? null,
+                                'new_phone' => $new_values['phone'] ?? null,
+                                'prev_cta_enabled' => $old_values['cta_enabled'] ?? null,
+                                'new_cta_enabled' => $new_values['cta_enabled'] ?? null,
+                                'prev_cta_type' => $old_values['cta_type'] ?? null,
+                                'new_cta_type' => $new_values['cta_type'] ?? null,
+                                'new_images' => $new_images,
+                                'edited_at' => human_time_diff(strtotime($pending_history['created_at'] . ' UTC'), time()) . ' temu'
+                            );
+                        } else if ($pending_history['action_type'] === 'delete_request') {
+                            $deletion_info = array(
+                                'history_id' => intval($pending_history['id']),
+                                'reason' => $new_values['reason'] ?? '',
+                                'requested_at' => human_time_diff(strtotime($pending_history['created_at'] . ' UTC'), time()) . ' temu'
+                            );
+                        }
                     }
                 }
                 $is_edit = ($edit_info !== null);
@@ -901,10 +904,15 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Check if there's already pending edit for this point
-        $pending_edit = JG_Map_Database::get_pending_history($point_id);
-        if ($pending_edit && !$is_admin) {
-            wp_send_json_error(array('message' => 'Ta lokalizacja ma już oczekującą edycję'));
-            exit;
+        $pending_histories = JG_Map_Database::get_pending_history($point_id);
+        if (!empty($pending_histories) && !$is_admin) {
+            // Check if any of the pending changes is an edit
+            foreach ($pending_histories as $ph) {
+                if ($ph['action_type'] === 'edit') {
+                    wp_send_json_error(array('message' => 'Ta lokalizacja ma już oczekującą edycję'));
+                    exit;
+                }
+            }
         }
 
         // Admins and moderators can edit directly ONLY if they use admin panel

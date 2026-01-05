@@ -987,7 +987,7 @@ class JG_Map_Database {
     }
 
     /**
-     * Get pending history for a point
+     * Get ALL pending history entries for a point (can be multiple: edit + deletion)
      */
     public static function get_pending_history($point_id) {
         global $wpdb;
@@ -997,12 +997,12 @@ class JG_Map_Database {
 
         $table = self::get_history_table();
 
-        return $wpdb->get_row(
+        return $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT id, point_id, user_id, action_type, old_values, new_values,
                         status, created_at, resolved_at, resolved_by
                  FROM $table WHERE point_id = %d AND status = 'pending'
-                 ORDER BY created_at DESC LIMIT 1",
+                 ORDER BY created_at ASC",
                 $point_id
             ),
             ARRAY_A

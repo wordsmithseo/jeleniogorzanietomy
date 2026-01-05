@@ -943,22 +943,34 @@ class JG_Map_Admin {
 
                 case 'approve_edit':
                     // Get pending edit history ID
-                    $history = JG_Map_Database::get_pending_history($point_id);
-                    if ($history) {
-                        $buttons .= sprintf(
-                            '<button class="button button-primary jg-approve-edit" data-history-id="%d">✓ Zaakceptuj</button>',
-                            $history['id']
-                        );
+                    $histories = JG_Map_Database::get_pending_history($point_id);
+                    if (!empty($histories)) {
+                        // Find the edit entry
+                        foreach ($histories as $h) {
+                            if ($h['action_type'] === 'edit') {
+                                $buttons .= sprintf(
+                                    '<button class="button button-primary jg-approve-edit" data-history-id="%d">✓ Zaakceptuj</button>',
+                                    $h['id']
+                                );
+                                break;
+                            }
+                        }
                     }
                     break;
 
                 case 'reject_edit':
-                    $history = JG_Map_Database::get_pending_history($point_id);
-                    if ($history) {
-                        $buttons .= sprintf(
-                            '<button class="button jg-reject-edit" data-history-id="%d">✗ Odrzuć</button>',
-                            $history['id']
-                        );
+                    $histories = JG_Map_Database::get_pending_history($point_id);
+                    if (!empty($histories)) {
+                        // Find the edit entry
+                        foreach ($histories as $h) {
+                            if ($h['action_type'] === 'edit') {
+                                $buttons .= sprintf(
+                                    '<button class="button jg-reject-edit" data-history-id="%d">✗ Odrzuć</button>',
+                                    $h['id']
+                                );
+                                break;
+                            }
+                        }
                     }
                     break;
 
