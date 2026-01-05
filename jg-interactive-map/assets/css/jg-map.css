@@ -238,6 +238,164 @@
   transform: scale(0.95);
 }
 
+/* Responsive filters - Better spacing on narrow screens */
+@media (max-width: 1024px) {
+  .jg-filters {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .jg-filters label {
+    padding: 6px 10px;
+    gap: 6px;
+    font-size: 14px;
+  }
+}
+
+/* Tablet responsive - More compact layout */
+@media (max-width: 768px) {
+  .jg-filters {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .jg-filters label {
+    padding: 6px 8px;
+    font-size: 13px;
+    gap: 5px;
+  }
+
+  .jg-filters input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+  }
+
+  .jg-search {
+    min-width: 150px;
+    max-width: 250px;
+  }
+
+  .jg-search input {
+    padding: 8px 40px 8px 12px;
+    font-size: 13px;
+  }
+
+  .jg-search-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .jg-search-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Mobile responsive - Circular notification icons */
+@media (max-width: 640px) {
+  .jg-filters {
+    gap: 10px;
+    padding: 12px;
+    justify-content: center;
+  }
+
+  .jg-filters label {
+    padding: 0;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 50%;
+    justify-content: center;
+    position: relative;
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    transition: all 0.2s;
+  }
+
+  .jg-filters label:hover {
+    background: #fff;
+    border-color: #8d2324;
+    transform: scale(1.05);
+  }
+
+  .jg-filters label:has(input:checked) {
+    background: #8d2324;
+    border-color: #8d2324;
+  }
+
+  .jg-filters label:has(input:checked):hover {
+    background: #a02829;
+    border-color: #a02829;
+  }
+
+  /* Hide checkbox input */
+  .jg-filters input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Hide text, show only as tooltip on hover */
+  .jg-filters label {
+    font-size: 0;
+  }
+
+  .jg-filters label::before {
+    font-size: 20px;
+  }
+
+  /* Add icon indicators for each filter type */
+  .jg-filters label:has([data-type="zgloszenie"])::before {
+    content: "🚨";
+  }
+
+  .jg-filters label:has([data-type="ciekawostka"])::before {
+    content: "ℹ️";
+  }
+
+  .jg-filters label:has([data-type="miejsce"])::before {
+    content: "📍";
+  }
+
+  .jg-filters label:has([data-my-places])::before {
+    content: "👤";
+  }
+
+  .jg-filters label:has([data-promo])::before {
+    content: "⭐";
+    margin-left: 0;
+  }
+
+  /* Full width search on mobile */
+  .jg-search {
+    flex: 1 1 100%;
+    max-width: 100%;
+    min-width: 100%;
+    order: -1;
+    margin-bottom: 8px;
+  }
+
+  .jg-search input {
+    width: 100%;
+  }
+}
+
+/* Very small mobile - Stack everything vertically */
+@media (max-width: 480px) {
+  .jg-filters {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .jg-filters label {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .jg-filters label::before {
+    font-size: 18px;
+  }
+}
+
 /* Search Results Side Panel */
 .jg-search-panel {
   position: absolute;
