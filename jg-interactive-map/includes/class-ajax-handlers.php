@@ -78,6 +78,8 @@ class JG_Map_Ajax_Handlers {
         // Public AJAX actions (logged in and not logged in)
         add_action('wp_ajax_jg_points', array($this, 'get_points'));
         add_action('wp_ajax_nopriv_jg_points', array($this, 'get_points'));
+        add_action('wp_ajax_jg_check_point_exists', array($this, 'check_point_exists'));
+        add_action('wp_ajax_nopriv_jg_check_point_exists', array($this, 'check_point_exists'));
         add_action('wp_ajax_jg_check_updates', array($this, 'check_updates'));
         add_action('wp_ajax_nopriv_jg_check_updates', array($this, 'check_updates'));
         add_action('wp_ajax_jg_reverse_geocode', array($this, 'reverse_geocode'));
@@ -177,6 +179,33 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+    }
+
+    /**
+     * Check if point exists (prevent operations on deleted points)
+     */
+    public function check_point_exists() {
+        $point_id = intval($_POST['point_id'] ?? 0);
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        // Check if point exists in database
+        $exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM $table WHERE id = %d",
+            $point_id
+        ));
+
+        if ($exists) {
+            wp_send_json_success(array('exists' => true));
+        } else {
+            wp_send_json_success(array('exists' => false));
+        }
     }
 
     /**
