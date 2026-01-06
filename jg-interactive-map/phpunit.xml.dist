@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.5/phpunit.xsd"
+    bootstrap="tests/bootstrap.php"
+    colors="true"
+    verbose="true"
+    stopOnFailure="false"
+    failOnWarning="true"
+    failOnRisky="true"
+    convertErrorsToExceptions="true"
+    convertNoticesToExceptions="true"
+    convertWarningsToExceptions="true"
+    beStrictAboutOutputDuringTests="true">
+
+    <testsuites>
+        <testsuite name="JG Interactive Map Test Suite">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+
+    <coverage processUncoveredFiles="true">
+        <include>
+            <directory suffix=".php">includes</directory>
+            <file>jg-interactive-map.php</file>
+        </include>
+        <exclude>
+            <directory>tests</directory>
+            <directory>assets</directory>
+        </exclude>
+        <report>
+            <html outputDirectory="tests/coverage-report"/>
+            <text outputFile="php://stdout" showUncoveredFiles="true"/>
+        </report>
+    </coverage>
+
+    <php>
+        <const name="WP_TESTS_PHPUNIT_POLYFILLS_PATH" value="vendor/yoast/phpunit-polyfills"/>
+    </php>
+</phpunit>
