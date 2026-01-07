@@ -6,6 +6,28 @@
 (function($) {
   'use strict';
 
+  // Debug mode - set to false in production
+  var DEBUG = window.JG_MAP_DEBUG || false;
+
+  // Debug logging wrapper
+  function debugLog() {
+    if (DEBUG && console && console.log) {
+      console.log.apply(console, arguments);
+    }
+  }
+
+  function debugWarn() {
+    if (DEBUG && console && console.warn) {
+      console.warn.apply(console, arguments);
+    }
+  }
+
+  function debugError() {
+    if (DEBUG && console && console.error) {
+      console.error.apply(console, arguments);
+    }
+  }
+
   // Unregister Service Worker to fix caching issues
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -33,7 +55,7 @@
         localStorage.removeItem('jg_map_cache_version_v2');
         // v3 will be used from now on, but clear old versions on page load
       } catch (e) {
-        console.error('[JG MAP] Failed to clear localStorage:', e);
+        debugError('[JG MAP] Failed to clear localStorage:', e);
       }
     });
   }
@@ -178,7 +200,7 @@
   }
 
   function showError(msg) {
-    console.error('[JG MAP]', msg);
+    debugError('[JG MAP]', msg);
     if (loadingEl) loadingEl.style.display = 'none';
     if (errorEl) errorEl.style.display = 'block';
     if (errorMsg) errorMsg.textContent = msg;
@@ -737,10 +759,10 @@
                 newUrl
               );
             } else {
-              console.error('[JG MAP] history.pushState not supported');
+              debugError('[JG MAP] history.pushState not supported');
             }
           } else {
-            console.warn('[JG MAP] Point missing slug or type:', point);
+            debugWarn('[JG MAP] Point missing slug or type:', point);
           }
         }
       }
@@ -1133,7 +1155,7 @@
               setTimeout(function() { draw(pendingData); }, 300);
             }
           } catch (e) {
-            console.error('[JG MAP] Błąd tworzenia clustera:', e);
+            debugError('[JG MAP] Błąd tworzenia clustera:', e);
             clusterReady = false;
           }
         }, 800);
@@ -1415,13 +1437,13 @@
                     addressInput.value = fullAddress;
                     addressDisplay.innerHTML = '<strong>📍 Adres:</strong> ' + esc(fullAddress);
                   } else {
-                    console.warn('[JG MAP] No address found in response');
+                    debugWarn('[JG MAP] No address found in response');
                     addressDisplay.innerHTML = '<strong>📍 Adres:</strong> Nie znaleziono adresu dla tej lokalizacji';
                     addressInput.value = '';
                   }
                 })
                 .catch(function(err) {
-                  console.error('[JG MAP] Reverse geocoding error:', err);
+                  debugError('[JG MAP] Reverse geocoding error:', err);
                   addressDisplay.innerHTML = '<strong>📍 Adres:</strong> Błąd pobierania adresu';
                   addressInput.value = '';
                 });
@@ -1482,7 +1504,7 @@
                   close(modalAdd);
                 }, 800);
               }).catch(function(err) {
-                console.error('[JG MAP] Błąd odświeżania:', err);
+                debugError('[JG MAP] Błąd odświeżania:', err);
                 setTimeout(function() {
                   close(modalAdd);
                 }, 1000);
@@ -1827,12 +1849,12 @@
           try {
             j = JSON.parse(t);
           } catch (e) {
-            console.error('[JG MAP] JSON parse error:', e);
-            console.error('[JG MAP] Raw response:', t);
+            debugError('[JG MAP] JSON parse error:', e);
+            debugError('[JG MAP] Raw response:', t);
           }
           if (!j || j.success === false) {
             var errMsg = (j && j.data && (j.data.message || j.data.error)) || 'Błąd';
-            console.error('[JG MAP] API error:', errMsg, j);
+            debugError('[JG MAP] API error:', errMsg, j);
             throw new Error(errMsg);
           }
           // Process response data
@@ -1972,7 +1994,7 @@
             window.JG_USER_RESTRICTIONS = result;
           })
           .catch(function(e) {
-            console.error('[JG MAP] Failed to check restrictions:', e);
+            debugError('[JG MAP] Failed to check restrictions:', e);
           });
       }
 
@@ -2073,11 +2095,11 @@
                 }, 800); // Wait for zoom animation
               }, 300); // Map is already loaded and scrolled, just wait for initialization
             } else {
-              console.warn('[JG MAP] Point not found with id:', pointId);
+              debugWarn('[JG MAP] Point not found with id:', pointId);
             }
           }
         } catch (e) {
-          console.error('[JG MAP] Deep link error:', e);
+          debugError('[JG MAP] Deep link error:', e);
         }
       }
 
@@ -2138,7 +2160,7 @@
             return data;
           }
         } catch (e) {
-          console.error('[JG MAP] Cache load error:', e);
+          debugError('[JG MAP] Cache load error:', e);
         }
         return null;
       }
@@ -2150,7 +2172,7 @@
           localStorage.setItem(CACHE_VERSION_KEY, version.toString());
           lastModified = version;
         } catch (e) {
-          console.error('[JG MAP] Cache save error:', e);
+          debugError('[JG MAP] Cache save error:', e);
         }
       }
 
@@ -2223,7 +2245,7 @@
           if (typeof window.jgRefreshNotifications === 'function') {
             return window.jgRefreshNotifications().then(function() {
             }).catch(function(err) {
-              console.error('[JG MAP] Failed to refresh notifications:', err);
+              debugError('[JG MAP] Failed to refresh notifications:', err);
             });
           }
 
@@ -2313,7 +2335,7 @@
         try {
           cluster.clearLayers();
         } catch (e) {
-          console.error('[JG MAP] Błąd czyszczenia clustera:', e);
+          debugError('[JG MAP] Błąd czyszczenia clustera:', e);
         }
 
         // Clear any markers that were added directly to map (not in cluster)
@@ -2383,7 +2405,7 @@
 
             newMarkers.push(m);
           } catch (e) {
-            console.error('[JG MAP] Błąd dodawania markera:', e);
+            debugError('[JG MAP] Błąd dodawania markera:', e);
           }
         });
 
@@ -2412,7 +2434,7 @@
 
               isInitialLoad = false;
             } catch (e) {
-              console.error('[JG MAP] Błąd fitBounds:', e);
+              debugError('[JG MAP] Błąd fitBounds:', e);
             }
 
             // Wait for cluster animation to complete before showing map
@@ -3139,7 +3161,7 @@
                   }
                 }
               } catch (err) {
-                console.error('[JG MAP] Błąd aktualizacji markera:', err);
+                debugError('[JG MAP] Błąd aktualizacji markera:', err);
               }
             }
 
@@ -3655,7 +3677,7 @@
             var day = String(d.getDate()).padStart(2, '0');
             promoDateValue = year + '-' + month + '-' + day;
           } catch (e) {
-            console.error('Error parsing promo date:', e);
+            debugError('Error parsing promo date:', e);
           }
         }
 
@@ -3948,7 +3970,7 @@
           },
           error: function() {
             // Network error - assume point exists (fail-safe)
-            console.warn('[JG MAP] Could not validate point existence - opening anyway');
+            debugWarn('[JG MAP] Could not validate point existence - opening anyway');
             openDetailsModalContent(p);
           }
         });
@@ -5281,7 +5303,7 @@
             });
           });
         } else {
-          console.error('[JG MAP] Filter container not found!');
+          debugError('[JG MAP] Filter container not found!');
         }
       }, 500);
 
@@ -5310,7 +5332,7 @@
             }
           }
         } catch (e) {
-          console.error('[JG MAP] Early scroll check error:', e);
+          debugError('[JG MAP] Early scroll check error:', e);
         }
       })();
 
@@ -5328,7 +5350,7 @@
 
         // Then check for updates in background
         refreshData(false).catch(function(err) {
-          console.error('[JG MAP] Background update failed:', err);
+          debugError('[JG MAP] Background update failed:', err);
         });
       } else {
         // No cache, fetch fresh data
@@ -5443,7 +5465,7 @@
 
       // WordPress Heartbeat for REAL-TIME synchronization
       if (typeof wp !== 'undefined' && wp.heartbeat) {
-        console.log('[JG MAP SYNC] Initializing real-time synchronization');
+        debugLog('[JG MAP SYNC] Initializing real-time synchronization');
 
         // Set heartbeat interval to 15 seconds (optimal for real-time updates)
         wp.heartbeat.interval(15);
@@ -5452,37 +5474,37 @@
         $(document).on('heartbeat-send.jgMapSync', function(e, data) {
           data.jg_map_check = true;
           data.jg_map_last_check = lastSyncCheck;
-          console.log('[JG MAP SYNC] Heartbeat send - checking for updates since', lastSyncCheck);
+          debugLog('[JG MAP SYNC] Heartbeat send - checking for updates since', lastSyncCheck);
         });
 
         // Process heartbeat response - REAL-TIME sync events
         $(document).on('heartbeat-tick.jgMapSync', function(e, data) {
           if (!data.jg_map_sync) {
-            console.log('[JG MAP SYNC] No sync data in heartbeat response');
+            debugLog('[JG MAP SYNC] No sync data in heartbeat response');
             return;
           }
 
           var syncData = data.jg_map_sync;
-          console.log('[JG MAP SYNC] Heartbeat tick received:', syncData);
+          debugLog('[JG MAP SYNC] Heartbeat tick received:', syncData);
 
           // Update last check timestamp
           lastSyncCheck = syncData.server_time || Math.floor(Date.now() / 1000);
 
           // Check if there are new/updated points
           if (syncData.new_points > 0 || (syncData.sync_events && syncData.sync_events.length > 0)) {
-            console.log('[JG MAP SYNC] Changes detected! New points:', syncData.new_points, 'Events:', syncData.sync_events ? syncData.sync_events.length : 0);
+            debugLog('[JG MAP SYNC] Changes detected! New points:', syncData.new_points, 'Events:', syncData.sync_events ? syncData.sync_events.length : 0);
 
             // Show "syncing" status
             updateSyncStatus('syncing');
 
             // INSTANT refresh - no delay!
             refreshData(false).then(function() {
-              console.log('[JG MAP SYNC] Map refreshed successfully');
+              debugLog('[JG MAP SYNC] Map refreshed successfully');
 
               // Show "completed" status
               updateSyncStatus('completed');
             }).catch(function(err) {
-              console.error('[JG MAP SYNC] Refresh failed:', err);
+              debugError('[JG MAP SYNC] Refresh failed:', err);
               updateSyncStatus('online'); // Return to online on error
             });
           } else {
@@ -5492,14 +5514,14 @@
 
           // Update pending counts for admins
           if (CFG.isAdmin && syncData.pending_counts) {
-            console.log('[JG MAP SYNC] Admin pending counts:', syncData.pending_counts);
+            debugLog('[JG MAP SYNC] Admin pending counts:', syncData.pending_counts);
             // Notification system will handle this via jg-notifications.js
           }
         });
 
         // Handle connection errors
         $(document).on('heartbeat-error.jgMapSync', function() {
-          console.warn('[JG MAP SYNC] Heartbeat error - connection lost');
+          debugWarn('[JG MAP SYNC] Heartbeat error - connection lost');
           updateSyncStatus('Błąd połączenia');
         });
 
@@ -5510,14 +5532,14 @@
         // This ensures sync check happens instantly on page load
         setTimeout(function() {
           if (typeof wp !== 'undefined' && wp.heartbeat) {
-            console.log('[JG MAP SYNC] Forcing immediate first heartbeat tick');
+            debugLog('[JG MAP SYNC] Forcing immediate first heartbeat tick');
             wp.heartbeat.connectNow();
           }
         }, 100); // Small delay to ensure everything is initialized
 
-        console.log('[JG MAP SYNC] Real-time synchronization initialized successfully');
+        debugLog('[JG MAP SYNC] Real-time synchronization initialized successfully');
       } else {
-        console.warn('[JG MAP SYNC] WordPress Heartbeat API not available - falling back to polling');
+        debugWarn('[JG MAP SYNC] WordPress Heartbeat API not available - falling back to polling');
         updateSyncStatus('Brak Heartbeat API');
 
         // Fallback: Polling every 10 seconds if heartbeat not available
@@ -5529,7 +5551,7 @@
       // Check for updates when page becomes visible
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
-          console.log('[JG MAP SYNC] Page visible - refreshing data');
+          debugLog('[JG MAP SYNC] Page visible - refreshing data');
           refreshData(false);
         }
       });
@@ -5819,17 +5841,17 @@
 
         input.on('input', function() {
           var query = $(this).val().trim();
-          console.log('[JG FAB] Input changed, query length:', query.length, 'value:', query);
+          debugLog('[JG FAB] Input changed, query length:', query.length, 'value:', query);
 
           if (searchTimeout) clearTimeout(searchTimeout);
 
           if (query.length < 3) {
-            console.log('[JG FAB] Query too short, hiding suggestions');
+            debugLog('[JG FAB] Query too short, hiding suggestions');
             suggestionsList.hide().empty();
             return;
           }
 
-          console.log('[JG FAB] Scheduling search in 300ms');
+          debugLog('[JG FAB] Scheduling search in 300ms');
           // Debounce search by 300ms
           searchTimeout = setTimeout(function() {
             searchAddressSuggestions(query, suggestionsList);
@@ -5879,7 +5901,7 @@
 
         // Search suggestions function
         function searchAddressSuggestions(query, container) {
-          console.log('[JG FAB] Searching for:', query);
+          debugLog('[JG FAB] Searching for:', query);
 
           // Use backend proxy endpoint to avoid CSP issues
           $.ajax({
@@ -5891,12 +5913,12 @@
               query: query
             },
             success: function(response) {
-              console.log('[JG FAB] Got response:', response);
+              debugLog('[JG FAB] Got response:', response);
               container.empty();
 
               if (response.success && response.data && response.data.length > 0) {
                 var results = response.data;
-                console.log('[JG FAB] Processing', results.length, 'results');
+                debugLog('[JG FAB] Processing', results.length, 'results');
 
                 results.forEach(function(result) {
                   var displayName = result.display_name;
@@ -5951,14 +5973,14 @@
 
                 container.show();
               } else {
-                console.log('[JG FAB] No results found or empty response');
+                debugLog('[JG FAB] No results found or empty response');
                 container.hide();
               }
             },
             error: function(xhr, status, error) {
-              console.error('[JG FAB] AJAX Error:', status, error);
+              debugError('[JG FAB] AJAX Error:', status, error);
               if (xhr.responseJSON) {
-                console.error('[JG FAB] Error response:', xhr.responseJSON);
+                debugError('[JG FAB] Error response:', xhr.responseJSON);
               }
               container.hide();
             }
@@ -6129,7 +6151,7 @@
 
         // Wait for animation to complete, then open add modal
         setTimeout(function() {
-          console.log('[JG FAB] Opening add modal for:', lat, lng);
+          debugLog('[JG FAB] Opening add modal for:', lat, lng);
           openAddPlaceModal(lat, lng);
         }, 1600);
       }
@@ -6167,12 +6189,12 @@
         var latFixed = parseFloat(lat).toFixed(6);
         var lngFixed = parseFloat(lng).toFixed(6);
 
-        console.log('[JG FAB] Fetching daily limits...');
+        debugLog('[JG FAB] Fetching daily limits...');
 
         // Fetch daily limits and open modal
         api('jg_get_daily_limits', {})
           .then(function(limits) {
-            console.log('[JG FAB] Got limits, building modal...');
+            debugLog('[JG FAB] Got limits, building modal...');
 
             var limitsHtml = '';
             if (!limits.is_admin) {
@@ -6247,7 +6269,7 @@
               '<div id="add-msg" class="cols-2" style="font-size:12px;color:#555"></div>' +
               '</form>';
 
-            console.log('[JG FAB] Opening modal...');
+            debugLog('[JG FAB] Opening modal...');
             open(modalAdd, formHtml);
 
             // Setup modal handlers (same as in map click handler)
@@ -6300,7 +6322,7 @@
                 }
               })
               .catch(function(err) {
-                console.error('[JG FAB] Reverse geocoding error:', err);
+                debugError('[JG FAB] Reverse geocoding error:', err);
                 addressDisplay.innerHTML = '<strong>📍 Błąd pobierania adresu. Współrzędne: ' + latFixed + ', ' + lngFixed + '</strong>';
                 addressInput.value = latFixed + ', ' + lngFixed;
               });
@@ -6309,7 +6331,7 @@
             // Rest of the modal setup logic will be handled by existing code
           })
           .catch(function(err) {
-            console.error('[JG FAB] Error fetching limits:', err);
+            debugError('[JG FAB] Error fetching limits:', err);
             showMessage('Błąd podczas pobierania limitów. Spróbuj ponownie.', 'error');
           });
       }
