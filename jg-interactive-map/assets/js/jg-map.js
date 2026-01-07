@@ -2940,6 +2940,30 @@
       }
 
       /**
+       * Check if this is a unique visitor for a given point
+       * Uses localStorage to track visited points (keeps last 1000)
+       */
+      function isUniqueVisitor(pointId) {
+        try {
+          var visited = localStorage.getItem('jg_visited_points');
+          var visitedPoints = visited ? JSON.parse(visited) : [];
+
+          if (visitedPoints.indexOf(pointId) === -1) {
+            visitedPoints.push(pointId);
+            // Keep only last 1000 to prevent overflow
+            if (visitedPoints.length > 1000) {
+              visitedPoints = visitedPoints.slice(-1000);
+            }
+            localStorage.setItem('jg_visited_points', JSON.stringify(visitedPoints));
+            return true; // First visit!
+          }
+          return false; // Already visited
+        } catch (e) {
+          return false;
+        }
+      }
+
+      /**
        * Render stats modal content (for real-time updates)
        */
       function renderStatsContent(p) {
