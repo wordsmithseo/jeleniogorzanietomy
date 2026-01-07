@@ -489,6 +489,18 @@ class JG_Map_Ajax_Handlers {
                     'avg_time_spent' => intval($point['stats_avg_time_spent'] ?? 0)
                 ) : null
             );
+
+            // DEBUG: Log stats visibility for sponsored points
+            if ($point['is_promo']) {
+                error_log(sprintf(
+                    '[JG STATS PHP] Point #%d: is_admin=%s, is_own_place=%s, stats_included=%s, stats_views=%d',
+                    $point['id'],
+                    $is_admin ? 'true' : 'false',
+                    $is_own_place ? 'true' : 'false',
+                    ($is_admin || $is_own_place) ? 'YES' : 'NO',
+                    intval($point['stats_views'] ?? 0)
+                ));
+            }
         }
 
         // DEBUG: Log the actual $result array before sending to JavaScript
