@@ -822,6 +822,7 @@ class JG_Map_Database {
         );
     }
 
+    /**
      * Get history table name
      */
     public static function get_history_table() {
