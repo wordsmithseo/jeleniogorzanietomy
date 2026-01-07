@@ -2294,7 +2294,12 @@
               is_deletion_requested: !!r.is_deletion_requested,
               deletion_info: r.deletion_info || null,
               reports_count: +(r.reports_count || 0),
-              user_has_reported: !!r.user_has_reported
+              user_has_reported: !!r.user_has_reported,
+              stats: r.stats || null,  // FIX: Include stats from server (for admin/owner only)
+              facebook_url: r.facebook_url || null,
+              instagram_url: r.instagram_url || null,
+              linkedin_url: r.linkedin_url || null,
+              tiktok_url: r.tiktok_url || null
             };
           });
 
