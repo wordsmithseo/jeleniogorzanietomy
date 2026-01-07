@@ -4101,7 +4101,9 @@ class JG_Map_Ajax_Handlers {
         $platform = isset($_POST['platform']) ? sanitize_text_field($_POST['platform']) : '';
         $image_index = isset($_POST['image_index']) ? intval($_POST['image_index']) : -1;
         $time_spent = isset($_POST['time_spent']) ? intval($_POST['time_spent']) : 0;
-        $is_unique = isset($_POST['is_unique']) ? (bool)$_POST['is_unique'] : false;
+        // FIX: Properly convert string "true"/"false" to boolean
+        // URLSearchParams sends booleans as strings, and (bool)"false" = true in PHP
+        $is_unique = isset($_POST['is_unique']) && filter_var($_POST['is_unique'], FILTER_VALIDATE_BOOLEAN);
 
         if (!$point_id || !$action_type) {
             wp_send_json_error(array('message' => 'Brak wymaganych parametrów'));
@@ -4250,9 +4252,38 @@ class JG_Map_Ajax_Handlers {
         }
 
         if ($result !== false) {
-            wp_send_json_success(array('message' => 'Statystyka zapisana', 'rows_affected' => $result));
+            // Log successful stat tracking for debugging
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(sprintf(
+                    '[JG MAP STATS] Tracked %s for point #%d (rows affected: %d, is_promo: %s)',
+                    $action_type,
+                    $point_id,
+                    $result,
+                    $point['is_promo']
+                ));
+            }
+            wp_send_json_success(array(
+                'message' => 'Statystyka zapisana',
+                'rows_affected' => $result,
+                'action_type' => $action_type,
+                'point_id' => $point_id
+            ));
         } else {
-            wp_send_json_error(array('message' => 'Błąd zapisu: ' . $wpdb->last_error));
+            // Log error for debugging
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(sprintf(
+                    '[JG MAP STATS ERROR] Failed to track %s for point #%d: %s',
+                    $action_type,
+                    $point_id,
+                    $wpdb->last_error
+                ));
+            }
+            wp_send_json_error(array(
+                'message' => 'Błąd zapisu: ' . $wpdb->last_error,
+                'action_type' => $action_type,
+                'point_id' => $point_id,
+                'sql_error' => $wpdb->last_error
+            ));
         }
     }
 

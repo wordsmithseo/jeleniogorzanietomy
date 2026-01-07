@@ -243,6 +243,7 @@ class JG_Map_Enqueue {
                 'loginUrl' => wp_login_url(get_permalink()),
                 'registrationEnabled' => (bool) get_option('jg_map_registration_enabled', 1),
                 'registrationDisabledMessage' => get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.'),
+                'debug' => defined('WP_DEBUG') && WP_DEBUG,
                 'defaults' => array(
                     'lat' => 50.904,
                     'lng' => 15.734,
