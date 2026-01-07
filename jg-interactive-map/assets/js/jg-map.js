@@ -2997,8 +2997,13 @@
        * Render stats modal content (for real-time updates)
        */
       function renderStatsContent(p) {
+        console.log('[JG STATS RENDER] renderStatsContent called for point #' + p.id);
+        console.log('[JG STATS RENDER] p.stats exists?', !!p.stats);
+        console.log('[JG STATS RENDER] p.stats value:', p.stats);
+
         // Initialize stats object if not present (for new sponsored places)
         if (!p.stats) {
+          console.warn('[JG STATS RENDER] WARNING: p.stats is null/undefined, creating empty stats object');
           p.stats = {
             views: 0,
             phone_clicks: 0,
@@ -3011,6 +3016,8 @@
             unique_visitors: 0,
             avg_time_spent: 0
           };
+        } else {
+          console.log('[JG STATS RENDER] p.stats contains:', JSON.stringify(p.stats, null, 2));
         }
 
         var totalSocialClicks = 0;
@@ -4797,6 +4804,10 @@
           // Stats button handler
           var statsBtn = qs('#btn-stats', modalView);
           if (statsBtn) statsBtn.onclick = function() {
+            console.log('[JG STATS MODAL] Opening stats modal for point #' + p.id);
+            console.log('[JG STATS MODAL] Point data:', p);
+            console.log('[JG STATS MODAL] p.stats exists?', !!p.stats);
+            console.log('[JG STATS MODAL] p.stats value:', p.stats);
             openStatsModal(p);
           };
 
