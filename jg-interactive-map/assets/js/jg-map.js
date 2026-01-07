@@ -3031,7 +3031,7 @@
               } else {
                 imgThumb = imgData; // Old format - just a string URL
               }
-              galleryBreakdown.push('<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:#f9fafb;border-radius:6px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:10px"><img src="' + esc(imgThumb) + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px" alt="Zdjęcie #' + (i + 1) + '"><span>Zdjęcie #' + (i + 1) + '</span></div><div style="font-size:18px;font-weight:600;color:#374151">' + imgClicks + '</div></div>');
+              galleryBreakdown.push('<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:#f9fafb;border-radius:6px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:10px"><img src="' + esc(imgThumb) + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px" alt="Zdjęcie #' + (i + 1) + '"><span>Zdjęcie #' + (i + 1) + '</span></div><div style="font-size:18px;font-weight:600;color:#374151">' + imgClicks + ' <span style="font-size:14px;font-weight:400;color:#6b7280">otwarć</span></div></div>');
             }
           }
         }
