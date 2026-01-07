@@ -4105,7 +4105,11 @@ class JG_Map_Ajax_Handlers {
         // URLSearchParams sends booleans as strings, and (bool)"false" = true in PHP
         $is_unique = isset($_POST['is_unique']) && filter_var($_POST['is_unique'], FILTER_VALIDATE_BOOLEAN);
 
+        // DEBUG: Unconditional logging
+        error_log('[JG STATS PHP] track_stat called: point_id=' . $point_id . ', action_type=' . $action_type . ', is_unique=' . ($is_unique ? 'true' : 'false'));
+
         if (!$point_id || !$action_type) {
+            error_log('[JG STATS PHP] ERROR: Missing required parameters');
             wp_send_json_error(array('message' => 'Brak wymaganych parametrów'));
             return;
         }
@@ -4116,16 +4120,26 @@ class JG_Map_Ajax_Handlers {
             $point_id
         ), ARRAY_A);
 
+        error_log('[JG STATS PHP] Point data: ' . print_r($point, true));
+
         if (!$point) {
+            error_log('[JG STATS PHP] ERROR: Point not found');
             wp_send_json_error(array('message' => 'Nie znaleziono pinezki'));
             return;
         }
 
         // Only track stats for sponsored/promo places
         if (!$point['is_promo']) {
-            wp_send_json_success(array('message' => 'Tracking disabled for non-sponsored places'));
+            error_log('[JG STATS PHP] WARNING: Point is NOT sponsored (is_promo=' . $point['is_promo'] . '), skipping tracking');
+            wp_send_json_success(array(
+                'message' => 'Tracking disabled for non-sponsored places',
+                'is_promo' => $point['is_promo'],
+                'point_id' => $point_id
+            ));
             return;
         }
+
+        error_log('[JG STATS PHP] Point IS sponsored, proceeding with tracking');
 
         $current_time = current_time('mysql');
         $result = false;
@@ -4252,16 +4266,14 @@ class JG_Map_Ajax_Handlers {
         }
 
         if ($result !== false) {
-            // Log successful stat tracking for debugging
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log(sprintf(
-                    '[JG MAP STATS] Tracked %s for point #%d (rows affected: %d, is_promo: %s)',
-                    $action_type,
-                    $point_id,
-                    $result,
-                    $point['is_promo']
-                ));
-            }
+            // DEBUG: Unconditional logging
+            error_log(sprintf(
+                '[JG STATS PHP] ✓ SUCCESS: Tracked %s for point #%d (rows affected: %d, is_promo: %s)',
+                $action_type,
+                $point_id,
+                $result,
+                $point['is_promo']
+            ));
             wp_send_json_success(array(
                 'message' => 'Statystyka zapisana',
                 'rows_affected' => $result,
@@ -4269,15 +4281,13 @@ class JG_Map_Ajax_Handlers {
                 'point_id' => $point_id
             ));
         } else {
-            // Log error for debugging
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log(sprintf(
-                    '[JG MAP STATS ERROR] Failed to track %s for point #%d: %s',
-                    $action_type,
-                    $point_id,
-                    $wpdb->last_error
-                ));
-            }
+            // DEBUG: Unconditional error logging
+            error_log(sprintf(
+                '[JG STATS PHP] ✗ ERROR: Failed to track %s for point #%d: %s',
+                $action_type,
+                $point_id,
+                $wpdb->last_error
+            ));
             wp_send_json_error(array(
                 'message' => 'Błąd zapisu: ' . $wpdb->last_error,
                 'action_type' => $action_type,

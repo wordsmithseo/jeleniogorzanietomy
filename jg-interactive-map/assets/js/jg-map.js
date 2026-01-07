@@ -2949,10 +2949,11 @@
         })
         .then(function(result) {
           console.log('[JG STATS] Parsed JSON:', result);
+          console.log('[JG STATS] Full response data:', JSON.stringify(result, null, 2));
           if (result.success) {
-            console.log('[JG STATS] ✓ Successfully tracked:', actionType, 'for point #' + pointId);
+            console.log('[JG STATS] ✓ Successfully tracked:', actionType, 'for point #' + pointId, '- Response data:', result.data);
           } else {
-            console.error('[JG STATS] ✗ Failed to track:', actionType, result.data);
+            console.error('[JG STATS] ✗ Failed to track:', actionType, '- Error:', result.data);
           }
         })
         .catch(function(error) {
