@@ -880,8 +880,9 @@ class JG_Map_Admin {
      */
     private function render_place_row($place, $actions, $is_admin) {
         $author_name = !empty($place['author_name']) ? $place['author_name'] : 'Nieznany';
-        $created_date = date('Y-m-d H:i', strtotime($place['created_at']));
-        $approved_date = !empty($place['approved_at']) ? date('Y-m-d H:i', strtotime($place['approved_at'])) : '-';
+        // Convert GMT timestamps to WordPress local timezone
+        $created_date = get_date_from_gmt($place['created_at'], 'Y-m-d H:i');
+        $approved_date = !empty($place['approved_at']) ? get_date_from_gmt($place['approved_at'], 'Y-m-d H:i') : '-';
         $is_sponsored = $place['is_promo'] == 1 ? '⭐ Tak' : 'Nie';
 
         // For regular users, only show 'details' action
@@ -3138,7 +3139,7 @@ class JG_Map_Admin {
                         $user_name = $user ? $user->display_name : 'Użytkownik #' . $log['user_id'];
                     ?>
                         <tr>
-                            <td><?php echo esc_html(date('Y-m-d H:i:s', strtotime($log['created_at']))); ?></td>
+                            <td><?php echo esc_html(get_date_from_gmt($log['created_at'], 'Y-m-d H:i:s')); ?></td>
                             <td><?php echo esc_html($user_name); ?></td>
                             <td><strong><?php echo esc_html($log['action']); ?></strong></td>
                             <td><?php echo esc_html($log['object_type']); ?></td>
