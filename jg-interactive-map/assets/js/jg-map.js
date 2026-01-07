@@ -2916,16 +2916,10 @@
        * Excludes tracking for point owner
        */
       function trackStat(pointId, actionType, extraData, pointOwnerId) {
-        console.log('[JG STATS TRACK] Called with:', {pointId: pointId, actionType: actionType, extraData: extraData, pointOwnerId: pointOwnerId, currentUserId: CFG.currentUserId});
-
-        if (!pointId) {
-          console.warn('[JG STATS] trackStat called without pointId');
-          return;
-        }
+        if (!pointId) return;
 
         // Don't track owner's own interactions
         if (CFG.currentUserId && pointOwnerId && parseInt(CFG.currentUserId) === parseInt(pointOwnerId)) {
-          console.log('[JG STATS] Skipping tracking for owner (point #' + pointId + ')');
           return;
         }
 
@@ -2941,28 +2935,12 @@
           }
         }
 
-        console.log('[JG STATS] Sending AJAX request:', data, 'to:', CFG.ajax);
-
         fetch(CFG.ajax, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams(data)
-        })
-        .then(function(response) {
-          console.log('[JG STATS] Got response, status:', response.status);
-          return response.json();
-        })
-        .then(function(result) {
-          console.log('[JG STATS] Parsed JSON:', result);
-          console.log('[JG STATS] Full response data:', JSON.stringify(result, null, 2));
-          if (result.success) {
-            console.log('[JG STATS] ✓ Successfully tracked:', actionType, 'for point #' + pointId, '- Response data:', result.data);
-          } else {
-            console.error('[JG STATS] ✗ Failed to track:', actionType, '- Error:', result.data);
-          }
-        })
-        .catch(function(error) {
-          console.error('[JG STATS] ✗ Network/parse error tracking:', actionType, error);
+        }).catch(function() {
+          // Silent fail
         });
       }
 
@@ -3002,13 +2980,8 @@
        * Render stats modal content (for real-time updates)
        */
       function renderStatsContent(p) {
-        console.log('[JG STATS RENDER] renderStatsContent called for point #' + p.id);
-        console.log('[JG STATS RENDER] p.stats exists?', !!p.stats);
-        console.log('[JG STATS RENDER] p.stats value:', p.stats);
-
         // Initialize stats object if not present (for new sponsored places)
         if (!p.stats) {
-          console.warn('[JG STATS RENDER] WARNING: p.stats is null/undefined, creating empty stats object');
           p.stats = {
             views: 0,
             phone_clicks: 0,
@@ -3021,8 +2994,6 @@
             unique_visitors: 0,
             avg_time_spent: 0
           };
-        } else {
-          console.log('[JG STATS RENDER] p.stats contains:', JSON.stringify(p.stats, null, 2));
         }
 
         var totalSocialClicks = 0;
@@ -4596,13 +4567,9 @@
 
         // Track view for sponsored pins with unique visitor detection
         var viewStartTime = Date.now();
-        console.log('[JG STATS DEBUG] Opening details for point #' + p.id + ', sponsored:', p.sponsored, 'is_promo:', p.is_promo);
         if (p.sponsored) {
-          console.log('[JG STATS DEBUG] Tracking view for sponsored point #' + p.id);
           var isUnique = isUniqueVisitor(p.id);
           trackStat(p.id, 'view', { is_unique: isUnique }, p.author_id);
-        } else {
-          console.log('[JG STATS DEBUG] NOT tracking - point #' + p.id + ' is not sponsored');
         }
 
         qs('#dlg-close', modalView).onclick = function() {
@@ -4809,10 +4776,6 @@
           // Stats button handler
           var statsBtn = qs('#btn-stats', modalView);
           if (statsBtn) statsBtn.onclick = function() {
-            console.log('[JG STATS MODAL] Opening stats modal for point #' + p.id);
-            console.log('[JG STATS MODAL] Point data:', p);
-            console.log('[JG STATS MODAL] p.stats exists?', !!p.stats);
-            console.log('[JG STATS MODAL] p.stats value:', p.stats);
             openStatsModal(p);
           };
 
