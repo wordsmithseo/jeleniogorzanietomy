@@ -6388,7 +6388,152 @@
               });
             }
 
-            // Rest of the modal setup logic will be handled by existing code
+            // Setup form handlers
+            var form = qs('#add-form', modalAdd);
+            var msg = qs('#add-msg', modalAdd);
+
+            // Character counter for description
+            var contentInput = qs('#add-content-input', modalAdd);
+            var contentCounter = qs('#add-content-counter', modalAdd);
+            if (contentInput && contentCounter) {
+              contentInput.addEventListener('input', function() {
+                var length = this.value.length;
+                var maxLength = 200;
+                contentCounter.textContent = length + ' / ' + maxLength + ' znaków';
+                if (length > maxLength * 0.9) {
+                  contentCounter.style.color = '#d97706';
+                } else {
+                  contentCounter.style.color = '#666';
+                }
+              });
+            }
+
+            // Image preview functionality
+            var imagesInput = qs('#add-images-input', modalAdd);
+            var imagesPreview = qs('#add-images-preview', modalAdd);
+
+            if (imagesInput) {
+              imagesInput.addEventListener('change', function(e) {
+                imagesPreview.innerHTML = '';
+                var files = e.target.files;
+
+                if (files.length > 6) {
+                  msg.textContent = 'Uwaga: Możesz dodać maksymalnie 6 zdjęć. Pierwsze 6 zostanie użytych.';
+                  msg.style.color = '#d97706';
+                } else if (msg.textContent.indexOf('maksymalnie 6') !== -1) {
+                  msg.textContent = '';
+                }
+
+                if (files.length > 0) {
+                  imagesPreview.style.display = 'grid';
+                  var maxFiles = Math.min(files.length, 6);
+                  for (var i = 0; i < maxFiles; i++) {
+                    var file = files[i];
+                    var reader = new FileReader();
+
+                    reader.onload = (function(f) {
+                      return function(e) {
+                        var imgHtml = '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid #e5e7eb">' +
+                          '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover" alt="Podgląd">' +
+                          '</div>';
+                        imagesPreview.innerHTML += imgHtml;
+                      };
+                    })(file);
+
+                    reader.readAsDataURL(file);
+                  }
+                } else {
+                  imagesPreview.style.display = 'none';
+                }
+              });
+            }
+
+            // Toggle category field based on type selection
+            var typeSelect = qs('#add-type-select', modalAdd);
+            var categoryField = qs('#add-category-field', modalAdd);
+            var categorySelect = qs('#add-category-select', modalAdd);
+
+            if (typeSelect && categoryField && categorySelect) {
+              // Function to toggle category field visibility
+              function toggleCategoryField() {
+                if (typeSelect.value === 'zgloszenie') {
+                  categoryField.style.display = 'block';
+                  categorySelect.setAttribute('required', 'required');
+                } else {
+                  categoryField.style.display = 'none';
+                  categorySelect.removeAttribute('required');
+                  categorySelect.value = ''; // Clear selection when hidden
+                }
+              }
+
+              // Initial toggle on page load (default is zgloszenie)
+              toggleCategoryField();
+
+              // Listen for changes
+              typeSelect.addEventListener('change', toggleCategoryField);
+            }
+
+            // Form submission handler
+            form.onsubmit = function(e) {
+              e.preventDefault();
+              msg.textContent = 'Wysyłanie...';
+
+              var fd = new FormData(form);
+              fd.append('action', 'jg_submit_point');
+              fd.append('_ajax_nonce', CFG.nonce);
+
+              fetch(CFG.ajax, {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin'
+              })
+              .then(function(r) {
+                return r.text();
+              })
+              .then(function(t) {
+                var j = null;
+                try {
+                  j = JSON.parse(t);
+                } catch (_) {}
+
+                if (!j || j.success === false) {
+                  // Handle duplicate point error specially
+                  if (j && j.data && j.data.duplicate_point_id) {
+                    var duplicatePointId = j.data.duplicate_point_id;
+                    msg.innerHTML = (j.data.message || 'Błąd') + ' <br><button style="margin-top:8px;padding:6px 12px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="' +
+                      'document.getElementById(\'jg-map-modal-add\').style.display=\'none\';' +
+                      'window.location.hash=\'#point-' + duplicatePointId + '\';' +
+                      '">Zobacz istniejące zgłoszenie</button>';
+                    msg.style.color = '#b91c1c';
+                    return;
+                  }
+                  throw new Error((j && j.data && j.data.message) || 'Błąd');
+                }
+
+                lastSubmitTime = Date.now();
+
+                msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
+                msg.style.color = '#15803d';
+                form.reset();
+
+                // Immediate refresh for better UX
+                refreshAll().then(function() {
+                  msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
+                  setTimeout(function() {
+                    close(modalAdd);
+                  }, 800);
+                }).catch(function(err) {
+                  debugError('[JG FAB] Błąd odświeżania:', err);
+                  setTimeout(function() {
+                    close(modalAdd);
+                  }, 1000);
+                });
+              })
+              .catch(function(err) {
+                msg.textContent = err.message || 'Błąd';
+                msg.style.color = '#b91c1c';
+              });
+            };
           })
           .catch(function(err) {
             debugError('[JG FAB] Error fetching limits:', err);
