@@ -2911,10 +2911,14 @@
        * Excludes tracking for point owner
        */
       function trackStat(pointId, actionType, extraData, pointOwnerId) {
-        if (!pointId) return;
+        if (!pointId) {
+          if (CFG.debug) console.warn('[JG STATS] trackStat called without pointId');
+          return;
+        }
 
         // Don't track owner's own interactions
         if (CFG.currentUserId && pointOwnerId && parseInt(CFG.currentUserId) === parseInt(pointOwnerId)) {
+          if (CFG.debug) console.log('[JG STATS] Skipping tracking for owner (point #' + pointId + ')');
           return;
         }
 
@@ -2930,12 +2934,31 @@
           }
         }
 
+        if (CFG.debug) {
+          console.log('[JG STATS] Tracking:', actionType, 'for point #' + pointId, extraData || '');
+        }
+
         fetch(CFG.ajax, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams(data)
-        }).catch(function() {
-          // Silent fail
+        })
+        .then(function(response) {
+          return response.json();
+        })
+        .then(function(result) {
+          if (CFG.debug) {
+            if (result.success) {
+              console.log('[JG STATS] ✓ Successfully tracked:', actionType, 'for point #' + pointId);
+            } else {
+              console.error('[JG STATS] ✗ Failed to track:', actionType, result.data);
+            }
+          }
+        })
+        .catch(function(error) {
+          if (CFG.debug) {
+            console.error('[JG STATS] ✗ Network error tracking:', actionType, error);
+          }
         });
       }
 
@@ -2945,20 +2968,28 @@
        */
       function isUniqueVisitor(pointId) {
         try {
+          // FIX: Ensure consistent type (convert to string for comparison)
+          var pointIdStr = String(pointId);
           var visited = localStorage.getItem('jg_visited_points');
           var visitedPoints = visited ? JSON.parse(visited) : [];
 
-          if (visitedPoints.indexOf(pointId) === -1) {
-            visitedPoints.push(pointId);
+          // Ensure all existing IDs are strings for consistent comparison
+          visitedPoints = visitedPoints.map(function(id) { return String(id); });
+
+          if (visitedPoints.indexOf(pointIdStr) === -1) {
+            visitedPoints.push(pointIdStr);
             // Keep only last 1000 to prevent overflow
             if (visitedPoints.length > 1000) {
               visitedPoints = visitedPoints.slice(-1000);
             }
             localStorage.setItem('jg_visited_points', JSON.stringify(visitedPoints));
+            if (CFG.debug) console.log('[JG STATS] First visit for point #' + pointId);
             return true; // First visit!
           }
+          if (CFG.debug) console.log('[JG STATS] Returning visitor for point #' + pointId);
           return false; // Already visited
         } catch (e) {
+          if (CFG.debug) console.error('[JG STATS] Error in isUniqueVisitor:', e);
           return false;
         }
       }
