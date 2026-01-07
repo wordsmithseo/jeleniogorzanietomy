@@ -1457,6 +1457,13 @@ class JG_Map_Ajax_Handlers {
         $content = wp_kses_post($_POST['content'] ?? '');
         $website = sanitize_text_field($_POST['website'] ?? '');
         $phone = sanitize_text_field($_POST['phone'] ?? '');
+
+        // Social media URLs
+        $facebook_url = !empty($_POST['facebook_url']) ? $this->normalize_social_url($_POST['facebook_url'], 'facebook') : '';
+        $instagram_url = !empty($_POST['instagram_url']) ? $this->normalize_social_url($_POST['instagram_url'], 'instagram') : '';
+        $linkedin_url = !empty($_POST['linkedin_url']) ? $this->normalize_social_url($_POST['linkedin_url'], 'linkedin') : '';
+        $tiktok_url = !empty($_POST['tiktok_url']) ? $this->normalize_social_url($_POST['tiktok_url'], 'tiktok') : '';
+
         $cta_enabled = isset($_POST['cta_enabled']) ? 1 : 0;
         $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
@@ -1506,11 +1513,15 @@ class JG_Map_Ajax_Handlers {
             'excerpt' => wp_trim_words($content, 20)
         );
 
-        // Add website, phone, and CTA if point is sponsored
+        // Add website, phone, social media, and CTA if point is sponsored
         $is_sponsored = (bool)$point['is_promo'];
         if ($is_sponsored) {
             $update_data['website'] = !empty($website) ? $website : null;
             $update_data['phone'] = !empty($phone) ? $phone : null;
+            $update_data['facebook_url'] = !empty($facebook_url) ? $facebook_url : null;
+            $update_data['instagram_url'] = !empty($instagram_url) ? $instagram_url : null;
+            $update_data['linkedin_url'] = !empty($linkedin_url) ? $linkedin_url : null;
+            $update_data['tiktok_url'] = !empty($tiktok_url) ? $tiktok_url : null;
             $update_data['cta_enabled'] = $cta_enabled;
             $update_data['cta_type'] = !empty($cta_type) ? $cta_type : null;
         }
@@ -2474,7 +2485,7 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
-        // Add website, phone, and CTA if point is sponsored and they are in new_values
+        // Add website, phone, social media, and CTA if point is sponsored and they are in new_values
         $is_sponsored = (bool)$point['is_promo'];
         if ($is_sponsored) {
             if (isset($new_values['website'])) {
@@ -2482,6 +2493,18 @@ class JG_Map_Ajax_Handlers {
             }
             if (isset($new_values['phone'])) {
                 $update_data['phone'] = $new_values['phone'];
+            }
+            if (isset($new_values['facebook_url'])) {
+                $update_data['facebook_url'] = $new_values['facebook_url'];
+            }
+            if (isset($new_values['instagram_url'])) {
+                $update_data['instagram_url'] = $new_values['instagram_url'];
+            }
+            if (isset($new_values['linkedin_url'])) {
+                $update_data['linkedin_url'] = $new_values['linkedin_url'];
+            }
+            if (isset($new_values['tiktok_url'])) {
+                $update_data['tiktok_url'] = $new_values['tiktok_url'];
             }
             if (isset($new_values['cta_enabled'])) {
                 $update_data['cta_enabled'] = $new_values['cta_enabled'];
