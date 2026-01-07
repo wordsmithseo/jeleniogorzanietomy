@@ -4177,6 +4177,18 @@ class JG_Map_Ajax_Handlers {
                     // Calculate new average: (current_avg * (views - 1) + time_spent) / views
                     $new_avg = round(($current_avg * ($current_views - 1) + $time_spent) / $current_views);
 
+                    // DEBUG: Log calculation
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log(sprintf(
+                            '[JG STATS] time_spent calc: point #%d, time=%ds, views=%d, old_avg=%ds, new_avg=%ds',
+                            $point_id,
+                            $time_spent,
+                            $current_views,
+                            $current_avg,
+                            $new_avg
+                        ));
+                    }
+
                     $result = $wpdb->query($wpdb->prepare(
                         "UPDATE $table SET stats_avg_time_spent = %d WHERE id = %d",
                         $new_avg,

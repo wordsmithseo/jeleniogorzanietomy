@@ -3023,8 +3023,15 @@
             var imgClicks = parseInt(p.stats.gallery_clicks[i] || 0);
             totalGalleryClicks += imgClicks;
             if (imgClicks > 0) {
-              var imgThumb = p.images[i].thumbnail || p.images[i].url;
-              galleryBreakdown.push('<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:#f9fafb;border-radius:6px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:10px"><img src="' + esc(imgThumb) + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px" alt=""><span>Zdjęcie #' + (i + 1) + '</span></div><div style="font-size:18px;font-weight:600;color:#374151">' + imgClicks + '</div></div>');
+              // FIX: Handle both old format (string URL) and new format (object with thumb/full)
+              var imgData = p.images[i];
+              var imgThumb = '';
+              if (typeof imgData === 'object') {
+                imgThumb = imgData.thumb || imgData.full || imgData.url || '';
+              } else {
+                imgThumb = imgData; // Old format - just a string URL
+              }
+              galleryBreakdown.push('<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:#f9fafb;border-radius:6px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:10px"><img src="' + esc(imgThumb) + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px" alt="Zdjęcie #' + (i + 1) + '"><span>Zdjęcie #' + (i + 1) + '</span></div><div style="font-size:18px;font-weight:600;color:#374151">' + imgClicks + '</div></div>');
             }
           }
         }
@@ -3053,13 +3060,17 @@
           '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px">' +
           '<div style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">📞 Telefon</div><div style="font-size:32px;font-weight:700">' + (p.stats.phone_clicks || 0) + '</div></div>' +
           '<div style="padding:16px;background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);border-radius:12px;box-shadow:0 4px 12px rgba(79,172,254,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🌐 Strona WWW</div><div style="font-size:32px;font-weight:700">' + (p.stats.website_clicks || 0) + '</div></div>' +
-          '<div style="padding:16px;background:linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);border-radius:12px;box-shadow:0 4px 12px rgba(67,233,123,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">📱 Social media</div><div style="font-size:32px;font-weight:700">' + totalSocialClicks + '</div></div>' +
           '<div style="padding:16px;background:linear-gradient(135deg, #ffa751 0%, #ffe259 100%);border-radius:12px;box-shadow:0 4px 12px rgba(255,167,81,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🎯 CTA</div><div style="font-size:32px;font-weight:700">' + (p.stats.cta_clicks || 0) + '</div></div>' +
           '<div style="padding:16px;background:linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);border-radius:12px;box-shadow:0 4px 12px rgba(168,237,234,0.3);color:#333"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🖼️ Galeria</div><div style="font-size:32px;font-weight:700">' + totalGalleryClicks + '</div></div>' +
           '</div></div>' +
 
-          // Social media breakdown
-          (socialBreakdown.length > 0 ? '<div style="margin-bottom:24px"><h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;font-weight:600">Szczegóły kliknięć social media</h4>' + socialBreakdown.join('') + '</div>' : '') +
+          // Social media clicks - separate tiles for each platform
+          (totalSocialClicks > 0 ? '<div style="margin-bottom:24px"><h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;font-weight:600">Social media</h4><div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px">' +
+            '<div style="padding:16px;background:linear-gradient(135deg, #1877f2 0%, #0c65d8 100%);border-radius:12px;box-shadow:0 4px 12px rgba(24,119,242,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">📘 Facebook</div><div style="font-size:32px;font-weight:700">' + (p.stats.social_clicks.facebook || 0) + '</div></div>' +
+            '<div style="padding:16px;background:linear-gradient(135deg, #e1306c 0%, #c13584 100%);border-radius:12px;box-shadow:0 4px 12px rgba(225,48,108,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">📷 Instagram</div><div style="font-size:32px;font-weight:700">' + (p.stats.social_clicks.instagram || 0) + '</div></div>' +
+            '<div style="padding:16px;background:linear-gradient(135deg, #0077b5 0%, #005582 100%);border-radius:12px;box-shadow:0 4px 12px rgba(0,119,181,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">💼 LinkedIn</div><div style="font-size:32px;font-weight:700">' + (p.stats.social_clicks.linkedin || 0) + '</div></div>' +
+            '<div style="padding:16px;background:linear-gradient(135deg, #000 0%, #333 100%);border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🎵 TikTok</div><div style="font-size:32px;font-weight:700">' + (p.stats.social_clicks.tiktok || 0) + '</div></div>' +
+          '</div></div>' : '') +
 
           // Gallery breakdown
           (galleryBreakdown.length > 0 ? '<div style="margin-bottom:24px"><h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;font-weight:600">Najpopularniejsze zdjęcia</h4>' + galleryBreakdown.join('') + '</div>' : '') +
@@ -4576,8 +4587,11 @@
           // Track time spent before closing (for sponsored pins)
           if (p.sponsored) {
             var timeSpent = Math.round((Date.now() - viewStartTime) / 1000); // seconds
+            if (CFG.debug) console.log('[JG STATS] Closing modal, time spent:', timeSpent, 'seconds');
             if (timeSpent > 0 && timeSpent < 3600) { // Max 1 hour to filter out abandoned tabs
               trackStat(p.id, 'time_spent', { time_spent: timeSpent }, p.author_id);
+            } else {
+              if (CFG.debug) console.log('[JG STATS] Time spent out of range (0 or > 3600), not tracking');
             }
           }
           close(modalView);
