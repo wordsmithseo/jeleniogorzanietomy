@@ -4585,9 +4585,13 @@
 
         // Track view for sponsored pins with unique visitor detection
         var viewStartTime = Date.now();
+        console.log('[JG STATS DEBUG] Opening details for point #' + p.id + ', sponsored:', p.sponsored, 'is_promo:', p.is_promo);
         if (p.sponsored) {
+          console.log('[JG STATS DEBUG] Tracking view for sponsored point #' + p.id);
           var isUnique = isUniqueVisitor(p.id);
           trackStat(p.id, 'view', { is_unique: isUnique }, p.author_id);
+        } else {
+          console.log('[JG STATS DEBUG] NOT tracking - point #' + p.id + ' is not sponsored');
         }
 
         qs('#dlg-close', modalView).onclick = function() {
