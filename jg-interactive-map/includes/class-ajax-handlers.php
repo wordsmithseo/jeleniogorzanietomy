@@ -4100,6 +4100,8 @@ class JG_Map_Ajax_Handlers {
         $action_type = isset($_POST['action_type']) ? sanitize_text_field($_POST['action_type']) : '';
         $platform = isset($_POST['platform']) ? sanitize_text_field($_POST['platform']) : '';
         $image_index = isset($_POST['image_index']) ? intval($_POST['image_index']) : -1;
+        $time_spent = isset($_POST['time_spent']) ? intval($_POST['time_spent']) : 0;
+        $is_unique = isset($_POST['is_unique']) ? (bool)$_POST['is_unique'] : false;
 
         if (!$point_id || !$action_type) {
             wp_send_json_error(array('message' => 'Brak wymaganych parametrów'));
@@ -4108,7 +4110,7 @@ class JG_Map_Ajax_Handlers {
 
         // Check if point exists and is sponsored
         $point = $wpdb->get_row($wpdb->prepare(
-            "SELECT id, is_promo, stats_first_viewed, stats_social_clicks, stats_gallery_clicks FROM $table WHERE id = %d",
+            "SELECT id, is_promo, stats_first_viewed, stats_social_clicks, stats_gallery_clicks, stats_views, stats_unique_visitors, stats_avg_time_spent FROM $table WHERE id = %d",
             $point_id
         ), ARRAY_A);
 
@@ -4129,9 +4131,28 @@ class JG_Map_Ajax_Handlers {
         switch ($action_type) {
             case 'view':
                 // Increment view counter and update last viewed
+                $updates = array(
+                    'stats_views' => 'COALESCE(stats_views, 0) + 1',
+                    'stats_last_viewed' => $current_time
+                );
+
+                // Track unique visitor if flagged
+                if ($is_unique) {
+                    $updates['stats_unique_visitors'] = 'COALESCE(stats_unique_visitors, 0) + 1';
+                }
+
+                // Build UPDATE query
+                $update_parts = array();
+                foreach ($updates as $col => $val) {
+                    if ($col === 'stats_last_viewed') {
+                        $update_parts[] = "$col = '" . esc_sql($val) . "'";
+                    } else {
+                        $update_parts[] = "$col = $val";
+                    }
+                }
+
                 $result = $wpdb->query($wpdb->prepare(
-                    "UPDATE $table SET stats_views = COALESCE(stats_views, 0) + 1, stats_last_viewed = %s WHERE id = %d",
-                    $current_time,
+                    "UPDATE $table SET " . implode(', ', $update_parts) . " WHERE id = %d",
                     $point_id
                 ));
 
@@ -4140,6 +4161,23 @@ class JG_Map_Ajax_Handlers {
                     $wpdb->query($wpdb->prepare(
                         "UPDATE $table SET stats_first_viewed = %s WHERE id = %d",
                         $current_time,
+                        $point_id
+                    ));
+                }
+                break;
+
+            case 'time_spent':
+                // Update average time spent
+                if ($time_spent > 0) {
+                    $current_views = intval($point['stats_views']) ?: 1;
+                    $current_avg = intval($point['stats_avg_time_spent']) ?: 0;
+
+                    // Calculate new average: (current_avg * (views - 1) + time_spent) / views
+                    $new_avg = round(($current_avg * ($current_views - 1) + $time_spent) / $current_views);
+
+                    $result = $wpdb->query($wpdb->prepare(
+                        "UPDATE $table SET stats_avg_time_spent = %d WHERE id = %d",
+                        $new_avg,
                         $point_id
                     ));
                 }
