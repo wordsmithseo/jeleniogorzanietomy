@@ -30,3 +30,6 @@ error_log
 *.tmp
 *.temp
 *~
+
+# Debug/test files
+check-category-in-db.php
