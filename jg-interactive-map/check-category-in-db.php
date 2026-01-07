@@ -1,4 +1,9 @@
 <?php
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * Direct database query to check category column value
  * Run this by visiting: https://jeleniogorzanietomy.pl/wp-content/plugins/jg-interactive-map/check-category-in-db.php

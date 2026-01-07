@@ -22,10 +22,10 @@ class JG_Map_Database {
         $table_points = $wpdb->prefix . 'jg_map_points';
 
         // Check if category column exists, add it if it doesn't
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_points LIKE 'category'");
+        $safe_table = esc_sql($table_points);
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `%s` LIKE %s", $safe_table, 'category'));
         if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $table_points ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
-        } else {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
         }
 
         // Table for votes
@@ -175,10 +175,11 @@ class JG_Map_Database {
     public static function check_and_update_schema() {
         global $wpdb;
         $table = self::get_points_table();
+        $safe_table = esc_sql($table);
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.3.8'; // Updated for rejection_reason in history table
+        $current_schema_version = '3.3.9'; // Updated for SQL injection fixes
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -194,103 +195,88 @@ class JG_Map_Database {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-sync-manager.php';
         JG_Map_Sync_Manager::create_table();
 
+        // Helper function to check if column exists
+        $column_exists = function($column_name) use ($wpdb, $safe_table) {
+            $result = $wpdb->get_results($wpdb->prepare(
+                "SHOW COLUMNS FROM `$safe_table` LIKE %s",
+                $column_name
+            ));
+            return !empty($result);
+        };
+
         // Check if category column exists (added in v3.2.x for report categorization)
-        $category_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'category'");
-        if (empty($category_exists)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
+        if (!$column_exists('category')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
         }
 
         // Check if promo_until column exists
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'promo_until'");
-        if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN promo_until datetime DEFAULT NULL AFTER is_promo");
+        if (!$column_exists('promo_until')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN promo_until datetime DEFAULT NULL AFTER is_promo");
         }
 
         // Check if deletion request columns exist
-        $deletion_requested = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'is_deletion_requested'");
-        if (empty($deletion_requested)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN is_deletion_requested tinyint(1) DEFAULT 0 AFTER author_hidden");
+        if (!$column_exists('is_deletion_requested')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN is_deletion_requested tinyint(1) DEFAULT 0 AFTER author_hidden");
         }
 
-        $deletion_reason = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'deletion_reason'");
-        if (empty($deletion_reason)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN deletion_reason text DEFAULT NULL AFTER is_deletion_requested");
+        if (!$column_exists('deletion_reason')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN deletion_reason text DEFAULT NULL AFTER is_deletion_requested");
         }
 
-        $deletion_requested_at = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'deletion_requested_at'");
-        if (empty($deletion_requested_at)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN deletion_requested_at datetime DEFAULT NULL AFTER deletion_reason");
+        if (!$column_exists('deletion_requested_at')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN deletion_requested_at datetime DEFAULT NULL AFTER deletion_reason");
         }
 
         // Check if website column exists (for sponsored points)
-        $website = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'website'");
-        if (empty($website)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN website varchar(255) DEFAULT NULL AFTER promo_until");
+        if (!$column_exists('website')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN website varchar(255) DEFAULT NULL AFTER promo_until");
         }
 
         // Check if phone column exists (for sponsored points)
-        $phone = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'phone'");
-        if (empty($phone)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN phone varchar(50) DEFAULT NULL AFTER website");
+        if (!$column_exists('phone')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN phone varchar(50) DEFAULT NULL AFTER website");
         }
 
         // Check if cta_enabled column exists (for sponsored points CTA)
-        $cta_enabled = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'cta_enabled'");
-        if (empty($cta_enabled)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN cta_enabled tinyint(1) DEFAULT 0 AFTER phone");
+        if (!$column_exists('cta_enabled')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN cta_enabled tinyint(1) DEFAULT 0 AFTER phone");
         }
 
         // Check if cta_type column exists (for sponsored points CTA - 'call' or 'website')
-        $cta_type = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'cta_type'");
-        if (empty($cta_type)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN cta_type varchar(20) DEFAULT NULL AFTER cta_enabled");
+        if (!$column_exists('cta_type')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN cta_type varchar(20) DEFAULT NULL AFTER cta_enabled");
         }
 
         // Check if address column exists (for geocoding)
-        $address = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'address'");
-        if (empty($address)) {
-            $result = $wpdb->query("ALTER TABLE $table ADD COLUMN address varchar(500) DEFAULT NULL AFTER lng");
-        } else {
-        }
-
-        // Check if category column exists (for report categories)
-        $category = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'category'");
-        if (empty($category)) {
-            $result = $wpdb->query("ALTER TABLE $table ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
-            if ($result === false) {
-            }
-        } else {
+        if (!$column_exists('address')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN address varchar(500) DEFAULT NULL AFTER lng");
         }
 
         // Check if approved_at column exists (for tracking approval date)
-        $approved_at = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'approved_at'");
-        if (empty($approved_at)) {
-            $result = $wpdb->query("ALTER TABLE $table ADD COLUMN approved_at datetime DEFAULT NULL AFTER created_at");
-            if ($result === false) {
-            }
-        } else {
+        if (!$column_exists('approved_at')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN approved_at datetime DEFAULT NULL AFTER created_at");
         }
 
         // Check if slug column exists (for SEO-friendly URLs)
-        $slug = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'slug'");
         $slug_was_added = false;
-        if (empty($slug)) {
-            $result = $wpdb->query("ALTER TABLE $table ADD COLUMN slug varchar(255) DEFAULT NULL AFTER title");
+        if (!$column_exists('slug')) {
+            $result = $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN slug varchar(255) DEFAULT NULL AFTER title");
             if ($result !== false) {
                 // Add unique index
-                $wpdb->query("ALTER TABLE $table ADD UNIQUE KEY slug (slug)");
+                $wpdb->query("ALTER TABLE `$safe_table` ADD UNIQUE KEY slug (slug)");
 
                 // Generate slugs for existing points
                 self::migrate_generate_slugs();
 
                 // Mark that slug was added so we can flush rewrite rules
                 $slug_was_added = true;
-            } else {
             }
         } else {
-
             // Check if there are any points without slugs and generate them
-            $points_without_slugs = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE slug IS NULL OR slug = ''");
+            $points_without_slugs = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM `$safe_table` WHERE slug IS NULL OR slug = %s",
+                ''
+            ));
             if ($points_without_slugs > 0) {
                 self::migrate_generate_slugs();
             }
@@ -303,76 +289,58 @@ class JG_Map_Database {
             update_option('jg_map_needs_rewrite_flush', true);
         }
 
-        // Check if relevance_votes table exists (for "Nadal aktualne?" voting)
-        $table_relevance_votes = $wpdb->prefix . 'jg_map_relevance_votes';
-        $relevance_table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_relevance_votes'");
-        if ($relevance_table_exists != $table_relevance_votes) {
-            $charset_collate = $wpdb->get_charset_collate();
-            $sql_relevance_votes = "CREATE TABLE IF NOT EXISTS $table_relevance_votes (
-                id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-                point_id bigint(20) UNSIGNED NOT NULL,
-                user_id bigint(20) UNSIGNED NOT NULL,
-                vote_type varchar(10) NOT NULL,
-                created_at datetime DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                UNIQUE KEY user_point (user_id, point_id),
-                KEY point_id (point_id)
-            ) $charset_collate;";
-            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-            dbDelta($sql_relevance_votes);
-        } else {
-        }
-
         // Check if featured_image_index column exists (for OG/social media featured image)
-        $featured_image_index = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'featured_image_index'");
-        if (empty($featured_image_index)) {
-            $result = $wpdb->query("ALTER TABLE $table ADD COLUMN featured_image_index int DEFAULT 0 AFTER images");
-        } else {
+        if (!$column_exists('featured_image_index')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN featured_image_index int DEFAULT 0 AFTER images");
         }
 
         // Check if social media columns exist (for sponsored places)
-        $social_columns = array(
-            'facebook_url' => "ALTER TABLE $table ADD COLUMN facebook_url varchar(255) DEFAULT NULL AFTER phone",
-            'instagram_url' => "ALTER TABLE $table ADD COLUMN instagram_url varchar(255) DEFAULT NULL AFTER facebook_url",
-            'linkedin_url' => "ALTER TABLE $table ADD COLUMN linkedin_url varchar(255) DEFAULT NULL AFTER instagram_url",
-            'tiktok_url' => "ALTER TABLE $table ADD COLUMN tiktok_url varchar(255) DEFAULT NULL AFTER linkedin_url"
+        $social_columns = array('facebook_url', 'instagram_url', 'linkedin_url', 'tiktok_url');
+        $social_definitions = array(
+            'facebook_url' => "ALTER TABLE `$safe_table` ADD COLUMN facebook_url varchar(255) DEFAULT NULL AFTER phone",
+            'instagram_url' => "ALTER TABLE `$safe_table` ADD COLUMN instagram_url varchar(255) DEFAULT NULL AFTER facebook_url",
+            'linkedin_url' => "ALTER TABLE `$safe_table` ADD COLUMN linkedin_url varchar(255) DEFAULT NULL AFTER instagram_url",
+            'tiktok_url' => "ALTER TABLE `$safe_table` ADD COLUMN tiktok_url varchar(255) DEFAULT NULL AFTER linkedin_url"
         );
 
-        foreach ($social_columns as $column_name => $alter_query) {
-            $column_check = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE '$column_name'");
-            if (empty($column_check)) {
-                $result = $wpdb->query($alter_query);
-            } else {
+        foreach ($social_columns as $column_name) {
+            if (!$column_exists($column_name)) {
+                $wpdb->query($social_definitions[$column_name]);
             }
         }
 
         // Check if statistics columns exist (for analytics)
-        $stats_columns = array(
-            'stats_views' => "ALTER TABLE $table ADD COLUMN stats_views int DEFAULT 0 AFTER tiktok_url",
-            'stats_phone_clicks' => "ALTER TABLE $table ADD COLUMN stats_phone_clicks int DEFAULT 0 AFTER stats_views",
-            'stats_website_clicks' => "ALTER TABLE $table ADD COLUMN stats_website_clicks int DEFAULT 0 AFTER stats_phone_clicks",
-            'stats_social_clicks' => "ALTER TABLE $table ADD COLUMN stats_social_clicks longtext DEFAULT NULL AFTER stats_website_clicks",
-            'stats_cta_clicks' => "ALTER TABLE $table ADD COLUMN stats_cta_clicks int DEFAULT 0 AFTER stats_social_clicks",
-            'stats_gallery_clicks' => "ALTER TABLE $table ADD COLUMN stats_gallery_clicks longtext DEFAULT NULL AFTER stats_cta_clicks",
-            'stats_first_viewed' => "ALTER TABLE $table ADD COLUMN stats_first_viewed datetime DEFAULT NULL AFTER stats_gallery_clicks",
-            'stats_last_viewed' => "ALTER TABLE $table ADD COLUMN stats_last_viewed datetime DEFAULT NULL AFTER stats_first_viewed",
-            'stats_unique_visitors' => "ALTER TABLE $table ADD COLUMN stats_unique_visitors int DEFAULT 0 AFTER stats_last_viewed",
-            'stats_avg_time_spent' => "ALTER TABLE $table ADD COLUMN stats_avg_time_spent int DEFAULT 0 AFTER stats_unique_visitors"
+        $stats_columns = array('stats_views', 'stats_phone_clicks', 'stats_website_clicks', 'stats_social_clicks',
+                              'stats_cta_clicks', 'stats_gallery_clicks', 'stats_first_viewed', 'stats_last_viewed',
+                              'stats_unique_visitors', 'stats_avg_time_spent');
+        $stats_definitions = array(
+            'stats_views' => "ALTER TABLE `$safe_table` ADD COLUMN stats_views int DEFAULT 0 AFTER tiktok_url",
+            'stats_phone_clicks' => "ALTER TABLE `$safe_table` ADD COLUMN stats_phone_clicks int DEFAULT 0 AFTER stats_views",
+            'stats_website_clicks' => "ALTER TABLE `$safe_table` ADD COLUMN stats_website_clicks int DEFAULT 0 AFTER stats_phone_clicks",
+            'stats_social_clicks' => "ALTER TABLE `$safe_table` ADD COLUMN stats_social_clicks longtext DEFAULT NULL AFTER stats_website_clicks",
+            'stats_cta_clicks' => "ALTER TABLE `$safe_table` ADD COLUMN stats_cta_clicks int DEFAULT 0 AFTER stats_social_clicks",
+            'stats_gallery_clicks' => "ALTER TABLE `$safe_table` ADD COLUMN stats_gallery_clicks longtext DEFAULT NULL AFTER stats_cta_clicks",
+            'stats_first_viewed' => "ALTER TABLE `$safe_table` ADD COLUMN stats_first_viewed datetime DEFAULT NULL AFTER stats_gallery_clicks",
+            'stats_last_viewed' => "ALTER TABLE `$safe_table` ADD COLUMN stats_last_viewed datetime DEFAULT NULL AFTER stats_first_viewed",
+            'stats_unique_visitors' => "ALTER TABLE `$safe_table` ADD COLUMN stats_unique_visitors int DEFAULT 0 AFTER stats_last_viewed",
+            'stats_avg_time_spent' => "ALTER TABLE `$safe_table` ADD COLUMN stats_avg_time_spent int DEFAULT 0 AFTER stats_unique_visitors"
         );
 
-        foreach ($stats_columns as $column_name => $alter_query) {
-            $column_check = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE '$column_name'");
-            if (empty($column_check)) {
-                $result = $wpdb->query($alter_query);
-            } else {
+        foreach ($stats_columns as $column_name) {
+            if (!$column_exists($column_name)) {
+                $wpdb->query($stats_definitions[$column_name]);
             }
         }
 
         // Check if rejection_reason column exists in history table (for moderation transparency)
         $table_history = self::get_history_table();
-        $rejection_reason = $wpdb->get_results("SHOW COLUMNS FROM $table_history LIKE 'rejection_reason'");
-        if (empty($rejection_reason)) {
-            $wpdb->query("ALTER TABLE $table_history ADD COLUMN rejection_reason text DEFAULT NULL AFTER resolved_by");
+        $safe_history = esc_sql($table_history);
+        $rejection_exists = $wpdb->get_results($wpdb->prepare(
+            "SHOW COLUMNS FROM `$safe_history` LIKE %s",
+            'rejection_reason'
+        ));
+        if (empty($rejection_exists)) {
+            $wpdb->query("ALTER TABLE `$safe_history` ADD COLUMN rejection_reason text DEFAULT NULL AFTER resolved_by");
         }
 
         // Cache the schema version to avoid running these checks on every page load
@@ -854,75 +822,6 @@ class JG_Map_Database {
         );
     }
 
-    /**
-     * Get relevance votes count for a point (for "Nadal aktualne?" voting)
-     */
-    public static function get_relevance_votes_count($point_id) {
-        global $wpdb;
-        $table = self::get_relevance_votes_table();
-
-        $up = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*) FROM $table WHERE point_id = %d AND vote_type = 'up'",
-                $point_id
-            )
-        );
-
-        $down = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*) FROM $table WHERE point_id = %d AND vote_type = 'down'",
-                $point_id
-            )
-        );
-
-        return intval($up) - intval($down);
-    }
-
-    /**
-     * Get user's relevance vote for a point
-     */
-    public static function get_user_relevance_vote($point_id, $user_id) {
-        global $wpdb;
-        $table = self::get_relevance_votes_table();
-
-        return $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT vote_type FROM $table WHERE point_id = %d AND user_id = %d",
-                $point_id,
-                $user_id
-            )
-        );
-    }
-
-    /**
-     * Set user relevance vote
-     */
-    public static function set_relevance_vote($point_id, $user_id, $vote_type) {
-        global $wpdb;
-        $table = self::get_relevance_votes_table();
-
-        // Delete existing vote first
-        $wpdb->delete(
-            $table,
-            array('point_id' => $point_id, 'user_id' => $user_id)
-        );
-
-        // Insert new vote if not removing
-        if (!empty($vote_type)) {
-            $wpdb->insert(
-                $table,
-                array(
-                    'point_id' => $point_id,
-                    'user_id' => $user_id,
-                    'vote_type' => $vote_type
-                )
-            );
-        }
-
-        return true;
-    }
-
-    /**
      * Get history table name
      */
     public static function get_history_table() {

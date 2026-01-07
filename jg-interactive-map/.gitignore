@@ -1,0 +1,35 @@
+# Plugin files
+*.zip
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+
+# Tests
+/tests/coverage-report/
+.phpunit.result.cache
+phpunit.xml
+
+# Build
+/build/
+/dist/
+
+# Logs
+*.log
+npm-debug.log*
+error_log
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Debug/test files
+check-category-in-db.php
