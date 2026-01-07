@@ -2911,14 +2911,16 @@
        * Excludes tracking for point owner
        */
       function trackStat(pointId, actionType, extraData, pointOwnerId) {
+        console.log('[JG STATS TRACK] Called with:', {pointId: pointId, actionType: actionType, extraData: extraData, pointOwnerId: pointOwnerId, currentUserId: CFG.currentUserId});
+
         if (!pointId) {
-          if (CFG.debug) console.warn('[JG STATS] trackStat called without pointId');
+          console.warn('[JG STATS] trackStat called without pointId');
           return;
         }
 
         // Don't track owner's own interactions
         if (CFG.currentUserId && pointOwnerId && parseInt(CFG.currentUserId) === parseInt(pointOwnerId)) {
-          if (CFG.debug) console.log('[JG STATS] Skipping tracking for owner (point #' + pointId + ')');
+          console.log('[JG STATS] Skipping tracking for owner (point #' + pointId + ')');
           return;
         }
 
@@ -2934,9 +2936,7 @@
           }
         }
 
-        if (CFG.debug) {
-          console.log('[JG STATS] Tracking:', actionType, 'for point #' + pointId, extraData || '');
-        }
+        console.log('[JG STATS] Sending AJAX request:', data, 'to:', CFG.ajax);
 
         fetch(CFG.ajax, {
           method: 'POST',
@@ -2944,21 +2944,19 @@
           body: new URLSearchParams(data)
         })
         .then(function(response) {
+          console.log('[JG STATS] Got response, status:', response.status);
           return response.json();
         })
         .then(function(result) {
-          if (CFG.debug) {
-            if (result.success) {
-              console.log('[JG STATS] ✓ Successfully tracked:', actionType, 'for point #' + pointId);
-            } else {
-              console.error('[JG STATS] ✗ Failed to track:', actionType, result.data);
-            }
+          console.log('[JG STATS] Parsed JSON:', result);
+          if (result.success) {
+            console.log('[JG STATS] ✓ Successfully tracked:', actionType, 'for point #' + pointId);
+          } else {
+            console.error('[JG STATS] ✗ Failed to track:', actionType, result.data);
           }
         })
         .catch(function(error) {
-          if (CFG.debug) {
-            console.error('[JG STATS] ✗ Network error tracking:', actionType, error);
-          }
+          console.error('[JG STATS] ✗ Network/parse error tracking:', actionType, error);
         });
       }
 
