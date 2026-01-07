@@ -4128,6 +4128,18 @@ class JG_Map_Ajax_Handlers {
         // URLSearchParams sends booleans as strings, and (bool)"false" = true in PHP
         $is_unique = isset($_POST['is_unique']) && filter_var($_POST['is_unique'], FILTER_VALIDATE_BOOLEAN);
 
+        // DEBUG: Log all incoming stat tracking requests
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                '[JG STATS] track_stat called: point_id=%d, action_type=%s, time_spent=%d, platform=%s, image_index=%d',
+                $point_id,
+                $action_type,
+                $time_spent,
+                $platform,
+                $image_index
+            ));
+        }
+
         if (!$point_id || !$action_type) {
             wp_send_json_error(array('message' => 'Brak wymaganych parametrów'));
             return;
@@ -4192,6 +4204,15 @@ class JG_Map_Ajax_Handlers {
                 break;
 
             case 'time_spent':
+                // DEBUG: Log case entry
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log(sprintf(
+                        '[JG STATS] time_spent case entered: point #%d, time_spent=%d seconds',
+                        $point_id,
+                        $time_spent
+                    ));
+                }
+
                 // Update average time spent
                 if ($time_spent > 0) {
                     $current_views = intval($point['stats_views']) ?: 1;
