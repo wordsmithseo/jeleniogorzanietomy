@@ -642,11 +642,11 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Get all visitors for this point (only logged in users)
+        // Get all visitors for this point (both logged in and anonymous)
         $visitors = $wpdb->get_results($wpdb->prepare(
-            "SELECT v.user_id, v.visit_count, v.first_visited, v.last_visited
+            "SELECT v.user_id, v.visitor_fingerprint, v.visit_count, v.first_visited, v.last_visited
              FROM $table_visits v
-             WHERE v.point_id = %d AND v.user_id IS NOT NULL
+             WHERE v.point_id = %d
              ORDER BY v.visit_count DESC, v.last_visited DESC",
             $point_id
         ), ARRAY_A);
@@ -660,14 +660,28 @@ class JG_Map_Ajax_Handlers {
 
         $result = array();
         foreach ($visitors as $visitor) {
-            $user = get_userdata($visitor['user_id']);
-            if ($user) {
+            if ($visitor['user_id']) {
+                // Logged in user
+                $user = get_userdata($visitor['user_id']);
+                if ($user) {
+                    $result[] = array(
+                        'user_id' => intval($visitor['user_id']),
+                        'username' => $user->display_name,
+                        'visit_count' => intval($visitor['visit_count']),
+                        'first_visited' => $visitor['first_visited'] ? $visitor['first_visited'] . ' UTC' : null,
+                        'last_visited' => $visitor['last_visited'] ? $visitor['last_visited'] . ' UTC' : null,
+                        'is_anonymous' => false
+                    );
+                }
+            } else {
+                // Anonymous visitor
                 $result[] = array(
-                    'user_id' => intval($visitor['user_id']),
-                    'username' => $user->display_name,
+                    'user_id' => 0,
+                    'username' => 'Użytkownik niezalogowany',
                     'visit_count' => intval($visitor['visit_count']),
                     'first_visited' => $visitor['first_visited'] ? $visitor['first_visited'] . ' UTC' : null,
-                    'last_visited' => $visitor['last_visited'] ? $visitor['last_visited'] . ' UTC' : null
+                    'last_visited' => $visitor['last_visited'] ? $visitor['last_visited'] . ' UTC' : null,
+                    'is_anonymous' => true
                 );
             }
         }
@@ -4466,6 +4480,35 @@ class JG_Map_Ajax_Handlers {
                         $wpdb->insert($visitor_table, array(
                             'point_id' => $point_id,
                             'user_id' => $current_user_id,
+                            'visit_count' => 1,
+                            'first_visited' => $current_time,
+                            'last_visited' => $current_time
+                        ));
+                    }
+                } else {
+                    // Not logged in - track by fingerprint (IP + User Agent hash)
+                    $visitor_ip = $_SERVER['REMOTE_ADDR'] ?? '';
+                    $visitor_ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+                    $fingerprint = md5($visitor_ip . '|' . $visitor_ua);
+
+                    $existing_visit = $wpdb->get_row($wpdb->prepare(
+                        "SELECT id, visit_count FROM $visitor_table WHERE point_id = %d AND visitor_fingerprint = %s",
+                        $point_id,
+                        $fingerprint
+                    ), ARRAY_A);
+
+                    if ($existing_visit) {
+                        // Update visit count
+                        $wpdb->query($wpdb->prepare(
+                            "UPDATE $visitor_table SET visit_count = visit_count + 1, last_visited = %s WHERE id = %d",
+                            $current_time,
+                            $existing_visit['id']
+                        ));
+                    } else {
+                        // First visit - insert
+                        $wpdb->insert($visitor_table, array(
+                            'point_id' => $point_id,
+                            'visitor_fingerprint' => $fingerprint,
                             'visit_count' => 1,
                             'first_visited' => $current_time,
                             'last_visited' => $current_time

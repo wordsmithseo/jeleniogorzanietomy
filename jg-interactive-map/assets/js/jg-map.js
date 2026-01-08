@@ -3286,8 +3286,11 @@
             for (var i = 0; i < visitors.length; i++) {
               var visitor = visitors[i];
               var lastVisited = visitor.last_visited ? new Date(visitor.last_visited).toLocaleDateString('pl-PL') : '-';
+              var isAnonymous = visitor.is_anonymous || visitor.user_id === 0;
+              var cursorStyle = isAnonymous ? 'default' : 'pointer';
+              var opacityStyle = isAnonymous ? 'opacity:0.7;' : '';
 
-              visitorsHtml += '<div style="padding:12px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;cursor:pointer" class="visitor-row" data-user-id="' + visitor.user_id + '">' +
+              visitorsHtml += '<div style="padding:12px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;cursor:' + cursorStyle + ';' + opacityStyle + '" class="visitor-row" data-user-id="' + visitor.user_id + '" data-is-anonymous="' + isAnonymous + '">' +
                 '<div style="flex:1">' +
                 '<div style="font-weight:600;color:#111827;margin-bottom:4px">' + esc(visitor.username) + '</div>' +
                 '<div style="font-size:12px;color:#6b7280">Ostatnia wizyta: ' + lastVisited + '</div>' +
@@ -3312,20 +3315,28 @@
             close(modalReport);
           };
 
-          // Add click handlers to visitor rows
+          // Add click handlers to visitor rows (only for logged-in users)
           var visitorRows = modalReport.querySelectorAll('.visitor-row');
           for (var j = 0; j < visitorRows.length; j++) {
-            visitorRows[j].onmouseover = function() {
-              this.style.background = '#f3f4f6';
-            };
-            visitorRows[j].onmouseout = function() {
-              this.style.background = '';
-            };
-            visitorRows[j].onclick = function() {
-              var userId = parseInt(this.getAttribute('data-user-id'));
-              close(modalReport);
-              openUserModal(userId);
-            };
+            (function(row) {
+              var isAnonymous = row.getAttribute('data-is-anonymous') === 'true';
+
+              if (!isAnonymous) {
+                row.onmouseover = function() {
+                  this.style.background = '#f3f4f6';
+                };
+                row.onmouseout = function() {
+                  this.style.background = '';
+                };
+                row.onclick = function() {
+                  var userId = parseInt(this.getAttribute('data-user-id'));
+                  if (userId > 0) {
+                    close(modalReport);
+                    openUserModal(userId);
+                  }
+                };
+              }
+            })(visitorRows[j]);
           }
         }).catch(function(err) {
           showAlert((err && err.message) || 'Błąd pobierania listy odwiedzających');
@@ -3399,7 +3410,13 @@
             var updatedHtml = renderStatsContent(p);
 
             // Update only the content part (not the header)
-            var contentDiv = qs('.jg-modal-report > div:last-child', modalReport);
+            // First find the modal container, then the content div
+            var modal = qs('.jg-modal', modalReport);
+            if (!modal) {
+              console.error('[Stats Auto-Refresh] Modal container not found!');
+              return;
+            }
+            var contentDiv = modal.querySelector('div:last-child');
             console.log('[Stats Auto-Refresh] contentDiv found:', !!contentDiv);
             if (!contentDiv) {
               console.error('[Stats Auto-Refresh] contentDiv not found!');
