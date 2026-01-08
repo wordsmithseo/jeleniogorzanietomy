@@ -5176,9 +5176,9 @@
           }
 
           // For non-sponsored: check type filters
-          // If NO type filters enabled -> show ALL non-sponsored
+          // If NO type filters enabled -> hide all non-sponsored (only sponsored show)
           if (Object.keys(enabled).length === 0) {
-            return true; // No filters = show everything
+            return false; // No type filters enabled = hide non-sponsored points
           }
 
           // If type filters enabled -> check if this point's type is enabled
