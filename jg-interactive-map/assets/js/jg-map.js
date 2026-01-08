@@ -3249,9 +3249,12 @@
        */
       function openVisitorsModal(p) {
         // Fetch visitors list
+        console.log('[Visitors Modal] Fetching visitors for point:', p.id);
         api('jg_get_point_visitors', { point_id: p.id }).then(function(result) {
+          console.log('[Visitors Modal] API response:', result);
           if (!result || !result.data) {
-            showAlert('Błąd pobierania listy odwiedzających');
+            console.error('[Visitors Modal] Invalid response:', result);
+            showAlert('Błąd pobierania listy odwiedzających: ' + (result && result.message ? result.message : 'Brak danych'));
             return;
           }
 
@@ -3387,6 +3390,14 @@
                   if (newContent) {
                     // Replace content (handles structural changes like new social media fields)
                     contentDiv.innerHTML = newContent.innerHTML;
+
+                    // Re-attach click handler to unique visitors card after content update
+                    var uniqueVisitorsCard = qs('#unique-visitors-card', modalReport);
+                    if (uniqueVisitorsCard) {
+                      uniqueVisitorsCard.onclick = function() {
+                        openVisitorsModal(p);
+                      };
+                    }
 
                     // Animate numbers that changed (slot machine effect)
                     var newStatsElements = contentDiv.querySelectorAll('[data-stat]');
@@ -4500,8 +4511,8 @@
         if (CFG.isAdmin) {
           var adminData = [];
           if (p.admin) {
-            // Author name with 3-dot menu button
-            adminData.push('<div style="display:flex;align-items:center;gap:8px"><div><strong>Autor:</strong> ' + esc(p.admin.author_name_real || '?') + '</div><button id="btn-user-actions" class="jg-btn jg-btn--ghost" style="padding:2px 8px;font-size:16px;line-height:1" title="Akcje użytkownika">⋮</button></div>');
+            // Author name as clickable link with 3-dot menu button
+            adminData.push('<div style="display:flex;align-items:center;gap:8px"><div><strong>Autor:</strong> <a href="#" id="btn-author-admin" data-user-id="' + esc(p.author_id) + '" style="color:#2563eb;text-decoration:underline;cursor:pointer">' + esc(p.admin.author_name_real || '?') + '</a></div><button id="btn-user-actions" class="jg-btn jg-btn--ghost" style="padding:2px 8px;font-size:16px;line-height:1" title="Akcje użytkownika">⋮</button></div>');
             adminData.push('<div><strong>Email:</strong> ' + esc(p.admin.author_email || '?') + '</div>');
             if (p.admin.ip && p.admin.ip !== '(brak)' && p.admin.ip.trim() !== '') {
               adminData.push('<div><strong>IP:</strong> ' + esc(p.admin.ip) + '</div>');
@@ -4689,49 +4700,49 @@
               if (p.phone) {
                 ctaUrl = 'tel:' + esc(p.phone);
                 ctaText = 'Zadzwoń Teraz';
-                ctaIcon = '📞';
+                ctaIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>';
               }
               break;
             case 'website':
               if (p.website) {
                 ctaUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
                 ctaText = 'Zobacz Więcej';
-                ctaIcon = '🌟';
+                ctaIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>';
               }
               break;
             case 'facebook':
               if (p.facebook_url) {
                 ctaUrl = p.facebook_url.startsWith('http') ? p.facebook_url : 'https://' + p.facebook_url;
                 ctaText = 'Odwiedź nas na Facebooku';
-                ctaIcon = '📘';
+                ctaIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
               }
               break;
             case 'instagram':
               if (p.instagram_url) {
                 ctaUrl = p.instagram_url.startsWith('http') ? p.instagram_url : 'https://' + p.instagram_url;
                 ctaText = 'Sprawdź nas na Instagramie';
-                ctaIcon = '📷';
+                ctaIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>';
               }
               break;
             case 'linkedin':
               if (p.linkedin_url) {
                 ctaUrl = p.linkedin_url.startsWith('http') ? p.linkedin_url : 'https://' + p.linkedin_url;
                 ctaText = 'Zobacz nas na LinkedIn';
-                ctaIcon = '💼';
+                ctaIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>';
               }
               break;
             case 'tiktok':
               if (p.tiktok_url) {
                 ctaUrl = p.tiktok_url.startsWith('http') ? p.tiktok_url : 'https://' + p.tiktok_url;
                 ctaText = 'Obserwuj nas na TikToku';
-                ctaIcon = '🎵';
+                ctaIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.592 2.592 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48z"/></svg>';
               }
               break;
           }
 
           if (ctaUrl) {
             var targetAttr = (p.cta_type === 'call') ? '' : ' target="_blank" rel="noopener"';
-            ctaButton = '<a href="' + ctaUrl + '"' + targetAttr + ' class="jg-btn-cta-sponsored">' + ctaIcon + ' ' + ctaText + ' ' + ctaIcon + '</a>';
+            ctaButton = '<a href="' + ctaUrl + '"' + targetAttr + ' class="jg-btn-cta-sponsored">' + ctaIcon + ' ' + ctaText + '</a>';
           }
         }
 
@@ -5096,13 +5107,9 @@
           ba.addEventListener('click', function(ev) {
             ev.preventDefault();
             var authorId = +this.getAttribute('data-id');
-            var authorName = this.textContent;
 
-            if (CFG.isAdmin) {
-              openUserActionsModal(authorId, authorName);
-            } else {
-              openAuthorModal(authorId, authorName);
-            }
+            // Open user profile modal for everyone
+            openUserModal(authorId);
           });
         }
 
@@ -5112,6 +5119,16 @@
             btnViewReports.onclick = function() {
               openReportsListModal(p);
             };
+          }
+
+          // Handler for author link in admin panel
+          var btnAuthorAdmin = qs('#btn-author-admin', modalView);
+          if (btnAuthorAdmin) {
+            btnAuthorAdmin.addEventListener('click', function(ev) {
+              ev.preventDefault();
+              var userId = +this.getAttribute('data-user-id');
+              openUserModal(userId);
+            });
           }
 
           // User actions menu button

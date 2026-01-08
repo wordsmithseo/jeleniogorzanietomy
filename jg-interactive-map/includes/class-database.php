@@ -199,7 +199,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.3.9'; // Updated for SQL injection fixes
+        $current_schema_version = '3.4.0'; // Updated for point_visits table
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -214,6 +214,26 @@ class JG_Map_Database {
         // Ensure sync queue table exists (for existing installations)
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-sync-manager.php';
         JG_Map_Sync_Manager::create_table();
+
+        // Ensure point visits table exists (for visitor tracking)
+        $table_point_visits = $wpdb->prefix . 'jg_map_point_visits';
+        $charset_collate = $wpdb->get_charset_collate();
+        $sql_point_visits = "CREATE TABLE IF NOT EXISTS $table_point_visits (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            user_id bigint(20) UNSIGNED DEFAULT NULL,
+            visitor_fingerprint varchar(64) DEFAULT NULL,
+            visit_count int(11) DEFAULT 1,
+            first_visited datetime DEFAULT CURRENT_TIMESTAMP,
+            last_visited datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY user_point (user_id, point_id),
+            UNIQUE KEY fingerprint_point (visitor_fingerprint, point_id),
+            KEY point_id (point_id),
+            KEY user_id (user_id)
+        ) $charset_collate;";
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql_point_visits);
 
         // Helper function to check if column exists
         $column_exists = function($column_name) use ($wpdb, $safe_table) {

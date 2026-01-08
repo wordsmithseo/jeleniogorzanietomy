@@ -641,6 +641,13 @@ class JG_Map_Ajax_Handlers {
             $point_id
         ), ARRAY_A);
 
+        // Check for SQL errors
+        if ($wpdb->last_error) {
+            error_log('[JG MAP] SQL Error in get_point_visitors: ' . $wpdb->last_error);
+            wp_send_json_error(array('message' => 'Database error: ' . $wpdb->last_error));
+            return;
+        }
+
         $result = array();
         foreach ($visitors as $visitor) {
             $user = get_userdata($visitor['user_id']);
