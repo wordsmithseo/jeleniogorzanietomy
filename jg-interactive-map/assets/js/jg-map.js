@@ -3099,7 +3099,7 @@
           '<div style="margin-bottom:24px"><h4 style="margin:0 0 16px 0;color:#374151;font-size:16px;font-weight:600">Kluczowe wskaźniki</h4>' +
           '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px">' +
           '<div style="padding:16px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:12px;box-shadow:0 4px 12px rgba(102,126,234,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👁️ Wyświetlenia</div><div style="font-size:32px;font-weight:700"><span data-stat="views">' + (p.stats.views || 0) + '</span></div></div>' +
-          '<div style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👥 Unikalni</div><div style="font-size:32px;font-weight:700"><span data-stat="unique_visitors">' + (p.stats.unique_visitors || 0) + '</span></div></div>' +
+          '<div id="unique-visitors-card" style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👥 Unikalni</div><div style="font-size:32px;font-weight:700"><span data-stat="unique_visitors">' + (p.stats.unique_visitors || 0) + '</span></div></div>' +
           '<div style="padding:16px;background:linear-gradient(135deg, #fa709a 0%, #fee140 100%);border-radius:12px;box-shadow:0 4px 12px rgba(250,112,154,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">⏱️ Śr. czas</div><div style="font-size:20px;font-weight:700"><span data-stat="avg_time_spent">' + timeFormatted + '</span></div></div>' +
           '</div></div>' +
 
@@ -3137,6 +3137,74 @@
       }
 
       /**
+       * Open visitors list modal
+       */
+      function openVisitorsModal(p) {
+        // Fetch visitors list
+        api('jg_get_point_visitors', { point_id: p.id }).then(function(result) {
+          if (!result || !result.data) {
+            showAlert('Błąd pobierania listy odwiedzających');
+            return;
+          }
+
+          var visitors = result.data;
+          var visitorsHtml = '';
+
+          if (visitors.length === 0) {
+            visitorsHtml = '<div style="padding:40px;text-align:center;color:#9ca3af">Brak zarejestrowanych odwiedzin</div>';
+          } else {
+            visitorsHtml = '<div style="max-height:500px;overflow-y:auto">';
+            for (var i = 0; i < visitors.length; i++) {
+              var visitor = visitors[i];
+              var lastVisited = visitor.last_visited ? new Date(visitor.last_visited).toLocaleDateString('pl-PL') : '-';
+
+              visitorsHtml += '<div style="padding:12px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;cursor:pointer" class="visitor-row" data-user-id="' + visitor.user_id + '">' +
+                '<div style="flex:1">' +
+                '<div style="font-weight:600;color:#111827;margin-bottom:4px">' + esc(visitor.username) + '</div>' +
+                '<div style="font-size:12px;color:#6b7280">Ostatnia wizyta: ' + lastVisited + '</div>' +
+                '</div>' +
+                '<div style="padding:8px 16px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:20px;color:#fff;font-weight:700">' +
+                visitor.visit_count + (visitor.visit_count === 1 ? ' wizyta' : visitor.visit_count < 5 ? ' wizyty' : ' wizyt') +
+                '</div>' +
+                '</div>';
+            }
+            visitorsHtml += '</div>';
+          }
+
+          var modalHtml = '<header style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:20px;border-radius:12px 12px 0 0">' +
+            '<h3 style="margin:0;color:#fff;font-size:20px">👥 Unikalni odwiedzający</h3>' +
+            '<button class="jg-close" id="visitors-close" style="color:#fff;opacity:0.9">&times;</button>' +
+            '</header>' +
+            '<div style="padding:20px">' + visitorsHtml + '</div>';
+
+          open(modalReport, modalHtml);
+
+          qs('#visitors-close', modalReport).onclick = function() {
+            close(modalReport);
+          };
+
+          // Add click handlers to visitor rows
+          var visitorRows = modalReport.querySelectorAll('.visitor-row');
+          for (var j = 0; j < visitorRows.length; j++) {
+            visitorRows[j].onmouseover = function() {
+              this.style.background = '#f3f4f6';
+            };
+            visitorRows[j].onmouseout = function() {
+              this.style.background = '';
+            };
+            visitorRows[j].onclick = function() {
+              var userId = parseInt(this.getAttribute('data-user-id'));
+              close(modalReport);
+              // TODO: Open user modal
+              showAlert('Modal użytkownika #' + userId + ' będzie dostępny wkrótce');
+            };
+          }
+        }).catch(function(err) {
+          showAlert((err && err.message) || 'Błąd pobierania listy odwiedzających');
+        });
+      }
+
+      /**
        * Open stats modal with real-time updates
        */
       function openStatsModal(p) {
@@ -3151,6 +3219,14 @@
           }
           close(modalReport);
         };
+
+        // Add click handler to unique visitors card
+        var uniqueVisitorsCard = qs('#unique-visitors-card', modalReport);
+        if (uniqueVisitorsCard) {
+          uniqueVisitorsCard.onclick = function() {
+            openVisitorsModal(p);
+          };
+        }
 
         // Start real-time updates - refresh every 3 seconds
         if (statsRefreshInterval) {

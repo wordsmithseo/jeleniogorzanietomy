@@ -96,6 +96,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_track_stat', array($this, 'track_stat'));
         add_action('wp_ajax_nopriv_jg_track_stat', array($this, 'track_stat'));
         add_action('wp_ajax_jg_get_point_stats', array($this, 'get_point_stats'));
+        add_action('wp_ajax_jg_get_point_visitors', array($this, 'get_point_visitors'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -589,6 +590,69 @@ class JG_Map_Ajax_Handlers {
                 'avg_time_spent' => intval($point['stats_avg_time_spent'] ?? 0)
             )
         );
+
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Get visitors list for a point (for stats modal)
+     */
+    public function get_point_visitors() {
+        global $wpdb;
+        $table_points = $wpdb->prefix . 'jg_map_points';
+        $table_visits = $wpdb->prefix . 'jg_map_point_visits';
+
+        $point_id = isset($_POST['point_id']) ? intval($_POST['point_id']) : 0;
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Missing point_id'));
+            return;
+        }
+
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        // Check if point exists
+        $point = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, author_id FROM $table_points WHERE id = %d",
+            $point_id
+        ), ARRAY_A);
+
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Point not found'));
+            return;
+        }
+
+        $is_own_place = ($current_user_id > 0 && $current_user_id == $point['author_id']);
+
+        // Only return visitors if user is admin or owner
+        if (!$is_admin && !$is_own_place) {
+            wp_send_json_error(array('message' => 'Permission denied'));
+            return;
+        }
+
+        // Get all visitors for this point (only logged in users)
+        $visitors = $wpdb->get_results($wpdb->prepare(
+            "SELECT v.user_id, v.visit_count, v.first_visited, v.last_visited
+             FROM $table_visits v
+             WHERE v.point_id = %d AND v.user_id IS NOT NULL
+             ORDER BY v.visit_count DESC, v.last_visited DESC",
+            $point_id
+        ), ARRAY_A);
+
+        $result = array();
+        foreach ($visitors as $visitor) {
+            $user = get_userdata($visitor['user_id']);
+            if ($user) {
+                $result[] = array(
+                    'user_id' => intval($visitor['user_id']),
+                    'username' => $user->display_name,
+                    'visit_count' => intval($visitor['visit_count']),
+                    'first_visited' => $visitor['first_visited'] ? $visitor['first_visited'] . ' UTC' : null,
+                    'last_visited' => $visitor['last_visited'] ? $visitor['last_visited'] . ' UTC' : null
+                );
+            }
+        }
 
         wp_send_json_success($result);
     }
@@ -4260,6 +4324,37 @@ class JG_Map_Ajax_Handlers {
 
         switch ($action_type) {
             case 'view':
+                // Track individual visitor (for stats dashboard)
+                $current_user_id = get_current_user_id();
+                $visitor_table = $wpdb->prefix . 'jg_map_point_visits';
+
+                if ($current_user_id > 0) {
+                    // Logged in user - track by user_id
+                    $existing_visit = $wpdb->get_row($wpdb->prepare(
+                        "SELECT id, visit_count FROM $visitor_table WHERE point_id = %d AND user_id = %d",
+                        $point_id,
+                        $current_user_id
+                    ), ARRAY_A);
+
+                    if ($existing_visit) {
+                        // Update visit count
+                        $wpdb->query($wpdb->prepare(
+                            "UPDATE $visitor_table SET visit_count = visit_count + 1, last_visited = %s WHERE id = %d",
+                            $current_time,
+                            $existing_visit['id']
+                        ));
+                    } else {
+                        // First visit - insert
+                        $wpdb->insert($visitor_table, array(
+                            'point_id' => $point_id,
+                            'user_id' => $current_user_id,
+                            'visit_count' => 1,
+                            'first_visited' => $current_time,
+                            'last_visited' => $current_time
+                        ));
+                    }
+                }
+
                 // Increment view counter and update last viewed
                 $updates = array(
                     'stats_views' => 'COALESCE(stats_views, 0) + 1',
