@@ -3174,36 +3174,24 @@
             pointsHtml = '<div style="padding:20px;text-align:center;color:#9ca3af">Brak dodanych miejsc</div>';
           }
 
-          // Admin management panel
-          var adminPanel = '';
-          if (user.is_admin && user.restrictions) {
-            var bannedStatus = '';
-            if (user.restrictions.banned_until) {
-              var banDate = new Date(user.restrictions.banned_until);
-              var now = new Date();
-              if (banDate > now) {
-                bannedStatus = '<div style="padding:12px;background:#fee2e2;border:1px solid #ef4444;border-radius:8px;margin-bottom:12px;color:#991b1b">' +
-                  '🚫 <strong>Użytkownik zbanowany</strong> do ' + banDate.toLocaleDateString('pl-PL') +
-                  '</div>';
-              }
+          // Photo gallery
+          var photosHtml = '';
+          if (user.photos && user.photos.length > 0) {
+            photosHtml = '<div>' +
+              '<h4 style="margin:20px 0 12px 0;color:#374151">📷 Galeria zdjęć (' + user.photos.length + ')</h4>' +
+              '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));gap:12px;max-height:400px;overflow-y:auto">';
+
+            for (var j = 0; j < user.photos.length; j++) {
+              var photo = user.photos[j];
+              var photoUrl = photo.url || photo;
+              var thumbUrl = photo.thumbnail || photoUrl;
+
+              photosHtml += '<div class="user-photo-item" data-photo-url="' + esc(photoUrl) + '" style="position:relative;padding-bottom:100%;border-radius:8px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s">' +
+                '<img src="' + esc(thumbUrl) + '" alt="User photo" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover">' +
+                '</div>';
             }
 
-            adminPanel = '<div style="margin-top:24px;padding-top:24px;border-top:2px solid #e5e7eb">' +
-              '<h4 style="margin:0 0 12px 0;color:#374151">⚙️ Panel administracyjny</h4>' +
-              bannedStatus +
-              '<div style="display:grid;gap:8px">';
-
-            if (!user.restrictions.can_add) {
-              adminPanel += '<div style="padding:8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:14px">⚠️ Ograniczenie: Nie może dodawać nowych miejsc</div>';
-            }
-            if (!user.restrictions.can_edit) {
-              adminPanel += '<div style="padding:8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:14px">⚠️ Ograniczenie: Nie może edytować miejsc</div>';
-            }
-            if (!user.restrictions.can_delete) {
-              adminPanel += '<div style="padding:8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:14px">⚠️ Ograniczenie: Nie może usuwać miejsc</div>';
-            }
-
-            adminPanel += '</div></div>';
+            photosHtml += '</div></div>';
           }
 
           var modalHtml = '<header style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:20px;border-radius:12px 12px 0 0">' +
@@ -3229,7 +3217,7 @@
             '<h4 style="margin:0 0 8px 0;color:#374151">Ostatnio dodane miejsca (max 10)</h4>' +
             pointsHtml +
             '</div>' +
-            adminPanel +
+            photosHtml +
             '</div>';
 
           open(modalReport, modalHtml);
@@ -3237,6 +3225,23 @@
           qs('#user-modal-close', modalReport).onclick = function() {
             close(modalReport);
           };
+
+          // Add click handlers for photo gallery
+          var photoItems = modalReport.querySelectorAll('.user-photo-item');
+          for (var k = 0; k < photoItems.length; k++) {
+            photoItems[k].onmouseover = function() {
+              this.style.transform = 'scale(1.05)';
+              this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            };
+            photoItems[k].onmouseout = function() {
+              this.style.transform = 'scale(1)';
+              this.style.boxShadow = 'none';
+            };
+            photoItems[k].onclick = function() {
+              var photoUrl = this.getAttribute('data-photo-url');
+              openLightbox(photoUrl);
+            };
+          }
         }).catch(function(err) {
           showAlert((err && err.message) || 'Błąd pobierania informacji o użytkowniku');
         });
@@ -3341,11 +3346,21 @@
         }
 
         statsRefreshInterval = setInterval(function() {
+          console.log('[Stats Auto-Refresh] Interval tick - fetching stats for point:', p.id);
+
+          // Update timestamp to show we're attempting refresh
+          var lastUpdateEl = qs('#stats-last-update', modalReport);
+          if (lastUpdateEl) {
+            var now = new Date();
+            lastUpdateEl.textContent = 'Próba odświeżenia: ' + now.toLocaleTimeString('pl-PL');
+            lastUpdateEl.style.color = '#f59e0b'; // Orange while loading
+          }
+
           // Fetch updated stats for this specific point
           api('jg_get_point_stats', { point_id: p.id }).then(function(updatedPoint) {
             console.log('[Stats Auto-Refresh] API response received for point:', p.id, updatedPoint);
             if (!updatedPoint || !updatedPoint.stats) {
-              console.error('[Stats Auto-Refresh] Invalid response');
+              console.error('[Stats Auto-Refresh] Invalid response:', updatedPoint);
               return;
             }
 
@@ -3409,14 +3424,22 @@
               }
             }
 
-            // Update last update time
+            // Update last update time to show success
             var lastUpdateEl = qs('#stats-last-update', modalReport);
             if (lastUpdateEl) {
               var now = new Date();
               lastUpdateEl.textContent = 'Ostatnia aktualizacja: ' + now.toLocaleTimeString('pl-PL');
+              lastUpdateEl.style.color = '#10b981'; // Green on success
             }
-          }).catch(function() {
-            // Silently ignore errors - don't disrupt UX
+          }).catch(function(err) {
+            console.error('[Stats Auto-Refresh] Error fetching stats:', err);
+            // Update timestamp to show error
+            var lastUpdateEl = qs('#stats-last-update', modalReport);
+            if (lastUpdateEl) {
+              var now = new Date();
+              lastUpdateEl.textContent = 'Błąd odświeżenia: ' + now.toLocaleTimeString('pl-PL');
+              lastUpdateEl.style.color = '#ef4444'; // Red on error
+            }
           });
         }, 3000); // Update every 3 seconds
       }

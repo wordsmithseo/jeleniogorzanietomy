@@ -522,14 +522,17 @@ class JG_Map_Ajax_Handlers {
         $table = $wpdb->prefix . 'jg_map_points';
 
         $point_id = isset($_POST['point_id']) ? intval($_POST['point_id']) : 0;
+        error_log('[JG MAP] get_point_stats called for point_id: ' . $point_id);
 
         if (!$point_id) {
+            error_log('[JG MAP] get_point_stats - Missing point_id');
             wp_send_json_error(array('message' => 'Missing point_id'));
             return;
         }
 
         $current_user_id = get_current_user_id();
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+        error_log('[JG MAP] get_point_stats - user_id: ' . $current_user_id . ', is_admin: ' . ($is_admin ? 'yes' : 'no'));
 
         // Disable caching
         wp_cache_flush();
@@ -547,14 +550,17 @@ class JG_Map_Ajax_Handlers {
         ), ARRAY_A);
 
         if (!$point) {
+            error_log('[JG MAP] get_point_stats - Point not found');
             wp_send_json_error(array('message' => 'Point not found'));
             return;
         }
 
         $is_own_place = ($current_user_id > 0 && $current_user_id == $point['author_id']);
+        error_log('[JG MAP] get_point_stats - point author: ' . $point['author_id'] . ', is_own_place: ' . ($is_own_place ? 'yes' : 'no'));
 
         // Only return stats if user is admin or owner
         if (!$is_admin && !$is_own_place) {
+            error_log('[JG MAP] get_point_stats - Permission denied');
             wp_send_json_error(array('message' => 'Permission denied'));
             return;
         }
@@ -595,6 +601,7 @@ class JG_Map_Ajax_Handlers {
             )
         );
 
+        error_log('[JG MAP] get_point_stats - Returning data with views: ' . $result['stats']['views']);
         wp_send_json_success($result);
     }
 
@@ -722,6 +729,26 @@ class JG_Map_Ajax_Handlers {
             );
         }
 
+        // Get all user's photos from all their points
+        $user_photos_data = $wpdb->get_results($wpdb->prepare(
+            "SELECT images FROM $table_points
+             WHERE author_id = %d AND status = 'publish' AND images IS NOT NULL AND images != ''
+             ORDER BY created_at DESC",
+            $user_id
+        ), ARRAY_A);
+
+        $all_photos = array();
+        foreach ($user_photos_data as $point_data) {
+            if (!empty($point_data['images'])) {
+                $images = json_decode($point_data['images'], true);
+                if (is_array($images)) {
+                    foreach ($images as $image) {
+                        $all_photos[] = $image;
+                    }
+                }
+            }
+        }
+
         // Get restrictions (if admin or own profile)
         $restrictions = null;
         if ($is_admin || $current_user_id == $user_id) {
@@ -740,6 +767,7 @@ class JG_Map_Ajax_Handlers {
             'last_activity' => $last_activity ? $last_activity . ' UTC' : null,
             'points_count' => intval($points_count),
             'points' => $points_list,
+            'photos' => $all_photos,
             'restrictions' => $restrictions,
             'is_admin' => $is_admin
         );
