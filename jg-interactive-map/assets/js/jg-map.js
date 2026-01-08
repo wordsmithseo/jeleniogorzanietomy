@@ -3176,6 +3176,7 @@
 
           // Photo gallery
           var photosHtml = '';
+          console.log('[User Modal] Photos data:', user.photos);
           if (user.photos && user.photos.length > 0) {
             photosHtml = '<div>' +
               '<h4 style="margin:20px 0 12px 0;color:#374151">📷 Galeria zdjęć (' + user.photos.length + ')</h4>' +
@@ -3183,12 +3184,27 @@
 
             for (var j = 0; j < user.photos.length; j++) {
               var photo = user.photos[j];
-              var photoUrl = photo.url || photo;
-              var thumbUrl = photo.thumbnail || photoUrl;
+              console.log('[User Modal] Photo ' + j + ':', photo);
 
-              photosHtml += '<div class="user-photo-item" data-photo-url="' + esc(photoUrl) + '" style="position:relative;padding-bottom:100%;border-radius:8px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s">' +
-                '<img src="' + esc(thumbUrl) + '" alt="User photo" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover">' +
-                '</div>';
+              // Handle both object {url, thumbnail} and string formats
+              var photoUrl = '';
+              var thumbUrl = '';
+
+              if (typeof photo === 'string') {
+                photoUrl = photo;
+                thumbUrl = photo;
+              } else if (photo && typeof photo === 'object') {
+                photoUrl = photo.url || photo.full || '';
+                thumbUrl = photo.thumbnail || photo.thumb || photo.url || photo.full || '';
+              }
+
+              console.log('[User Modal] Photo URLs - full:', photoUrl, 'thumb:', thumbUrl);
+
+              if (photoUrl && thumbUrl) {
+                photosHtml += '<div class="user-photo-item" data-photo-url="' + esc(photoUrl) + '" style="position:relative;padding-bottom:100%;border-radius:8px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s">' +
+                  '<img src="' + esc(thumbUrl) + '" alt="User photo" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover">' +
+                  '</div>';
+              }
             }
 
             photosHtml += '</div></div>';
@@ -3379,11 +3395,16 @@
             p.cta_type = updatedPoint.cta_type;
 
             // Re-render modal content
+            console.log('[Stats Auto-Refresh] Re-rendering stats content');
             var updatedHtml = renderStatsContent(p);
 
             // Update only the content part (not the header)
             var contentDiv = qs('.jg-modal-report > div:last-child', modalReport);
-            if (!contentDiv) return;
+            console.log('[Stats Auto-Refresh] contentDiv found:', !!contentDiv);
+            if (!contentDiv) {
+              console.error('[Stats Auto-Refresh] contentDiv not found!');
+              return;
+            }
 
             // Before replacing, collect old values for animation
             var oldValues = {};
@@ -3398,10 +3419,16 @@
             var tempDiv = document.createElement('div');
             tempDiv.innerHTML = updatedHtml;
             var newContent = tempDiv.querySelector('div:last-child');
-            if (!newContent) return;
+            console.log('[Stats Auto-Refresh] newContent found:', !!newContent);
+            if (!newContent) {
+              console.error('[Stats Auto-Refresh] newContent not found!');
+              return;
+            }
 
             // Replace content (handles structural changes like new social media fields)
+            console.log('[Stats Auto-Refresh] Replacing content in DOM');
             contentDiv.innerHTML = newContent.innerHTML;
+            console.log('[Stats Auto-Refresh] DOM updated successfully');
 
             // Re-attach click handler to unique visitors card after content update
             var uniqueVisitorsCard = qs('#unique-visitors-card', modalReport);
