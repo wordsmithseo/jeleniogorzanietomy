@@ -2979,6 +2979,37 @@
       /**
        * Render stats modal content (for real-time updates)
        */
+      /**
+       * Animate number change with slot machine effect
+       */
+      function animateNumber(element, from, to, duration) {
+        if (!element || from === to) return;
+
+        duration = duration || 800;
+        var startTime = Date.now();
+        var range = to - from;
+
+        function update() {
+          var now = Date.now();
+          var elapsed = now - startTime;
+          var progress = Math.min(elapsed / duration, 1);
+
+          // Easing function (ease-out)
+          var eased = 1 - Math.pow(1 - progress, 3);
+          var current = Math.round(from + (range * eased));
+
+          element.textContent = current;
+
+          if (progress < 1) {
+            requestAnimationFrame(update);
+          } else {
+            element.textContent = to; // Ensure final value is exact
+          }
+        }
+
+        requestAnimationFrame(update);
+      }
+
       function renderStatsContent(p) {
         // Initialize stats object if not present (for new sponsored places)
         if (!p.stats) {
@@ -3067,26 +3098,26 @@
           // Main metrics
           '<div style="margin-bottom:24px"><h4 style="margin:0 0 16px 0;color:#374151;font-size:16px;font-weight:600">Kluczowe wskaźniki</h4>' +
           '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px">' +
-          '<div style="padding:16px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:12px;box-shadow:0 4px 12px rgba(102,126,234,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👁️ Wyświetlenia</div><div style="font-size:32px;font-weight:700">' + (p.stats.views || 0) + '</div></div>' +
-          '<div style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👥 Unikalni</div><div style="font-size:32px;font-weight:700">' + (p.stats.unique_visitors || 0) + '</div></div>' +
-          '<div style="padding:16px;background:linear-gradient(135deg, #fa709a 0%, #fee140 100%);border-radius:12px;box-shadow:0 4px 12px rgba(250,112,154,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">⏱️ Śr. czas</div><div style="font-size:20px;font-weight:700">' + timeFormatted + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:12px;box-shadow:0 4px 12px rgba(102,126,234,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👁️ Wyświetlenia</div><div style="font-size:32px;font-weight:700"><span data-stat="views">' + (p.stats.views || 0) + '</span></div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👥 Unikalni</div><div style="font-size:32px;font-weight:700"><span data-stat="unique_visitors">' + (p.stats.unique_visitors || 0) + '</span></div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #fa709a 0%, #fee140 100%);border-radius:12px;box-shadow:0 4px 12px rgba(250,112,154,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">⏱️ Śr. czas</div><div style="font-size:20px;font-weight:700"><span data-stat="avg_time_spent">' + timeFormatted + '</span></div></div>' +
           '</div></div>' +
 
           // Interaction metrics
           '<div style="margin-bottom:24px"><h4 style="margin:0 0 16px 0;color:#374151;font-size:16px;font-weight:600">Interakcje użytkowników</h4>' +
           '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px">' +
-          '<div style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">📞 Telefon</div><div style="font-size:32px;font-weight:700">' + (p.stats.phone_clicks || 0) + '</div></div>' +
-          '<div style="padding:16px;background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);border-radius:12px;box-shadow:0 4px 12px rgba(79,172,254,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🌐 Strona WWW</div><div style="font-size:32px;font-weight:700">' + (p.stats.website_clicks || 0) + '</div></div>' +
-          '<div style="padding:16px;background:linear-gradient(135deg, #ffa751 0%, #ffe259 100%);border-radius:12px;box-shadow:0 4px 12px rgba(255,167,81,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🎯 CTA</div><div style="font-size:32px;font-weight:700">' + (p.stats.cta_clicks || 0) + '</div></div>' +
-          '<div style="padding:16px;background:linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);border-radius:12px;box-shadow:0 4px 12px rgba(168,237,234,0.3);color:#333"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🖼️ Galeria</div><div style="font-size:32px;font-weight:700">' + totalGalleryClicks + '</div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">📞 Telefon</div><div style="font-size:32px;font-weight:700"><span data-stat="phone_clicks">' + (p.stats.phone_clicks || 0) + '</span></div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);border-radius:12px;box-shadow:0 4px 12px rgba(79,172,254,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🌐 Strona WWW</div><div style="font-size:32px;font-weight:700"><span data-stat="website_clicks">' + (p.stats.website_clicks || 0) + '</span></div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #ffa751 0%, #ffe259 100%);border-radius:12px;box-shadow:0 4px 12px rgba(255,167,81,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🎯 CTA</div><div style="font-size:32px;font-weight:700"><span data-stat="cta_clicks">' + (p.stats.cta_clicks || 0) + '</span></div></div>' +
+          '<div style="padding:16px;background:linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);border-radius:12px;box-shadow:0 4px 12px rgba(168,237,234,0.3);color:#333"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">🖼️ Galeria</div><div style="font-size:32px;font-weight:700"><span data-stat="gallery_clicks">' + totalGalleryClicks + '</span></div></div>' +
           '</div></div>' +
 
           // Social media clicks - separate tiles for each platform
           (totalSocialClicks > 0 ? '<div style="margin-bottom:24px"><h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;font-weight:600">Social media</h4><div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px">' +
-            '<div style="padding:16px;background:linear-gradient(135deg, #1877f2 0%, #0c65d8 100%);border-radius:12px;box-shadow:0 4px 12px rgba(24,119,242,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> Facebook</div><div style="font-size:32px;font-weight:700">' + (p.stats.social_clicks.facebook || 0) + '</div></div>' +
-            '<div style="padding:16px;background:linear-gradient(135deg, #e1306c 0%, #c13584 100%);border-radius:12px;box-shadow:0 4px 12px rgba(225,48,108,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg> Instagram</div><div style="font-size:32px;font-weight:700">' + (p.stats.social_clicks.instagram || 0) + '</div></div>' +
-            '<div style="padding:16px;background:linear-gradient(135deg, #0077b5 0%, #005582 100%);border-radius:12px;box-shadow:0 4px 12px rgba(0,119,181,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> LinkedIn</div><div style="font-size:32px;font-weight:700">' + (p.stats.social_clicks.linkedin || 0) + '</div></div>' +
-            '<div style="padding:16px;background:linear-gradient(135deg, #000 0%, #333 100%);border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg> TikTok</div><div style="font-size:32px;font-weight:700">' + (p.stats.social_clicks.tiktok || 0) + '</div></div>' +
+            '<div style="padding:16px;background:linear-gradient(135deg, #1877f2 0%, #0c65d8 100%);border-radius:12px;box-shadow:0 4px 12px rgba(24,119,242,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> Facebook</div><div style="font-size:32px;font-weight:700"><span data-stat="social_facebook">' + (p.stats.social_clicks.facebook || 0) + '</span></div></div>' +
+            '<div style="padding:16px;background:linear-gradient(135deg, #e1306c 0%, #c13584 100%);border-radius:12px;box-shadow:0 4px 12px rgba(225,48,108,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg> Instagram</div><div style="font-size:32px;font-weight:700"><span data-stat="social_instagram">' + (p.stats.social_clicks.instagram || 0) + '</span></div></div>' +
+            '<div style="padding:16px;background:linear-gradient(135deg, #0077b5 0%, #005582 100%);border-radius:12px;box-shadow:0 4px 12px rgba(0,119,181,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> LinkedIn</div><div style="font-size:32px;font-weight:700"><span data-stat="social_linkedin">' + (p.stats.social_clicks.linkedin || 0) + '</span></div></div>' +
+            '<div style="padding:16px;background:linear-gradient(135deg, #000 0%, #333 100%);border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg> TikTok</div><div style="font-size:32px;font-weight:700"><span data-stat="social_tiktok">' + (p.stats.social_clicks.tiktok || 0) + '</span></div></div>' +
           '</div></div>' : '') +
 
           // Gallery breakdown
@@ -3135,9 +3166,20 @@
               });
 
               if (updatedPoint && updatedPoint.stats) {
-                // Update p.stats and p.images with new data
+                // Store old values for animation
+                var oldStats = JSON.parse(JSON.stringify(p.stats));
+
+                // Update ALL point data (stats, images, social media, phone, website, etc.)
                 p.stats = updatedPoint.stats;
                 p.images = updatedPoint.images || p.images;
+                p.facebook_url = updatedPoint.facebook_url;
+                p.instagram_url = updatedPoint.instagram_url;
+                p.linkedin_url = updatedPoint.linkedin_url;
+                p.tiktok_url = updatedPoint.tiktok_url;
+                p.website = updatedPoint.website;
+                p.phone = updatedPoint.phone;
+                p.cta_enabled = updatedPoint.cta_enabled;
+                p.cta_type = updatedPoint.cta_type;
 
                 // Re-render modal content
                 var updatedHtml = renderStatsContent(p);
@@ -3145,12 +3187,35 @@
                 // Update only the content part (not the header)
                 var contentDiv = qs('.jg-modal-report > div:last-child', modalReport);
                 if (contentDiv) {
+                  // Before replacing, collect old values for animation
+                  var oldValues = {};
+                  var statsElements = contentDiv.querySelectorAll('[data-stat]');
+                  for (var i = 0; i < statsElements.length; i++) {
+                    var el = statsElements[i];
+                    var statName = el.getAttribute('data-stat');
+                    oldValues[statName] = parseInt(el.textContent) || 0;
+                  }
+
                   // Extract content without header
                   var tempDiv = document.createElement('div');
                   tempDiv.innerHTML = updatedHtml;
                   var newContent = tempDiv.querySelector('div:last-child');
                   if (newContent) {
+                    // Replace content (handles structural changes like new social media fields)
                     contentDiv.innerHTML = newContent.innerHTML;
+
+                    // Animate numbers that changed (slot machine effect)
+                    var newStatsElements = contentDiv.querySelectorAll('[data-stat]');
+                    for (var j = 0; j < newStatsElements.length; j++) {
+                      var el = newStatsElements[j];
+                      var statName = el.getAttribute('data-stat');
+                      var newValue = parseInt(el.textContent) || 0;
+                      var oldValue = oldValues[statName] || 0;
+
+                      if (newValue !== oldValue) {
+                        animateNumber(el, oldValue, newValue);
+                      }
+                    }
 
                     // Update last update time
                     var lastUpdateEl = qs('#stats-last-update', modalReport);
