@@ -95,6 +95,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_logout_user', array($this, 'logout_user'));
         add_action('wp_ajax_jg_track_stat', array($this, 'track_stat'));
         add_action('wp_ajax_nopriv_jg_track_stat', array($this, 'track_stat'));
+        add_action('wp_ajax_jg_get_point_stats', array($this, 'get_point_stats'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -377,6 +378,14 @@ class JG_Map_Ajax_Handlers {
                                 'new_website' => $new_values['website'] ?? null,
                                 'prev_phone' => $old_values['phone'] ?? null,
                                 'new_phone' => $new_values['phone'] ?? null,
+                                'prev_facebook_url' => $old_values['facebook_url'] ?? null,
+                                'new_facebook_url' => $new_values['facebook_url'] ?? null,
+                                'prev_instagram_url' => $old_values['instagram_url'] ?? null,
+                                'new_instagram_url' => $new_values['instagram_url'] ?? null,
+                                'prev_linkedin_url' => $old_values['linkedin_url'] ?? null,
+                                'new_linkedin_url' => $new_values['linkedin_url'] ?? null,
+                                'prev_tiktok_url' => $old_values['tiktok_url'] ?? null,
+                                'new_tiktok_url' => $new_values['tiktok_url'] ?? null,
                                 'prev_cta_enabled' => $old_values['cta_enabled'] ?? null,
                                 'new_cta_enabled' => $new_values['cta_enabled'] ?? null,
                                 'prev_cta_type' => $old_values['cta_type'] ?? null,
@@ -496,6 +505,90 @@ class JG_Map_Ajax_Handlers {
             if ($item['type'] === 'zgloszenie') {
             }
         }
+
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Get stats for a single point (for live updates)
+     */
+    public function get_point_stats() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'jg_map_points';
+
+        $point_id = isset($_POST['point_id']) ? intval($_POST['point_id']) : 0;
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Missing point_id'));
+            return;
+        }
+
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        // Disable caching
+        wp_cache_flush();
+        $wpdb->query('SET SESSION query_cache_type = OFF');
+
+        // Get point with all data
+        $point = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, author_id, is_promo, images, facebook_url, instagram_url, linkedin_url, tiktok_url,
+                    website, phone, cta_enabled, cta_type,
+                    stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
+                    stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
+                    stats_unique_visitors, stats_avg_time_spent
+             FROM $table WHERE id = %d",
+            $point_id
+        ), ARRAY_A);
+
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Point not found'));
+            return;
+        }
+
+        $is_own_place = ($current_user_id > 0 && $current_user_id == $point['author_id']);
+
+        // Only return stats if user is admin or owner
+        if (!$is_admin && !$is_own_place) {
+            wp_send_json_error(array('message' => 'Permission denied'));
+            return;
+        }
+
+        // Parse images
+        $images = array();
+        if (!empty($point['images'])) {
+            $images_data = json_decode($point['images'], true);
+            if (is_array($images_data)) {
+                $is_sponsored = (bool)$point['is_promo'];
+                $max_visible_images = $is_sponsored ? 12 : 6;
+                $images = array_slice($images_data, 0, $max_visible_images);
+            }
+        }
+
+        $result = array(
+            'id' => intval($point['id']),
+            'images' => $images,
+            'facebook_url' => $point['facebook_url'],
+            'instagram_url' => $point['instagram_url'],
+            'linkedin_url' => $point['linkedin_url'],
+            'tiktok_url' => $point['tiktok_url'],
+            'website' => $point['website'],
+            'phone' => $point['phone'],
+            'cta_enabled' => $point['cta_enabled'],
+            'cta_type' => $point['cta_type'],
+            'stats' => array(
+                'views' => intval($point['stats_views'] ?? 0),
+                'phone_clicks' => intval($point['stats_phone_clicks'] ?? 0),
+                'website_clicks' => intval($point['stats_website_clicks'] ?? 0),
+                'social_clicks' => json_decode($point['stats_social_clicks'] ?? '{}', true) ?: array(),
+                'cta_clicks' => intval($point['stats_cta_clicks'] ?? 0),
+                'gallery_clicks' => json_decode($point['stats_gallery_clicks'] ?? '{}', true) ?: array(),
+                'first_viewed' => $point['stats_first_viewed'] ? $point['stats_first_viewed'] . ' UTC' : null,
+                'last_viewed' => $point['stats_last_viewed'] ? $point['stats_last_viewed'] . ' UTC' : null,
+                'unique_visitors' => intval($point['stats_unique_visitors'] ?? 0),
+                'avg_time_spent' => intval($point['stats_avg_time_spent'] ?? 0)
+            )
+        );
 
         wp_send_json_success($result);
     }

@@ -57,7 +57,7 @@ class JG_Map_Shortcode {
                 <label><input type="checkbox" data-type="ciekawostka" checked> <?php _e('Ciekawostki', 'jg-map'); ?></label>
                 <label><input type="checkbox" data-type="miejsce" checked> <?php _e('Miejsca', 'jg-map'); ?></label>
                 <label><input type="checkbox" data-my-places> <?php _e('Moje miejsca', 'jg-map'); ?></label>
-                <label style="margin-left:auto"><input type="checkbox" data-promo> <?php _e('Tylko promocje', 'jg-map'); ?></label>
+                <label style="margin-left:auto"><input type="checkbox" data-promo> <?php _e('Tylko miejsca sponsorowane', 'jg-map'); ?></label>
                 <div class="jg-search">
                     <input type="text" id="jg-search-input" placeholder="🔍 <?php _e('Szukaj miejsca...', 'jg-map'); ?>" />
                     <button id="jg-search-btn" class="jg-search-btn" title="Szukaj">

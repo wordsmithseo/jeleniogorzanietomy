@@ -3158,14 +3158,15 @@
         }
 
         statsRefreshInterval = setInterval(function() {
-          // Fetch updated stats
-          api('jg_points', {}).then(function(result) {
-            if (result && result.points) {
-              var updatedPoint = result.points.find(function(point) {
-                return point.id === p.id;
-              });
+          // Fetch updated stats for this specific point
+          api('jg_get_point_stats', { point_id: p.id }).then(function(result) {
+            console.log('[Stats Auto-Refresh] API response received for point:', p.id);
+            if (result && result.data) {
+              var updatedPoint = result.data;
 
+              console.log('[Stats Auto-Refresh] Has stats:', updatedPoint.stats ? 'YES' : 'NO');
               if (updatedPoint && updatedPoint.stats) {
+                console.log('[Stats Auto-Refresh] Old views:', p.stats.views, 'New views:', updatedPoint.stats.views);
                 // Store old values for animation
                 var oldStats = JSON.parse(JSON.stringify(p.stats));
 
@@ -4212,6 +4213,26 @@
           // Show phone changes if present (for sponsored points)
           if (p.edit_info.prev_phone !== undefined && p.edit_info.new_phone !== undefined && p.edit_info.prev_phone !== p.edit_info.new_phone) {
             changes.push('<div><strong>📞 Telefon:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_phone || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_phone || '(brak)') + '</span></div>');
+          }
+
+          // Show Facebook changes if present (for sponsored points)
+          if (p.edit_info.prev_facebook_url !== undefined && p.edit_info.new_facebook_url !== undefined && p.edit_info.prev_facebook_url !== p.edit_info.new_facebook_url) {
+            changes.push('<div><strong>Facebook:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_facebook_url || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_facebook_url || '(brak)') + '</span></div>');
+          }
+
+          // Show Instagram changes if present (for sponsored points)
+          if (p.edit_info.prev_instagram_url !== undefined && p.edit_info.new_instagram_url !== undefined && p.edit_info.prev_instagram_url !== p.edit_info.new_instagram_url) {
+            changes.push('<div><strong>Instagram:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_instagram_url || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_instagram_url || '(brak)') + '</span></div>');
+          }
+
+          // Show LinkedIn changes if present (for sponsored points)
+          if (p.edit_info.prev_linkedin_url !== undefined && p.edit_info.new_linkedin_url !== undefined && p.edit_info.prev_linkedin_url !== p.edit_info.new_linkedin_url) {
+            changes.push('<div><strong>LinkedIn:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_linkedin_url || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_linkedin_url || '(brak)') + '</span></div>');
+          }
+
+          // Show TikTok changes if present (for sponsored points)
+          if (p.edit_info.prev_tiktok_url !== undefined && p.edit_info.new_tiktok_url !== undefined && p.edit_info.prev_tiktok_url !== p.edit_info.new_tiktok_url) {
+            changes.push('<div><strong>TikTok:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_tiktok_url || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_tiktok_url || '(brak)') + '</span></div>');
           }
 
           // Show CTA changes if present (for sponsored points)
