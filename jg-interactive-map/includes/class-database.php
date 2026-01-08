@@ -40,6 +40,9 @@ class JG_Map_Database {
         // Table for relevance votes
         $table_relevance_votes = $wpdb->prefix . 'jg_map_relevance_votes';
 
+        // Table for point visits (tracking who visited which point)
+        $table_point_visits = $wpdb->prefix . 'jg_map_point_visits';
+
         // Points table SQL
         $sql_points = "CREATE TABLE IF NOT EXISTS $table_points (
             id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -137,12 +140,29 @@ class JG_Map_Database {
             KEY point_id (point_id)
         ) $charset_collate;";
 
+        // Point visits table SQL (for tracking unique visitors)
+        $sql_point_visits = "CREATE TABLE IF NOT EXISTS $table_point_visits (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            user_id bigint(20) UNSIGNED DEFAULT NULL,
+            visitor_fingerprint varchar(64) DEFAULT NULL,
+            visit_count int(11) DEFAULT 1,
+            first_visited datetime DEFAULT CURRENT_TIMESTAMP,
+            last_visited datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY user_point (user_id, point_id),
+            UNIQUE KEY fingerprint_point (visitor_fingerprint, point_id),
+            KEY point_id (point_id),
+            KEY user_id (user_id)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_points);
         dbDelta($sql_votes);
         dbDelta($sql_reports);
         dbDelta($sql_history);
         dbDelta($sql_relevance_votes);
+        dbDelta($sql_point_visits);
 
         // Set plugin version
         update_option('jg_map_db_version', JG_MAP_VERSION);

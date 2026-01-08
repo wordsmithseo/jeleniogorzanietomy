@@ -3099,7 +3099,7 @@
           '<div style="margin-bottom:24px"><h4 style="margin:0 0 16px 0;color:#374151;font-size:16px;font-weight:600">Kluczowe wskaźniki</h4>' +
           '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px">' +
           '<div style="padding:16px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:12px;box-shadow:0 4px 12px rgba(102,126,234,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👁️ Wyświetlenia</div><div style="font-size:32px;font-weight:700"><span data-stat="views">' + (p.stats.views || 0) + '</span></div></div>' +
-          '<div style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👥 Unikalni</div><div style="font-size:32px;font-weight:700"><span data-stat="unique_visitors">' + (p.stats.unique_visitors || 0) + '</span></div></div>' +
+          '<div id="unique-visitors-card" style="padding:16px;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);border-radius:12px;box-shadow:0 4px 12px rgba(240,147,251,0.3);color:#fff;cursor:pointer;transition:transform 0.2s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">👥 Unikalni</div><div style="font-size:32px;font-weight:700"><span data-stat="unique_visitors">' + (p.stats.unique_visitors || 0) + '</span></div></div>' +
           '<div style="padding:16px;background:linear-gradient(135deg, #fa709a 0%, #fee140 100%);border-radius:12px;box-shadow:0 4px 12px rgba(250,112,154,0.3);color:#fff"><div style="font-size:14px;opacity:0.9;margin-bottom:4px">⏱️ Śr. czas</div><div style="font-size:20px;font-weight:700"><span data-stat="avg_time_spent">' + timeFormatted + '</span></div></div>' +
           '</div></div>' +
 
@@ -3137,6 +3137,181 @@
       }
 
       /**
+       * Open user profile modal
+       */
+      function openUserModal(userId) {
+        api('jg_get_user_info', { user_id: userId }).then(function(result) {
+          if (!result || !result.data) {
+            showAlert('Błąd pobierania informacji o użytkowniku');
+            return;
+          }
+
+          var user = result.data;
+          var memberSince = user.member_since ? new Date(user.member_since).toLocaleDateString('pl-PL') : '-';
+          var lastActivity = user.last_activity ? new Date(user.last_activity).toLocaleDateString('pl-PL') : 'Brak aktywności';
+
+          var pointsHtml = '';
+          if (user.points && user.points.length > 0) {
+            pointsHtml = '<div style="max-height:300px;overflow-y:auto;margin-top:12px">';
+            for (var i = 0; i < user.points.length; i++) {
+              var point = user.points[i];
+              var typeLabels = {
+                'miejsce': '📍 Miejsce',
+                'ciekawostka': '💡 Ciekawostka',
+                'zgloszenie': '📢 Zgłoszenie'
+              };
+              var typeLabel = typeLabels[point.type] || point.type;
+              var createdAt = point.created_at ? new Date(point.created_at).toLocaleDateString('pl-PL') : '-';
+
+              pointsHtml += '<div style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px">' +
+                '<div style="font-weight:600;margin-bottom:4px">' + esc(point.title) + '</div>' +
+                '<div style="font-size:12px;color:#6b7280">' +
+                '<span style="margin-right:12px">' + typeLabel + '</span>' +
+                '<span>Dodano: ' + createdAt + '</span>' +
+                '</div>' +
+                '</div>';
+            }
+            pointsHtml += '</div>';
+          } else {
+            pointsHtml = '<div style="padding:20px;text-align:center;color:#9ca3af">Brak dodanych miejsc</div>';
+          }
+
+          // Admin management panel
+          var adminPanel = '';
+          if (user.is_admin && user.restrictions) {
+            var bannedStatus = '';
+            if (user.restrictions.banned_until) {
+              var banDate = new Date(user.restrictions.banned_until);
+              var now = new Date();
+              if (banDate > now) {
+                bannedStatus = '<div style="padding:12px;background:#fee2e2;border:1px solid #ef4444;border-radius:8px;margin-bottom:12px;color:#991b1b">' +
+                  '🚫 <strong>Użytkownik zbanowany</strong> do ' + banDate.toLocaleDateString('pl-PL') +
+                  '</div>';
+              }
+            }
+
+            adminPanel = '<div style="margin-top:24px;padding-top:24px;border-top:2px solid #e5e7eb">' +
+              '<h4 style="margin:0 0 12px 0;color:#374151">⚙️ Panel administracyjny</h4>' +
+              bannedStatus +
+              '<div style="display:grid;gap:8px">';
+
+            if (!user.restrictions.can_add) {
+              adminPanel += '<div style="padding:8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:14px">⚠️ Ograniczenie: Nie może dodawać nowych miejsc</div>';
+            }
+            if (!user.restrictions.can_edit) {
+              adminPanel += '<div style="padding:8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:14px">⚠️ Ograniczenie: Nie może edytować miejsc</div>';
+            }
+            if (!user.restrictions.can_delete) {
+              adminPanel += '<div style="padding:8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:14px">⚠️ Ograniczenie: Nie może usuwać miejsc</div>';
+            }
+
+            adminPanel += '</div></div>';
+          }
+
+          var modalHtml = '<header style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:20px;border-radius:12px 12px 0 0">' +
+            '<h3 style="margin:0;color:#fff;font-size:20px">👤 ' + esc(user.username) + '</h3>' +
+            '<button class="jg-close" id="user-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
+            '</header>' +
+            '<div style="padding:20px">' +
+            '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:20px">' +
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📅 Członek od</div>' +
+            '<div style="font-weight:600">' + memberSince + '</div>' +
+            '</div>' +
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">⏱️ Ostatnia aktywność</div>' +
+            '<div style="font-weight:600">' + lastActivity + '</div>' +
+            '</div>' +
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📍 Dodane miejsca</div>' +
+            '<div style="font-weight:600;font-size:24px">' + user.points_count + '</div>' +
+            '</div>' +
+            '</div>' +
+            '<div>' +
+            '<h4 style="margin:0 0 8px 0;color:#374151">Ostatnio dodane miejsca (max 10)</h4>' +
+            pointsHtml +
+            '</div>' +
+            adminPanel +
+            '</div>';
+
+          open(modalReport, modalHtml);
+
+          qs('#user-modal-close', modalReport).onclick = function() {
+            close(modalReport);
+          };
+        }).catch(function(err) {
+          showAlert((err && err.message) || 'Błąd pobierania informacji o użytkowniku');
+        });
+      }
+
+      /**
+       * Open visitors list modal
+       */
+      function openVisitorsModal(p) {
+        // Fetch visitors list
+        api('jg_get_point_visitors', { point_id: p.id }).then(function(result) {
+          if (!result || !result.data) {
+            showAlert('Błąd pobierania listy odwiedzających');
+            return;
+          }
+
+          var visitors = result.data;
+          var visitorsHtml = '';
+
+          if (visitors.length === 0) {
+            visitorsHtml = '<div style="padding:40px;text-align:center;color:#9ca3af">Brak zarejestrowanych odwiedzin</div>';
+          } else {
+            visitorsHtml = '<div style="max-height:500px;overflow-y:auto">';
+            for (var i = 0; i < visitors.length; i++) {
+              var visitor = visitors[i];
+              var lastVisited = visitor.last_visited ? new Date(visitor.last_visited).toLocaleDateString('pl-PL') : '-';
+
+              visitorsHtml += '<div style="padding:12px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;cursor:pointer" class="visitor-row" data-user-id="' + visitor.user_id + '">' +
+                '<div style="flex:1">' +
+                '<div style="font-weight:600;color:#111827;margin-bottom:4px">' + esc(visitor.username) + '</div>' +
+                '<div style="font-size:12px;color:#6b7280">Ostatnia wizyta: ' + lastVisited + '</div>' +
+                '</div>' +
+                '<div style="padding:8px 16px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:20px;color:#fff;font-weight:700">' +
+                visitor.visit_count + (visitor.visit_count === 1 ? ' wizyta' : visitor.visit_count < 5 ? ' wizyty' : ' wizyt') +
+                '</div>' +
+                '</div>';
+            }
+            visitorsHtml += '</div>';
+          }
+
+          var modalHtml = '<header style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:20px;border-radius:12px 12px 0 0">' +
+            '<h3 style="margin:0;color:#fff;font-size:20px">👥 Unikalni odwiedzający</h3>' +
+            '<button class="jg-close" id="visitors-close" style="color:#fff;opacity:0.9">&times;</button>' +
+            '</header>' +
+            '<div style="padding:20px">' + visitorsHtml + '</div>';
+
+          open(modalReport, modalHtml);
+
+          qs('#visitors-close', modalReport).onclick = function() {
+            close(modalReport);
+          };
+
+          // Add click handlers to visitor rows
+          var visitorRows = modalReport.querySelectorAll('.visitor-row');
+          for (var j = 0; j < visitorRows.length; j++) {
+            visitorRows[j].onmouseover = function() {
+              this.style.background = '#f3f4f6';
+            };
+            visitorRows[j].onmouseout = function() {
+              this.style.background = '';
+            };
+            visitorRows[j].onclick = function() {
+              var userId = parseInt(this.getAttribute('data-user-id'));
+              close(modalReport);
+              openUserModal(userId);
+            };
+          }
+        }).catch(function(err) {
+          showAlert((err && err.message) || 'Błąd pobierania listy odwiedzających');
+        });
+      }
+
+      /**
        * Open stats modal with real-time updates
        */
       function openStatsModal(p) {
@@ -3152,20 +3327,29 @@
           close(modalReport);
         };
 
+        // Add click handler to unique visitors card
+        var uniqueVisitorsCard = qs('#unique-visitors-card', modalReport);
+        if (uniqueVisitorsCard) {
+          uniqueVisitorsCard.onclick = function() {
+            openVisitorsModal(p);
+          };
+        }
+
         // Start real-time updates - refresh every 3 seconds
         if (statsRefreshInterval) {
           clearInterval(statsRefreshInterval);
         }
 
         statsRefreshInterval = setInterval(function() {
-          // Fetch updated stats
-          api('jg_points', {}).then(function(result) {
-            if (result && result.points) {
-              var updatedPoint = result.points.find(function(point) {
-                return point.id === p.id;
-              });
+          // Fetch updated stats for this specific point
+          api('jg_get_point_stats', { point_id: p.id }).then(function(result) {
+            console.log('[Stats Auto-Refresh] API response received for point:', p.id);
+            if (result && result.data) {
+              var updatedPoint = result.data;
 
+              console.log('[Stats Auto-Refresh] Has stats:', updatedPoint.stats ? 'YES' : 'NO');
               if (updatedPoint && updatedPoint.stats) {
+                console.log('[Stats Auto-Refresh] Old views:', p.stats.views, 'New views:', updatedPoint.stats.views);
                 // Store old values for animation
                 var oldStats = JSON.parse(JSON.stringify(p.stats));
 
@@ -4212,6 +4396,26 @@
           // Show phone changes if present (for sponsored points)
           if (p.edit_info.prev_phone !== undefined && p.edit_info.new_phone !== undefined && p.edit_info.prev_phone !== p.edit_info.new_phone) {
             changes.push('<div><strong>📞 Telefon:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_phone || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_phone || '(brak)') + '</span></div>');
+          }
+
+          // Show Facebook changes if present (for sponsored points)
+          if (p.edit_info.prev_facebook_url !== undefined && p.edit_info.new_facebook_url !== undefined && p.edit_info.prev_facebook_url !== p.edit_info.new_facebook_url) {
+            changes.push('<div><strong>Facebook:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_facebook_url || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_facebook_url || '(brak)') + '</span></div>');
+          }
+
+          // Show Instagram changes if present (for sponsored points)
+          if (p.edit_info.prev_instagram_url !== undefined && p.edit_info.new_instagram_url !== undefined && p.edit_info.prev_instagram_url !== p.edit_info.new_instagram_url) {
+            changes.push('<div><strong>Instagram:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_instagram_url || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_instagram_url || '(brak)') + '</span></div>');
+          }
+
+          // Show LinkedIn changes if present (for sponsored points)
+          if (p.edit_info.prev_linkedin_url !== undefined && p.edit_info.new_linkedin_url !== undefined && p.edit_info.prev_linkedin_url !== p.edit_info.new_linkedin_url) {
+            changes.push('<div><strong>LinkedIn:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_linkedin_url || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_linkedin_url || '(brak)') + '</span></div>');
+          }
+
+          // Show TikTok changes if present (for sponsored points)
+          if (p.edit_info.prev_tiktok_url !== undefined && p.edit_info.new_tiktok_url !== undefined && p.edit_info.prev_tiktok_url !== p.edit_info.new_tiktok_url) {
+            changes.push('<div><strong>TikTok:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_tiktok_url || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_tiktok_url || '(brak)') + '</span></div>');
           }
 
           // Show CTA changes if present (for sponsored points)

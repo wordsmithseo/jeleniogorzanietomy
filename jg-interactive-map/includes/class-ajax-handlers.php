@@ -95,6 +95,9 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_logout_user', array($this, 'logout_user'));
         add_action('wp_ajax_jg_track_stat', array($this, 'track_stat'));
         add_action('wp_ajax_nopriv_jg_track_stat', array($this, 'track_stat'));
+        add_action('wp_ajax_jg_get_point_stats', array($this, 'get_point_stats'));
+        add_action('wp_ajax_jg_get_point_visitors', array($this, 'get_point_visitors'));
+        add_action('wp_ajax_jg_get_user_info', array($this, 'get_user_info'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -377,6 +380,14 @@ class JG_Map_Ajax_Handlers {
                                 'new_website' => $new_values['website'] ?? null,
                                 'prev_phone' => $old_values['phone'] ?? null,
                                 'new_phone' => $new_values['phone'] ?? null,
+                                'prev_facebook_url' => $old_values['facebook_url'] ?? null,
+                                'new_facebook_url' => $new_values['facebook_url'] ?? null,
+                                'prev_instagram_url' => $old_values['instagram_url'] ?? null,
+                                'new_instagram_url' => $new_values['instagram_url'] ?? null,
+                                'prev_linkedin_url' => $old_values['linkedin_url'] ?? null,
+                                'new_linkedin_url' => $new_values['linkedin_url'] ?? null,
+                                'prev_tiktok_url' => $old_values['tiktok_url'] ?? null,
+                                'new_tiktok_url' => $new_values['tiktok_url'] ?? null,
                                 'prev_cta_enabled' => $old_values['cta_enabled'] ?? null,
                                 'new_cta_enabled' => $new_values['cta_enabled'] ?? null,
                                 'prev_cta_type' => $old_values['cta_type'] ?? null,
@@ -496,6 +507,232 @@ class JG_Map_Ajax_Handlers {
             if ($item['type'] === 'zgloszenie') {
             }
         }
+
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Get stats for a single point (for live updates)
+     */
+    public function get_point_stats() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'jg_map_points';
+
+        $point_id = isset($_POST['point_id']) ? intval($_POST['point_id']) : 0;
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Missing point_id'));
+            return;
+        }
+
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        // Disable caching
+        wp_cache_flush();
+        $wpdb->query('SET SESSION query_cache_type = OFF');
+
+        // Get point with all data
+        $point = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, author_id, is_promo, images, facebook_url, instagram_url, linkedin_url, tiktok_url,
+                    website, phone, cta_enabled, cta_type,
+                    stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
+                    stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
+                    stats_unique_visitors, stats_avg_time_spent
+             FROM $table WHERE id = %d",
+            $point_id
+        ), ARRAY_A);
+
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Point not found'));
+            return;
+        }
+
+        $is_own_place = ($current_user_id > 0 && $current_user_id == $point['author_id']);
+
+        // Only return stats if user is admin or owner
+        if (!$is_admin && !$is_own_place) {
+            wp_send_json_error(array('message' => 'Permission denied'));
+            return;
+        }
+
+        // Parse images
+        $images = array();
+        if (!empty($point['images'])) {
+            $images_data = json_decode($point['images'], true);
+            if (is_array($images_data)) {
+                $is_sponsored = (bool)$point['is_promo'];
+                $max_visible_images = $is_sponsored ? 12 : 6;
+                $images = array_slice($images_data, 0, $max_visible_images);
+            }
+        }
+
+        $result = array(
+            'id' => intval($point['id']),
+            'images' => $images,
+            'facebook_url' => $point['facebook_url'],
+            'instagram_url' => $point['instagram_url'],
+            'linkedin_url' => $point['linkedin_url'],
+            'tiktok_url' => $point['tiktok_url'],
+            'website' => $point['website'],
+            'phone' => $point['phone'],
+            'cta_enabled' => $point['cta_enabled'],
+            'cta_type' => $point['cta_type'],
+            'stats' => array(
+                'views' => intval($point['stats_views'] ?? 0),
+                'phone_clicks' => intval($point['stats_phone_clicks'] ?? 0),
+                'website_clicks' => intval($point['stats_website_clicks'] ?? 0),
+                'social_clicks' => json_decode($point['stats_social_clicks'] ?? '{}', true) ?: array(),
+                'cta_clicks' => intval($point['stats_cta_clicks'] ?? 0),
+                'gallery_clicks' => json_decode($point['stats_gallery_clicks'] ?? '{}', true) ?: array(),
+                'first_viewed' => $point['stats_first_viewed'] ? $point['stats_first_viewed'] . ' UTC' : null,
+                'last_viewed' => $point['stats_last_viewed'] ? $point['stats_last_viewed'] . ' UTC' : null,
+                'unique_visitors' => intval($point['stats_unique_visitors'] ?? 0),
+                'avg_time_spent' => intval($point['stats_avg_time_spent'] ?? 0)
+            )
+        );
+
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Get visitors list for a point (for stats modal)
+     */
+    public function get_point_visitors() {
+        global $wpdb;
+        $table_points = $wpdb->prefix . 'jg_map_points';
+        $table_visits = $wpdb->prefix . 'jg_map_point_visits';
+
+        $point_id = isset($_POST['point_id']) ? intval($_POST['point_id']) : 0;
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Missing point_id'));
+            return;
+        }
+
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        // Check if point exists
+        $point = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, author_id FROM $table_points WHERE id = %d",
+            $point_id
+        ), ARRAY_A);
+
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Point not found'));
+            return;
+        }
+
+        $is_own_place = ($current_user_id > 0 && $current_user_id == $point['author_id']);
+
+        // Only return visitors if user is admin or owner
+        if (!$is_admin && !$is_own_place) {
+            wp_send_json_error(array('message' => 'Permission denied'));
+            return;
+        }
+
+        // Get all visitors for this point (only logged in users)
+        $visitors = $wpdb->get_results($wpdb->prepare(
+            "SELECT v.user_id, v.visit_count, v.first_visited, v.last_visited
+             FROM $table_visits v
+             WHERE v.point_id = %d AND v.user_id IS NOT NULL
+             ORDER BY v.visit_count DESC, v.last_visited DESC",
+            $point_id
+        ), ARRAY_A);
+
+        $result = array();
+        foreach ($visitors as $visitor) {
+            $user = get_userdata($visitor['user_id']);
+            if ($user) {
+                $result[] = array(
+                    'user_id' => intval($visitor['user_id']),
+                    'username' => $user->display_name,
+                    'visit_count' => intval($visitor['visit_count']),
+                    'first_visited' => $visitor['first_visited'] ? $visitor['first_visited'] . ' UTC' : null,
+                    'last_visited' => $visitor['last_visited'] ? $visitor['last_visited'] . ' UTC' : null
+                );
+            }
+        }
+
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Get user information (for user profile modal)
+     */
+    public function get_user_info() {
+        global $wpdb;
+        $table_points = $wpdb->prefix . 'jg_map_points';
+
+        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Missing user_id'));
+            return;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'User not found'));
+            return;
+        }
+
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        // Get user's points count
+        $points_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_points WHERE author_id = %d AND status = 'publish'",
+            $user_id
+        ));
+
+        // Get user's last activity (last point created)
+        $last_activity = $wpdb->get_var($wpdb->prepare(
+            "SELECT created_at FROM $table_points WHERE author_id = %d ORDER BY created_at DESC LIMIT 1",
+            $user_id
+        ));
+
+        // Get user's points (for listing)
+        $user_points = $wpdb->get_results($wpdb->prepare(
+            "SELECT id, title, type, created_at FROM $table_points
+             WHERE author_id = %d AND status = 'publish'
+             ORDER BY created_at DESC
+             LIMIT 10",
+            $user_id
+        ), ARRAY_A);
+
+        $points_list = array();
+        foreach ($user_points as $point) {
+            $points_list[] = array(
+                'id' => intval($point['id']),
+                'title' => $point['title'],
+                'type' => $point['type'],
+                'created_at' => $point['created_at'] ? $point['created_at'] . ' UTC' : null
+            );
+        }
+
+        // Get restrictions (if admin or own profile)
+        $restrictions = null;
+        if ($is_admin || $current_user_id == $user_id) {
+            $restrictions = array(
+                'banned_until' => get_user_meta($user_id, 'jg_map_ban_until', true),
+                'can_edit' => !get_user_meta($user_id, 'jg_map_restrict_edit', true),
+                'can_delete' => !get_user_meta($user_id, 'jg_map_restrict_delete', true),
+                'can_add' => !get_user_meta($user_id, 'jg_map_restrict_add', true)
+            );
+        }
+
+        $result = array(
+            'user_id' => $user_id,
+            'username' => $user->display_name,
+            'member_since' => $user->user_registered . ' UTC',
+            'last_activity' => $last_activity ? $last_activity . ' UTC' : null,
+            'points_count' => intval($points_count),
+            'points' => $points_list,
+            'restrictions' => $restrictions,
+            'is_admin' => $is_admin
+        );
 
         wp_send_json_success($result);
     }
@@ -4167,6 +4404,37 @@ class JG_Map_Ajax_Handlers {
 
         switch ($action_type) {
             case 'view':
+                // Track individual visitor (for stats dashboard)
+                $current_user_id = get_current_user_id();
+                $visitor_table = $wpdb->prefix . 'jg_map_point_visits';
+
+                if ($current_user_id > 0) {
+                    // Logged in user - track by user_id
+                    $existing_visit = $wpdb->get_row($wpdb->prepare(
+                        "SELECT id, visit_count FROM $visitor_table WHERE point_id = %d AND user_id = %d",
+                        $point_id,
+                        $current_user_id
+                    ), ARRAY_A);
+
+                    if ($existing_visit) {
+                        // Update visit count
+                        $wpdb->query($wpdb->prepare(
+                            "UPDATE $visitor_table SET visit_count = visit_count + 1, last_visited = %s WHERE id = %d",
+                            $current_time,
+                            $existing_visit['id']
+                        ));
+                    } else {
+                        // First visit - insert
+                        $wpdb->insert($visitor_table, array(
+                            'point_id' => $point_id,
+                            'user_id' => $current_user_id,
+                            'visit_count' => 1,
+                            'first_visited' => $current_time,
+                            'last_visited' => $current_time
+                        ));
+                    }
+                }
+
                 // Increment view counter and update last viewed
                 $updates = array(
                     'stats_views' => 'COALESCE(stats_views, 0) + 1',
