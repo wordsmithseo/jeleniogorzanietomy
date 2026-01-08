@@ -1834,7 +1834,7 @@ class JG_Map_Admin {
                             <td><?php echo esc_html($promo['type']); ?></td>
                             <td>
                                 <?php if ($promo['promo_until']): ?>
-                                    <?php echo date('Y-m-d H:i', strtotime($promo['promo_until'])); ?>
+                                    <?php echo get_date_from_gmt($promo['promo_until'], 'Y-m-d H:i'); ?>
                                     <?php if ($expired): ?>
                                         <span style="color:#dc2626;font-weight:700">(Wygasła)</span>
                                     <?php endif; ?>
@@ -1850,7 +1850,7 @@ class JG_Map_Admin {
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <button type="button" class="button jg-edit-promo-date" data-id="<?php echo $promo['id']; ?>" data-current="<?php echo $promo['promo_until'] ? date('Y-m-d\TH:i', strtotime($promo['promo_until'])) : ''; ?>">Edytuj datę</button>
+                                <button type="button" class="button jg-edit-promo-date" data-id="<?php echo $promo['id']; ?>" data-current="<?php echo $promo['promo_until'] ? get_date_from_gmt($promo['promo_until'], 'Y-m-d\TH:i') : ''; ?>">Edytuj datę</button>
                                 <form method="post" style="display:inline" onsubmit="return confirm('Na pewno usunąć promocję?');">
                                     <?php wp_nonce_field('jg_promo_action', 'jg_promo_nonce'); ?>
                                     <input type="hidden" name="jg_promo_action" value="1">
@@ -2595,7 +2595,7 @@ class JG_Map_Admin {
                                     <?php if ($stats['ban_status'] === 'permanent'): ?>
                                         <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700">🚫 Ban permanentny</span>
                                     <?php else: ?>
-                                        <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700">🚫 Ban do <?php echo date('Y-m-d', strtotime($stats['ban_until'])); ?></span>
+                                        <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700">🚫 Ban do <?php echo get_date_from_gmt($stats['ban_until'], 'Y-m-d'); ?></span>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px">✓ Aktywny</span>
