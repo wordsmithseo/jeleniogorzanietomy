@@ -96,8 +96,11 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_track_stat', array($this, 'track_stat'));
         add_action('wp_ajax_nopriv_jg_track_stat', array($this, 'track_stat'));
         add_action('wp_ajax_jg_get_point_stats', array($this, 'get_point_stats'));
+        add_action('wp_ajax_nopriv_jg_get_point_stats', array($this, 'get_point_stats'));
         add_action('wp_ajax_jg_get_point_visitors', array($this, 'get_point_visitors'));
+        add_action('wp_ajax_nopriv_jg_get_point_visitors', array($this, 'get_point_visitors'));
         add_action('wp_ajax_jg_get_user_info', array($this, 'get_user_info'));
+        add_action('wp_ajax_nopriv_jg_get_user_info', array($this, 'get_user_info'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
