@@ -3140,13 +3140,11 @@
        * Open user profile modal
        */
       function openUserModal(userId) {
-        api('jg_get_user_info', { user_id: userId }).then(function(result) {
-          if (!result || !result.data) {
+        api('jg_get_user_info', { user_id: userId }).then(function(user) {
+          if (!user) {
             showAlert('Błąd pobierania informacji o użytkowniku');
             return;
           }
-
-          var user = result.data;
           var memberSince = user.member_since ? new Date(user.member_since).toLocaleDateString('pl-PL') : '-';
           var lastActivity = user.last_activity ? new Date(user.last_activity).toLocaleDateString('pl-PL') : 'Brak aktywności';
 
@@ -3250,15 +3248,14 @@
       function openVisitorsModal(p) {
         // Fetch visitors list
         console.log('[Visitors Modal] Fetching visitors for point:', p.id);
-        api('jg_get_point_visitors', { point_id: p.id }).then(function(result) {
-          console.log('[Visitors Modal] API response:', result);
-          if (!result || !result.data) {
-            console.error('[Visitors Modal] Invalid response:', result);
-            showAlert('Błąd pobierania listy odwiedzających: ' + (result && result.message ? result.message : 'Brak danych'));
+        api('jg_get_point_visitors', { point_id: p.id }).then(function(visitors) {
+          console.log('[Visitors Modal] API response:', visitors);
+          if (!visitors) {
+            console.error('[Visitors Modal] No data returned');
+            showAlert('Błąd pobierania listy odwiedzających');
             return;
           }
 
-          var visitors = result.data;
           var visitorsHtml = '';
 
           if (visitors.length === 0) {
@@ -3345,82 +3342,78 @@
 
         statsRefreshInterval = setInterval(function() {
           // Fetch updated stats for this specific point
-          api('jg_get_point_stats', { point_id: p.id }).then(function(result) {
-            console.log('[Stats Auto-Refresh] API response received for point:', p.id);
-            if (result && result.data) {
-              var updatedPoint = result.data;
+          api('jg_get_point_stats', { point_id: p.id }).then(function(updatedPoint) {
+            console.log('[Stats Auto-Refresh] API response received for point:', p.id, updatedPoint);
+            if (!updatedPoint || !updatedPoint.stats) {
+              console.error('[Stats Auto-Refresh] Invalid response');
+              return;
+            }
 
-              console.log('[Stats Auto-Refresh] Has stats:', updatedPoint.stats ? 'YES' : 'NO');
-              if (updatedPoint && updatedPoint.stats) {
-                console.log('[Stats Auto-Refresh] Old views:', p.stats.views, 'New views:', updatedPoint.stats.views);
-                // Store old values for animation
-                var oldStats = JSON.parse(JSON.stringify(p.stats));
+            console.log('[Stats Auto-Refresh] Old views:', p.stats.views, 'New views:', updatedPoint.stats.views);
 
-                // Update ALL point data (stats, images, social media, phone, website, etc.)
-                p.stats = updatedPoint.stats;
-                p.images = updatedPoint.images || p.images;
-                p.facebook_url = updatedPoint.facebook_url;
-                p.instagram_url = updatedPoint.instagram_url;
-                p.linkedin_url = updatedPoint.linkedin_url;
-                p.tiktok_url = updatedPoint.tiktok_url;
-                p.website = updatedPoint.website;
-                p.phone = updatedPoint.phone;
-                p.cta_enabled = updatedPoint.cta_enabled;
-                p.cta_type = updatedPoint.cta_type;
+            // Update ALL point data (stats, images, social media, phone, website, etc.)
+            p.stats = updatedPoint.stats;
+            p.images = updatedPoint.images || p.images;
+            p.facebook_url = updatedPoint.facebook_url;
+            p.instagram_url = updatedPoint.instagram_url;
+            p.linkedin_url = updatedPoint.linkedin_url;
+            p.tiktok_url = updatedPoint.tiktok_url;
+            p.website = updatedPoint.website;
+            p.phone = updatedPoint.phone;
+            p.cta_enabled = updatedPoint.cta_enabled;
+            p.cta_type = updatedPoint.cta_type;
 
-                // Re-render modal content
-                var updatedHtml = renderStatsContent(p);
+            // Re-render modal content
+            var updatedHtml = renderStatsContent(p);
 
-                // Update only the content part (not the header)
-                var contentDiv = qs('.jg-modal-report > div:last-child', modalReport);
-                if (contentDiv) {
-                  // Before replacing, collect old values for animation
-                  var oldValues = {};
-                  var statsElements = contentDiv.querySelectorAll('[data-stat]');
-                  for (var i = 0; i < statsElements.length; i++) {
-                    var el = statsElements[i];
-                    var statName = el.getAttribute('data-stat');
-                    oldValues[statName] = parseInt(el.textContent) || 0;
-                  }
+            // Update only the content part (not the header)
+            var contentDiv = qs('.jg-modal-report > div:last-child', modalReport);
+            if (!contentDiv) return;
 
-                  // Extract content without header
-                  var tempDiv = document.createElement('div');
-                  tempDiv.innerHTML = updatedHtml;
-                  var newContent = tempDiv.querySelector('div:last-child');
-                  if (newContent) {
-                    // Replace content (handles structural changes like new social media fields)
-                    contentDiv.innerHTML = newContent.innerHTML;
+            // Before replacing, collect old values for animation
+            var oldValues = {};
+            var statsElements = contentDiv.querySelectorAll('[data-stat]');
+            for (var i = 0; i < statsElements.length; i++) {
+              var el = statsElements[i];
+              var statName = el.getAttribute('data-stat');
+              oldValues[statName] = parseInt(el.textContent) || 0;
+            }
 
-                    // Re-attach click handler to unique visitors card after content update
-                    var uniqueVisitorsCard = qs('#unique-visitors-card', modalReport);
-                    if (uniqueVisitorsCard) {
-                      uniqueVisitorsCard.onclick = function() {
-                        openVisitorsModal(p);
-                      };
-                    }
+            // Extract content without header
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = updatedHtml;
+            var newContent = tempDiv.querySelector('div:last-child');
+            if (!newContent) return;
 
-                    // Animate numbers that changed (slot machine effect)
-                    var newStatsElements = contentDiv.querySelectorAll('[data-stat]');
-                    for (var j = 0; j < newStatsElements.length; j++) {
-                      var el = newStatsElements[j];
-                      var statName = el.getAttribute('data-stat');
-                      var newValue = parseInt(el.textContent) || 0;
-                      var oldValue = oldValues[statName] || 0;
+            // Replace content (handles structural changes like new social media fields)
+            contentDiv.innerHTML = newContent.innerHTML;
 
-                      if (newValue !== oldValue) {
-                        animateNumber(el, oldValue, newValue);
-                      }
-                    }
+            // Re-attach click handler to unique visitors card after content update
+            var uniqueVisitorsCard = qs('#unique-visitors-card', modalReport);
+            if (uniqueVisitorsCard) {
+              uniqueVisitorsCard.onclick = function() {
+                openVisitorsModal(p);
+              };
+            }
 
-                    // Update last update time
-                    var lastUpdateEl = qs('#stats-last-update', modalReport);
-                    if (lastUpdateEl) {
-                      var now = new Date();
-                      lastUpdateEl.textContent = 'Ostatnia aktualizacja: ' + now.toLocaleTimeString('pl-PL');
-                    }
-                  }
-                }
+            // Animate numbers that changed (slot machine effect)
+            var newStatsElements = contentDiv.querySelectorAll('[data-stat]');
+            for (var j = 0; j < newStatsElements.length; j++) {
+              var el = newStatsElements[j];
+              var statName = el.getAttribute('data-stat');
+              var newValue = parseInt(el.textContent) || 0;
+              var oldValue = oldValues[statName] || 0;
+
+              if (newValue !== oldValue) {
+                animateNumber(el, oldValue, newValue);
               }
+            }
+
+            // Update last update time
+            var lastUpdateEl = qs('#stats-last-update', modalReport);
+            if (lastUpdateEl) {
+              var now = new Date();
+              lastUpdateEl.textContent = 'Ostatnia aktualizacja: ' + now.toLocaleTimeString('pl-PL');
             }
           }).catch(function() {
             // Silently ignore errors - don't disrupt UX
