@@ -506,7 +506,7 @@ class JG_Interactive_Map {
                 <h1 class="jg-point-title"><?php echo esc_html($point['title']); ?></h1>
                 <div class="jg-point-meta">
                     📍 <?php echo esc_html($point['lat']); ?>, <?php echo esc_html($point['lng']); ?>
-                    · 📅 <?php echo date('d.m.Y', strtotime($point['created_at'])); ?>
+                    · 📅 <?php echo get_date_from_gmt($point['created_at'], 'd.m.Y'); ?>
                 </div>
             </div>
 
@@ -735,7 +735,7 @@ class JG_Interactive_Map {
     }
 
     $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
-    $lastmod = date('Y-m-d', strtotime($point['updated_at']));
+    $lastmod = get_date_from_gmt($point['updated_at'], 'Y-m-d');
 ?>
     <url>
         <loc><?php echo esc_url($url); ?></loc>

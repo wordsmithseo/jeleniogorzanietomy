@@ -483,8 +483,8 @@ class JG_Map_Ajax_Handlers {
                     'social_clicks' => json_decode($point['stats_social_clicks'] ?? '{}', true) ?: array(),
                     'cta_clicks' => intval($point['stats_cta_clicks'] ?? 0),
                     'gallery_clicks' => json_decode($point['stats_gallery_clicks'] ?? '{}', true) ?: array(),
-                    'first_viewed' => $point['stats_first_viewed'] ?? null,
-                    'last_viewed' => $point['stats_last_viewed'] ?? null,
+                    'first_viewed' => $point['stats_first_viewed'] ? $point['stats_first_viewed'] . ' UTC' : null,
+                    'last_viewed' => $point['stats_last_viewed'] ? $point['stats_last_viewed'] . ' UTC' : null,
                     'unique_visitors' => intval($point['stats_unique_visitors'] ?? 0),
                     'avg_time_spent' => intval($point['stats_avg_time_spent'] ?? 0)
                 ) : null
@@ -4162,7 +4162,7 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        $current_time = current_time('mysql');
+        $current_time = current_time('mysql', true); // GMT time for consistency with other timestamps
         $result = false;
 
         switch ($action_type) {
