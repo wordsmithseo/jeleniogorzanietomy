@@ -3375,8 +3375,14 @@
         statsRefreshInterval = setInterval(function() {
           console.log('[Stats Auto-Refresh] Interval tick - fetching stats for point:', p.id);
 
-          // Update timestamp to show we're attempting refresh
+          // Check if stats modal is still open (not visitors modal or user modal)
           var lastUpdateEl = qs('#stats-last-update', modalReport);
+          if (!lastUpdateEl) {
+            console.log('[Stats Auto-Refresh] Stats modal not visible, skipping refresh');
+            return;
+          }
+
+          // Update timestamp to show we're attempting refresh
           if (lastUpdateEl) {
             var now = new Date();
             lastUpdateEl.textContent = 'Próba odświeżenia: ' + now.toLocaleTimeString('pl-PL');
@@ -3455,7 +3461,7 @@
               };
             }
 
-            // Animate numbers that changed (slot machine effect)
+            // Animate ALL numbers with slot machine effect (even if value didn't change)
             var newStatsElements = contentDiv.querySelectorAll('[data-stat]');
             for (var j = 0; j < newStatsElements.length; j++) {
               var el = newStatsElements[j];
@@ -3463,9 +3469,8 @@
               var newValue = parseInt(el.textContent) || 0;
               var oldValue = oldValues[statName] || 0;
 
-              if (newValue !== oldValue) {
-                animateNumber(el, oldValue, newValue);
-              }
+              // Always animate, even if value is the same (for visual feedback)
+              animateNumber(el, oldValue, newValue);
             }
 
             // Update last update time to show success
@@ -3485,7 +3490,7 @@
               lastUpdateEl.style.color = '#ef4444'; // Red on error
             }
           });
-        }, 3000); // Update every 3 seconds
+        }, 20000); // Update every 20 seconds
       }
 
       function openReportModal(p) {
