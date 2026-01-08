@@ -3137,6 +3137,114 @@
       }
 
       /**
+       * Open user profile modal
+       */
+      function openUserModal(userId) {
+        api('jg_get_user_info', { user_id: userId }).then(function(result) {
+          if (!result || !result.data) {
+            showAlert('Błąd pobierania informacji o użytkowniku');
+            return;
+          }
+
+          var user = result.data;
+          var memberSince = user.member_since ? new Date(user.member_since).toLocaleDateString('pl-PL') : '-';
+          var lastActivity = user.last_activity ? new Date(user.last_activity).toLocaleDateString('pl-PL') : 'Brak aktywności';
+
+          var pointsHtml = '';
+          if (user.points && user.points.length > 0) {
+            pointsHtml = '<div style="max-height:300px;overflow-y:auto;margin-top:12px">';
+            for (var i = 0; i < user.points.length; i++) {
+              var point = user.points[i];
+              var typeLabels = {
+                'miejsce': '📍 Miejsce',
+                'ciekawostka': '💡 Ciekawostka',
+                'zgloszenie': '📢 Zgłoszenie'
+              };
+              var typeLabel = typeLabels[point.type] || point.type;
+              var createdAt = point.created_at ? new Date(point.created_at).toLocaleDateString('pl-PL') : '-';
+
+              pointsHtml += '<div style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px">' +
+                '<div style="font-weight:600;margin-bottom:4px">' + esc(point.title) + '</div>' +
+                '<div style="font-size:12px;color:#6b7280">' +
+                '<span style="margin-right:12px">' + typeLabel + '</span>' +
+                '<span>Dodano: ' + createdAt + '</span>' +
+                '</div>' +
+                '</div>';
+            }
+            pointsHtml += '</div>';
+          } else {
+            pointsHtml = '<div style="padding:20px;text-align:center;color:#9ca3af">Brak dodanych miejsc</div>';
+          }
+
+          // Admin management panel
+          var adminPanel = '';
+          if (user.is_admin && user.restrictions) {
+            var bannedStatus = '';
+            if (user.restrictions.banned_until) {
+              var banDate = new Date(user.restrictions.banned_until);
+              var now = new Date();
+              if (banDate > now) {
+                bannedStatus = '<div style="padding:12px;background:#fee2e2;border:1px solid #ef4444;border-radius:8px;margin-bottom:12px;color:#991b1b">' +
+                  '🚫 <strong>Użytkownik zbanowany</strong> do ' + banDate.toLocaleDateString('pl-PL') +
+                  '</div>';
+              }
+            }
+
+            adminPanel = '<div style="margin-top:24px;padding-top:24px;border-top:2px solid #e5e7eb">' +
+              '<h4 style="margin:0 0 12px 0;color:#374151">⚙️ Panel administracyjny</h4>' +
+              bannedStatus +
+              '<div style="display:grid;gap:8px">';
+
+            if (!user.restrictions.can_add) {
+              adminPanel += '<div style="padding:8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:14px">⚠️ Ograniczenie: Nie może dodawać nowych miejsc</div>';
+            }
+            if (!user.restrictions.can_edit) {
+              adminPanel += '<div style="padding:8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:14px">⚠️ Ograniczenie: Nie może edytować miejsc</div>';
+            }
+            if (!user.restrictions.can_delete) {
+              adminPanel += '<div style="padding:8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:14px">⚠️ Ograniczenie: Nie może usuwać miejsc</div>';
+            }
+
+            adminPanel += '</div></div>';
+          }
+
+          var modalHtml = '<header style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:20px;border-radius:12px 12px 0 0">' +
+            '<h3 style="margin:0;color:#fff;font-size:20px">👤 ' + esc(user.username) + '</h3>' +
+            '<button class="jg-close" id="user-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
+            '</header>' +
+            '<div style="padding:20px">' +
+            '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:20px">' +
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📅 Członek od</div>' +
+            '<div style="font-weight:600">' + memberSince + '</div>' +
+            '</div>' +
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">⏱️ Ostatnia aktywność</div>' +
+            '<div style="font-weight:600">' + lastActivity + '</div>' +
+            '</div>' +
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📍 Dodane miejsca</div>' +
+            '<div style="font-weight:600;font-size:24px">' + user.points_count + '</div>' +
+            '</div>' +
+            '</div>' +
+            '<div>' +
+            '<h4 style="margin:0 0 8px 0;color:#374151">Ostatnio dodane miejsca (max 10)</h4>' +
+            pointsHtml +
+            '</div>' +
+            adminPanel +
+            '</div>';
+
+          open(modalReport, modalHtml);
+
+          qs('#user-modal-close', modalReport).onclick = function() {
+            close(modalReport);
+          };
+        }).catch(function(err) {
+          showAlert((err && err.message) || 'Błąd pobierania informacji o użytkowniku');
+        });
+      }
+
+      /**
        * Open visitors list modal
        */
       function openVisitorsModal(p) {
@@ -3195,8 +3303,7 @@
             visitorRows[j].onclick = function() {
               var userId = parseInt(this.getAttribute('data-user-id'));
               close(modalReport);
-              // TODO: Open user modal
-              showAlert('Modal użytkownika #' + userId + ' będzie dostępny wkrótce');
+              openUserModal(userId);
             };
           }
         }).catch(function(err) {

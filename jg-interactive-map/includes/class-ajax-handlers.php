@@ -97,6 +97,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_track_stat', array($this, 'track_stat'));
         add_action('wp_ajax_jg_get_point_stats', array($this, 'get_point_stats'));
         add_action('wp_ajax_jg_get_point_visitors', array($this, 'get_point_visitors'));
+        add_action('wp_ajax_jg_get_user_info', array($this, 'get_user_info'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -653,6 +654,85 @@ class JG_Map_Ajax_Handlers {
                 );
             }
         }
+
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Get user information (for user profile modal)
+     */
+    public function get_user_info() {
+        global $wpdb;
+        $table_points = $wpdb->prefix . 'jg_map_points';
+
+        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Missing user_id'));
+            return;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'User not found'));
+            return;
+        }
+
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        // Get user's points count
+        $points_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_points WHERE author_id = %d AND status = 'publish'",
+            $user_id
+        ));
+
+        // Get user's last activity (last point created)
+        $last_activity = $wpdb->get_var($wpdb->prepare(
+            "SELECT created_at FROM $table_points WHERE author_id = %d ORDER BY created_at DESC LIMIT 1",
+            $user_id
+        ));
+
+        // Get user's points (for listing)
+        $user_points = $wpdb->get_results($wpdb->prepare(
+            "SELECT id, title, type, created_at FROM $table_points
+             WHERE author_id = %d AND status = 'publish'
+             ORDER BY created_at DESC
+             LIMIT 10",
+            $user_id
+        ), ARRAY_A);
+
+        $points_list = array();
+        foreach ($user_points as $point) {
+            $points_list[] = array(
+                'id' => intval($point['id']),
+                'title' => $point['title'],
+                'type' => $point['type'],
+                'created_at' => $point['created_at'] ? $point['created_at'] . ' UTC' : null
+            );
+        }
+
+        // Get restrictions (if admin or own profile)
+        $restrictions = null;
+        if ($is_admin || $current_user_id == $user_id) {
+            $restrictions = array(
+                'banned_until' => get_user_meta($user_id, 'jg_map_ban_until', true),
+                'can_edit' => !get_user_meta($user_id, 'jg_map_restrict_edit', true),
+                'can_delete' => !get_user_meta($user_id, 'jg_map_restrict_delete', true),
+                'can_add' => !get_user_meta($user_id, 'jg_map_restrict_add', true)
+            );
+        }
+
+        $result = array(
+            'user_id' => $user_id,
+            'username' => $user->display_name,
+            'member_since' => $user->user_registered . ' UTC',
+            'last_activity' => $last_activity ? $last_activity . ' UTC' : null,
+            'points_count' => intval($points_count),
+            'points' => $points_list,
+            'restrictions' => $restrictions,
+            'is_admin' => $is_admin
+        );
 
         wp_send_json_success($result);
     }
