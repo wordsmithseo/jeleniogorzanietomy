@@ -688,7 +688,17 @@ class JG_Interactive_Map {
         $description = !empty($point['excerpt']) ? $point['excerpt'] : wp_trim_words(strip_tags($point['content']), 30);
         $type_path = ($point['type'] === 'ciekawostka') ? 'ciekawostka' : (($point['type'] === 'zgloszenie') ? 'zgloszenie' : 'miejsce');
         $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
-        $robots_content = (get_option('blog_public') == '0') ? 'noindex, nofollow' : 'index, follow';
+
+        // Determine robots directive (same logic as add_point_meta_tags)
+        $robots_content = 'index, follow'; // Default
+        if (get_option('blog_public') == '0') {
+            $robots_content = 'noindex, nofollow';
+        }
+        // Check Elementor maintenance mode
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
+        if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
+            $robots_content = 'noindex, nofollow';
+        }
 
         ?><!DOCTYPE html>
 <html lang="pl">
@@ -762,10 +772,23 @@ class JG_Interactive_Map {
 
         $point = $jg_current_point;
 
-        // Determine robots directive based on WordPress settings
+        // Determine robots directive based on WordPress settings and Elementor maintenance mode
         // Note: We still generate all meta tags even if indexing is discouraged,
         // as they're useful for social sharing (Open Graph, Twitter Cards)
-        $robots_content = (get_option('blog_public') == '0') ? 'noindex, nofollow' : 'index, follow';
+        $robots_content = 'index, follow'; // Default
+
+        // Check WordPress search engine visibility setting
+        if (get_option('blog_public') == '0') {
+            $robots_content = 'noindex, nofollow';
+        }
+
+        // Check Elementor maintenance mode - should block indexing during maintenance
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
+        if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
+            $robots_content = 'noindex, nofollow';
+            error_log('[JG MAP SEO] Setting noindex for point "' . $point['title'] . '" due to Elementor maintenance mode: ' . $maintenance_mode);
+        }
+
         $images = json_decode($point['images'], true) ?: array();
 
         // Get featured image (or first image as fallback) - ensure it's a full URL
