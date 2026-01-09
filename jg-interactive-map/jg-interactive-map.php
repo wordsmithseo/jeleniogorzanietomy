@@ -301,29 +301,35 @@ class JG_Interactive_Map {
 
         // Common bot signatures
         $bots = array(
-            'googlebot',           // Google
-            'bingbot',            // Bing
-            'slurp',              // Yahoo
-            'duckduckbot',        // DuckDuckGo
-            'baiduspider',        // Baidu
-            'yandexbot',          // Yandex
-            'facebookexternalhit', // Facebook
-            'twitterbot',         // Twitter
-            'whatsapp',           // WhatsApp
-            'telegram',           // Telegram
-            'linkedinbot',        // LinkedIn
-            'pinterestbot',       // Pinterest
-            'slackbot',           // Slack
-            'discordbot',         // Discord
-            'applebot',           // Apple
-            'ia_archiver',        // Alexa
-            'semrushbot',         // SEMrush
-            'ahrefsbot',          // Ahrefs
-            'mj12bot',            // Majestic
-            'dotbot',             // Moz
-            'rogerbot',           // Moz
-            'petalbot',           // Huawei
-            'seznambot',          // Seznam
+            'googlebot',              // Google crawler
+            'google-inspectiontool',  // Google Search Console URL inspection tool (CRITICAL!)
+            'adsbot-google',          // Google Ads bot
+            'googlebot-image',        // Google Image crawler
+            'googlebot-news',         // Google News crawler
+            'googlebot-video',        // Google Video crawler
+            'chrome-lighthouse',      // Google Lighthouse
+            'bingbot',                // Bing
+            'slurp',                  // Yahoo
+            'duckduckbot',            // DuckDuckGo
+            'baiduspider',            // Baidu
+            'yandexbot',              // Yandex
+            'facebookexternalhit',    // Facebook
+            'twitterbot',             // Twitter
+            'whatsapp',               // WhatsApp
+            'telegram',               // Telegram
+            'linkedinbot',            // LinkedIn
+            'pinterestbot',           // Pinterest
+            'slackbot',               // Slack
+            'discordbot',             // Discord
+            'applebot',               // Apple
+            'ia_archiver',            // Alexa
+            'semrushbot',             // SEMrush
+            'ahrefsbot',              // Ahrefs
+            'mj12bot',                // Majestic
+            'dotbot',                 // Moz
+            'rogerbot',               // Moz
+            'petalbot',               // Huawei
+            'seznambot',              // Seznam
         );
 
         foreach ($bots as $bot) {
@@ -345,6 +351,9 @@ class JG_Interactive_Map {
             return;
         }
 
+        $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
+        error_log('[JG MAP POINT] Request for slug: ' . $point_slug . ' | User-Agent: ' . $user_agent);
+
         // Get point by slug from database
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
@@ -363,6 +372,7 @@ class JG_Interactive_Map {
         );
 
         if (!$point) {
+            error_log('[JG MAP POINT] Point not found: ' . $point_slug);
             global $wp_query;
             $wp_query->set_404();
             status_header(404);
@@ -370,16 +380,34 @@ class JG_Interactive_Map {
             exit;
         }
 
+        error_log('[JG MAP POINT] Found point ID: ' . $point['id'] . ' | Title: ' . $point['title']);
+
         // Check if visitor is a bot
-        if ($this->is_bot()) {
+        $is_bot = $this->is_bot();
+        error_log('[JG MAP POINT] Is bot: ' . ($is_bot ? 'YES' : 'NO'));
+
+        if ($is_bot) {
             // Bots get full HTML page with meta tags for SEO
+            error_log('[JG MAP POINT] Rendering page for bot');
+
+            // Ensure HTTP 200 status
+            status_header(200);
+            error_log('[JG MAP POINT] Set status to 200 OK');
+
             global $jg_current_point;
             $jg_current_point = $point;
 
-            $this->render_point_page($point);
+            try {
+                $this->render_point_page($point);
+                error_log('[JG MAP POINT] Page rendered successfully for bot');
+            } catch (Exception $e) {
+                error_log('[JG MAP POINT] ERROR rendering page: ' . $e->getMessage());
+                error_log('[JG MAP POINT] Stack trace: ' . $e->getTraceAsString());
+            }
             exit;
         } else {
             // Humans get redirected to map with modal
+            error_log('[JG MAP POINT] Redirecting human to map');
             wp_redirect(home_url('/#point-' . $point['id']));
             exit;
         }
@@ -389,6 +417,8 @@ class JG_Interactive_Map {
      * Render single point page
      */
     private function render_point_page($point) {
+        error_log('[JG MAP RENDER] Starting render for point: ' . $point['title']);
+
         // Set page title for SEO
         add_filter('pre_get_document_title', function() use ($point) {
             $type_labels = array(
@@ -400,8 +430,10 @@ class JG_Interactive_Map {
             return $point['title'] . ' - ' . $type_label . ' w Jeleniej Górze';
         }, 999);
 
+        error_log('[JG MAP RENDER] Calling get_header()');
         // Get site header
         get_header();
+        error_log('[JG MAP RENDER] get_header() completed');
 
         $images = json_decode($point['images'], true) ?: array();
 
@@ -554,8 +586,10 @@ class JG_Interactive_Map {
         </div>
 
         <?php
+        error_log('[JG MAP RENDER] Calling get_footer()');
         // Get site footer
         get_footer();
+        error_log('[JG MAP RENDER] Render completed successfully');
     }
 
     /**
