@@ -1500,9 +1500,23 @@
               // Immediate refresh for better UX
               refreshAll().then(function() {
                 msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
-                setTimeout(function() {
-                  close(modalAdd);
-                }, 800);
+
+                // Show special info modal for reports
+                if (j.data && j.data.show_report_info_modal && j.data.case_id) {
+                  setTimeout(function() {
+                    close(modalAdd);
+
+                    var modalMessage = 'Twoje zgłoszenie zostało przyjęte i otrzymało unikalny numer sprawy: <strong>' + j.data.case_id + '</strong>.\n\n' +
+                      'Teraz zostanie poddane weryfikacji przez nasz zespół. Po weryfikacji, jeśli zgłoszenie spełni nasze wytyczne, zostanie ono przekazane do właściwej instytucji (np. Straż Miejska, Urząd Miasta, administratorzy osiedli).\n\n' +
+                      'Monitorujemy status każdego zgłoszenia i aktualizujemy jego statusy na mapie. Możesz śledzić postępy rozwiązywania problemu, wchodząc na mapę i klikając na pineskę Twojego zgłoszenia.';
+
+                    showAlert(modalMessage.replace(/\n\n/g, '<br><br>'));
+                  }, 800);
+                } else {
+                  setTimeout(function() {
+                    close(modalAdd);
+                  }, 800);
+                }
               }).catch(function(err) {
                 debugError('[JG MAP] Błąd odświeżania:', err);
                 setTimeout(function() {
@@ -2467,9 +2481,16 @@
           h += '<span class="jg-promo-tag">⭐ MIEJSCE SPONSOROWANE</span>';  // Changed class name and added star emoji
         }
 
-        if (p.type === 'zgloszenie' && p.report_status) {
-          var statusClass = 'jg-status-badge--' + p.report_status;
-          h += '<span class="jg-status-badge ' + statusClass + '">' + esc(p.report_status_label || p.report_status) + '</span>';
+        if (p.type === 'zgloszenie') {
+          if (p.report_status) {
+            var statusClass = 'jg-status-badge--' + p.report_status;
+            h += '<span class="jg-status-badge ' + statusClass + '">' + esc(p.report_status_label || p.report_status) + '</span>';
+          }
+
+          // Display case ID if available
+          if (p.case_id) {
+            h += '<span class="jg-case-id-badge">' + esc(p.case_id) + '</span>';
+          }
         }
 
         return h;
@@ -4859,7 +4880,21 @@
           };
           var colors = statusColors[p.report_status] || { bg: '#f3f4f6', border: '#6b7280', text: '#374151' };
           var statusLabel = p.report_status_label || p.report_status;
-          statusBadge = '<div style="font-size:1rem;padding:6px 14px;background:' + colors.bg + ';border:1px solid ' + colors.border + ';border-radius:8px;color:' + colors.text + ';font-weight:600;white-space:nowrap">' + esc(statusLabel) + '</div>';
+
+          // Add deletion date for resolved reports
+          var deletionDateText = '';
+          if (p.report_status === 'resolved' && p.resolved_delete_at) {
+            try {
+              var deleteDate = new Date(p.resolved_delete_at);
+              var months = ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'];
+              var formattedDate = deleteDate.getDate() + ' ' + months[deleteDate.getMonth()] + ' ' + deleteDate.getFullYear();
+              deletionDateText = '<div style="font-size:0.85rem;margin-top:4px;opacity:0.8">Usunięcie: ' + formattedDate + '</div>';
+            } catch(e) {
+              // Ignore date parsing errors
+            }
+          }
+
+          statusBadge = '<div style="font-size:1rem;padding:6px 14px;background:' + colors.bg + ';border:1px solid ' + colors.border + ';border-radius:8px;color:' + colors.text + ';font-weight:600;white-space:nowrap">' + esc(statusLabel) + deletionDateText + '</div>';
         }
 
         // Type badge for header (left side)
@@ -6887,9 +6922,23 @@
                 // Immediate refresh for better UX
                 refreshAll().then(function() {
                   msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
-                  setTimeout(function() {
-                    close(modalAdd);
-                  }, 800);
+
+                  // Show special info modal for reports
+                  if (j.data && j.data.show_report_info_modal && j.data.case_id) {
+                    setTimeout(function() {
+                      close(modalAdd);
+
+                      var modalMessage = 'Twoje zgłoszenie zostało przyjęte i otrzymało unikalny numer sprawy: <strong>' + j.data.case_id + '</strong>.\n\n' +
+                        'Teraz zostanie poddane weryfikacji przez nasz zespół. Po weryfikacji, jeśli zgłoszenie spełni nasze wytyczne, zostanie ono przekazane do właściwej instytucji (np. Straż Miejska, Urząd Miasta, administratorzy osiedli).\n\n' +
+                        'Monitorujemy status każdego zgłoszenia i aktualizujemy jego statusy na mapie. Możesz śledzić postępy rozwiązywania problemu, wchodząc na mapę i klikając na pineskę Twojego zgłoszenia.';
+
+                      showAlert(modalMessage.replace(/\n\n/g, '<br><br>'));
+                    }, 800);
+                  } else {
+                    setTimeout(function() {
+                      close(modalAdd);
+                    }, 800);
+                  }
                 }).catch(function(err) {
                   debugError('[JG FAB] Błąd odświeżania:', err);
                   setTimeout(function() {
