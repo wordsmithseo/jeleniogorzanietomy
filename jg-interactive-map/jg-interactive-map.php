@@ -36,6 +36,11 @@ class JG_Interactive_Map {
     private static $instance = null;
 
     /**
+     * Flag to prevent double execution of page rendering
+     */
+    private static $page_rendered = false;
+
+    /**
      * Get single instance
      */
     public static function get_instance() {
@@ -351,6 +356,13 @@ class JG_Interactive_Map {
             return;
         }
 
+        // Prevent double execution
+        if (self::$page_rendered) {
+            error_log('[JG MAP POINT] Preventing double execution for slug: ' . $point_slug);
+            exit;
+        }
+        self::$page_rendered = true;
+
         $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
         error_log('[JG MAP POINT] Request for slug: ' . $point_slug . ' | User-Agent: ' . $user_agent);
 
@@ -394,6 +406,9 @@ class JG_Interactive_Map {
             status_header(200);
             error_log('[JG MAP POINT] Set status to 200 OK');
 
+            // Prevent WordPress from doing redirects or 404 handling
+            remove_action('template_redirect', 'redirect_canonical');
+
             global $jg_current_point;
             $jg_current_point = $point;
 
@@ -418,6 +433,11 @@ class JG_Interactive_Map {
      */
     private function render_point_page($point) {
         error_log('[JG MAP RENDER] Starting render for point: ' . $point['title']);
+
+        // Clean all output buffers before rendering
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
 
         // Set page title for SEO
         add_filter('pre_get_document_title', function() use ($point) {
