@@ -440,6 +440,7 @@ class JG_Map_Ajax_Handlers {
 
             $result[] = array(
                 'id' => intval($point['id']),
+                'case_id' => $point['case_id'] ?? null,
                 'title' => $point['title'],
                 'slug' => $point['slug'] ?? '',
                 'excerpt' => $point['excerpt'],
@@ -463,6 +464,7 @@ class JG_Map_Ajax_Handlers {
                 'status_label' => $status_label,
                 'report_status' => $point['report_status'],
                 'report_status_label' => $report_status_label,
+                'resolved_delete_at' => $point['resolved_delete_at'] ?? null,
                 'author_id' => intval($point['author_id']),
                 'author_name' => $author_name,
                 'author_hidden' => (bool)$point['author_hidden'],
@@ -1959,16 +1961,38 @@ class JG_Map_Ajax_Handlers {
         $point_id = intval($_POST['post_id'] ?? 0);
         $new_status = sanitize_text_field($_POST['new_status'] ?? '');
 
-        if (!$point_id || !in_array($new_status, array('added', 'reported', 'resolved'))) {
+        if (!$point_id || !in_array($new_status, array('added', 'needs_better_documentation', 'reported', 'resolved'))) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
             exit;
         }
 
-        JG_Map_Database::update_point($point_id, array('report_status' => $new_status));
+        // Get current point to check old status
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie znaleziony'));
+            exit;
+        }
+
+        $update_data = array('report_status' => $new_status);
+
+        // Set auto-delete date when changing to 'resolved' status (7 days from now)
+        if ($new_status === 'resolved') {
+            $update_data['resolved_delete_at'] = date('Y-m-d H:i:s', strtotime('+7 days'));
+        }
+        // Clear auto-delete date when changing away from 'resolved' status
+        elseif ($point['report_status'] === 'resolved' && $new_status !== 'resolved') {
+            $update_data['resolved_delete_at'] = null;
+        }
+
+        JG_Map_Database::update_point($point_id, $update_data);
+
+        // Get updated point to return delete date
+        $updated_point = JG_Map_Database::get_point($point_id);
 
         wp_send_json_success(array(
             'report_status' => $new_status,
-            'report_status_label' => $this->get_report_status_label($new_status)
+            'report_status_label' => $this->get_report_status_label($new_status),
+            'resolved_delete_at' => $updated_point['resolved_delete_at'] ?? null
         ));
     }
 
@@ -2472,6 +2496,7 @@ class JG_Map_Ajax_Handlers {
     private function get_report_status_label($status) {
         $labels = array(
             'added' => 'Dodane',
+            'needs_better_documentation' => 'Wymaga lepszego udokumentowania',
             'reported' => 'Zgłoszone do instytucji',
             'resolved' => 'Rozwiązane'
         );
