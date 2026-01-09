@@ -402,6 +402,11 @@ class JG_Interactive_Map {
             // Bots get full HTML page with meta tags for SEO
             error_log('[JG MAP POINT] Rendering page for bot');
 
+            // Check if headers already sent
+            if (headers_sent($file, $line)) {
+                error_log('[JG MAP POINT] ERROR: Headers already sent in ' . $file . ' on line ' . $line);
+            }
+
             // Ensure HTTP 200 status
             status_header(200);
             error_log('[JG MAP POINT] Set status to 200 OK');
@@ -412,12 +417,41 @@ class JG_Interactive_Map {
             global $jg_current_point;
             $jg_current_point = $point;
 
+            // Start output buffering to capture entire page
+            ob_start();
+
             try {
                 $this->render_point_page($point);
+
+                // Get the rendered content
+                $html_output = ob_get_clean();
+                $html_size = strlen($html_output);
+
                 error_log('[JG MAP POINT] Page rendered successfully for bot');
+                error_log('[JG MAP POINT] HTML output size: ' . $html_size . ' bytes');
+
+                // Check for PHP errors in output
+                if (stripos($html_output, 'fatal error') !== false ||
+                    stripos($html_output, 'parse error') !== false ||
+                    stripos($html_output, 'warning:') !== false) {
+                    error_log('[JG MAP POINT] WARNING: Possible PHP errors detected in output');
+                }
+
+                // Check if HTML is reasonable size (not empty, not too small)
+                if ($html_size < 100) {
+                    error_log('[JG MAP POINT] WARNING: HTML output is suspiciously small (' . $html_size . ' bytes)');
+                }
+
+                // Output the captured HTML
+                echo $html_output;
+
             } catch (Exception $e) {
+                ob_end_clean();
                 error_log('[JG MAP POINT] ERROR rendering page: ' . $e->getMessage());
                 error_log('[JG MAP POINT] Stack trace: ' . $e->getTraceAsString());
+
+                // Fallback: render minimal HTML
+                $this->render_fallback_page($point);
             }
             exit;
         } else {
@@ -433,11 +467,6 @@ class JG_Interactive_Map {
      */
     private function render_point_page($point) {
         error_log('[JG MAP RENDER] Starting render for point: ' . $point['title']);
-
-        // Clean all output buffers before rendering
-        while (ob_get_level() > 0) {
-            ob_end_clean();
-        }
 
         // Set page title for SEO
         add_filter('pre_get_document_title', function() use ($point) {
@@ -610,6 +639,95 @@ class JG_Interactive_Map {
         // Get site footer
         get_footer();
         error_log('[JG MAP RENDER] Render completed successfully');
+    }
+
+    /**
+     * Render fallback minimal HTML page (no theme)
+     */
+    private function render_fallback_page($point) {
+        error_log('[JG MAP FALLBACK] Rendering fallback page for: ' . $point['title']);
+
+        $images = json_decode($point['images'], true) ?: array();
+        $first_image = '';
+        if (!empty($images)) {
+            $featured_index = isset($point['featured_image_index']) ? (int)$point['featured_image_index'] : 0;
+            $img_index = isset($images[$featured_index]) ? $featured_index : 0;
+            if (isset($images[$img_index])) {
+                $img = $images[$img_index];
+                if (is_array($img)) {
+                    $first_image = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
+                } else {
+                    $first_image = $img;
+                }
+                if ($first_image && strpos($first_image, 'http') !== 0) {
+                    $first_image = home_url($first_image);
+                }
+            }
+        }
+
+        $description = !empty($point['excerpt']) ? $point['excerpt'] : wp_trim_words(strip_tags($point['content']), 30);
+        $type_path = ($point['type'] === 'ciekawostka') ? 'ciekawostka' : (($point['type'] === 'zgloszenie') ? 'zgloszenie' : 'miejsce');
+        $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
+        $robots_content = (get_option('blog_public') == '0') ? 'noindex, nofollow' : 'index, follow';
+
+        ?><!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo esc_html($point['title']); ?> - Jelenia Góra</title>
+    <meta name="description" content="<?php echo esc_attr($description); ?>">
+    <meta name="robots" content="<?php echo esc_attr($robots_content); ?>">
+    <link rel="canonical" href="<?php echo esc_url($url); ?>">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="<?php echo esc_attr($point['title']); ?>">
+    <meta property="og:description" content="<?php echo esc_attr($description); ?>">
+    <meta property="og:url" content="<?php echo esc_url($url); ?>">
+    <?php if ($first_image): ?>
+    <meta property="og:image" content="<?php echo esc_url($first_image); ?>">
+    <?php endif; ?>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "<?php echo $point['type'] === 'miejsce' ? 'LocalBusiness' : 'Place'; ?>",
+        "name": <?php echo json_encode($point['title']); ?>,
+        "description": <?php echo json_encode($description); ?>,
+        "url": <?php echo json_encode($url); ?>,
+        <?php if ($first_image): ?>"image": <?php echo json_encode($first_image); ?>,<?php endif; ?>
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": <?php echo json_encode($point['lat']); ?>,
+            "longitude": <?php echo json_encode($point['lng']); ?>
+        },
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Jelenia Góra",
+            "addressCountry": "PL"
+        }
+    }
+    </script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        h1 { color: #8d2324; }
+        img { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <h1><?php echo esc_html($point['title']); ?></h1>
+    <?php if ($first_image): ?>
+    <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>">
+    <?php endif; ?>
+    <div><?php echo wp_kses_post($point['content']); ?></div>
+    <p><strong>Lokalizacja:</strong> <?php echo esc_html($point['lat']); ?>, <?php echo esc_html($point['lng']); ?></p>
+    <?php if (!empty($point['website'])): ?>
+    <p><a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener">Odwiedź stronę</a></p>
+    <?php endif; ?>
+    <?php if (!empty($point['phone'])): ?>
+    <p><a href="tel:<?php echo esc_attr($point['phone']); ?>">Telefon: <?php echo esc_html($point['phone']); ?></a></p>
+    <?php endif; ?>
+</body>
+</html><?php
+        error_log('[JG MAP FALLBACK] Fallback rendering completed');
     }
 
     /**
