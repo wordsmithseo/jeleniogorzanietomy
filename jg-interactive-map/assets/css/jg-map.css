@@ -1243,6 +1243,24 @@
   color: #065f46;
 }
 
+.jg-status-badge--needs_better_documentation {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Case ID Badge */
+.jg-case-id-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  margin-left: 8px;
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
 /* Leaflet Overrides */
 .leaflet-container {
   background: #e5e7eb;
