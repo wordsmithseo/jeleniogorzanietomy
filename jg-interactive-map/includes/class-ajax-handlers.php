@@ -1074,10 +1074,19 @@ class JG_Map_Ajax_Handlers {
             // Send email notification to admin
             $this->notify_admin_new_point($point_id);
 
-            wp_send_json_success(array(
+            $response = array(
                 'message' => 'Punkt dodany do moderacji',
-                'point_id' => $point_id
-            ));
+                'point_id' => $point_id,
+                'type' => $type
+            );
+
+            // Include case_id for reports (zgłoszenie)
+            if ($type === 'zgloszenie' && !empty($saved_point['case_id'])) {
+                $response['case_id'] = $saved_point['case_id'];
+                $response['show_report_info_modal'] = true;
+            }
+
+            wp_send_json_success($response);
         } else {
             wp_send_json_error(array('message' => 'Błąd zapisu'));
         }
