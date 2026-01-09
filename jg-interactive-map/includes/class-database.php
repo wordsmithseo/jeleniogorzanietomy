@@ -46,6 +46,7 @@ class JG_Map_Database {
         // Points table SQL
         $sql_points = "CREATE TABLE IF NOT EXISTS $table_points (
             id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            case_id varchar(20) DEFAULT NULL,
             title varchar(255) NOT NULL,
             slug varchar(255) DEFAULT NULL,
             content longtext,
@@ -57,6 +58,7 @@ class JG_Map_Database {
             category varchar(100) DEFAULT NULL,
             status varchar(20) NOT NULL DEFAULT 'pending',
             report_status varchar(20) DEFAULT 'added',
+            resolved_delete_at datetime DEFAULT NULL,
             author_id bigint(20) UNSIGNED NOT NULL,
             author_hidden tinyint(1) DEFAULT 0,
             is_promo tinyint(1) DEFAULT 0,
@@ -79,7 +81,8 @@ class JG_Map_Database {
             KEY author_id (author_id),
             KEY status (status),
             KEY type (type),
-            KEY lat_lng (lat, lng)
+            KEY lat_lng (lat, lng),
+            KEY case_id (case_id)
         ) $charset_collate;";
 
         // Votes table SQL
@@ -199,7 +202,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.4.0'; // Updated for point_visits table
+        $current_schema_version = '3.5.0'; // Updated for case_id and resolved_delete_at for reports
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -381,6 +384,23 @@ class JG_Map_Database {
         ));
         if (empty($rejection_exists)) {
             $wpdb->query("ALTER TABLE `$safe_history` ADD COLUMN rejection_reason text DEFAULT NULL AFTER resolved_by");
+        }
+
+        // Check if case_id column exists (for unique report case numbers)
+        if (!$column_exists('case_id')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN case_id varchar(20) DEFAULT NULL AFTER id");
+
+            // Generate case IDs for existing zgłoszenie type points
+            $wpdb->query("
+                UPDATE `$safe_table`
+                SET case_id = CONCAT('ZGL-', LPAD(id, 6, '0'))
+                WHERE type = 'zgloszenie' AND case_id IS NULL
+            ");
+        }
+
+        // Check if resolved_delete_at column exists (for auto-deletion of resolved reports after 7 days)
+        if (!$column_exists('resolved_delete_at')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN resolved_delete_at datetime DEFAULT NULL AFTER report_status");
         }
 
         // Cache the schema version to avoid running these checks on every page load
@@ -661,9 +681,24 @@ class JG_Map_Database {
 
         $result = $wpdb->insert($table, $data);
         if ($result === false) {
+            return false;
         }
 
-        return $wpdb->insert_id;
+        $insert_id = $wpdb->insert_id;
+
+        // Auto-generate case_id for zgłoszenie type if not provided
+        if (!empty($data['type']) && $data['type'] === 'zgloszenie' && empty($data['case_id'])) {
+            $case_id = 'ZGL-' . str_pad($insert_id, 6, '0', STR_PAD_LEFT);
+            $wpdb->update(
+                $table,
+                array('case_id' => $case_id),
+                array('id' => $insert_id),
+                array('%s'),
+                array('%d')
+            );
+        }
+
+        return $insert_id;
     }
 
     /**
