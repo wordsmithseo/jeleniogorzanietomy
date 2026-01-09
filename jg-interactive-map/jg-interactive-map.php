@@ -192,6 +192,13 @@ class JG_Interactive_Map {
             return;
         }
 
+        // CRITICAL: Skip security headers for bots (especially Google-InspectionTool)
+        // CSP "connect-src 'self'" blocks Google from sending inspection results back
+        if ($this->is_bot()) {
+            error_log('[JG MAP SECURITY] Skipping security headers for bot: ' . ($_SERVER['HTTP_USER_AGENT'] ?? 'unknown'));
+            return;
+        }
+
         // Content Security Policy
         // Allow self, inline scripts (needed for map), and specific external sources
         $csp_directives = array(
