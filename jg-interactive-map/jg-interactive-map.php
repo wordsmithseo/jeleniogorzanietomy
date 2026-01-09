@@ -356,15 +356,20 @@ class JG_Interactive_Map {
             return;
         }
 
-        // Prevent double execution
+        // Generate unique request ID for logging
+        $request_id = substr(md5(uniqid(mt_rand(), true)), 0, 8);
+        $start_time = microtime(true);
+
+        // Prevent double execution within same PHP process
         if (self::$page_rendered) {
-            error_log('[JG MAP POINT] Preventing double execution for slug: ' . $point_slug);
+            error_log('[JG MAP ' . $request_id . '] Preventing double execution for slug: ' . $point_slug);
             exit;
         }
         self::$page_rendered = true;
 
         $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
-        error_log('[JG MAP POINT] Request for slug: ' . $point_slug . ' | User-Agent: ' . $user_agent);
+        $user_agent_short = (strpos($user_agent, 'Mobile') !== false) ? 'Mobile' : 'Desktop';
+        error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Request for slug: ' . $point_slug);
 
         // Get point by slug from database
         global $wpdb;
@@ -384,7 +389,7 @@ class JG_Interactive_Map {
         );
 
         if (!$point) {
-            error_log('[JG MAP POINT] Point not found: ' . $point_slug);
+            error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Point not found: ' . $point_slug);
             global $wp_query;
             $wp_query->set_404();
             status_header(404);
@@ -392,24 +397,25 @@ class JG_Interactive_Map {
             exit;
         }
 
-        error_log('[JG MAP POINT] Found point ID: ' . $point['id'] . ' | Title: ' . $point['title']);
+        $db_time = microtime(true) - $start_time;
+        error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Found point ID: ' . $point['id'] . ' (DB query: ' . round($db_time * 1000, 2) . 'ms)');
 
         // Check if visitor is a bot
         $is_bot = $this->is_bot();
-        error_log('[JG MAP POINT] Is bot: ' . ($is_bot ? 'YES' : 'NO'));
+        error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Is bot: ' . ($is_bot ? 'YES' : 'NO'));
 
         if ($is_bot) {
             // Bots get full HTML page with meta tags for SEO
-            error_log('[JG MAP POINT] Rendering page for bot');
+            error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Rendering page for bot');
 
             // Check if headers already sent
             if (headers_sent($file, $line)) {
-                error_log('[JG MAP POINT] ERROR: Headers already sent in ' . $file . ' on line ' . $line);
+                error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] ERROR: Headers already sent in ' . $file . ' on line ' . $line);
             }
 
             // Ensure HTTP 200 status
             status_header(200);
-            error_log('[JG MAP POINT] Set status to 200 OK');
+            error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Set status to 200 OK');
 
             // Prevent WordPress from doing redirects or 404 handling
             remove_action('template_redirect', 'redirect_canonical');
@@ -418,28 +424,31 @@ class JG_Interactive_Map {
             $jg_current_point = $point;
 
             // Start output buffering to capture entire page
+            $render_start = microtime(true);
             ob_start();
 
             try {
-                $this->render_point_page($point);
+                $this->render_point_page($point, $request_id, $user_agent_short);
 
                 // Get the rendered content
                 $html_output = ob_get_clean();
                 $html_size = strlen($html_output);
+                $render_time = microtime(true) - $render_start;
+                $total_time = microtime(true) - $start_time;
 
-                error_log('[JG MAP POINT] Page rendered successfully for bot');
-                error_log('[JG MAP POINT] HTML output size: ' . $html_size . ' bytes');
+                error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Page rendered successfully (render: ' . round($render_time * 1000, 2) . 'ms, total: ' . round($total_time * 1000, 2) . 'ms)');
+                error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] HTML output size: ' . $html_size . ' bytes');
 
                 // Check for PHP errors in output
                 if (stripos($html_output, 'fatal error') !== false ||
                     stripos($html_output, 'parse error') !== false ||
                     stripos($html_output, 'warning:') !== false) {
-                    error_log('[JG MAP POINT] WARNING: Possible PHP errors detected in output');
+                    error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] WARNING: Possible PHP errors detected in output');
                 }
 
                 // Check if HTML is reasonable size (not empty, not too small)
                 if ($html_size < 100) {
-                    error_log('[JG MAP POINT] WARNING: HTML output is suspiciously small (' . $html_size . ' bytes)');
+                    error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] WARNING: HTML output is suspiciously small (' . $html_size . ' bytes)');
                 }
 
                 // Output the captured HTML
@@ -447,16 +456,16 @@ class JG_Interactive_Map {
 
             } catch (Exception $e) {
                 ob_end_clean();
-                error_log('[JG MAP POINT] ERROR rendering page: ' . $e->getMessage());
-                error_log('[JG MAP POINT] Stack trace: ' . $e->getTraceAsString());
+                error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] ERROR rendering page: ' . $e->getMessage());
+                error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Stack trace: ' . $e->getTraceAsString());
 
                 // Fallback: render minimal HTML
-                $this->render_fallback_page($point);
+                $this->render_fallback_page($point, $request_id, $user_agent_short);
             }
             exit;
         } else {
             // Humans get redirected to map with modal
-            error_log('[JG MAP POINT] Redirecting human to map');
+            error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Redirecting human to map');
             wp_redirect(home_url('/#point-' . $point['id']));
             exit;
         }
@@ -465,8 +474,9 @@ class JG_Interactive_Map {
     /**
      * Render single point page
      */
-    private function render_point_page($point) {
-        error_log('[JG MAP RENDER] Starting render for point: ' . $point['title']);
+    private function render_point_page($point, $request_id = 'unknown', $user_agent_short = '') {
+        $header_start = microtime(true);
+        error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Starting render for point: ' . $point['title']);
 
         // Set page title for SEO
         add_filter('pre_get_document_title', function() use ($point) {
@@ -479,10 +489,11 @@ class JG_Interactive_Map {
             return $point['title'] . ' - ' . $type_label . ' w Jeleniej Górze';
         }, 999);
 
-        error_log('[JG MAP RENDER] Calling get_header()');
+        error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Calling get_header()');
         // Get site header
         get_header();
-        error_log('[JG MAP RENDER] get_header() completed');
+        $header_time = microtime(true) - $header_start;
+        error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] get_header() completed (' . round($header_time * 1000, 2) . 'ms)');
 
         $images = json_decode($point['images'], true) ?: array();
 
@@ -635,17 +646,19 @@ class JG_Interactive_Map {
         </div>
 
         <?php
-        error_log('[JG MAP RENDER] Calling get_footer()');
+        $footer_start = microtime(true);
+        error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Calling get_footer()');
         // Get site footer
         get_footer();
-        error_log('[JG MAP RENDER] Render completed successfully');
+        $footer_time = microtime(true) - $footer_start;
+        error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Render completed successfully (footer: ' . round($footer_time * 1000, 2) . 'ms)');
     }
 
     /**
      * Render fallback minimal HTML page (no theme)
      */
-    private function render_fallback_page($point) {
-        error_log('[JG MAP FALLBACK] Rendering fallback page for: ' . $point['title']);
+    private function render_fallback_page($point, $request_id = 'unknown', $user_agent_short = '') {
+        error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Rendering fallback page for: ' . $point['title']);
 
         $images = json_decode($point['images'], true) ?: array();
         $first_image = '';
@@ -727,7 +740,7 @@ class JG_Interactive_Map {
     <?php endif; ?>
 </body>
 </html><?php
-        error_log('[JG MAP FALLBACK] Fallback rendering completed');
+        error_log('[JG MAP ' . $request_id . ' ' . $user_agent_short . '] Fallback rendering completed');
     }
 
     /**
