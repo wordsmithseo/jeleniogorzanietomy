@@ -13,7 +13,25 @@
  */
 
 // Load WordPress
-require_once(__DIR__ . '/../../../../wp-load.php');
+// Try different possible paths to wp-load.php
+$wp_load_paths = [
+    __DIR__ . '/../../../wp-load.php',           // Standard: plugins/jg-interactive-map -> wp-load.php
+    __DIR__ . '/../../../../wp-load.php',        // Alternative structure
+    __DIR__ . '/../../../../../wp-load.php',     // Subdomain structure
+];
+
+$wp_loaded = false;
+foreach ($wp_load_paths as $path) {
+    if (file_exists($path)) {
+        require_once($path);
+        $wp_loaded = true;
+        break;
+    }
+}
+
+if (!$wp_loaded) {
+    die('Error: Could not find wp-load.php. Please check the installation path.');
+}
 
 // Security check - only admins can run this
 if (!current_user_can('manage_options')) {
