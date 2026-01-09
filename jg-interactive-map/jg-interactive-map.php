@@ -182,6 +182,11 @@ class JG_Interactive_Map {
             return;
         }
 
+        // Skip security headers for sitemap XML requests
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'jg-map-sitemap.xml') !== false) {
+            return;
+        }
+
         // Content Security Policy
         // Allow self, inline scripts (needed for map), and specific external sources
         $csp_directives = array(
@@ -563,13 +568,12 @@ class JG_Interactive_Map {
             return;
         }
 
-        // Check if search engines are discouraged
-        if (get_option('blog_public') == '0') {
-            echo '<meta name="robots" content="noindex, nofollow">' . "\n";
-            return;
-        }
-
         $point = $jg_current_point;
+
+        // Determine robots directive based on WordPress settings
+        // Note: We still generate all meta tags even if indexing is discouraged,
+        // as they're useful for social sharing (Open Graph, Twitter Cards)
+        $robots_content = (get_option('blog_public') == '0') ? 'noindex, nofollow' : 'index, follow';
         $images = json_decode($point['images'], true) ?: array();
 
         // Get featured image (or first image as fallback) - ensure it's a full URL
@@ -609,7 +613,7 @@ class JG_Interactive_Map {
 
         ?>
         <meta name="description" content="<?php echo esc_attr($description); ?>">
-        <meta name="robots" content="index, follow">
+        <meta name="robots" content="<?php echo esc_attr($robots_content); ?>">
 
         <!-- Open Graph / Facebook -->
         <meta property="og:type" content="article">
@@ -700,7 +704,7 @@ class JG_Interactive_Map {
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
-        // Get all published points with slug
+        // Get all published points with slug - with error handling
         $points = $wpdb->get_results(
             "SELECT id, title, slug, type, updated_at
              FROM $table
@@ -709,10 +713,27 @@ class JG_Interactive_Map {
             ARRAY_A
         );
 
+        // Check for database errors
+        if ($wpdb->last_error) {
+            error_log('[JG MAP SITEMAP] Database error: ' . $wpdb->last_error);
+            status_header(500);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'Sitemap generation error. Please contact administrator.';
+            exit;
+        }
+
+        // Ensure we have results (could be empty array)
+        if (!is_array($points)) {
+            error_log('[JG MAP SITEMAP] No points returned from database');
+            $points = array();
+        }
+
+        error_log('[JG MAP SITEMAP] Found ' . count($points) . ' points to include');
+
         // Set HTTP status code explicitly
         status_header(200);
 
-        // Set headers for XML sitemap
+        // Set headers for XML sitemap - no cache for debugging
         nocache_headers();
         header('Content-Type: application/xml; charset=UTF-8');
         header('X-Robots-Tag: index, follow');
@@ -747,6 +768,9 @@ class JG_Interactive_Map {
 </urlset>
         <?php
         $xml_content = ob_get_clean();
+
+        // Log the sitemap size for debugging
+        error_log('[JG MAP SITEMAP] Generated XML size: ' . strlen($xml_content) . ' bytes');
 
         // Set Content-Length header for better compatibility
         header('Content-Length: ' . strlen($xml_content));
