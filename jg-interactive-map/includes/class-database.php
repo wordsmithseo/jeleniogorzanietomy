@@ -591,8 +591,8 @@ class JG_Map_Database {
             ? "status IN ('publish', 'pending', 'edit')"
             : "status = 'publish'";
 
-        $sql = "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                       author_id, author_hidden, is_deletion_requested, deletion_reason,
+        $sql = "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
+                       resolved_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                        deletion_requested_at, is_promo, promo_until, website, phone,
                        cta_enabled, cta_type, admin_note, images, featured_image_index,
                        facebook_url, instagram_url, linkedin_url, tiktok_url,
@@ -621,8 +621,8 @@ class JG_Map_Database {
         $table = self::get_points_table();
 
         $sql = $wpdb->prepare(
-            "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                    author_id, author_hidden, is_deletion_requested, deletion_reason,
+            "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
+                    resolved_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                     deletion_requested_at, is_promo, promo_until, website, phone,
                     cta_enabled, cta_type, admin_note, images, featured_image_index,
                     facebook_url, instagram_url, linkedin_url, tiktok_url,
@@ -651,8 +651,8 @@ class JG_Map_Database {
 
         return $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                        author_id, author_hidden, is_deletion_requested, deletion_reason,
+                "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
+                        resolved_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                         deletion_requested_at, is_promo, promo_until, website, phone,
                         cta_enabled, cta_type, admin_note, images, featured_image_index,
                         facebook_url, instagram_url, linkedin_url, tiktok_url,
