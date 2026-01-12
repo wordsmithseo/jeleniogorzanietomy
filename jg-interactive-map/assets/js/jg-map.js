@@ -2310,6 +2310,8 @@
               deletion_info: r.deletion_info || null,
               reports_count: +(r.reports_count || 0),
               user_has_reported: !!r.user_has_reported,
+              case_id: r.case_id || null,
+              resolved_delete_at: r.resolved_delete_at || null,
               stats: r.stats || null,  // FIX: Include stats from server (for admin/owner only)
               facebook_url: r.facebook_url || null,
               instagram_url: r.instagram_url || null,
