@@ -5016,7 +5016,6 @@
             var timeSpent = Math.round((Date.now() - viewStartTime) / 1000); // seconds
             if (timeSpent > 0 && timeSpent < 3600) { // Max 1 hour to filter out abandoned tabs
               trackStat(p.id, 'time_spent', { time_spent: timeSpent }, p.author_id);
-            } else {
             }
           }
           close(modalView);

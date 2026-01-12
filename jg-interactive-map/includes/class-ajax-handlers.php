@@ -891,15 +891,16 @@ class JG_Map_Ajax_Handlers {
         }
 
         $user_id = get_current_user_id();
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
 
-        // Check if user is banned
-        if (self::is_user_banned($user_id)) {
+        // Check if user is banned (skip for admins)
+        if (!$is_admin && self::is_user_banned($user_id)) {
             wp_send_json_error(array('message' => 'Twoje konto zostało zbanowane'));
             exit;
         }
 
-        // Check if user has restriction for adding places
-        if (self::has_user_restriction($user_id, 'add_places')) {
+        // Check if user has restriction for adding places (skip for admins)
+        if (!$is_admin && self::has_user_restriction($user_id, 'add_places')) {
             wp_send_json_error(array('message' => 'Masz zablokowaną możliwość dodawania miejsc'));
             exit;
         }
@@ -1032,6 +1033,9 @@ class JG_Map_Ajax_Handlers {
         $ip_address = $this->get_user_ip();
 
         // Insert point
+        // Admins and moderators don't need approval - publish immediately
+        $status = $is_admin ? 'publish' : 'pending';
+
         $point_data = array(
             'title' => $title,
             'content' => $content,
@@ -1040,7 +1044,7 @@ class JG_Map_Ajax_Handlers {
             'lng' => $lng,
             'address' => $address,
             'type' => $type,
-            'status' => 'pending',
+            'status' => $status,
             'report_status' => 'added',
             'author_id' => $user_id,
             'author_hidden' => !$public_name,
@@ -1225,11 +1229,8 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
-        // Admins and moderators can edit directly ONLY if they use admin panel
-        // Regular edits from map always go through moderation
-        $direct_edit = $is_admin && isset($_POST['admin_edit']);
-
-        if ($direct_edit) {
+        // Admins and moderators can edit directly without approval
+        if ($is_admin) {
             $update_data = array(
                 'title' => $title,
                 'type' => $type,
