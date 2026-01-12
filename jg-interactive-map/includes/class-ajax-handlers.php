@@ -4461,7 +4461,7 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Check if point exists
+        // Check if point exists and is sponsored
         $point = $wpdb->get_row($wpdb->prepare(
             "SELECT id, is_promo, stats_first_viewed, stats_social_clicks, stats_gallery_clicks, stats_views, stats_unique_visitors, stats_avg_time_spent FROM $table WHERE id = %d",
             $point_id
@@ -4472,8 +4472,11 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Track stats for all places (not just sponsored)
-        // Some actions like phone/website/cta clicks still limited to sponsored in switch below
+        // Only track stats for sponsored/promo places
+        if (!$point['is_promo']) {
+            wp_send_json_success(array('message' => 'Tracking disabled for non-sponsored places'));
+            return;
+        }
 
         $current_time = current_time('mysql', true); // GMT time for consistency with other timestamps
         $result = false;

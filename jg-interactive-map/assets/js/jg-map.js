@@ -5003,16 +5003,20 @@
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
-        // Track view with unique visitor detection
+        // Track view for sponsored pins with unique visitor detection
         var viewStartTime = Date.now();
-        var isUnique = isUniqueVisitor(p.id);
-        trackStat(p.id, 'view', { is_unique: isUnique }, p.author_id);
+        if (p.sponsored) {
+          var isUnique = isUniqueVisitor(p.id);
+          trackStat(p.id, 'view', { is_unique: isUnique }, p.author_id);
+        }
 
         qs('#dlg-close', modalView).onclick = function() {
-          // Track time spent before closing
-          var timeSpent = Math.round((Date.now() - viewStartTime) / 1000); // seconds
-          if (timeSpent > 0 && timeSpent < 3600) { // Max 1 hour to filter out abandoned tabs
-            trackStat(p.id, 'time_spent', { time_spent: timeSpent }, p.author_id);
+          // Track time spent before closing (for sponsored pins)
+          if (p.sponsored) {
+            var timeSpent = Math.round((Date.now() - viewStartTime) / 1000); // seconds
+            if (timeSpent > 0 && timeSpent < 3600) { // Max 1 hour to filter out abandoned tabs
+              trackStat(p.id, 'time_spent', { time_spent: timeSpent }, p.author_id);
+            }
           }
           close(modalView);
         };
