@@ -162,22 +162,9 @@ class JG_Map_Maintenance {
         $count = count($invalid_points);
 
         if ($count > 0) {
-
+            error_log('[JG MAP MAINTENANCE] Found ' . $count . ' points with invalid coordinates');
             foreach ($invalid_points as $point) {
-
-                // Add admin note about invalid coordinates
-                $current_note = $wpdb->get_var($wpdb->prepare(
-                    "SELECT admin_note FROM $table WHERE id = %d",
-                    $point->id
-                ));
-
-                $new_note = trim($current_note . "\n\n[AUTOMATYCZNE] Nieprawidłowe współrzędne wykryte przez system: lat=" . $point->lat . ", lng=" . $point->lng);
-
-                $wpdb->update(
-                    $table,
-                    array('admin_note' => $new_note),
-                    array('id' => $point->id)
-                );
+                error_log('[JG MAP MAINTENANCE] Invalid coordinates for point #' . $point->id . ': lat=' . $point->lat . ', lng=' . $point->lng);
             }
         }
 
@@ -202,22 +189,9 @@ class JG_Map_Maintenance {
         $count = count($empty_points);
 
         if ($count > 0) {
-
+            error_log('[JG MAP MAINTENANCE] Found ' . $count . ' points with empty content');
             foreach ($empty_points as $point) {
-
-                // Add admin note
-                $current_note = $wpdb->get_var($wpdb->prepare(
-                    "SELECT admin_note FROM $table WHERE id = %d",
-                    $point->id
-                ));
-
-                $new_note = trim($current_note . "\n\n[AUTOMATYCZNE] Wykryto brak tytułu lub treści. Wymaga weryfikacji.");
-
-                $wpdb->update(
-                    $table,
-                    array('admin_note' => $new_note),
-                    array('id' => $point->id)
-                );
+                error_log('[JG MAP MAINTENANCE] Empty content for point #' . $point->id . ': title=' . ($point->title ?: 'EMPTY'));
             }
         }
 
