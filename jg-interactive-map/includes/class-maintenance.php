@@ -62,6 +62,7 @@ class JG_Map_Maintenance {
         $results['orphaned_votes'] = self::clean_orphaned_votes();
         $results['orphaned_reports'] = self::clean_orphaned_reports();
         $results['orphaned_history'] = self::clean_orphaned_history();
+        $results['orphaned_images'] = self::clean_orphaned_images();
 
         // 2. Validate data integrity
         $results['invalid_coords'] = self::validate_coordinates();
@@ -312,6 +313,77 @@ class JG_Map_Maintenance {
         }
 
         return $count;
+    }
+
+    /**
+     * Clean orphaned image files (images not referenced in any point)
+     */
+    private static function clean_orphaned_images() {
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+
+        // Get all image URLs from database
+        $all_points = $wpdb->get_results("SELECT id, images FROM $points_table WHERE images IS NOT NULL AND images != ''");
+
+        $used_files = array();
+        foreach ($all_points as $point) {
+            $images = json_decode($point->images, true);
+            if (is_array($images)) {
+                foreach ($images as $image) {
+                    if (!empty($image['full'])) {
+                        $used_files[] = basename($image['full']);
+                    }
+                    if (!empty($image['thumb']) && $image['thumb'] !== $image['full']) {
+                        $used_files[] = basename($image['thumb']);
+                    }
+                }
+            }
+        }
+
+        // Get upload directory
+        $upload_dir = wp_upload_dir();
+        $jg_map_dir = $upload_dir['basedir'] . '/jg-map-images';
+
+        // Check if directory exists
+        if (!is_dir($jg_map_dir)) {
+            return 0;
+        }
+
+        // Scan directory for all image files
+        $all_files = array();
+        $extensions = array('jpg', 'jpeg', 'png', 'gif', 'webp');
+
+        foreach ($extensions as $ext) {
+            $files = glob($jg_map_dir . '/*.' . $ext);
+            if ($files) {
+                $all_files = array_merge($all_files, $files);
+            }
+            // Check uppercase extensions too
+            $files = glob($jg_map_dir . '/*.' . strtoupper($ext));
+            if ($files) {
+                $all_files = array_merge($all_files, $files);
+            }
+        }
+
+        // Delete orphaned files
+        $deleted_count = 0;
+        foreach ($all_files as $file_path) {
+            $filename = basename($file_path);
+
+            // If file is not in used_files list, delete it
+            if (!in_array($filename, $used_files)) {
+                if (@unlink($file_path)) {
+                    $deleted_count++;
+                    error_log('[JG MAP MAINTENANCE] Deleted orphaned image: ' . $filename);
+                }
+            }
+        }
+
+        if ($deleted_count > 0) {
+            error_log('[JG MAP MAINTENANCE] Deleted ' . $deleted_count . ' orphaned images');
+        }
+
+        return $deleted_count;
     }
 
     /**
