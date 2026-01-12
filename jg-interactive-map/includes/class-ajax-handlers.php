@@ -4580,14 +4580,8 @@ class JG_Map_Ajax_Handlers {
                 break;
 
             case 'time_spent':
-                // DEBUG: Log case entry
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log(sprintf(
-                        '[JG STATS] time_spent case entered: point #%d, time_spent=%d seconds',
-                        $point_id,
-                        $time_spent
-                    ));
-                }
+                // TEMPORARY DEBUG: Always log (remove after testing)
+                error_log('[JG STATS TEST] time_spent received: point=' . $point_id . ', time=' . $time_spent . 's');
 
                 // Update average time spent
                 if ($time_spent > 0) {
@@ -4597,23 +4591,19 @@ class JG_Map_Ajax_Handlers {
                     // Calculate new average: (current_avg * (views - 1) + time_spent) / views
                     $new_avg = round(($current_avg * ($current_views - 1) + $time_spent) / $current_views);
 
-                    // DEBUG: Log calculation
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log(sprintf(
-                            '[JG STATS] time_spent calc: point #%d, time=%ds, views=%d, old_avg=%ds, new_avg=%ds',
-                            $point_id,
-                            $time_spent,
-                            $current_views,
-                            $current_avg,
-                            $new_avg
-                        ));
-                    }
+                    error_log('[JG STATS TEST] Calculation: views=' . $current_views . ', old_avg=' . $current_avg . 's, new_avg=' . $new_avg . 's');
 
                     $result = $wpdb->query($wpdb->prepare(
                         "UPDATE $table SET stats_avg_time_spent = %d WHERE id = %d",
                         $new_avg,
                         $point_id
                     ));
+
+                    if ($result === false) {
+                        error_log('[JG STATS TEST] SQL UPDATE FAILED: ' . $wpdb->last_error);
+                    } else {
+                        error_log('[JG STATS TEST] SQL UPDATE SUCCESS: affected rows=' . $result);
+                    }
                 }
                 break;
 
