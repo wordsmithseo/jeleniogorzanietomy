@@ -2271,6 +2271,29 @@
       function fetchAndProcessPoints(version) {
         return fetchPoints().then(function(data) {
 
+          // Data mapping validation (debug mode only)
+          if (DEBUG && data && data.length > 0) {
+            var sample = data[0];
+            var mappedKeys = [
+              'id', 'title', 'slug', 'excerpt', 'content', 'lat', 'lng', 'address',
+              'type', 'category', 'sponsored', 'sponsored_until', 'website', 'phone',
+              'cta_enabled', 'cta_type', 'status', 'status_label', 'report_status',
+              'report_status_label', 'author_id', 'author_name', 'author_hidden',
+              'images', 'featured_image_index', 'votes', 'my_vote', 'date', 'admin',
+              'admin_note', 'is_pending', 'is_edit', 'edit_info', 'is_deletion_requested',
+              'deletion_info', 'reports_count', 'user_has_reported', 'case_id',
+              'resolved_delete_at', 'stats', 'facebook_url', 'instagram_url',
+              'linkedin_url', 'tiktok_url'
+            ];
+            var apiKeys = Object.keys(sample);
+            var unmapped = apiKeys.filter(function(k) { return mappedKeys.indexOf(k) === -1; });
+            if (unmapped.length > 0) {
+              debugWarn('[JG MAP] WARNING: API response contains unmapped fields:', unmapped);
+              debugWarn('[JG MAP] These fields are sent by backend but not included in frontend data mapping.');
+              debugWarn('[JG MAP] Add them to fetchAndProcessPoints() mapping to make them available in frontend.');
+            }
+          }
+
           ALL = (data || []).map(function(r) {
             return {
               id: r.id,
@@ -2989,13 +3012,10 @@
               visitedPoints = visitedPoints.slice(-1000);
             }
             localStorage.setItem('jg_visited_points', JSON.stringify(visitedPoints));
-            if (CFG.debug) console.log('[JG STATS] First visit for point #' + pointId);
             return true; // First visit!
           }
-          if (CFG.debug) console.log('[JG STATS] Returning visitor for point #' + pointId);
           return false; // Already visited
         } catch (e) {
-          if (CFG.debug) console.error('[JG STATS] Error in isUniqueVisitor:', e);
           return false;
         }
       }
@@ -3200,7 +3220,6 @@
 
           // Photo gallery
           var photosHtml = '';
-          console.log('[User Modal] Photos data:', user.photos);
           if (user.photos && user.photos.length > 0) {
             photosHtml = '<div>' +
               '<h4 style="margin:20px 0 12px 0;color:#374151">📷 Galeria zdjęć (' + user.photos.length + ')</h4>' +
@@ -3208,7 +3227,6 @@
 
             for (var j = 0; j < user.photos.length; j++) {
               var photo = user.photos[j];
-              console.log('[User Modal] Photo ' + j + ':', photo);
 
               // Handle both object {url, thumbnail} and string formats
               var photoUrl = '';
@@ -3221,8 +3239,6 @@
                 photoUrl = photo.url || photo.full || '';
                 thumbUrl = photo.thumbnail || photo.thumb || photo.url || photo.full || '';
               }
-
-              console.log('[User Modal] Photo URLs - full:', photoUrl, 'thumb:', thumbUrl);
 
               if (photoUrl && thumbUrl) {
                 photosHtml += '<div class="user-photo-item" data-photo-url="' + esc(photoUrl) + '" style="position:relative;padding-bottom:100%;border-radius:8px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s">' +
@@ -4998,11 +5014,9 @@
           // Track time spent before closing (for sponsored pins)
           if (p.sponsored) {
             var timeSpent = Math.round((Date.now() - viewStartTime) / 1000); // seconds
-            if (CFG.debug) console.log('[JG STATS] Closing modal, time spent:', timeSpent, 'seconds');
             if (timeSpent > 0 && timeSpent < 3600) { // Max 1 hour to filter out abandoned tabs
               trackStat(p.id, 'time_spent', { time_spent: timeSpent }, p.author_id);
             } else {
-              if (CFG.debug) console.log('[JG STATS] Time spent out of range (0 or > 3600), not tracking');
             }
           }
           close(modalView);

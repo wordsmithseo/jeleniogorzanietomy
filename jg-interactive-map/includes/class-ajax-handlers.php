@@ -524,17 +524,14 @@ class JG_Map_Ajax_Handlers {
         $table = $wpdb->prefix . 'jg_map_points';
 
         $point_id = isset($_POST['point_id']) ? intval($_POST['point_id']) : 0;
-        error_log('[JG MAP] get_point_stats called for point_id: ' . $point_id);
 
         if (!$point_id) {
-            error_log('[JG MAP] get_point_stats - Missing point_id');
             wp_send_json_error(array('message' => 'Missing point_id'));
             return;
         }
 
         $current_user_id = get_current_user_id();
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
-        error_log('[JG MAP] get_point_stats - user_id: ' . $current_user_id . ', is_admin: ' . ($is_admin ? 'yes' : 'no'));
 
         // Disable caching
         wp_cache_flush();
@@ -552,17 +549,14 @@ class JG_Map_Ajax_Handlers {
         ), ARRAY_A);
 
         if (!$point) {
-            error_log('[JG MAP] get_point_stats - Point not found');
             wp_send_json_error(array('message' => 'Point not found'));
             return;
         }
 
         $is_own_place = ($current_user_id > 0 && $current_user_id == $point['author_id']);
-        error_log('[JG MAP] get_point_stats - point author: ' . $point['author_id'] . ', is_own_place: ' . ($is_own_place ? 'yes' : 'no'));
 
         // Only return stats if user is admin or owner
         if (!$is_admin && !$is_own_place) {
-            error_log('[JG MAP] get_point_stats - Permission denied');
             wp_send_json_error(array('message' => 'Permission denied'));
             return;
         }
@@ -603,7 +597,6 @@ class JG_Map_Ajax_Handlers {
             )
         );
 
-        error_log('[JG MAP] get_point_stats - Returning data with views: ' . $result['stats']['views']);
         wp_send_json_success($result);
     }
 
@@ -655,7 +648,6 @@ class JG_Map_Ajax_Handlers {
 
         // Check for SQL errors
         if ($wpdb->last_error) {
-            error_log('[JG MAP] SQL Error in get_point_visitors: ' . $wpdb->last_error);
             wp_send_json_error(array('message' => 'Database error: ' . $wpdb->last_error));
             return;
         }

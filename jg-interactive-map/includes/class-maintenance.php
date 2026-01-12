@@ -162,7 +162,6 @@ class JG_Map_Maintenance {
         $count = count($invalid_points);
 
         if ($count > 0) {
-            error_log('[JG MAP MAINTENANCE] Found ' . $count . ' points with invalid coordinates');
             foreach ($invalid_points as $point) {
                 error_log('[JG MAP MAINTENANCE] Invalid coordinates for point #' . $point->id . ': lat=' . $point->lat . ', lng=' . $point->lng);
             }
@@ -191,7 +190,6 @@ class JG_Map_Maintenance {
         if ($count > 0) {
             error_log('[JG MAP MAINTENANCE] Found ' . $count . ' points with empty content');
             foreach ($empty_points as $point) {
-                error_log('[JG MAP MAINTENANCE] Empty content for point #' . $point->id . ': title=' . ($point->title ?: 'EMPTY'));
             }
         }
 

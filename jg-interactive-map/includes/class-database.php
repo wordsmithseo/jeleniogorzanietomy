@@ -57,7 +57,7 @@ class JG_Map_Database {
             type varchar(50) NOT NULL DEFAULT 'zgloszenie',
             category varchar(100) DEFAULT NULL,
             status varchar(20) NOT NULL DEFAULT 'pending',
-            report_status varchar(20) DEFAULT 'added',
+            report_status varchar(50) DEFAULT 'added',
             resolved_delete_at datetime DEFAULT NULL,
             author_id bigint(20) UNSIGNED NOT NULL,
             author_hidden tinyint(1) DEFAULT 0,
@@ -401,6 +401,15 @@ class JG_Map_Database {
         // Check if resolved_delete_at column exists (for auto-deletion of resolved reports after 7 days)
         if (!$column_exists('resolved_delete_at')) {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN resolved_delete_at datetime DEFAULT NULL AFTER report_status");
+        }
+
+        // Modify report_status column to support longer status names (needs_better_documentation = 27 chars)
+        $report_status_size = $wpdb->get_row($wpdb->prepare(
+            "SHOW COLUMNS FROM `$safe_table` LIKE %s",
+            'report_status'
+        ));
+        if ($report_status_size && strpos($report_status_size->Type, 'varchar(20)') !== false) {
+            $wpdb->query("ALTER TABLE `$safe_table` MODIFY COLUMN report_status varchar(50) DEFAULT 'added'");
         }
 
         // Cache the schema version to avoid running these checks on every page load
