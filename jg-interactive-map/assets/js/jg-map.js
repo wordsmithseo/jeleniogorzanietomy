@@ -1508,7 +1508,8 @@
 
                     var modalMessage = 'Twoje zgłoszenie zostało przyjęte i otrzymało unikalny numer sprawy: <strong>' + j.data.case_id + '</strong>.\n\n' +
                       'Teraz zostanie poddane weryfikacji przez nasz zespół. Po weryfikacji, jeśli zgłoszenie spełni nasze wytyczne, zostanie ono przekazane do właściwej instytucji (np. Straż Miejska, Urząd Miasta, administratorzy osiedli).\n\n' +
-                      'Monitorujemy status każdego zgłoszenia i aktualizujemy jego statusy na mapie. Możesz śledzić postępy rozwiązywania problemu, wchodząc na mapę i klikając na pineskę Twojego zgłoszenia.';
+                      'Monitorujemy status każdego zgłoszenia i aktualizujemy jego statusy na mapie. Możesz śledzić postępy rozwiązywania problemu, wchodząc na mapę i klikając na pineskę Twojego zgłoszenia.\n\n' +
+                      '<strong>Ważne:</strong> Portal nie daje gwarancji rozwiązania problemu, gdyż nie jest z definicji instytucją pośredniczącą, a jedynie organizacją, która stara się naświetlać istnienie nieprawidłowości w przestrzeni publicznej miasta Jelenia Góra oraz jej okolic.';
 
                     showAlert(modalMessage.replace(/\n\n/g, '<br><br>'));
                   }, 800);
@@ -6941,7 +6942,8 @@
 
                       var modalMessage = 'Twoje zgłoszenie zostało przyjęte i otrzymało unikalny numer sprawy: <strong>' + j.data.case_id + '</strong>.\n\n' +
                         'Teraz zostanie poddane weryfikacji przez nasz zespół. Po weryfikacji, jeśli zgłoszenie spełni nasze wytyczne, zostanie ono przekazane do właściwej instytucji (np. Straż Miejska, Urząd Miasta, administratorzy osiedli).\n\n' +
-                        'Monitorujemy status każdego zgłoszenia i aktualizujemy jego statusy na mapie. Możesz śledzić postępy rozwiązywania problemu, wchodząc na mapę i klikając na pineskę Twojego zgłoszenia.';
+                        'Monitorujemy status każdego zgłoszenia i aktualizujemy jego statusy na mapie. Możesz śledzić postępy rozwiązywania problemu, wchodząc na mapę i klikając na pineskę Twojego zgłoszenia.\n\n' +
+                        '<strong>Ważne:</strong> Portal nie daje gwarancji rozwiązania problemu, gdyż nie jest z definicji instytucją pośredniczącą, a jedynie organizacją, która stara się naświetlać istnienie nieprawidłowości w przestrzeni publicznej miasta Jelenia Góra oraz jej okolic.';
 
                       showAlert(modalMessage.replace(/\n\n/g, '<br><br>'));
                     }, 800);
