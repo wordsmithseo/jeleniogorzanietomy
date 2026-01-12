@@ -272,10 +272,17 @@ class JG_Map_Ajax_Handlers {
             $points = array_merge($points, $user_pending_points);
         }
 
+        // PERFORMANCE OPTIMIZATION: Pre-load all user data to avoid N+1 queries
+        $author_ids = array_unique(array_column($points, 'author_id'));
+        $author_ids = array_filter($author_ids); // Remove nulls/zeros
+        if (!empty($author_ids)) {
+            wp_prime_user_cache($author_ids); // Load all users at once
+        }
+
         $result = array();
 
         foreach ($points as $point) {
-            $author = get_userdata($point['author_id']);
+            $author = get_userdata($point['author_id']); // Now from cache
             $author_name = '';
             $author_email = '';
 
@@ -534,10 +541,6 @@ class JG_Map_Ajax_Handlers {
 
         $current_user_id = get_current_user_id();
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
-
-        // Disable caching
-        wp_cache_flush();
-        $wpdb->query('SET SESSION query_cache_type = OFF');
 
         // Get point with all data
         $point = $wpdb->get_row($wpdb->prepare(
@@ -4323,9 +4326,6 @@ class JG_Map_Ajax_Handlers {
 
         // Ensure history table exists
         JG_Map_Database::ensure_history_table();
-
-        // Disable caching
-        $wpdb->query('SET SESSION query_cache_type = OFF');
 
         $pending_points = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM $points_table WHERE status = %s",

@@ -602,11 +602,14 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
-        // Flush WordPress object cache to ensure fresh data
-        wp_cache_flush();
+        // PERFORMANCE OPTIMIZATION: Use transient cache (30 seconds)
+        // Cache key includes $include_pending to avoid conflicts
+        $cache_key = $include_pending ? 'jg_map_points_with_pending' : 'jg_map_points_published';
+        $cached_results = get_transient($cache_key);
 
-        // Disable MySQL query cache for this session
-        $wpdb->query('SET SESSION query_cache_type = OFF');
+        if ($cached_results !== false) {
+            return $cached_results;
+        }
 
         $status_condition = $include_pending
             ? "status IN ('publish', 'pending', 'edit')"
@@ -625,13 +628,18 @@ class JG_Map_Database {
 
         $results = $wpdb->get_results($sql, ARRAY_A);
 
-        // DEBUG: Log raw SQL results for zgłoszenia with categories
-        foreach ($results as $row) {
-            if ($row['type'] === 'zgloszenie') {
-            }
-        }
+        // Cache results for 30 seconds
+        set_transient($cache_key, $results, 30);
 
         return $results;
+    }
+
+    /**
+     * Invalidate points cache - call this whenever point data changes
+     */
+    public static function invalidate_points_cache() {
+        delete_transient('jg_map_points_published');
+        delete_transient('jg_map_points_with_pending');
     }
 
     /**
@@ -719,6 +727,9 @@ class JG_Map_Database {
             );
         }
 
+        // Invalidate points cache after insert
+        self::invalidate_points_cache();
+
         return $insert_id;
     }
 
@@ -734,11 +745,18 @@ class JG_Map_Database {
             $data['slug'] = self::generate_unique_slug($data['title'], $point_id);
         }
 
-        return $wpdb->update(
+        $result = $wpdb->update(
             $table,
             $data,
             array('id' => $point_id)
         );
+
+        // Invalidate points cache after update
+        if ($result !== false) {
+            self::invalidate_points_cache();
+        }
+
+        return $result;
     }
 
     /**
@@ -765,11 +783,18 @@ class JG_Map_Database {
         $wpdb->delete($history_table, array('point_id' => $point_id), array('%d'));
 
         // Delete the point itself
-        return $wpdb->delete(
+        $result = $wpdb->delete(
             $points_table,
             array('id' => $point_id),
             array('%d')
         );
+
+        // Invalidate points cache after deletion
+        if ($result !== false) {
+            self::invalidate_points_cache();
+        }
+
+        return $result;
     }
 
     /**
