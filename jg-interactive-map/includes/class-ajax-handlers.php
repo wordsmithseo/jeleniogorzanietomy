@@ -4615,9 +4615,6 @@ class JG_Map_Ajax_Handlers {
                 break;
 
             case 'time_spent':
-                // TEMPORARY DEBUG: Always log (remove after testing)
-                error_log('[JG STATS TEST] time_spent received: point=' . $point_id . ', time=' . $time_spent . 's');
-
                 // Update average time spent
                 if ($time_spent > 0) {
                     $current_views = intval($point['stats_views']) ?: 1;
@@ -4627,23 +4624,13 @@ class JG_Map_Ajax_Handlers {
                     // Use ceil() instead of round() to always round up, ensuring changes are saved
                     $new_avg = ceil(($current_avg * ($current_views - 1) + $time_spent) / $current_views);
 
-                    error_log('[JG STATS TEST] Calculation: views=' . $current_views . ', old_avg=' . $current_avg . 's, new_avg=' . $new_avg . 's');
-
                     // Only UPDATE if value actually changed (avoid unnecessary writes)
                     if ($new_avg != $current_avg) {
-                        $result = $wpdb->query($wpdb->prepare(
+                        $wpdb->query($wpdb->prepare(
                             "UPDATE $table SET stats_avg_time_spent = %d WHERE id = %d",
                             $new_avg,
                             $point_id
                         ));
-
-                        if ($result === false) {
-                            error_log('[JG STATS TEST] SQL UPDATE FAILED: ' . $wpdb->last_error);
-                        } else {
-                            error_log('[JG STATS TEST] SQL UPDATE SUCCESS: affected rows=' . $result);
-                        }
-                    } else {
-                        error_log('[JG STATS TEST] Skipping UPDATE - value unchanged (' . $new_avg . 's)');
                     }
                 }
                 break;

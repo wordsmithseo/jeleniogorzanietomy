@@ -5015,15 +5015,9 @@
           // Track time spent before closing (for sponsored pins)
           if (p.sponsored) {
             var timeSpent = Math.round((Date.now() - viewStartTime) / 1000); // seconds
-            console.log('[AVG TIME TEST] Sponsored pin closed after ' + timeSpent + ' seconds');
             if (timeSpent > 0 && timeSpent < 3600) { // Max 1 hour to filter out abandoned tabs
-              console.log('[AVG TIME TEST] Sending time_spent to server: ' + timeSpent + 's');
               trackStat(p.id, 'time_spent', { time_spent: timeSpent }, p.author_id);
-            } else {
-              console.log('[AVG TIME TEST] Time out of range (0-3600s), not sending');
             }
-          } else {
-            console.log('[AVG TIME TEST] Pin is not sponsored, not tracking time');
           }
           close(modalView);
         };
@@ -5034,9 +5028,7 @@
             // Track time spent before closing (for sponsored pins)
             if (p.sponsored) {
               var timeSpent = Math.round((Date.now() - viewStartTime) / 1000);
-              console.log('[AVG TIME TEST] Sponsored pin closed (backdrop) after ' + timeSpent + ' seconds');
               if (timeSpent > 0 && timeSpent < 3600) {
-                console.log('[AVG TIME TEST] Sending time_spent to server: ' + timeSpent + 's');
                 trackStat(p.id, 'time_spent', { time_spent: timeSpent }, p.author_id);
               }
             }
