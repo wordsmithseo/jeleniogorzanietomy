@@ -616,7 +616,7 @@ class JG_Map_Database {
             : "status = 'publish'";
 
         $sql = "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                       resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                       resolved_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                        deletion_requested_at, is_promo, promo_until, website, phone,
                        cta_enabled, cta_type, admin_note, images, featured_image_index,
                        facebook_url, instagram_url, linkedin_url, tiktok_url,
@@ -651,7 +651,7 @@ class JG_Map_Database {
 
         $sql = $wpdb->prepare(
             "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                    resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                    resolved_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                     deletion_requested_at, is_promo, promo_until, website, phone,
                     cta_enabled, cta_type, admin_note, images, featured_image_index,
                     facebook_url, instagram_url, linkedin_url, tiktok_url,
@@ -681,7 +681,7 @@ class JG_Map_Database {
         return $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                        resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                        resolved_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                         deletion_requested_at, is_promo, promo_until, website, phone,
                         cta_enabled, cta_type, admin_note, images, featured_image_index,
                         facebook_url, instagram_url, linkedin_url, tiktok_url,

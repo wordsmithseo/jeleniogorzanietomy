@@ -273,10 +273,12 @@ class JG_Map_Ajax_Handlers {
         }
 
         // PERFORMANCE OPTIMIZATION: Pre-load all user data to avoid N+1 queries
-        $author_ids = array_unique(array_column($points, 'author_id'));
-        $author_ids = array_filter($author_ids); // Remove nulls/zeros
-        if (!empty($author_ids)) {
-            wp_prime_user_cache($author_ids); // Load all users at once
+        if (is_array($points) && !empty($points) && function_exists('wp_prime_user_cache')) {
+            $author_ids = array_unique(array_column($points, 'author_id'));
+            $author_ids = array_filter($author_ids); // Remove nulls/zeros
+            if (!empty($author_ids)) {
+                wp_prime_user_cache($author_ids); // Load all users at once
+            }
         }
 
         $result = array();
