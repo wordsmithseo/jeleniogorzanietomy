@@ -4589,20 +4589,26 @@ class JG_Map_Ajax_Handlers {
                     $current_avg = intval($point['stats_avg_time_spent']) ?: 0;
 
                     // Calculate new average: (current_avg * (views - 1) + time_spent) / views
-                    $new_avg = round(($current_avg * ($current_views - 1) + $time_spent) / $current_views);
+                    // Use ceil() instead of round() to always round up, ensuring changes are saved
+                    $new_avg = ceil(($current_avg * ($current_views - 1) + $time_spent) / $current_views);
 
                     error_log('[JG STATS TEST] Calculation: views=' . $current_views . ', old_avg=' . $current_avg . 's, new_avg=' . $new_avg . 's');
 
-                    $result = $wpdb->query($wpdb->prepare(
-                        "UPDATE $table SET stats_avg_time_spent = %d WHERE id = %d",
-                        $new_avg,
-                        $point_id
-                    ));
+                    // Only UPDATE if value actually changed (avoid unnecessary writes)
+                    if ($new_avg != $current_avg) {
+                        $result = $wpdb->query($wpdb->prepare(
+                            "UPDATE $table SET stats_avg_time_spent = %d WHERE id = %d",
+                            $new_avg,
+                            $point_id
+                        ));
 
-                    if ($result === false) {
-                        error_log('[JG STATS TEST] SQL UPDATE FAILED: ' . $wpdb->last_error);
+                        if ($result === false) {
+                            error_log('[JG STATS TEST] SQL UPDATE FAILED: ' . $wpdb->last_error);
+                        } else {
+                            error_log('[JG STATS TEST] SQL UPDATE SUCCESS: affected rows=' . $result);
+                        }
                     } else {
-                        error_log('[JG STATS TEST] SQL UPDATE SUCCESS: affected rows=' . $result);
+                        error_log('[JG STATS TEST] Skipping UPDATE - value unchanged (' . $new_avg . 's)');
                     }
                 }
                 break;
