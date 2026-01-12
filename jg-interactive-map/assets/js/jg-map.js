@@ -4280,6 +4280,10 @@
           '<div><strong>Dodane</strong></div>' +
           '</label>' +
           '<label style="display:flex;align-items:center;gap:8px;padding:12px;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer">' +
+          '<input type="radio" name="status" value="needs_better_documentation" ' + (currentStatus === 'needs_better_documentation' ? 'checked' : '') + ' style="width:20px;height:20px">' +
+          '<div><strong>Wymaga lepszego udokumentowania</strong></div>' +
+          '</label>' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:12px;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer">' +
           '<input type="radio" name="status" value="reported" ' + (currentStatus === 'reported' ? 'checked' : '') + ' style="width:20px;height:20px">' +
           '<div><strong>Zgłoszone do instytucji</strong></div>' +
           '</label>' +
