@@ -739,6 +739,14 @@ class JG_Map_Database {
         $reports_table = self::get_reports_table();
         $history_table = self::get_history_table();
 
+        // Get point data before deletion to clean up images
+        $point = self::get_point($point_id);
+
+        // Delete physical image files from filesystem
+        if ($point && !empty($point['images'])) {
+            self::delete_point_images($point['images']);
+        }
+
         // Delete related data first
         $wpdb->delete($votes_table, array('point_id' => $point_id), array('%d'));
         $wpdb->delete($reports_table, array('point_id' => $point_id), array('%d'));
@@ -750,6 +758,44 @@ class JG_Map_Database {
             array('id' => $point_id),
             array('%d')
         );
+    }
+
+    /**
+     * Delete physical image files from filesystem
+     *
+     * @param string $images_json JSON string containing image URLs
+     */
+    private static function delete_point_images($images_json) {
+        if (empty($images_json)) {
+            return;
+        }
+
+        $images = json_decode($images_json, true);
+        if (!is_array($images) || empty($images)) {
+            return;
+        }
+
+        $upload_dir = wp_upload_dir();
+        $upload_base_url = $upload_dir['baseurl'];
+        $upload_base_path = $upload_dir['basedir'];
+
+        foreach ($images as $image) {
+            // Delete full size image
+            if (!empty($image['full'])) {
+                $file_path = str_replace($upload_base_url, $upload_base_path, $image['full']);
+                if (file_exists($file_path)) {
+                    @unlink($file_path);
+                }
+            }
+
+            // Delete thumbnail
+            if (!empty($image['thumb']) && $image['thumb'] !== $image['full']) {
+                $thumb_path = str_replace($upload_base_url, $upload_base_path, $image['thumb']);
+                if (file_exists($thumb_path)) {
+                    @unlink($thumb_path);
+                }
+            }
+        }
     }
 
     /**

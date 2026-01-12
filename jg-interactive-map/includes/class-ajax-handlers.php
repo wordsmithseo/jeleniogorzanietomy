@@ -3760,6 +3760,10 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Delete physical image files before removing from array
+        $image_to_delete = $images[$image_index];
+        $this->delete_image_files($image_to_delete);
+
         // Get current featured image index
         $current_featured = isset($point['featured_image_index']) ? (int)$point['featured_image_index'] : 0;
 
@@ -3802,6 +3806,37 @@ class JG_Map_Ajax_Handlers {
             'remaining_count' => count($images),
             'new_featured_index' => $update_data['featured_image_index']
         ));
+    }
+
+    /**
+     * Delete physical image files from filesystem
+     *
+     * @param array $image Image array with 'full' and 'thumb' URLs
+     */
+    private function delete_image_files($image) {
+        if (empty($image) || !is_array($image)) {
+            return;
+        }
+
+        $upload_dir = wp_upload_dir();
+        $upload_base_url = $upload_dir['baseurl'];
+        $upload_base_path = $upload_dir['basedir'];
+
+        // Delete full size image
+        if (!empty($image['full'])) {
+            $file_path = str_replace($upload_base_url, $upload_base_path, $image['full']);
+            if (file_exists($file_path)) {
+                @unlink($file_path);
+            }
+        }
+
+        // Delete thumbnail (only if different from full image)
+        if (!empty($image['thumb']) && $image['thumb'] !== $image['full']) {
+            $thumb_path = str_replace($upload_base_url, $upload_base_path, $image['thumb']);
+            if (file_exists($thumb_path)) {
+                @unlink($thumb_path);
+            }
+        }
     }
 
     /**
