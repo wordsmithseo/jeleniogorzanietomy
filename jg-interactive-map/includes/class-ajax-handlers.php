@@ -274,18 +274,44 @@ class JG_Map_Ajax_Handlers {
             $points = array_merge($points, $user_pending_points);
         }
 
-        // PERFORMANCE OPTIMIZATION: Pre-load all user data to avoid N+1 queries
-        if (is_array($points) && !empty($points) && function_exists('wp_prime_user_cache')) {
-            $author_ids = array_unique(array_column($points, 'author_id'));
-            $author_ids = array_filter($author_ids); // Remove nulls/zeros
-            if (!empty($author_ids)) {
-                wp_prime_user_cache($author_ids); // Load all users at once
+        // PERFORMANCE OPTIMIZATION: Batch load all related data to avoid N+1 queries
+        $point_ids = array();
+        $owner_point_ids = array(); // Points owned by current user (need rejected histories)
+
+        if (is_array($points) && !empty($points)) {
+            // Collect all point IDs
+            $point_ids = array_column($points, 'id');
+
+            // Pre-load user data
+            if (function_exists('wp_prime_user_cache')) {
+                $author_ids = array_unique(array_column($points, 'author_id'));
+                $author_ids = array_filter($author_ids); // Remove nulls/zeros
+                if (!empty($author_ids)) {
+                    wp_prime_user_cache($author_ids); // Load all users at once
+                }
+            }
+
+            // Identify owner points for rejected histories
+            foreach ($points as $point) {
+                if ($current_user_id > 0 && $current_user_id == $point['author_id']) {
+                    $owner_point_ids[] = $point['id'];
+                }
             }
         }
+
+        // BATCH LOAD: Load all votes, reports, and histories at once (prevents N+1 queries)
+        $votes_counts_map = !empty($point_ids) ? JG_Map_Database::get_votes_counts_batch($point_ids) : array();
+        $user_votes_map = ($current_user_id > 0 && !empty($point_ids)) ? JG_Map_Database::get_user_votes_batch($point_ids, $current_user_id) : array();
+        $reports_counts_map = ($is_admin && !empty($point_ids)) ? JG_Map_Database::get_reports_counts_batch($point_ids) : array();
+        $user_reported_map = ($current_user_id > 0 && !empty($point_ids)) ? JG_Map_Database::has_user_reported_batch($point_ids, $current_user_id) : array();
+        $pending_histories_map = (($is_admin || $current_user_id > 0) && !empty($point_ids)) ? JG_Map_Database::get_pending_histories_batch($point_ids) : array();
+        $rejected_histories_map = (!empty($owner_point_ids)) ? JG_Map_Database::get_rejected_histories_batch($owner_point_ids, 30) : array();
 
         $result = array();
 
         foreach ($points as $point) {
+            $point_id = intval($point['id']);
+
             $author = get_userdata($point['author_id']); // Now from cache
             $author_name = '';
             $author_email = '';
@@ -298,30 +324,27 @@ class JG_Map_Ajax_Handlers {
                 $author_email = $author->user_email;
             }
 
-            // Get votes
-            $votes_count = JG_Map_Database::get_votes_count($point['id']);
-            $my_vote = '';
-            if ($current_user_id > 0) {
-                $my_vote = JG_Map_Database::get_user_vote($point['id'], $current_user_id) ?: '';
-            }
+            // Get votes from batch-loaded data
+            $votes_count = isset($votes_counts_map[$point_id]) ? $votes_counts_map[$point_id] : 0;
+            $my_vote = isset($user_votes_map[$point_id]) ? $user_votes_map[$point_id] : '';
 
             // Get relevance votes
             $my_relevance_vote = '';
             if ($current_user_id > 0) {
             }
 
-            // Get reports count - for admins or place owner
+            // Get reports count from batch-loaded data - for admins or place owner
             $reports_count = 0;
             $is_own_place_temp = ($current_user_id > 0 && $current_user_id == $point['author_id']);
-            if ($is_admin || $is_own_place_temp) {
-                $reports_count = JG_Map_Database::get_reports_count($point['id']);
+            if ($is_admin && isset($reports_counts_map[$point_id])) {
+                $reports_count = $reports_counts_map[$point_id];
+            } elseif ($is_own_place_temp && !$is_admin) {
+                // For non-admin owners, load individually (rare case)
+                $reports_count = JG_Map_Database::get_reports_count($point_id);
             }
 
-            // Check if current user has reported this point
-            $user_has_reported = false;
-            if ($current_user_id > 0) {
-                $user_has_reported = JG_Map_Database::has_user_reported($point['id'], $current_user_id);
-            }
+            // Check if current user has reported this point from batch-loaded data
+            $user_has_reported = isset($user_reported_map[$point_id]) ? $user_reported_map[$point_id] : false;
 
             // Check if sponsored expired
             $is_sponsored = (bool)$point['is_promo'];
@@ -361,8 +384,8 @@ class JG_Map_Ajax_Handlers {
             if ($is_admin || $is_own_place) {
                 $is_pending = ($point['status'] === 'pending');
 
-                // Get ALL pending history entries (can be multiple: edit + deletion)
-                $pending_histories = JG_Map_Database::get_pending_history($point['id']);
+                // Get ALL pending history entries from batch-loaded data (can be multiple: edit + deletion)
+                $pending_histories = isset($pending_histories_map[$point_id]) ? $pending_histories_map[$point_id] : array();
 
                 // Loop through all pending changes and populate edit_info and/or deletion_info
                 if (!empty($pending_histories)) {
@@ -419,9 +442,9 @@ class JG_Map_Ajax_Handlers {
                     }
                 }
 
-                // For place owners, also get recently rejected history to show rejection reasons
+                // For place owners, also get recently rejected history from batch-loaded data to show rejection reasons
                 if ($is_own_place) {
-                    $rejected_histories = JG_Map_Database::get_rejected_history($point['id'], 30);
+                    $rejected_histories = isset($rejected_histories_map[$point_id]) ? $rejected_histories_map[$point_id] : array();
                     if (!empty($rejected_histories)) {
                         foreach ($rejected_histories as $rejected_history) {
                             $rejection_reason = $rejected_history['rejection_reason'] ?? '';
@@ -662,11 +685,19 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
+        // PERFORMANCE OPTIMIZATION: Prime user cache to avoid N+1 queries
+        if (!empty($visitors) && function_exists('wp_prime_user_cache')) {
+            $user_ids = array_filter(array_column($visitors, 'user_id'));
+            if (!empty($user_ids)) {
+                wp_prime_user_cache($user_ids);
+            }
+        }
+
         $result = array();
         foreach ($visitors as $visitor) {
             if ($visitor['user_id']) {
                 // Logged in user
-                $user = get_userdata($visitor['user_id']);
+                $user = get_userdata($visitor['user_id']); // Now from cache
                 if ($user) {
                     $result[] = array(
                         'user_id' => intval($visitor['user_id']),
@@ -4820,10 +4851,14 @@ class JG_Map_Ajax_Handlers {
             $points = array_merge($points, $user_pending_points);
         }
 
-        // Pre-load votes for all points
+        // PERFORMANCE OPTIMIZATION: Batch load votes for all points to avoid N+1 queries
+        $point_ids = array_column($points, 'id');
+        $votes_counts_map = !empty($point_ids) ? JG_Map_Database::get_votes_counts_batch($point_ids) : array();
+
         $points_with_votes = array();
         foreach ($points as $point) {
-            $votes_count = JG_Map_Database::get_votes_count($point['id']);
+            $point_id = intval($point['id']);
+            $votes_count = isset($votes_counts_map[$point_id]) ? $votes_counts_map[$point_id] : 0;
             $point['votes_count'] = $votes_count;
             $points_with_votes[] = $point;
         }

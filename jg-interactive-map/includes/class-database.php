@@ -910,6 +910,260 @@ class JG_Map_Database {
     }
 
     /**
+     * BATCH LOADING METHODS - Performance optimization to prevent N+1 queries
+     * These methods load data for multiple points at once using IN clauses
+     */
+
+    /**
+     * Get votes counts for multiple points at once (batch loading)
+     *
+     * @param array $point_ids Array of point IDs
+     * @return array Associative array [point_id => vote_count]
+     */
+    public static function get_votes_counts_batch($point_ids) {
+        if (empty($point_ids)) {
+            return array();
+        }
+
+        global $wpdb;
+        $table = self::get_votes_table();
+
+        // Sanitize point IDs
+        $point_ids = array_map('intval', $point_ids);
+        $ids_placeholder = implode(',', array_fill(0, count($point_ids), '%d'));
+
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT point_id,
+                    SUM(CASE WHEN vote_type = 'up' THEN 1 ELSE 0 END) as up_votes,
+                    SUM(CASE WHEN vote_type = 'down' THEN 1 ELSE 0 END) as down_votes
+             FROM $table
+             WHERE point_id IN ($ids_placeholder)
+             GROUP BY point_id",
+            ...$point_ids
+        ), ARRAY_A);
+
+        // Return as associative array indexed by point_id
+        $votes_map = array();
+        foreach ($results as $row) {
+            $votes_map[intval($row['point_id'])] = intval($row['up_votes']) - intval($row['down_votes']);
+        }
+
+        // Fill in zeros for points with no votes
+        foreach ($point_ids as $point_id) {
+            if (!isset($votes_map[$point_id])) {
+                $votes_map[$point_id] = 0;
+            }
+        }
+
+        return $votes_map;
+    }
+
+    /**
+     * Get user votes for multiple points at once (batch loading)
+     *
+     * @param array $point_ids Array of point IDs
+     * @param int $user_id User ID
+     * @return array Associative array [point_id => vote_type]
+     */
+    public static function get_user_votes_batch($point_ids, $user_id) {
+        if (empty($point_ids) || !$user_id) {
+            return array();
+        }
+
+        global $wpdb;
+        $table = self::get_votes_table();
+
+        // Sanitize point IDs
+        $point_ids = array_map('intval', $point_ids);
+        $ids_placeholder = implode(',', array_fill(0, count($point_ids), '%d'));
+
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT point_id, vote_type
+             FROM $table
+             WHERE point_id IN ($ids_placeholder)
+             AND user_id = %d",
+            ...array_merge($point_ids, array($user_id))
+        ), ARRAY_A);
+
+        // Return as associative array indexed by point_id
+        $votes_map = array();
+        foreach ($results as $row) {
+            $votes_map[intval($row['point_id'])] = $row['vote_type'];
+        }
+
+        return $votes_map;
+    }
+
+    /**
+     * Get reports counts for multiple points at once (batch loading)
+     *
+     * @param array $point_ids Array of point IDs
+     * @return array Associative array [point_id => reports_count]
+     */
+    public static function get_reports_counts_batch($point_ids) {
+        if (empty($point_ids)) {
+            return array();
+        }
+
+        global $wpdb;
+        $table = self::get_reports_table();
+
+        // Sanitize point IDs
+        $point_ids = array_map('intval', $point_ids);
+        $ids_placeholder = implode(',', array_fill(0, count($point_ids), '%d'));
+
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT point_id, COUNT(*) as reports_count
+             FROM $table
+             WHERE point_id IN ($ids_placeholder)
+             AND status = 'pending'
+             GROUP BY point_id",
+            ...$point_ids
+        ), ARRAY_A);
+
+        // Return as associative array indexed by point_id
+        $reports_map = array();
+        foreach ($results as $row) {
+            $reports_map[intval($row['point_id'])] = intval($row['reports_count']);
+        }
+
+        // Fill in zeros for points with no reports
+        foreach ($point_ids as $point_id) {
+            if (!isset($reports_map[$point_id])) {
+                $reports_map[$point_id] = 0;
+            }
+        }
+
+        return $reports_map;
+    }
+
+    /**
+     * Check if user reported multiple points (batch loading)
+     *
+     * @param array $point_ids Array of point IDs
+     * @param int $user_id User ID
+     * @return array Associative array [point_id => has_reported (bool)]
+     */
+    public static function has_user_reported_batch($point_ids, $user_id) {
+        if (empty($point_ids) || !$user_id) {
+            return array();
+        }
+
+        global $wpdb;
+        $table = self::get_reports_table();
+
+        // Sanitize point IDs
+        $point_ids = array_map('intval', $point_ids);
+        $ids_placeholder = implode(',', array_fill(0, count($point_ids), '%d'));
+
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT DISTINCT point_id
+             FROM $table
+             WHERE point_id IN ($ids_placeholder)
+             AND user_id = %d
+             AND status = 'pending'",
+            ...array_merge($point_ids, array($user_id))
+        ), ARRAY_A);
+
+        // Return as associative array indexed by point_id
+        $reported_map = array();
+
+        // Initialize all as false
+        foreach ($point_ids as $point_id) {
+            $reported_map[$point_id] = false;
+        }
+
+        // Set true for reported points
+        foreach ($results as $row) {
+            $reported_map[intval($row['point_id'])] = true;
+        }
+
+        return $reported_map;
+    }
+
+    /**
+     * Get pending histories for multiple points at once (batch loading)
+     *
+     * @param array $point_ids Array of point IDs
+     * @return array Associative array [point_id => [history_records]]
+     */
+    public static function get_pending_histories_batch($point_ids) {
+        if (empty($point_ids)) {
+            return array();
+        }
+
+        global $wpdb;
+        $table = self::get_history_table();
+
+        // Sanitize point IDs
+        $point_ids = array_map('intval', $point_ids);
+        $ids_placeholder = implode(',', array_fill(0, count($point_ids), '%d'));
+
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT *
+             FROM $table
+             WHERE point_id IN ($ids_placeholder)
+             AND status = 'pending'
+             ORDER BY created_at DESC",
+            ...$point_ids
+        ), ARRAY_A);
+
+        // Group by point_id
+        $histories_map = array();
+        foreach ($results as $row) {
+            $point_id = intval($row['point_id']);
+            if (!isset($histories_map[$point_id])) {
+                $histories_map[$point_id] = array();
+            }
+            $histories_map[$point_id][] = $row;
+        }
+
+        return $histories_map;
+    }
+
+    /**
+     * Get rejected histories for multiple points at once (batch loading)
+     *
+     * @param array $point_ids Array of point IDs
+     * @param int $days_ago Number of days to look back (default 30)
+     * @return array Associative array [point_id => [history_records]]
+     */
+    public static function get_rejected_histories_batch($point_ids, $days_ago = 30) {
+        if (empty($point_ids)) {
+            return array();
+        }
+
+        global $wpdb;
+        $table = self::get_history_table();
+
+        // Sanitize point IDs
+        $point_ids = array_map('intval', $point_ids);
+        $ids_placeholder = implode(',', array_fill(0, count($point_ids), '%d'));
+
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT *
+             FROM $table
+             WHERE point_id IN ($ids_placeholder)
+             AND status = 'rejected'
+             AND resolved_at >= DATE_SUB(NOW(), INTERVAL %d DAY)
+             ORDER BY resolved_at DESC",
+            ...array_merge($point_ids, array($days_ago))
+        ), ARRAY_A);
+
+        // Group by point_id
+        $histories_map = array();
+        foreach ($results as $row) {
+            $point_id = intval($row['point_id']);
+            if (!isset($histories_map[$point_id])) {
+                $histories_map[$point_id] = array();
+            }
+            $histories_map[$point_id][] = $row;
+        }
+
+        return $histories_map;
+    }
+
+    /**
      * Get reports for a point
      */
     public static function get_reports($point_id) {
