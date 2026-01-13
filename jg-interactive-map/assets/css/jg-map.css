@@ -508,49 +508,69 @@
   .jg-custom-top-bar {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 8px;
   }
 
+  /* Hide left section (datetime only) */
   .jg-top-bar-left {
-    flex-direction: row;
-    gap: 10px;
-    align-items: center;
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .jg-top-bar-right {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-  }
-
-  /* DateTime at top - hide on mobile */
-  #jg-top-bar-datetime {
     display: none;
   }
 
-  /* User info - align right */
-  .jg-top-bar-user {
-    font-size: 12px;
-    text-align: right;
-    margin-right: 0;
-    margin-left: auto;
+  /* Right section becomes 2 rows */
+  .jg-top-bar-right {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
   }
 
-  /* Notifications section - align left */
+  /* First row: User info - full width, align left */
+  .jg-top-bar-user {
+    font-size: 12px;
+    text-align: left;
+    width: 100%;
+    order: 1;
+    margin: 0;
+  }
+
+  /* Second row left: Notifications section */
   #jg-top-bar-notifications {
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
-    gap: 10px;
+    gap: 8px;
     padding: 8px;
     background: rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     width: fit-content;
+    order: 2;
     margin: 0;
+  }
+
+  /* Second row right: Action buttons (Edit Profile, Admin, Logout/Login) */
+  #jg-edit-profile-btn {
+    order: 3;
+    margin-left: auto;
+  }
+
+  .jg-top-bar-btn-admin {
+    order: 4;
+  }
+
+  .jg-top-bar-btn[href*="logout"] {
+    order: 5;
+  }
+
+  /* Login and Register buttons */
+  #jg-login-btn {
+    order: 3;
+    margin-left: auto;
+  }
+
+  #jg-register-btn {
+    order: 4;
   }
 
   .jg-top-bar-notif {
@@ -1759,6 +1779,7 @@
   color: #1f2937;
   padding: 12px 4px 8px 4px;
   margin-top: 8px;
+  margin-bottom: 12px;
   border-bottom: 2px solid #8d2324;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1997,6 +2018,7 @@
   .jg-sidebar-section-title {
     font-size: 12px;
     padding: 10px 4px 6px 4px;
+    margin-bottom: 10px;
   }
 
   .jg-sidebar-item {
@@ -2096,6 +2118,7 @@
     font-size: 11px;
     padding: 8px 4px 4px 4px;
     letter-spacing: 0.3px;
+    margin-bottom: 8px;
   }
 
   .jg-sidebar-item {
@@ -2160,6 +2183,7 @@
   .jg-sidebar-section-title {
     font-size: 10px;
     padding: 6px 4px 4px 4px;
+    margin-bottom: 6px;
   }
 
   .jg-sidebar-item {
