@@ -512,10 +512,11 @@
   }
 
   .jg-top-bar-left {
-    flex-direction: column;
-    gap: 4px;
-    align-items: flex-start;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
     width: 100%;
+    justify-content: space-between;
   }
 
   .jg-top-bar-right {
@@ -526,33 +527,30 @@
     gap: 10px;
   }
 
-  /* DateTime at top */
+  /* DateTime at top - hide on mobile */
   #jg-top-bar-datetime {
-    font-size: 12px;
-    width: 100%;
+    display: none;
   }
 
-  /* User info below datetime */
+  /* User info - align right */
   .jg-top-bar-user {
     font-size: 12px;
-    text-align: left;
-    width: 100%;
+    text-align: right;
     margin-right: 0;
-    order: -2;
+    margin-left: auto;
   }
 
-  /* Notifications section - circular icons */
+  /* Notifications section - align left */
   #jg-top-bar-notifications {
     display: flex;
     flex-direction: row;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 10px;
-    order: -1;
     padding: 8px;
     background: rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     width: fit-content;
-    margin: 0 auto;
+    margin: 0;
   }
 
   .jg-top-bar-notif {
@@ -564,14 +562,14 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    background: #ffffff;
+    border: 2px solid rgba(0, 0, 0, 0.1);
     flex-shrink: 0;
   }
 
   .jg-top-bar-notif:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.6);
+    background: #f9fafb;
+    border-color: rgba(0, 0, 0, 0.2);
   }
 
   /* Hide text labels, show only icons */
@@ -629,14 +627,14 @@
     align-items: center;
     justify-content: center;
     position: relative;
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    background: #ffffff;
+    border: 2px solid rgba(0, 0, 0, 0.1);
     flex-shrink: 0;
   }
 
   .jg-top-bar-btn:not(.jg-top-bar-notif):hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.6);
+    background: #f9fafb;
+    border-color: rgba(0, 0, 0, 0.2);
   }
 
   /* Edit Profile button icon */
@@ -1754,6 +1752,22 @@
   font-size: 14px;
 }
 
+/* Section Titles */
+.jg-sidebar-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  padding: 12px 4px 8px 4px;
+  margin-top: 8px;
+  border-bottom: 2px solid #8d2324;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jg-sidebar-section-title:first-child {
+  margin-top: 0;
+}
+
 /* Point Item */
 .jg-sidebar-item {
   background: #fff;
@@ -1980,6 +1994,11 @@
     font-size: 11px;
   }
 
+  .jg-sidebar-section-title {
+    font-size: 12px;
+    padding: 10px 4px 6px 4px;
+  }
+
   .jg-sidebar-item {
     padding: 10px;
     gap: 10px;
@@ -2073,6 +2092,12 @@
     padding: 6px;
   }
 
+  .jg-sidebar-section-title {
+    font-size: 11px;
+    padding: 8px 4px 4px 4px;
+    letter-spacing: 0.3px;
+  }
+
   .jg-sidebar-item {
     padding: 8px;
     gap: 8px;
@@ -2130,6 +2155,11 @@
 
   .jg-sidebar-stat-value {
     font-size: 14px;
+  }
+
+  .jg-sidebar-section-title {
+    font-size: 10px;
+    padding: 6px 4px 4px 4px;
   }
 
   .jg-sidebar-item {

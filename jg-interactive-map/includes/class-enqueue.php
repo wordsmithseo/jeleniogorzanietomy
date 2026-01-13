@@ -41,6 +41,9 @@ class JG_Map_Enqueue {
         // Hide register button on Elementor maintenance screen
         add_action('wp_head', array($this, 'hide_register_on_maintenance'));
 
+        // Disable pinch-to-zoom on mobile (except for map)
+        add_action('wp_head', array($this, 'disable_mobile_zoom'), 1);
+
         // Handle email activation
         add_action('template_redirect', array($this, 'handle_email_activation'));
         add_action('template_redirect', array($this, 'handle_password_reset'));
@@ -536,6 +539,32 @@ class JG_Map_Enqueue {
             </style>
             <?php
         }
+    }
+
+    /**
+     * Disable pinch-to-zoom on mobile devices (except for the map)
+     * The Leaflet map has its own zoom controls that work independently
+     */
+    public function disable_mobile_zoom() {
+        ?>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <style>
+            @media (max-width: 768px) {
+                /* Disable double-tap zoom on all elements except map */
+                body, body * {
+                    touch-action: manipulation;
+                }
+
+                /* Allow touch gestures on the map container */
+                #jg-map-container,
+                #jg-map-container *,
+                .leaflet-container,
+                .leaflet-container * {
+                    touch-action: auto !important;
+                }
+            }
+        </style>
+        <?php
     }
 
     /**
