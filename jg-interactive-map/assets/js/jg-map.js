@@ -2095,17 +2095,15 @@
                   // Add pulsing red circle around the point
                   addPulsingMarker(point.lat, point.lng, function() {
 
-                    // STEP 4: Wait 2 seconds, then open modal
-                    setTimeout(function() {
-                      // Open modal after animation - use openDetails, not viewPoint!
-                      openDetails(point);
+                    // STEP 4: Open modal immediately after pulsing animation
+                    // Open modal after animation - use openDetails, not viewPoint!
+                    openDetails(point);
 
-                      // Clean URL (remove point_id parameter or hash) after modal opens
-                      if (history.replaceState) {
-                        var cleanUrl = window.location.origin + window.location.pathname;
-                        history.replaceState(null, '', cleanUrl);
-                      }
-                    }, 2000); // Wait 2 seconds after pulsing
+                    // Clean URL (remove point_id parameter or hash) after modal opens
+                    if (history.replaceState) {
+                      var cleanUrl = window.location.origin + window.location.pathname;
+                      history.replaceState(null, '', cleanUrl);
+                    }
                   });
                 }, 800); // Wait for zoom animation
               }, 300); // Map is already loaded and scrolled, just wait for initialization
@@ -2119,7 +2117,7 @@
       }
 
       // Add pulsing red circle marker for deep-linked points
-      // Callback is called after animation completes (4 seconds)
+      // Callback is called after animation completes (2 seconds)
       function addPulsingMarker(lat, lng, callback) {
         // Create pulsing red circle (small, just around the marker)
         var pulsingCircle = L.circle([lat, lng], {
@@ -2132,7 +2130,7 @@
 
         // Animate the circle (pulse effect)
         var pulseCount = 0;
-        var maxPulses = 8; // 8 pulses over 4 seconds
+        var maxPulses = 4; // 4 pulses over 2 seconds
         var pulseInterval = setInterval(function() {
           pulseCount++;
 
@@ -2143,7 +2141,7 @@
             pulsingCircle.setStyle({ fillOpacity: 0.2, weight: 2 });
           }
 
-          // Remove after 5 seconds and call callback
+          // Remove after 2 seconds and call callback
           if (pulseCount >= maxPulses) {
             clearInterval(pulseInterval);
             setTimeout(function() {
@@ -2153,7 +2151,7 @@
               if (callback && typeof callback === 'function') {
                 callback();
               }
-            }, 500);
+            }, 100);
           }
         }, 500); // Pulse every 500ms
       }
