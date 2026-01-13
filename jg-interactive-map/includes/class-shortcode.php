@@ -88,7 +88,7 @@ class JG_Map_Shortcode {
                 <div style="margin-top:16px;font-size:16px;color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
             </div>
 
-            <div id="jg-map" class="jg-map" style="opacity: 0; transition: opacity 0.3s; height: <?php echo esc_attr($atts['height']); ?>;"
+            <div id="jg-map" class="jg-map" style="opacity: 0; transition: opacity 0.3s; height: <?php echo esc_attr($atts['height']); ?> !important;"
                  data-lat="<?php echo esc_attr($atts['lat']); ?>"
                  data-lng="<?php echo esc_attr($atts['lng']); ?>"
                  data-zoom="<?php echo esc_attr($atts['zoom']); ?>">
@@ -129,7 +129,7 @@ class JG_Map_Shortcode {
         $atts = shortcode_atts(
             array(
                 'title' => 'Lista miejsc',
-                'height' => '600px'
+                'height' => '80dvh'
             ),
             $atts,
             'jg_map_sidebar'
@@ -137,7 +137,7 @@ class JG_Map_Shortcode {
 
         ob_start();
         ?>
-        <div id="jg-map-sidebar" class="jg-map-sidebar" style="height: <?php echo esc_attr($atts['height']); ?>;">
+        <div id="jg-map-sidebar" class="jg-map-sidebar" style="height: <?php echo esc_attr($atts['height']); ?> !important;">
 
             <!-- Statistics Summary -->
             <div class="jg-sidebar-stats">

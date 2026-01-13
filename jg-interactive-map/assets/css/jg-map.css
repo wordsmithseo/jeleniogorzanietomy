@@ -1593,6 +1593,7 @@
   flex-direction: column;
   overflow-x: hidden; /* Prevent horizontal overflow */
   box-sizing: border-box; /* Ensure height includes padding and border */
+  min-height: 0; /* Allow flex children to shrink below content size */
 }
 
 /* Statistics Summary */
