@@ -129,10 +129,27 @@
             return;
         }
 
-        points.forEach(function(point) {
-            const $item = createPointItem(point);
-            $list.append($item);
-        });
+        // Separate sponsored and regular pins
+        const sponsoredPoints = points.filter(p => p.is_promo);
+        const regularPoints = points.filter(p => !p.is_promo);
+
+        // Add sponsored section if there are sponsored pins
+        if (sponsoredPoints.length > 0) {
+            $list.append('<div class="jg-sidebar-section-title">Polecamy:</div>');
+            sponsoredPoints.forEach(function(point) {
+                const $item = createPointItem(point);
+                $list.append($item);
+            });
+        }
+
+        // Add regular pins section if there are regular pins
+        if (regularPoints.length > 0) {
+            $list.append('<div class="jg-sidebar-section-title">Pinezki na mapie</div>');
+            regularPoints.forEach(function(point) {
+                const $item = createPointItem(point);
+                $list.append($item);
+            });
+        }
     }
 
     /**
