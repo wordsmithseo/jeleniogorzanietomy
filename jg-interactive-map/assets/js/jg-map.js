@@ -2282,8 +2282,8 @@
               'images', 'featured_image_index', 'votes', 'my_vote', 'date', 'admin',
               'admin_note', 'is_pending', 'is_edit', 'edit_info', 'is_deletion_requested',
               'deletion_info', 'reports_count', 'user_has_reported', 'case_id',
-              'resolved_delete_at', 'stats', 'facebook_url', 'instagram_url',
-              'linkedin_url', 'tiktok_url'
+              'resolved_delete_at', 'rejected_reason', 'rejected_delete_at', 'stats',
+              'facebook_url', 'instagram_url', 'linkedin_url', 'tiktok_url'
             ];
             var apiKeys = Object.keys(sample);
             var unmapped = apiKeys.filter(function(k) { return mappedKeys.indexOf(k) === -1; });
@@ -2335,6 +2335,8 @@
               user_has_reported: !!r.user_has_reported,
               case_id: r.case_id || null,
               resolved_delete_at: r.resolved_delete_at || null,
+              rejected_reason: r.rejected_reason || null,
+              rejected_delete_at: r.rejected_delete_at || null,
               stats: r.stats || null,  // FIX: Include stats from server (for admin/owner only)
               facebook_url: r.facebook_url || null,
               instagram_url: r.instagram_url || null,
