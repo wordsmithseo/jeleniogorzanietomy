@@ -30,6 +30,7 @@ class JG_Map_Shortcode {
      */
     private function __construct() {
         add_shortcode('jg_map', array($this, 'render_map'));
+        add_shortcode('jg_map_sidebar', array($this, 'render_sidebar'));
     }
 
     /**
@@ -113,6 +114,83 @@ class JG_Map_Shortcode {
                     <div class="jg-modal-message-content"></div>
                     <div class="jg-modal-message-buttons"></div>
                 </div>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Render sidebar shortcode
+     *
+     * Usage: [jg_map_sidebar]
+     */
+    public function render_sidebar($atts) {
+        $atts = shortcode_atts(
+            array(
+                'title' => 'Lista miejsc',
+            ),
+            $atts,
+            'jg_map_sidebar'
+        );
+
+        ob_start();
+        ?>
+        <div id="jg-map-sidebar" class="jg-map-sidebar">
+
+            <!-- Statistics Summary -->
+            <div class="jg-sidebar-stats">
+                <div class="jg-sidebar-stat">
+                    <span class="jg-sidebar-stat-label">Wszystkie pinezki:</span>
+                    <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-total">0</span>
+                </div>
+                <div class="jg-sidebar-stat">
+                    <span class="jg-sidebar-stat-label">Miejsca:</span>
+                    <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-miejsce">0</span>
+                </div>
+                <div class="jg-sidebar-stat">
+                    <span class="jg-sidebar-stat-label">Ciekawostki:</span>
+                    <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-ciekawostka">0</span>
+                </div>
+                <div class="jg-sidebar-stat">
+                    <span class="jg-sidebar-stat-label">Zgłoszenia:</span>
+                    <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-zgloszenie">0</span>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="jg-sidebar-filters">
+                <h3>Filtry</h3>
+                <div class="jg-sidebar-filter-group">
+                    <label><input type="checkbox" data-sidebar-type="miejsce" checked> <?php _e('Miejsca', 'jg-map'); ?></label>
+                    <label><input type="checkbox" data-sidebar-type="ciekawostka" checked> <?php _e('Ciekawostki', 'jg-map'); ?></label>
+                    <label><input type="checkbox" data-sidebar-type="zgloszenie" checked> <?php _e('Zgłoszenia', 'jg-map'); ?></label>
+                    <label><input type="checkbox" data-sidebar-my-places> <?php _e('Moje miejsca', 'jg-map'); ?></label>
+                </div>
+            </div>
+
+            <!-- Sorting -->
+            <div class="jg-sidebar-sort">
+                <label for="jg-sidebar-sort-select">Sortuj:</label>
+                <select id="jg-sidebar-sort-select">
+                    <option value="date_desc">Najnowsze</option>
+                    <option value="date_asc">Najstarsze</option>
+                    <option value="alpha_asc">Alfabetycznie A-Z</option>
+                    <option value="alpha_desc">Alfabetycznie Z-A</option>
+                    <option value="votes_desc">Najlepiej oceniane</option>
+                    <option value="votes_asc">Najgorzej oceniane</option>
+                </select>
+            </div>
+
+            <!-- Loader -->
+            <div id="jg-sidebar-loading" class="jg-sidebar-loading" style="display:none;">
+                <div class="jg-spinner"></div>
+                <div>Ładowanie...</div>
+            </div>
+
+            <!-- Points List -->
+            <div id="jg-sidebar-list" class="jg-sidebar-list">
+                <!-- Will be populated by JavaScript -->
             </div>
         </div>
         <?php

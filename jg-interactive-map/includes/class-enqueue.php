@@ -230,6 +230,15 @@ class JG_Map_Enqueue {
             true
         );
 
+        // Sidebar script (depends on main map script)
+        wp_enqueue_script(
+            'jg-map-sidebar',
+            JG_MAP_PLUGIN_URL . 'assets/js/jg-sidebar.js',
+            array('jquery', 'jg-map-script'),
+            JG_MAP_VERSION,
+            true
+        );
+
         // Localize script with config
         wp_localize_script(
             'jg-map-script',
