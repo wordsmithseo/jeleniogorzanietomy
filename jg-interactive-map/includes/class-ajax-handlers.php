@@ -272,10 +272,19 @@ class JG_Map_Ajax_Handlers {
             $points = array_merge($points, $user_pending_points);
         }
 
+        // PERFORMANCE OPTIMIZATION: Pre-load all user data to avoid N+1 queries
+        if (is_array($points) && !empty($points) && function_exists('wp_prime_user_cache')) {
+            $author_ids = array_unique(array_column($points, 'author_id'));
+            $author_ids = array_filter($author_ids); // Remove nulls/zeros
+            if (!empty($author_ids)) {
+                wp_prime_user_cache($author_ids); // Load all users at once
+            }
+        }
+
         $result = array();
 
         foreach ($points as $point) {
-            $author = get_userdata($point['author_id']);
+            $author = get_userdata($point['author_id']); // Now from cache
             $author_name = '';
             $author_email = '';
 
@@ -465,6 +474,8 @@ class JG_Map_Ajax_Handlers {
                 'report_status' => $point['report_status'],
                 'report_status_label' => $report_status_label,
                 'resolved_delete_at' => $point['resolved_delete_at'] ?? null,
+                'rejected_reason' => $point['rejected_reason'] ?? null,
+                'rejected_delete_at' => $point['rejected_delete_at'] ?? null,
                 'author_id' => intval($point['author_id']),
                 'author_name' => $author_name,
                 'author_hidden' => (bool)$point['author_hidden'],
@@ -532,10 +543,6 @@ class JG_Map_Ajax_Handlers {
 
         $current_user_id = get_current_user_id();
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
-
-        // Disable caching
-        wp_cache_flush();
-        $wpdb->query('SET SESSION query_cache_type = OFF');
 
         // Get point with all data
         $point = $wpdb->get_row($wpdb->prepare(
@@ -1962,9 +1969,16 @@ class JG_Map_Ajax_Handlers {
 
         $point_id = intval($_POST['post_id'] ?? 0);
         $new_status = sanitize_text_field($_POST['new_status'] ?? '');
+        $rejection_reason = isset($_POST['rejection_reason']) ? sanitize_textarea_field($_POST['rejection_reason']) : '';
 
-        if (!$point_id || !in_array($new_status, array('added', 'needs_better_documentation', 'reported', 'resolved'))) {
+        if (!$point_id || !in_array($new_status, array('added', 'needs_better_documentation', 'reported', 'resolved', 'rejected'))) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        // Rejection reason is required when changing to 'rejected' status
+        if ($new_status === 'rejected' && empty($rejection_reason)) {
+            wp_send_json_error(array('message' => 'Powód odrzucenia jest wymagany'));
             exit;
         }
 
@@ -1986,15 +2000,28 @@ class JG_Map_Ajax_Handlers {
             $update_data['resolved_delete_at'] = null;
         }
 
+        // Set auto-delete date and reason when changing to 'rejected' status (7 days from now)
+        if ($new_status === 'rejected') {
+            $update_data['rejected_delete_at'] = date('Y-m-d H:i:s', strtotime('+7 days'));
+            $update_data['rejected_reason'] = $rejection_reason;
+        }
+        // Clear rejected data when changing away from 'rejected' status
+        elseif ($point['report_status'] === 'rejected' && $new_status !== 'rejected') {
+            $update_data['rejected_delete_at'] = null;
+            $update_data['rejected_reason'] = null;
+        }
+
         JG_Map_Database::update_point($point_id, $update_data);
 
-        // Get updated point to return delete date
+        // Get updated point to return delete date and rejection reason
         $updated_point = JG_Map_Database::get_point($point_id);
 
         wp_send_json_success(array(
             'report_status' => $new_status,
             'report_status_label' => $this->get_report_status_label($new_status),
-            'resolved_delete_at' => $updated_point['resolved_delete_at'] ?? null
+            'resolved_delete_at' => $updated_point['resolved_delete_at'] ?? null,
+            'rejected_delete_at' => $updated_point['rejected_delete_at'] ?? null,
+            'rejected_reason' => $updated_point['rejected_reason'] ?? null
         ));
     }
 
@@ -2500,7 +2527,8 @@ class JG_Map_Ajax_Handlers {
             'added' => 'Dodane',
             'needs_better_documentation' => 'Wymaga lepszego udokumentowania',
             'reported' => 'Zgłoszone do instytucji',
-            'resolved' => 'Rozwiązane'
+            'resolved' => 'Rozwiązane',
+            'rejected' => 'Odrzucono'
         );
 
         return $labels[$status] ?? $status;
@@ -4300,9 +4328,6 @@ class JG_Map_Ajax_Handlers {
 
         // Ensure history table exists
         JG_Map_Database::ensure_history_table();
-
-        // Disable caching
-        $wpdb->query('SET SESSION query_cache_type = OFF');
 
         $pending_points = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM $points_table WHERE status = %s",

@@ -1,1 +1,5 @@
 *.zip
+
+# Migration scripts (security risk if exposed)
+*migration*.php
+*migration*.sql

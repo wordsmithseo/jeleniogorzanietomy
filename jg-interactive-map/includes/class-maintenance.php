@@ -73,6 +73,7 @@ class JG_Map_Maintenance {
         $results['old_pending'] = self::clean_old_pending_points();
         $results['old_deleted'] = self::clean_old_deleted_points();
         $results['expired_resolved_reports'] = self::clean_expired_resolved_reports();
+        $results['expired_rejected_reports'] = self::clean_expired_rejected_reports();
 
         // 4. Optimize database
         $results['cache_cleared'] = self::clear_caches();
@@ -310,6 +311,41 @@ class JG_Map_Maintenance {
             }
 
             error_log('[JG MAP MAINTENANCE] Successfully deleted ' . $count . ' expired resolved reports');
+        }
+
+        return $count;
+    }
+
+    /**
+     * Clean expired rejected reports (after 7 days)
+     */
+    private static function clean_expired_rejected_reports() {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        // Get expired rejected reports
+        $expired_reports = $wpdb->get_results($wpdb->prepare("
+            SELECT id, title, case_id, report_status, rejected_delete_at
+            FROM $table
+            WHERE type = 'zgloszenie'
+              AND report_status = 'rejected'
+              AND rejected_delete_at IS NOT NULL
+              AND rejected_delete_at <= %s
+        ", current_time('mysql')));
+
+        $count = count($expired_reports);
+
+        if ($count > 0) {
+            error_log('[JG MAP MAINTENANCE] Found ' . $count . ' expired rejected reports to delete');
+
+            foreach ($expired_reports as $report) {
+                error_log('[JG MAP MAINTENANCE] Auto-deleting rejected report: ' . $report->case_id . ' - ' . $report->title);
+
+                // Delete the report completely (will also delete related data)
+                JG_Map_Database::delete_point($report->id);
+            }
+
+            error_log('[JG MAP MAINTENANCE] Successfully deleted ' . $count . ' expired rejected reports');
         }
 
         return $count;

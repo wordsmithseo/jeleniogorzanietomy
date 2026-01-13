@@ -59,6 +59,8 @@ class JG_Map_Database {
             status varchar(20) NOT NULL DEFAULT 'pending',
             report_status varchar(50) DEFAULT 'added',
             resolved_delete_at datetime DEFAULT NULL,
+            rejected_reason text DEFAULT NULL,
+            rejected_delete_at datetime DEFAULT NULL,
             author_id bigint(20) UNSIGNED NOT NULL,
             author_hidden tinyint(1) DEFAULT 0,
             is_promo tinyint(1) DEFAULT 0,
@@ -202,7 +204,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.5.1'; // Updated report_status column size to varchar(50)
+        $current_schema_version = '3.5.2'; // Added rejected_reason and rejected_delete_at columns
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -403,6 +405,16 @@ class JG_Map_Database {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN resolved_delete_at datetime DEFAULT NULL AFTER report_status");
         }
 
+        // Check if rejected_reason column exists (for rejection explanation)
+        if (!$column_exists('rejected_reason')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN rejected_reason text DEFAULT NULL AFTER resolved_delete_at");
+        }
+
+        // Check if rejected_delete_at column exists (for auto-deletion of rejected reports after 7 days)
+        if (!$column_exists('rejected_delete_at')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN rejected_delete_at datetime DEFAULT NULL AFTER rejected_reason");
+        }
+
         // Modify report_status column to support longer status names (needs_better_documentation = 27 chars)
         $report_status_size = $wpdb->get_row($wpdb->prepare(
             "SHOW COLUMNS FROM `$safe_table` LIKE %s",
@@ -590,18 +602,21 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
-        // Flush WordPress object cache to ensure fresh data
-        wp_cache_flush();
+        // PERFORMANCE OPTIMIZATION: Use transient cache (30 seconds)
+        // Cache key includes $include_pending to avoid conflicts
+        $cache_key = $include_pending ? 'jg_map_points_with_pending' : 'jg_map_points_published';
+        $cached_results = get_transient($cache_key);
 
-        // Disable MySQL query cache for this session
-        $wpdb->query('SET SESSION query_cache_type = OFF');
+        if ($cached_results !== false) {
+            return $cached_results;
+        }
 
         $status_condition = $include_pending
             ? "status IN ('publish', 'pending', 'edit')"
             : "status = 'publish'";
 
         $sql = "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                       resolved_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                       resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                        deletion_requested_at, is_promo, promo_until, website, phone,
                        cta_enabled, cta_type, admin_note, images, featured_image_index,
                        facebook_url, instagram_url, linkedin_url, tiktok_url,
@@ -613,13 +628,18 @@ class JG_Map_Database {
 
         $results = $wpdb->get_results($sql, ARRAY_A);
 
-        // DEBUG: Log raw SQL results for zgłoszenia with categories
-        foreach ($results as $row) {
-            if ($row['type'] === 'zgloszenie') {
-            }
-        }
+        // Cache results for 30 seconds
+        set_transient($cache_key, $results, 30);
 
         return $results;
+    }
+
+    /**
+     * Invalidate points cache - call this whenever point data changes
+     */
+    public static function invalidate_points_cache() {
+        delete_transient('jg_map_points_published');
+        delete_transient('jg_map_points_with_pending');
     }
 
     /**
@@ -631,7 +651,7 @@ class JG_Map_Database {
 
         $sql = $wpdb->prepare(
             "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                    resolved_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                    resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                     deletion_requested_at, is_promo, promo_until, website, phone,
                     cta_enabled, cta_type, admin_note, images, featured_image_index,
                     facebook_url, instagram_url, linkedin_url, tiktok_url,
@@ -661,7 +681,7 @@ class JG_Map_Database {
         return $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                        resolved_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                        resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                         deletion_requested_at, is_promo, promo_until, website, phone,
                         cta_enabled, cta_type, admin_note, images, featured_image_index,
                         facebook_url, instagram_url, linkedin_url, tiktok_url,
@@ -707,6 +727,9 @@ class JG_Map_Database {
             );
         }
 
+        // Invalidate points cache after insert
+        self::invalidate_points_cache();
+
         return $insert_id;
     }
 
@@ -722,11 +745,18 @@ class JG_Map_Database {
             $data['slug'] = self::generate_unique_slug($data['title'], $point_id);
         }
 
-        return $wpdb->update(
+        $result = $wpdb->update(
             $table,
             $data,
             array('id' => $point_id)
         );
+
+        // Invalidate points cache after update
+        if ($result !== false) {
+            self::invalidate_points_cache();
+        }
+
+        return $result;
     }
 
     /**
@@ -753,11 +783,18 @@ class JG_Map_Database {
         $wpdb->delete($history_table, array('point_id' => $point_id), array('%d'));
 
         // Delete the point itself
-        return $wpdb->delete(
+        $result = $wpdb->delete(
             $points_table,
             array('id' => $point_id),
             array('%d')
         );
+
+        // Invalidate points cache after deletion
+        if ($result !== false) {
+            self::invalidate_points_cache();
+        }
+
+        return $result;
     }
 
     /**
