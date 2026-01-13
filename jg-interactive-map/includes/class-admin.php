@@ -1047,6 +1047,14 @@ class JG_Map_Admin {
             ARRAY_A
         );
 
+        // PERFORMANCE OPTIMIZATION: Prime user cache to avoid N+1 queries
+        if (!empty($pending) && function_exists('wp_prime_user_cache')) {
+            $author_ids = array_unique(array_filter(array_column($pending, 'author_id')));
+            if (!empty($author_ids)) {
+                wp_prime_user_cache($author_ids);
+            }
+        }
+
         // Get edits with priority calculation (based on how old they are and number of reports on the point)
         // ONLY get edits, not deletion requests (filter by action_type)
         $edits = $wpdb->get_results(
@@ -1061,6 +1069,14 @@ class JG_Map_Admin {
             ORDER BY report_count DESC, hours_old DESC",
             ARRAY_A
         );
+
+        // PERFORMANCE OPTIMIZATION: Prime user cache for edit authors
+        if (!empty($edits) && function_exists('wp_prime_user_cache')) {
+            $edit_author_ids = array_unique(array_filter(array_column($edits, 'user_id')));
+            if (!empty($edit_author_ids)) {
+                wp_prime_user_cache($edit_author_ids);
+            }
+        }
 
         ?>
         <div class="wrap">
@@ -1925,6 +1941,14 @@ class JG_Map_Admin {
             ARRAY_A
         );
 
+        // PERFORMANCE OPTIMIZATION: Prime user cache to avoid N+1 queries
+        if (!empty($points) && function_exists('wp_prime_user_cache')) {
+            $author_ids = array_unique(array_filter(array_column($points, 'author_id')));
+            if (!empty($author_ids)) {
+                wp_prime_user_cache($author_ids);
+            }
+        }
+
         ?>
         <div class="wrap">
             <h1>Wszystkie miejsca (ostatnie 100)</h1>
@@ -2151,6 +2175,14 @@ class JG_Map_Admin {
             "SELECT * FROM $points_table WHERE is_deletion_requested = 1 ORDER BY deletion_requested_at DESC",
             ARRAY_A
         );
+
+        // PERFORMANCE OPTIMIZATION: Prime user cache to avoid N+1 queries
+        if (!empty($deletions) && function_exists('wp_prime_user_cache')) {
+            $author_ids = array_unique(array_filter(array_column($deletions, 'author_id')));
+            if (!empty($author_ids)) {
+                wp_prime_user_cache($author_ids);
+            }
+        }
 
         ?>
         <div class="wrap">
@@ -3066,6 +3098,14 @@ class JG_Map_Admin {
             ARRAY_A
         );
 
+        // PERFORMANCE OPTIMIZATION: Prime user cache for log authors to avoid N+1 queries
+        if (!empty($logs) && function_exists('wp_prime_user_cache')) {
+            $log_user_ids = array_unique(array_filter(array_column($logs, 'user_id')));
+            if (!empty($log_user_ids)) {
+                wp_prime_user_cache($log_user_ids);
+            }
+        }
+
         // Get total count
         $total = $wpdb->get_var("SELECT COUNT(*) FROM $log_table WHERE $where_clause");
         $total_pages = ceil($total / $per_page);
@@ -3077,6 +3117,14 @@ class JG_Map_Admin {
         $users_with_logs = $wpdb->get_results(
             "SELECT DISTINCT user_id FROM $log_table ORDER BY user_id"
         );
+
+        // PERFORMANCE OPTIMIZATION: Prime user cache for filter dropdown to avoid N+1 queries
+        if (!empty($users_with_logs) && function_exists('wp_prime_user_cache')) {
+            $filter_user_ids = array_unique(array_filter(array_column($users_with_logs, 'user_id')));
+            if (!empty($filter_user_ids)) {
+                wp_prime_user_cache($filter_user_ids);
+            }
+        }
 
         ?>
         <div class="wrap">
