@@ -4866,10 +4866,8 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
-        // Sort sponsored alphabetically (always)
-        usort($sponsored_points, function($a, $b) {
-            return strcasecmp($a['title'], $b['title']);
-        });
+        // Randomize sponsored order on each page load
+        shuffle($sponsored_points);
 
         // Sort regular points based on sort_by parameter
         switch ($sort_by) {
