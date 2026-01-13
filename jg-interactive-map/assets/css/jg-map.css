@@ -1504,6 +1504,7 @@
   max-width: 100%;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden; /* Prevent horizontal overflow */
 }
 
 /* Statistics Summary */
@@ -1568,6 +1569,8 @@
   color: #374151;
   transition: color 0.2s;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .jg-sidebar-filter-group label:hover {
@@ -1687,6 +1690,8 @@
   transition: all 0.2s;
   display: flex;
   gap: 14px;
+  min-width: 0; /* Fix for flex overflow */
+  overflow: hidden; /* Prevent content overflow */
 }
 
 .jg-sidebar-item:hover {
@@ -1746,6 +1751,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow: hidden;
 }
 
 .jg-sidebar-item__header {
@@ -1765,6 +1771,10 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   align-self: flex-start;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .jg-sidebar-item__badge--sponsored {
@@ -1798,6 +1808,8 @@
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .jg-sidebar-item__footer {
@@ -1836,6 +1848,8 @@
 }
 
 /* Responsive Design */
+
+/* Tablets and smaller desktops (up to 768px) */
 @media (max-width: 768px) {
   .jg-sidebar-stats {
     grid-template-columns: repeat(2, 1fr);
@@ -1844,7 +1858,7 @@
   }
 
   .jg-sidebar-stat {
-    padding: 6px;
+    padding: 6px 4px;
   }
 
   .jg-sidebar-stat-label {
@@ -1883,8 +1897,8 @@
   }
 
   .jg-sidebar-item {
-    padding: 12px;
-    gap: 12px;
+    padding: 10px;
+    gap: 10px;
   }
 
   .jg-sidebar-item__image {
@@ -1892,11 +1906,168 @@
     height: 60px;
   }
 
+  .jg-sidebar-star-icon {
+    font-size: 32px;
+  }
+
   .jg-sidebar-item__title {
-    font-size: 14px;
+    font-size: 13px;
+  }
+
+  .jg-sidebar-item__badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .jg-sidebar-item__votes {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .jg-sidebar-item__date {
+    font-size: 11px;
+  }
+}
+
+/* Mobile phones (up to 480px) */
+@media (max-width: 480px) {
+  .jg-sidebar-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .jg-sidebar-stat {
+    padding: 4px 2px;
+  }
+
+  .jg-sidebar-stat-label {
+    font-size: 8px;
+    margin-bottom: 2px;
+  }
+
+  .jg-sidebar-stat-value {
+    font-size: 16px;
+  }
+
+  .jg-sidebar-filters {
+    padding: 8px;
+  }
+
+  .jg-sidebar-filters h3 {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .jg-sidebar-filter-group {
+    gap: 4px 6px;
+  }
+
+  .jg-sidebar-filter-group label {
+    font-size: 10px;
+  }
+
+  .jg-sidebar-filter-group input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+  }
+
+  .jg-sidebar-sort {
+    padding: 8px;
+  }
+
+  .jg-sidebar-sort label {
+    font-size: 10px;
+  }
+
+  .jg-sidebar-sort select {
+    font-size: 11px;
+    padding: 6px 10px;
   }
 
   .jg-sidebar-list {
-    max-height: 500px;
+    padding: 6px;
+  }
+
+  .jg-sidebar-item {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .jg-sidebar-item__image {
+    width: 50px;
+    height: 50px;
+  }
+
+  .jg-sidebar-star-icon {
+    font-size: 28px;
+  }
+
+  .jg-sidebar-item__title {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .jg-sidebar-item__badge {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+
+  .jg-sidebar-item__votes {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+
+  .jg-sidebar-item__date {
+    font-size: 10px;
+  }
+
+  .jg-sidebar-item__footer {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+}
+
+/* Very narrow screens (up to 360px) */
+@media (max-width: 360px) {
+  .jg-sidebar-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    padding: 6px;
+  }
+
+  .jg-sidebar-stat {
+    padding: 3px 2px;
+  }
+
+  .jg-sidebar-stat-label {
+    font-size: 7px;
+  }
+
+  .jg-sidebar-stat-value {
+    font-size: 14px;
+  }
+
+  .jg-sidebar-item {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .jg-sidebar-item__image {
+    width: 45px;
+    height: 45px;
+  }
+
+  .jg-sidebar-star-icon {
+    font-size: 24px;
+  }
+
+  .jg-sidebar-item__title {
+    font-size: 11px;
+  }
+
+  .jg-sidebar-item__badge {
+    font-size: 8px;
+    padding: 2px 4px;
   }
 }
