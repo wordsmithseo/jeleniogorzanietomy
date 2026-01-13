@@ -4310,8 +4310,16 @@
           '<input type="radio" name="status" value="resolved" ' + (currentStatus === 'resolved' ? 'checked' : '') + ' style="width:20px;height:20px">' +
           '<div><strong>Rozwiązane</strong></div>' +
           '</label>' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:12px;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer">' +
+          '<input type="radio" name="status" value="rejected" ' + (currentStatus === 'rejected' ? 'checked' : '') + ' style="width:20px;height:20px">' +
+          '<div><strong>Odrzucono</strong></div>' +
+          '</label>' +
           '</div>' +
-          '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+          '<div id="rejection-reason-box" style="display:none;margin-top:12px;padding:12px;background:#fee2e2;border:2px solid #ef4444;border-radius:8px">' +
+          '<label style="display:block;margin-bottom:8px;font-weight:700;color:#991b1b">Powód odrzucenia (wymagane):</label>' +
+          '<textarea id="rejection-reason" style="width:100%;min-height:80px;padding:8px;border:1px solid #ef4444;border-radius:4px;resize:vertical" placeholder="Wyjaśnij dlaczego zgłoszenie zostało odrzucone..."></textarea>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">' +
           '<button type="button" class="jg-btn jg-btn--ghost" id="status-cancel">Anuluj</button>' +
           '<button type="button" class="jg-btn" id="status-save">Zapisz</button>' +
           '</div>' +
@@ -4330,6 +4338,28 @@
 
         var msg = qs('#status-msg', modalStatus);
         var saveBtn = qs('#status-save', modalStatus);
+        var rejectionReasonBox = qs('#rejection-reason-box', modalStatus);
+        var rejectionReasonInput = qs('#rejection-reason', modalStatus);
+
+        // Show/hide rejection reason field based on selected status
+        var radioButtons = modalStatus.querySelectorAll('input[name="status"]');
+        radioButtons.forEach(function(radio) {
+          radio.onchange = function() {
+            if (radio.value === 'rejected') {
+              rejectionReasonBox.style.display = 'block';
+            } else {
+              rejectionReasonBox.style.display = 'none';
+            }
+          };
+        });
+
+        // Show rejection reason box if already rejected
+        if (currentStatus === 'rejected') {
+          rejectionReasonBox.style.display = 'block';
+          if (p.rejected_reason) {
+            rejectionReasonInput.value = p.rejected_reason;
+          }
+        }
 
         saveBtn.onclick = function() {
           var selected = qs('input[name="status"]:checked', modalStatus);
@@ -4340,6 +4370,18 @@
           }
 
           var newStatus = selected.value;
+
+          // Validation: rejection reason is required for "rejected" status
+          if (newStatus === 'rejected') {
+            var rejectionReason = rejectionReasonInput.value.trim();
+            if (!rejectionReason) {
+              msg.textContent = 'Powód odrzucenia jest wymagany';
+              msg.style.color = '#b91c1c';
+              rejectionReasonInput.focus();
+              return;
+            }
+          }
+
           if (newStatus === currentStatus) {
             close(modalStatus);
             return;
@@ -4348,7 +4390,12 @@
           msg.textContent = 'Zapisywanie...';
           saveBtn.disabled = true;
 
-          adminChangeStatus({ post_id: p.id, new_status: newStatus })
+          var requestData = { post_id: p.id, new_status: newStatus };
+          if (newStatus === 'rejected') {
+            requestData.rejection_reason = rejectionReasonInput.value.trim();
+          }
+
+          adminChangeStatus(requestData)
             .then(function(result) {
               msg.textContent = 'Zapisano! Odświeżanie...';
               msg.style.color = '#15803d';
