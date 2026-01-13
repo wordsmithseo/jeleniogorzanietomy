@@ -179,24 +179,27 @@
         // Badge (sponsored or type)
         let badgeHtml = '';
         if (point.is_promo) {
-            badgeHtml = '<span class="jg-sidebar-item__badge jg-sidebar-item__badge--sponsored">⭐ Sponsorowane</span>';
+            badgeHtml = '<span class="jg-sidebar-item__badge jg-sidebar-item__badge--sponsored">⭐ Sponsor</span>';
         } else {
             const typeIcon = typeIcons[point.type] || '📍';
             const typeLabel = typeLabels[point.type] || point.type;
             badgeHtml = `<span class="jg-sidebar-item__badge jg-sidebar-item__badge--${point.type}">${typeIcon} ${typeLabel}</span>`;
         }
 
-        // Votes display
-        let votesClass = 'jg-sidebar-item__votes--neutral';
-        if (point.votes_count > 0) {
-            votesClass = 'jg-sidebar-item__votes--positive';
-        } else if (point.votes_count < 0) {
-            votesClass = 'jg-sidebar-item__votes--negative';
-        }
+        // Votes display (only for non-sponsored items)
+        let votesHtml = '';
+        if (!point.is_promo) {
+            let votesClass = 'jg-sidebar-item__votes--neutral';
+            if (point.votes_count > 0) {
+                votesClass = 'jg-sidebar-item__votes--positive';
+            } else if (point.votes_count < 0) {
+                votesClass = 'jg-sidebar-item__votes--negative';
+            }
 
-        const votesHtml = `<div class="jg-sidebar-item__votes ${votesClass}">
-            ${point.votes_count > 0 ? '+' : ''}${point.votes_count} głosów
-        </div>`;
+            votesHtml = `<div class="jg-sidebar-item__votes ${votesClass}">
+                ${point.votes_count > 0 ? '+' : ''}${point.votes_count} głosów
+            </div>`;
+        }
 
         // Build item HTML
         $item.html(`

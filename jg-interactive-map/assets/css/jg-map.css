@@ -508,46 +508,56 @@
   .jg-custom-top-bar {
     flex-direction: column;
     align-items: stretch;
+    gap: 10px;
   }
 
-  .jg-top-bar-left,
-  .jg-top-bar-right {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .jg-top-bar-right {
+  .jg-top-bar-left {
     flex-direction: column;
-  }
-
-  .jg-top-bar-btn {
+    gap: 4px;
+    align-items: flex-start;
     width: 100%;
-    text-align: center;
   }
 
-  /* User info on mobile - make it centered and smaller */
-  .jg-top-bar-user {
-    font-size: 13px;
-    text-align: center;
-    width: 100%;
-    margin-right: 0;
-    margin-bottom: 4px;
-  }
-
-  /* Notifications on mobile - Circular icons with badges */
-  #jg-top-bar-notifications {
+  .jg-top-bar-right {
     width: 100%;
     flex-direction: row;
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
+  }
+
+  /* DateTime at top */
+  #jg-top-bar-datetime {
+    font-size: 12px;
+    width: 100%;
+  }
+
+  /* User info below datetime */
+  .jg-top-bar-user {
+    font-size: 12px;
+    text-align: left;
+    width: 100%;
+    margin-right: 0;
+    order: -2;
+  }
+
+  /* Notifications section - circular icons */
+  #jg-top-bar-notifications {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
     order: -1;
-    margin-bottom: 8px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    width: fit-content;
+    margin: 0 auto;
   }
 
   .jg-top-bar-notif {
-    width: auto;
-    min-width: 50px;
-    min-height: 50px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
     padding: 0;
     display: flex;
@@ -570,9 +580,9 @@
     line-height: 0;
   }
 
-  /* Show only emoji by setting font-size to 24px for emoji characters */
+  /* Show only emoji by setting font-size to 22px for emoji characters */
   .jg-top-bar-notif span:first-child::before {
-    font-size: 24px;
+    font-size: 22px;
     line-height: 1;
     display: inline-block;
   }
@@ -599,12 +609,70 @@
     position: absolute;
     top: -2px;
     right: -2px;
-    min-width: 20px;
-    height: 20px;
-    font-size: 11px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
     background: #ef4444;
     border: 2px solid #8d2324;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+  }
+
+  /* Action buttons (Edit Profile, Admin Panel, Logout) as icons */
+  .jg-top-bar-btn:not(.jg-top-bar-notif) {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
+  }
+
+  .jg-top-bar-btn:not(.jg-top-bar-notif):hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  /* Edit Profile button icon */
+  #jg-edit-profile-btn::before {
+    content: "👤";
+    font-size: 22px;
+    display: block;
+  }
+
+  /* Admin Panel button icon */
+  .jg-top-bar-btn-admin::before {
+    content: "⚙️";
+    font-size: 22px;
+    display: block;
+  }
+
+  /* Logout button icon */
+  .jg-top-bar-btn[href*="logout"]::before {
+    content: "🚪";
+    font-size: 22px;
+    display: block;
+  }
+
+  /* Login/Register buttons on mobile - keep text but make compact */
+  #jg-login-btn,
+  #jg-register-btn {
+    width: auto;
+    height: auto;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  #jg-login-btn::before,
+  #jg-register-btn::before {
+    content: none;
   }
 }
 
@@ -1511,7 +1579,7 @@
 
 /* Statistics Summary */
 .jg-sidebar-stats {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8d2324 0%, #b52829 100%);
   color: #fff;
   padding: 12px 15px;
   display: grid;
