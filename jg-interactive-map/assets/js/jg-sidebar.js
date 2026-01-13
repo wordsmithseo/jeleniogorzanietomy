@@ -217,37 +217,20 @@
     }
 
     /**
-     * Handle click on point item - zoom map and open modal
+     * Handle click on point item - navigate to point URL
+     * This uses the existing SEO routing which will automatically:
+     * - Zoom the map to the point
+     * - Open the details modal
      */
     function handlePointClick(point) {
         console.log('[JG SIDEBAR] Point clicked:', point);
 
-        // Check if map exists
-        if (typeof window.jgMap === 'undefined') {
-            console.warn('[JG SIDEBAR] Map not found, opening point details by slug');
-            // Fallback: navigate to point URL
-            window.location.href = `/${point.slug}`;
-            return;
-        }
+        // Construct URL based on type and slug
+        // Format: /miejsce/slug, /ciekawostka/slug, /zgloszenie/slug
+        const url = `/${point.type}/${point.slug}`;
 
-        // Zoom to point with max zoom
-        const maxZoom = 19;
-        window.jgMap.setView([point.lat, point.lng], maxZoom, {
-            animate: true,
-            duration: 1
-        });
-
-        // Open point details modal after zoom animation
-        setTimeout(function() {
-            // Call the global openDetails function if available
-            if (typeof window.openDetails === 'function') {
-                window.openDetails(point);
-            } else {
-                console.error('[JG SIDEBAR] openDetails function not found');
-                // Fallback: navigate to point URL
-                window.location.href = `/${point.slug}`;
-            }
-        }, 1000);
+        console.log('[JG SIDEBAR] Navigating to:', url);
+        window.location.href = url;
     }
 
     /**

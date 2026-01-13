@@ -7108,6 +7108,10 @@
       // Create FAB on init
       createFAB();
 
+      // Export map and openDetails as global functions for use by sidebar widget
+      window.jgMap = map;
+      window.openDetails = openDetails;
+
     } catch (e) {
       showError('Błąd: ' + e.message);
     }
