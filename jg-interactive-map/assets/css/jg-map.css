@@ -1510,62 +1510,64 @@
 .jg-sidebar-stats {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
-  padding: 20px;
+  padding: 12px 15px;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
 
 .jg-sidebar-stat {
   text-align: center;
-  padding: 12px;
+  padding: 6px 4px;
   background: rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  border-radius: 6px;
   backdrop-filter: blur(10px);
 }
 
 .jg-sidebar-stat-label {
   display: block;
-  font-size: 13px;
+  font-size: 10px;
   opacity: 0.9;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
   font-weight: 500;
 }
 
 .jg-sidebar-stat-value {
   display: block;
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Filters Section */
 .jg-sidebar-filters {
-  padding: 20px;
+  padding: 12px 15px;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .jg-sidebar-filters h3 {
-  margin: 0 0 15px 0;
-  font-size: 16px;
+  margin: 0 0 8px 0;
+  font-size: 13px;
   font-weight: 600;
   color: #1f2937;
 }
 
 .jg-sidebar-filter-group {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px 12px;
 }
 
 .jg-sidebar-filter-group label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
   color: #374151;
   transition: color 0.2s;
+  white-space: nowrap;
 }
 
 .jg-sidebar-filter-group label:hover {
@@ -1573,23 +1575,23 @@
 }
 
 .jg-sidebar-filter-group input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
   accent-color: #667eea;
 }
 
 /* Sorting Section */
 .jg-sidebar-sort {
-  padding: 20px;
+  padding: 12px 15px;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .jg-sidebar-sort label {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: #1f2937;
   white-space: nowrap;
@@ -1597,10 +1599,10 @@
 
 .jg-sidebar-sort select {
   flex: 1;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 12px;
   color: #374151;
   background: #fff;
   cursor: pointer;
@@ -1724,6 +1726,19 @@
   object-fit: cover;
 }
 
+/* Star icon for sponsored places without image */
+.jg-sidebar-item__image--star {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.jg-sidebar-star-icon {
+  font-size: 40px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
 /* Item Content */
 .jg-sidebar-item__content {
   flex: 1;
@@ -1823,25 +1838,48 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .jg-sidebar-stats {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .jg-sidebar-stat {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
     padding: 10px;
   }
 
+  .jg-sidebar-stat {
+    padding: 6px;
+  }
+
+  .jg-sidebar-stat-label {
+    font-size: 9px;
+  }
+
   .jg-sidebar-stat-value {
-    font-size: 24px;
+    font-size: 18px;
+  }
+
+  .jg-sidebar-filters {
+    padding: 10px;
+  }
+
+  .jg-sidebar-filters h3 {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .jg-sidebar-filter-group {
+    gap: 6px 8px;
+  }
+
+  .jg-sidebar-filter-group label {
+    font-size: 11px;
   }
 
   .jg-sidebar-sort {
+    padding: 10px;
     flex-direction: column;
     align-items: stretch;
   }
 
   .jg-sidebar-sort label {
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .jg-sidebar-item {
