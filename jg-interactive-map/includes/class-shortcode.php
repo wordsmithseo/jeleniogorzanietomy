@@ -137,7 +137,7 @@ class JG_Map_Shortcode {
 
         ob_start();
         ?>
-        <div id="jg-map-sidebar" class="jg-map-sidebar">
+        <div id="jg-map-sidebar" class="jg-map-sidebar" style="height: <?php echo esc_attr($atts['height']); ?>;">
 
             <!-- Statistics Summary -->
             <div class="jg-sidebar-stats">
@@ -190,7 +190,7 @@ class JG_Map_Shortcode {
             </div>
 
             <!-- Points List -->
-            <div id="jg-sidebar-list" class="jg-sidebar-list" style="max-height: <?php echo esc_attr($atts['height']); ?>;">
+            <div id="jg-sidebar-list" class="jg-sidebar-list">
                 <!-- Will be populated by JavaScript -->
             </div>
         </div>

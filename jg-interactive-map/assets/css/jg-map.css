@@ -1502,6 +1502,8 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Statistics Summary */
@@ -1628,9 +1630,10 @@
 
 /* Points List */
 .jg-sidebar-list {
-  max-height: 600px;
+  flex: 1;
   overflow-y: auto;
   padding: 10px;
+  min-height: 0; /* Fix for Firefox flex overflow bug */
 }
 
 /* Custom scrollbar for sidebar list */
