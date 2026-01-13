@@ -54,11 +54,11 @@ class JG_Map_Shortcode {
         ?>
         <div id="jg-map-wrap" class="jg-wrap" style="position:relative; height: <?php echo esc_attr($atts['height']); ?> !important; display: grid; grid-template-rows: auto 1fr;">
             <div id="jg-map-filters" class="jg-filters">
-                <label><input type="checkbox" data-type="zgloszenie" checked> <?php _e('Zgłoszenia', 'jg-map'); ?></label>
-                <label><input type="checkbox" data-type="ciekawostka" checked> <?php _e('Ciekawostki', 'jg-map'); ?></label>
-                <label><input type="checkbox" data-type="miejsce" checked> <?php _e('Miejsca', 'jg-map'); ?></label>
-                <label><input type="checkbox" data-my-places> <?php _e('Moje miejsca', 'jg-map'); ?></label>
-                <label style="margin-left:auto"><input type="checkbox" data-promo> <?php _e('Tylko miejsca sponsorowane', 'jg-map'); ?></label>
+                <label class="jg-filter-label" data-filter-type="zgloszenie"><input type="checkbox" data-type="zgloszenie" checked><span class="jg-filter-icon">⚠️</span><span class="jg-filter-text"><?php _e('Zgłoszenia', 'jg-map'); ?></span></label>
+                <label class="jg-filter-label" data-filter-type="ciekawostka"><input type="checkbox" data-type="ciekawostka" checked><span class="jg-filter-icon">💡</span><span class="jg-filter-text"><?php _e('Ciekawostki', 'jg-map'); ?></span></label>
+                <label class="jg-filter-label" data-filter-type="miejsce"><input type="checkbox" data-type="miejsce" checked><span class="jg-filter-icon">📍</span><span class="jg-filter-text"><?php _e('Miejsca', 'jg-map'); ?></span></label>
+                <label class="jg-filter-label" data-filter-type="my-places"><input type="checkbox" data-my-places><span class="jg-filter-icon">👤</span><span class="jg-filter-text"><?php _e('Moje miejsca', 'jg-map'); ?></span></label>
+                <label class="jg-filter-label" data-filter-type="promo" style="margin-left:auto"><input type="checkbox" data-promo><span class="jg-filter-icon">⭐</span><span class="jg-filter-text"><?php _e('Tylko miejsca sponsorowane', 'jg-map'); ?></span></label>
                 <div class="jg-search">
                     <input type="text" id="jg-search-input" placeholder="🔍 <?php _e('Szukaj miejsca...', 'jg-map'); ?>" />
                     <button id="jg-search-btn" class="jg-search-btn" title="Szukaj">
@@ -142,19 +142,19 @@ class JG_Map_Shortcode {
             <!-- Statistics Summary -->
             <div class="jg-sidebar-stats">
                 <div class="jg-sidebar-stat">
-                    <span class="jg-sidebar-stat-label">Wszystkie pinezki:</span>
+                    <span class="jg-sidebar-stat-icon">📊</span>
                     <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-total">0</span>
                 </div>
                 <div class="jg-sidebar-stat">
-                    <span class="jg-sidebar-stat-label">Miejsca:</span>
+                    <span class="jg-sidebar-stat-icon">📍</span>
                     <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-miejsce">0</span>
                 </div>
                 <div class="jg-sidebar-stat">
-                    <span class="jg-sidebar-stat-label">Ciekawostki:</span>
+                    <span class="jg-sidebar-stat-icon">💡</span>
                     <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-ciekawostka">0</span>
                 </div>
                 <div class="jg-sidebar-stat">
-                    <span class="jg-sidebar-stat-label">Zgłoszenia:</span>
+                    <span class="jg-sidebar-stat-icon">⚠️</span>
                     <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-zgloszenie">0</span>
                 </div>
             </div>
@@ -163,10 +163,10 @@ class JG_Map_Shortcode {
             <div class="jg-sidebar-filters">
                 <h3>Filtry</h3>
                 <div class="jg-sidebar-filter-group">
-                    <label><input type="checkbox" data-sidebar-type="miejsce" checked> <?php _e('Miejsca', 'jg-map'); ?></label>
-                    <label><input type="checkbox" data-sidebar-type="ciekawostka" checked> <?php _e('Ciekawostki', 'jg-map'); ?></label>
-                    <label><input type="checkbox" data-sidebar-type="zgloszenie" checked> <?php _e('Zgłoszenia', 'jg-map'); ?></label>
-                    <label><input type="checkbox" data-sidebar-my-places> <?php _e('Moje miejsca', 'jg-map'); ?></label>
+                    <label class="jg-sidebar-filter-label" data-sidebar-filter="miejsce"><input type="checkbox" data-sidebar-type="miejsce" checked><span class="jg-sidebar-filter-icon">📍</span><span class="jg-sidebar-filter-text"><?php _e('Miejsca', 'jg-map'); ?></span></label>
+                    <label class="jg-sidebar-filter-label" data-sidebar-filter="ciekawostka"><input type="checkbox" data-sidebar-type="ciekawostka" checked><span class="jg-sidebar-filter-icon">💡</span><span class="jg-sidebar-filter-text"><?php _e('Ciekawostki', 'jg-map'); ?></span></label>
+                    <label class="jg-sidebar-filter-label" data-sidebar-filter="zgloszenie"><input type="checkbox" data-sidebar-type="zgloszenie" checked><span class="jg-sidebar-filter-icon">⚠️</span><span class="jg-sidebar-filter-text"><?php _e('Zgłoszenia', 'jg-map'); ?></span></label>
+                    <label class="jg-sidebar-filter-label" data-sidebar-filter="my-places"><input type="checkbox" data-sidebar-my-places><span class="jg-sidebar-filter-icon">👤</span><span class="jg-sidebar-filter-text"><?php _e('Moje miejsca', 'jg-map'); ?></span></label>
                 </div>
             </div>
 
