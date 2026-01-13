@@ -52,7 +52,7 @@ class JG_Map_Shortcode {
 
         ob_start();
         ?>
-        <div id="jg-map-wrap" class="jg-wrap" style="position:relative">
+        <div id="jg-map-wrap" class="jg-wrap" style="position:relative; height: <?php echo esc_attr($atts['height']); ?> !important; display: flex; flex-direction: column;">
             <div id="jg-map-filters" class="jg-filters">
                 <label><input type="checkbox" data-type="zgloszenie" checked> <?php _e('Zgłoszenia', 'jg-map'); ?></label>
                 <label><input type="checkbox" data-type="ciekawostka" checked> <?php _e('Ciekawostki', 'jg-map'); ?></label>
@@ -88,7 +88,7 @@ class JG_Map_Shortcode {
                 <div style="margin-top:16px;font-size:16px;color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
             </div>
 
-            <div id="jg-map" class="jg-map" style="opacity: 0; transition: opacity 0.3s; height: <?php echo esc_attr($atts['height']); ?> !important;"
+            <div id="jg-map" class="jg-map" style="opacity: 0; transition: opacity 0.3s; flex: 1; min-height: 0;"
                  data-lat="<?php echo esc_attr($atts['lat']); ?>"
                  data-lng="<?php echo esc_attr($atts['lng']); ?>"
                  data-zoom="<?php echo esc_attr($atts['zoom']); ?>">

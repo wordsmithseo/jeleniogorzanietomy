@@ -5984,26 +5984,28 @@
       function createSyncStatusIndicator() {
         var indicator = $('<div>')
           .attr('id', 'jg-sync-status')
+          .attr('title', 'Status synchronizacji')
           .css({
-            padding: '8px 16px',
-            borderRadius: '8px',
-            fontSize: '13px',
+            padding: '6px 10px',
+            borderRadius: '6px',
+            fontSize: '11px',
             fontWeight: '600',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: '4px',
             transition: 'all 0.3s ease',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
             color: '#92400e',
             border: '1px solid #fbbf24',
             whiteSpace: 'nowrap',
-            minWidth: '220px',
-            flexShrink: 0
+            flexShrink: 0,
+            cursor: 'help',
+            order: 10
           });
 
-        // Add to filters bar, right after search field
-        $('.jg-search').after(indicator);
+        // Add to filters bar
+        $('#jg-map-filters').append(indicator);
         return indicator;
       }
 
@@ -6020,34 +6022,21 @@
 
         var dot = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #92400e; display: inline-block;"></span>';
         var text = '';
+        var tooltipText = 'Status synchronizacji';
 
         if (state === 'online') {
           syncOnline = true;
           dot = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #16a34a; display: inline-block; animation: pulse-dot 2s infinite;"></span>';
-          text = '<span>Synchronizacja: <strong>Online</strong></span>';
+          text = '<span style="font-size:14px;">⟳</span>';
+          tooltipText = 'Synchronizacja: Online';
         } else if (state === 'syncing') {
           dot = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block; animation: pulse-dot 1s infinite;"></span>';
-          text = '<span>Synchronizacja: <strong>W trakcie<span class="jg-sync-dots"></span></strong></span>';
-
-          // Animate dots
-          var dotsElem = null;
-          setTimeout(function() {
-            dotsElem = syncStatusIndicator.find('.jg-sync-dots');
-            if (dotsElem.length) {
-              var dotCount = 0;
-              var dotsInterval = setInterval(function() {
-                if (!syncStatusIndicator.find('.jg-sync-dots').length) {
-                  clearInterval(dotsInterval);
-                  return;
-                }
-                dotCount = (dotCount + 1) % 4;
-                dotsElem.text('.'.repeat(dotCount));
-              }, 400);
-            }
-          }, 50);
+          text = '<span style="font-size:14px; animation: spin-icon 1s linear infinite;">⟳</span>';
+          tooltipText = 'Synchronizacja w trakcie...';
         } else if (state === 'completed') {
           dot = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #16a34a; display: inline-block;"></span>';
-          text = '<span>Synchronizacja: <strong>Ukończona</strong></span>';
+          text = '<span style="font-size:14px;">✓</span>';
+          tooltipText = 'Synchronizacja ukończona';
 
           // Return to "online" after 3 seconds
           syncCompletedTimeout = setTimeout(function() {
@@ -6057,16 +6046,17 @@
           // offline or error
           syncOnline = false;
           dot = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #dc2626; display: inline-block;"></span>';
-          text = '<span>Synchronizacja: <strong>' + (state || 'Offline') + '</strong></span>';
+          text = '<span style="font-size:14px;">⚠</span>';
+          tooltipText = 'Synchronizacja: ' + (state || 'Offline');
         }
 
-        syncStatusIndicator.html(dot + text);
+        syncStatusIndicator.html(dot + text).attr('title', tooltipText);
       }
 
       // Add CSS animations
       if (!$('#jg-sync-animations').length) {
         $('<style id="jg-sync-animations">')
-          .text('@keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.85); } }')
+          .text('@keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.85); } } @keyframes spin-icon { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }')
           .appendTo('head');
       }
 
