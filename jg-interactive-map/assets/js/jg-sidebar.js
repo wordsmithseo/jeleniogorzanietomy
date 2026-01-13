@@ -163,11 +163,16 @@
             $item.addClass('jg-sidebar-item--sponsored');
         }
 
-        // Image (if available)
+        // Image (if available) or star icon for sponsored without image
         let imageHtml = '';
         if (point.featured_image) {
             imageHtml = `<div class="jg-sidebar-item__image">
                 <img src="${point.featured_image}" alt="${point.title}" />
+            </div>`;
+        } else if (point.is_promo) {
+            // Show gold star for sponsored places without image
+            imageHtml = `<div class="jg-sidebar-item__image jg-sidebar-item__image--star">
+                <span class="jg-sidebar-star-icon">⭐</span>
             </div>`;
         }
 

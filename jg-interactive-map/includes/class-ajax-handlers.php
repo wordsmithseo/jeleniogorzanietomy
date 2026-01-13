@@ -4966,10 +4966,20 @@ class JG_Map_Ajax_Handlers {
 
         $featured_index = isset($point['featured_image_index']) ? intval($point['featured_image_index']) : 0;
 
+        $featured_image = null;
         if (isset($images[$featured_index])) {
-            return $images[$featured_index];
+            $featured_image = $images[$featured_index];
+        } else {
+            $featured_image = $images[0];
         }
 
-        return $images[0];
+        // Support both old format (string URL) and new format (object with thumb/full)
+        if (is_array($featured_image)) {
+            // New format: return thumb for sidebar list
+            return $featured_image['thumb'] ?? $featured_image['full'] ?? '';
+        }
+
+        // Old format: return string URL
+        return $featured_image;
     }
 }
