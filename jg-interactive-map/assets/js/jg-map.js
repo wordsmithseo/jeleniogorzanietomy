@@ -5999,11 +5999,11 @@
             border: '1px solid #fbbf24',
             whiteSpace: 'nowrap',
             minWidth: '220px',
-            marginLeft: 'auto'
+            flexShrink: 0
           });
 
-        // Add to filters bar, after search field
-        $('#jg-map-filters').append(indicator);
+        // Add to filters bar, right after search field
+        $('.jg-search').after(indicator);
         return indicator;
       }
 

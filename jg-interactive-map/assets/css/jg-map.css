@@ -128,6 +128,8 @@
   overflow: visible; /* Allow sponsored pins to extend beyond edges */
   background: #e5e7eb;
   box-sizing: border-box;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* Loading spinner */
@@ -1593,6 +1595,24 @@
   flex-direction: column;
   overflow-x: hidden; /* Prevent horizontal overflow */
   box-sizing: border-box; /* Ensure height includes padding and border */
+  min-height: 0; /* Allow flex children to shrink below content size */
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* Force equal height for map and sidebar - override Elementor container styles */
+.elementor-element .jg-map,
+.elementor-widget .jg-map,
+.elementor-element .jg-map-sidebar,
+.elementor-widget .jg-map-sidebar,
+#jg-map,
+#jg-map-sidebar {
+  max-height: none !important;
+  min-height: auto !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  flex-basis: auto !important;
 }
 
 /* Statistics Summary */
