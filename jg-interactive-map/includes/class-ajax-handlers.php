@@ -101,6 +101,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_get_point_visitors', array($this, 'get_point_visitors'));
         add_action('wp_ajax_jg_get_user_info', array($this, 'get_user_info'));
         add_action('wp_ajax_nopriv_jg_get_user_info', array($this, 'get_user_info'));
+        add_action('wp_ajax_jg_get_sidebar_points', array($this, 'get_sidebar_points'));
+        add_action('wp_ajax_nopriv_jg_get_sidebar_points', array($this, 'get_sidebar_points'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -4795,5 +4797,179 @@ class JG_Map_Ajax_Handlers {
 
         // Build full URL - don't use esc_url_raw as it may strip valid social media URLs
         return $base_urls[$platform] . urlencode($input);
+    }
+
+    /**
+     * Get points for sidebar widget with sorting and filtering
+     */
+    public function get_sidebar_points() {
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+        $current_user_id = get_current_user_id();
+
+        // Get filter and sort parameters
+        $type_filters = isset($_POST['type_filters']) ? (array)$_POST['type_filters'] : array();
+        $my_places = isset($_POST['my_places']) ? (bool)$_POST['my_places'] : false;
+        $sort_by = isset($_POST['sort_by']) ? sanitize_text_field($_POST['sort_by']) : 'date_desc';
+
+        // Get all published points
+        $points = JG_Map_Database::get_published_points($is_admin);
+
+        // If regular user is logged in, add their pending points
+        if (!$is_admin && $current_user_id > 0) {
+            $user_pending_points = JG_Map_Database::get_user_pending_points($current_user_id);
+            $points = array_merge($points, $user_pending_points);
+        }
+
+        // Pre-load votes for all points
+        $points_with_votes = array();
+        foreach ($points as $point) {
+            $votes_count = JG_Map_Database::get_votes_count($point['id']);
+            $point['votes_count'] = $votes_count;
+            $points_with_votes[] = $point;
+        }
+
+        // Apply filters
+        $filtered_points = array();
+
+        foreach ($points_with_votes as $point) {
+            $is_sponsored = (bool)$point['is_promo'];
+            $is_my_place = ($current_user_id > 0 && $point['author_id'] == $current_user_id);
+
+            // "Moje miejsca" filter
+            if ($my_places) {
+                if (!$is_sponsored && !$is_my_place) {
+                    continue;
+                }
+            }
+
+            // Type filters (miejsca, ciekawostki, zgloszenia)
+            if (!empty($type_filters)) {
+                $matches_type = in_array($point['type'], $type_filters);
+                if (!$matches_type && !$is_sponsored) {
+                    continue;
+                }
+            }
+
+            $filtered_points[] = $point;
+        }
+
+        // Sort points
+        $sponsored_points = array();
+        $regular_points = array();
+
+        // Separate sponsored from regular
+        foreach ($filtered_points as $point) {
+            if ((bool)$point['is_promo']) {
+                $sponsored_points[] = $point;
+            } else {
+                $regular_points[] = $point;
+            }
+        }
+
+        // Sort sponsored alphabetically (always)
+        usort($sponsored_points, function($a, $b) {
+            return strcasecmp($a['title'], $b['title']);
+        });
+
+        // Sort regular points based on sort_by parameter
+        switch ($sort_by) {
+            case 'date_asc':
+                usort($regular_points, function($a, $b) {
+                    return strtotime($a['created_at']) - strtotime($b['created_at']);
+                });
+                break;
+
+            case 'date_desc':
+            default:
+                usort($regular_points, function($a, $b) {
+                    return strtotime($b['created_at']) - strtotime($a['created_at']);
+                });
+                break;
+
+            case 'alpha_asc':
+                usort($regular_points, function($a, $b) {
+                    return strcasecmp($a['title'], $b['title']);
+                });
+                break;
+
+            case 'alpha_desc':
+                usort($regular_points, function($a, $b) {
+                    return strcasecmp($b['title'], $a['title']);
+                });
+                break;
+
+            case 'votes_desc':
+                usort($regular_points, function($a, $b) {
+                    return $b['votes_count'] - $a['votes_count'];
+                });
+                break;
+
+            case 'votes_asc':
+                usort($regular_points, function($a, $b) {
+                    return $a['votes_count'] - $b['votes_count'];
+                });
+                break;
+        }
+
+        // Merge sponsored at the top
+        $sorted_points = array_merge($sponsored_points, $regular_points);
+
+        // Build simplified result for sidebar
+        $result = array();
+        foreach ($sorted_points as $point) {
+            $result[] = array(
+                'id' => $point['id'],
+                'title' => $point['title'],
+                'slug' => $point['slug'],
+                'type' => $point['type'],
+                'lat' => $point['lat'],
+                'lng' => $point['lng'],
+                'is_promo' => (bool)$point['is_promo'],
+                'votes_count' => $point['votes_count'],
+                'created_at' => $point['created_at'],
+                'featured_image' => $this->get_featured_image_url($point)
+            );
+        }
+
+        // Calculate statistics
+        $stats = array(
+            'total' => count($points_with_votes),
+            'miejsce' => 0,
+            'ciekawostka' => 0,
+            'zgloszenie' => 0
+        );
+
+        foreach ($points_with_votes as $point) {
+            if (isset($stats[$point['type']])) {
+                $stats[$point['type']]++;
+            }
+        }
+
+        wp_send_json_success(array(
+            'points' => $result,
+            'stats' => $stats
+        ));
+    }
+
+    /**
+     * Get featured image URL for a point
+     */
+    private function get_featured_image_url($point) {
+        if (empty($point['images'])) {
+            return '';
+        }
+
+        $images = json_decode($point['images'], true);
+        if (!is_array($images) || empty($images)) {
+            return '';
+        }
+
+        $featured_index = isset($point['featured_image_index']) ? intval($point['featured_image_index']) : 0;
+
+        if (isset($images[$featured_index])) {
+            return $images[$featured_index];
+        }
+
+        return $images[0];
     }
 }
