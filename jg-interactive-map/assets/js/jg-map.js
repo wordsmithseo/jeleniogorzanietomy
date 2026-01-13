@@ -2282,7 +2282,7 @@
               'images', 'featured_image_index', 'votes', 'my_vote', 'date', 'admin',
               'admin_note', 'is_pending', 'is_edit', 'edit_info', 'is_deletion_requested',
               'deletion_info', 'reports_count', 'user_has_reported', 'case_id',
-              'resolved_delete_at', 'rejected_reason', 'rejected_delete_at', 'stats',
+              'resolved_delete_at', 'resolved_summary', 'rejected_reason', 'rejected_delete_at', 'stats',
               'facebook_url', 'instagram_url', 'linkedin_url', 'tiktok_url'
             ];
             var apiKeys = Object.keys(sample);
@@ -2335,6 +2335,7 @@
               user_has_reported: !!r.user_has_reported,
               case_id: r.case_id || null,
               resolved_delete_at: r.resolved_delete_at || null,
+              resolved_summary: r.resolved_summary || null,
               rejected_reason: r.rejected_reason || null,
               rejected_delete_at: r.rejected_delete_at || null,
               stats: r.stats || null,  // FIX: Include stats from server (for admin/owner only)
@@ -4317,6 +4318,10 @@
           '<div><strong>Odrzucono</strong></div>' +
           '</label>' +
           '</div>' +
+          '<div id="resolved-summary-box" style="display:none;margin-top:12px;padding:12px;background:#d1fae5;border:2px solid #10b981;border-radius:8px">' +
+          '<label style="display:block;margin-bottom:8px;font-weight:700;color:#065f46">Podsumowanie rozwiązania (wymagane):</label>' +
+          '<textarea id="resolved-summary" style="width:100%;min-height:80px;padding:8px;border:1px solid #10b981;border-radius:4px;resize:vertical" placeholder="Opisz jak zostało rozwiązane zgłoszenie..."></textarea>' +
+          '</div>' +
           '<div id="rejection-reason-box" style="display:none;margin-top:12px;padding:12px;background:#fee2e2;border:2px solid #ef4444;border-radius:8px">' +
           '<label style="display:block;margin-bottom:8px;font-weight:700;color:#991b1b">Powód odrzucenia (wymagane):</label>' +
           '<textarea id="rejection-reason" style="width:100%;min-height:80px;padding:8px;border:1px solid #ef4444;border-radius:4px;resize:vertical" placeholder="Wyjaśnij dlaczego zgłoszenie zostało odrzucone..."></textarea>' +
@@ -4340,20 +4345,35 @@
 
         var msg = qs('#status-msg', modalStatus);
         var saveBtn = qs('#status-save', modalStatus);
+        var resolvedSummaryBox = qs('#resolved-summary-box', modalStatus);
+        var resolvedSummaryInput = qs('#resolved-summary', modalStatus);
         var rejectionReasonBox = qs('#rejection-reason-box', modalStatus);
         var rejectionReasonInput = qs('#rejection-reason', modalStatus);
 
-        // Show/hide rejection reason field based on selected status
+        // Show/hide summary/reason fields based on selected status
         var radioButtons = modalStatus.querySelectorAll('input[name="status"]');
         radioButtons.forEach(function(radio) {
           radio.onchange = function() {
-            if (radio.value === 'rejected') {
+            if (radio.value === 'resolved') {
+              resolvedSummaryBox.style.display = 'block';
+              rejectionReasonBox.style.display = 'none';
+            } else if (radio.value === 'rejected') {
+              resolvedSummaryBox.style.display = 'none';
               rejectionReasonBox.style.display = 'block';
             } else {
+              resolvedSummaryBox.style.display = 'none';
               rejectionReasonBox.style.display = 'none';
             }
           };
         });
+
+        // Show resolved summary box if already resolved
+        if (currentStatus === 'resolved') {
+          resolvedSummaryBox.style.display = 'block';
+          if (p.resolved_summary) {
+            resolvedSummaryInput.value = p.resolved_summary;
+          }
+        }
 
         // Show rejection reason box if already rejected
         if (currentStatus === 'rejected') {
@@ -4372,6 +4392,17 @@
           }
 
           var newStatus = selected.value;
+
+          // Validation: resolved summary is required for "resolved" status
+          if (newStatus === 'resolved') {
+            var resolvedSummary = resolvedSummaryInput.value.trim();
+            if (!resolvedSummary) {
+              msg.textContent = 'Podsumowanie rozwiązania jest wymagane';
+              msg.style.color = '#b91c1c';
+              resolvedSummaryInput.focus();
+              return;
+            }
+          }
 
           // Validation: rejection reason is required for "rejected" status
           if (newStatus === 'rejected') {
@@ -4393,6 +4424,9 @@
           saveBtn.disabled = true;
 
           var requestData = { post_id: p.id, new_status: newStatus };
+          if (newStatus === 'resolved') {
+            requestData.resolved_summary = resolvedSummaryInput.value.trim();
+          }
           if (newStatus === 'rejected') {
             requestData.rejection_reason = rejectionReasonInput.value.trim();
           }
@@ -4507,6 +4541,11 @@
         var adminNote = '';
         if (p.admin_note && p.admin_note.trim()) {
           adminNote = '<div class="jg-admin-note"><div class="jg-admin-note-title">📢 Notatka administratora</div><div class="jg-admin-note-content">' + esc(p.admin_note) + '</div></div>';
+        }
+
+        var resolvedNotice = '';
+        if (p.report_status === 'resolved' && p.resolved_summary) {
+          resolvedNotice = '<div style="background:#d1fae5;border:2px solid #10b981;border-radius:8px;padding:12px;margin:12px 0"><div style="font-weight:700;color:#065f46;margin-bottom:6px">✅ Zgłoszenie rozwiązane</div><div style="color:#064e3b;margin-bottom:8px">' + esc(p.resolved_summary) + '</div><div style="font-size:0.875rem;color:#065f46">Za 7 dni pinezka zostanie automatycznie usunięta z mapy.</div></div>';
         }
 
         var rejectedNotice = '';
@@ -5064,7 +5103,7 @@
           caseIdBadge = '<span class="jg-case-id-badge">' + esc(p.case_id) + '</span>';
         }
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + editInfo + deletionInfo + adminNote + rejectedNotice + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 

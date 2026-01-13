@@ -59,6 +59,7 @@ class JG_Map_Database {
             status varchar(20) NOT NULL DEFAULT 'pending',
             report_status varchar(50) DEFAULT 'added',
             resolved_delete_at datetime DEFAULT NULL,
+            resolved_summary text DEFAULT NULL,
             rejected_reason text DEFAULT NULL,
             rejected_delete_at datetime DEFAULT NULL,
             author_id bigint(20) UNSIGNED NOT NULL,
@@ -204,7 +205,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.5.2'; // Added rejected_reason and rejected_delete_at columns
+        $current_schema_version = '3.5.3'; // Added resolved_summary column
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -405,9 +406,14 @@ class JG_Map_Database {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN resolved_delete_at datetime DEFAULT NULL AFTER report_status");
         }
 
+        // Check if resolved_summary column exists (for resolved summary)
+        if (!$column_exists('resolved_summary')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN resolved_summary text DEFAULT NULL AFTER resolved_delete_at");
+        }
+
         // Check if rejected_reason column exists (for rejection explanation)
         if (!$column_exists('rejected_reason')) {
-            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN rejected_reason text DEFAULT NULL AFTER resolved_delete_at");
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN rejected_reason text DEFAULT NULL AFTER resolved_summary");
         }
 
         // Check if rejected_delete_at column exists (for auto-deletion of rejected reports after 7 days)
@@ -616,7 +622,7 @@ class JG_Map_Database {
             : "status = 'publish'";
 
         $sql = "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                       resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                       resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                        deletion_requested_at, is_promo, promo_until, website, phone,
                        cta_enabled, cta_type, admin_note, images, featured_image_index,
                        facebook_url, instagram_url, linkedin_url, tiktok_url,
@@ -681,7 +687,7 @@ class JG_Map_Database {
         return $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                        resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                        resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
                         deletion_requested_at, is_promo, promo_until, website, phone,
                         cta_enabled, cta_type, admin_note, images, featured_image_index,
                         facebook_url, instagram_url, linkedin_url, tiktok_url,
