@@ -123,12 +123,13 @@ class JG_Map_Shortcode {
     /**
      * Render sidebar shortcode
      *
-     * Usage: [jg_map_sidebar]
+     * Usage: [jg_map_sidebar] or [jg_map_sidebar height="800px"]
      */
     public function render_sidebar($atts) {
         $atts = shortcode_atts(
             array(
                 'title' => 'Lista miejsc',
+                'height' => '600px'
             ),
             $atts,
             'jg_map_sidebar'
@@ -189,7 +190,7 @@ class JG_Map_Shortcode {
             </div>
 
             <!-- Points List -->
-            <div id="jg-sidebar-list" class="jg-sidebar-list">
+            <div id="jg-sidebar-list" class="jg-sidebar-list" style="max-height: <?php echo esc_attr($atts['height']); ?>;">
                 <!-- Will be populated by JavaScript -->
             </div>
         </div>
