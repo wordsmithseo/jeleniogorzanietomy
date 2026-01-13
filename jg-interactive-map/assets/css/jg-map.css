@@ -169,19 +169,30 @@
   margin-bottom: 8px;
 }
 
-.jg-filters label {
+.jg-filter-label {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   padding: 8px 12px;
   border-radius: 8px;
-  transition: background 0.2s;
+  transition: all 0.2s;
   user-select: none;
+  position: relative;
 }
 
-.jg-filters label:hover {
+.jg-filter-label:hover {
   background: #f3f4f6;
+}
+
+.jg-filter-icon {
+  font-size: 20px;
+  line-height: 1;
+  display: none;
+}
+
+.jg-filter-text {
+  display: inline;
 }
 
 .jg-filters input[type="checkbox"] {
@@ -478,6 +489,54 @@
 
   .jg-search-results {
     max-height: 300px;
+  }
+
+  /* Mobile filters - icon only */
+  .jg-filters {
+    justify-content: space-between;
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .jg-filter-label {
+    padding: 8px;
+    min-width: 46px;
+    justify-content: center;
+    border: 2px solid transparent;
+  }
+
+  .jg-filter-label input[type="checkbox"] {
+    display: none;
+  }
+
+  .jg-filter-icon {
+    display: block;
+    font-size: 24px;
+  }
+
+  .jg-filter-text {
+    display: none;
+  }
+
+  .jg-filter-label input[type="checkbox"]:checked + .jg-filter-icon {
+    transform: scale(1.1);
+  }
+
+  .jg-filter-label input[type="checkbox"]:checked ~ .jg-filter-label {
+    background: rgba(141, 35, 36, 0.1);
+    border-color: #8d2324;
+  }
+
+  /* Visual feedback for checked state */
+  .jg-filter-label:has(input[type="checkbox"]:checked) {
+    background: rgba(141, 35, 36, 0.1);
+    border-color: #8d2324;
+  }
+
+  .jg-search {
+    flex: 1;
+    min-width: 120px;
+    max-width: none;
   }
 
   /* Modal adjustments for mobile */
@@ -1624,40 +1683,35 @@
 
 /* Statistics Summary */
 .jg-sidebar-stats {
-  background: linear-gradient(135deg, #8d2324 0%, #b52829 100%);
-  color: #fff;
+  background: #fff;
   padding: 12px 15px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .jg-sidebar-stat {
-  text-align: center;
-  padding: 6px 4px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   backdrop-filter: blur(10px);
   min-width: 0;
   overflow: hidden;
 }
 
-.jg-sidebar-stat-label {
-  display: block;
-  font-size: 10px;
-  opacity: 0.9;
-  margin-bottom: 3px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.jg-sidebar-stat-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .jg-sidebar-stat-value {
-  display: block;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #8d2324;
+  line-height: 1;
 }
 
 /* Filters Section */
@@ -1680,28 +1734,47 @@
   gap: 8px 12px;
 }
 
-.jg-sidebar-filter-group label {
+.jg-sidebar-filter-label {
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
   font-size: 12px;
   color: #374151;
-  transition: color 0.2s;
+  transition: all 0.2s;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 2px solid transparent;
 }
 
-.jg-sidebar-filter-group label:hover {
-  color: #667eea;
+.jg-sidebar-filter-label:hover {
+  background: #f3f4f6;
 }
 
-.jg-sidebar-filter-group input[type="checkbox"] {
+.jg-sidebar-filter-icon {
+  font-size: 16px;
+  line-height: 1;
+  display: none;
+}
+
+.jg-sidebar-filter-text {
+  display: inline;
+}
+
+.jg-sidebar-filter-label:has(input[type="checkbox"]:checked) {
+  background: rgba(141, 35, 36, 0.1);
+  border-color: #8d2324;
+}
+
+.jg-sidebar-filter-label input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: #667eea;
+  accent-color: #8d2324;
+  flex-shrink: 0;
 }
 
 /* Sorting Section */
@@ -1998,21 +2071,47 @@
 /* Tablets and smaller desktops (up to 768px) */
 @media (max-width: 768px) {
   .jg-sidebar-stats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
+    flex-wrap: wrap;
+    gap: 10px 8px;
     padding: 10px;
+    justify-content: space-between;
   }
 
   .jg-sidebar-stat {
-    padding: 6px 4px;
+    gap: 4px;
   }
 
-  .jg-sidebar-stat-label {
-    font-size: 9px;
+  .jg-sidebar-stat-icon {
+    font-size: 18px;
   }
 
   .jg-sidebar-stat-value {
-    font-size: 18px;
+    font-size: 16px;
+  }
+
+  /* Sidebar filters - icon only on mobile */
+  .jg-sidebar-filter-group {
+    gap: 4px;
+    justify-content: space-between;
+  }
+
+  .jg-sidebar-filter-label {
+    padding: 6px;
+    min-width: 42px;
+    justify-content: center;
+  }
+
+  .jg-sidebar-filter-label input[type="checkbox"] {
+    display: none;
+  }
+
+  .jg-sidebar-filter-icon {
+    display: block;
+    font-size: 20px;
+  }
+
+  .jg-sidebar-filter-text {
+    display: none;
   }
 
   .jg-sidebar-filters {

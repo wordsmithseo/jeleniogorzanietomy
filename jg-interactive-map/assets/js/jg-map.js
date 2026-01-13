@@ -894,6 +894,15 @@
         if (elMap) {
           elMap.style.opacity = '1';
           inv();
+          // Extra invalidateSize for mobile devices with delay
+          if (window.innerWidth <= 768) {
+            setTimeout(function() {
+              inv();
+            }, 300);
+            setTimeout(function() {
+              inv();
+            }, 600);
+          }
         }
       }
 
