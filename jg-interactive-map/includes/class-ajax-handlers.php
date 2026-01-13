@@ -474,6 +474,7 @@ class JG_Map_Ajax_Handlers {
                 'report_status' => $point['report_status'],
                 'report_status_label' => $report_status_label,
                 'resolved_delete_at' => $point['resolved_delete_at'] ?? null,
+                'resolved_summary' => $point['resolved_summary'] ?? null,
                 'rejected_reason' => $point['rejected_reason'] ?? null,
                 'rejected_delete_at' => $point['rejected_delete_at'] ?? null,
                 'author_id' => intval($point['author_id']),
@@ -1969,10 +1970,17 @@ class JG_Map_Ajax_Handlers {
 
         $point_id = intval($_POST['post_id'] ?? 0);
         $new_status = sanitize_text_field($_POST['new_status'] ?? '');
+        $resolved_summary = isset($_POST['resolved_summary']) ? sanitize_textarea_field($_POST['resolved_summary']) : '';
         $rejection_reason = isset($_POST['rejection_reason']) ? sanitize_textarea_field($_POST['rejection_reason']) : '';
 
         if (!$point_id || !in_array($new_status, array('added', 'needs_better_documentation', 'reported', 'resolved', 'rejected'))) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        // Resolved summary is required when changing to 'resolved' status
+        if ($new_status === 'resolved' && empty($resolved_summary)) {
+            wp_send_json_error(array('message' => 'Podsumowanie rozwiązania jest wymagane'));
             exit;
         }
 
@@ -1991,13 +1999,15 @@ class JG_Map_Ajax_Handlers {
 
         $update_data = array('report_status' => $new_status);
 
-        // Set auto-delete date when changing to 'resolved' status (7 days from now)
+        // Set auto-delete date and summary when changing to 'resolved' status (7 days from now)
         if ($new_status === 'resolved') {
             $update_data['resolved_delete_at'] = date('Y-m-d H:i:s', strtotime('+7 days'));
+            $update_data['resolved_summary'] = $resolved_summary;
         }
-        // Clear auto-delete date when changing away from 'resolved' status
+        // Clear resolved data when changing away from 'resolved' status
         elseif ($point['report_status'] === 'resolved' && $new_status !== 'resolved') {
             $update_data['resolved_delete_at'] = null;
+            $update_data['resolved_summary'] = null;
         }
 
         // Set auto-delete date and reason when changing to 'rejected' status (7 days from now)
@@ -2020,6 +2030,7 @@ class JG_Map_Ajax_Handlers {
             'report_status' => $new_status,
             'report_status_label' => $this->get_report_status_label($new_status),
             'resolved_delete_at' => $updated_point['resolved_delete_at'] ?? null,
+            'resolved_summary' => $updated_point['resolved_summary'] ?? null,
             'rejected_delete_at' => $updated_point['rejected_delete_at'] ?? null,
             'rejected_reason' => $updated_point['rejected_reason'] ?? null
         ));
