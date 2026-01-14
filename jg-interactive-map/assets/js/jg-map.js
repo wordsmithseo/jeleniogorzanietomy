@@ -2288,7 +2288,7 @@
               'report_status_label', 'author_id', 'author_name', 'author_hidden',
               'images', 'featured_image_index', 'votes', 'my_vote', 'date', 'admin',
               'admin_note', 'is_pending', 'is_edit', 'edit_info', 'is_deletion_requested',
-              'deletion_info', 'reports_count', 'user_has_reported', 'case_id',
+              'deletion_info', 'reports_count', 'user_has_reported', 'reporter_info', 'case_id',
               'resolved_delete_at', 'resolved_summary', 'rejected_reason', 'rejected_delete_at', 'stats',
               'facebook_url', 'instagram_url', 'linkedin_url', 'tiktok_url'
             ];
@@ -2340,6 +2340,7 @@
               deletion_info: r.deletion_info || null,
               reports_count: +(r.reports_count || 0),
               user_has_reported: !!r.user_has_reported,
+              reporter_info: r.reporter_info || null,
               case_id: r.case_id || null,
               resolved_delete_at: r.resolved_delete_at || null,
               resolved_summary: r.resolved_summary || null,
@@ -4716,6 +4717,16 @@
             '</div>';
         }
 
+        // User report notice - displayed to user who reported this place
+        var userReportNotice = '';
+        if (p.user_has_reported && p.reporter_info && p.reporter_info.reported_at) {
+          userReportNotice = '<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin:12px 0">' +
+            '<div style="color:#92400e;font-weight:700;margin-bottom:4px">⚠️ Miejsce zgłoszone do moderacji</div>' +
+            '<div style="color:#78350f;font-size:14px">Zgłoszono: ' + esc(p.reporter_info.reported_at) + '</div>' +
+            '<div style="color:#78350f;font-size:13px;margin-top:4px;opacity:0.9">Twoje zgłoszenie zostanie rozpatrzone przez moderatorów.</div>' +
+            '</div>';
+        }
+
         var adminBox = '';
         if (CFG.isAdmin) {
           var adminData = [];
@@ -5110,7 +5121,7 @@
           caseIdBadge = '<span class="jg-case-id-badge">' + esc(p.case_id) + '</span>';
         }
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + voteHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
