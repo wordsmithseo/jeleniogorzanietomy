@@ -2554,7 +2554,8 @@ class JG_Map_Admin {
             "SELECT option_name, option_value
              FROM {$wpdb->options}
              WHERE option_name LIKE '_transient_jg_rate_limit_login_%'
-             AND option_name NOT LIKE '%_time_%'",
+             AND option_name NOT LIKE '%_time_%'
+             AND option_name NOT LIKE '%_userdata_%'",
             ARRAY_A
         );
 
@@ -2573,12 +2574,25 @@ class JG_Map_Admin {
                     $time_key
                 ));
 
+                // Get user data transient
+                $userdata_key = '_transient_jg_rate_limit_userdata_login_' . $key;
+                $user_data = $wpdb->get_var($wpdb->prepare(
+                    "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+                    $userdata_key
+                ));
+
                 if ($first_attempt_time) {
                     $time_elapsed = time() - intval($first_attempt_time);
                     $time_remaining = max(0, 900 - $time_elapsed); // 900 seconds = 15 minutes
 
+                    // Unserialize user data
+                    $user_info = $user_data ? maybe_unserialize($user_data) : array();
+
                     $blocked_ips[] = array(
                         'hash' => $key,
+                        'ip' => isset($user_info['ip']) ? $user_info['ip'] : 'Nieznany',
+                        'username' => isset($user_info['username']) ? $user_info['username'] : 'Nieznany',
+                        'email' => isset($user_info['email']) ? $user_info['email'] : '',
                         'attempts' => $attempts,
                         'blocked_at' => intval($first_attempt_time),
                         'time_remaining' => $time_remaining
@@ -2661,11 +2675,13 @@ class JG_Map_Admin {
                     <table class="wp-list-table widefat fixed striped" style="margin-top:10px">
                         <thead>
                             <tr>
-                                <th style="width:40%">Hash IP</th>
-                                <th style="width:15%">Liczba prób</th>
-                                <th style="width:20%">Zablokowano</th>
-                                <th style="width:15%">Czas pozostały</th>
-                                <th style="width:10%">Akcje</th>
+                                <th style="width:15%">Adres IP</th>
+                                <th style="width:20%">Nazwa użytkownika</th>
+                                <th style="width:20%">Email</th>
+                                <th style="width:10%">Próby</th>
+                                <th style="width:15%">Zablokowano</th>
+                                <th style="width:12%">Pozostało</th>
+                                <th style="width:8%">Akcje</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2674,7 +2690,9 @@ class JG_Map_Admin {
                                 $blocked_time = get_date_from_gmt(date('Y-m-d H:i:s', $ip['blocked_at']), 'Y-m-d H:i:s');
                             ?>
                                 <tr data-ip-hash="<?php echo esc_attr($ip['hash']); ?>">
-                                    <td><code style="background:#fff;padding:4px 8px;border-radius:4px;font-size:11px"><?php echo esc_html($ip['hash']); ?></code></td>
+                                    <td><code style="background:#fff;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:700"><?php echo esc_html($ip['ip']); ?></code></td>
+                                    <td><strong><?php echo esc_html($ip['username']); ?></strong></td>
+                                    <td><?php echo esc_html($ip['email']); ?></td>
                                     <td><strong style="color:#dc2626"><?php echo $ip['attempts']; ?></strong></td>
                                     <td><?php echo esc_html($blocked_time); ?></td>
                                     <td>
