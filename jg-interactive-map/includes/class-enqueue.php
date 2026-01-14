@@ -506,7 +506,7 @@ class JG_Map_Enqueue {
                     </div>
 
                     <?php if ($is_admin) : ?>
-                        <a href="<?php echo admin_url(); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin">⚙️ Panel administratora</a>
+                        <a href="<?php echo admin_url(); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin">Panel administratora</a>
                     <?php endif; ?>
                     <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn">Wyloguj</a>
                 <?php else : ?>

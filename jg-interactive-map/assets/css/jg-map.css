@@ -449,12 +449,14 @@
   .jg-wrap {
     display: flex !important;
     flex-direction: column !important;
+    overflow: hidden !important;
   }
 
   .jg-map {
-    height: 60dvh !important;
-    min-height: 300px !important;
-    max-height: 500px !important;
+    height: 80dvh !important;
+    min-height: 400px !important;
+    max-height: 80dvh !important;
+    overflow: hidden !important;
   }
 
   /* Top bar mobile responsive */
@@ -725,7 +727,7 @@
     font-size: 13px;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     position: relative;
     background: transparent;
     border: none;
@@ -748,28 +750,28 @@
     font-size: 14px;
   }
 
-  /* Edit Profile button icon */
+  /* Edit Profile button icon - white Unicode symbol */
   #jg-edit-profile-btn::before {
-    content: "👤";
+    content: "◉";
     font-size: 16px;
     display: inline-block;
-    filter: grayscale(1) brightness(2);
+    color: #ffffff;
   }
 
-  /* Admin Panel button icon */
+  /* Admin Panel button icon - white Unicode gear */
   .jg-top-bar-btn-admin::before {
-    content: "⚙️";
+    content: "⚙";
     font-size: 16px;
     display: inline-block;
-    filter: grayscale(1) brightness(2);
+    color: #ffffff;
   }
 
-  /* Logout button icon */
+  /* Logout button icon - white Unicode arrow */
   .jg-top-bar-btn[href*="logout"]::before {
-    content: "🚪";
+    content: "→";
     font-size: 16px;
     display: inline-block;
-    filter: grayscale(1) brightness(2);
+    color: #ffffff;
   }
 
   /* Login/Register buttons on mobile - white icon + text with bullet separator */
@@ -785,7 +787,7 @@
     color: #ffffff;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
   }
 
   #jg-login-btn:hover,
@@ -794,19 +796,19 @@
     border-radius: 4px;
   }
 
-  /* Add icons to login/register buttons */
+  /* Add white Unicode icons to login/register buttons */
   #jg-login-btn::before {
-    content: "🔑";
+    content: "→";
     font-size: 16px;
     display: inline-block;
-    filter: grayscale(1) brightness(2);
+    color: #ffffff;
   }
 
   #jg-register-btn::before {
-    content: "✍️";
+    content: "✚";
     font-size: 16px;
     display: inline-block;
-    filter: grayscale(1) brightness(2);
+    color: #ffffff;
   }
 
   /* Add bullet separator between login and register */
