@@ -2544,11 +2544,61 @@ class JG_Map_Admin {
     }
 
     /**
+     * Get blocked IPs from rate limiting
+     */
+    private function get_blocked_ips() {
+        global $wpdb;
+
+        // Get all transients for login rate limiting
+        $transients = $wpdb->get_results(
+            "SELECT option_name, option_value
+             FROM {$wpdb->options}
+             WHERE option_name LIKE '_transient_jg_rate_limit_login_%'
+             AND option_name NOT LIKE '%_time_%'",
+            ARRAY_A
+        );
+
+        $blocked_ips = array();
+
+        foreach ($transients as $transient) {
+            $key = str_replace('_transient_jg_rate_limit_login_', '', $transient['option_name']);
+            $attempts = intval($transient['option_value']);
+
+            // Only show if blocked (5+ attempts)
+            if ($attempts >= 5) {
+                // Get time transient
+                $time_key = '_transient_jg_rate_limit_time_login_' . $key;
+                $first_attempt_time = $wpdb->get_var($wpdb->prepare(
+                    "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+                    $time_key
+                ));
+
+                if ($first_attempt_time) {
+                    $time_elapsed = time() - intval($first_attempt_time);
+                    $time_remaining = max(0, 900 - $time_elapsed); // 900 seconds = 15 minutes
+
+                    $blocked_ips[] = array(
+                        'hash' => $key,
+                        'attempts' => $attempts,
+                        'blocked_at' => intval($first_attempt_time),
+                        'time_remaining' => $time_remaining
+                    );
+                }
+            }
+        }
+
+        return $blocked_ips;
+    }
+
+    /**
      * Render users management page
      */
     public function render_users_page() {
         global $wpdb;
         $points_table = JG_Map_Database::get_points_table();
+
+        // Get blocked IPs
+        $blocked_ips = $this->get_blocked_ips();
 
         // Get all users with their statistics
         $users = get_users(array('orderby' => 'registered', 'order' => 'DESC'));
@@ -2601,6 +2651,58 @@ class JG_Map_Admin {
                 </ul>
             </div>
 
+            <?php if (!empty($blocked_ips)): ?>
+                <div style="background:#fee2e2;border:2px solid #dc2626;padding:15px;border-radius:8px;margin:20px 0">
+                    <h2 style="margin-top:0;color:#991b1b">🔒 Zablokowane adresy IP (nieudane próby logowania)</h2>
+                    <p style="color:#7f1d1d;margin-bottom:15px">
+                        Poniżej znajdują się adresy IP zablokowane po 5 nieudanych próbach logowania.
+                        Blokada trwa 15 minut od pierwszej próby.
+                    </p>
+                    <table class="wp-list-table widefat fixed striped" style="margin-top:10px">
+                        <thead>
+                            <tr>
+                                <th style="width:40%">Hash IP</th>
+                                <th style="width:15%">Liczba prób</th>
+                                <th style="width:20%">Zablokowano</th>
+                                <th style="width:15%">Czas pozostały</th>
+                                <th style="width:10%">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($blocked_ips as $ip):
+                                $minutes_remaining = ceil($ip['time_remaining'] / 60);
+                                $blocked_time = get_date_from_gmt(date('Y-m-d H:i:s', $ip['blocked_at']), 'Y-m-d H:i:s');
+                            ?>
+                                <tr data-ip-hash="<?php echo esc_attr($ip['hash']); ?>">
+                                    <td><code style="background:#fff;padding:4px 8px;border-radius:4px;font-size:11px"><?php echo esc_html($ip['hash']); ?></code></td>
+                                    <td><strong style="color:#dc2626"><?php echo $ip['attempts']; ?></strong></td>
+                                    <td><?php echo esc_html($blocked_time); ?></td>
+                                    <td>
+                                        <?php if ($ip['time_remaining'] > 0): ?>
+                                            <span style="background:#fbbf24;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">
+                                                <?php echo $minutes_remaining; ?> min
+                                            </span>
+                                        <?php else: ?>
+                                            <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">
+                                                Wygasło
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <button class="button button-small jg-unblock-ip"
+                                                data-ip-hash="<?php echo esc_attr($ip['hash']); ?>"
+                                                style="background:#10b981;color:#fff;border-color:#10b981">
+                                            Odblokuj
+                                        </button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+
+            <h2>Wszyscy użytkownicy</h2>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
@@ -3061,6 +3163,45 @@ class JG_Map_Admin {
                             } else {
                                 showMessage(response.data.message || 'Błąd', true);
                             }
+                        }
+                    });
+                });
+
+                // Unblock IP address
+                $('.jg-unblock-ip').on('click', function() {
+                    var btn = $(this);
+                    var ipHash = btn.data('ip-hash');
+                    var row = btn.closest('tr');
+
+                    if (!confirm('Czy na pewno odblokować ten adres IP?')) return;
+
+                    btn.prop('disabled', true).text('Odblokowywanie...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_unblock_ip',
+                            ip_hash: ipHash,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                row.fadeOut(300, function() {
+                                    $(this).remove();
+                                    // If no more blocked IPs, reload page to hide the section
+                                    if ($('.jg-unblock-ip').length === 0) {
+                                        location.reload();
+                                    }
+                                });
+                            } else {
+                                alert(response.data.message || 'Błąd podczas odblokowywania');
+                                btn.prop('disabled', false).text('Odblokuj');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd podczas odblokowywania');
+                            btn.prop('disabled', false).text('Odblokuj');
                         }
                     });
                 });
