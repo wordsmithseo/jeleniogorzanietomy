@@ -196,7 +196,7 @@
         // Badge (sponsored or type)
         let badgeHtml = '';
         if (point.is_promo) {
-            badgeHtml = '<span class="jg-sidebar-item__badge jg-sidebar-item__badge--sponsored">⭐ Sponsor</span>';
+            badgeHtml = '<span class="jg-sidebar-item__badge jg-sidebar-item__badge--sponsored">⭐ Sponsorowane</span>';
         } else {
             const typeIcon = typeIcons[point.type] || '📍';
             const typeLabel = typeLabels[point.type] || point.type;
