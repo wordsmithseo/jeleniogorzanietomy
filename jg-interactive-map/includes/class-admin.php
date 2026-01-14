@@ -203,7 +203,7 @@ class JG_Map_Admin {
         $total_count = 0;
 
         // Moderation page - show pending points and edits
-        if (strpos($screen->id, 'jg-map-moderation') !== false) {
+        if (strpos($screen->id, 'jg-map-places') !== false) {
             // Get pending points
             $pending_points = $wpdb->get_results(
                 "SELECT title FROM $points_table WHERE status = 'pending' ORDER BY created_at DESC LIMIT 5",
@@ -413,7 +413,7 @@ class JG_Map_Admin {
                     <h3 style="margin:0 0 10px">⏳ Oczekujące</h3>
                     <p style="font-size:32px;font-weight:700;margin:0;color:#d63638"><?php echo $pending; ?></p>
                     <?php if ($pending > 0): ?>
-                    <a href="<?php echo admin_url('admin.php?page=jg-map-moderation'); ?>" class="button">Moderuj</a>
+                    <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="button">Moderuj</a>
                     <?php endif; ?>
                 </div>
 
@@ -421,7 +421,7 @@ class JG_Map_Admin {
                     <h3 style="margin:0 0 10px">✏️ Edycje do zatwierdzenia</h3>
                     <p style="font-size:32px;font-weight:700;margin:0;color:#9333ea"><?php echo $edits; ?></p>
                     <?php if ($edits > 0): ?>
-                    <a href="<?php echo admin_url('admin.php?page=jg-map-moderation'); ?>" class="button">Zobacz</a>
+                    <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="button">Zobacz</a>
                     <?php endif; ?>
                 </div>
 
