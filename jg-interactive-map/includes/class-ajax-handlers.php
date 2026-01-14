@@ -367,8 +367,11 @@ class JG_Map_Ajax_Handlers {
                     $current_user = wp_get_current_user();
                     $reporter_name = $current_user ? $current_user->display_name : 'Ty';
 
+                    // Convert GMT time from DB to local WordPress time for display
+                    $local_time = get_date_from_gmt($report['created_at']);
+
                     $reporter_info = array(
-                        'reported_at' => human_time_diff(strtotime($report['created_at']), current_time('timestamp', true)) . ' temu',
+                        'reported_at' => human_time_diff(strtotime($local_time), current_time('timestamp')) . ' temu',
                         'reporter_name' => $reporter_name
                     );
                 }
@@ -459,13 +462,13 @@ class JG_Map_Ajax_Handlers {
                                 'prev_cta_type' => $old_values['cta_type'] ?? null,
                                 'new_cta_type' => $new_values['cta_type'] ?? null,
                                 'new_images' => $new_images,
-                                'edited_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp', true)) . ' temu'
+                                'edited_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
                             );
                         } else if ($pending_history['action_type'] === 'delete_request') {
                             $deletion_info = array(
                                 'history_id' => intval($pending_history['id']),
                                 'reason' => $new_values['reason'] ?? '',
-                                'requested_at' => human_time_diff(strtotime($pending_history['created_at']), current_time('timestamp', true)) . ' temu'
+                                'requested_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
                             );
                         }
                     }
@@ -483,13 +486,13 @@ class JG_Map_Ajax_Handlers {
                                 $edit_info = array(
                                     'status' => 'rejected',
                                     'rejection_reason' => $rejection_reason,
-                                    'rejected_at' => human_time_diff(strtotime($rejected_history['resolved_at']), current_time('timestamp', true)) . ' temu'
+                                    'rejected_at' => human_time_diff(strtotime(get_date_from_gmt($rejected_history['resolved_at'])), current_time('timestamp')) . ' temu'
                                 );
                             } else if ($rejected_history['action_type'] === 'delete_request' && $deletion_info === null) {
                                 $deletion_info = array(
                                     'status' => 'rejected',
                                     'rejection_reason' => $rejection_reason,
-                                    'rejected_at' => human_time_diff(strtotime($rejected_history['resolved_at']), current_time('timestamp', true)) . ' temu'
+                                    'rejected_at' => human_time_diff(strtotime(get_date_from_gmt($rejected_history['resolved_at'])), current_time('timestamp')) . ' temu'
                                 );
                             }
                         }
@@ -542,7 +545,7 @@ class JG_Map_Ajax_Handlers {
                 'my_relevance_vote' => $my_relevance_vote,
                 'date' => array(
                     'raw' => $point['created_at'],
-                    'human' => human_time_diff(strtotime($point['created_at']), current_time('timestamp', true)) . ' temu'
+                    'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu'
                 ),
                 'admin' => $is_admin ? array(
                     'author_name_real' => $author ? $author->display_name : '',
@@ -1735,7 +1738,7 @@ class JG_Map_Ajax_Handlers {
             $formatted_reports[] = array(
                 'user_name' => $user_name,
                 'reason' => $report['reason'] ?: 'Brak powodu',
-                'date' => human_time_diff(strtotime($report['created_at']), current_time('timestamp', true)) . ' temu'
+                'date' => human_time_diff(strtotime(get_date_from_gmt($report['created_at'])), current_time('timestamp')) . ' temu'
             );
         }
 
@@ -2827,8 +2830,8 @@ class JG_Map_Ajax_Handlers {
                 'old_values' => $old_values,
                 'new_values' => $new_values,
                 'status' => $entry['status'],
-                'created_at' => human_time_diff(strtotime($entry['created_at'] . ' UTC'), time()) . ' temu',
-                'resolved_at' => $entry['resolved_at'] ? human_time_diff(strtotime($entry['resolved_at'] . ' UTC'), time()) . ' temu' : null
+                'created_at' => human_time_diff(strtotime(get_date_from_gmt($entry['created_at'])), current_time('timestamp')) . ' temu',
+                'resolved_at' => $entry['resolved_at'] ? human_time_diff(strtotime(get_date_from_gmt($entry['resolved_at'])), current_time('timestamp')) . ' temu' : null
             );
         }
 

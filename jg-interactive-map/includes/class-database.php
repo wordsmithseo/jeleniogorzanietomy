@@ -1226,7 +1226,8 @@ class JG_Map_Database {
                 'user_id' => $user_id,
                 'email' => $email,
                 'reason' => $reason,
-                'status' => 'pending'
+                'status' => 'pending',
+                'created_at' => current_time('mysql', true) // ALWAYS save as GMT
             )
         );
     }
