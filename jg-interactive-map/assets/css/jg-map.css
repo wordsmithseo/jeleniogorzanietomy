@@ -452,9 +452,9 @@
   }
 
   .jg-map {
-    height: calc(100dvh - 200px) !important;
-    min-height: 400px !important;
-    flex: 1 !important;
+    height: 60dvh !important;
+    min-height: 300px !important;
+    max-height: 500px !important;
   }
 
   /* Top bar mobile responsive */
@@ -716,61 +716,106 @@
     border-radius: 10px;
   }
 
-  /* Action buttons (Edit Profile, Admin Panel, Logout) as icons */
+  /* Action buttons (Edit Profile, Admin Panel, Logout) - white icon + text with bullet separators */
   .jg-top-bar-btn:not(.jg-top-bar-notif) {
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    padding: 0;
-    font-size: 0;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    padding: 4px 8px;
+    font-size: 13px;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 4px;
     position: relative;
-    background: #ffffff;
-    border: 2px solid rgba(0, 0, 0, 0.1);
+    background: transparent;
+    border: none;
     flex-shrink: 0;
+    color: #ffffff;
+    white-space: nowrap;
   }
 
   .jg-top-bar-btn:not(.jg-top-bar-notif):hover {
-    background: #f9fafb;
-    border-color: rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+
+  /* Add bullet separator after each button except last */
+  .jg-top-bar-btn:not(.jg-top-bar-notif):not(:last-of-type)::after {
+    content: "•";
+    position: absolute;
+    right: -8px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
   }
 
   /* Edit Profile button icon */
   #jg-edit-profile-btn::before {
     content: "👤";
-    font-size: 22px;
-    display: block;
+    font-size: 16px;
+    display: inline-block;
+    filter: grayscale(1) brightness(2);
   }
 
   /* Admin Panel button icon */
   .jg-top-bar-btn-admin::before {
     content: "⚙️";
-    font-size: 22px;
-    display: block;
+    font-size: 16px;
+    display: inline-block;
+    filter: grayscale(1) brightness(2);
   }
 
   /* Logout button icon */
   .jg-top-bar-btn[href*="logout"]::before {
     content: "🚪";
-    font-size: 22px;
-    display: block;
+    font-size: 16px;
+    display: inline-block;
+    filter: grayscale(1) brightness(2);
   }
 
-  /* Login/Register buttons on mobile - keep text but make compact */
+  /* Login/Register buttons on mobile - white icon + text with bullet separator */
   #jg-login-btn,
   #jg-register-btn {
     width: auto;
     height: auto;
-    border-radius: 6px;
-    padding: 8px 16px;
+    border-radius: 0;
+    padding: 4px 8px;
     font-size: 13px;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
 
-  #jg-login-btn::before,
+  #jg-login-btn:hover,
+  #jg-register-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+
+  /* Add icons to login/register buttons */
+  #jg-login-btn::before {
+    content: "🔑";
+    font-size: 16px;
+    display: inline-block;
+    filter: grayscale(1) brightness(2);
+  }
+
   #jg-register-btn::before {
-    content: none;
+    content: "✍️";
+    font-size: 16px;
+    display: inline-block;
+    filter: grayscale(1) brightness(2);
+  }
+
+  /* Add bullet separator between login and register */
+  #jg-login-btn::after {
+    content: "•";
+    position: absolute;
+    right: -8px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
   }
 }
 
