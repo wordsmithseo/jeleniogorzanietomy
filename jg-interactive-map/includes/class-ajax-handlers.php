@@ -2343,9 +2343,10 @@ class JG_Map_Ajax_Handlers {
     /**
      * Check rate limiting to prevent abuse
      */
-    private function check_rate_limit($action, $identifier, $max_attempts = 5, $timeframe = 900) {
+    private function check_rate_limit($action, $identifier, $max_attempts = 5, $timeframe = 900, $user_data = array()) {
         $transient_key = 'jg_rate_limit_' . $action . '_' . md5($identifier);
         $transient_time_key = 'jg_rate_limit_time_' . $action . '_' . md5($identifier);
+        $transient_userdata_key = 'jg_rate_limit_userdata_' . $action . '_' . md5($identifier);
 
         $attempts = get_transient($transient_key);
         $first_attempt_time = get_transient($transient_time_key);
@@ -2366,8 +2367,18 @@ class JG_Map_Ajax_Handlers {
         if ($attempts === false) {
             set_transient($transient_key, 1, $timeframe);
             set_transient($transient_time_key, time(), $timeframe);
+
+            // Store user data for admin viewing (IP, username, email)
+            if (!empty($user_data)) {
+                set_transient($transient_userdata_key, $user_data, $timeframe);
+            }
         } else {
             set_transient($transient_key, $attempts + 1, $timeframe);
+
+            // Update user data if provided
+            if (!empty($user_data)) {
+                set_transient($transient_userdata_key, $user_data, $timeframe);
+            }
         }
 
         return array('allowed' => true);
@@ -3837,12 +3848,14 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Delete both transients (attempts count and time)
+        // Delete all three transients (attempts count, time, and user data)
         $transient_key = 'jg_rate_limit_login_' . $ip_hash;
         $transient_time_key = 'jg_rate_limit_time_login_' . $ip_hash;
+        $transient_userdata_key = 'jg_rate_limit_userdata_login_' . $ip_hash;
 
         delete_transient($transient_key);
         delete_transient($transient_time_key);
+        delete_transient($transient_userdata_key);
 
         wp_send_json_success(array('message' => 'Adres IP odblokowany pomyślnie'));
     }
@@ -4124,7 +4137,15 @@ class JG_Map_Ajax_Handlers {
         // Rate limiting check (skip for admins and moderators)
         if (!$bypass_rate_limit) {
             $ip = $this->get_user_ip();
-            $rate_check = $this->check_rate_limit('login', $ip, 5, 900);
+
+            // Prepare user data for rate limiting tracking
+            $user_data = array(
+                'ip' => $ip,
+                'username' => $username,
+                'email' => $user_check ? $user_check->user_email : ''
+            );
+
+            $rate_check = $this->check_rate_limit('login', $ip, 5, 900, $user_data);
             if (!$rate_check['allowed']) {
                 $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 15;
                 wp_send_json_error('Zbyt wiele prób logowania. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
