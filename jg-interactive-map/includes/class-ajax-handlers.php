@@ -255,6 +255,8 @@ class JG_Map_Ajax_Handlers {
      * Get all points
      */
     public function get_points() {
+        global $wpdb;
+
         // Force schema check and slug generation on first request (ensures backward compatibility)
         static $schema_checked = false;
         if (!$schema_checked) {
@@ -329,7 +331,8 @@ class JG_Map_Ajax_Handlers {
             $votes_count = isset($votes_counts_map[$point_id]) ? $votes_counts_map[$point_id] : 0;
             $my_vote = isset($user_votes_map[$point_id]) ? $user_votes_map[$point_id] : '';
 
-            // Get relevance votes
+            // Get relevance votes (not yet implemented)
+            $relevance_votes_count = 0;
             $my_relevance_vote = '';
             if ($current_user_id > 0) {
             }
