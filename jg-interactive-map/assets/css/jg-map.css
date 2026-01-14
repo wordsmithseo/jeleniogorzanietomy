@@ -590,7 +590,8 @@
   .jg-custom-top-bar {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 12px;
+    padding: 12px;
   }
 
   /* Hide left section (datetime only) */
@@ -598,40 +599,39 @@
     display: none;
   }
 
-  /* Right section becomes 2 rows */
+  /* Right section becomes 3 rows */
   .jg-top-bar-right {
     width: 100%;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
   }
 
-  /* First row: User info - full width, align left */
+  /* First row: User info - full width, larger font in REM */
   .jg-top-bar-user {
-    font-size: 12px;
+    font-size: 0.95rem;
     text-align: left;
     width: 100%;
     order: 1;
-    margin: 0;
+    margin: 0 0 8px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   }
 
-  /* Second row left: Notifications section */
+  /* Second row: Notifications section - full width, align left */
   #jg-top-bar-notifications {
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
     gap: 8px;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    width: fit-content;
+    width: 100%;
     order: 2;
-    margin: 0;
+    margin: 0 0 4px 0;
   }
 
-  /* Second row right: Action buttons (Edit Profile, Admin, Logout/Login) */
+  /* Third row: Action buttons - full width, align right */
   #jg-edit-profile-btn {
     order: 3;
     margin-left: auto;
@@ -724,7 +724,7 @@
     height: auto;
     border-radius: 0;
     padding: 4px 8px;
-    font-size: 13px;
+    font-size: 0.85rem;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -781,7 +781,7 @@
     height: auto;
     border-radius: 0;
     padding: 4px 8px;
-    font-size: 13px;
+    font-size: 0.85rem;
     background: transparent;
     border: none;
     color: #ffffff;
