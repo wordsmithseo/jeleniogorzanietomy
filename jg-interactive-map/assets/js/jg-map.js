@@ -2288,7 +2288,7 @@
               'report_status_label', 'author_id', 'author_name', 'author_hidden',
               'images', 'featured_image_index', 'votes', 'my_vote', 'date', 'admin',
               'admin_note', 'is_pending', 'is_edit', 'edit_info', 'is_deletion_requested',
-              'deletion_info', 'reports_count', 'user_has_reported', 'case_id',
+              'deletion_info', 'reports_count', 'user_has_reported', 'reporter_info', 'case_id',
               'resolved_delete_at', 'resolved_summary', 'rejected_reason', 'rejected_delete_at', 'stats',
               'facebook_url', 'instagram_url', 'linkedin_url', 'tiktok_url'
             ];
@@ -2340,6 +2340,7 @@
               deletion_info: r.deletion_info || null,
               reports_count: +(r.reports_count || 0),
               user_has_reported: !!r.user_has_reported,
+              reporter_info: r.reporter_info || null,
               case_id: r.case_id || null,
               resolved_delete_at: r.resolved_delete_at || null,
               resolved_summary: r.resolved_summary || null,
