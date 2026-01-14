@@ -1639,7 +1639,7 @@ class JG_Map_Ajax_Handlers {
         ));
 
         // Notify admin
-        $this->notify_admin_new_report($point_id);
+        $this->notify_admin_new_report($point_id, $user_id);
 
         // Notify reporter (confirmation email)
         $this->notify_reporter_confirmation($point_id, $email);
@@ -2589,7 +2589,7 @@ class JG_Map_Ajax_Handlers {
         $message = "Nowy punkt został dodany i czeka na moderację:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
         $message .= "Typ: {$point['type']}\n";
-        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
+        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-places') . "\n";
 
         wp_mail($admin_email, $subject, $message);
     }
@@ -2597,14 +2597,22 @@ class JG_Map_Ajax_Handlers {
     /**
      * Notify admin about new report
      */
-    private function notify_admin_new_report($point_id) {
+    private function notify_admin_new_report($point_id, $reporter_user_id = 0) {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
+
+        // Get reporter name
+        $reporter_name = 'Nieznany';
+        if ($reporter_user_id > 0) {
+            $reporter = get_userdata($reporter_user_id);
+            $reporter_name = $reporter ? $reporter->display_name : 'Nieznany';
+        }
 
         $subject = 'Portal Jeleniogórzanie to my - Nowe zgłoszenie miejsca';
         $message = "Miejsce zostało zgłoszone:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
-        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
+        $message .= "Zgłoszone przez: {$reporter_name}\n";
+        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-places') . "\n";
 
         wp_mail($admin_email, $subject, $message);
     }
@@ -2620,7 +2628,7 @@ class JG_Map_Ajax_Handlers {
         $message = "Miejsce zostało automatycznie zgłoszone do moderacji z powodu niskich głosów na aktualność:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
         $message .= "Głosy \"Nadal aktualne?\": {$relevance_votes_count}\n";
-        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
+        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-places') . "\n";
 
         wp_mail($admin_email, $subject, $message);
     }
@@ -2636,7 +2644,7 @@ class JG_Map_Ajax_Handlers {
         $message = "Miejsce zostało automatycznie zgłoszone do moderacji z powodu dużej dezaprobaty społeczności:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
         $message .= "Liczba głosów: {$votes_count}\n";
-        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
+        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-places') . "\n";
 
         wp_mail($admin_email, $subject, $message);
     }
@@ -2744,7 +2752,7 @@ class JG_Map_Ajax_Handlers {
         $subject = 'Portal Jeleniogórzanie to my - Edycja miejsca do zatwierdzenia';
         $message = "Użytkownik zaktualizował miejsce:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
-        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
+        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-places') . "\n";
 
         wp_mail($admin_email, $subject, $message);
     }

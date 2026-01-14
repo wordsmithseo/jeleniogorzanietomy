@@ -203,7 +203,7 @@ class JG_Map_Admin {
         $total_count = 0;
 
         // Moderation page - show pending points and edits
-        if (strpos($screen->id, 'jg-map-moderation') !== false) {
+        if (strpos($screen->id, 'jg-map-places') !== false) {
             // Get pending points
             $pending_points = $wpdb->get_results(
                 "SELECT title FROM $points_table WHERE status = 'pending' ORDER BY created_at DESC LIMIT 5",
@@ -299,14 +299,14 @@ class JG_Map_Admin {
             'JG Map',
             'JG Map',
             'manage_options',
-            'jg-map',
-            array($this, 'render_main_page'),
+            'jg-map-places',
+            array($this, 'render_places_page'),
             'dashicons-location-alt',
             30
         );
 
         add_submenu_page(
-            'jg-map',
+            'jg-map-places',
             'Miejsca',
             'Miejsca',
             'read', // Allow all logged-in users to see their own places
@@ -315,7 +315,7 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map',
+            'jg-map-places',
             'Promocje',
             'Promocje',
             'manage_options',
@@ -324,7 +324,7 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map',
+            'jg-map-places',
             'Galeria zdjęć',
             'Galeria zdjęć',
             'manage_options',
@@ -333,7 +333,7 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map',
+            'jg-map-places',
             'Użytkownicy',
             'Użytkownicy',
             'manage_options',
@@ -342,7 +342,7 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map',
+            'jg-map-places',
             'Konserwacja',
             'Konserwacja',
             'manage_options',
@@ -351,7 +351,7 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map',
+            'jg-map-places',
             'Role użytkowników',
             'Role użytkowników',
             'manage_options',
@@ -360,7 +360,7 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map',
+            'jg-map-places',
             'Activity Log',
             'Activity Log',
             'manage_options',
@@ -369,7 +369,7 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map',
+            'jg-map-places',
             'Ustawienia',
             'Ustawienia',
             'manage_options',
@@ -413,7 +413,7 @@ class JG_Map_Admin {
                     <h3 style="margin:0 0 10px">⏳ Oczekujące</h3>
                     <p style="font-size:32px;font-weight:700;margin:0;color:#d63638"><?php echo $pending; ?></p>
                     <?php if ($pending > 0): ?>
-                    <a href="<?php echo admin_url('admin.php?page=jg-map-moderation'); ?>" class="button">Moderuj</a>
+                    <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="button">Moderuj</a>
                     <?php endif; ?>
                 </div>
 
@@ -421,7 +421,7 @@ class JG_Map_Admin {
                     <h3 style="margin:0 0 10px">✏️ Edycje do zatwierdzenia</h3>
                     <p style="font-size:32px;font-weight:700;margin:0;color:#9333ea"><?php echo $edits; ?></p>
                     <?php if ($edits > 0): ?>
-                    <a href="<?php echo admin_url('admin.php?page=jg-map-moderation'); ?>" class="button">Zobacz</a>
+                    <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="button">Zobacz</a>
                     <?php endif; ?>
                 </div>
 
@@ -616,18 +616,21 @@ class JG_Map_Admin {
                             <table class="wp-list-table widefat fixed striped">
                                 <thead>
                                     <tr>
-                                        <th style="width:20%">Miejsce</th>
+                                        <th style="width:<?php echo $status === 'reported' ? '18%' : '20%'; ?>">Miejsce</th>
                                         <th style="width:12%">Kto dodał</th>
+                                        <?php if ($status === 'reported'): ?>
+                                        <th style="width:12%">Kto zgłosił</th>
+                                        <?php endif; ?>
                                         <th style="width:12%">Data dodania</th>
                                         <th style="width:12%">Data zatwierdzenia</th>
                                         <th style="width:10%">Status</th>
                                         <th style="width:8%">Sponsorowane</th>
-                                        <th style="width:26%">Akcje</th>
+                                        <th style="width:<?php echo $status === 'reported' ? '16%' : '26%'; ?>">Akcje</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($section_places as $place):
-                                        $this->render_place_row($place, $config['actions'], $is_admin);
+                                        $this->render_place_row($place, $config['actions'], $is_admin, $status);
                                     endforeach; ?>
                                 </tbody>
                             </table>
@@ -878,8 +881,9 @@ class JG_Map_Admin {
     /**
      * Render a single place row in the table
      */
-    private function render_place_row($place, $actions, $is_admin) {
+    private function render_place_row($place, $actions, $is_admin, $status = '') {
         $author_name = !empty($place['author_name']) ? $place['author_name'] : 'Nieznany';
+        $reporter_name = !empty($place['reporter_name']) ? $place['reporter_name'] : 'Nieznany';
         // Convert GMT timestamps to WordPress local timezone
         $created_date = get_date_from_gmt($place['created_at'], 'Y-m-d H:i');
         $approved_date = !empty($place['approved_at']) ? get_date_from_gmt($place['approved_at'], 'Y-m-d H:i') : '-';
@@ -894,6 +898,9 @@ class JG_Map_Admin {
         <tr>
             <td><strong><?php echo esc_html($place['title']); ?></strong></td>
             <td><?php echo esc_html($author_name); ?></td>
+            <?php if ($status === 'reported'): ?>
+            <td><strong style="color:#dc2626"><?php echo esc_html($reporter_name); ?></strong></td>
+            <?php endif; ?>
             <td><?php echo esc_html($created_date); ?></td>
             <td><?php echo esc_html($approved_date); ?></td>
             <td><span style="font-size:11px;padding:3px 6px;background:#f3f4f6;border-radius:3px">
