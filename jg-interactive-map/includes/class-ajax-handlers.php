@@ -1608,7 +1608,7 @@ class JG_Map_Ajax_Handlers {
         ));
 
         // Notify admin
-        $this->notify_admin_new_report($point_id);
+        $this->notify_admin_new_report($point_id, $user_id);
 
         // Notify reporter (confirmation email)
         $this->notify_reporter_confirmation($point_id, $email);
@@ -2566,14 +2566,22 @@ class JG_Map_Ajax_Handlers {
     /**
      * Notify admin about new report
      */
-    private function notify_admin_new_report($point_id) {
+    private function notify_admin_new_report($point_id, $reporter_user_id = 0) {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
+
+        // Get reporter name
+        $reporter_name = 'Nieznany';
+        if ($reporter_user_id > 0) {
+            $reporter = get_userdata($reporter_user_id);
+            $reporter_name = $reporter ? $reporter->display_name : 'Nieznany';
+        }
 
         $subject = 'Portal Jeleniogórzanie to my - Nowe zgłoszenie miejsca';
         $message = "Miejsce zostało zgłoszone:\n\n";
         $message .= "Tytuł: {$point['title']}\n";
-        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-moderation') . "\n";
+        $message .= "Zgłoszone przez: {$reporter_name}\n";
+        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-places') . "\n";
 
         wp_mail($admin_email, $subject, $message);
     }

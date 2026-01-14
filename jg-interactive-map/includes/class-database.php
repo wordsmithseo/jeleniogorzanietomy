@@ -1214,7 +1214,14 @@ class JG_Map_Database {
                  WHERE h.point_id = p.id AND h.status = 'pending' AND h.action_type = 'edit') as pending_edits_count,
                 (SELECT created_at FROM $history_table h
                  WHERE h.point_id = p.id AND h.status = 'pending' AND h.action_type = 'edit'
-                 ORDER BY created_at DESC LIMIT 1) as latest_edit_date
+                 ORDER BY created_at DESC LIMIT 1) as latest_edit_date,
+                (SELECT u2.display_name FROM $reports_table r2
+                 LEFT JOIN {$wpdb->users} u2 ON r2.user_id = u2.ID
+                 WHERE r2.point_id = p.id AND r2.status = 'pending'
+                 ORDER BY r2.created_at DESC LIMIT 1) as reporter_name,
+                (SELECT r2.user_id FROM $reports_table r2
+                 WHERE r2.point_id = p.id AND r2.status = 'pending'
+                 ORDER BY r2.created_at DESC LIMIT 1) as reporter_id
             FROM $points_table p
             LEFT JOIN {$wpdb->users} u ON p.author_id = u.ID
             $where_clause
