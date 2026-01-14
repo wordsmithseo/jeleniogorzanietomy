@@ -144,6 +144,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_get_user_photo_limit', array($this, 'admin_get_user_photo_limit'), 1);
         add_action('wp_ajax_jg_admin_set_user_photo_limit', array($this, 'admin_set_user_photo_limit'), 1);
         add_action('wp_ajax_jg_admin_reset_user_photo_limit', array($this, 'admin_reset_user_photo_limit'), 1);
+        add_action('wp_ajax_jg_admin_unblock_ip', array($this, 'admin_unblock_ip'), 1);
         add_action('wp_ajax_jg_delete_image', array($this, 'delete_image'), 1);
         add_action('wp_ajax_jg_set_featured_image', array($this, 'set_featured_image'), 1);
         add_action('wp_ajax_jg_get_notification_counts', array($this, 'get_notification_counts'), 1);
@@ -3820,6 +3821,30 @@ class JG_Map_Ajax_Handlers {
             'used_mb' => $monthly_data['used_mb'],
             'limit_mb' => $monthly_data['limit_mb']
         ));
+    }
+
+    /**
+     * Unblock IP address from rate limiting (admin only)
+     */
+    public function admin_unblock_ip() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $ip_hash = sanitize_text_field($_POST['ip_hash'] ?? '');
+
+        if (empty($ip_hash)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy hash IP'));
+            exit;
+        }
+
+        // Delete both transients (attempts count and time)
+        $transient_key = 'jg_rate_limit_login_' . $ip_hash;
+        $transient_time_key = 'jg_rate_limit_time_login_' . $ip_hash;
+
+        delete_transient($transient_key);
+        delete_transient($transient_time_key);
+
+        wp_send_json_success(array('message' => 'Adres IP odblokowany pomyślnie'));
     }
 
     /**
