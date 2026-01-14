@@ -346,7 +346,7 @@ class JG_Map_Ajax_Handlers {
             // Check if current user has reported this point from batch-loaded data
             $user_has_reported = isset($user_reported_map[$point_id]) ? $user_reported_map[$point_id] : false;
 
-            // If user has reported, get report details (time when reported)
+            // If user has reported, get report details (time when reported and who reported)
             $reporter_info = null;
             if ($user_has_reported) {
                 $reports_table = JG_Map_Database::get_reports_table();
@@ -359,8 +359,13 @@ class JG_Map_Ajax_Handlers {
                 ), ARRAY_A);
 
                 if ($report) {
+                    // Get current user's display name
+                    $current_user = wp_get_current_user();
+                    $reporter_name = $current_user ? $current_user->display_name : 'Ty';
+
                     $reporter_info = array(
-                        'reported_at' => human_time_diff(strtotime($report['created_at']), current_time('timestamp', true)) . ' temu'
+                        'reported_at' => human_time_diff(strtotime($report['created_at']), current_time('timestamp', true)) . ' temu',
+                        'reporter_name' => $reporter_name
                     );
                 }
             }

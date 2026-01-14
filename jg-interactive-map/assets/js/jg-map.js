@@ -4720,10 +4720,12 @@
         // User report notice - displayed to user who reported this place
         var userReportNotice = '';
         if (p.user_has_reported && p.reporter_info && p.reporter_info.reported_at) {
-          userReportNotice = '<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin:12px 0">' +
-            '<div style="color:#92400e;font-weight:700;margin-bottom:4px">⚠️ Miejsce zgłoszone do moderacji</div>' +
-            '<div style="color:#78350f;font-size:14px">Zgłoszono: ' + esc(p.reporter_info.reported_at) + '</div>' +
-            '<div style="color:#78350f;font-size:13px;margin-top:4px;opacity:0.9">Twoje zgłoszenie zostanie rozpatrzone przez moderatorów.</div>' +
+          var reporterName = p.reporter_info.reporter_name || 'Ty';
+          userReportNotice = '<div style="background:#fee2e2;border:2px solid #dc2626;border-radius:8px;padding:12px;margin:12px 0">' +
+            '<div style="color:#991b1b;font-weight:700;margin-bottom:4px">⚠️ Miejsce zgłoszone do moderacji</div>' +
+            '<div style="color:#7f1d1d;font-size:14px">Zgłoszone przez: <strong>' + esc(reporterName) + '</strong></div>' +
+            '<div style="color:#7f1d1d;font-size:14px">Zgłoszono: ' + esc(p.reporter_info.reported_at) + '</div>' +
+            '<div style="color:#7f1d1d;font-size:13px;margin-top:4px;opacity:0.9">Twoje zgłoszenie zostanie rozpatrzone przez moderatorów.</div>' +
             '</div>';
         }
 
