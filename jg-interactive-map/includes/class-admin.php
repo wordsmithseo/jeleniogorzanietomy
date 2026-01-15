@@ -1179,7 +1179,7 @@ class JG_Map_Admin {
                             </td>
                             <td><?php echo $user ? esc_html($user->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo implode(', ', $changes); ?></td>
-                            <td><?php echo human_time_diff(strtotime($edit['created_at'] . ' UTC'), time()); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($edit['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <button class="button jg-view-edit-details" data-edit='<?php echo esc_attr(json_encode($edit)); ?>'>Szczegóły</button>
                                 <button class="button button-primary jg-approve-edit" data-id="<?php echo $edit['id']; ?>">Zatwierdź</button>
@@ -1492,7 +1492,7 @@ class JG_Map_Admin {
                             </td>
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
-                            <td><?php echo human_time_diff(strtotime($point['created_at'] . ' UTC'), time()); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <button class="button jg-view-pending-details" data-point='<?php echo esc_attr(json_encode($point)); ?>'>Zobacz szczegóły</button>
                             </td>
@@ -1773,7 +1773,7 @@ class JG_Map_Admin {
                         <tr>
                             <td><strong><?php echo esc_html($report['point_title']); ?></strong></td>
                             <td><span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px"><?php echo $report['report_count']; ?></span></td>
-                            <td><?php echo human_time_diff(strtotime($report['created_at'] . ' UTC'), time()); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($report['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo esc_url(add_query_arg('jg_view_reports', $report['point_id'], $this->get_map_page_url())); ?>" class="button">Zobacz szczegóły</a>
                             </td>
@@ -1982,7 +1982,7 @@ class JG_Map_Admin {
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo $point['is_promo'] ? '⭐' : '-'; ?></td>
-                            <td><?php echo human_time_diff(strtotime($point['created_at'] . ' UTC'), time()); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button button-small">Zobacz</a>
                                 <button class="button button-small jg-delete-point" data-id="<?php echo $point['id']; ?>" style="color:#b32d2e">Usuń</button>
@@ -2216,7 +2216,7 @@ class JG_Map_Admin {
                             <td><?php echo esc_html($point['type']); ?></td>
                             <td><?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?></td>
                             <td><?php echo $point['deletion_reason'] ? esc_html($point['deletion_reason']) : '<em>Brak powodu</em>'; ?></td>
-                            <td><?php echo human_time_diff(strtotime($point['deletion_requested_at'] . ' UTC'), time()); ?> temu</td>
+                            <td><?php echo human_time_diff(strtotime(get_date_from_gmt($point['deletion_requested_at'])), current_time('timestamp')); ?> temu</td>
                             <td>
                                 <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>" class="button" target="_blank">Zobacz miejsce</a>
                                 <button class="button button-primary jg-approve-deletion" data-id="<?php echo $point['id']; ?>">Zatwierdź usunięcie</button>
@@ -2350,7 +2350,7 @@ class JG_Map_Admin {
                                 <p style="margin:0 0 8px;font-size:12px;color:#666">
                                     <strong><?php echo esc_html($point['type']); ?></strong> •
                                     <?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?> •
-                                    <?php echo human_time_diff(strtotime($point['created_at'] . ' UTC'), time()); ?> temu
+                                    <?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu
                                 </p>
                                 <div style="display:flex;gap:8px;flex-wrap:wrap">
                                     <a href="<?php echo get_site_url(); ?>?jg_view_point=<?php echo $point['id']; ?>"
@@ -2595,7 +2595,70 @@ class JG_Map_Admin {
                         'email' => isset($user_info['email']) ? $user_info['email'] : '',
                         'attempts' => $attempts,
                         'blocked_at' => intval($first_attempt_time),
-                        'time_remaining' => $time_remaining
+                        'time_remaining' => $time_remaining,
+                        'type' => 'login'
+                    );
+                }
+            }
+        }
+
+        return $blocked_ips;
+    }
+
+    /**
+     * Get blocked IPs from registration rate limiting
+     */
+    private function get_blocked_registration_ips() {
+        global $wpdb;
+
+        // Get all transients for registration rate limiting
+        $transients = $wpdb->get_results(
+            "SELECT option_name, option_value
+             FROM {$wpdb->options}
+             WHERE option_name LIKE '_transient_jg_rate_limit_register_%'
+             AND option_name NOT LIKE '%_time_%'
+             AND option_name NOT LIKE '%_userdata_%'",
+            ARRAY_A
+        );
+
+        $blocked_ips = array();
+
+        foreach ($transients as $transient) {
+            $key = str_replace('_transient_jg_rate_limit_register_', '', $transient['option_name']);
+            $attempts = intval($transient['option_value']);
+
+            // Only show if blocked (3+ attempts for registration)
+            if ($attempts >= 3) {
+                // Get time transient
+                $time_key = '_transient_jg_rate_limit_time_register_' . $key;
+                $first_attempt_time = $wpdb->get_var($wpdb->prepare(
+                    "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+                    $time_key
+                ));
+
+                // Get user data transient
+                $userdata_key = '_transient_jg_rate_limit_userdata_register_' . $key;
+                $user_data = $wpdb->get_var($wpdb->prepare(
+                    "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+                    $userdata_key
+                ));
+
+                if ($first_attempt_time) {
+                    $time_elapsed = time() - intval($first_attempt_time);
+                    $time_remaining = max(0, 3600 - $time_elapsed); // 3600 seconds = 1 hour
+
+                    // Unserialize user data
+                    $user_info = $user_data ? maybe_unserialize($user_data) : array();
+
+                    $blocked_ips[] = array(
+                        'hash' => $key,
+                        'ip' => isset($user_info['ip']) ? $user_info['ip'] : 'Nieznany',
+                        'username' => isset($user_info['username']) ? $user_info['username'] : 'Nieznany',
+                        'email' => isset($user_info['email']) ? $user_info['email'] : '',
+                        'attempts' => $attempts,
+                        'blocked_at' => intval($first_attempt_time),
+                        'time_remaining' => $time_remaining,
+                        'type' => 'register'
                     );
                 }
             }
@@ -2611,8 +2674,9 @@ class JG_Map_Admin {
         global $wpdb;
         $points_table = JG_Map_Database::get_points_table();
 
-        // Get blocked IPs
+        // Get blocked IPs (login and registration)
         $blocked_ips = $this->get_blocked_ips();
+        $blocked_registration_ips = $this->get_blocked_registration_ips();
 
         // Get all users with their statistics
         $users = get_users(array('orderby' => 'registered', 'order' => 'DESC'));
@@ -2689,7 +2753,7 @@ class JG_Map_Admin {
                                 $minutes_remaining = ceil($ip['time_remaining'] / 60);
                                 $blocked_time = get_date_from_gmt(date('Y-m-d H:i:s', $ip['blocked_at']), 'Y-m-d H:i:s');
                             ?>
-                                <tr data-ip-hash="<?php echo esc_attr($ip['hash']); ?>">
+                                <tr data-ip-hash="<?php echo esc_attr($ip['hash']); ?>" data-ip-type="login">
                                     <td><code style="background:#fff;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:700"><?php echo esc_html($ip['ip']); ?></code></td>
                                     <td><strong><?php echo esc_html($ip['username']); ?></strong></td>
                                     <td><?php echo esc_html($ip['email']); ?></td>
@@ -2709,6 +2773,63 @@ class JG_Map_Admin {
                                     <td>
                                         <button class="button button-small jg-unblock-ip"
                                                 data-ip-hash="<?php echo esc_attr($ip['hash']); ?>"
+                                                data-ip-type="login"
+                                                style="background:#10b981;color:#fff;border-color:#10b981">
+                                            Odblokuj
+                                        </button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($blocked_registration_ips)): ?>
+                <div style="background:#fef3c7;border:2px solid #f59e0b;padding:15px;border-radius:8px;margin:20px 0">
+                    <h2 style="margin-top:0;color:#92400e">⚠️ Zablokowane adresy IP (nieudane próby rejestracji)</h2>
+                    <p style="color:#78350f;margin-bottom:15px">
+                        Poniżej znajdują się adresy IP zablokowane po 3 nieudanych próbach rejestracji.
+                        Blokada trwa 1 godzinę od pierwszej próby.
+                    </p>
+                    <table class="wp-list-table widefat fixed striped" style="margin-top:10px">
+                        <thead>
+                            <tr>
+                                <th style="width:15%">Adres IP</th>
+                                <th style="width:20%">Nazwa użytkownika</th>
+                                <th style="width:20%">Email</th>
+                                <th style="width:10%">Próby</th>
+                                <th style="width:15%">Zablokowano</th>
+                                <th style="width:12%">Pozostało</th>
+                                <th style="width:8%">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($blocked_registration_ips as $ip):
+                                $minutes_remaining = ceil($ip['time_remaining'] / 60);
+                                $blocked_time = get_date_from_gmt(date('Y-m-d H:i:s', $ip['blocked_at']), 'Y-m-d H:i:s');
+                            ?>
+                                <tr data-ip-hash="<?php echo esc_attr($ip['hash']); ?>" data-ip-type="register">
+                                    <td><code style="background:#fff;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:700"><?php echo esc_html($ip['ip']); ?></code></td>
+                                    <td><strong><?php echo esc_html($ip['username']); ?></strong></td>
+                                    <td><?php echo esc_html($ip['email']); ?></td>
+                                    <td><strong style="color:#f59e0b"><?php echo $ip['attempts']; ?></strong></td>
+                                    <td><?php echo esc_html($blocked_time); ?></td>
+                                    <td>
+                                        <?php if ($ip['time_remaining'] > 0): ?>
+                                            <span style="background:#fbbf24;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">
+                                                <?php echo $minutes_remaining; ?> min
+                                            </span>
+                                        <?php else: ?>
+                                            <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">
+                                                Wygasło
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <button class="button button-small jg-unblock-ip"
+                                                data-ip-hash="<?php echo esc_attr($ip['hash']); ?>"
+                                                data-ip-type="register"
                                                 style="background:#10b981;color:#fff;border-color:#10b981">
                                             Odblokuj
                                         </button>
@@ -3185,10 +3306,11 @@ class JG_Map_Admin {
                     });
                 });
 
-                // Unblock IP address
+                // Unblock IP address (login or registration)
                 $('.jg-unblock-ip').on('click', function() {
                     var btn = $(this);
                     var ipHash = btn.data('ip-hash');
+                    var ipType = btn.data('ip-type') || 'login'; // Default to login if not specified
                     var row = btn.closest('tr');
 
                     if (!confirm('Czy na pewno odblokować ten adres IP?')) return;
@@ -3201,14 +3323,15 @@ class JG_Map_Admin {
                         data: {
                             action: 'jg_admin_unblock_ip',
                             ip_hash: ipHash,
+                            ip_type: ipType,
                             _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
                         },
                         success: function(response) {
                             if (response.success) {
                                 row.fadeOut(300, function() {
                                     $(this).remove();
-                                    // If no more blocked IPs, reload page to hide the section
-                                    if ($('.jg-unblock-ip').length === 0) {
+                                    // If no more blocked IPs of this type, reload page to hide the section
+                                    if ($('.jg-unblock-ip[data-ip-type="' + ipType + '"]').length === 0) {
                                         location.reload();
                                     }
                                 });
@@ -3747,7 +3870,7 @@ class JG_Map_Admin {
                     <table class="form-table">
                         <tr>
                             <th scope="row">Data:</th>
-                            <td><?php echo $last_maintenance['time']; ?> (<?php echo human_time_diff(strtotime($last_maintenance['time']), time()); ?> temu)</td>
+                            <td><?php echo $last_maintenance['time']; ?> (<?php echo human_time_diff(strtotime($last_maintenance['time']), current_time('timestamp')); ?> temu)</td>
                         </tr>
                         <tr>
                             <th scope="row">Czas wykonania:</th>
