@@ -2975,6 +2975,25 @@ class JG_Map_Admin {
                         </div>
                     </div>
 
+                    <!-- Daily Edit Limit -->
+                    <div style="background:#fef3c7;padding:16px;border-radius:8px;margin-top:16px;border:2px solid #f59e0b;">
+                        <h3 style="margin:0 0 12px 0;font-size:14px;color:#78350f;">✏️ Dzienny limit edycji miejsc</h3>
+                        <p style="font-size:12px;color:#92400e;margin:0 0 12px 0">Użytkownik może wykonać maksymalnie 2 edycje na dobę (wszystkie miejsca łącznie). Licznik resetuje się o północy.</p>
+                        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px;">
+                            <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
+                                <div style="font-size:24px;font-weight:700;color:#f59e0b;" id="edit-count-display">-</div>
+                                <div style="font-size:11px;color:#666;">wykorzystano dzisiaj</div>
+                            </div>
+                            <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
+                                <div style="font-size:24px;font-weight:700;color:#78350f;">2</div>
+                                <div style="font-size:11px;color:#666;">limit dzienny</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="button jg-reset-edit-limit" style="background:#10b981;color:#fff;border-color:#10b981;">Zresetuj licznik</button>
+                        </div>
+                    </div>
+
                     <!-- Monthly Photo Upload Limit -->
                     <div style="background:#f8fafc;padding:16px;border-radius:8px;margin-top:16px;">
                         <h3 style="margin:0 0 12px 0;font-size:14px;color:#334155;">📸 Miesięczny limit przesyłania zdjęć</h3>
@@ -3088,6 +3107,23 @@ class JG_Map_Admin {
                                 $('#photo-used-display').text(data.used_mb);
                                 $('#photo-limit-display').text(data.limit_mb);
                                 $('#photo-limit-input').val(data.limit_mb);
+                            }
+                        }
+                    });
+
+                    // Fetch daily edit limit
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_get_user_edit_limit',
+                            user_id: currentUserId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                var data = response.data;
+                                $('#edit-count-display').text(data.edit_count + ' / 2');
                             }
                         }
                     });
@@ -3299,6 +3335,29 @@ class JG_Map_Admin {
                                 $('#photo-limit-display').text(response.data.limit_mb);
                                 $('#photo-limit-input').val(response.data.limit_mb);
                                 showMessage('Limit zdjęć zresetowany do domyślnego (100MB)!', false);
+                            } else {
+                                showMessage(response.data.message || 'Błąd', true);
+                            }
+                        }
+                    });
+                });
+
+                // Reset daily edit limit
+                $('.jg-reset-edit-limit').on('click', function() {
+                    if (!confirm('Zresetować licznik edycji użytkownika?')) return;
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_reset_user_edit_limit',
+                            user_id: currentUserId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#edit-count-display').text(response.data.edit_count + ' / 2');
+                                showMessage('Licznik edycji zresetowany!', false);
                             } else {
                                 showMessage(response.data.message || 'Błąd', true);
                             }

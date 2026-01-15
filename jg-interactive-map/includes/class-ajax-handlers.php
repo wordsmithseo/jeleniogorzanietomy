@@ -144,6 +144,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_get_user_photo_limit', array($this, 'admin_get_user_photo_limit'), 1);
         add_action('wp_ajax_jg_admin_set_user_photo_limit', array($this, 'admin_set_user_photo_limit'), 1);
         add_action('wp_ajax_jg_admin_reset_user_photo_limit', array($this, 'admin_reset_user_photo_limit'), 1);
+        add_action('wp_ajax_jg_admin_get_user_edit_limit', array($this, 'admin_get_user_edit_limit'), 1);
+        add_action('wp_ajax_jg_admin_reset_user_edit_limit', array($this, 'admin_reset_user_edit_limit'), 1);
         add_action('wp_ajax_jg_admin_unblock_ip', array($this, 'admin_unblock_ip'), 1);
         add_action('wp_ajax_jg_delete_image', array($this, 'delete_image'), 1);
         add_action('wp_ajax_jg_set_featured_image', array($this, 'set_featured_image'), 1);
@@ -1366,6 +1368,24 @@ class JG_Map_Ajax_Handlers {
 
             wp_send_json_success(array('message' => 'Zaktualizowano'));
         } else {
+            // Check daily edit limit for regular users (2 edits per day)
+            $edit_count = intval(get_user_meta($user_id, 'jg_map_edits_count', true));
+            $edit_date = get_user_meta($user_id, 'jg_map_edits_date', true);
+            $today = current_time('Y-m-d');
+
+            // Reset counter if it's a new day
+            if ($edit_date !== $today) {
+                $edit_count = 0;
+                update_user_meta($user_id, 'jg_map_edits_date', $today);
+                update_user_meta($user_id, 'jg_map_edits_count', 0);
+            }
+
+            // Check if limit exceeded
+            if ($edit_count >= 2) {
+                wp_send_json_error(array('message' => 'Osiągnąłeś dzienny limit edycji (2 na dobę). Spróbuj ponownie jutro.'));
+                exit;
+            }
+
             // All edits from map go through moderation system
             $old_values = array(
                 'title' => $point['title'],
@@ -1417,6 +1437,9 @@ class JG_Map_Ajax_Handlers {
             }
 
             JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values);
+
+            // Increment daily edit counter
+            update_user_meta($user_id, 'jg_map_edits_count', $edit_count + 1);
 
             // Queue sync event via dedicated sync manager
             JG_Map_Sync_Manager::get_instance()->queue_edit_submitted($point_id, array(
@@ -3837,6 +3860,71 @@ class JG_Map_Ajax_Handlers {
             'message' => 'Limit zresetowany do domyślnego (100MB)',
             'used_mb' => $monthly_data['used_mb'],
             'limit_mb' => $monthly_data['limit_mb']
+        ));
+    }
+
+    /**
+     * Get user's daily edit limit (admin only)
+     */
+    public function admin_get_user_edit_limit() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID użytkownika'));
+            exit;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        // Get current edit count and date
+        $edit_count = intval(get_user_meta($user_id, 'jg_map_edits_count', true));
+        $edit_date = get_user_meta($user_id, 'jg_map_edits_date', true);
+        $today = current_time('Y-m-d');
+
+        // Reset counter if it's a new day
+        if ($edit_date !== $today) {
+            $edit_count = 0;
+        }
+
+        wp_send_json_success(array(
+            'edit_count' => $edit_count
+        ));
+    }
+
+    /**
+     * Reset user's daily edit limit (admin only)
+     */
+    public function admin_reset_user_edit_limit() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID użytkownika'));
+            exit;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        // Reset edit counter
+        update_user_meta($user_id, 'jg_map_edits_count', 0);
+        update_user_meta($user_id, 'jg_map_edits_date', current_time('Y-m-d'));
+
+        wp_send_json_success(array(
+            'message' => 'Licznik edycji zresetowany',
+            'edit_count' => 0
         ));
     }
 
