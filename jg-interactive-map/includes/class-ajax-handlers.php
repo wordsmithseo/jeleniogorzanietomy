@@ -3842,22 +3842,29 @@ class JG_Map_Ajax_Handlers {
 
     /**
      * Unblock IP address from rate limiting (admin only)
+     * Supports both 'login' and 'register' types
      */
     public function admin_unblock_ip() {
         $this->verify_nonce();
         $this->check_admin();
 
         $ip_hash = sanitize_text_field($_POST['ip_hash'] ?? '');
+        $ip_type = sanitize_text_field($_POST['ip_type'] ?? 'login');
 
         if (empty($ip_hash)) {
             wp_send_json_error(array('message' => 'Nieprawidłowy hash IP'));
             exit;
         }
 
+        // Validate ip_type
+        if (!in_array($ip_type, array('login', 'register'))) {
+            $ip_type = 'login';
+        }
+
         // Delete all three transients (attempts count, time, and user data)
-        $transient_key = 'jg_rate_limit_login_' . $ip_hash;
-        $transient_time_key = 'jg_rate_limit_time_login_' . $ip_hash;
-        $transient_userdata_key = 'jg_rate_limit_userdata_login_' . $ip_hash;
+        $transient_key = 'jg_rate_limit_' . $ip_type . '_' . $ip_hash;
+        $transient_time_key = 'jg_rate_limit_time_' . $ip_type . '_' . $ip_hash;
+        $transient_userdata_key = 'jg_rate_limit_userdata_' . $ip_type . '_' . $ip_hash;
 
         delete_transient($transient_key);
         delete_transient($transient_time_key);
@@ -4224,9 +4231,19 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Rate limiting check
+        // Get form data first for rate limiting tracking
+        $username = isset($_POST['username']) ? sanitize_text_field($_POST['username']) : '';
+        $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+        $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+        // Rate limiting check with user data for admin panel display
         $ip = $this->get_user_ip();
-        $rate_check = $this->check_rate_limit('register', $ip, 3, 3600);
+        $user_data = array(
+            'ip' => $ip,
+            'username' => $username,
+            'email' => $email
+        );
+        $rate_check = $this->check_rate_limit('register', $ip, 3, 3600, $user_data);
         if (!$rate_check['allowed']) {
             wp_send_json_error('Zbyt wiele prób rejestracji. Spróbuj ponownie za godzinę.');
             exit;
@@ -4247,10 +4264,6 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_error('Trwają prace konserwacyjne. Rejestracja nowych kont została tymczasowo wstrzymana. Zapraszamy później.');
             exit;
         }
-
-        $username = isset($_POST['username']) ? sanitize_text_field($_POST['username']) : '';
-        $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
-        $password = isset($_POST['password']) ? $_POST['password'] : '';
 
         if (empty($username) || empty($email) || empty($password)) {
             wp_send_json_error('Proszę wypełnić wszystkie pola');
