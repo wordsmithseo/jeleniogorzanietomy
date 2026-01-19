@@ -33,6 +33,9 @@
      * Setup event listeners for filters and sorting
      */
     function setupEventListeners() {
+        console.log('[JG SIDEBAR] Setting up event listeners');
+        console.log('[JG SIDEBAR] Collapsible headers found:', $('.jg-sidebar-collapsible-header').length);
+
         // Type filters
         $('[data-sidebar-type]').on('change', function() {
             updateTypeFilters();
@@ -51,11 +54,14 @@
             loadPoints();
         });
 
-        // Collapsible sections
-        $('.jg-sidebar-collapsible-header').on('click', function() {
+        // Collapsible sections - use event delegation
+        $('#jg-map-sidebar').on('click', '.jg-sidebar-collapsible-header', function(e) {
+            e.preventDefault();
             const $header = $(this);
             const $content = $header.next('.jg-sidebar-collapsible-content');
             const $icon = $header.find('.jg-sidebar-toggle-icon');
+
+            console.log('[JG SIDEBAR] Collapsible header clicked', $header, $content.length);
 
             // Check current state before toggle
             const isCurrentlyVisible = $content.is(':visible');

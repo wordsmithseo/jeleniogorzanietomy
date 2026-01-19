@@ -1856,16 +1856,24 @@
   font-size: 0.875rem;
   font-weight: 600;
   transition: background-color 0.2s;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 .jg-sidebar-collapsible-header:hover {
   background: #a02829;
 }
 
+.jg-sidebar-collapsible-header span {
+  pointer-events: none;
+}
+
 .jg-sidebar-toggle-icon {
   font-size: 0.75rem;
   transition: transform 0.2s;
   color: #ffffff;
+  pointer-events: none;
 }
 
 .jg-sidebar-collapsible-content {
