@@ -87,6 +87,151 @@
     });
   }
 
+  function showPendingActivationModal(username, email) {
+    ensureModalsExist();
+    var CFG = window.JG_AUTH_CFG || {};
+    var modal = document.getElementById('jg-modal-alert');
+    if (!modal) {
+      alert('Twoje konto nie zostało jeszcze aktywowane. Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.');
+      return;
+    }
+
+    var contentEl = modal.querySelector('.jg-modal-message-content');
+    var buttonsEl = modal.querySelector('.jg-modal-message-buttons');
+
+    contentEl.innerHTML =
+      '<div style="font-size:64px;margin-bottom:20px">📧</div>' +
+      '<h2 style="margin:0 0 16px 0;font-size:24px;font-weight:600">Konto oczekuje na aktywację</h2>' +
+      '<p style="margin:0 0 16px 0;color:#666">Twoje konto nie zostało jeszcze aktywowane. Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.</p>' +
+      '<p style="margin:0;color:#666">Nie otrzymałeś emaila? Możesz wysłać link ponownie.</p>';
+
+    buttonsEl.innerHTML =
+      '<button class="jg-btn" id="jg-resend-activation" style="padding:8px 16px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;margin-right:8px;">Wyślij ponownie</button>' +
+      '<button class="jg-btn" id="jg-activation-cancel" style="padding:8px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Zamknij</button>';
+
+    modal.style.display = 'flex';
+
+    var resendBtn = document.getElementById('jg-resend-activation');
+    var cancelBtn = document.getElementById('jg-activation-cancel');
+
+    resendBtn.onclick = function() {
+      resendBtn.disabled = true;
+      resendBtn.textContent = 'Wysyłanie...';
+
+      $.ajax({
+        url: CFG.ajax,
+        type: 'POST',
+        data: {
+          action: 'jg_map_resend_activation',
+          username: username,
+          email: email
+        },
+        success: function(response) {
+          if (response.success) {
+            modal.style.display = 'none';
+            showAlert(response.data || 'Link aktywacyjny został wysłany ponownie. Sprawdź swoją skrzynkę email.');
+          } else {
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Wyślij ponownie';
+            showAlert(response.data || 'Wystąpił błąd podczas wysyłania emaila');
+          }
+        },
+        error: function() {
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Wyślij ponownie';
+          showAlert('Wystąpił błąd podczas wysyłania emaila');
+        }
+      });
+    };
+
+    cancelBtn.onclick = function() {
+      modal.style.display = 'none';
+    };
+
+    modal.onclick = function(e) {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
+    };
+  }
+
+  function showRateLimitModal(message, secondsRemaining, actionType) {
+    ensureModalsExist();
+    var modal = document.getElementById('jg-modal-alert');
+    if (!modal) {
+      alert(message);
+      return;
+    }
+
+    var contentEl = modal.querySelector('.jg-modal-message-content');
+    var buttonsEl = modal.querySelector('.jg-modal-message-buttons');
+
+    var timeLeft = secondsRemaining;
+    var countdownText = '';
+
+    function formatTime(seconds) {
+      var hours = Math.floor(seconds / 3600);
+      var minutes = Math.floor((seconds % 3600) / 60);
+      var secs = seconds % 60;
+
+      if (hours > 0) {
+        return hours + ' ' + (hours === 1 ? 'godzina' : 'godzin') + ' ' +
+               minutes + ' ' + (minutes === 1 ? 'minuta' : (minutes < 5 ? 'minuty' : 'minut'));
+      } else if (minutes > 0) {
+        return minutes + ' ' + (minutes === 1 ? 'minuta' : (minutes < 5 ? 'minuty' : 'minut')) + ' ' +
+               secs + ' ' + (secs === 1 ? 'sekunda' : (secs < 5 ? 'sekundy' : 'sekund'));
+      } else {
+        return secs + ' ' + (secs === 1 ? 'sekunda' : (secs < 5 ? 'sekundy' : 'sekund'));
+      }
+    }
+
+    function updateCountdown() {
+      if (timeLeft <= 0) {
+        modal.style.display = 'none';
+        return;
+      }
+
+      countdownText = formatTime(timeLeft);
+      contentEl.innerHTML =
+        '<div style="font-size:64px;margin-bottom:20px">⏱️</div>' +
+        '<h2 style="margin:0 0 16px 0;font-size:24px;font-weight:600">Zbyt wiele prób</h2>' +
+        '<p style="margin:0 0 16px 0;color:#666">' + message + '</p>' +
+        '<div style="background:#f3f4f6;padding:16px;border-radius:8px;margin-bottom:16px">' +
+        '<div style="font-size:32px;font-weight:700;color:#8d2324;font-family:monospace">' + countdownText + '</div>' +
+        '</div>' +
+        '<p style="margin:0;color:#999;font-size:14px">Odliczanie zostanie automatycznie zaktualizowane</p>';
+    }
+
+    updateCountdown();
+
+    buttonsEl.innerHTML =
+      '<button class="jg-btn" id="jg-rate-limit-close" style="padding:8px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Zamknij</button>';
+
+    modal.style.display = 'flex';
+
+    var closeBtn = document.getElementById('jg-rate-limit-close');
+    closeBtn.onclick = function() {
+      modal.style.display = 'none';
+      clearInterval(countdownInterval);
+    };
+
+    modal.onclick = function(e) {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+        clearInterval(countdownInterval);
+      }
+    };
+
+    // Update countdown every second
+    var countdownInterval = setInterval(function() {
+      timeLeft--;
+      updateCountdown();
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval);
+      }
+    }, 1000);
+  }
+
   function open(modalEl, html) {
     if (!modalEl) return;
     var innerModal = modalEl.querySelector('.jg-modal');
@@ -169,7 +314,15 @@
             close(modalEdit);
             location.reload();
           } else {
-            showAlert(response.data || 'Błąd logowania');
+            // Check if it's a pending activation error
+            if (response.data && typeof response.data === 'object' && response.data.type === 'pending_activation') {
+              showPendingActivationModal(response.data.username, response.data.email);
+            } else if (response.data && typeof response.data === 'object' && response.data.type === 'rate_limit') {
+              // Show rate limit modal with countdown
+              showRateLimitModal(response.data.message, response.data.seconds_remaining, response.data.action);
+            } else {
+              showAlert(response.data && response.data.message ? response.data.message : (response.data || 'Błąd logowania'));
+            }
           }
         },
         error: function() {
@@ -379,7 +532,12 @@
 
             open(modalEdit, successHtml);
           } else {
-            showAlert(response.data || 'Błąd rejestracji');
+            // Check if it's a rate limit error
+            if (response.data && typeof response.data === 'object' && response.data.type === 'rate_limit') {
+              showRateLimitModal(response.data.message, response.data.seconds_remaining, response.data.action);
+            } else {
+              showAlert(response.data && response.data.message ? response.data.message : (response.data || 'Błąd rejestracji'));
+            }
           }
         },
         error: function() {

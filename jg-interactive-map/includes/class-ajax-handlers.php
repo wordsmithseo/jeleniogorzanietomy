@@ -89,10 +89,14 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_map_login', array($this, 'login_user'));
         add_action('wp_ajax_nopriv_jg_map_register', array($this, 'register_user'));
         add_action('wp_ajax_nopriv_jg_map_forgot_password', array($this, 'forgot_password'));
+        add_action('wp_ajax_nopriv_jg_map_resend_activation', array($this, 'resend_activation_email'));
+        add_action('wp_ajax_jg_map_resend_activation', array($this, 'resend_activation_email'));
         add_action('wp_ajax_jg_check_registration_status', array($this, 'check_registration_status'));
         add_action('wp_ajax_nopriv_jg_check_registration_status', array($this, 'check_registration_status'));
         add_action('wp_ajax_jg_check_user_session_status', array($this, 'check_user_session_status'));
+        add_action('wp_ajax_nopriv_jg_check_user_session_status', array($this, 'check_user_session_status'));
         add_action('wp_ajax_jg_logout_user', array($this, 'logout_user'));
+        add_action('wp_ajax_nopriv_jg_logout_user', array($this, 'logout_user'));
         add_action('wp_ajax_jg_track_stat', array($this, 'track_stat'));
         add_action('wp_ajax_nopriv_jg_track_stat', array($this, 'track_stat'));
         add_action('wp_ajax_jg_get_point_stats', array($this, 'get_point_stats'));
@@ -4448,6 +4452,95 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Resend activation email
+     */
+    public function resend_activation_email() {
+        $username = isset($_POST['username']) ? sanitize_text_field($_POST['username']) : '';
+        $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+
+        if (empty($username) && empty($email)) {
+            wp_send_json_error('Proszę podać nazwę użytkownika lub email');
+            exit;
+        }
+
+        // Find user by username or email
+        $user = null;
+        if (!empty($username)) {
+            $user = get_user_by('login', $username);
+            if (!$user) {
+                $user = get_user_by('email', $username);
+            }
+        } elseif (!empty($email)) {
+            $user = get_user_by('email', $email);
+        }
+
+        if (!$user) {
+            wp_send_json_error('Nie znaleziono użytkownika');
+            exit;
+        }
+
+        // Check if account is already activated
+        $account_status = get_user_meta($user->ID, 'jg_map_account_status', true);
+        if ($account_status === 'active') {
+            wp_send_json_error('To konto jest już aktywowane. Możesz się zalogować.');
+            exit;
+        }
+
+        // Rate limiting for resend attempts (max 3 per hour)
+        $ip = $this->get_user_ip();
+        $user_data = array(
+            'ip' => $ip,
+            'username' => $user->user_login,
+            'email' => $user->user_email
+        );
+
+        // Check rate limit
+        $rate_check = $this->check_rate_limit('resend_activation', $ip, 3, 3600, $user_data, false);
+        if (!$rate_check['allowed']) {
+            $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 60;
+            wp_send_json_error('Zbyt wiele prób wysłania linku aktywacyjnego. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
+            exit;
+        }
+
+        // Generate new activation key
+        $activation_key = wp_generate_password(32, false);
+        update_user_meta($user->ID, 'jg_map_activation_key', $activation_key);
+        update_user_meta($user->ID, 'jg_map_activation_key_time', time());
+
+        // Send activation email
+        $activation_link = add_query_arg(
+            array(
+                'action' => 'activate',
+                'key' => $activation_key,
+                'email' => rawurlencode($user->user_email)
+            ),
+            home_url()
+        );
+
+        $subject = 'Aktywacja konta - Jeleniogórzanie to my';
+        $message = "Witaj " . $user->user_login . ",\n\n";
+        $message .= "Aby aktywować swoje konto w serwisie Jeleniogórzanie to my, kliknij w poniższy link:\n\n";
+        $message .= $activation_link . "\n\n";
+        $message .= "Link aktywacyjny jest ważny przez 24 godziny.\n\n";
+        $message .= "UWAGA: Link musi zostać otwarty w tej samej przeglądarce, w której dokonałeś rejestracji.\n\n";
+        $message .= "Jeśli nie rejestrowałeś się w naszym serwisie, zignoruj tę wiadomość.\n\n";
+        $message .= "Pozdrawiamy,\n";
+        $message .= "Zespół Jeleniogórzanie to my";
+
+        $email_sent = $this->send_plugin_email($user->user_email, $subject, $message);
+
+        if (!$email_sent) {
+            wp_send_json_error('Wystąpił błąd podczas wysyłania emaila');
+            exit;
+        }
+
+        // Increment rate limit after successful send
+        $this->check_rate_limit('resend_activation', $ip, 3, 3600, $user_data, true);
+
+        wp_send_json_success('Link aktywacyjny został wysłany ponownie. Sprawdź swoją skrzynkę email.');
+    }
+
+    /**
      * Login user via AJAX
      */
     public function login_user() {
@@ -4489,7 +4582,13 @@ class JG_Map_Ajax_Handlers {
             $rate_check = $this->check_rate_limit('login', $ip, 5, 900, $user_data, false);
             if (!$rate_check['allowed']) {
                 $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 15;
-                wp_send_json_error('Zbyt wiele prób logowania. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
+                $seconds = $minutes * 60;
+                wp_send_json_error(array(
+                    'message' => 'Zbyt wiele prób logowania. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.',
+                    'type' => 'rate_limit',
+                    'seconds_remaining' => $seconds,
+                    'action' => 'login'
+                ));
                 exit;
             }
         }
@@ -4537,7 +4636,12 @@ class JG_Map_Ajax_Handlers {
         $account_status = get_user_meta($user->ID, 'jg_map_account_status', true);
         if ($account_status === 'pending') {
             wp_logout(); // Logout the user
-            wp_send_json_error('Twoje konto nie zostało jeszcze aktywowane. Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.');
+            wp_send_json_error(array(
+                'message' => 'Twoje konto nie zostało jeszcze aktywowane. Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.',
+                'type' => 'pending_activation',
+                'username' => $user->user_login,
+                'email' => $user->user_email
+            ));
             exit;
         }
 
@@ -4588,12 +4692,20 @@ class JG_Map_Ajax_Handlers {
         $rate_check = $this->check_rate_limit('register', $ip, 3, 3600, $user_data, false);
         if (!$rate_check['allowed']) {
             $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 60;
+            $seconds = $minutes * 60;
             $hours = ceil($minutes / 60);
+            $message = '';
             if ($hours >= 1) {
-                wp_send_json_error('Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $hours . ' ' . ($hours === 1 ? 'godzinę' : 'godzin') . '.');
+                $message = 'Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $hours . ' ' . ($hours === 1 ? 'godzinę' : 'godzin') . '.';
             } else {
-                wp_send_json_error('Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
+                $message = 'Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.';
             }
+            wp_send_json_error(array(
+                'message' => $message,
+                'type' => 'rate_limit',
+                'seconds_remaining' => $seconds,
+                'action' => 'register'
+            ));
             exit;
         }
 
