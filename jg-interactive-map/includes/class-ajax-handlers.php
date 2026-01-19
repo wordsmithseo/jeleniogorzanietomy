@@ -4615,6 +4615,21 @@ class JG_Map_Ajax_Handlers {
                     'email' => $user_check ? $user_check->user_email : ''
                 );
                 $this->check_rate_limit('login', $ip, 5, 900, $user_data, true);
+
+                // Check if we just hit the rate limit
+                $rate_check_after = $this->check_rate_limit('login', $ip, 5, 900, $user_data, false);
+                if (!$rate_check_after['allowed']) {
+                    // Now blocked - return rate limit error with countdown
+                    $minutes = isset($rate_check_after['minutes_remaining']) ? $rate_check_after['minutes_remaining'] : 15;
+                    $seconds = $minutes * 60;
+                    wp_send_json_error(array(
+                        'message' => 'Zbyt wiele nieudanych prób logowania. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.',
+                        'type' => 'rate_limit',
+                        'seconds_remaining' => $seconds,
+                        'action' => 'login'
+                    ));
+                    exit;
+                }
             }
             wp_send_json_error('Nieprawidłowa nazwa użytkownika lub hasło');
             exit;
@@ -4725,6 +4740,31 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Increment rate limit counter HERE - counts all non-bot registration attempts
+        // This protects against spam/flood even with invalid data
+        $this->check_rate_limit('register', $ip, 3, 3600, $user_data, true);
+
+        // Check if we just hit the rate limit after incrementing
+        $rate_check_after = $this->check_rate_limit('register', $ip, 3, 3600, $user_data, false);
+        if (!$rate_check_after['allowed']) {
+            $minutes = isset($rate_check_after['minutes_remaining']) ? $rate_check_after['minutes_remaining'] : 60;
+            $seconds = $minutes * 60;
+            $hours = ceil($minutes / 60);
+            $message = '';
+            if ($hours >= 1) {
+                $message = 'Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $hours . ' ' . ($hours === 1 ? 'godzinę' : 'godzin') . '.';
+            } else {
+                $message = 'Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.';
+            }
+            wp_send_json_error(array(
+                'message' => $message,
+                'type' => 'rate_limit',
+                'seconds_remaining' => $seconds,
+                'action' => 'register'
+            ));
+            exit;
+        }
+
         if (empty($username) || empty($email) || empty($password)) {
             wp_send_json_error('Proszę wypełnić wszystkie pola');
             exit;
@@ -4795,9 +4835,6 @@ class JG_Map_Ajax_Handlers {
         $message .= "Zespół Jeleniórzanie to my";
 
         $this->send_plugin_email($email, $subject, $message);
-
-        // Increment rate limit counter after successful registration
-        $this->check_rate_limit('register', $ip, 3, 3600, $user_data, true);
 
         // Don't auto login - user must verify email first
         wp_send_json_success('Rejestracja zakończona pomyślnie! Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.');
