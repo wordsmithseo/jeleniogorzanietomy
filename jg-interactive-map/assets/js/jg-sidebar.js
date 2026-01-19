@@ -57,15 +57,18 @@
             const $content = $header.next('.jg-sidebar-collapsible-content');
             const $icon = $header.find('.jg-sidebar-toggle-icon');
 
-            // Toggle content visibility
-            $content.slideToggle(200);
+            // Check current state before toggle
+            const isCurrentlyVisible = $content.is(':visible');
 
-            // Rotate icon
-            if ($content.is(':visible') || $content.css('display') !== 'none') {
-                $icon.text('▲');
-            } else {
-                $icon.text('▼');
-            }
+            // Toggle content visibility with callback
+            $content.slideToggle(200, function() {
+                // Update icon after animation completes
+                if (isCurrentlyVisible) {
+                    $icon.text('▼');
+                } else {
+                    $icon.text('▲');
+                }
+            });
         });
     }
 
