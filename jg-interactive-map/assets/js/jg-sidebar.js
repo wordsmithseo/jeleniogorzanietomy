@@ -196,13 +196,15 @@
         const sponsoredPoints = points.filter(p => p.is_promo);
         const regularPoints = points.filter(p => !p.is_promo);
 
-        // Add sponsored section if there are sponsored pins
+        // Add ONE random sponsored pin in "Polecamy" section
         if (sponsoredPoints.length > 0) {
+            // Pick one random sponsored place
+            const randomIndex = Math.floor(Math.random() * sponsoredPoints.length);
+            const randomSponsored = sponsoredPoints[randomIndex];
+
             $list.append('<div class="jg-sidebar-section-title">Polecamy:</div>');
-            sponsoredPoints.forEach(function(point) {
-                const $item = createPointItem(point);
-                $list.append($item);
-            });
+            const $item = createPointItem(randomSponsored);
+            $list.append($item);
         }
 
         // Add regular pins section if there are regular pins
