@@ -34,7 +34,9 @@
      */
     function setupEventListeners() {
         console.log('[JG SIDEBAR] Setting up event listeners');
+        console.log('[JG SIDEBAR] Sidebar element:', $('#jg-map-sidebar').length);
         console.log('[JG SIDEBAR] Collapsible headers found:', $('.jg-sidebar-collapsible-header').length);
+        console.log('[JG SIDEBAR] Headers HTML:', $('.jg-sidebar-collapsible-header').html());
 
         // Type filters
         $('[data-sidebar-type]').on('change', function() {
@@ -54,27 +56,62 @@
             loadPoints();
         });
 
-        // Collapsible sections - use event delegation
+        // Collapsible sections - Multiple approaches to ensure it works
+
+        // Method 1: Event delegation on parent
         $('#jg-map-sidebar').on('click', '.jg-sidebar-collapsible-header', function(e) {
             e.preventDefault();
-            const $header = $(this);
-            const $content = $header.next('.jg-sidebar-collapsible-content');
-            const $icon = $header.find('.jg-sidebar-toggle-icon');
+            e.stopPropagation();
+            console.log('[JG SIDEBAR] Method 1 - Collapsible header clicked via delegation');
+            toggleCollapsible($(this));
+        });
 
-            console.log('[JG SIDEBAR] Collapsible header clicked', $header, $content.length);
+        // Method 2: Direct binding (backup)
+        $(document).on('click', '.jg-sidebar-collapsible-header', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[JG SIDEBAR] Method 2 - Collapsible header clicked via document');
+            toggleCollapsible($(this));
+        });
 
-            // Check current state before toggle
-            const isCurrentlyVisible = $content.is(':visible');
+        // Method 3: Direct on ready
+        $('.jg-sidebar-collapsible-header').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[JG SIDEBAR] Method 3 - Collapsible header clicked directly');
+            toggleCollapsible($(this));
+        });
+    }
 
-            // Toggle content visibility with callback
-            $content.slideToggle(200, function() {
-                // Update icon after animation completes
-                if (isCurrentlyVisible) {
-                    $icon.text('▼');
-                } else {
-                    $icon.text('▲');
-                }
-            });
+    /**
+     * Toggle collapsible section
+     */
+    function toggleCollapsible($header) {
+        const $content = $header.next('.jg-sidebar-collapsible-content');
+        const $icon = $header.find('.jg-sidebar-toggle-icon');
+
+        console.log('[JG SIDEBAR] Toggle called', {
+            header: $header.length,
+            content: $content.length,
+            icon: $icon.length
+        });
+
+        if ($content.length === 0) {
+            console.error('[JG SIDEBAR] No content element found!');
+            return;
+        }
+
+        // Check current state before toggle
+        const isCurrentlyVisible = $content.is(':visible');
+
+        // Toggle content visibility with callback
+        $content.slideToggle(200, function() {
+            // Update icon after animation completes
+            if (isCurrentlyVisible) {
+                $icon.text('▼');
+            } else {
+                $icon.text('▲');
+            }
         });
     }
 
