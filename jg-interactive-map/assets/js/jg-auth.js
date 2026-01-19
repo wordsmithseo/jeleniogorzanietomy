@@ -443,6 +443,16 @@
       success: function(response) {
         if (response.success && response.data) {
           document.getElementById('profile-email').value = response.data.email || '';
+
+          // Add delete profile button if user can delete their profile (not admin/moderator)
+          if (response.data.can_delete_profile) {
+            var deleteBtn = '<button class="jg-btn jg-btn--danger" id="delete-profile-btn" style="padding:10px 20px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-right:auto" onmouseover="this.style.background=\'#b91c1c\'" onmouseout="this.style.background=\'#dc2626\'">Usuń profil</button>';
+            document.querySelector('.jg-modal-footer').insertAdjacentHTML('afterbegin', deleteBtn);
+
+            document.getElementById('delete-profile-btn').addEventListener('click', function() {
+              openDeleteProfileConfirmation();
+            });
+          }
         }
       }
     });
@@ -486,6 +496,101 @@
           showAlert('Wystąpił błąd podczas komunikacji z serwerem');
         }
       });
+    });
+  }
+
+  // Open delete profile confirmation modal
+  function openDeleteProfileConfirmation() {
+    var CFG = window.JG_AUTH_CFG || {};
+
+    // Show password confirmation modal
+    var modal = document.getElementById('jg-modal-alert');
+    if (!modal) {
+      var password = prompt('Aby usunąć profil, podaj swoje hasło:');
+      if (password) {
+        deleteProfileWithPassword(password);
+      }
+      return;
+    }
+
+    var contentEl = modal.querySelector('.jg-modal-message-content');
+    var buttonsEl = modal.querySelector('.jg-modal-message-buttons');
+
+    contentEl.innerHTML = '<div style="margin-bottom:16px;font-weight:600;font-size:18px">Czy na pewno chcesz usunąć swój profil?</div>' +
+      '<div style="margin-bottom:16px;color:#666">Ta operacja jest <strong style="color:#dc2626">nieodwracalna</strong>. Zostaną usunięte:</div>' +
+      '<ul style="margin-bottom:16px;text-align:left;line-height:1.8">' +
+      '<li>Wszystkie Twoje pinezki</li>' +
+      '<li>Wszystkie przesłane przez Ciebie zdjęcia</li>' +
+      '<li>Twój profil i wszystkie dane</li>' +
+      '</ul>' +
+      '<div style="margin-bottom:12px;font-weight:600">Aby potwierdzić, podaj swoje hasło:</div>' +
+      '<input type="password" id="jg-delete-password-input" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px" placeholder="Twoje hasło">';
+    buttonsEl.innerHTML = '<button class="jg-btn jg-btn--ghost" id="jg-confirm-no">Anuluj</button><button class="jg-btn jg-btn--danger" id="jg-confirm-yes">Usuń profil</button>';
+
+    modal.style.display = 'flex';
+
+    var passwordInput = document.getElementById('jg-delete-password-input');
+    var yesBtn = document.getElementById('jg-confirm-yes');
+    var noBtn = document.getElementById('jg-confirm-no');
+
+    // Focus password input after a brief delay
+    setTimeout(function() {
+      if (passwordInput) passwordInput.focus();
+    }, 100);
+
+    // Handle Enter key in password input
+    passwordInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        yesBtn.click();
+      }
+    });
+
+    yesBtn.onclick = function() {
+      var password = passwordInput.value;
+      if (!password) {
+        showAlert('Musisz podać hasło aby usunąć profil');
+        return;
+      }
+      modal.style.display = 'none';
+      deleteProfileWithPassword(password);
+    };
+
+    noBtn.onclick = function() {
+      modal.style.display = 'none';
+    };
+
+    // Close on background click = cancel
+    modal.onclick = function(e) {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
+    };
+  }
+
+  // Delete profile with password verification
+  function deleteProfileWithPassword(password) {
+    var CFG = window.JG_AUTH_CFG || {};
+
+    $.ajax({
+      url: CFG.ajax,
+      type: 'POST',
+      data: {
+        action: 'jg_map_delete_profile',
+        nonce: CFG.nonce,
+        password: password
+      },
+      success: function(response) {
+        if (response.success) {
+          showAlert('Twój profil został pomyślnie usunięty').then(function() {
+            window.location.href = '/';
+          });
+        } else {
+          showAlert(response.data || 'Wystąpił błąd podczas usuwania profilu');
+        }
+      },
+      error: function() {
+        showAlert('Wystąpił błąd podczas komunikacji z serwerem');
+      }
     });
   }
 

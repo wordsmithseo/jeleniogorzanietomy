@@ -114,6 +114,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_get_daily_limits', array($this, 'get_daily_limits'));
         add_action('wp_ajax_jg_map_get_current_user', array($this, 'get_current_user'));
         add_action('wp_ajax_jg_map_update_profile', array($this, 'update_profile'));
+        add_action('wp_ajax_jg_map_delete_profile', array($this, 'delete_profile'));
 
         // Admin actions
         add_action('wp_ajax_jg_get_reports', array($this, 'get_reports'));
@@ -151,6 +152,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_set_featured_image', array($this, 'set_featured_image'), 1);
         add_action('wp_ajax_jg_get_notification_counts', array($this, 'get_notification_counts'), 1);
         add_action('wp_ajax_jg_keep_reported_place', array($this, 'keep_reported_place'), 1);
+        add_action('wp_ajax_jg_admin_delete_user', array($this, 'admin_delete_user'), 1);
     }
 
     /**
@@ -4027,6 +4029,87 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Admin delete user - removes all user data including pins, photos, and account
+     */
+    public function admin_delete_user() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID użytkownika'));
+            exit;
+        }
+
+        // Check if user exists
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        // Prevent deleting admins and moderators
+        $is_admin = user_can($user_id, 'manage_options');
+        $is_moderator = user_can($user_id, 'jg_map_moderate');
+
+        if ($is_admin || $is_moderator) {
+            wp_send_json_error(array('message' => 'Nie można usunąć administratorów ani moderatorów'));
+            exit;
+        }
+
+        // Get all user's points (pins)
+        $user_places = JG_Map_Database::get_all_places_with_status('', '', $user_id);
+
+        // Delete all user's points with their images
+        if (!empty($user_places)) {
+            foreach ($user_places as $place) {
+                JG_Map_Database::delete_point($place['id']);
+            }
+        }
+
+        // Delete all user meta data related to the plugin
+        $meta_keys = array(
+            'jg_map_ban_until',
+            'jg_map_restrict_edit',
+            'jg_map_restrict_delete',
+            'jg_map_restrict_add',
+            'jg_map_restrict_voting',
+            'jg_map_restrict_add_events',
+            'jg_map_restrict_add_trivia',
+            'jg_map_restrict_photo_upload',
+            'jg_map_daily_reset',
+            'jg_map_daily_places',
+            'jg_map_daily_reports',
+            'jg_map_edits_count',
+            'jg_map_edits_date',
+            'jg_map_photo_month',
+            'jg_map_photo_used_bytes',
+            'jg_map_photo_custom_limit',
+            'jg_map_activation_key',
+            'jg_map_activation_key_time',
+            'jg_map_account_status',
+            'jg_map_reset_key',
+            'jg_map_reset_key_time'
+        );
+
+        foreach ($meta_keys as $meta_key) {
+            delete_user_meta($user_id, $meta_key);
+        }
+
+        // Delete the user account
+        require_once(ABSPATH . 'wp-admin/includes/user.php');
+        $deleted = wp_delete_user($user_id);
+
+        if (!$deleted) {
+            wp_send_json_error(array('message' => 'Wystąpił błąd podczas usuwania użytkownika'));
+            exit;
+        }
+
+        wp_send_json_success(array('message' => 'Użytkownik został pomyślnie usunięty'));
+    }
+
+    /**
      * Delete image from point
      * Admins/moderators can delete from any point, users can only delete from their own points
      */
@@ -4213,10 +4296,15 @@ class JG_Map_Ajax_Handlers {
         }
 
         $current_user = wp_get_current_user();
+        $is_admin = user_can($current_user->ID, 'manage_options');
+        $is_moderator = user_can($current_user->ID, 'jg_map_moderate');
 
         wp_send_json_success(array(
             'display_name' => $current_user->display_name,
-            'email' => $current_user->user_email
+            'email' => $current_user->user_email,
+            'is_admin' => $is_admin,
+            'is_moderator' => $is_moderator,
+            'can_delete_profile' => !$is_admin && !$is_moderator
         ));
     }
 
@@ -4270,6 +4358,93 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success('Profil został zaktualizowany');
+    }
+
+    /**
+     * Delete user profile - removes all user data including pins, photos, and account
+     */
+    public function delete_profile() {
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Musisz być zalogowany');
+            exit;
+        }
+
+        $user_id = get_current_user_id();
+        $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+        // Check if user is admin or moderator - they cannot delete their own profiles this way
+        $is_admin = user_can($user_id, 'manage_options');
+        $is_moderator = user_can($user_id, 'jg_map_moderate');
+
+        if ($is_admin || $is_moderator) {
+            wp_send_json_error('Administratorzy i moderatorzy nie mogą usunąć swoich profili przez tę opcję');
+            exit;
+        }
+
+        if (empty($password)) {
+            wp_send_json_error('Proszę podać hasło w celu potwierdzenia');
+            exit;
+        }
+
+        // Verify password
+        $user = wp_get_current_user();
+        if (!wp_check_password($password, $user->user_pass, $user_id)) {
+            wp_send_json_error('Nieprawidłowe hasło');
+            exit;
+        }
+
+        // Get all user's points (pins)
+        $user_places = JG_Map_Database::get_all_places_with_status('', '', $user_id);
+
+        // Delete all user's points with their images
+        if (!empty($user_places)) {
+            foreach ($user_places as $place) {
+                JG_Map_Database::delete_point($place['id']);
+            }
+        }
+
+        // Delete all user meta data related to the plugin
+        $meta_keys = array(
+            'jg_map_ban_until',
+            'jg_map_restrict_edit',
+            'jg_map_restrict_delete',
+            'jg_map_restrict_add',
+            'jg_map_restrict_voting',
+            'jg_map_restrict_add_events',
+            'jg_map_restrict_add_trivia',
+            'jg_map_restrict_photo_upload',
+            'jg_map_daily_reset',
+            'jg_map_daily_places',
+            'jg_map_daily_reports',
+            'jg_map_edits_count',
+            'jg_map_edits_date',
+            'jg_map_photo_month',
+            'jg_map_photo_used_bytes',
+            'jg_map_photo_custom_limit',
+            'jg_map_activation_key',
+            'jg_map_activation_key_time',
+            'jg_map_account_status',
+            'jg_map_reset_key',
+            'jg_map_reset_key_time'
+        );
+
+        foreach ($meta_keys as $meta_key) {
+            delete_user_meta($user_id, $meta_key);
+        }
+
+        // Log user out before deletion
+        wp_logout();
+
+        // Delete the user account
+        require_once(ABSPATH . 'wp-admin/includes/user.php');
+        $deleted = wp_delete_user($user_id);
+
+        if (!$deleted) {
+            wp_send_json_error('Wystąpił błąd podczas usuwania profilu');
+            exit;
+        }
+
+        wp_send_json_success('Profil został pomyślnie usunięty');
     }
 
     /**
