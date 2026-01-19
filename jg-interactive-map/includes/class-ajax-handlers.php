@@ -4578,14 +4578,14 @@ class JG_Map_Ajax_Handlers {
         $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
         $password = isset($_POST['password']) ? $_POST['password'] : '';
 
-        // Rate limiting check with user data for admin panel display
+        // Rate limiting check with user data for admin panel display (check only, don't increment yet)
         $ip = $this->get_user_ip();
         $user_data = array(
             'ip' => $ip,
             'username' => $username,
             'email' => $email
         );
-        $rate_check = $this->check_rate_limit('register', $ip, 3, 3600, $user_data, true);
+        $rate_check = $this->check_rate_limit('register', $ip, 3, 3600, $user_data, false);
         if (!$rate_check['allowed']) {
             $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 60;
             $hours = ceil($minutes / 60);
@@ -4671,14 +4671,17 @@ class JG_Map_Ajax_Handlers {
 
         $this->send_plugin_email($email, $subject, $message);
 
+        // Increment rate limit counter after successful registration
+        $this->check_rate_limit('register', $ip, 3, 3600, $user_data, true);
+
         // Don't auto login - user must verify email first
         wp_send_json_success('Rejestracja zakończona pomyślnie! Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.');
     }
 
     public function forgot_password() {
-        // Rate limiting check
+        // Rate limiting check (check only, don't increment yet)
         $ip = $this->get_user_ip();
-        $rate_check = $this->check_rate_limit('forgot_password', $ip, 3, 1800, array(), true);
+        $rate_check = $this->check_rate_limit('forgot_password', $ip, 3, 1800, array(), false);
         if (!$rate_check['allowed']) {
             $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 30;
             wp_send_json_error('Zbyt wiele prób resetowania hasła. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
@@ -4704,6 +4707,8 @@ class JG_Map_Ajax_Handlers {
         if (!$user) {
             // Don't reveal if email exists or not for security
             // Send success message anyway
+            // Increment rate limit counter even if user doesn't exist
+            $this->check_rate_limit('forgot_password', $ip, 3, 1800, array(), true);
             wp_send_json_success('Jeśli konto z tym adresem email istnieje, wysłaliśmy link do resetowania hasła.');
             exit;
         }
@@ -4726,6 +4731,9 @@ class JG_Map_Ajax_Handlers {
         $message .= "Zespół Jeleniórzanie to my";
 
         $this->send_plugin_email($email, $subject, $message);
+
+        // Increment rate limit counter after successful password reset request
+        $this->check_rate_limit('forgot_password', $ip, 3, 1800, array(), true);
 
         wp_send_json_success('Link do resetowania hasła został wysłany na Twój adres email.');
     }
