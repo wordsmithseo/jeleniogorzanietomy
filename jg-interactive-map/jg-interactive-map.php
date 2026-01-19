@@ -124,8 +124,7 @@ class JG_Interactive_Map {
     public function set_email_from($from_email) {
         // Check if this is called from plugin context
         if (doing_filter('jg_map_email')) {
-            $domain = wp_parse_url(home_url(), PHP_URL_HOST);
-            return 'noreply@' . $domain;
+            return 'powiadomienia@jeleniogorzanietomy.pl';
         }
         return $from_email;
     }

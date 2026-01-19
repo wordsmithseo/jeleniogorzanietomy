@@ -2372,7 +2372,7 @@ class JG_Map_Ajax_Handlers {
     /**
      * Check rate limiting to prevent abuse
      */
-    private function check_rate_limit($action, $identifier, $max_attempts = 5, $timeframe = 900, $user_data = array()) {
+    private function check_rate_limit($action, $identifier, $max_attempts = 5, $timeframe = 900, $user_data = array(), $increment = false) {
         $transient_key = 'jg_rate_limit_' . $action . '_' . md5($identifier);
         $transient_time_key = 'jg_rate_limit_time_' . $action . '_' . md5($identifier);
         $transient_userdata_key = 'jg_rate_limit_userdata_' . $action . '_' . md5($identifier);
@@ -2384,7 +2384,16 @@ class JG_Map_Ajax_Handlers {
             // Calculate actual time remaining
             $elapsed_time = time() - $first_attempt_time;
             $time_remaining = max(0, $timeframe - $elapsed_time);
-            $minutes_remaining = ceil($time_remaining / 60);
+
+            // If time has expired, clear the rate limit and allow the attempt
+            if ($time_remaining <= 0) {
+                delete_transient($transient_key);
+                delete_transient($transient_time_key);
+                delete_transient($transient_userdata_key);
+                return array('allowed' => true);
+            }
+
+            $minutes_remaining = max(1, ceil($time_remaining / 60));
 
             return array(
                 'allowed' => false,
@@ -2392,25 +2401,81 @@ class JG_Map_Ajax_Handlers {
             );
         }
 
-        // Increment or set attempts
-        if ($attempts === false) {
-            set_transient($transient_key, 1, $timeframe);
-            set_transient($transient_time_key, time(), $timeframe);
+        // Only increment if requested (for failed attempts)
+        if ($increment) {
+            if ($attempts === false) {
+                set_transient($transient_key, 1, $timeframe);
+                set_transient($transient_time_key, time(), $timeframe);
 
-            // Store user data for admin viewing (IP, username, email)
-            if (!empty($user_data)) {
-                set_transient($transient_userdata_key, $user_data, $timeframe);
-            }
-        } else {
-            set_transient($transient_key, $attempts + 1, $timeframe);
+                // Store user data for admin viewing (IP, username, email)
+                if (!empty($user_data)) {
+                    set_transient($transient_userdata_key, $user_data, $timeframe);
+                }
+            } else {
+                set_transient($transient_key, $attempts + 1, $timeframe);
 
-            // Update user data if provided
-            if (!empty($user_data)) {
-                set_transient($transient_userdata_key, $user_data, $timeframe);
+                // Update user data if provided
+                if (!empty($user_data)) {
+                    set_transient($transient_userdata_key, $user_data, $timeframe);
+                }
             }
         }
 
         return array('allowed' => true);
+    }
+
+    /**
+     * Clear rate limit for successful attempts
+     */
+    private function clear_rate_limit($action, $identifier) {
+        $transient_key = 'jg_rate_limit_' . $action . '_' . md5($identifier);
+        $transient_time_key = 'jg_rate_limit_time_' . $action . '_' . md5($identifier);
+        $transient_userdata_key = 'jg_rate_limit_userdata_' . $action . '_' . md5($identifier);
+
+        delete_transient($transient_key);
+        delete_transient($transient_time_key);
+        delete_transient($transient_userdata_key);
+    }
+
+    /**
+     * Send email with proper headers for spam prevention
+     */
+    private function send_plugin_email($to, $subject, $message) {
+        // Temporarily override email sender for this email
+        add_filter('wp_mail_from_name', array($this, 'get_plugin_email_from_name'), 99);
+        add_filter('wp_mail_from', array($this, 'get_plugin_email_from'), 99);
+
+        // Set up headers for better deliverability and spam prevention
+        $headers = array(
+            'Content-Type: text/plain; charset=UTF-8',
+            'Reply-To: powiadomienia@jeleniogorzanietomy.pl',
+            'X-Mailer: PHP/' . phpversion(),
+            'X-Priority: 3',
+            'Importance: Normal'
+        );
+
+        // Send email
+        $result = wp_mail($to, $subject, $message, $headers);
+
+        // Remove temporary filters
+        remove_filter('wp_mail_from_name', array($this, 'get_plugin_email_from_name'), 99);
+        remove_filter('wp_mail_from', array($this, 'get_plugin_email_from'), 99);
+
+        return $result;
+    }
+
+    /**
+     * Get plugin email sender name
+     */
+    public function get_plugin_email_from_name($from_name) {
+        return 'Jeleniogorzanie to my';
+    }
+
+    /**
+     * Get plugin email sender address
+     */
+    public function get_plugin_email_from($from_email) {
+        return 'powiadomienia@jeleniogorzanietomy.pl';
     }
 
     /**
@@ -4236,9 +4301,8 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Rate limiting check (skip for admins and moderators)
+        $ip = $this->get_user_ip();
         if (!$bypass_rate_limit) {
-            $ip = $this->get_user_ip();
-
             // Prepare user data for rate limiting tracking
             $user_data = array(
                 'ip' => $ip,
@@ -4246,7 +4310,8 @@ class JG_Map_Ajax_Handlers {
                 'email' => $user_check ? $user_check->user_email : ''
             );
 
-            $rate_check = $this->check_rate_limit('login', $ip, 5, 900, $user_data);
+            // Check rate limit without incrementing
+            $rate_check = $this->check_rate_limit('login', $ip, 5, 900, $user_data, false);
             if (!$rate_check['allowed']) {
                 $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 15;
                 wp_send_json_error('Zbyt wiele prób logowania. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
@@ -4268,8 +4333,22 @@ class JG_Map_Ajax_Handlers {
         $user = wp_signon($credentials, false);
 
         if (is_wp_error($user)) {
+            // Increment rate limit only on failed login (skip for admins/moderators)
+            if (!$bypass_rate_limit) {
+                $user_data = array(
+                    'ip' => $ip,
+                    'username' => $username,
+                    'email' => $user_check ? $user_check->user_email : ''
+                );
+                $this->check_rate_limit('login', $ip, 5, 900, $user_data, true);
+            }
             wp_send_json_error('Nieprawidłowa nazwa użytkownika lub hasło');
             exit;
+        }
+
+        // Clear rate limit on successful login
+        if (!$bypass_rate_limit) {
+            $this->clear_rate_limit('login', $ip);
         }
 
         // Set authentication cookie for wp-admin access
@@ -4331,9 +4410,15 @@ class JG_Map_Ajax_Handlers {
             'username' => $username,
             'email' => $email
         );
-        $rate_check = $this->check_rate_limit('register', $ip, 3, 3600, $user_data);
+        $rate_check = $this->check_rate_limit('register', $ip, 3, 3600, $user_data, true);
         if (!$rate_check['allowed']) {
-            wp_send_json_error('Zbyt wiele prób rejestracji. Spróbuj ponownie za godzinę.');
+            $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 60;
+            $hours = ceil($minutes / 60);
+            if ($hours >= 1) {
+                wp_send_json_error('Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $hours . ' ' . ($hours === 1 ? 'godzinę' : 'godzin') . '.');
+            } else {
+                wp_send_json_error('Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
+            }
             exit;
         }
 
@@ -4407,10 +4492,9 @@ class JG_Map_Ajax_Handlers {
         $message .= "Link jest ważny przez 48 godzin.\n\n";
         $message .= "Jeśli to nie Ty zarejestrowałeś to konto, zignoruj tę wiadomość.\n\n";
         $message .= "Pozdrawiamy,\n";
-        $message .= get_bloginfo('name');
+        $message .= "Zespół Jeleniórzanie to my";
 
-        $headers = array('Content-Type: text/plain; charset=UTF-8');
-        wp_mail($email, $subject, $message, $headers);
+        $this->send_plugin_email($email, $subject, $message);
 
         // Don't auto login - user must verify email first
         wp_send_json_success('Rejestracja zakończona pomyślnie! Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.');
@@ -4419,9 +4503,10 @@ class JG_Map_Ajax_Handlers {
     public function forgot_password() {
         // Rate limiting check
         $ip = $this->get_user_ip();
-        $rate_check = $this->check_rate_limit('forgot_password', $ip, 3, 1800);
+        $rate_check = $this->check_rate_limit('forgot_password', $ip, 3, 1800, array(), true);
         if (!$rate_check['allowed']) {
-            wp_send_json_error('Zbyt wiele prób resetowania hasła. Spróbuj ponownie za 30 minut.');
+            $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 30;
+            wp_send_json_error('Zbyt wiele prób resetowania hasła. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
             exit;
         }
 
@@ -4463,10 +4548,9 @@ class JG_Map_Ajax_Handlers {
         $message .= "Link jest ważny przez 24 godziny.\n\n";
         $message .= "Jeśli to nie Ty zleciłeś resetowanie hasła, zignoruj tę wiadomość.\n\n";
         $message .= "Pozdrawiamy,\n";
-        $message .= get_bloginfo('name');
+        $message .= "Zespół Jeleniórzanie to my";
 
-        $headers = array('Content-Type: text/plain; charset=UTF-8');
-        wp_mail($email, $subject, $message, $headers);
+        $this->send_plugin_email($email, $subject, $message);
 
         wp_send_json_success('Link do resetowania hasła został wysłany na Twój adres email.');
     }

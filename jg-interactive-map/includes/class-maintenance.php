@@ -248,9 +248,24 @@ class JG_Map_Maintenance {
                     $message = "Witaj " . $user->display_name . ",\n\n";
                     $message .= "Twoje miejsce \"" . $point->title . "\" zostało automatycznie usunięte, ponieważ czekało na moderację dłużej niż 30 dni.\n\n";
                     $message .= "Możesz dodać je ponownie na mapie.\n\n";
-                    $message .= "Pozdrawiamy,\nZespół JeleniogorzaNieTomy";
+                    $message .= "Pozdrawiamy,\nZespół Jeleniórzanie to my";
 
-                    wp_mail($user->user_email, $subject, $message);
+                    // Temporarily override email sender for this email
+                    $custom_from_name = function($from_name) { return 'Jeleniogorzanie to my'; };
+                    $custom_from_email = function($from_email) { return 'powiadomienia@jeleniogorzanietomy.pl'; };
+                    add_filter('wp_mail_from_name', $custom_from_name, 99);
+                    add_filter('wp_mail_from', $custom_from_email, 99);
+
+                    $headers = array(
+                        'Content-Type: text/plain; charset=UTF-8',
+                        'Reply-To: powiadomienia@jeleniogorzanietomy.pl'
+                    );
+
+                    wp_mail($user->user_email, $subject, $message, $headers);
+
+                    // Remove temporary filters
+                    remove_filter('wp_mail_from_name', $custom_from_name, 99);
+                    remove_filter('wp_mail_from', $custom_from_email, 99);
                 }
 
                 // Delete the point (will also delete related data thanks to our delete_point() function)
