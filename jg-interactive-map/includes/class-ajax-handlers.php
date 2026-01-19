@@ -114,6 +114,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_get_daily_limits', array($this, 'get_daily_limits'));
         add_action('wp_ajax_jg_map_get_current_user', array($this, 'get_current_user'));
         add_action('wp_ajax_jg_map_update_profile', array($this, 'update_profile'));
+        add_action('wp_ajax_jg_map_delete_profile', array($this, 'delete_profile'));
 
         // Admin actions
         add_action('wp_ajax_jg_get_reports', array($this, 'get_reports'));
@@ -151,6 +152,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_set_featured_image', array($this, 'set_featured_image'), 1);
         add_action('wp_ajax_jg_get_notification_counts', array($this, 'get_notification_counts'), 1);
         add_action('wp_ajax_jg_keep_reported_place', array($this, 'keep_reported_place'), 1);
+        add_action('wp_ajax_jg_admin_delete_user', array($this, 'admin_delete_user'), 1);
     }
 
     /**
@@ -2372,7 +2374,7 @@ class JG_Map_Ajax_Handlers {
     /**
      * Check rate limiting to prevent abuse
      */
-    private function check_rate_limit($action, $identifier, $max_attempts = 5, $timeframe = 900, $user_data = array()) {
+    private function check_rate_limit($action, $identifier, $max_attempts = 5, $timeframe = 900, $user_data = array(), $increment = false) {
         $transient_key = 'jg_rate_limit_' . $action . '_' . md5($identifier);
         $transient_time_key = 'jg_rate_limit_time_' . $action . '_' . md5($identifier);
         $transient_userdata_key = 'jg_rate_limit_userdata_' . $action . '_' . md5($identifier);
@@ -2384,7 +2386,16 @@ class JG_Map_Ajax_Handlers {
             // Calculate actual time remaining
             $elapsed_time = time() - $first_attempt_time;
             $time_remaining = max(0, $timeframe - $elapsed_time);
-            $minutes_remaining = ceil($time_remaining / 60);
+
+            // If time has expired, clear the rate limit and allow the attempt
+            if ($time_remaining <= 0) {
+                delete_transient($transient_key);
+                delete_transient($transient_time_key);
+                delete_transient($transient_userdata_key);
+                return array('allowed' => true);
+            }
+
+            $minutes_remaining = max(1, ceil($time_remaining / 60));
 
             return array(
                 'allowed' => false,
@@ -2392,25 +2403,81 @@ class JG_Map_Ajax_Handlers {
             );
         }
 
-        // Increment or set attempts
-        if ($attempts === false) {
-            set_transient($transient_key, 1, $timeframe);
-            set_transient($transient_time_key, time(), $timeframe);
+        // Only increment if requested (for failed attempts)
+        if ($increment) {
+            if ($attempts === false) {
+                set_transient($transient_key, 1, $timeframe);
+                set_transient($transient_time_key, time(), $timeframe);
 
-            // Store user data for admin viewing (IP, username, email)
-            if (!empty($user_data)) {
-                set_transient($transient_userdata_key, $user_data, $timeframe);
-            }
-        } else {
-            set_transient($transient_key, $attempts + 1, $timeframe);
+                // Store user data for admin viewing (IP, username, email)
+                if (!empty($user_data)) {
+                    set_transient($transient_userdata_key, $user_data, $timeframe);
+                }
+            } else {
+                set_transient($transient_key, $attempts + 1, $timeframe);
 
-            // Update user data if provided
-            if (!empty($user_data)) {
-                set_transient($transient_userdata_key, $user_data, $timeframe);
+                // Update user data if provided
+                if (!empty($user_data)) {
+                    set_transient($transient_userdata_key, $user_data, $timeframe);
+                }
             }
         }
 
         return array('allowed' => true);
+    }
+
+    /**
+     * Clear rate limit for successful attempts
+     */
+    private function clear_rate_limit($action, $identifier) {
+        $transient_key = 'jg_rate_limit_' . $action . '_' . md5($identifier);
+        $transient_time_key = 'jg_rate_limit_time_' . $action . '_' . md5($identifier);
+        $transient_userdata_key = 'jg_rate_limit_userdata_' . $action . '_' . md5($identifier);
+
+        delete_transient($transient_key);
+        delete_transient($transient_time_key);
+        delete_transient($transient_userdata_key);
+    }
+
+    /**
+     * Send email with proper headers for spam prevention
+     */
+    private function send_plugin_email($to, $subject, $message) {
+        // Temporarily override email sender for this email
+        add_filter('wp_mail_from_name', array($this, 'get_plugin_email_from_name'), 99);
+        add_filter('wp_mail_from', array($this, 'get_plugin_email_from'), 99);
+
+        // Set up headers for better deliverability and spam prevention
+        $headers = array(
+            'Content-Type: text/plain; charset=UTF-8',
+            'Reply-To: powiadomienia@jeleniogorzanietomy.pl',
+            'X-Mailer: PHP/' . phpversion(),
+            'X-Priority: 3',
+            'Importance: Normal'
+        );
+
+        // Send email
+        $result = wp_mail($to, $subject, $message, $headers);
+
+        // Remove temporary filters
+        remove_filter('wp_mail_from_name', array($this, 'get_plugin_email_from_name'), 99);
+        remove_filter('wp_mail_from', array($this, 'get_plugin_email_from'), 99);
+
+        return $result;
+    }
+
+    /**
+     * Get plugin email sender name
+     */
+    public function get_plugin_email_from_name($from_name) {
+        return 'Jeleniogorzanie to my';
+    }
+
+    /**
+     * Get plugin email sender address
+     */
+    public function get_plugin_email_from($from_email) {
+        return 'powiadomienia@jeleniogorzanietomy.pl';
     }
 
     /**
@@ -3962,6 +4029,87 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Admin delete user - removes all user data including pins, photos, and account
+     */
+    public function admin_delete_user() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+
+        if (!$user_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID użytkownika'));
+            exit;
+        }
+
+        // Check if user exists
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        // Prevent deleting admins and moderators
+        $is_admin = user_can($user_id, 'manage_options');
+        $is_moderator = user_can($user_id, 'jg_map_moderate');
+
+        if ($is_admin || $is_moderator) {
+            wp_send_json_error(array('message' => 'Nie można usunąć administratorów ani moderatorów'));
+            exit;
+        }
+
+        // Get all user's points (pins)
+        $user_places = JG_Map_Database::get_all_places_with_status('', '', $user_id);
+
+        // Delete all user's points with their images
+        if (!empty($user_places)) {
+            foreach ($user_places as $place) {
+                JG_Map_Database::delete_point($place['id']);
+            }
+        }
+
+        // Delete all user meta data related to the plugin
+        $meta_keys = array(
+            'jg_map_ban_until',
+            'jg_map_restrict_edit',
+            'jg_map_restrict_delete',
+            'jg_map_restrict_add',
+            'jg_map_restrict_voting',
+            'jg_map_restrict_add_events',
+            'jg_map_restrict_add_trivia',
+            'jg_map_restrict_photo_upload',
+            'jg_map_daily_reset',
+            'jg_map_daily_places',
+            'jg_map_daily_reports',
+            'jg_map_edits_count',
+            'jg_map_edits_date',
+            'jg_map_photo_month',
+            'jg_map_photo_used_bytes',
+            'jg_map_photo_custom_limit',
+            'jg_map_activation_key',
+            'jg_map_activation_key_time',
+            'jg_map_account_status',
+            'jg_map_reset_key',
+            'jg_map_reset_key_time'
+        );
+
+        foreach ($meta_keys as $meta_key) {
+            delete_user_meta($user_id, $meta_key);
+        }
+
+        // Delete the user account
+        require_once(ABSPATH . 'wp-admin/includes/user.php');
+        $deleted = wp_delete_user($user_id);
+
+        if (!$deleted) {
+            wp_send_json_error(array('message' => 'Wystąpił błąd podczas usuwania użytkownika'));
+            exit;
+        }
+
+        wp_send_json_success(array('message' => 'Użytkownik został pomyślnie usunięty'));
+    }
+
+    /**
      * Delete image from point
      * Admins/moderators can delete from any point, users can only delete from their own points
      */
@@ -4148,10 +4296,15 @@ class JG_Map_Ajax_Handlers {
         }
 
         $current_user = wp_get_current_user();
+        $is_admin = user_can($current_user->ID, 'manage_options');
+        $is_moderator = user_can($current_user->ID, 'jg_map_moderate');
 
         wp_send_json_success(array(
             'display_name' => $current_user->display_name,
-            'email' => $current_user->user_email
+            'email' => $current_user->user_email,
+            'is_admin' => $is_admin,
+            'is_moderator' => $is_moderator,
+            'can_delete_profile' => !$is_admin && !$is_moderator
         ));
     }
 
@@ -4208,6 +4361,93 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Delete user profile - removes all user data including pins, photos, and account
+     */
+    public function delete_profile() {
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Musisz być zalogowany');
+            exit;
+        }
+
+        $user_id = get_current_user_id();
+        $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+        // Check if user is admin or moderator - they cannot delete their own profiles this way
+        $is_admin = user_can($user_id, 'manage_options');
+        $is_moderator = user_can($user_id, 'jg_map_moderate');
+
+        if ($is_admin || $is_moderator) {
+            wp_send_json_error('Administratorzy i moderatorzy nie mogą usunąć swoich profili przez tę opcję');
+            exit;
+        }
+
+        if (empty($password)) {
+            wp_send_json_error('Proszę podać hasło w celu potwierdzenia');
+            exit;
+        }
+
+        // Verify password
+        $user = wp_get_current_user();
+        if (!wp_check_password($password, $user->user_pass, $user_id)) {
+            wp_send_json_error('Nieprawidłowe hasło');
+            exit;
+        }
+
+        // Get all user's points (pins)
+        $user_places = JG_Map_Database::get_all_places_with_status('', '', $user_id);
+
+        // Delete all user's points with their images
+        if (!empty($user_places)) {
+            foreach ($user_places as $place) {
+                JG_Map_Database::delete_point($place['id']);
+            }
+        }
+
+        // Delete all user meta data related to the plugin
+        $meta_keys = array(
+            'jg_map_ban_until',
+            'jg_map_restrict_edit',
+            'jg_map_restrict_delete',
+            'jg_map_restrict_add',
+            'jg_map_restrict_voting',
+            'jg_map_restrict_add_events',
+            'jg_map_restrict_add_trivia',
+            'jg_map_restrict_photo_upload',
+            'jg_map_daily_reset',
+            'jg_map_daily_places',
+            'jg_map_daily_reports',
+            'jg_map_edits_count',
+            'jg_map_edits_date',
+            'jg_map_photo_month',
+            'jg_map_photo_used_bytes',
+            'jg_map_photo_custom_limit',
+            'jg_map_activation_key',
+            'jg_map_activation_key_time',
+            'jg_map_account_status',
+            'jg_map_reset_key',
+            'jg_map_reset_key_time'
+        );
+
+        foreach ($meta_keys as $meta_key) {
+            delete_user_meta($user_id, $meta_key);
+        }
+
+        // Log user out before deletion
+        wp_logout();
+
+        // Delete the user account
+        require_once(ABSPATH . 'wp-admin/includes/user.php');
+        $deleted = wp_delete_user($user_id);
+
+        if (!$deleted) {
+            wp_send_json_error('Wystąpił błąd podczas usuwania profilu');
+            exit;
+        }
+
+        wp_send_json_success('Profil został pomyślnie usunięty');
+    }
+
+    /**
      * Login user via AJAX
      */
     public function login_user() {
@@ -4236,9 +4476,8 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Rate limiting check (skip for admins and moderators)
+        $ip = $this->get_user_ip();
         if (!$bypass_rate_limit) {
-            $ip = $this->get_user_ip();
-
             // Prepare user data for rate limiting tracking
             $user_data = array(
                 'ip' => $ip,
@@ -4246,7 +4485,8 @@ class JG_Map_Ajax_Handlers {
                 'email' => $user_check ? $user_check->user_email : ''
             );
 
-            $rate_check = $this->check_rate_limit('login', $ip, 5, 900, $user_data);
+            // Check rate limit without incrementing
+            $rate_check = $this->check_rate_limit('login', $ip, 5, 900, $user_data, false);
             if (!$rate_check['allowed']) {
                 $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 15;
                 wp_send_json_error('Zbyt wiele prób logowania. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
@@ -4268,8 +4508,22 @@ class JG_Map_Ajax_Handlers {
         $user = wp_signon($credentials, false);
 
         if (is_wp_error($user)) {
+            // Increment rate limit only on failed login (skip for admins/moderators)
+            if (!$bypass_rate_limit) {
+                $user_data = array(
+                    'ip' => $ip,
+                    'username' => $username,
+                    'email' => $user_check ? $user_check->user_email : ''
+                );
+                $this->check_rate_limit('login', $ip, 5, 900, $user_data, true);
+            }
             wp_send_json_error('Nieprawidłowa nazwa użytkownika lub hasło');
             exit;
+        }
+
+        // Clear rate limit on successful login
+        if (!$bypass_rate_limit) {
+            $this->clear_rate_limit('login', $ip);
         }
 
         // Set authentication cookie for wp-admin access
@@ -4331,9 +4585,15 @@ class JG_Map_Ajax_Handlers {
             'username' => $username,
             'email' => $email
         );
-        $rate_check = $this->check_rate_limit('register', $ip, 3, 3600, $user_data);
+        $rate_check = $this->check_rate_limit('register', $ip, 3, 3600, $user_data, true);
         if (!$rate_check['allowed']) {
-            wp_send_json_error('Zbyt wiele prób rejestracji. Spróbuj ponownie za godzinę.');
+            $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 60;
+            $hours = ceil($minutes / 60);
+            if ($hours >= 1) {
+                wp_send_json_error('Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $hours . ' ' . ($hours === 1 ? 'godzinę' : 'godzin') . '.');
+            } else {
+                wp_send_json_error('Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
+            }
             exit;
         }
 
@@ -4407,10 +4667,9 @@ class JG_Map_Ajax_Handlers {
         $message .= "Link jest ważny przez 48 godzin.\n\n";
         $message .= "Jeśli to nie Ty zarejestrowałeś to konto, zignoruj tę wiadomość.\n\n";
         $message .= "Pozdrawiamy,\n";
-        $message .= get_bloginfo('name');
+        $message .= "Zespół Jeleniórzanie to my";
 
-        $headers = array('Content-Type: text/plain; charset=UTF-8');
-        wp_mail($email, $subject, $message, $headers);
+        $this->send_plugin_email($email, $subject, $message);
 
         // Don't auto login - user must verify email first
         wp_send_json_success('Rejestracja zakończona pomyślnie! Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.');
@@ -4419,9 +4678,10 @@ class JG_Map_Ajax_Handlers {
     public function forgot_password() {
         // Rate limiting check
         $ip = $this->get_user_ip();
-        $rate_check = $this->check_rate_limit('forgot_password', $ip, 3, 1800);
+        $rate_check = $this->check_rate_limit('forgot_password', $ip, 3, 1800, array(), true);
         if (!$rate_check['allowed']) {
-            wp_send_json_error('Zbyt wiele prób resetowania hasła. Spróbuj ponownie za 30 minut.');
+            $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 30;
+            wp_send_json_error('Zbyt wiele prób resetowania hasła. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
             exit;
         }
 
@@ -4463,10 +4723,9 @@ class JG_Map_Ajax_Handlers {
         $message .= "Link jest ważny przez 24 godziny.\n\n";
         $message .= "Jeśli to nie Ty zleciłeś resetowanie hasła, zignoruj tę wiadomość.\n\n";
         $message .= "Pozdrawiamy,\n";
-        $message .= get_bloginfo('name');
+        $message .= "Zespół Jeleniórzanie to my";
 
-        $headers = array('Content-Type: text/plain; charset=UTF-8');
-        wp_mail($email, $subject, $message, $headers);
+        $this->send_plugin_email($email, $subject, $message);
 
         wp_send_json_success('Link do resetowania hasła został wysłany na Twój adres email.');
     }

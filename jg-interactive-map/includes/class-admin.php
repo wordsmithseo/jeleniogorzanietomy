@@ -3017,6 +3017,17 @@ class JG_Map_Admin {
                         </div>
                     </div>
 
+                    <!-- Delete User Profile -->
+                    <div style="background:#fee2e2;padding:16px;border-radius:8px;margin-top:16px;border:2px solid #dc2626;">
+                        <h3 style="margin:0 0 12px 0;font-size:14px;color:#7f1d1d;">🗑️ Usuń profil użytkownika</h3>
+                        <p style="font-size:12px;color:#991b1b;margin:0 0 12px 0">
+                            <strong>UWAGA:</strong> Ta operacja jest nieodwracalna! Zostaną usunięte wszystkie pinezki użytkownika, wszystkie przesłane zdjęcia oraz profil ze wszystkimi danymi.
+                        </p>
+                        <button class="button jg-delete-user-profile" style="background:#dc2626;color:#fff;border-color:#dc2626;font-weight:700;">
+                            Usuń profil użytkownika
+                        </button>
+                    </div>
+
                     <div id="jg-user-message" style="margin-top:16px;padding:12px;border-radius:8px;display:none;"></div>
                 </div>
             </div>
@@ -3361,6 +3372,48 @@ class JG_Map_Admin {
                             } else {
                                 showMessage(response.data.message || 'Błąd', true);
                             }
+                        }
+                    });
+                });
+
+                // Delete user profile
+                $('.jg-delete-user-profile').on('click', function() {
+                    if (!currentUserId) {
+                        showMessage('Nieprawidłowe ID użytkownika', true);
+                        return;
+                    }
+
+                    var userName = modalTitle.text().replace('Zarządzanie: ', '');
+                    if (!confirm('CZY NA PEWNO chcesz usunąć profil użytkownika "' + userName + '"?\n\nZostaną usunięte:\n• Wszystkie pinezki użytkownika\n• Wszystkie przesłane zdjęcia\n• Profil ze wszystkimi danymi\n\nTa operacja jest NIEODWRACALNA!')) {
+                        return;
+                    }
+
+                    // Second confirmation with prompt
+                    var confirmation = prompt('To jest ostatnie ostrzeżenie!\n\nUsunięcie użytkownika "' + userName + '" spowoduje trwałe usunięcie wszystkich jego danych.\n\nWpisz "TAK" aby potwierdzić:');
+                    if (confirmation !== 'TAK') {
+                        showMessage('Anulowano usuwanie użytkownika', false);
+                        return;
+                    }
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_delete_user',
+                            user_id: currentUserId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                modal.hide();
+                                alert('Użytkownik został pomyślnie usunięty');
+                                location.reload();
+                            } else {
+                                showMessage(response.data.message || 'Błąd podczas usuwania użytkownika', true);
+                            }
+                        },
+                        error: function() {
+                            showMessage('Wystąpił błąd podczas komunikacji z serwerem', true);
                         }
                     });
                 });
