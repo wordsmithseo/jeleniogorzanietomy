@@ -4734,16 +4734,17 @@ class JG_Map_Ajax_Handlers {
      * Check if current user should be logged out due to maintenance mode or permission changes
      */
     public function check_user_session_status() {
-        // Must be logged in
-        if (!is_user_logged_in()) {
+        // Get user ID from session (even if user doesn't exist anymore)
+        $user_id = get_current_user_id();
+
+        // If no user ID in session, not logged in
+        if (!$user_id) {
             wp_send_json_success(array(
                 'should_logout' => false,
                 'reason' => 'not_logged_in'
             ));
             return;
         }
-
-        $user_id = get_current_user_id();
 
         // Check if user still exists (might have been deleted by admin)
         $user = get_userdata($user_id);
@@ -4757,19 +4758,33 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
+        // Get current permissions
         $is_admin = user_can($user_id, 'manage_options');
         $is_moderator = user_can($user_id, 'jg_map_moderate');
         $can_bypass_maintenance = user_can($user_id, 'jg_map_bypass_maintenance');
+
+        // Get sponsored places count for premium status
+        global $wpdb;
+        $points_table = $wpdb->prefix . 'jg_map_points';
+        $sponsored_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $points_table WHERE author_id = %d AND is_sponsored = 1 AND status = 'publish'",
+            $user_id
+        ));
 
         // Check if maintenance mode is active
         $maintenance_mode = get_option('elementor_maintenance_mode_mode');
         $is_maintenance = ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon');
 
-        // Users who can bypass don't need to be logged out
+        // Users who can bypass don't need to be logged out during maintenance
         if ($is_admin || $is_moderator || $can_bypass_maintenance) {
             wp_send_json_success(array(
                 'should_logout' => false,
-                'reason' => 'has_permissions'
+                'reason' => 'has_permissions',
+                'user_data' => array(
+                    'is_admin' => $is_admin,
+                    'is_moderator' => $is_moderator,
+                    'sponsored_count' => (int)$sponsored_count
+                )
             ));
             return;
         }
@@ -4784,10 +4799,15 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // All good
+        // All good - return user data for change detection
         wp_send_json_success(array(
             'should_logout' => false,
-            'reason' => 'ok'
+            'reason' => 'ok',
+            'user_data' => array(
+                'is_admin' => $is_admin,
+                'is_moderator' => $is_moderator,
+                'sponsored_count' => (int)$sponsored_count
+            )
         ));
     }
 
