@@ -741,15 +741,6 @@
     border-radius: 4px;
   }
 
-  /* Add bullet separator after each button except last */
-  .jg-top-bar-btn:not(.jg-top-bar-notif):not(:last-of-type)::after {
-    content: "•";
-    position: absolute;
-    right: -8px;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 14px;
-  }
-
   /* Edit Profile button icon - white Unicode symbol */
   #jg-edit-profile-btn::before {
     content: "◉";
@@ -1857,6 +1848,31 @@
   color: #1f2937;
 }
 
+/* Collapsible header styles */
+.jg-sidebar-collapsible-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+  transition: color 0.2s;
+}
+
+.jg-sidebar-collapsible-header:hover {
+  color: #667eea;
+}
+
+.jg-sidebar-toggle-icon {
+  font-size: 10px;
+  transition: transform 0.2s;
+  color: #6b7280;
+}
+
+.jg-sidebar-collapsible-content {
+  overflow: hidden;
+}
+
 .jg-sidebar-filter-group {
   display: flex;
   flex-direction: row;
@@ -1911,6 +1927,16 @@
 .jg-sidebar-sort {
   padding: 12px 15px;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.jg-sidebar-sort h3 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.jg-sidebar-sort .jg-sidebar-collapsible-content {
   display: flex;
   align-items: center;
   gap: 10px;

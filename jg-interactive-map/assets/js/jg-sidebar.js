@@ -50,6 +50,23 @@
             currentFilters.sortBy = $(this).val();
             loadPoints();
         });
+
+        // Collapsible sections
+        $('.jg-sidebar-collapsible-header').on('click', function() {
+            const $header = $(this);
+            const $content = $header.next('.jg-sidebar-collapsible-content');
+            const $icon = $header.find('.jg-sidebar-toggle-icon');
+
+            // Toggle content visibility
+            $content.slideToggle(200);
+
+            // Rotate icon
+            if ($content.is(':visible') || $content.css('display') !== 'none') {
+                $icon.text('▲');
+            } else {
+                $icon.text('▼');
+            }
+        });
     }
 
     /**
