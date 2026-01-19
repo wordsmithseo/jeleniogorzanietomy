@@ -2396,29 +2396,40 @@ class JG_Map_Ajax_Handlers {
                 delete_transient($transient_key);
                 delete_transient($transient_time_key);
                 delete_transient($transient_userdata_key);
-                return array('allowed' => true);
+                return array(
+                    'allowed' => true,
+                    'attempts_used' => 0,
+                    'attempts_remaining' => $max_attempts
+                );
             }
 
             $minutes_remaining = max(1, ceil($time_remaining / 60));
 
             return array(
                 'allowed' => false,
-                'minutes_remaining' => $minutes_remaining
+                'minutes_remaining' => $minutes_remaining,
+                'attempts_used' => $attempts,
+                'attempts_remaining' => 0
             );
         }
+
+        // Calculate current attempts
+        $current_attempts = ($attempts !== false) ? $attempts : 0;
 
         // Only increment if requested (for failed attempts)
         if ($increment) {
             if ($attempts === false) {
                 set_transient($transient_key, 1, $timeframe);
                 set_transient($transient_time_key, time(), $timeframe);
+                $current_attempts = 1;
 
                 // Store user data for admin viewing (IP, username, email)
                 if (!empty($user_data)) {
                     set_transient($transient_userdata_key, $user_data, $timeframe);
                 }
             } else {
-                set_transient($transient_key, $attempts + 1, $timeframe);
+                $current_attempts = $attempts + 1;
+                set_transient($transient_key, $current_attempts, $timeframe);
 
                 // Update user data if provided
                 if (!empty($user_data)) {
@@ -2427,7 +2438,11 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
-        return array('allowed' => true);
+        return array(
+            'allowed' => true,
+            'attempts_used' => $current_attempts,
+            'attempts_remaining' => max(0, $max_attempts - $current_attempts)
+        );
     }
 
     /**
@@ -4578,8 +4593,8 @@ class JG_Map_Ajax_Handlers {
                 'email' => $user_check ? $user_check->user_email : ''
             );
 
-            // Check rate limit without incrementing
-            $rate_check = $this->check_rate_limit('login', $ip, 5, 900, $user_data, false);
+            // Check rate limit without incrementing (3 max attempts for login)
+            $rate_check = $this->check_rate_limit('login', $ip, 3, 900, $user_data, false);
             if (!$rate_check['allowed']) {
                 $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 15;
                 $seconds = $minutes * 60;
@@ -4614,21 +4629,50 @@ class JG_Map_Ajax_Handlers {
                     'username' => $username,
                     'email' => $user_check ? $user_check->user_email : ''
                 );
-                $this->check_rate_limit('login', $ip, 5, 900, $user_data, true);
+                $this->check_rate_limit('login', $ip, 3, 900, $user_data, true);
 
                 // Check if we just hit the rate limit
-                $rate_check_after = $this->check_rate_limit('login', $ip, 5, 900, $user_data, false);
+                $rate_check_after = $this->check_rate_limit('login', $ip, 3, 900, $user_data, false);
                 if (!$rate_check_after['allowed']) {
                     // Now blocked - return rate limit error with countdown
                     $minutes = isset($rate_check_after['minutes_remaining']) ? $rate_check_after['minutes_remaining'] : 15;
                     $seconds = $minutes * 60;
                     wp_send_json_error(array(
-                        'message' => 'Zbyt wiele nieudanych prób logowania. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.',
+                        'message' => 'Wykorzystałeś wszystkie próby logowania. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.',
                         'type' => 'rate_limit',
                         'seconds_remaining' => $seconds,
                         'action' => 'login'
                     ));
                     exit;
+                } else {
+                    // Still have attempts remaining - show warning
+                    $attempts_remaining = isset($rate_check_after['attempts_remaining']) ? $rate_check_after['attempts_remaining'] : 0;
+                    $attempts_used = isset($rate_check_after['attempts_used']) ? $rate_check_after['attempts_used'] : 0;
+
+                    if ($attempts_remaining === 1) {
+                        // Last attempt warning
+                        wp_send_json_error(array(
+                            'message' => 'Nieprawidłowa nazwa użytkownika lub hasło.',
+                            'type' => 'attempts_warning',
+                            'attempts_remaining' => $attempts_remaining,
+                            'attempts_used' => $attempts_used,
+                            'is_last_attempt' => true,
+                            'warning' => 'UWAGA: To była Twoja przedostatnia próba! Jeśli kolejna próba się nie powiedzie, logowanie zostanie zablokowane na 15 minut.',
+                            'action' => 'login'
+                        ));
+                        exit;
+                    } else if ($attempts_remaining > 0) {
+                        // Regular warning
+                        wp_send_json_error(array(
+                            'message' => 'Nieprawidłowa nazwa użytkownika lub hasło.',
+                            'type' => 'attempts_warning',
+                            'attempts_remaining' => $attempts_remaining,
+                            'attempts_used' => $attempts_used,
+                            'is_last_attempt' => false,
+                            'action' => 'login'
+                        ));
+                        exit;
+                    }
                 }
             }
             wp_send_json_error('Nieprawidłowa nazwa użytkownika lub hasło');
@@ -4698,22 +4742,23 @@ class JG_Map_Ajax_Handlers {
         $password = isset($_POST['password']) ? $_POST['password'] : '';
 
         // Rate limiting check with user data for admin panel display (check only, don't increment yet)
+        // 5 max attempts for registration
         $ip = $this->get_user_ip();
         $user_data = array(
             'ip' => $ip,
             'username' => $username,
             'email' => $email
         );
-        $rate_check = $this->check_rate_limit('register', $ip, 3, 3600, $user_data, false);
+        $rate_check = $this->check_rate_limit('register', $ip, 5, 3600, $user_data, false);
         if (!$rate_check['allowed']) {
             $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 60;
             $seconds = $minutes * 60;
             $hours = ceil($minutes / 60);
             $message = '';
             if ($hours >= 1) {
-                $message = 'Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $hours . ' ' . ($hours === 1 ? 'godzinę' : 'godzin') . '.';
+                $message = 'Wykorzystałeś wszystkie próby rejestracji. Spróbuj ponownie za ' . $hours . ' ' . ($hours === 1 ? 'godzinę' : 'godzin') . '.';
             } else {
-                $message = 'Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.';
+                $message = 'Wykorzystałeś wszystkie próby rejestracji. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.';
             }
             wp_send_json_error(array(
                 'message' => $message,
@@ -4741,20 +4786,23 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Increment rate limit counter HERE - counts all non-bot registration attempts
-        // This protects against spam/flood even with invalid data
-        $this->check_rate_limit('register', $ip, 3, 3600, $user_data, true);
+        // This protects against spam/flood even with invalid data (5 max attempts)
+        $this->check_rate_limit('register', $ip, 5, 3600, $user_data, true);
 
         // Check if we just hit the rate limit after incrementing
-        $rate_check_after = $this->check_rate_limit('register', $ip, 3, 3600, $user_data, false);
+        $rate_check_after = $this->check_rate_limit('register', $ip, 5, 3600, $user_data, false);
+        $attempts_remaining = isset($rate_check_after['attempts_remaining']) ? $rate_check_after['attempts_remaining'] : 0;
+        $attempts_used = isset($rate_check_after['attempts_used']) ? $rate_check_after['attempts_used'] : 0;
+
         if (!$rate_check_after['allowed']) {
             $minutes = isset($rate_check_after['minutes_remaining']) ? $rate_check_after['minutes_remaining'] : 60;
             $seconds = $minutes * 60;
             $hours = ceil($minutes / 60);
             $message = '';
             if ($hours >= 1) {
-                $message = 'Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $hours . ' ' . ($hours === 1 ? 'godzinę' : 'godzin') . '.';
+                $message = 'Wykorzystałeś wszystkie próby rejestracji. Spróbuj ponownie za ' . $hours . ' ' . ($hours === 1 ? 'godzinę' : 'godzin') . '.';
             } else {
-                $message = 'Zbyt wiele prób rejestracji. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.';
+                $message = 'Wykorzystałeś wszystkie próby rejestracji. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.';
             }
             wp_send_json_error(array(
                 'message' => $message,
@@ -4765,33 +4813,62 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Helper function for error response with attempts remaining
+        $send_validation_error = function($message) use ($attempts_remaining, $attempts_used) {
+            if ($attempts_remaining === 1) {
+                // Last attempt warning
+                wp_send_json_error(array(
+                    'message' => $message,
+                    'type' => 'attempts_warning',
+                    'attempts_remaining' => $attempts_remaining,
+                    'attempts_used' => $attempts_used,
+                    'is_last_attempt' => true,
+                    'warning' => 'UWAGA: To była Twoja przedostatnia próba! Jeśli kolejna próba się nie powiedzie, rejestracja zostanie zablokowana na 1 godzinę.',
+                    'action' => 'register'
+                ));
+            } else if ($attempts_remaining > 0) {
+                // Regular warning
+                wp_send_json_error(array(
+                    'message' => $message,
+                    'type' => 'attempts_warning',
+                    'attempts_remaining' => $attempts_remaining,
+                    'attempts_used' => $attempts_used,
+                    'is_last_attempt' => false,
+                    'action' => 'register'
+                ));
+            } else {
+                // No attempts info
+                wp_send_json_error($message);
+            }
+        };
+
         if (empty($username) || empty($email) || empty($password)) {
-            wp_send_json_error('Proszę wypełnić wszystkie pola');
+            $send_validation_error('Proszę wypełnić wszystkie pola');
             exit;
         }
 
         // Validate email
         if (!is_email($email)) {
-            wp_send_json_error('Nieprawidłowy adres email');
+            $send_validation_error('Nieprawidłowy adres email');
             exit;
         }
 
         // Validate password strength
         $password_check = $this->validate_password_strength($password);
         if (!$password_check['valid']) {
-            wp_send_json_error($password_check['error']);
+            $send_validation_error($password_check['error']);
             exit;
         }
 
         // Check if username exists
         if (username_exists($username)) {
-            wp_send_json_error('Ta nazwa użytkownika jest już zajęta');
+            $send_validation_error('Ta nazwa użytkownika jest już zajęta');
             exit;
         }
 
         // Check if email exists
         if (email_exists($email)) {
-            wp_send_json_error('Ten adres email jest już zarejestrowany');
+            $send_validation_error('Ten adres email jest już zarejestrowany');
             exit;
         }
 
@@ -4799,7 +4876,7 @@ class JG_Map_Ajax_Handlers {
         $user_id = wp_create_user($username, $password, $email);
 
         if (is_wp_error($user_id)) {
-            wp_send_json_error($user_id->get_error_message());
+            $send_validation_error($user_id->get_error_message());
             exit;
         }
 
