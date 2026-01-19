@@ -841,7 +841,7 @@
   .jg-filters {
     display: flex !important;
     visibility: visible !important;
-    z-index: 400 !important;
+    z-index: 10000 !important;  /* Higher than modal backdrop (9999) */
     position: relative !important;
   }
 
@@ -850,6 +850,7 @@
     display: flex !important;
     opacity: 1 !important;
     visibility: visible !important;
+    z-index: 10000 !important;  /* Higher than modal backdrop */
   }
 }
 
