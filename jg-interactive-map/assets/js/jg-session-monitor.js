@@ -18,7 +18,7 @@
   /**
    * Show modal before logging out
    */
-  function showLogoutModal(message, callback) {
+  function showLogoutModal(message, requiresConfirmation, callback) {
     if (modalShown) return;
     modalShown = true;
 
@@ -30,19 +30,46 @@
     var modalContent = document.createElement('div');
     modalContent.style.cssText = 'background:#fff;padding:30px;border-radius:12px;max-width:500px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);text-align:center;';
 
-    modalContent.innerHTML =
-      '<div style="font-size:64px;margin-bottom:20px">⚠️</div>' +
-      '<h2 style="margin:0 0 15px;font-size:24px;color:#333">Powiadomienie systemowe</h2>' +
-      '<p style="font-size:16px;line-height:1.6;color:#666;margin:0 0 25px">' + escapeHtml(message) + '</p>' +
-      '<p style="font-size:14px;color:#999;margin:0">Za chwilę zostaniesz automatycznie wylogowany...</p>';
+    // Different content based on whether confirmation is required
+    if (requiresConfirmation) {
+      // Show modal with OK button for deleted account
+      modalContent.innerHTML =
+        '<div style="font-size:64px;margin-bottom:20px">ℹ️</div>' +
+        '<h2 style="margin:0 0 15px;font-size:24px;color:#333">Powiadomienie systemowe</h2>' +
+        '<p style="font-size:16px;line-height:1.6;color:#666;margin:0 0 25px">' + escapeHtml(message) + '</p>' +
+        '<button id="jg-logout-confirm-btn" style="padding:12px 32px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.2s">OK</button>';
 
-    modal.appendChild(modalContent);
-    document.body.appendChild(modal);
+      modal.appendChild(modalContent);
+      document.body.appendChild(modal);
 
-    // Auto logout after 3 seconds
-    setTimeout(function() {
-      if (callback) callback();
-    }, 3000);
+      // Handle OK button click
+      document.getElementById('jg-logout-confirm-btn').addEventListener('click', function() {
+        if (callback) callback();
+      });
+
+      // Handle Enter key
+      document.addEventListener('keypress', function onEnter(e) {
+        if (e.key === 'Enter') {
+          document.removeEventListener('keypress', onEnter);
+          if (callback) callback();
+        }
+      });
+    } else {
+      // Auto logout after 3 seconds for maintenance mode
+      modalContent.innerHTML =
+        '<div style="font-size:64px;margin-bottom:20px">⚠️</div>' +
+        '<h2 style="margin:0 0 15px;font-size:24px;color:#333">Powiadomienie systemowe</h2>' +
+        '<p style="font-size:16px;line-height:1.6;color:#666;margin:0 0 25px">' + escapeHtml(message) + '</p>' +
+        '<p style="font-size:14px;color:#999;margin:0">Za chwilę zostaniesz automatycznie wylogowany...</p>';
+
+      modal.appendChild(modalContent);
+      document.body.appendChild(modal);
+
+      // Auto logout after 3 seconds
+      setTimeout(function() {
+        if (callback) callback();
+      }, 3000);
+    }
   }
 
   /**
@@ -88,9 +115,10 @@
           // User should be logged out
           if (data.should_logout) {
             var message = data.message || 'Sesja wygasła. Zapraszamy później.';
+            var requiresConfirmation = data.requires_confirmation || false;
 
             // Show modal and then logout
-            showLogoutModal(message, function() {
+            showLogoutModal(message, requiresConfirmation, function() {
               logoutUser();
             });
           }

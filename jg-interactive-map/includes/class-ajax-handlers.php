@@ -4744,6 +4744,19 @@ class JG_Map_Ajax_Handlers {
         }
 
         $user_id = get_current_user_id();
+
+        // Check if user still exists (might have been deleted by admin)
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_send_json_success(array(
+                'should_logout' => true,
+                'reason' => 'user_deleted',
+                'message' => 'Twoje konto zostało usunięte przez administratora.',
+                'requires_confirmation' => true
+            ));
+            return;
+        }
+
         $is_admin = user_can($user_id, 'manage_options');
         $is_moderator = user_can($user_id, 'jg_map_moderate');
         $can_bypass_maintenance = user_can($user_id, 'jg_map_bypass_maintenance');
