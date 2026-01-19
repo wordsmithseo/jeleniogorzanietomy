@@ -811,13 +811,45 @@
     color: #ffffff;
   }
 
-  /* Add bullet separator between login and register */
-  #jg-login-btn::after {
-    content: "•";
-    position: absolute;
-    right: -8px;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 14px;
+  /* Remove bullet separator - no separator needed */
+  /* Separator removed for cleaner mobile navigation */
+
+  /* Fix Leaflet zoom control visibility on mobile */
+  .leaflet-control-zoom {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 1000 !important;
+  }
+
+  .leaflet-control-zoom a {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Ensure zoom buttons are always visible and not hidden by map interactions */
+  .leaflet-control-zoom-in,
+  .leaflet-control-zoom-out {
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  /* Keep filters visible - prevent them from disappearing on map click */
+  .jg-filters {
+    display: flex !important;
+    visibility: visible !important;
+    z-index: 400 !important;
+    position: relative !important;
+  }
+
+  /* Force filter bar to stay visible even when map is focused */
+  #jg-map-filters {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
 }
 
