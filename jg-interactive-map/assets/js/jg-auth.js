@@ -144,15 +144,28 @@
       });
     };
 
-    cancelBtn.onclick = function() {
+    var closeModal = function() {
       modal.style.display = 'none';
+      document.removeEventListener('keydown', handleKeyDown);
     };
+
+    cancelBtn.onclick = closeModal;
 
     modal.onclick = function(e) {
       if (e.target === modal) {
-        modal.style.display = 'none';
+        closeModal();
       }
     };
+
+    // Handle Enter key to close modal (prevent form resubmission)
+    var handleKeyDown = function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
   }
 
   function showRateLimitModal(message, secondsRemaining, actionType) {
@@ -210,17 +223,30 @@
     modal.style.display = 'flex';
 
     var closeBtn = document.getElementById('jg-rate-limit-close');
-    closeBtn.onclick = function() {
+
+    var closeModal = function() {
       modal.style.display = 'none';
       clearInterval(countdownInterval);
+      document.removeEventListener('keydown', handleKeyDown);
     };
+
+    closeBtn.onclick = closeModal;
 
     modal.onclick = function(e) {
       if (e.target === modal) {
-        modal.style.display = 'none';
-        clearInterval(countdownInterval);
+        closeModal();
       }
     };
+
+    // Handle Enter key to close modal (prevent form resubmission)
+    var handleKeyDown = function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
 
     // Update countdown every second
     var countdownInterval = setInterval(function() {
@@ -228,6 +254,7 @@
       updateCountdown();
       if (timeLeft <= 0) {
         clearInterval(countdownInterval);
+        closeModal();
       }
     }, 1000);
   }
@@ -271,15 +298,29 @@
     modal.style.display = 'flex';
 
     var okBtn = document.getElementById('jg-attempts-warning-ok');
-    okBtn.onclick = function() {
+
+    var closeModal = function() {
       modal.style.display = 'none';
+      document.removeEventListener('keydown', handleKeyDown);
     };
+
+    okBtn.onclick = closeModal;
 
     modal.onclick = function(e) {
       if (e.target === modal) {
-        modal.style.display = 'none';
+        closeModal();
       }
     };
+
+    // Handle Enter key to close modal (prevent form resubmission)
+    var handleKeyDown = function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModal();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
   }
 
   function open(modalEl, html) {
