@@ -852,6 +852,25 @@
     visibility: visible !important;
     z-index: 10000 !important;  /* Higher than modal backdrop */
   }
+
+  /* Fix FAB (Floating Action Button) visibility on mobile */
+  #jg-fab-container {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;  /* Fixed instead of absolute for mobile */
+    z-index: 10001 !important;  /* Above filters (10000) and modal backdrop (9999) */
+    bottom: 20px !important;  /* Adjusted for mobile */
+    right: 20px !important;
+    pointer-events: auto !important;
+  }
+
+  #jg-fab-button {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
 }
 
 /* Compact datetime on small mobile screens */
