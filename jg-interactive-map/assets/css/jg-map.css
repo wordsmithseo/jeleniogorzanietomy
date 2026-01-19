@@ -1842,38 +1842,40 @@
   background: #fafafa;
 }
 
-/* Collapsible header styles */
+/* Collapsible header styles - Use stronger selector to ensure it applies */
+.jg-map-sidebar .jg-sidebar-filters-sort .jg-sidebar-collapsible-header,
 .jg-sidebar-collapsible-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-  padding: 8px 12px;
-  background: #8d2324;
-  color: #ffffff;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  transition: background-color 0.2s;
-  position: relative;
-  z-index: 10;
-  pointer-events: auto;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  padding: 8px 12px !important;
+  background: #8d2324 !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  transition: background-color 0.2s !important;
+  position: relative !important;
+  z-index: 10 !important;
+  pointer-events: auto !important;
 }
 
+.jg-map-sidebar .jg-sidebar-filters-sort .jg-sidebar-collapsible-header:hover,
 .jg-sidebar-collapsible-header:hover {
-  background: #a02829;
+  background: #a02829 !important;
 }
 
 .jg-sidebar-collapsible-header span {
-  pointer-events: none;
+  pointer-events: none !important;
 }
 
 .jg-sidebar-toggle-icon {
-  font-size: 0.75rem;
-  transition: transform 0.2s;
-  color: #ffffff;
-  pointer-events: none;
+  font-size: 0.75rem !important;
+  transition: transform 0.2s !important;
+  color: #ffffff !important;
+  pointer-events: none !important;
 }
 
 .jg-sidebar-collapsible-content {
