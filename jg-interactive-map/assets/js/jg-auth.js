@@ -232,6 +232,56 @@
     }, 1000);
   }
 
+  function showAttemptsWarningModal(message, attemptsRemaining, attemptsUsed, isLastAttempt, warning, actionType) {
+    ensureModalsExist();
+    var modal = document.getElementById('jg-modal-alert');
+    if (!modal) {
+      alert(message + '\nPozostało prób: ' + attemptsRemaining);
+      return;
+    }
+
+    var contentEl = modal.querySelector('.jg-modal-message-content');
+    var buttonsEl = modal.querySelector('.jg-modal-message-buttons');
+
+    var icon = isLastAttempt ? '⚠️' : 'ℹ️';
+    var title = isLastAttempt ? 'Ostatnia próba!' : 'Uwaga';
+    var bgColor = isLastAttempt ? '#fef3c7' : '#e0f2fe';
+    var borderColor = isLastAttempt ? '#f59e0b' : '#0ea5e9';
+    var textColor = isLastAttempt ? '#92400e' : '#075985';
+
+    var content = '<div style="font-size:64px;margin-bottom:20px">' + icon + '</div>' +
+      '<h2 style="margin:0 0 16px 0;font-size:24px;font-weight:600;color:#1f2937">' + title + '</h2>' +
+      '<p style="margin:0 0 20px 0;color:#4b5563;font-size:16px">' + message + '</p>' +
+      '<div style="background:' + bgColor + ';border:2px solid ' + borderColor + ';border-radius:8px;padding:16px;margin-bottom:16px">' +
+      '<div style="font-size:18px;font-weight:700;color:' + textColor + ';margin-bottom:8px">Pozostało prób: ' + attemptsRemaining + '</div>' +
+      '<div style="font-size:14px;color:' + textColor + '">Wykorzystano: ' + attemptsUsed + '</div>' +
+      '</div>';
+
+    if (isLastAttempt && warning) {
+      content += '<div style="background:#fee2e2;border:2px solid #dc2626;border-radius:8px;padding:12px;margin-bottom:16px">' +
+        '<p style="margin:0;color:#991b1b;font-size:14px;font-weight:600">' + warning + '</p>' +
+        '</div>';
+    }
+
+    contentEl.innerHTML = content;
+
+    buttonsEl.innerHTML =
+      '<button class="jg-btn" id="jg-attempts-warning-ok" style="padding:8px 16px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">OK, rozumiem</button>';
+
+    modal.style.display = 'flex';
+
+    var okBtn = document.getElementById('jg-attempts-warning-ok');
+    okBtn.onclick = function() {
+      modal.style.display = 'none';
+    };
+
+    modal.onclick = function(e) {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
+    };
+  }
+
   function open(modalEl, html) {
     if (!modalEl) return;
     var innerModal = modalEl.querySelector('.jg-modal');
@@ -320,6 +370,16 @@
             } else if (response.data && typeof response.data === 'object' && response.data.type === 'rate_limit') {
               // Show rate limit modal with countdown
               showRateLimitModal(response.data.message, response.data.seconds_remaining, response.data.action);
+            } else if (response.data && typeof response.data === 'object' && response.data.type === 'attempts_warning') {
+              // Show attempts warning modal
+              showAttemptsWarningModal(
+                response.data.message,
+                response.data.attempts_remaining,
+                response.data.attempts_used,
+                response.data.is_last_attempt,
+                response.data.warning,
+                response.data.action
+              );
             } else {
               showAlert(response.data && response.data.message ? response.data.message : (response.data || 'Błąd logowania'));
             }
@@ -535,6 +595,16 @@
             // Check if it's a rate limit error
             if (response.data && typeof response.data === 'object' && response.data.type === 'rate_limit') {
               showRateLimitModal(response.data.message, response.data.seconds_remaining, response.data.action);
+            } else if (response.data && typeof response.data === 'object' && response.data.type === 'attempts_warning') {
+              // Show attempts warning modal
+              showAttemptsWarningModal(
+                response.data.message,
+                response.data.attempts_remaining,
+                response.data.attempts_used,
+                response.data.is_last_attempt,
+                response.data.warning,
+                response.data.action
+              );
             } else {
               showAlert(response.data && response.data.message ? response.data.message : (response.data || 'Błąd rejestracji'));
             }
