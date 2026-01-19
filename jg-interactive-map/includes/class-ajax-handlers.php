@@ -4657,6 +4657,19 @@ class JG_Map_Ajax_Handlers {
         update_user_meta($user_id, 'jg_map_activation_key_time', time());
         update_user_meta($user_id, 'jg_map_account_status', 'pending');
 
+        // Store session ID for security - link should be activated from same session
+        $session_id = session_id();
+        if (empty($session_id)) {
+            // Start session if not started
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+                $session_id = session_id();
+            }
+        }
+        if (!empty($session_id)) {
+            update_user_meta($user_id, 'jg_map_activation_session', $session_id);
+        }
+
         // Send activation email
         $activation_link = home_url('/?jg_activate=' . $activation_key);
         $subject = 'Aktywacja konta - ' . get_bloginfo('name');
