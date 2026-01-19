@@ -854,14 +854,19 @@
   }
 
   /* Fix FAB (Floating Action Button) visibility on mobile */
+  /* Ensure map container has relative positioning for FAB */
+  .jg-map {
+    position: relative !important;
+  }
+
   #jg-fab-container {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
-    position: fixed !important;  /* Fixed instead of absolute for mobile */
-    z-index: 10001 !important;  /* Above filters (10000) and modal backdrop (9999) */
-    bottom: 20px !important;  /* Adjusted for mobile */
-    right: 20px !important;
+    position: absolute !important;  /* Absolute relative to .jg-map container */
+    z-index: 1001 !important;  /* Above Leaflet controls (1000) */
+    bottom: 80px !important;  /* Higher up to avoid being cut off */
+    right: 15px !important;
     pointer-events: auto !important;
   }
 
@@ -870,6 +875,20 @@
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: auto !important;
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  /* Fix modal backdrop to not cover filters on mobile */
+  .jg-modal-bg {
+    pointer-events: none !important;  /* Don't block clicks on backdrop */
+    background: none !important;  /* Remove dark background that covers everything */
+  }
+
+  /* Add dark background only to modal content area */
+  .jg-modal {
+    pointer-events: auto !important;  /* Modal content is clickable */
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45) !important;  /* Dark backdrop around modal */
   }
 }
 
