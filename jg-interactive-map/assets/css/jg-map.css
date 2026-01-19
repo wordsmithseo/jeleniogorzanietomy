@@ -841,7 +841,7 @@
   .jg-filters {
     display: flex !important;
     visibility: visible !important;
-    z-index: 10000 !important;  /* Higher than modal backdrop (9999) */
+    z-index: 400 !important;  /* Lower than top bar (9999) to not overlap during scroll */
     position: relative !important;
   }
 
@@ -850,7 +850,7 @@
     display: flex !important;
     opacity: 1 !important;
     visibility: visible !important;
-    z-index: 10000 !important;  /* Higher than modal backdrop */
+    z-index: 400 !important;  /* Lower than top bar to not overlap during scroll */
   }
 
   /* Fix FAB (Floating Action Button) visibility on mobile */
@@ -865,7 +865,7 @@
     opacity: 1 !important;
     position: absolute !important;  /* Absolute relative to .jg-map container */
     z-index: 1001 !important;  /* Above Leaflet controls (1000) */
-    bottom: 80px !important;  /* Higher up to avoid being cut off */
+    bottom: 15px !important;  /* Bottom-right corner of map */
     right: 15px !important;
     pointer-events: auto !important;
   }
