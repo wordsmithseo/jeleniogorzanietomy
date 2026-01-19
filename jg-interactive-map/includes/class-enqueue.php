@@ -602,19 +602,36 @@ class JG_Map_Enqueue {
         if (empty($key_time) || (time() - $key_time) > 172800) {
             delete_user_meta($user->ID, 'jg_map_activation_key');
             delete_user_meta($user->ID, 'jg_map_activation_key_time');
+            delete_user_meta($user->ID, 'jg_map_activation_session');
             wp_die('Link aktywacyjny wygasł. Linki są ważne przez 48 godzin. Skontaktuj się z administratorem aby ponownie aktywować konto.', 'Link wygasł', array('response' => 400));
+        }
+
+        // Check if activation is from the same session as registration (security)
+        $expected_session = get_user_meta($user->ID, 'jg_map_activation_session', true);
+        if (!empty($expected_session)) {
+            // Get current session ID
+            $current_session = session_id();
+            if (empty($current_session)) {
+                if (session_status() === PHP_SESSION_NONE) {
+                    session_start();
+                    $current_session = session_id();
+                }
+            }
+
+            // If session doesn't match, deny activation for security
+            if ($current_session !== $expected_session) {
+                wp_die('Link aktywacyjny musi być otwarty w tej samej przeglądarce i sesji, w której dokonano rejestracji. Proszę skopiować link i otworzyć go w tej samej przeglądarce, w której rejestrowałeś się.', 'Błąd bezpieczeństwa', array('response' => 403));
+            }
         }
 
         // Activate account
         update_user_meta($user->ID, 'jg_map_account_status', 'active');
         delete_user_meta($user->ID, 'jg_map_activation_key');
         delete_user_meta($user->ID, 'jg_map_activation_key_time');
+        delete_user_meta($user->ID, 'jg_map_activation_session');
 
-        // Auto login user
-        wp_set_current_user($user->ID);
-        wp_set_auth_cookie($user->ID, true);
-
-        // Redirect to home with success message
+        // DO NOT auto login - require manual login for security
+        // Redirect to home with success message (will show modal)
         wp_redirect(add_query_arg('activation', 'success', home_url()));
         exit;
     }

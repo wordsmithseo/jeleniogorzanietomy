@@ -631,11 +631,42 @@
     }
   });
 
+  // Check for activation/registration success messages in URL
+  function checkUrlMessages() {
+    var urlParams = new URLSearchParams(window.location.search);
+
+    // Check for activation success
+    if (urlParams.get('activation') === 'success') {
+      showAlert('Twoje konto zostało pomyślnie aktywowane! Możesz się teraz zalogować.').then(function() {
+        // Remove activation parameter from URL
+        var newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        // Open login modal
+        openLoginModal();
+      });
+    }
+
+    // Check for already activated
+    if (urlParams.get('activation') === 'already') {
+      showAlert('To konto zostało już aktywowane. Możesz się zalogować.').then(function() {
+        // Remove activation parameter from URL
+        var newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        // Open login modal
+        openLoginModal();
+      });
+    }
+  }
+
   // Run on DOM ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAuthButtons);
+    document.addEventListener('DOMContentLoaded', function() {
+      initAuthButtons();
+      checkUrlMessages();
+    });
   } else {
     initAuthButtons();
+    checkUrlMessages();
   }
 
 })(jQuery);
