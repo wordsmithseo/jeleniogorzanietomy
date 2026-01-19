@@ -159,36 +159,39 @@ class JG_Map_Shortcode {
                 </div>
             </div>
 
-            <!-- Filters -->
-            <div class="jg-sidebar-filters">
-                <h3 class="jg-sidebar-collapsible-header">
-                    <span>Filtry</span>
+            <!-- Filters and Sorting - Single Collapsible Section -->
+            <div class="jg-sidebar-filters-sort">
+                <div class="jg-sidebar-collapsible-header">
+                    <span>Filtry i sortowanie</span>
                     <span class="jg-sidebar-toggle-icon">▼</span>
-                </h3>
-                <div class="jg-sidebar-filter-group jg-sidebar-collapsible-content" style="display:none;">
-                    <label class="jg-sidebar-filter-label" data-sidebar-filter="miejsce"><input type="checkbox" data-sidebar-type="miejsce" checked><span class="jg-sidebar-filter-icon">📍</span><span class="jg-sidebar-filter-text"><?php _e('Miejsca', 'jg-map'); ?></span></label>
-                    <label class="jg-sidebar-filter-label" data-sidebar-filter="ciekawostka"><input type="checkbox" data-sidebar-type="ciekawostka" checked><span class="jg-sidebar-filter-icon">💡</span><span class="jg-sidebar-filter-text"><?php _e('Ciekawostki', 'jg-map'); ?></span></label>
-                    <label class="jg-sidebar-filter-label" data-sidebar-filter="zgloszenie"><input type="checkbox" data-sidebar-type="zgloszenie" checked><span class="jg-sidebar-filter-icon">⚠️</span><span class="jg-sidebar-filter-text"><?php _e('Zgłoszenia', 'jg-map'); ?></span></label>
-                    <label class="jg-sidebar-filter-label" data-sidebar-filter="my-places"><input type="checkbox" data-sidebar-my-places><span class="jg-sidebar-filter-icon">👤</span><span class="jg-sidebar-filter-text"><?php _e('Moje miejsca', 'jg-map'); ?></span></label>
                 </div>
-            </div>
-
-            <!-- Sorting -->
-            <div class="jg-sidebar-sort">
-                <h3 class="jg-sidebar-collapsible-header">
-                    <span>Sortowanie</span>
-                    <span class="jg-sidebar-toggle-icon">▼</span>
-                </h3>
                 <div class="jg-sidebar-collapsible-content" style="display:none;">
-                    <label for="jg-sidebar-sort-select">Sortuj:</label>
-                    <select id="jg-sidebar-sort-select">
-                        <option value="date_desc">Najnowsze</option>
-                        <option value="date_asc">Najstarsze</option>
-                        <option value="alpha_asc">Alfabetycznie A-Z</option>
-                        <option value="alpha_desc">Alfabetycznie Z-A</option>
-                        <option value="votes_desc">Najlepiej oceniane</option>
-                        <option value="votes_asc">Najgorzej oceniane</option>
-                    </select>
+                    <!-- Filters -->
+                    <div class="jg-sidebar-filter-section">
+                        <h4>Filtry</h4>
+                        <div class="jg-sidebar-filter-group">
+                            <label class="jg-sidebar-filter-label" data-sidebar-filter="miejsce"><input type="checkbox" data-sidebar-type="miejsce" checked><span class="jg-sidebar-filter-icon">📍</span><span class="jg-sidebar-filter-text"><?php _e('Miejsca', 'jg-map'); ?></span></label>
+                            <label class="jg-sidebar-filter-label" data-sidebar-filter="ciekawostka"><input type="checkbox" data-sidebar-type="ciekawostka" checked><span class="jg-sidebar-filter-icon">💡</span><span class="jg-sidebar-filter-text"><?php _e('Ciekawostki', 'jg-map'); ?></span></label>
+                            <label class="jg-sidebar-filter-label" data-sidebar-filter="zgloszenie"><input type="checkbox" data-sidebar-type="zgloszenie" checked><span class="jg-sidebar-filter-icon">⚠️</span><span class="jg-sidebar-filter-text"><?php _e('Zgłoszenia', 'jg-map'); ?></span></label>
+                            <label class="jg-sidebar-filter-label" data-sidebar-filter="my-places"><input type="checkbox" data-sidebar-my-places><span class="jg-sidebar-filter-icon">👤</span><span class="jg-sidebar-filter-text"><?php _e('Moje miejsca', 'jg-map'); ?></span></label>
+                        </div>
+                    </div>
+
+                    <!-- Sorting -->
+                    <div class="jg-sidebar-sort-section">
+                        <h4>Sortowanie</h4>
+                        <div class="jg-sidebar-sort-controls">
+                            <label for="jg-sidebar-sort-select">Sortuj:</label>
+                            <select id="jg-sidebar-sort-select">
+                                <option value="date_desc">Najnowsze</option>
+                                <option value="date_asc">Najstarsze</option>
+                                <option value="alpha_asc">Alfabetycznie A-Z</option>
+                                <option value="alpha_desc">Alfabetycznie Z-A</option>
+                                <option value="votes_desc">Najlepiej oceniane</option>
+                                <option value="votes_asc">Najgorzej oceniane</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
