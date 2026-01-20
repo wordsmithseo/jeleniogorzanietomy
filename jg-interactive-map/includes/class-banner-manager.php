@@ -18,8 +18,10 @@ class JG_Map_Banner_Manager {
         global $wpdb;
 
         $table_name = self::get_table_name();
+        $impressions_table = self::get_impressions_table_name();
         $charset_collate = $wpdb->get_charset_collate();
 
+        // Main banners table
         $sql = "CREATE TABLE IF NOT EXISTS $table_name (
             id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             title varchar(255) NOT NULL,
@@ -40,8 +42,29 @@ class JG_Map_Banner_Manager {
             KEY impressions_used (impressions_used)
         ) $charset_collate;";
 
+        // Unique impressions tracking table
+        $sql_impressions = "CREATE TABLE IF NOT EXISTS $impressions_table (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            banner_id bigint(20) UNSIGNED NOT NULL,
+            user_fingerprint varchar(64) NOT NULL,
+            viewed_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY unique_view (banner_id, user_fingerprint),
+            KEY banner_id (banner_id),
+            KEY viewed_at (viewed_at)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+        dbDelta($sql_impressions);
+    }
+
+    /**
+     * Get impressions table name
+     */
+    public static function get_impressions_table_name() {
+        global $wpdb;
+        return $wpdb->prefix . 'jg_map_banner_impressions';
     }
 
     /**
@@ -50,6 +73,17 @@ class JG_Map_Banner_Manager {
     public static function get_table_name() {
         global $wpdb;
         return $wpdb->prefix . 'jg_map_banners';
+    }
+
+    /**
+     * Generate user fingerprint for unique tracking
+     */
+    public static function get_user_fingerprint() {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+
+        // Create hash from IP + User Agent
+        return hash('sha256', $ip . '|' . $user_agent);
     }
 
     /**
@@ -165,18 +199,55 @@ class JG_Map_Banner_Manager {
     }
 
     /**
-     * Track impression (increment impressions_used)
+     * Track impression (increment impressions_used only if unique in 24h)
      */
     public static function track_impression($banner_id) {
         global $wpdb;
         $table = self::get_table_name();
+        $impressions_table = self::get_impressions_table_name();
 
-        return $wpdb->query(
+        $fingerprint = self::get_user_fingerprint();
+        $now = current_time('mysql');
+        $yesterday = date('Y-m-d H:i:s', strtotime($now . ' -24 hours'));
+
+        // Check if user already viewed this banner in last 24h
+        $existing = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT id FROM $impressions_table
+                 WHERE banner_id = %d
+                 AND user_fingerprint = %s
+                 AND viewed_at > %s",
+                $banner_id,
+                $fingerprint,
+                $yesterday
+            )
+        );
+
+        // If already viewed in last 24h, don't count it
+        if ($existing) {
+            return false; // Not a unique impression
+        }
+
+        // Insert new unique impression record
+        $wpdb->insert(
+            $impressions_table,
+            array(
+                'banner_id' => $banner_id,
+                'user_fingerprint' => $fingerprint,
+                'viewed_at' => $now
+            ),
+            array('%d', '%s', '%s')
+        );
+
+        // Increment counter in main table
+        $result = $wpdb->query(
             $wpdb->prepare(
                 "UPDATE $table SET impressions_used = impressions_used + 1 WHERE id = %d",
                 $banner_id
             )
         );
+
+        return $result;
     }
 
     /**
@@ -213,19 +284,23 @@ class JG_Map_Banner_Manager {
             return null;
         }
 
-        $impressions_remaining = $banner['impressions_bought'] > 0
-            ? max(0, $banner['impressions_bought'] - $banner['impressions_used'])
+        $impressions_bought = intval($banner['impressions_bought']);
+        $impressions_used = intval($banner['impressions_used']);
+        $clicks = intval($banner['clicks']);
+
+        $impressions_remaining = $impressions_bought > 0
+            ? max(0, $impressions_bought - $impressions_used)
             : 'unlimited';
 
-        $ctr = $banner['impressions_used'] > 0
-            ? round(($banner['clicks'] / $banner['impressions_used']) * 100, 2)
+        $ctr = $impressions_used > 0
+            ? round(($clicks / $impressions_used) * 100, 2)
             : 0;
 
         return array(
-            'impressions_bought' => $banner['impressions_bought'],
-            'impressions_used' => $banner['impressions_used'],
+            'impressions_bought' => $impressions_bought,
+            'impressions_used' => $impressions_used,
             'impressions_remaining' => $impressions_remaining,
-            'clicks' => $banner['clicks'],
+            'clicks' => $clicks,
             'ctr' => $ctr . '%'
         );
     }
@@ -263,5 +338,24 @@ class JG_Map_Banner_Manager {
         $wpdb->query(
             "UPDATE $table SET active = 0 WHERE active = 1 AND impressions_bought > 0 AND impressions_used >= impressions_bought"
         );
+    }
+
+    /**
+     * Clean old impression records (older than 24h)
+     * Called by maintenance cron to keep table small
+     */
+    public static function clean_old_impressions() {
+        global $wpdb;
+        $impressions_table = self::get_impressions_table_name();
+        $yesterday = date('Y-m-d H:i:s', strtotime(current_time('mysql') . ' -24 hours'));
+
+        $deleted = $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM $impressions_table WHERE viewed_at < %s",
+                $yesterday
+            )
+        );
+
+        return $deleted;
     }
 }

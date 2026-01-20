@@ -221,10 +221,11 @@ class JG_Map_Maintenance {
     }
 
     /**
-     * Deactivate expired banners
+     * Deactivate expired banners and clean old impression records
      */
     private static function deactivate_expired_banners() {
         JG_Map_Banner_Manager::deactivate_expired_banners();
+        JG_Map_Banner_Manager::clean_old_impressions();
         return true;
     }
 
