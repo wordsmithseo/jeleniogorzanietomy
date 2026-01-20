@@ -209,7 +209,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.5.3'; // Added resolved_summary column
+        $current_schema_version = '3.5.5'; // Added banners table
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -244,6 +244,10 @@ class JG_Map_Database {
         ) $charset_collate;";
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_point_visits);
+
+        // Ensure banners table exists (for existing installations)
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-manager.php';
+        JG_Map_Banner_Manager::create_table();
 
         // Helper function to check if column exists
         $column_exists = function($column_name) use ($wpdb, $safe_table) {
