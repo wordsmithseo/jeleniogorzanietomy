@@ -11,9 +11,6 @@ if (!defined('ABSPATH')) {
 
 class JG_Map_Banner_Admin {
 
-    // Store hook name for debugging
-    private static $current_hook_name = '';
-
     /**
      * Initialize admin panel
      */
@@ -28,9 +25,6 @@ class JG_Map_Banner_Admin {
 
         // Enqueue admin scripts
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_admin_assets'));
-
-        // Show debug notice
-        add_action('admin_notices', array(__CLASS__, 'show_debug_notice'));
     }
 
     /**
@@ -51,13 +45,7 @@ class JG_Map_Banner_Admin {
      * Enqueue admin assets
      */
     public static function enqueue_admin_assets($hook) {
-        // Store hook name for debug display
-        self::$current_hook_name = $hook;
-
-        // Debug: log hook name
-        error_log('[JG Banner Admin] Hook: ' . $hook);
-
-        if ($hook !== 'jg-map-places_page_jg-map-banners') {
+        if ($hook !== 'jg-map_page_jg-map-banners') {
             return;
         }
 
@@ -75,29 +63,6 @@ class JG_Map_Banner_Admin {
 
         // Add custom admin styles
         wp_add_inline_style('wp-admin', self::get_admin_styles());
-    }
-
-    /**
-     * Show debug notice with current hook name
-     */
-    public static function show_debug_notice() {
-        // Only show on our banner admin page
-        $screen = get_current_screen();
-        if (!$screen || strpos($screen->id, 'jg-map-banners') === false) {
-            return;
-        }
-
-        if (!empty(self::$current_hook_name)) {
-            echo '<div class="notice notice-info" style="background:#fff3cd;border-left:4px solid #ffc107;">';
-            echo '<p><strong>🔧 DEBUG:</strong> Aktualna nazwa hooka: <code>' . esc_html(self::$current_hook_name) . '</code></p>';
-            echo '<p>Oczekiwana nazwa: <code>jg-map-places_page_jg-map-banners</code></p>';
-            if (self::$current_hook_name === 'jg-map-places_page_jg-map-banners') {
-                echo '<p style="color:#0a7e07;">✅ Hook name matches! Skrypty powinny się załadować.</p>';
-            } else {
-                echo '<p style="color:#d63638;">❌ Hook name does NOT match! To dlatego skrypty się nie ładują.</p>';
-            }
-            echo '</div>';
-        }
     }
 
     /**
