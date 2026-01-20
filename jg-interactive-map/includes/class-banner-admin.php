@@ -22,6 +22,7 @@ class JG_Map_Banner_Admin {
         add_action('admin_post_jg_save_banner', array(__CLASS__, 'handle_save_banner'));
         add_action('admin_post_jg_delete_banner', array(__CLASS__, 'handle_delete_banner'));
         add_action('admin_post_jg_toggle_banner', array(__CLASS__, 'handle_toggle_banner'));
+        add_action('admin_post_jg_export_banner_stats', array(__CLASS__, 'handle_export_banner_stats'));
 
         // Enqueue admin scripts
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_admin_assets'));
@@ -446,6 +447,15 @@ CSS;
             </div>
 
             <div class="jg-banner-actions">
+                <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline;" target="_blank">
+                    <?php wp_nonce_field('jg_export_banner_stats', 'jg_banner_nonce'); ?>
+                    <input type="hidden" name="action" value="jg_export_banner_stats">
+                    <input type="hidden" name="banner_id" value="<?php echo $banner['id']; ?>">
+                    <button type="submit" class="button" style="background:#0073aa;color:#fff;border-color:#0073aa;">
+                        📊 Raport PDF
+                    </button>
+                </form>
+
                 <a href="#" class="button jg-edit-banner" data-id="<?php echo $banner['id']; ?>">Edytuj</a>
 
                 <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline;">
@@ -599,5 +609,286 @@ CSS;
             wp_redirect(admin_url('admin.php?page=jg-map-banners&message=error'));
         }
         exit;
+    }
+
+    /**
+     * Handle export banner stats to PDF
+     */
+    public static function handle_export_banner_stats() {
+        // Check nonce
+        if (!isset($_POST['jg_banner_nonce']) || !wp_verify_nonce($_POST['jg_banner_nonce'], 'jg_export_banner_stats')) {
+            wp_die('Security check failed');
+        }
+
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_die('Brak uprawnień');
+        }
+
+        $banner_id = isset($_POST['banner_id']) ? intval($_POST['banner_id']) : 0;
+
+        if ($banner_id <= 0) {
+            wp_die('Nieprawidłowy ID banneru');
+        }
+
+        $banner = JG_Map_Banner_Manager::get_banner($banner_id);
+        if (!$banner) {
+            wp_die('Baner nie został znaleziony');
+        }
+
+        $stats = JG_Map_Banner_Manager::get_banner_stats($banner_id);
+
+        // Generate HTML report
+        $html = self::generate_pdf_report($banner, $stats);
+
+        // Output HTML (browser can save as PDF)
+        echo $html;
+        exit;
+    }
+
+    /**
+     * Generate PDF report HTML
+     */
+    private static function generate_pdf_report($banner, $stats) {
+        $site_name = get_bloginfo('name');
+        $report_date = date('d.m.Y H:i');
+        $campaign_status = intval($banner['active']) === 1 ? 'Aktywna' : 'Nieaktywna';
+        $campaign_status_color = intval($banner['active']) === 1 ? '#0a7e07' : '#d63638';
+
+        $start_date = $banner['start_date'] ? date('d.m.Y H:i', strtotime($banner['start_date'])) : 'Brak';
+        $end_date = $banner['end_date'] ? date('d.m.Y H:i', strtotime($banner['end_date'])) : 'Brak';
+
+        $impressions_bought = intval($banner['impressions_bought']);
+        $impressions_text = $impressions_bought > 0 ? number_format($impressions_bought, 0, ',', ' ') : 'Nielimitowane';
+
+        ob_start();
+        ?>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raport - <?php echo esc_html($banner['title']); ?></title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #0073aa;
+        }
+        .header h1 {
+            font-size: 28px;
+            color: #0073aa;
+            margin-bottom: 10px;
+        }
+        .header .subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+        .banner-info {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+        .banner-info h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+        .info-value {
+            color: #333;
+            text-align: right;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 8px;
+            color: #fff;
+            text-align: center;
+        }
+        .stat-card:nth-child(2) {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card:nth-child(3) {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .stat-card:nth-child(4) {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .campaign-preview {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+        .campaign-preview img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 13px;
+            color: #666;
+        }
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #0073aa;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,115,170,0.3);
+            z-index: 1000;
+        }
+        .print-button:hover {
+            background: #005a87;
+        }
+        @media print {
+            body {
+                background: #fff;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+            .print-button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button" onclick="window.print()">🖨️ Drukuj / Zapisz PDF</button>
+
+    <div class="container">
+        <div class="header">
+            <h1>Raport kampanii reklamowej</h1>
+            <div class="subtitle"><?php echo esc_html($site_name); ?> • Wygenerowano: <?php echo $report_date; ?></div>
+        </div>
+
+        <div class="banner-info">
+            <h2><?php echo esc_html($banner['title']); ?></h2>
+            <div class="info-row">
+                <span class="info-label">Status kampanii:</span>
+                <span class="info-value" style="color:<?php echo $campaign_status_color; ?>;font-weight:600;"><?php echo $campaign_status; ?></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Data rozpoczęcia:</span>
+                <span class="info-value"><?php echo $start_date; ?></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Data zakończenia:</span>
+                <span class="info-value"><?php echo $end_date; ?></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Zakupione wyświetlenia:</span>
+                <span class="info-value"><?php echo $impressions_text; ?></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Link docelowy:</span>
+                <span class="info-value" style="font-size:12px;word-break:break-all;"><?php echo esc_html($banner['link_url']); ?></span>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Wyświetlenia unikalne (24h)</div>
+                <div class="stat-value"><?php echo number_format($banner['impressions_used'], 0, ',', ' '); ?></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Pozostało wyświetleń</div>
+                <div class="stat-value"><?php echo is_numeric($stats['impressions_remaining']) ? number_format($stats['impressions_remaining'], 0, ',', ' ') : $stats['impressions_remaining']; ?></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Kliknięcia</div>
+                <div class="stat-value"><?php echo number_format($banner['clicks'], 0, ',', ' '); ?></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">CTR (Click-Through Rate)</div>
+                <div class="stat-value"><?php echo $stats['ctr']; ?></div>
+            </div>
+        </div>
+
+        <div class="campaign-preview">
+            <h3 style="margin-bottom:15px;color:#555;">Podgląd banneru:</h3>
+            <img src="<?php echo esc_url($banner['image_url']); ?>" alt="<?php echo esc_attr($banner['title']); ?>">
+        </div>
+
+        <div class="footer">
+            <p><strong>Informacje o systemie trackingu:</strong></p>
+            <p style="margin-top:8px;">System liczy tylko <strong>unikalne wyświetlenia</strong> (1 na użytkownika w ciągu 24 godzin).</p>
+            <p>Ten sam użytkownik nie może wielokrotnie zużyć budżetu kampanii poprzez odświeżanie strony.</p>
+            <p style="margin-top:15px;font-size:12px;">© <?php echo date('Y'); ?> <?php echo esc_html($site_name); ?> • Raport wygenerowany automatycznie</p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-print dialog after page load (optional)
+        // window.onload = function() { window.print(); };
+    </script>
+</body>
+</html>
+        <?php
+        return ob_get_clean();
     }
 }
