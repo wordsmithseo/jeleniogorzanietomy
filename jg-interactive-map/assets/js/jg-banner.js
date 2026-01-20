@@ -63,11 +63,9 @@
       // Refresh image timestamp to bypass cache
       var $img = $container.find('#jg-banner-image');
       if ($img.length && $img.attr('src')) {
-        var currentSrc = $img.attr('src').split('?')[0];
+        var currentSrc = $img.attr('src').split('?')[0');
         $img.attr('src', currentSrc + '?t=' + Date.now());
       }
-
-      console.log('[JG Banner] Applied obfuscation class:', newClass);
     },
 
     /**
@@ -87,6 +85,12 @@
     loadBanners: function() {
       var self = this;
 
+      // Debug: Check if config exists
+      if (!self.config || !self.config.ajax) {
+        $('#jg-banner-loading').html('Błąd konfiguracji (brak AJAX URL)');
+        return;
+      }
+
       $.ajax({
         url: self.config.ajax,
         type: 'POST',
@@ -98,11 +102,19 @@
             self.banners = response.data.banners;
             self.initRotation();
           } else {
-            self.hideBanner();
+            // Debug: Show why banner is hidden
+            if (!response.success) {
+              $('#jg-banner-loading').html('Błąd: ' + (response.data && response.data.message ? response.data.message : 'Nieznany błąd'));
+            } else if (!response.data.banners || response.data.banners.length === 0) {
+              $('#jg-banner-loading').html('Brak aktywnych banerów');
+            } else {
+              self.hideBanner();
+            }
           }
         },
-        error: function() {
-          self.hideBanner();
+        error: function(xhr, status, error) {
+          // Debug: Show AJAX error
+          $('#jg-banner-loading').html('Błąd AJAX: ' + error + ' (status: ' + status + ')');
         }
       });
     },
