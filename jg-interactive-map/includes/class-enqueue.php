@@ -167,26 +167,20 @@ class JG_Map_Enqueue {
     public function enqueue_frontend_assets() {
         global $post;
 
-        // Try to get post if global $post is not set
-        if (!$post) {
-            $post = get_post();
-        }
+        // Always enqueue banner script (it's small and will only init if container exists)
+        // This avoids issues with caching and post detection
+        wp_enqueue_script(
+            'jg-map-banner',
+            JG_MAP_PLUGIN_URL . 'assets/js/jg-banner.js',
+            array('jquery'),
+            JG_MAP_VERSION . '-' . time(),
+            true
+        );
 
-        // Enqueue banner script if shortcode present
-        if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'jg_banner')) {
-            wp_enqueue_script(
-                'jg-map-banner',
-                JG_MAP_PLUGIN_URL . 'assets/js/jg-banner.js',
-                array('jquery'),
-                JG_MAP_VERSION . '-' . time(),
-                true
-            );
-
-            // Localize banner script
-            wp_localize_script('jg-map-banner', 'JG_BANNER_CFG', array(
-                'ajax' => admin_url('admin-ajax.php')
-            ));
-        }
+        // Localize banner script
+        wp_localize_script('jg-map-banner', 'JG_BANNER_CFG', array(
+            'ajax' => admin_url('admin-ajax.php')
+        ));
 
         // Only load map assets on pages with map shortcode
         if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'jg_map')) {
