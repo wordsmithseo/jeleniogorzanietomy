@@ -52,11 +52,22 @@ class JG_Map_Banner_Admin {
         // Enqueue WordPress media uploader
         wp_enqueue_media();
 
-        // Enqueue custom admin styles
-        wp_add_inline_style('wp-admin', self::get_admin_styles());
+        // Enqueue jQuery (required for media uploader)
+        wp_enqueue_script('jquery');
 
-        // Enqueue custom admin script
-        wp_add_inline_script('jquery', self::get_admin_script());
+        // Register and enqueue custom admin script
+        wp_register_script(
+            'jg-banner-admin',
+            false, // No external file
+            array('jquery', 'media-upload', 'media-views'), // Dependencies
+            JG_MAP_VERSION,
+            true // Load in footer
+        );
+        wp_enqueue_script('jg-banner-admin');
+        wp_add_inline_script('jg-banner-admin', self::get_admin_script());
+
+        // Add custom admin styles
+        wp_add_inline_style('wp-admin', self::get_admin_styles());
     }
 
     /**
@@ -205,11 +216,22 @@ class JG_Map_Banner_Admin {
     private static function get_admin_script() {
         return "
         jQuery(document).ready(function($) {
+            console.log('[JG Banner Admin] Script loaded');
+            console.log('[JG Banner Admin] wp.media available:', typeof wp !== 'undefined' && typeof wp.media !== 'undefined');
+
             // Media uploader for banner image
             var mediaUploader;
 
-            $('#jg-upload-banner-image').on('click', function(e) {
+            $(document).on('click', '#jg-upload-banner-image', function(e) {
                 e.preventDefault();
+                console.log('[JG Banner Admin] Upload button clicked');
+
+                // Check if wp.media is available
+                if (typeof wp === 'undefined' || typeof wp.media === 'undefined') {
+                    alert('WordPress Media Library nie jest załadowana. Odśwież stronę i spróbuj ponownie.');
+                    console.error('[JG Banner Admin] wp.media is not defined');
+                    return;
+                }
 
                 if (mediaUploader) {
                     mediaUploader.open();
@@ -226,8 +248,11 @@ class JG_Map_Banner_Admin {
 
                 mediaUploader.on('select', function() {
                     var attachment = mediaUploader.state().get('selection').first().toJSON();
+                    console.log('[JG Banner Admin] Image selected:', attachment.url);
                     $('#banner_image_url').val(attachment.url);
-                    $('#jg-banner-image-preview-container').html('<img src=\"' + attachment.url + '\" alt=\"Preview\">');
+                    var previewContainer = $('#jg-banner-image-preview-container');
+                    previewContainer.html('<img src=\"' + attachment.url + '\" alt=\"Preview\">');
+                    previewContainer.show();
                 });
 
                 mediaUploader.open();
