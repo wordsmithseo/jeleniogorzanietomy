@@ -3892,19 +3892,19 @@ class JG_Map_Admin {
                         // Update child items - preserve hrefs
                         $('#wp-admin-bar-jg-map-pending-points').toggle(counts.points > 0);
                         $('#wp-admin-bar-jg-map-pending-points a').html('📍 ' + counts.points + ' nowych miejsc')
-                            .attr('href', '<?php echo admin_url('admin.php?page=jg-map-places#section-new_pending'); ?>');
+                            .attr('href', '<?php echo esc_js(admin_url('admin.php?page=jg-map-places#section-new_pending')); ?>');
 
                         $('#wp-admin-bar-jg-map-pending-edits').toggle(counts.edits > 0);
                         $('#wp-admin-bar-jg-map-pending-edits a').html('✏️ ' + counts.edits + ' edycji do zatwierdzenia')
-                            .attr('href', '<?php echo admin_url('admin.php?page=jg-map-places#section-edit_pending'); ?>');
+                            .attr('href', '<?php echo esc_js(admin_url('admin.php?page=jg-map-places#section-edit_pending')); ?>');
 
                         $('#wp-admin-bar-jg-map-pending-reports').toggle(counts.reports > 0);
                         $('#wp-admin-bar-jg-map-pending-reports a').html('🚨 ' + counts.reports + ' zgłoszeń')
-                            .attr('href', '<?php echo admin_url('admin.php?page=jg-map-places#section-reported'); ?>');
+                            .attr('href', '<?php echo esc_js(admin_url('admin.php?page=jg-map-places#section-reported')); ?>');
 
                         $('#wp-admin-bar-jg-map-pending-deletions').toggle(counts.deletions > 0);
                         $('#wp-admin-bar-jg-map-pending-deletions a').html('🗑️ ' + counts.deletions + ' żądań usunięcia')
-                            .attr('href', '<?php echo admin_url('admin.php?page=jg-map-places#section-deletion_pending'); ?>');
+                            .attr('href', '<?php echo esc_js(admin_url('admin.php?page=jg-map-places#section-deletion_pending')); ?>');
 
                     } else {
                         // Reload page to show notification
