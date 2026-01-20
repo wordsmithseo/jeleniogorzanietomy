@@ -52,12 +52,12 @@ class JG_Map_Banner_Admin {
         // Enqueue WordPress media uploader
         wp_enqueue_media();
 
-        // Enqueue custom admin script
+        // Enqueue custom admin script (with timestamp to force cache refresh)
         wp_enqueue_script(
             'jg-banner-admin',
             JG_MAP_PLUGIN_URL . 'assets/js/jg-banner-admin.js',
             array('jquery', 'media-upload', 'media-views'),
-            JG_MAP_VERSION,
+            JG_MAP_VERSION . '-' . time(),
             true
         );
 
