@@ -214,7 +214,7 @@ class JG_Map_Banner_Admin {
      * Get custom admin script
      */
     private static function get_admin_script() {
-        return "
+        return <<<'SCRIPT'
         jQuery(document).ready(function($) {
             console.log('[JG Banner Admin] Script loaded');
             console.log('[JG Banner Admin] wp.media available:', typeof wp !== 'undefined' && typeof wp.media !== 'undefined');
@@ -251,7 +251,7 @@ class JG_Map_Banner_Admin {
                     console.log('[JG Banner Admin] Image selected:', attachment.url);
                     $('#banner_image_url').val(attachment.url);
                     var previewContainer = $('#jg-banner-image-preview-container');
-                    previewContainer.html('<img src=\"' + attachment.url + '\" alt=\"Preview\">');
+                    previewContainer.html('<img src="' + attachment.url + '" alt="Preview">');
                     previewContainer.show();
                 });
 
@@ -272,7 +272,7 @@ class JG_Map_Banner_Admin {
                 }
             });
         });
-        ";
+SCRIPT;
     }
 
     /**
