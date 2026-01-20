@@ -85,12 +85,6 @@
     loadBanners: function() {
       var self = this;
 
-      // Debug: Check if config exists
-      if (!self.config || !self.config.ajax) {
-        $('#jg-banner-loading').html('Błąd konfiguracji (brak AJAX URL)');
-        return;
-      }
-
       $.ajax({
         url: self.config.ajax,
         type: 'POST',
@@ -102,19 +96,11 @@
             self.banners = response.data.banners;
             self.initRotation();
           } else {
-            // Debug: Show why banner is hidden
-            if (!response.success) {
-              $('#jg-banner-loading').html('Błąd: ' + (response.data && response.data.message ? response.data.message : 'Nieznany błąd'));
-            } else if (!response.data.banners || response.data.banners.length === 0) {
-              $('#jg-banner-loading').html('Brak aktywnych banerów');
-            } else {
-              self.hideBanner();
-            }
+            self.hideBanner();
           }
         },
-        error: function(xhr, status, error) {
-          // Debug: Show AJAX error
-          $('#jg-banner-loading').html('Błąd AJAX: ' + error + ' (status: ' + status + ')');
+        error: function() {
+          self.hideBanner();
         }
       });
     },
