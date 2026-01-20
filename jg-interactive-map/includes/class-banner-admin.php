@@ -45,6 +45,9 @@ class JG_Map_Banner_Admin {
      * Enqueue admin assets
      */
     public static function enqueue_admin_assets($hook) {
+        // Debug: log hook name
+        error_log('[JG Banner Admin] Hook: ' . $hook);
+
         if ($hook !== 'jg-map-places_page_jg-map-banners') {
             return;
         }
