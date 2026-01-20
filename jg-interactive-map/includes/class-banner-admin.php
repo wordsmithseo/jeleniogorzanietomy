@@ -32,7 +32,7 @@ class JG_Map_Banner_Admin {
      */
     public static function add_admin_menu() {
         add_submenu_page(
-            'jg-map',
+            'jg-map-places',
             'Banery reklamowe',
             'Banery 728x90',
             'manage_options',
@@ -45,7 +45,7 @@ class JG_Map_Banner_Admin {
      * Enqueue admin assets
      */
     public static function enqueue_admin_assets($hook) {
-        if ($hook !== 'jg-map_page_jg-map-banners') {
+        if ($hook !== 'jg-map-places_page_jg-map-banners') {
             return;
         }
 
