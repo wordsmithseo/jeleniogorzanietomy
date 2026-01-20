@@ -586,7 +586,7 @@
       '<div class="jg-form-group" style="margin-bottom:20px">' +
       '<label style="display:flex;align-items:flex-start;gap:8px;font-size:14px;color:#333;cursor:pointer;line-height:1.5">' +
       '<input type="checkbox" id="register-privacy-policy" required style="margin-top:4px;cursor:pointer;width:16px;height:16px;flex-shrink:0">' +
-      '<span>Oświadczam, że zapoznałem/am się i akceptuję <a href="/polityka-prywatnosci/" target="_blank" style="color:#8d2324;text-decoration:underline;font-weight:600" onmouseover="this.style.textDecoration=\'none\'" onmouseout="this.style.textDecoration=\'underline\'">Politykę prywatności</a> serwisu *</span>' +
+      '<span>Oświadczam, że zapoznałem/am się i akceptuję <a href="/oswiadczenie-o-ochronie-prywatnosci-eu/" target="_blank" style="color:#8d2324;text-decoration:underline;font-weight:600" onmouseover="this.style.textDecoration=\'none\'" onmouseout="this.style.textDecoration=\'underline\'">Politykę prywatności</a> serwisu *</span>' +
       '</label>' +
       '</div>' +
       '<div style="font-size:12px;color:#666;margin-top:8px">📧 Na podany adres email zostanie wysłany link aktywacyjny</div>' +

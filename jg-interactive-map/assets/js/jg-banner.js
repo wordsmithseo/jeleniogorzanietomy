@@ -1,5 +1,5 @@
 /**
- * JG Banner Manager - Fair rotation with session storage
+ * JG Banner Manager - Fair rotation with session storage and anti-adblock obfuscation
  */
 (function($) {
   'use strict';
@@ -10,6 +10,7 @@
     currentIndex: 0,
     currentBanner: null,
     sessionKey: 'jg_banner_rotation_index',
+    obfuscationInterval: null,
 
     /**
      * Initialize banner system
@@ -18,8 +19,66 @@
       this.config = window.JG_BANNER_CFG || {};
 
       if ($('#jg-banner-container').length) {
+        this.applyObfuscation();
         this.loadBanners();
+        this.startObfuscationRefresh();
       }
+    },
+
+    /**
+     * Generate random class name (anti-adblock)
+     */
+    randomClassName: function(length) {
+      length = length || 8;
+      var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      var result = '';
+      for (var i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return 'obf-' + result;
+    },
+
+    /**
+     * Apply obfuscation classes (anti-adblock)
+     */
+    applyObfuscation: function() {
+      var $container = $('#jg-banner-container');
+      if (!$container.length) return;
+
+      // Remove old obfuscation classes
+      var classes = $container.attr('class');
+      if (classes) {
+        var classList = classes.split(/\s+/);
+        classList.forEach(function(cls) {
+          if (cls.startsWith('obf-')) {
+            $container.removeClass(cls);
+          }
+        });
+      }
+
+      // Add new random class
+      var newClass = this.randomClassName();
+      $container.addClass(newClass);
+
+      // Refresh image timestamp to bypass cache
+      var $img = $container.find('#jg-banner-image');
+      if ($img.length && $img.attr('src')) {
+        var currentSrc = $img.attr('src').split('?')[0];
+        $img.attr('src', currentSrc + '?t=' + Date.now());
+      }
+
+      console.log('[JG Banner] Applied obfuscation class:', newClass);
+    },
+
+    /**
+     * Start periodic obfuscation refresh (every 15 minutes)
+     */
+    startObfuscationRefresh: function() {
+      var self = this;
+      // Refresh obfuscation every 15 minutes (900000ms)
+      this.obfuscationInterval = setInterval(function() {
+        self.applyObfuscation();
+      }, 900000);
     },
 
     /**
