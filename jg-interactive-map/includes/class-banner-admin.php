@@ -55,16 +55,12 @@ class JG_Map_Banner_Admin {
         // Enqueue jQuery (required for media uploader)
         wp_enqueue_script('jquery');
 
-        // Register and enqueue custom admin script
-        wp_register_script(
-            'jg-banner-admin',
-            false, // No external file
-            array('jquery', 'media-upload', 'media-views'), // Dependencies
-            JG_MAP_VERSION,
-            true // Load in footer
-        );
-        wp_enqueue_script('jg-banner-admin');
-        wp_add_inline_script('jg-banner-admin', self::get_admin_script());
+        // Enqueue media-upload and media-views explicitly
+        wp_enqueue_script('media-upload');
+        wp_enqueue_script('media-views');
+
+        // Add custom admin script to media-views handle
+        wp_add_inline_script('media-views', self::get_admin_script());
 
         // Add custom admin styles
         wp_add_inline_style('wp-admin', self::get_admin_styles());
