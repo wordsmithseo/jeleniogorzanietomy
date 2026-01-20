@@ -63,7 +63,7 @@
       // Refresh image timestamp to bypass cache
       var $img = $container.find('#jg-banner-image');
       if ($img.length && $img.attr('src')) {
-        var currentSrc = $img.attr('src').split('?')[0');
+        var currentSrc = $img.attr('src').split('?')[0];
         $img.attr('src', currentSrc + '?t=' + Date.now());
       }
     },
