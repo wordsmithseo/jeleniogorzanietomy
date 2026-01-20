@@ -58,7 +58,7 @@ class JG_Map_Banner_Manager {
     public static function get_active_banners() {
         global $wpdb;
         $table = self::get_table_name();
-        $now = current_time('mysql', true);
+        $now = current_time('mysql'); // Use local WordPress time, not UTC
 
         return $wpdb->get_results(
             $wpdb->prepare(
@@ -249,7 +249,7 @@ class JG_Map_Banner_Manager {
     public static function deactivate_expired_banners() {
         global $wpdb;
         $table = self::get_table_name();
-        $now = current_time('mysql', true);
+        $now = current_time('mysql'); // Use local WordPress time, not UTC
 
         // Deactivate banners past their end_date
         $wpdb->query(
