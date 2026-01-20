@@ -187,6 +187,10 @@ class JG_Map_Database {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-sync-manager.php';
         JG_Map_Sync_Manager::create_table();
 
+        // Create banners table
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-manager.php';
+        JG_Map_Banner_Manager::create_table();
+
         // Add custom capabilities to administrator role
         $admin = get_role('administrator');
         if ($admin) {

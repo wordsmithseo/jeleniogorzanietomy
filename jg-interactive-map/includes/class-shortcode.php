@@ -31,6 +31,7 @@ class JG_Map_Shortcode {
     private function __construct() {
         add_shortcode('jg_map', array($this, 'render_map'));
         add_shortcode('jg_map_sidebar', array($this, 'render_sidebar'));
+        add_shortcode('jg_banner', array($this, 'render_banner'));
     }
 
     /**
@@ -205,6 +206,35 @@ class JG_Map_Shortcode {
             <div id="jg-sidebar-list" class="jg-sidebar-list">
                 <!-- Will be populated by JavaScript -->
             </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Render banner shortcode
+     *
+     * Usage: [jg_banner]
+     */
+    public function render_banner($atts) {
+        $atts = shortcode_atts(
+            array(
+                'width' => '728px',
+                'height' => '90px'
+            ),
+            $atts,
+            'jg_banner'
+        );
+
+        ob_start();
+        ?>
+        <div id="jg-banner-container" class="jg-banner-container" style="width:<?php echo esc_attr($atts['width']); ?>;height:<?php echo esc_attr($atts['height']); ?>;margin:20px auto;position:relative;overflow:hidden;">
+            <div id="jg-banner-loading" style="display:flex;align-items:center;justify-content:center;height:100%;background:#f5f5f5;color:#999;font-size:14px;">
+                Ładowanie banneru...
+            </div>
+            <a id="jg-banner-link" href="#" target="_blank" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;">
+                <img id="jg-banner-image" src="" alt="Banner" style="width:100%;height:100%;object-fit:contain;background:#f5f5f5;">
+            </a>
         </div>
         <?php
         return ob_get_clean();

@@ -583,6 +583,12 @@
       '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Hasło</label>' +
       '<input type="password" id="register-password" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
       '</div>' +
+      '<div class="jg-form-group" style="margin-bottom:20px">' +
+      '<label style="display:flex;align-items:flex-start;gap:8px;font-size:14px;color:#333;cursor:pointer;line-height:1.5">' +
+      '<input type="checkbox" id="register-privacy-policy" required style="margin-top:4px;cursor:pointer;width:16px;height:16px;flex-shrink:0">' +
+      '<span>Oświadczam, że zapoznałem/am się i akceptuję <a href="/polityka-prywatnosci/" target="_blank" style="color:#8d2324;text-decoration:underline;font-weight:600" onmouseover="this.style.textDecoration=\'none\'" onmouseout="this.style.textDecoration=\'underline\'">Politykę prywatności</a> serwisu *</span>' +
+      '</label>' +
+      '</div>' +
       '<div style="font-size:12px;color:#666;margin-top:8px">📧 Na podany adres email zostanie wysłany link aktywacyjny</div>' +
       '</form>' +
       '</div>' +
@@ -598,9 +604,15 @@
       var email = document.getElementById('register-email').value;
       var password = document.getElementById('register-password').value;
       var honeypot = document.getElementById('register-website').value;
+      var privacyPolicyAccepted = document.getElementById('register-privacy-policy').checked;
 
       if (!username || !email || !password) {
         showAlert('Proszę wypełnić wszystkie pola');
+        return;
+      }
+
+      if (!privacyPolicyAccepted) {
+        showAlert('Musisz zaakceptować Politykę prywatności, aby się zarejestrować');
         return;
       }
 

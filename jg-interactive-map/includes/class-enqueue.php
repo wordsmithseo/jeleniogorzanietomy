@@ -165,8 +165,25 @@ class JG_Map_Enqueue {
      * Enqueue frontend scripts and styles
      */
     public function enqueue_frontend_assets() {
-        // Only load on pages with shortcode
         global $post;
+
+        // Enqueue banner script if shortcode present
+        if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'jg_banner')) {
+            wp_enqueue_script(
+                'jg-map-banner',
+                JG_MAP_PLUGIN_URL . 'assets/js/jg-banner.js',
+                array('jquery'),
+                JG_MAP_VERSION,
+                true
+            );
+
+            // Localize banner script
+            wp_localize_script('jg-map-banner', 'JG_BANNER_CFG', array(
+                'ajax' => admin_url('admin-ajax.php')
+            ));
+        }
+
+        // Only load map assets on pages with map shortcode
         if (!is_a($post, 'WP_Post') || !has_shortcode($post->post_content, 'jg_map')) {
             return;
         }
