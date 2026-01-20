@@ -318,10 +318,10 @@ CSS;
                 </tr>
 
                 <tr>
-                    <th><label for="impressions_bought">Limit wyświetleń</label></th>
+                    <th><label for="impressions_bought">Limit wyświetleń unikalnych</label></th>
                     <td>
                         <input type="number" id="impressions_bought" name="impressions_bought" value="<?php echo $impressions_bought; ?>" min="0" placeholder="0">
-                        <p class="description">Zostaw 0 dla nielimitowanych wyświetleń. Baner wyłączy się automatycznie po wyczerpaniu limitu.</p>
+                        <p class="description">Zostaw 0 dla nielimitowanych wyświetleń. <strong>System liczy tylko unikalne wyświetlenia</strong> (1 na użytkownika w ciągu 24h). Ten sam użytkownik nie zużyje budżetu wielokrotnym odświeżaniem strony.</p>
                     </td>
                 </tr>
 
@@ -401,7 +401,7 @@ CSS;
 
                 <div class="jg-banner-stats">
                     <div class="jg-banner-stat">
-                        <span>👁️ Wyświetlenia:</span>
+                        <span>👁️ Wyświetlenia unikalne (24h):</span>
                         <strong><?php echo number_format($banner['impressions_used'], 0, ',', ' '); ?></strong>
                         <?php if ($impressions_bought > 0) : ?>
                             / <?php echo number_format($impressions_bought, 0, ',', ' '); ?>
