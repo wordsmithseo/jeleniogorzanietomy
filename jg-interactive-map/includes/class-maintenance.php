@@ -70,6 +70,7 @@ class JG_Map_Maintenance {
 
         // 3. Clean outdated data
         $results['expired_sponsors'] = self::disable_expired_sponsorships();
+        $results['expired_banners'] = self::deactivate_expired_banners();
         $results['old_pending'] = self::clean_old_pending_points();
         $results['old_deleted'] = self::clean_old_deleted_points();
         $results['expired_resolved_reports'] = self::clean_expired_resolved_reports();
@@ -217,6 +218,14 @@ class JG_Map_Maintenance {
         }
 
         return $updated;
+    }
+
+    /**
+     * Deactivate expired banners
+     */
+    private static function deactivate_expired_banners() {
+        JG_Map_Banner_Manager::deactivate_expired_banners();
+        return true;
     }
 
     /**

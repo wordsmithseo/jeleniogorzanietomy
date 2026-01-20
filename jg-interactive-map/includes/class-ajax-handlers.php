@@ -107,6 +107,12 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_get_user_info', array($this, 'get_user_info'));
         add_action('wp_ajax_jg_get_sidebar_points', array($this, 'get_sidebar_points'));
         add_action('wp_ajax_nopriv_jg_get_sidebar_points', array($this, 'get_sidebar_points'));
+        add_action('wp_ajax_jg_banner_impression', array($this, 'track_banner_impression'));
+        add_action('wp_ajax_nopriv_jg_banner_impression', array($this, 'track_banner_impression'));
+        add_action('wp_ajax_jg_banner_click', array($this, 'track_banner_click'));
+        add_action('wp_ajax_nopriv_jg_banner_click', array($this, 'track_banner_click'));
+        add_action('wp_ajax_jg_get_banner', array($this, 'get_banner'));
+        add_action('wp_ajax_nopriv_jg_get_banner', array($this, 'get_banner'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -5740,5 +5746,60 @@ class JG_Map_Ajax_Handlers {
 
         // Old format: return string URL
         return $featured_image;
+    }
+
+    /**
+     * Get banner for display (with rotation logic)
+     */
+    public function get_banner() {
+        $active_banners = JG_Map_Banner_Manager::get_active_banners();
+
+        if (empty($active_banners)) {
+            wp_send_json_success(array('banner' => null));
+            return;
+        }
+
+        // Return all active banners for client-side rotation
+        wp_send_json_success(array('banners' => $active_banners));
+    }
+
+    /**
+     * Track banner impression
+     */
+    public function track_banner_impression() {
+        $banner_id = isset($_POST['banner_id']) ? intval($_POST['banner_id']) : 0;
+
+        if (!$banner_id) {
+            wp_send_json_error(array('message' => 'Invalid banner ID'));
+            return;
+        }
+
+        $result = JG_Map_Banner_Manager::track_impression($banner_id);
+
+        if ($result !== false) {
+            wp_send_json_success(array('message' => 'Impression tracked'));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to track impression'));
+        }
+    }
+
+    /**
+     * Track banner click
+     */
+    public function track_banner_click() {
+        $banner_id = isset($_POST['banner_id']) ? intval($_POST['banner_id']) : 0;
+
+        if (!$banner_id) {
+            wp_send_json_error(array('message' => 'Invalid banner ID'));
+            return;
+        }
+
+        $result = JG_Map_Banner_Manager::track_click($banner_id);
+
+        if ($result !== false) {
+            wp_send_json_success(array('message' => 'Click tracked'));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to track click'));
+        }
     }
 }
