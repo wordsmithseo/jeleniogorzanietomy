@@ -23,6 +23,7 @@ class JG_Map_Banner_Admin {
         add_action('admin_post_jg_delete_banner', array(__CLASS__, 'handle_delete_banner'));
         add_action('admin_post_jg_toggle_banner', array(__CLASS__, 'handle_toggle_banner'));
         add_action('admin_post_jg_export_banner_stats', array(__CLASS__, 'handle_export_banner_stats'));
+        add_action('admin_post_jg_save_banner_settings', array(__CLASS__, 'handle_save_banner_settings'));
 
         // Enqueue admin scripts
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_admin_assets'));
@@ -241,7 +242,16 @@ CSS;
                 <div class="notice notice-error is-dismissible">
                     <p><strong>Wystąpił błąd. Spróbuj ponownie.</strong></p>
                 </div>
+            <?php elseif ($message === 'settings_saved') : ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><strong>Ustawienia zostały zapisane!</strong></p>
+                </div>
             <?php endif; ?>
+
+            <div class="jg-banner-admin-wrap" style="margin-bottom:20px;">
+                <h2 class="jg-banner-section-title">⚙️ Ustawienia cenowe</h2>
+                <?php self::render_settings_form(); ?>
+            </div>
 
             <div class="jg-banner-admin-wrap">
                 <h2 class="jg-banner-section-title">➕ Dodaj nowy baner</h2>
@@ -378,11 +388,19 @@ CSS;
         $is_active = intval($banner['active']) === 1;
         $impressions_remaining = $stats['impressions_remaining'];
         $impressions_bought = intval($banner['impressions_bought']);
+        $impressions_used = intval($banner['impressions_used']);
+
+        // Get price per impression
+        $price_per_impression = floatval(get_option('jg_banner_price_per_impression', '0.10'));
+
+        // Calculate financial data
+        $budget_total = $impressions_bought > 0 ? $impressions_bought * $price_per_impression : 0;
+        $budget_used = $impressions_used * $price_per_impression;
+        $budget_remaining = $budget_total - $budget_used;
 
         // Calculate progress percentage
         $progress_percent = 0;
         if ($impressions_bought > 0) {
-            $impressions_used = intval($banner['impressions_used']);
             $progress_percent = min(100, round(($impressions_used / $impressions_bought) * 100));
         }
 
@@ -424,6 +442,21 @@ CSS;
                 </div>
 
                 <?php if ($impressions_bought > 0) : ?>
+                    <div style="margin-top:15px;padding:12px;background:#f0f7ff;border-left:4px solid #0073aa;border-radius:4px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                            <span style="font-weight:600;color:#555;">💰 Budżet kampanii:</span>
+                            <span style="font-weight:700;color:#0073aa;font-size:16px;"><?php echo number_format($budget_total, 2, ',', ' '); ?> PLN</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-top:5px;">
+                            <span style="color:#666;">Wykorzystano:</span>
+                            <span style="font-weight:600;color:#d63638;"><?php echo number_format($budget_used, 2, ',', ' '); ?> PLN</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-top:5px;">
+                            <span style="color:#666;">Pozostało:</span>
+                            <span style="font-weight:600;color:#0a7e07;"><?php echo number_format($budget_remaining, 2, ',', ' '); ?> PLN</span>
+                        </div>
+                    </div>
+
                     <div style="margin-top:10px;background:#e0e0e0;height:8px;border-radius:4px;overflow:hidden;">
                         <div style="background:#0073aa;height:100%;width:<?php echo $progress_percent; ?>%;transition:width 0.3s;"></div>
                     </div>
@@ -659,7 +692,14 @@ CSS;
         $end_date = $banner['end_date'] ? date('d.m.Y H:i', strtotime($banner['end_date'])) : 'Brak';
 
         $impressions_bought = intval($banner['impressions_bought']);
+        $impressions_used = intval($banner['impressions_used']);
         $impressions_text = $impressions_bought > 0 ? number_format($impressions_bought, 0, ',', ' ') : 'Nielimitowane';
+
+        // Calculate financial data
+        $price_per_impression = floatval(get_option('jg_banner_price_per_impression', '0.10'));
+        $budget_total = $impressions_bought > 0 ? $impressions_bought * $price_per_impression : 0;
+        $budget_used = $impressions_used * $price_per_impression;
+        $budget_remaining = $budget_total - $budget_used;
 
         ob_start();
         ?>
@@ -869,16 +909,35 @@ CSS;
             </div>
         </div>
 
+        <?php if ($impressions_bought > 0) : ?>
+        <div class="banner-info" style="background: linear-gradient(135deg, #f0f7ff 0%, #e6f2ff 100%);border-left:4px solid #0073aa;">
+            <h2 style="color:#0073aa;margin-bottom:20px;">💰 Podsumowanie finansowe</h2>
+            <div class="info-row">
+                <span class="info-label">Budżet kampanii (łącznie):</span>
+                <span class="info-value" style="font-size:18px;font-weight:700;color:#0073aa;"><?php echo number_format($budget_total, 2, ',', ' '); ?> PLN</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Wykorzystano:</span>
+                <span class="info-value" style="font-size:16px;font-weight:600;color:#d63638;"><?php echo number_format($budget_used, 2, ',', ' '); ?> PLN</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Pozostało do wykorzystania:</span>
+                <span class="info-value" style="font-size:16px;font-weight:600;color:#0a7e07;"><?php echo number_format($budget_remaining, 2, ',', ' '); ?> PLN</span>
+            </div>
+            <div class="info-row" style="border-bottom:none;margin-top:10px;padding-top:15px;border-top:2px solid #0073aa;">
+                <span class="info-label">Cena za wyświetlenie:</span>
+                <span class="info-value" style="font-weight:600;"><?php echo number_format($price_per_impression, 2, ',', ' '); ?> PLN</span>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <div class="campaign-preview">
             <h3 style="margin-bottom:15px;color:#555;">Podgląd banneru:</h3>
             <img src="<?php echo esc_url($banner['image_url']); ?>" alt="<?php echo esc_attr($banner['title']); ?>">
         </div>
 
         <div class="footer">
-            <p><strong>Informacje o systemie trackingu:</strong></p>
-            <p style="margin-top:8px;">System liczy tylko <strong>unikalne wyświetlenia</strong> (1 na użytkownika w ciągu 24 godzin).</p>
-            <p>Ten sam użytkownik nie może wielokrotnie zużyć budżetu kampanii poprzez odświeżanie strony.</p>
-            <p style="margin-top:15px;font-size:12px;">© <?php echo date('Y'); ?> <?php echo esc_html($site_name); ?> • Raport wygenerowany automatycznie</p>
+            <p style="font-size:12px;color:#999;">© <?php echo date('Y'); ?> <?php echo esc_html($site_name); ?> • Raport wygenerowany automatycznie</p>
         </div>
     </div>
 
@@ -890,5 +949,54 @@ CSS;
 </html>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * Render settings form
+     */
+    private static function render_settings_form() {
+        $price_per_impression = get_option('jg_banner_price_per_impression', '0.10');
+        ?>
+        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" class="jg-banner-form">
+            <?php wp_nonce_field('jg_save_banner_settings', 'jg_settings_nonce'); ?>
+            <input type="hidden" name="action" value="jg_save_banner_settings">
+
+            <table style="width:auto;">
+                <tr>
+                    <th style="width:250px;"><label for="price_per_impression">Cena za 1 wyświetlenie unikalne (PLN)</label></th>
+                    <td>
+                        <input type="number" id="price_per_impression" name="price_per_impression" value="<?php echo esc_attr($price_per_impression); ?>" min="0" step="0.01" style="width:150px;" required>
+                        <p class="description">Domyślna cena za jedno unikalne wyświetlenie banneru (np. 0.10 PLN = 10 groszy za wyświetlenie)</p>
+                    </td>
+                </tr>
+            </table>
+
+            <p>
+                <button type="submit" class="button button-primary">💾 Zapisz ustawienia</button>
+            </p>
+        </form>
+        <?php
+    }
+
+    /**
+     * Handle save banner settings
+     */
+    public static function handle_save_banner_settings() {
+        // Check nonce
+        if (!isset($_POST['jg_settings_nonce']) || !wp_verify_nonce($_POST['jg_settings_nonce'], 'jg_save_banner_settings')) {
+            wp_die('Security check failed');
+        }
+
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_die('Brak uprawnień');
+        }
+
+        $price_per_impression = isset($_POST['price_per_impression']) ? floatval($_POST['price_per_impression']) : 0.10;
+
+        update_option('jg_banner_price_per_impression', $price_per_impression);
+
+        wp_redirect(admin_url('admin.php?page=jg-map-banners&message=settings_saved'));
+        exit;
     }
 }
