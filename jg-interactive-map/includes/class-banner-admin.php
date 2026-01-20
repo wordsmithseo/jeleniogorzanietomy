@@ -69,7 +69,7 @@ class JG_Map_Banner_Admin {
      * Get custom admin styles
      */
     private static function get_admin_styles() {
-        return "
+        return <<<'CSS'
         .jg-banner-admin-wrap {
             background: #fff;
             padding: 20px;
@@ -202,7 +202,7 @@ class JG_Map_Banner_Admin {
             padding-bottom: 10px;
             border-bottom: 2px solid #0073aa;
         }
-        ";
+CSS;
     }
 
     /**
