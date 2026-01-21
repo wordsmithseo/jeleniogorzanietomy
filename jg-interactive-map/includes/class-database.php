@@ -1447,8 +1447,8 @@ class JG_Map_Database {
         $reports_table = self::get_reports_table();
         $history_table = self::get_history_table();
 
-        // Base query - get all places except trash
-        $where_conditions = array("p.status != 'trash'");
+        // Base query - get all places (including trash)
+        $where_conditions = array("1=1");
 
         // Add user filter if provided
         if (!empty($user_id)) {
@@ -1516,6 +1516,10 @@ class JG_Map_Database {
                 $place['display_status'] = 'published';
                 $place['display_status_label'] = 'Opublikowane';
                 $place['priority'] = 1;
+            } elseif ($place['status'] === 'trash') {
+                $place['display_status'] = 'trash';
+                $place['display_status_label'] = 'W koszu';
+                $place['priority'] = 0;
             } else {
                 // Fallback for any other status
                 $place['display_status'] = 'other';
@@ -1555,6 +1559,7 @@ class JG_Map_Database {
             'edit_pending' => 0,
             'deletion_pending' => 0,
             'published' => 0,
+            'trash' => 0,
             'total' => count($places)
         );
 

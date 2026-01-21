@@ -486,11 +486,8 @@ class JG_Map_Admin {
         $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
 
         // For regular users, always filter by their ID
-        // For admins, respect the my_places checkbox
-        $my_places_only = !$is_admin || (isset($_GET['my_places']) && $_GET['my_places'] === '1');
-
-        // Get current user ID for filtering
-        $current_user_id = $my_places_only ? get_current_user_id() : 0;
+        // For admins, show all places by default
+        $current_user_id = $is_admin ? 0 : get_current_user_id();
 
         // Get places with status
         $places = JG_Map_Database::get_all_places_with_status($search, $status_filter, $current_user_id);
@@ -502,7 +499,8 @@ class JG_Map_Admin {
             'new_pending' => array(),
             'edit_pending' => array(),
             'deletion_pending' => array(),
-            'published' => array()
+            'published' => array(),
+            'trash' => array()
         );
 
         foreach ($places as $place) {
@@ -519,23 +517,16 @@ class JG_Map_Admin {
             <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
                 <form method="get" action="">
                     <input type="hidden" name="page" value="jg-map-places">
-                    <div style="display:flex;gap:10px;align-items:center<?php echo $is_admin ? ';margin-bottom:10px' : ''; ?>">
+                    <div style="display:flex;gap:10px;align-items:center">
                         <input type="text" name="search" value="<?php echo esc_attr($search); ?>"
                                placeholder="Szukaj po nazwie, treści, adresie<?php echo $is_admin ? ' lub autorze' : ''; ?>..."
                                style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:4px">
                         <button type="submit" class="button button-primary">🔍 Szukaj</button>
-                        <?php if ($search || $status_filter || ($is_admin && $my_places_only)): ?>
+                        <?php if ($search || $status_filter): ?>
                             <a href="?page=jg-map-places" class="button">✕ Wyczyść</a>
                         <?php endif; ?>
                     </div>
-                    <?php if ($is_admin): ?>
-                    <div style="display:flex;gap:15px;align-items:center">
-                        <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
-                            <input type="checkbox" name="my_places" value="1" <?php checked($my_places_only, true); ?>>
-                            <span>Tylko moje miejsca</span>
-                        </label>
-                    </div>
-                    <?php else: ?>
+                    <?php if (!$is_admin): ?>
                     <p style="margin:10px 0 0 0;color:#666;font-size:13px">
                         ℹ️ Widzisz tylko swoje miejsca
                     </p>
@@ -564,6 +555,10 @@ class JG_Map_Admin {
                 <div style="background:#10b981;color:#fff;padding:20px;border-radius:8px;text-align:center">
                     <div style="font-size:32px;font-weight:bold"><?php echo $counts['published']; ?></div>
                     <div>✅ Opublikowane</div>
+                </div>
+                <div style="background:#6b7280;color:#fff;padding:20px;border-radius:8px;text-align:center">
+                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['trash']; ?></div>
+                    <div>🗑️ Kosz</div>
                 </div>
             </div>
 
@@ -594,6 +589,11 @@ class JG_Map_Admin {
                     'title' => '✅ Opublikowane',
                     'color' => '#10b981',
                     'actions' => array('details', 'edit', 'delete_basic')
+                ),
+                'trash' => array(
+                    'title' => '🗑️ Kosz',
+                    'color' => '#6b7280',
+                    'actions' => array('details', 'restore', 'delete_permanent')
                 )
             );
 
@@ -864,6 +864,62 @@ class JG_Map_Admin {
                 });
             });
 
+            // Restore point from trash
+            $('.jg-restore-point').on('click', function() {
+                if (!confirm('Czy na pewno chcesz przywrócić to miejsce z kosza?')) return;
+
+                var pointId = $(this).data('point-id');
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'jg_admin_restore_point',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        post_id: pointId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Miejsce zostało przywrócone!');
+                            location.reload();
+                        } else {
+                            alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
+                        }
+                    },
+                    error: function() {
+                        alert('Błąd połączenia z serwerem');
+                    }
+                });
+            });
+
+            // Delete point permanently from trash
+            $('.jg-delete-permanent').on('click', function() {
+                if (!confirm('Czy na pewno chcesz TRWALE usunąć to miejsce? Tej operacji nie można cofnąć!')) return;
+
+                var pointId = $(this).data('point-id');
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'jg_admin_delete_point',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
+                        post_id: pointId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Miejsce zostało trwale usunięte!');
+                            location.reload();
+                        } else {
+                            alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
+                        }
+                    },
+                    error: function() {
+                        alert('Błąd połączenia z serwerem');
+                    }
+                });
+            });
+
             // Scroll to section if URL has hash
             if (window.location.hash) {
                 var hash = window.location.hash;
@@ -1020,6 +1076,20 @@ class JG_Map_Admin {
                 case 'delete_basic':
                     $buttons .= sprintf(
                         '<button class="button jg-delete-point" data-point-id="%d">🗑️ Usuń</button>',
+                        $point_id
+                    );
+                    break;
+
+                case 'restore':
+                    $buttons .= sprintf(
+                        '<button class="button button-primary jg-restore-point" data-point-id="%d">↩️ Przywróć</button>',
+                        $point_id
+                    );
+                    break;
+
+                case 'delete_permanent':
+                    $buttons .= sprintf(
+                        '<button class="button jg-delete-permanent" data-point-id="%d">🗑️ Usuń trwale</button>',
                         $point_id
                     );
                     break;
