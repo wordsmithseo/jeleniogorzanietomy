@@ -2166,6 +2166,7 @@
       }
 
       var ALL = [];
+      var dataLoaded = false; // Track if data has been loaded (even if empty)
       var lastModified = 0;
       // v5: Added reports_count field - invalidating cache to force reload
       var CACHE_KEY = 'jg_map_cache_v5';
@@ -2358,6 +2359,7 @@
           var cacheVersion = version || Date.now();
           saveToCache(ALL, cacheVersion);
 
+          dataLoaded = true; // Mark data as loaded
           apply(true); // Skip fitBounds on refresh to preserve user's view
 
           // Deep link handling (jg_view_point, jg_view_reports, point_id, #point-123)
@@ -5690,10 +5692,11 @@
       }
 
       function apply(skipFitBounds) {
-        console.log('[JG MAP APPLY] Called with ALL.length =', ALL ? ALL.length : 0);
+        console.log('[JG MAP APPLY] Called with ALL.length =', ALL ? ALL.length : 0, 'dataLoaded =', dataLoaded);
 
         // CRITICAL FIX: Don't apply filters if data not yet loaded
-        if (!ALL || ALL.length === 0) {
+        // Allow empty arrays if data was actually loaded (could be no points in DB)
+        if (!dataLoaded) {
           console.log('[JG MAP APPLY] Data not loaded yet, skipping');
           return;
         }
@@ -5985,6 +5988,7 @@
       var cachedData = loadFromCache();
       if (cachedData && cachedData.length > 0) {
         ALL = cachedData;
+        dataLoaded = true; // Mark data as loaded from cache
         apply(false); // Apply cached data immediately with fitBounds
         // Don't call hideLoading() here - let draw() handle it when cluster is ready
 
