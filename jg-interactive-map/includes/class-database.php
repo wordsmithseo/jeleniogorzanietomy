@@ -625,9 +625,10 @@ class JG_Map_Database {
             return $cached_results;
         }
 
+        // Exclude trashed points from all queries
         $status_condition = $include_pending
-            ? "status IN ('publish', 'pending', 'edit')"
-            : "status = 'publish'";
+            ? "status IN ('publish', 'pending', 'edit') AND status != 'trash'"
+            : "status = 'publish' AND status != 'trash'";
 
         $sql = "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                        resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
@@ -766,6 +767,52 @@ class JG_Map_Database {
         );
 
         // Invalidate points cache after update
+        if ($result !== false) {
+            self::invalidate_points_cache();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Soft delete point (move to trash)
+     */
+    public static function soft_delete_point($point_id) {
+        global $wpdb;
+        $points_table = self::get_points_table();
+
+        $result = $wpdb->update(
+            $points_table,
+            array('status' => 'trash'),
+            array('id' => $point_id),
+            array('%s'),
+            array('%d')
+        );
+
+        // Invalidate points cache after soft deletion
+        if ($result !== false) {
+            self::invalidate_points_cache();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Restore point from trash
+     */
+    public static function restore_point($point_id) {
+        global $wpdb;
+        $points_table = self::get_points_table();
+
+        $result = $wpdb->update(
+            $points_table,
+            array('status' => 'publish'),
+            array('id' => $point_id),
+            array('%s'),
+            array('%d')
+        );
+
+        // Invalidate points cache after restore
         if ($result !== false) {
             self::invalidate_points_cache();
         }

@@ -3607,8 +3607,8 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Delete permanently
-        $deleted = JG_Map_Database::delete_point($point_id);
+        // Soft delete (move to trash)
+        $deleted = JG_Map_Database::soft_delete_point($point_id);
 
         if ($deleted === false) {
             wp_send_json_error(array('message' => 'Błąd usuwania'));
@@ -3626,10 +3626,10 @@ class JG_Map_Ajax_Handlers {
             'delete_point',
             'point',
             $point_id,
-            sprintf('Trwale usunięto miejsce: %s', $point['title'])
+            sprintf('Przeniesiono do kosza miejsce: %s', $point['title'])
         );
 
-        wp_send_json_success(array('message' => 'Miejsce usunięte'));
+        wp_send_json_success(array('message' => 'Miejsce przeniesione do kosza'));
     }
 
     /**
