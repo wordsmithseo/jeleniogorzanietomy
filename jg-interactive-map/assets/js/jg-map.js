@@ -4482,8 +4482,8 @@
                 'Miejsce "' + esc(p.title || 'Bez tytułu') + '" zostało usunięte przez moderatora i nie jest już dostępne.',
                 [
                   { text: 'OK, rozumiem', className: 'jg-btn jg-btn--primary', callback: function() {
-                    // Refresh map to remove deleted point
-                    refreshData(false);
+                    // Refresh map to remove deleted point - FORCE refresh to ensure marker is removed
+                    refreshData(true);
                   }}
                 ]
               );
@@ -6116,8 +6116,8 @@
             // Show "syncing" status
             updateSyncStatus('syncing');
 
-            // INSTANT refresh - no delay!
-            refreshData(false).then(function() {
+            // INSTANT refresh - FORCE full refresh to ensure deleted points are removed
+            refreshData(true).then(function() {
               debugLog('[JG MAP SYNC] Map refreshed successfully');
 
               // Show "completed" status
@@ -6161,9 +6161,9 @@
         debugWarn('[JG MAP SYNC] WordPress Heartbeat API not available - falling back to polling');
         updateSyncStatus('Brak Heartbeat API');
 
-        // Fallback: Polling every 10 seconds if heartbeat not available
+        // Fallback: Polling every 10 seconds if heartbeat not available - FORCE refresh
         setInterval(function() {
-          refreshData(false).catch(function() {});
+          refreshData(true).catch(function() {});
         }, 10000);
       }
 
@@ -6171,7 +6171,8 @@
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) {
           debugLog('[JG MAP SYNC] Page visible - refreshing data');
-          refreshData(false);
+          // FORCE refresh when returning to tab to ensure we have latest data
+          refreshData(true);
         }
       });
 
