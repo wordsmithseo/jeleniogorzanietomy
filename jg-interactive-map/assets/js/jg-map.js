@@ -5692,6 +5692,12 @@
       function apply(skipFitBounds) {
         console.log('[JG MAP APPLY] Called with ALL.length =', ALL ? ALL.length : 0);
 
+        // CRITICAL FIX: Don't apply filters if data not yet loaded
+        if (!ALL || ALL.length === 0) {
+          console.log('[JG MAP APPLY] Data not loaded yet, skipping');
+          return;
+        }
+
         var enabled = {};
         var promoOnly = false;
         var myPlacesOnly = false;
