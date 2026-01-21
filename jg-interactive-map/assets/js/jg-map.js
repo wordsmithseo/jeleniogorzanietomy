@@ -2371,8 +2371,10 @@
       var isInitialLoad = true; // Track if this is the first load
 
       function draw(list, skipFitBounds) {
+        console.log('[JG MAP DRAW] Called with', list.length, 'points');
 
         if (!list || list.length === 0) {
+          console.log('[JG MAP DRAW] Empty list, showing map');
           showMap();
           hideLoading();
           // Check for deep-linked point after map is ready
@@ -2382,16 +2384,18 @@
 
         // Wait for cluster to be ready (created in map.whenReady)
         if (!clusterReady || !cluster) {
+          console.log('[JG MAP DRAW] Cluster not ready, storing pending data');
           pendingData = list;
           return;
         }
 
-
+        console.log('[JG MAP DRAW] Clearing cluster layers...');
         // Clear cluster layers
         try {
           cluster.clearLayers();
+          console.log('[JG MAP DRAW] Cluster cleared successfully');
         } catch (e) {
-          debugError('[JG MAP] Błąd czyszczenia clustera:', e);
+          console.error('[JG MAP DRAW] Error clearing cluster:', e);
         }
 
         // Clear any markers that were added directly to map (not in cluster)
