@@ -1181,8 +1181,25 @@
       setTimeout(inv, 900);
       window.addEventListener('resize', inv);
 
-      var lastSubmitTime = 0;
-      var FLOOD_DELAY = 60000;
+      var FLOOD_DELAY = 60000; // 60 seconds between submissions
+
+      // Load last submit time from localStorage
+      function getLastSubmitTime() {
+        try {
+          var stored = localStorage.getItem('jg_last_submit_time');
+          return stored ? parseInt(stored) : 0;
+        } catch (e) {
+          return 0;
+        }
+      }
+
+      function setLastSubmitTime(time) {
+        try {
+          localStorage.setItem('jg_last_submit_time', time.toString());
+        } catch (e) {}
+      }
+
+      var lastSubmitTime = getLastSubmitTime();
       var mapMoveDetected = false;
       var mapClickTimeout = null;
       var MIN_ZOOM_FOR_ADD = 17;
@@ -1228,10 +1245,51 @@
           }
 
           var now = Date.now();
-          if (lastSubmitTime > 0 && (now - lastSubmitTime) < FLOOD_DELAY) {
-            var sec = Math.ceil((FLOOD_DELAY - (now - lastSubmitTime)) / 1000);
-            showAlert('Poczekaj jeszcze ' + sec + ' sekund.');
-            return;
+          var remainingMs = FLOOD_DELAY - (now - lastSubmitTime);
+
+          if (lastSubmitTime > 0 && remainingMs > 0) {
+            var sec = Math.ceil(remainingMs / 1000);
+
+            // For admins: show modal with countdown and bypass button
+            if (CFG.isAdmin) {
+              showConfirm(
+                'Minęło dopiero ' + Math.floor((now - lastSubmitTime) / 1000) + ' sekund od ostatniego dodania miejsca.\n\n' +
+                'Poczekaj jeszcze <strong id="jg-cooldown-timer">' + sec + '</strong> sekund lub dodaj pomimo limitu.',
+                'Limit czasu',
+                'Dodaj pomimo tego'
+              ).then(function(confirmed) {
+                if (confirmed) {
+                  // Bypass: reset lastSubmitTime and continue
+                  lastSubmitTime = 0;
+                  setLastSubmitTime(0);
+                  // Trigger click again to proceed
+                  map.fire('click', e);
+                }
+              });
+
+              // Start countdown timer
+              var timerEl = null;
+              var countdownInterval = setInterval(function() {
+                timerEl = document.getElementById('jg-cooldown-timer');
+                if (timerEl) {
+                  var remaining = Math.ceil((FLOOD_DELAY - (Date.now() - lastSubmitTime)) / 1000);
+                  if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    timerEl.textContent = '0';
+                  } else {
+                    timerEl.textContent = remaining.toString();
+                  }
+                } else {
+                  clearInterval(countdownInterval);
+                }
+              }, 1000);
+
+              return;
+            } else {
+              // For regular users: just show alert
+              showAlert('Poczekaj jeszcze ' + sec + ' sekund.');
+              return;
+            }
           }
 
           var lat = e.latlng.lat.toFixed(6);
@@ -1500,7 +1558,9 @@
                 throw new Error((j && j.data && j.data.message) || 'Błąd');
               }
 
-              lastSubmitTime = Date.now();
+              var submitTime = Date.now();
+              lastSubmitTime = submitTime;
+              setLastSubmitTime(submitTime);
 
               msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
               msg.style.color = '#15803d';
@@ -6822,10 +6882,51 @@
 
         // Check flood protection
         var now = Date.now();
-        if (lastSubmitTime > 0 && (now - lastSubmitTime) < FLOOD_DELAY) {
-          var sec = Math.ceil((FLOOD_DELAY - (now - lastSubmitTime)) / 1000);
-          showAlert('Poczekaj jeszcze ' + sec + ' sekund.');
-          return;
+        var remainingMs = FLOOD_DELAY - (now - lastSubmitTime);
+
+        if (lastSubmitTime > 0 && remainingMs > 0) {
+          var sec = Math.ceil(remainingMs / 1000);
+
+          // For admins: show modal with countdown and bypass button
+          if (CFG.isAdmin) {
+            showConfirm(
+              'Minęło dopiero ' + Math.floor((now - lastSubmitTime) / 1000) + ' sekund od ostatniego dodania miejsca.\n\n' +
+              'Poczekaj jeszcze <strong id="jg-cooldown-timer-fab">' + sec + '</strong> sekund lub dodaj pomimo limitu.',
+              'Limit czasu',
+              'Dodaj pomimo tego'
+            ).then(function(confirmed) {
+              if (confirmed) {
+                // Bypass: reset lastSubmitTime and continue
+                lastSubmitTime = 0;
+                setLastSubmitTime(0);
+                // Proceed to open modal
+                openAddPlaceModal(lat, lng);
+              }
+            });
+
+            // Start countdown timer
+            var timerEl = null;
+            var countdownInterval = setInterval(function() {
+              timerEl = document.getElementById('jg-cooldown-timer-fab');
+              if (timerEl) {
+                var remaining = Math.ceil((FLOOD_DELAY - (Date.now() - lastSubmitTime)) / 1000);
+                if (remaining <= 0) {
+                  clearInterval(countdownInterval);
+                  timerEl.textContent = '0';
+                } else {
+                  timerEl.textContent = remaining.toString();
+                }
+              } else {
+                clearInterval(countdownInterval);
+              }
+            }, 1000);
+
+            return;
+          } else {
+            // For regular users: just show alert
+            showAlert('Poczekaj jeszcze ' + sec + ' sekund.');
+            return;
+          }
         }
 
         var latFixed = parseFloat(lat).toFixed(6);
@@ -7092,7 +7193,9 @@
                   throw new Error((j && j.data && j.data.message) || 'Błąd');
                 }
 
-                lastSubmitTime = Date.now();
+                var submitTime = Date.now();
+              lastSubmitTime = submitTime;
+              setLastSubmitTime(submitTime);
 
                 msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
                 msg.style.color = '#15803d';
