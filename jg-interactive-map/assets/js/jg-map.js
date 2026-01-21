@@ -6086,7 +6086,7 @@
       // Wrap in document.ready to ensure wp.heartbeat is fully initialized
       $(document).ready(function() {
         if (typeof wp !== 'undefined' && wp.heartbeat) {
-          debugLog('[JG MAP SYNC] Initializing real-time synchronization');
+          console.log('[JG MAP SYNC] Initializing real-time synchronization');
 
           // Set heartbeat interval to 15 seconds (optimal for real-time updates)
           wp.heartbeat.interval(15);
@@ -6095,37 +6095,37 @@
           $(document).on('heartbeat-send.jgMapSync', function(e, data) {
             data.jg_map_check = true;
             data.jg_map_last_check = lastSyncCheck;
-            debugLog('[JG MAP SYNC] Heartbeat send - checking for updates since', lastSyncCheck);
+            console.log('[JG MAP SYNC] Heartbeat send - checking for updates since', lastSyncCheck);
           });
 
           // Process heartbeat response - REAL-TIME sync events
           $(document).on('heartbeat-tick.jgMapSync', function(e, data) {
             if (!data.jg_map_sync) {
-              debugLog('[JG MAP SYNC] No sync data in heartbeat response');
+              console.log('[JG MAP SYNC] No sync data in heartbeat response');
               return;
             }
 
             var syncData = data.jg_map_sync;
-            debugLog('[JG MAP SYNC] Heartbeat tick received:', syncData);
+            console.log('[JG MAP SYNC] Heartbeat tick received:', syncData);
 
             // Update last check timestamp
             lastSyncCheck = syncData.server_time || Math.floor(Date.now() / 1000);
 
             // Check if there are new/updated points
             if (syncData.new_points > 0 || (syncData.sync_events && syncData.sync_events.length > 0)) {
-              debugLog('[JG MAP SYNC] Changes detected! New points:', syncData.new_points, 'Events:', syncData.sync_events ? syncData.sync_events.length : 0);
+              console.log('[JG MAP SYNC] Changes detected! New points:', syncData.new_points, 'Events:', syncData.sync_events ? syncData.sync_events.length : 0);
 
               // Show "syncing" status
               updateSyncStatus('syncing');
 
               // INSTANT refresh - FORCE full refresh to ensure deleted points are removed
               refreshData(true).then(function() {
-                debugLog('[JG MAP SYNC] Map refreshed successfully');
+                console.log('[JG MAP SYNC] Map refreshed successfully');
 
                 // Show "completed" status
                 updateSyncStatus('completed');
               }).catch(function(err) {
-                debugError('[JG MAP SYNC] Refresh failed:', err);
+                console.error('[JG MAP SYNC] Refresh failed:', err);
                 updateSyncStatus('online'); // Return to online on error
               });
             } else {
@@ -6135,14 +6135,14 @@
 
             // Update pending counts for admins
             if (CFG.isAdmin && syncData.pending_counts) {
-              debugLog('[JG MAP SYNC] Admin pending counts:', syncData.pending_counts);
+              console.log('[JG MAP SYNC] Admin pending counts:', syncData.pending_counts);
               // Notification system will handle this via jg-notifications.js
             }
           });
 
           // Handle connection errors
           $(document).on('heartbeat-error.jgMapSync', function() {
-            debugWarn('[JG MAP SYNC] Heartbeat error - connection lost');
+            console.warn('[JG MAP SYNC] Heartbeat error - connection lost');
             updateSyncStatus('Błąd połączenia');
           });
 
@@ -6153,14 +6153,14 @@
           // This ensures sync check happens instantly on page load
           setTimeout(function() {
             if (typeof wp !== 'undefined' && wp.heartbeat) {
-              debugLog('[JG MAP SYNC] Forcing immediate first heartbeat tick');
+              console.log('[JG MAP SYNC] Forcing immediate first heartbeat tick');
               wp.heartbeat.connectNow();
             }
           }, 100); // Small delay to ensure everything is initialized
 
-          debugLog('[JG MAP SYNC] Real-time synchronization initialized successfully');
+          console.log('[JG MAP SYNC] Real-time synchronization initialized successfully');
         } else {
-          debugWarn('[JG MAP SYNC] WordPress Heartbeat API not available - falling back to polling');
+          console.warn('[JG MAP SYNC] WordPress Heartbeat API not available - falling back to polling');
           updateSyncStatus('Brak Heartbeat API');
 
           // Fallback: Polling every 10 seconds if heartbeat not available - FORCE refresh
@@ -6172,7 +6172,7 @@
         // Check for updates when page becomes visible
         document.addEventListener('visibilitychange', function() {
           if (!document.hidden) {
-            debugLog('[JG MAP SYNC] Page visible - refreshing data');
+            console.log('[JG MAP SYNC] Page visible - refreshing data');
             // FORCE refresh when returning to tab to ensure we have latest data
             refreshData(true);
           }
