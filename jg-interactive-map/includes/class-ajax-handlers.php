@@ -163,6 +163,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_get_notification_counts', array($this, 'get_notification_counts'), 1);
         add_action('wp_ajax_jg_keep_reported_place', array($this, 'keep_reported_place'), 1);
         add_action('wp_ajax_jg_admin_delete_user', array($this, 'admin_delete_user'), 1);
+        add_action('wp_ajax_jg_admin_restore_point', array($this, 'admin_restore_point'), 1);
     }
 
     /**
@@ -5972,5 +5973,44 @@ class JG_Map_Ajax_Handlers {
         } else {
             wp_send_json_error(array('message' => 'Failed to track click'));
         }
+    }
+
+    /**
+     * Restore point from trash (admin only)
+     */
+    public function admin_restore_point() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID miejsca'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Miejsce nie istnieje'));
+            exit;
+        }
+
+        if ($point['status'] !== 'trash') {
+            wp_send_json_error(array('message' => 'Miejsce nie znajduje się w koszu'));
+            exit;
+        }
+
+        // Restore point to publish status
+        JG_Map_Database::update_point($point_id, array('status' => 'publish'));
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'restore_point',
+            'point',
+            $point_id,
+            sprintf('Przywrócono miejsce z kosza: %s', $point['title'])
+        );
+
+        wp_send_json_success(array('message' => 'Miejsce przywrócone z kosza'));
     }
 }
