@@ -315,12 +315,51 @@
     function handlePointClick(point) {
         console.log('[JG SIDEBAR] Point clicked:', point);
 
-        // Construct URL based on type and slug
-        // Format: /miejsce/slug, /ciekawostka/slug, /zgloszenie/slug
-        const url = `/${point.type}/${point.slug}`;
+        // First check if point still exists (protection against clicking deleted points before sync)
+        $.ajax({
+            url: JG_MAP_CFG.ajax,
+            type: 'POST',
+            data: {
+                action: 'jg_check_point_exists',
+                _ajax_nonce: JG_MAP_CFG.nonce,
+                point_id: point.id
+            },
+            success: function(response) {
+                if (!response.success || !response.data.exists) {
+                    // Point has been deleted - show alert and refresh sidebar
+                    showDeletedPointAlert();
+                    // Refresh sidebar to remove deleted point
+                    setTimeout(function() {
+                        loadPoints();
+                    }, 1500);
+                    return;
+                }
 
-        console.log('[JG SIDEBAR] Navigating to:', url);
-        window.location.href = url;
+                // Point exists - navigate to it
+                const url = `/${point.type}/${point.slug}`;
+                console.log('[JG SIDEBAR] Navigating to:', url);
+                window.location.href = url;
+            },
+            error: function() {
+                // On error, still try to navigate (fallback)
+                const url = `/${point.type}/${point.slug}`;
+                console.log('[JG SIDEBAR] Navigation (error fallback):', url);
+                window.location.href = url;
+            }
+        });
+    }
+
+    /**
+     * Show alert when clicked point was deleted
+     */
+    function showDeletedPointAlert() {
+        // Try to use map's showAlert function if available
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('Miejsce usunięte, niebawem zniknie z tej listy.');
+        } else {
+            // Fallback to browser alert
+            alert('Miejsce usunięte, niebawem zniknie z tej listy.');
+        }
     }
 
     /**
