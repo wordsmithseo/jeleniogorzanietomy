@@ -45,7 +45,7 @@ class JG_Map_Maintenance {
             }
 
             self::run_maintenance();
-            wp_redirect(admin_url('admin.php?page=jg-map&maintenance_done=1'));
+            wp_redirect(admin_url('admin.php?page=jg-map-maintenance&maintenance_done=1'));
             exit;
         }
     }
@@ -75,9 +75,13 @@ class JG_Map_Maintenance {
         $results['old_deleted'] = self::clean_old_deleted_points();
         $results['expired_resolved_reports'] = self::clean_expired_resolved_reports();
         $results['expired_rejected_reports'] = self::clean_expired_rejected_reports();
+        $results['old_activity_logs'] = self::clean_old_activity_logs();
+        $results['old_point_visits'] = self::clean_old_point_visits();
+        $results['old_relevance_votes'] = self::clean_old_relevance_votes();
 
         // 4. Optimize database
         $results['cache_cleared'] = self::clear_caches();
+        $results['expired_transients'] = self::clean_expired_transients();
         $results['tables_optimized'] = self::optimize_tables();
 
         $execution_time = round(microtime(true) - $start_time, 2);
@@ -448,6 +452,74 @@ class JG_Map_Maintenance {
     }
 
     /**
+     * Clean old activity logs (older than 90 days)
+     */
+    private static function clean_old_activity_logs() {
+        // Call the cleanup method from Activity Log class
+        if (class_exists('JG_Map_Activity_Log')) {
+            $deleted = JG_Map_Activity_Log::cleanup_old_logs(90);
+
+            if ($deleted > 0) {
+                error_log('[JG MAP MAINTENANCE] Deleted ' . $deleted . ' old activity log entries');
+            }
+
+            return $deleted;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Clean old point visits (older than 90 days)
+     */
+    private static function clean_old_point_visits() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'jg_map_point_visits';
+
+        // Delete visit records older than 90 days
+        $deleted = $wpdb->query($wpdb->prepare("
+            DELETE FROM $table
+            WHERE last_visited < %s
+        ", date('Y-m-d H:i:s', strtotime('-90 days'))));
+
+        if ($deleted > 0) {
+            error_log('[JG MAP MAINTENANCE] Deleted ' . $deleted . ' old point visit records');
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * Clean old relevance votes (older than 1 year or for deleted points)
+     */
+    private static function clean_old_relevance_votes() {
+        global $wpdb;
+        $relevance_votes_table = $wpdb->prefix . 'jg_map_relevance_votes';
+        $points_table = JG_Map_Database::get_points_table();
+
+        // First, clean orphaned votes (for deleted points)
+        $orphaned = $wpdb->query("
+            DELETE rv FROM $relevance_votes_table rv
+            LEFT JOIN $points_table p ON rv.point_id = p.id
+            WHERE p.id IS NULL
+        ");
+
+        // Then, clean very old votes (older than 1 year)
+        $old_votes = $wpdb->query($wpdb->prepare("
+            DELETE FROM $relevance_votes_table
+            WHERE created_at < %s
+        ", date('Y-m-d H:i:s', strtotime('-1 year'))));
+
+        $total_deleted = $orphaned + $old_votes;
+
+        if ($total_deleted > 0) {
+            error_log('[JG MAP MAINTENANCE] Deleted ' . $total_deleted . ' old/orphaned relevance votes');
+        }
+
+        return $total_deleted;
+    }
+
+    /**
      * Clear WordPress caches
      */
     private static function clear_caches() {
@@ -456,24 +528,69 @@ class JG_Map_Maintenance {
     }
 
     /**
+     * Clean expired transients from WordPress database
+     */
+    private static function clean_expired_transients() {
+        global $wpdb;
+
+        // Delete expired transients (WordPress doesn't always auto-delete these)
+        $deleted = $wpdb->query(
+            "DELETE FROM $wpdb->options
+             WHERE option_name LIKE '_transient_timeout_%'
+             AND option_value < UNIX_TIMESTAMP()"
+        );
+
+        // Delete the corresponding transient values
+        if ($deleted > 0) {
+            $wpdb->query(
+                "DELETE FROM $wpdb->options
+                 WHERE option_name LIKE '_transient_%'
+                 AND option_name NOT LIKE '_transient_timeout_%'
+                 AND option_name NOT IN (
+                     SELECT REPLACE(option_name, '_transient_timeout_', '_transient_')
+                     FROM (SELECT option_name FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_%') AS temp
+                 )"
+            );
+        }
+
+        if ($deleted > 0) {
+            error_log('[JG MAP MAINTENANCE] Deleted ' . $deleted . ' expired transients');
+        }
+
+        return $deleted;
+    }
+
+    /**
      * Optimize database tables
      */
     private static function optimize_tables() {
         global $wpdb;
 
+        // All 10 plugin tables
         $tables = array(
+            // Core plugin tables
             JG_Map_Database::get_points_table(),
             JG_Map_Database::get_votes_table(),
             JG_Map_Database::get_reports_table(),
             JG_Map_Database::get_history_table(),
-            JG_Map_Database::get_relevance_votes_table()
+            JG_Map_Database::get_relevance_votes_table(),
+            $wpdb->prefix . 'jg_map_point_visits',
+            // Supporting tables
+            $wpdb->prefix . 'jg_map_activity_log',
+            $wpdb->prefix . 'jg_map_sync_queue',
+            $wpdb->prefix . 'jg_map_banners',
+            $wpdb->prefix . 'jg_map_banner_impressions'
         );
 
         $optimized = 0;
         foreach ($tables as $table) {
-            $result = $wpdb->query("OPTIMIZE TABLE $table");
-            if ($result !== false) {
-                $optimized++;
+            // Check if table exists before optimizing
+            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'");
+            if ($table_exists) {
+                $result = $wpdb->query("OPTIMIZE TABLE $table");
+                if ($result !== false) {
+                    $optimized++;
+                }
             }
         }
 
