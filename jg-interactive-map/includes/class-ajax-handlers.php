@@ -1665,6 +1665,7 @@ class JG_Map_Ajax_Handlers {
         }
 
         $user_id = get_current_user_id();
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $point_id = intval($_POST['post_id'] ?? 0);
         $reason = sanitize_textarea_field($_POST['reason'] ?? '');
 
@@ -1685,11 +1686,37 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Check daily report limit for regular users (3 reports per day)
+        if (!$is_admin) {
+            $report_count = intval(get_user_meta($user_id, 'jg_map_daily_reports_count', true));
+            $report_date = get_user_meta($user_id, 'jg_map_daily_reports_date', true);
+            $today = current_time('Y-m-d');
+
+            // Reset counter if it's a new day
+            if ($report_date !== $today) {
+                $report_count = 0;
+                update_user_meta($user_id, 'jg_map_daily_reports_date', $today);
+                update_user_meta($user_id, 'jg_map_daily_reports_count', 0);
+            }
+
+            // Check if limit exceeded
+            if ($report_count >= 3) {
+                wp_send_json_error(array('message' => 'Osiągnąłeś dzienny limit zgłoszeń (3 na dobę). Spróbuj ponownie jutro.'));
+                exit;
+            }
+        }
+
         // Get email from logged in user
         $user = get_userdata($user_id);
         $email = $user ? $user->user_email : '';
 
         JG_Map_Database::add_report($point_id, $user_id, $email, $reason);
+
+        // Increment daily report counter for regular users
+        if (!$is_admin) {
+            $report_count = intval(get_user_meta($user_id, 'jg_map_daily_reports_count', true));
+            update_user_meta($user_id, 'jg_map_daily_reports_count', $report_count + 1);
+        }
 
         // Update point's report_status so users can see it's reported
         global $wpdb;
@@ -3607,8 +3634,8 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Delete permanently
-        $deleted = JG_Map_Database::delete_point($point_id);
+        // Soft delete (move to trash)
+        $deleted = JG_Map_Database::soft_delete_point($point_id);
 
         if ($deleted === false) {
             wp_send_json_error(array('message' => 'Błąd usuwania'));
@@ -3626,10 +3653,10 @@ class JG_Map_Ajax_Handlers {
             'delete_point',
             'point',
             $point_id,
-            sprintf('Trwale usunięto miejsce: %s', $point['title'])
+            sprintf('Przeniesiono do kosza miejsce: %s', $point['title'])
         );
 
-        wp_send_json_success(array('message' => 'Miejsce usunięte'));
+        wp_send_json_success(array('message' => 'Miejsce przeniesione do kosza'));
     }
 
     /**

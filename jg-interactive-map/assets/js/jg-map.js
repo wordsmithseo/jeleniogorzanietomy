@@ -1181,8 +1181,43 @@
       setTimeout(inv, 900);
       window.addEventListener('resize', inv);
 
-      var lastSubmitTime = 0;
-      var FLOOD_DELAY = 60000;
+      var FLOOD_DELAY = 60000; // 60 seconds between submissions
+      var REPORT_DELAY = 300000; // 5 minutes (300 seconds) between reports
+
+      // Load last submit time from localStorage
+      function getLastSubmitTime() {
+        try {
+          var stored = localStorage.getItem('jg_last_submit_time');
+          return stored ? parseInt(stored) : 0;
+        } catch (e) {
+          return 0;
+        }
+      }
+
+      function setLastSubmitTime(time) {
+        try {
+          localStorage.setItem('jg_last_submit_time', time.toString());
+        } catch (e) {}
+      }
+
+      // Load last report time from localStorage
+      function getLastReportTime() {
+        try {
+          var stored = localStorage.getItem('jg_last_report_time');
+          return stored ? parseInt(stored) : 0;
+        } catch (e) {
+          return 0;
+        }
+      }
+
+      function setLastReportTime(time) {
+        try {
+          localStorage.setItem('jg_last_report_time', time.toString());
+        } catch (e) {}
+      }
+
+      var lastSubmitTime = getLastSubmitTime();
+      var lastReportTime = getLastReportTime();
       var mapMoveDetected = false;
       var mapClickTimeout = null;
       var MIN_ZOOM_FOR_ADD = 17;
@@ -1228,10 +1263,51 @@
           }
 
           var now = Date.now();
-          if (lastSubmitTime > 0 && (now - lastSubmitTime) < FLOOD_DELAY) {
-            var sec = Math.ceil((FLOOD_DELAY - (now - lastSubmitTime)) / 1000);
-            showAlert('Poczekaj jeszcze ' + sec + ' sekund.');
-            return;
+          var remainingMs = FLOOD_DELAY - (now - lastSubmitTime);
+
+          if (lastSubmitTime > 0 && remainingMs > 0) {
+            var sec = Math.ceil(remainingMs / 1000);
+
+            // For admins: show modal with countdown and bypass button
+            if (CFG.isAdmin) {
+              showConfirm(
+                'Minęło dopiero ' + Math.floor((now - lastSubmitTime) / 1000) + ' sekund od ostatniego dodania miejsca.\n\n' +
+                'Poczekaj jeszcze <strong id="jg-cooldown-timer">' + sec + '</strong> sekund lub dodaj pomimo limitu.',
+                'Limit czasu',
+                'Dodaj pomimo tego'
+              ).then(function(confirmed) {
+                if (confirmed) {
+                  // Bypass: reset lastSubmitTime and continue
+                  lastSubmitTime = 0;
+                  setLastSubmitTime(0);
+                  // Trigger click again to proceed
+                  map.fire('click', e);
+                }
+              });
+
+              // Start countdown timer
+              var timerEl = null;
+              var countdownInterval = setInterval(function() {
+                timerEl = document.getElementById('jg-cooldown-timer');
+                if (timerEl) {
+                  var remaining = Math.ceil((FLOOD_DELAY - (Date.now() - lastSubmitTime)) / 1000);
+                  if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    timerEl.textContent = '0';
+                  } else {
+                    timerEl.textContent = remaining.toString();
+                  }
+                } else {
+                  clearInterval(countdownInterval);
+                }
+              }, 1000);
+
+              return;
+            } else {
+              // For regular users: just show alert
+              showAlert('Poczekaj jeszcze ' + sec + ' sekund.');
+              return;
+            }
           }
 
           var lat = e.latlng.lat.toFixed(6);
@@ -1500,7 +1576,9 @@
                 throw new Error((j && j.data && j.data.message) || 'Błąd');
               }
 
-              lastSubmitTime = Date.now();
+              var submitTime = Date.now();
+              lastSubmitTime = submitTime;
+              setLastSubmitTime(submitTime);
 
               msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
               msg.style.color = '#15803d';
@@ -3557,6 +3635,60 @@
           return;
         }
 
+        // Check report cooldown (5 minutes between reports)
+        var now = Date.now();
+        var remainingMs = REPORT_DELAY - (now - lastReportTime);
+
+        if (lastReportTime > 0 && remainingMs > 0) {
+          var sec = Math.ceil(remainingMs / 1000);
+          var minutes = Math.floor(sec / 60);
+          var seconds = sec % 60;
+          var timeStr = minutes > 0 ? minutes + ' min ' + seconds + ' sek' : seconds + ' sek';
+
+          // For admins: show modal with countdown and bypass button
+          if (CFG.isAdmin) {
+            showConfirm(
+              'Minęło dopiero ' + Math.floor((now - lastReportTime) / 1000) + ' sekund od ostatniego zgłoszenia.\n\n' +
+              'Poczekaj jeszcze <strong id="jg-report-cooldown-timer">' + timeStr + '</strong> lub zgłoś pomimo limitu.',
+              'Limit czasu zgłoszeń',
+              'Zgłoś pomimo tego'
+            ).then(function(confirmed) {
+              if (confirmed) {
+                // Bypass: reset lastReportTime and continue
+                lastReportTime = 0;
+                setLastReportTime(0);
+                // Proceed to open modal
+                openReportModal(p);
+              }
+            });
+
+            // Start countdown timer
+            var timerEl = null;
+            var countdownInterval = setInterval(function() {
+              timerEl = document.getElementById('jg-report-cooldown-timer');
+              if (timerEl) {
+                var remaining = Math.ceil((REPORT_DELAY - (Date.now() - lastReportTime)) / 1000);
+                if (remaining <= 0) {
+                  clearInterval(countdownInterval);
+                  timerEl.textContent = '0 sek';
+                } else {
+                  var mins = Math.floor(remaining / 60);
+                  var secs = remaining % 60;
+                  timerEl.textContent = mins > 0 ? mins + ' min ' + secs + ' sek' : secs + ' sek';
+                }
+              } else {
+                clearInterval(countdownInterval);
+              }
+            }, 1000);
+
+            return;
+          } else {
+            // For regular users: just show alert
+            showAlert('Poczekaj jeszcze ' + timeStr + ' przed kolejnym zgłoszeniem.');
+            return;
+          }
+        }
+
         open(modalReport, '<header><h3>Zgłoś do moderacji</h3><button class="jg-close" id="rpt-close">&times;</button></header><form id="report-form" class="jg-grid"><textarea name="reason" rows="3" placeholder="Powód zgłoszenia*" required style="padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><small style="color:#666">Powód zgłoszenia jest wymagany</small><div style="display:flex;gap:8px;justify-content:flex-end"><button class="jg-btn" type="submit">Zgłoś</button></div><div id="report-msg" style="font-size:12px;color:#555"></div></form>');
         qs('#rpt-close', modalReport).onclick = function() {
           close(modalReport);
@@ -3583,6 +3715,11 @@
             reason: f.reason.value.trim()
           })
           .then(function() {
+            // Save report time to localStorage
+            var reportTime = Date.now();
+            lastReportTime = reportTime;
+            setLastReportTime(reportTime);
+
             msg.textContent = 'Dziękujemy!';
             msg.style.color = '#15803d';
             f.reset();
@@ -6822,10 +6959,51 @@
 
         // Check flood protection
         var now = Date.now();
-        if (lastSubmitTime > 0 && (now - lastSubmitTime) < FLOOD_DELAY) {
-          var sec = Math.ceil((FLOOD_DELAY - (now - lastSubmitTime)) / 1000);
-          showAlert('Poczekaj jeszcze ' + sec + ' sekund.');
-          return;
+        var remainingMs = FLOOD_DELAY - (now - lastSubmitTime);
+
+        if (lastSubmitTime > 0 && remainingMs > 0) {
+          var sec = Math.ceil(remainingMs / 1000);
+
+          // For admins: show modal with countdown and bypass button
+          if (CFG.isAdmin) {
+            showConfirm(
+              'Minęło dopiero ' + Math.floor((now - lastSubmitTime) / 1000) + ' sekund od ostatniego dodania miejsca.\n\n' +
+              'Poczekaj jeszcze <strong id="jg-cooldown-timer-fab">' + sec + '</strong> sekund lub dodaj pomimo limitu.',
+              'Limit czasu',
+              'Dodaj pomimo tego'
+            ).then(function(confirmed) {
+              if (confirmed) {
+                // Bypass: reset lastSubmitTime and continue
+                lastSubmitTime = 0;
+                setLastSubmitTime(0);
+                // Proceed to open modal
+                openAddPlaceModal(lat, lng);
+              }
+            });
+
+            // Start countdown timer
+            var timerEl = null;
+            var countdownInterval = setInterval(function() {
+              timerEl = document.getElementById('jg-cooldown-timer-fab');
+              if (timerEl) {
+                var remaining = Math.ceil((FLOOD_DELAY - (Date.now() - lastSubmitTime)) / 1000);
+                if (remaining <= 0) {
+                  clearInterval(countdownInterval);
+                  timerEl.textContent = '0';
+                } else {
+                  timerEl.textContent = remaining.toString();
+                }
+              } else {
+                clearInterval(countdownInterval);
+              }
+            }, 1000);
+
+            return;
+          } else {
+            // For regular users: just show alert
+            showAlert('Poczekaj jeszcze ' + sec + ' sekund.');
+            return;
+          }
         }
 
         var latFixed = parseFloat(lat).toFixed(6);
@@ -7092,7 +7270,9 @@
                   throw new Error((j && j.data && j.data.message) || 'Błąd');
                 }
 
-                lastSubmitTime = Date.now();
+                var submitTime = Date.now();
+              lastSubmitTime = submitTime;
+              setLastSubmitTime(submitTime);
 
                 msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
                 msg.style.color = '#15803d';
