@@ -299,7 +299,9 @@
         `);
 
         // Click handler - trigger map zoom and modal
-        $item.on('click', function() {
+        $item.on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             handlePointClick(point);
         });
 
@@ -316,6 +318,8 @@
         console.log('[JG SIDEBAR] Point clicked:', point);
 
         // First check if point still exists (protection against clicking deleted points before sync)
+        console.log('[JG SIDEBAR] Checking if point exists, ID:', point.id);
+
         $.ajax({
             url: JG_MAP_CFG.ajax,
             type: 'POST',
@@ -325,11 +329,15 @@
                 point_id: point.id
             },
             success: function(response) {
-                if (!response.success || !response.data.exists) {
+                console.log('[JG SIDEBAR] Point check response:', response);
+
+                if (!response.success || !response.data || !response.data.exists) {
                     // Point has been deleted - show alert and refresh sidebar
+                    console.log('[JG SIDEBAR] Point deleted, showing alert');
                     showDeletedPointAlert();
                     // Refresh sidebar to remove deleted point
                     setTimeout(function() {
+                        console.log('[JG SIDEBAR] Refreshing sidebar to remove deleted point');
                         loadPoints();
                     }, 1500);
                     return;
@@ -337,11 +345,12 @@
 
                 // Point exists - navigate to it
                 const url = `/${point.type}/${point.slug}`;
-                console.log('[JG SIDEBAR] Navigating to:', url);
+                console.log('[JG SIDEBAR] Point exists, navigating to:', url);
                 window.location.href = url;
             },
-            error: function() {
+            error: function(xhr, status, error) {
                 // On error, still try to navigate (fallback)
+                console.error('[JG SIDEBAR] Error checking point:', status, error);
                 const url = `/${point.type}/${point.slug}`;
                 console.log('[JG SIDEBAR] Navigation (error fallback):', url);
                 window.location.href = url;
@@ -353,11 +362,16 @@
      * Show alert when clicked point was deleted
      */
     function showDeletedPointAlert() {
+        console.log('[JG SIDEBAR] Showing deleted point alert');
+        console.log('[JG SIDEBAR] window.showAlert available?', typeof window.showAlert);
+
         // Try to use map's showAlert function if available
         if (typeof window.showAlert === 'function') {
+            console.log('[JG SIDEBAR] Using window.showAlert');
             window.showAlert('Miejsce usunięte, niebawem zniknie z tej listy.');
         } else {
             // Fallback to browser alert
+            console.log('[JG SIDEBAR] Using browser alert');
             alert('Miejsce usunięte, niebawem zniknie z tej listy.');
         }
     }
