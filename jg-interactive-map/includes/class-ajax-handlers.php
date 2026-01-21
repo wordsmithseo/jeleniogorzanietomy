@@ -6042,14 +6042,18 @@ class JG_Map_Ajax_Handlers {
         foreach ($trashed_points as $point) {
             $point_id = $point['id'];
 
-            // Delete associated data
-            JG_Map_Database::delete_point_data($point_id);
+            // Delete point using the same method as admin_delete_point
+            $deleted = JG_Map_Database::delete_point($point_id);
 
-            // Delete the point itself
-            $result = $wpdb->delete($points_table, array('id' => $point_id), array('%d'));
-
-            if ($result) {
+            if ($deleted !== false) {
                 $deleted_count++;
+
+                // Queue sync event
+                JG_Map_Sync_Manager::get_instance()->queue_point_deleted($point_id, array(
+                    'admin_deleted' => true,
+                    'point_title' => $point['title'],
+                    'from_trash' => true
+                ));
 
                 // Log individual deletion
                 JG_Map_Activity_Log::log(
