@@ -287,95 +287,9 @@ class JG_Map_Enqueue {
             )
         );
 
-        // Add real-time updates for ALL users on map page
-        wp_enqueue_script('heartbeat');
-
-        $realtime_script = "
-        (function($) {
-            var lastCheckTime = Date.now();
-
-            console.log('[JG MAP REALTIME] Real-time updates enabled');
-
-            // Listen for reload request from Heartbeat
-            $(document).on('jg-map-reload-request', function() {
-                console.log('[JG MAP REALTIME] Reload requested, calling refreshData()');
-                // Call the global refreshData function from jg-map.js
-                if (typeof window.refreshData === 'function') {
-                    window.refreshData(true).catch(function(err) {
-                        console.error('[JG MAP REALTIME] Refresh failed:', err);
-                    });
-                } else {
-                    console.warn('[JG MAP REALTIME] refreshData function not found, will retry');
-                    // If not loaded yet, try again in a moment
-                    setTimeout(function() {
-                        if (typeof window.refreshData === 'function') {
-                            window.refreshData(true);
-                        }
-                    }, 1000);
-                }
-            });
-
-            // Listen for point removal events
-            $(document).on('jg-map-remove-points', function(e, pointIds) {
-                console.log('[JG MAP REALTIME] Removing points:', pointIds);
-                if (typeof window.removeMarkersById === 'function') {
-                    window.removeMarkersById(pointIds);
-                } else {
-                    console.warn('[JG MAP REALTIME] removeMarkersById function not found, triggering full reload');
-                    $(document).trigger('jg-map-reload-request');
-                }
-            });
-
-            // Set Heartbeat interval to 15 seconds
-            if (typeof wp !== 'undefined' && wp.heartbeat) {
-                wp.heartbeat.interval(15);
-            }
-
-            // Send request for map updates
-            $(document).on('heartbeat-send', function(e, data) {
-                data.jg_map_check_updates = true;
-                data.jg_map_last_check = lastCheckTime;
-            });
-
-            // Process heartbeat response
-            $(document).on('heartbeat-tick', function(e, data) {
-                if (!data.jg_map_updates) return;
-
-                var updates = data.jg_map_updates;
-                console.log('[JG MAP] Heartbeat map update:', updates);
-
-                // Handle rejected points (removed by admin)
-                if (updates.rejected_points && updates.rejected_points.length > 0) {
-                    console.log('[JG MAP] ' + updates.rejected_points.length + ' points rejected by admin');
-                    $(document).trigger('jg-map-remove-points', [updates.rejected_points]);
-                    lastCheckTime = Date.now();
-                }
-
-                // Handle deleted points (deletion approved)
-                if (updates.deleted_points && updates.deleted_points.length > 0) {
-                    console.log('[JG MAP] ' + updates.deleted_points.length + ' points deleted');
-                    $(document).trigger('jg-map-remove-points', [updates.deleted_points]);
-                    lastCheckTime = Date.now();
-                }
-
-                // Handle updated points (edit approved) - trigger full reload
-                if (updates.updated_points && updates.updated_points.length > 0) {
-                    console.log('[JG MAP] ' + updates.updated_points.length + ' points updated, triggering reload...');
-                    $(document).trigger('jg-map-reload-request');
-                    lastCheckTime = Date.now();
-                }
-
-                // If there are new points, trigger reload
-                if (updates.has_new_points) {
-                    console.log('[JG MAP] ' + updates.new_count + ' new points detected, triggering reload...');
-                    $(document).trigger('jg-map-reload-request');
-                    lastCheckTime = Date.now();
-                }
-            });
-        })(jQuery);
-        ";
-
-        wp_add_inline_script('heartbeat', $realtime_script);
+        // Real-time updates now handled directly in jg-map.js via WordPress Heartbeat API
+        // and JG_Map_Sync_Manager class. No inline script needed.
+        // Heartbeat is enqueued as a dependency of jg-map-script (see above)
     }
 
     /**
