@@ -2375,16 +2375,6 @@
       function draw(list, skipFitBounds) {
         console.log('[JG MAP DRAW] Called with', list.length, 'points');
 
-        if (!list || list.length === 0) {
-          console.log('[JG MAP DRAW] Empty list, showing map');
-          console.log('[JG MAP DRAW] Stack trace:', new Error().stack);
-          showMap();
-          hideLoading();
-          // Check for deep-linked point after map is ready
-          checkDeepLink();
-          return;
-        }
-
         // Wait for cluster to be ready (created in map.whenReady)
         if (!clusterReady || !cluster) {
           console.log('[JG MAP DRAW] Cluster not ready, storing pending data');
@@ -2392,13 +2382,22 @@
           return;
         }
 
+        // ALWAYS clear cluster first, even if list is empty
         console.log('[JG MAP DRAW] Clearing cluster layers...');
-        // Clear cluster layers
         try {
           cluster.clearLayers();
           console.log('[JG MAP DRAW] Cluster cleared successfully');
         } catch (e) {
           console.error('[JG MAP DRAW] Error clearing cluster:', e);
+        }
+
+        // If empty list, show map and return
+        if (!list || list.length === 0) {
+          console.log('[JG MAP DRAW] Empty list after clearing cluster, showing map');
+          showMap();
+          hideLoading();
+          checkDeepLink();
+          return;
         }
 
         // Clear any markers that were added directly to map (not in cluster)
