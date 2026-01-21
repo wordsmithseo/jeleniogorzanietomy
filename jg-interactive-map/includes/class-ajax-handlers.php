@@ -1954,6 +1954,14 @@ class JG_Map_Ajax_Handlers {
             'title' => $title
         ));
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'edit_and_resolve_reports',
+            'point',
+            $point_id,
+            sprintf('Edytowano miejsce i rozwiązano zgłoszenia: %s', $title)
+        );
+
         wp_send_json_success(array('message' => 'Miejsce edytowane i zgłoszenia zamknięte'));
     }
 
@@ -2018,6 +2026,14 @@ class JG_Map_Ajax_Handlers {
         $new_promo = !$point['is_promo'];
         JG_Map_Database::update_point($point_id, array('is_promo' => $new_promo));
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'toggle_promo',
+            'point',
+            $point_id,
+            sprintf('%s status promo dla: %s', $new_promo ? 'Włączono' : 'Wyłączono', $point['title'])
+        );
+
         wp_send_json_success(array('promo' => $new_promo));
     }
 
@@ -2039,6 +2055,14 @@ class JG_Map_Ajax_Handlers {
         $new_hidden = !$point['author_hidden'];
         JG_Map_Database::update_point($point_id, array('author_hidden' => $new_hidden));
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'toggle_author',
+            'point',
+            $point_id,
+            sprintf('%s autora dla: %s', $new_hidden ? 'Ukryto' : 'Pokazano', $point['title'])
+        );
+
         wp_send_json_success(array('author_hidden' => $new_hidden));
     }
 
@@ -2057,7 +2081,16 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        $point = JG_Map_Database::get_point($point_id);
         JG_Map_Database::update_point($point_id, array('admin_note' => $note));
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'update_note',
+            'point',
+            $point_id,
+            sprintf('Zaktualizowano notatkę dla: %s', $point ? $point['title'] : 'ID:' . $point_id)
+        );
 
         wp_send_json_success(array('message' => 'Notatka zaktualizowana'));
     }
@@ -2123,6 +2156,21 @@ class JG_Map_Ajax_Handlers {
         }
 
         JG_Map_Database::update_point($point_id, $update_data);
+
+        // Log action
+        $status_labels = array(
+            'added' => 'dodane',
+            'needs_better_documentation' => 'wymaga lepszej dokumentacji',
+            'reported' => 'zgłoszone',
+            'resolved' => 'rozwiązane',
+            'rejected' => 'odrzucone'
+        );
+        JG_Map_Activity_Log::log(
+            'change_report_status',
+            'point',
+            $point_id,
+            sprintf('Zmieniono status zgłoszenia na "%s" dla: %s', $status_labels[$new_status] ?? $new_status, $point['title'])
+        );
 
         // Get updated point to return delete date and rejection reason
         $updated_point = JG_Map_Database::get_point($point_id);
@@ -3258,6 +3306,14 @@ class JG_Map_Ajax_Handlers {
             wp_mail($author->user_email, $subject, $message);
         }
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'approve_deletion',
+            'point',
+            $point_id,
+            sprintf('Zaakceptowano żądanie usunięcia: %s', $point['title'])
+        );
+
         wp_send_json_success(array('message' => 'Miejsce usunięte'));
     }
 
@@ -3341,6 +3397,14 @@ class JG_Map_Ajax_Handlers {
                 }
                 wp_mail($author->user_email, $subject, $message);
             }
+
+            // Log action
+            JG_Map_Activity_Log::log(
+                'reject_deletion',
+                'point',
+                $point_id,
+                sprintf('Odrzucono żądanie usunięcia: %s. Powód: %s', $point['title'], $reason)
+            );
         }
 
         wp_send_json_success(array('message' => 'Zgłoszenie usunięcia odrzucone'));
@@ -3374,6 +3438,14 @@ class JG_Map_Ajax_Handlers {
             'is_promo' => $is_promo,
             'promo_until' => $promo_until ? $promo_until : null
         ));
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'update_promo_date',
+            'point',
+            $point_id,
+            sprintf('Zaktualizowano datę promocji do %s dla: %s', $promo_until ? $promo_until : 'brak', $point['title'])
+        );
 
         wp_send_json_success(array(
             'message' => 'Data promocji zaktualizowana',
@@ -3413,6 +3485,14 @@ class JG_Map_Ajax_Handlers {
             'is_promo' => $is_promo,
             'promo_until' => $promo_until_value
         ));
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'update_promo',
+            'point',
+            $point_id,
+            sprintf('Zaktualizowano promocję (status: %s, data: %s) dla: %s', $is_promo ? 'włączona' : 'wyłączona', $promo_until_value ?? 'brak', $point['title'])
+        );
 
         wp_send_json_success(array(
             'message' => 'Promocja zaktualizowana',
@@ -3486,6 +3566,13 @@ class JG_Map_Ajax_Handlers {
         // Get updated point to return current state
         $updated_point = JG_Map_Database::get_point($point_id);
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'update_sponsored',
+            'point',
+            $point_id,
+            sprintf('Zaktualizowano sponsorowanie (status: %s, data: %s) dla: %s', $is_sponsored ? 'włączone' : 'wyłączone', $sponsored_until_value ?? 'brak', $point['title'])
+        );
 
         wp_send_json_success(array(
             'message' => 'Sponsorowanie zaktualizowane',
@@ -3532,6 +3619,14 @@ class JG_Map_Ajax_Handlers {
             'point_title' => $point['title']
         ));
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'delete_point',
+            'point',
+            $point_id,
+            sprintf('Trwale usunięto miejsce: %s', $point['title'])
+        );
+
         wp_send_json_success(array('message' => 'Miejsce usunięte'));
     }
 
@@ -3559,6 +3654,7 @@ class JG_Map_Ajax_Handlers {
         if ($ban_type === 'permanent') {
             update_user_meta($user_id, 'jg_map_banned', 'permanent');
             delete_user_meta($user_id, 'jg_map_ban_until');
+            $ban_details = 'trwale';
         } else {
             // Temporary ban
             $ban_days = intval($_POST['ban_days'] ?? 7);
@@ -3566,7 +3662,16 @@ class JG_Map_Ajax_Handlers {
 
             update_user_meta($user_id, 'jg_map_banned', 'temporary');
             update_user_meta($user_id, 'jg_map_ban_until', $ban_until);
+            $ban_details = sprintf('tymczasowo na %d dni', $ban_days);
         }
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'ban_user',
+            'user',
+            $user_id,
+            sprintf('Zbanowano użytkownika %s (%s)', $user->display_name, $ban_details)
+        );
 
         wp_send_json_success(array(
             'message' => 'Użytkownik zbanowany',
@@ -3596,6 +3701,14 @@ class JG_Map_Ajax_Handlers {
 
         delete_user_meta($user_id, 'jg_map_banned');
         delete_user_meta($user_id, 'jg_map_ban_until');
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'unban_user',
+            'user',
+            $user_id,
+            sprintf('Odbanowano użytkownika %s', $user->display_name)
+        );
 
         wp_send_json_success(array('message' => 'Ban usunięty'));
     }
@@ -3630,12 +3743,22 @@ class JG_Map_Ajax_Handlers {
             delete_user_meta($user_id, $meta_key);
             $is_restricted = false;
             $message = 'Blokada usunięta';
+            $action = 'usunięto';
         } else {
             // Add restriction
             update_user_meta($user_id, $meta_key, '1');
             $is_restricted = true;
             $message = 'Blokada dodana';
+            $action = 'dodano';
         }
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'toggle_user_restriction',
+            'user',
+            $user_id,
+            sprintf('%s blokadę %s dla użytkownika %s', ucfirst($action), $restriction_type, $user->display_name)
+        );
 
         wp_send_json_success(array(
             'message' => $message,
@@ -3850,6 +3973,14 @@ class JG_Map_Ajax_Handlers {
         update_user_meta($user_id, 'jg_map_daily_places', $places_to_set);
         update_user_meta($user_id, 'jg_map_daily_reports', $reports_to_set);
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'set_user_limits',
+            'user',
+            $user_id,
+            sprintf('Ustawiono limity dla %s (miejsca: %d, zgłoszenia: %d)', $user->display_name, $places_limit, $reports_limit)
+        );
+
         wp_send_json_success(array(
             'message' => 'Limity ustawione',
             'places_remaining' => $places_limit,
@@ -3916,6 +4047,14 @@ class JG_Map_Ajax_Handlers {
         // Set custom limit
         update_user_meta($user_id, 'jg_map_photo_custom_limit', $limit_mb);
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'set_user_photo_limit',
+            'user',
+            $user_id,
+            sprintf('Ustawiono limit zdjęć dla %s: %d MB', $user->display_name, $limit_mb)
+        );
+
         wp_send_json_success(array(
             'message' => 'Limit zdjęć ustawiony',
             'limit_mb' => $limit_mb
@@ -3944,6 +4083,14 @@ class JG_Map_Ajax_Handlers {
 
         // Remove custom limit, falling back to default 100MB
         delete_user_meta($user_id, 'jg_map_photo_custom_limit');
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'reset_user_photo_limit',
+            'user',
+            $user_id,
+            sprintf('Zresetowano limit zdjęć dla %s do domyślnego (100MB)', $user->display_name)
+        );
 
         // Get current usage
         $monthly_data = $this->get_monthly_photo_usage($user_id);
@@ -4014,6 +4161,14 @@ class JG_Map_Ajax_Handlers {
         update_user_meta($user_id, 'jg_map_edits_count', 0);
         update_user_meta($user_id, 'jg_map_edits_date', current_time('Y-m-d'));
 
+        // Log action
+        JG_Map_Activity_Log::log(
+            'reset_user_edit_limit',
+            'user',
+            $user_id,
+            sprintf('Zresetowano licznik edycji dla %s', $user->display_name)
+        );
+
         wp_send_json_success(array(
             'message' => 'Licznik edycji zresetowany',
             'edit_count' => 0
@@ -4049,6 +4204,14 @@ class JG_Map_Ajax_Handlers {
         delete_transient($transient_key);
         delete_transient($transient_time_key);
         delete_transient($transient_userdata_key);
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'unblock_ip',
+            'system',
+            null,
+            sprintf('Odblokowano adres IP (typ: %s, hash: %s)', $ip_type, $ip_hash)
+        );
 
         wp_send_json_success(array('message' => 'Adres IP odblokowany pomyślnie'));
     }
@@ -4130,6 +4293,14 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_error(array('message' => 'Wystąpił błąd podczas usuwania użytkownika'));
             exit;
         }
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'delete_user',
+            'user',
+            $user_id,
+            sprintf('Trwale usunięto konto użytkownika %s (wraz z %d miejscami)', $user->display_name, count($user_places))
+        );
 
         wp_send_json_success(array('message' => 'Użytkownik został pomyślnie usunięty'));
     }
