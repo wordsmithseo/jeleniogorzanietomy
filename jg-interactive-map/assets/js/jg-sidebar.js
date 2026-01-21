@@ -372,9 +372,78 @@
         return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 
+    /**
+     * Setup synchronization with WordPress Heartbeat API
+     * This integrates with the main synchronization manager
+     * to automatically refresh sidebar when changes are detected
+     */
+    function setupSync() {
+        // Check if WordPress Heartbeat API is available
+        if (typeof wp === 'undefined' || !wp.heartbeat) {
+            console.log('[JG SIDEBAR SYNC] WordPress Heartbeat API not available');
+            return;
+        }
+
+        console.log('[JG SIDEBAR SYNC] Initializing real-time synchronization');
+
+        let lastSyncCheck = Math.floor(Date.now() / 1000);
+        let refreshPending = false;
+        let refreshTimeout = null;
+
+        // Listen to heartbeat responses
+        $(document).on('heartbeat-tick.jgSidebarSync', function(e, data) {
+            // Check if we have sync data from the sync manager
+            if (!data.jg_map_sync) {
+                return;
+            }
+
+            const syncData = data.jg_map_sync;
+            console.log('[JG SIDEBAR SYNC] Heartbeat tick received:', {
+                new_points: syncData.new_points,
+                events: syncData.sync_events ? syncData.sync_events.length : 0
+            });
+
+            // Update last check timestamp
+            lastSyncCheck = syncData.server_time || Math.floor(Date.now() / 1000);
+
+            // Check if there are changes that affect sidebar
+            const hasChanges = syncData.new_points > 0 ||
+                              (syncData.sync_events && syncData.sync_events.length > 0);
+
+            if (hasChanges) {
+                console.log('[JG SIDEBAR SYNC] Changes detected - scheduling refresh');
+                scheduleRefresh();
+            }
+        });
+
+        /**
+         * Schedule a refresh with debouncing to prevent excessive updates
+         * If multiple changes come in rapid succession, we only refresh once
+         */
+        function scheduleRefresh() {
+            // If refresh is already pending, just extend the timeout
+            if (refreshPending) {
+                console.log('[JG SIDEBAR SYNC] Refresh already pending, extending timeout');
+                clearTimeout(refreshTimeout);
+            }
+
+            refreshPending = true;
+
+            // Wait 500ms before refreshing to batch multiple rapid changes
+            refreshTimeout = setTimeout(function() {
+                console.log('[JG SIDEBAR SYNC] Executing scheduled refresh');
+                loadPoints();
+                refreshPending = false;
+            }, 500);
+        }
+
+        console.log('[JG SIDEBAR SYNC] Real-time synchronization initialized successfully');
+    }
+
     // Initialize on DOM ready
     $(document).ready(function() {
         init();
+        setupSync();
     });
 
     // Expose refresh function for external use
