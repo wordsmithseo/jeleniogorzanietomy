@@ -164,6 +164,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_keep_reported_place', array($this, 'keep_reported_place'), 1);
         add_action('wp_ajax_jg_admin_delete_user', array($this, 'admin_delete_user'), 1);
         add_action('wp_ajax_jg_admin_restore_point', array($this, 'admin_restore_point'), 1);
+        add_action('wp_ajax_jg_admin_empty_trash', array($this, 'admin_empty_trash'), 1);
     }
 
     /**
@@ -6012,5 +6013,65 @@ class JG_Map_Ajax_Handlers {
         );
 
         wp_send_json_success(array('message' => 'Miejsce przywrócone z kosza'));
+    }
+
+    /**
+     * Empty trash - permanently delete all trashed points (admin only)
+     */
+    public function admin_empty_trash() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+
+        // Get all trashed points for logging
+        $trashed_points = $wpdb->get_results($wpdb->prepare(
+            "SELECT id, title FROM $points_table WHERE status = %s",
+            'trash'
+        ), ARRAY_A);
+
+        if (empty($trashed_points)) {
+            wp_send_json_error(array('message' => 'Kosz jest pusty'));
+            exit;
+        }
+
+        $deleted_count = 0;
+
+        // Delete each trashed point
+        foreach ($trashed_points as $point) {
+            $point_id = $point['id'];
+
+            // Delete associated data
+            JG_Map_Database::delete_point_data($point_id);
+
+            // Delete the point itself
+            $result = $wpdb->delete($points_table, array('id' => $point_id), array('%d'));
+
+            if ($result) {
+                $deleted_count++;
+
+                // Log individual deletion
+                JG_Map_Activity_Log::log(
+                    'delete_point',
+                    'point',
+                    $point_id,
+                    sprintf('Trwale usunięto miejsce z kosza: %s', $point['title'])
+                );
+            }
+        }
+
+        // Log bulk action
+        JG_Map_Activity_Log::log(
+            'empty_trash',
+            'system',
+            0,
+            sprintf('Opróżniono kosz - usunięto %d miejsc', $deleted_count)
+        );
+
+        wp_send_json_success(array(
+            'message' => sprintf('Kosz został opróżniony. Usunięto %d miejsc.', $deleted_count),
+            'deleted_count' => $deleted_count
+        ));
     }
 }

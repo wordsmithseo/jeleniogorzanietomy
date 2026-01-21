@@ -610,6 +610,11 @@ class JG_Map_Admin {
                             <span style="background:<?php echo $config['color']; ?>;color:#fff;padding:4px 12px;border-radius:12px;font-size:14px">
                                 <?php echo $section_count; ?>
                             </span>
+                            <?php if ($status === 'trash' && $section_count > 0): ?>
+                                <button class="button jg-empty-trash" style="margin-left:15px;background:#dc2626;color:#fff;border-color:#dc2626">
+                                    🗑️ Opróżnij kosz
+                                </button>
+                            <?php endif; ?>
                         </h2>
 
                         <?php if ($section_count > 0): ?>
@@ -909,6 +914,31 @@ class JG_Map_Admin {
                     success: function(response) {
                         if (response.success) {
                             alert('Miejsce zostało trwale usunięte!');
+                            location.reload();
+                        } else {
+                            alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
+                        }
+                    },
+                    error: function() {
+                        alert('Błąd połączenia z serwerem');
+                    }
+                });
+            });
+
+            // Empty trash - delete all trashed points
+            $('.jg-empty-trash').on('click', function() {
+                if (!confirm('Czy na pewno chcesz TRWALE OPRÓŻNIĆ KOSZ? Wszystkie miejsca w koszu zostaną usunięte. Tej operacji nie można cofnąć!')) return;
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'jg_admin_empty_trash',
+                        _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.data.message || 'Kosz został opróżniony!');
                             location.reload();
                         } else {
                             alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
