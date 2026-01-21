@@ -2375,6 +2375,7 @@
 
         if (!list || list.length === 0) {
           console.log('[JG MAP DRAW] Empty list, showing map');
+          console.log('[JG MAP DRAW] Stack trace:', new Error().stack);
           showMap();
           hideLoading();
           // Check for deep-linked point after map is ready
@@ -5689,6 +5690,14 @@
       }
 
       function apply(skipFitBounds) {
+        console.log('[JG MAP APPLY] Called with ALL.length =', ALL ? ALL.length : 0);
+
+        // CRITICAL FIX: Don't apply filters if data not yet loaded
+        if (!ALL || ALL.length === 0) {
+          console.log('[JG MAP APPLY] Data not loaded yet, skipping');
+          return;
+        }
+
         var enabled = {};
         var promoOnly = false;
         var myPlacesOnly = false;
@@ -5702,6 +5711,8 @@
           var myPlaces = elFilters.querySelector('input[data-my-places]');
           myPlacesOnly = !!(myPlaces && myPlaces.checked);
         }
+
+        console.log('[JG MAP APPLY] Filters:', { enabled: enabled, promoOnly: promoOnly, myPlacesOnly: myPlacesOnly });
 
         // Filter logic:
         // 1. "Tylko sponsorowane" checkbox -> show ONLY sponsored
@@ -5745,6 +5756,7 @@
         var sponsoredCount = list.filter(function(p) { return p.sponsored; }).length;
         var nonSponsoredCount = list.length - sponsoredCount;
 
+        console.log('[JG MAP APPLY] Filtered list.length =', list.length);
         pendingData = list;
         draw(list, skipFitBounds);
       }
