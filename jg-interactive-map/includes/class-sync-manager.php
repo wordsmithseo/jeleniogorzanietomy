@@ -303,19 +303,40 @@ class JG_Map_Sync_Manager {
         $sync_events = $this->get_pending_syncs($last_check);
 
         // Get new/updated points count
+        // For admins: include both published and pending points
+        // For regular users: only published points
         $points_table = JG_Map_Database::get_points_table();
-        $new_points = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $points_table
-             WHERE status = 'publish'
-             AND (
-                created_at > %s
-                OR approved_at > %s
-                OR updated_at > %s
-             )",
-            date('Y-m-d H:i:s', $last_check),
-            date('Y-m-d H:i:s', $last_check),
-            date('Y-m-d H:i:s', $last_check)
-        ));
+        $is_admin = current_user_can('manage_options');
+
+        if ($is_admin) {
+            // Admins see both published and pending points
+            $new_points = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $points_table
+                 WHERE status IN ('publish', 'pending')
+                 AND (
+                    created_at > %s
+                    OR approved_at > %s
+                    OR updated_at > %s
+                 )",
+                date('Y-m-d H:i:s', $last_check),
+                date('Y-m-d H:i:s', $last_check),
+                date('Y-m-d H:i:s', $last_check)
+            ));
+        } else {
+            // Regular users only see published points
+            $new_points = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $points_table
+                 WHERE status = 'publish'
+                 AND (
+                    created_at > %s
+                    OR approved_at > %s
+                    OR updated_at > %s
+                 )",
+                date('Y-m-d H:i:s', $last_check),
+                date('Y-m-d H:i:s', $last_check),
+                date('Y-m-d H:i:s', $last_check)
+            ));
+        }
 
         // Get pending counts for admin
         $pending_counts = array();
