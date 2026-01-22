@@ -121,6 +121,7 @@ class JG_Map_Database {
             id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             point_id bigint(20) UNSIGNED NOT NULL,
             user_id bigint(20) UNSIGNED NOT NULL,
+            point_owner_id bigint(20) UNSIGNED DEFAULT NULL,
             action_type varchar(50) NOT NULL,
             old_values longtext,
             new_values longtext,
@@ -128,10 +129,15 @@ class JG_Map_Database {
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             resolved_at datetime DEFAULT NULL,
             resolved_by bigint(20) UNSIGNED DEFAULT NULL,
+            rejection_reason text DEFAULT NULL,
+            owner_approval_status varchar(20) DEFAULT 'pending',
+            owner_approval_at datetime DEFAULT NULL,
+            owner_approval_by bigint(20) UNSIGNED DEFAULT NULL,
             PRIMARY KEY (id),
             KEY point_id (point_id),
             KEY user_id (user_id),
-            KEY status (status)
+            KEY status (status),
+            KEY owner_approval_status (owner_approval_status)
         ) $charset_collate;";
 
         // Relevance votes table SQL (for "Nadal aktualne?" voting)
@@ -209,7 +215,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.5.6'; // Added banner impressions tracking table
+        $current_schema_version = '3.8.0'; // Added owner approval columns for two-stage edit approval
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -395,6 +401,40 @@ class JG_Map_Database {
         ));
         if (empty($rejection_exists)) {
             $wpdb->query("ALTER TABLE `$safe_history` ADD COLUMN rejection_reason text DEFAULT NULL AFTER resolved_by");
+        }
+
+        // Check if owner approval columns exist in history table (for two-stage approval)
+        $owner_approval_status_exists = $wpdb->get_results($wpdb->prepare(
+            "SHOW COLUMNS FROM `$safe_history` LIKE %s",
+            'owner_approval_status'
+        ));
+        if (empty($owner_approval_status_exists)) {
+            $wpdb->query("ALTER TABLE `$safe_history` ADD COLUMN owner_approval_status varchar(20) DEFAULT 'pending' AFTER rejection_reason");
+        }
+
+        $owner_approval_at_exists = $wpdb->get_results($wpdb->prepare(
+            "SHOW COLUMNS FROM `$safe_history` LIKE %s",
+            'owner_approval_at'
+        ));
+        if (empty($owner_approval_at_exists)) {
+            $wpdb->query("ALTER TABLE `$safe_history` ADD COLUMN owner_approval_at datetime DEFAULT NULL AFTER owner_approval_status");
+        }
+
+        $owner_approval_by_exists = $wpdb->get_results($wpdb->prepare(
+            "SHOW COLUMNS FROM `$safe_history` LIKE %s",
+            'owner_approval_by'
+        ));
+        if (empty($owner_approval_by_exists)) {
+            $wpdb->query("ALTER TABLE `$safe_history` ADD COLUMN owner_approval_by bigint(20) UNSIGNED DEFAULT NULL AFTER owner_approval_at");
+        }
+
+        // Check if point_owner_id column exists in history table (to track who needs to approve)
+        $point_owner_id_exists = $wpdb->get_results($wpdb->prepare(
+            "SHOW COLUMNS FROM `$safe_history` LIKE %s",
+            'point_owner_id'
+        ));
+        if (empty($point_owner_id_exists)) {
+            $wpdb->query("ALTER TABLE `$safe_history` ADD COLUMN point_owner_id bigint(20) UNSIGNED DEFAULT NULL AFTER user_id");
         }
 
         // Check if case_id column exists (for unique report case numbers)
@@ -1355,7 +1395,7 @@ class JG_Map_Database {
     /**
      * Add history entry
      */
-    public static function add_history($point_id, $user_id, $action_type, $old_values, $new_values) {
+    public static function add_history($point_id, $user_id, $action_type, $old_values, $new_values, $point_owner_id = null) {
         global $wpdb;
 
         // Ensure history table exists
@@ -1363,17 +1403,22 @@ class JG_Map_Database {
 
         $table = self::get_history_table();
 
-        return $wpdb->insert(
-            $table,
-            array(
-                'point_id' => $point_id,
-                'user_id' => $user_id,
-                'action_type' => $action_type,
-                'old_values' => is_array($old_values) ? json_encode($old_values) : $old_values,
-                'new_values' => is_array($new_values) ? json_encode($new_values) : $new_values,
-                'status' => 'pending'
-            )
+        $data = array(
+            'point_id' => $point_id,
+            'user_id' => $user_id,
+            'action_type' => $action_type,
+            'old_values' => is_array($old_values) ? json_encode($old_values) : $old_values,
+            'new_values' => is_array($new_values) ? json_encode($new_values) : $new_values,
+            'status' => 'pending'
         );
+
+        // If point_owner_id is provided, this requires owner approval first
+        if ($point_owner_id !== null) {
+            $data['point_owner_id'] = $point_owner_id;
+            $data['owner_approval_status'] = 'pending';
+        }
+
+        return $wpdb->insert($table, $data);
     }
 
     /**

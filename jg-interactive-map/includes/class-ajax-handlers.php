@@ -139,6 +139,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_get_point_history', array($this, 'get_point_history'));
         add_action('wp_ajax_jg_admin_approve_edit', array($this, 'admin_approve_edit'), 1, 0);
         add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'), 1);
+        add_action('wp_ajax_jg_owner_approve_edit', array($this, 'owner_approve_edit'), 1);
+        add_action('wp_ajax_jg_owner_reject_edit', array($this, 'owner_reject_edit'), 1);
         add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'), 1);
         add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'), 1);
         add_action('wp_ajax_jg_admin_update_sponsored', array($this, 'admin_update_sponsored'), 1);
@@ -1207,10 +1209,9 @@ class JG_Map_Ajax_Handlers {
 
         // Check permissions
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
-        if (!$is_admin && intval($point['author_id']) !== $user_id) {
-            wp_send_json_error(array('message' => 'Brak uprawnień'));
-            exit;
-        }
+        $is_owner = intval($point['author_id']) === $user_id;
+
+        // Anyone can suggest edits to any place (will require two-stage approval for non-owners)
 
         // Check if user is banned (skip for admins)
         if (!$is_admin && self::is_user_banned($user_id)) {
@@ -1389,7 +1390,20 @@ class JG_Map_Ajax_Handlers {
 
             wp_send_json_success(array('message' => 'Zaktualizowano'));
         } else {
-            // Check daily edit limit for regular users (2 edits per day)
+            // Check if user has sponsored places (users with sponsored places get 2x edit limit)
+            global $wpdb;
+            $points_table = JG_Map_Database::get_points_table();
+            $sponsored_count = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $points_table
+                WHERE author_id = %d AND is_promo = 1 AND status = 'publish'",
+                $user_id
+            ));
+            $has_sponsored = $sponsored_count > 0;
+
+            // Calculate daily edit limit (2 for regular users, 4 for users with sponsored places)
+            $daily_limit = $has_sponsored ? 4 : 2;
+
+            // Check daily edit limit
             $edit_count = intval(get_user_meta($user_id, 'jg_map_edits_count', true));
             $edit_date = get_user_meta($user_id, 'jg_map_edits_date', true);
             $today = current_time('Y-m-d');
@@ -1402,8 +1416,11 @@ class JG_Map_Ajax_Handlers {
             }
 
             // Check if limit exceeded
-            if ($edit_count >= 2) {
-                wp_send_json_error(array('message' => 'Osiągnąłeś dzienny limit edycji (2 na dobę). Spróbuj ponownie jutro.'));
+            if ($edit_count >= $daily_limit) {
+                $limit_msg = $has_sponsored
+                    ? 'Osiągnąłeś dzienny limit edycji (4 na dobę dla użytkowników z miejscami sponsorowanymi). Spróbuj ponownie jutro.'
+                    : 'Osiągnąłeś dzienny limit edycji (2 na dobę). Spróbuj ponownie jutro.';
+                wp_send_json_error(array('message' => $limit_msg));
                 exit;
             }
 
@@ -1457,7 +1474,10 @@ class JG_Map_Ajax_Handlers {
                 $new_values['cta_type'] = !empty($cta_type) ? $cta_type : null;
             }
 
-            JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values);
+            // Store point owner ID for two-stage approval (if non-owner is editing)
+            $point_owner_id = !$is_owner ? intval($point['author_id']) : null;
+
+            JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values, $point_owner_id);
 
             // Increment daily edit counter
             update_user_meta($user_id, 'jg_map_edits_count', $edit_count + 1);
@@ -1466,13 +1486,22 @@ class JG_Map_Ajax_Handlers {
             JG_Map_Sync_Manager::get_instance()->queue_edit_submitted($point_id, array(
                 'user_id' => $user_id,
                 'old_values' => $old_values,
-                'new_values' => $new_values
+                'new_values' => $new_values,
+                'requires_owner_approval' => !$is_owner
             ));
 
-            // Notify admin
-            $this->notify_admin_edit($point_id);
+            // Notify owner if non-owner is editing, otherwise notify admin
+            if (!$is_owner) {
+                $this->notify_owner_edit($point_id, $point_owner_id);
+            } else {
+                $this->notify_admin_edit($point_id);
+            }
 
-            wp_send_json_success(array('message' => 'Edycja wysłana do moderacji'));
+            $success_msg = !$is_owner
+                ? 'Edycja wysłana do zatwierdzenia przez właściciela miejsca'
+                : 'Edycja wysłana do moderacji';
+
+            wp_send_json_success(array('message' => $success_msg));
         }
     }
 
@@ -3001,6 +3030,27 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Notify owner of edit suggestion
+     */
+    private function notify_owner_edit($point_id, $owner_id) {
+        $owner = get_userdata($owner_id);
+        if (!$owner || empty($owner->user_email)) {
+            return;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        $editor = wp_get_current_user();
+
+        $subject = 'Portal Jeleniogórzanie to my - Propozycja edycji twojego miejsca';
+        $message = "Użytkownik {$editor->display_name} zaproponował zmiany w twoim miejscu:\n\n";
+        $message .= "Tytuł miejsca: {$point['title']}\n";
+        $message .= "Link do strony: " . home_url('/mapa/?point=' . $point_id) . "\n\n";
+        $message .= "Zaloguj się, aby przejrzeć i zatwierdzić lub odrzucić proponowane zmiany.";
+
+        wp_mail($owner->user_email, $subject, $message);
+    }
+
+    /**
      * Get point history (admin only)
      */
     public function get_point_history() {
@@ -3070,6 +3120,15 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Check if this edit requires owner approval and if it has been granted
+        if ($history['point_owner_id'] !== null) {
+            if ($history['owner_approval_status'] !== 'approved') {
+                wp_send_json_error(array(
+                    'message' => 'Ta edycja wymaga najpierw zatwierdzenia przez właściciela miejsca'
+                ));
+                exit;
+            }
+        }
 
         $new_values = json_decode($history['new_values'], true);
 
@@ -3177,13 +3236,13 @@ class JG_Map_Ajax_Handlers {
         // Approve history
         JG_Map_Database::approve_history($history_id, get_current_user_id());
 
-        // Notify author
+        // Notify editor (the person who submitted the edit)
         $point = JG_Map_Database::get_point($history['point_id']);
-        $author = get_userdata($point['author_id']);
-        if ($author && $author->user_email) {
+        $editor = get_userdata($history['user_id']);
+        if ($editor && $editor->user_email) {
             $subject = 'Portal Jeleniogórzanie to my - Twoja edycja została zaakceptowana';
-            $message = "Twoja edycja miejsca \"{$point['title']}\" została zaakceptowana.";
-            wp_mail($author->user_email, $subject, $message);
+            $message = "Twoja edycja miejsca \"{$point['title']}\" została zaakceptowana przez moderatora.";
+            wp_mail($editor->user_email, $subject, $message);
         }
 
         // Queue sync event via dedicated sync manager
@@ -3236,16 +3295,16 @@ class JG_Map_Ajax_Handlers {
             'reason' => $reason
         ));
 
-        // Notify author
+        // Notify editor (the person who submitted the edit)
         $point = JG_Map_Database::get_point($history['point_id']);
-        $author = get_userdata($point['author_id']);
-        if ($author && $author->user_email) {
+        $editor = get_userdata($history['user_id']);
+        if ($editor && $editor->user_email) {
             $subject = 'Portal Jeleniogórzanie to my - Twoja edycja została odrzucona';
-            $message = "Twoja edycja miejsca \"{$point['title']}\" została odrzucona.\n\n";
+            $message = "Twoja edycja miejsca \"{$point['title']}\" została odrzucona przez moderatora.\n\n";
             if ($reason) {
                 $message .= "Powód: $reason\n";
             }
-            wp_mail($author->user_email, $subject, $message);
+            wp_mail($editor->user_email, $subject, $message);
         }
 
         // Log action
@@ -3254,6 +3313,161 @@ class JG_Map_Ajax_Handlers {
             'history',
             $history_id,
             sprintf('Odrzucono edycję miejsca: %s. Powód: %s', $point['title'], $reason)
+        );
+
+        wp_send_json_success(array('message' => 'Edycja odrzucona'));
+    }
+
+    /**
+     * Owner approves edit suggestion
+     */
+    public function owner_approve_edit() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $user_id = get_current_user_id();
+        $history_id = intval($_POST['history_id'] ?? 0);
+
+        if (!$history_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        global $wpdb;
+        $table = JG_Map_Database::get_history_table();
+        $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
+
+        if (!$history) {
+            wp_send_json_error(array('message' => 'Historia nie istnieje'));
+            exit;
+        }
+
+        // Check if user is the point owner or admin
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+        if (!$is_admin && intval($history['point_owner_id']) !== $user_id) {
+            wp_send_json_error(array('message' => 'Brak uprawnień'));
+            exit;
+        }
+
+        // Update owner approval status
+        $wpdb->update(
+            $table,
+            array(
+                'owner_approval_status' => 'approved',
+                'owner_approval_at' => current_time('mysql'),
+                'owner_approval_by' => $user_id
+            ),
+            array('id' => $history_id)
+        );
+
+        // Get point info for notification
+        $point = JG_Map_Database::get_point($history['point_id']);
+        $editor = get_userdata($history['user_id']);
+
+        // Notify editor that owner approved, now waiting for moderator
+        if ($editor && $editor->user_email) {
+            $subject = 'Portal Jeleniogórzanie to my - Właściciel zaakceptował twoją edycję';
+            $message = "Właściciel miejsca \"{$point['title']}\" zaakceptował twoją propozycję zmian.\n\n";
+            $message .= "Twoja edycja oczekuje teraz na zatwierdzenie przez moderatora.";
+            wp_mail($editor->user_email, $subject, $message);
+        }
+
+        // Notify admin that edit is ready for final approval
+        $this->notify_admin_edit($history['point_id']);
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'owner_approve_edit',
+            'history',
+            $history_id,
+            sprintf('Właściciel zaakceptował propozycję edycji miejsca: %s', $point['title'])
+        );
+
+        wp_send_json_success(array('message' => 'Edycja zaakceptowana. Oczekuje teraz na zatwierdzenie moderatora.'));
+    }
+
+    /**
+     * Owner rejects edit suggestion
+     */
+    public function owner_reject_edit() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $user_id = get_current_user_id();
+        $history_id = intval($_POST['history_id'] ?? 0);
+        $reason = sanitize_textarea_field($_POST['reason'] ?? '');
+
+        if (!$history_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        global $wpdb;
+        $table = JG_Map_Database::get_history_table();
+        $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
+
+        if (!$history) {
+            wp_send_json_error(array('message' => 'Historia nie istnieje'));
+            exit;
+        }
+
+        // Check if user is the point owner or admin
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+        if (!$is_admin && intval($history['point_owner_id']) !== $user_id) {
+            wp_send_json_error(array('message' => 'Brak uprawnień'));
+            exit;
+        }
+
+        // Update owner approval status and mark history as rejected
+        $wpdb->update(
+            $table,
+            array(
+                'owner_approval_status' => 'rejected',
+                'owner_approval_at' => current_time('mysql'),
+                'owner_approval_by' => $user_id,
+                'status' => 'rejected',
+                'resolved_at' => current_time('mysql'),
+                'resolved_by' => $user_id,
+                'rejection_reason' => $reason
+            ),
+            array('id' => $history_id)
+        );
+
+        // Get point info for notification
+        $point = JG_Map_Database::get_point($history['point_id']);
+        $editor = get_userdata($history['user_id']);
+
+        // Notify editor that owner rejected
+        if ($editor && $editor->user_email) {
+            $subject = 'Portal Jeleniogórzanie to my - Właściciel odrzucił twoją edycję';
+            $message = "Właściciel miejsca \"{$point['title']}\" odrzucił twoją propozycję zmian.\n\n";
+            if ($reason) {
+                $message .= "Powód: $reason\n";
+            }
+            wp_mail($editor->user_email, $subject, $message);
+        }
+
+        // Queue sync event via dedicated sync manager
+        JG_Map_Sync_Manager::get_instance()->queue_edit_rejected($history['point_id'], array(
+            'history_id' => $history_id,
+            'reason' => $reason,
+            'rejected_by' => 'owner'
+        ));
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'owner_reject_edit',
+            'history',
+            $history_id,
+            sprintf('Właściciel odrzucił propozycję edycji miejsca: %s. Powód: %s', $point['title'], $reason)
         );
 
         wp_send_json_success(array('message' => 'Edycja odrzucona'));
