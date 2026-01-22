@@ -5778,8 +5778,18 @@ class JG_Map_Ajax_Handlers {
 
         // Get filter and sort parameters
         $type_filters = isset($_POST['type_filters']) ? (array)$_POST['type_filters'] : array();
+
+        // DEBUG: Log raw POST value
+        error_log('[JG SIDEBAR DEBUG] RAW $_POST my_places: ' . (isset($_POST['my_places']) ? var_export($_POST['my_places'], true) : 'NOT SET'));
+        error_log('[JG SIDEBAR DEBUG] RAW $_POST my_places type: ' . (isset($_POST['my_places']) ? gettype($_POST['my_places']) : 'N/A'));
+
         // FIX: Use filter_var to properly convert boolean from POST (string "false" was being cast to true)
         $my_places = isset($_POST['my_places']) ? filter_var($_POST['my_places'], FILTER_VALIDATE_BOOLEAN) : false;
+
+        // DEBUG: Log processed value
+        error_log('[JG SIDEBAR DEBUG] PROCESSED my_places: ' . ($my_places ? 'true' : 'false'));
+        error_log('[JG SIDEBAR DEBUG] Current user ID: ' . $current_user_id);
+
         $sort_by = isset($_POST['sort_by']) ? sanitize_text_field($_POST['sort_by']) : 'date_desc';
 
         // SIDEBAR SHOWS ONLY PUBLISHED POINTS (not pending)
