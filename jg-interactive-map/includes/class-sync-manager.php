@@ -152,6 +152,9 @@ class JG_Map_Sync_Manager {
         // Clear WordPress object cache
         wp_cache_delete('jg_map_pending_counts');
         wp_cache_flush();
+
+        // Invalidate points transient cache (for sidebar and map)
+        JG_Map_Database::invalidate_points_cache();
     }
 
     /**
