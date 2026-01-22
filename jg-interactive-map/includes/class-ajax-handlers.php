@@ -5778,23 +5778,13 @@ class JG_Map_Ajax_Handlers {
 
         // Get filter and sort parameters
         $type_filters = isset($_POST['type_filters']) ? (array)$_POST['type_filters'] : array();
-        $my_places = isset($_POST['my_places']) ? (bool)$_POST['my_places'] : false;
+        // FIX: Use filter_var to properly convert boolean from POST (string "false" was being cast to true)
+        $my_places = isset($_POST['my_places']) ? filter_var($_POST['my_places'], FILTER_VALIDATE_BOOLEAN) : false;
         $sort_by = isset($_POST['sort_by']) ? sanitize_text_field($_POST['sort_by']) : 'date_desc';
 
         // SIDEBAR SHOWS ONLY PUBLISHED POINTS (not pending)
         // Pending points are visible only on the map for moderation
         $points = JG_Map_Database::get_published_points(false);
-
-        // DEBUG: Log points fetched
-        error_log('[JG SIDEBAR DEBUG] Points fetched from DB: ' . count($points));
-        if (!empty($points)) {
-            error_log('[JG SIDEBAR DEBUG] First point: ' . json_encode(array(
-                'id' => $points[0]['id'],
-                'title' => $points[0]['title'],
-                'status' => $points[0]['status'],
-                'type' => $points[0]['type']
-            )));
-        }
 
         // PERFORMANCE OPTIMIZATION: Batch load votes for all points to avoid N+1 queries
         $point_ids = array_column($points, 'id');
@@ -5832,11 +5822,6 @@ class JG_Map_Ajax_Handlers {
 
             $filtered_points[] = $point;
         }
-
-        // DEBUG: Log filtered points
-        error_log('[JG SIDEBAR DEBUG] Filtered points: ' . count($filtered_points));
-        error_log('[JG SIDEBAR DEBUG] Type filters: ' . json_encode($type_filters));
-        error_log('[JG SIDEBAR DEBUG] My places filter: ' . ($my_places ? 'true' : 'false'));
 
         // Sort points
         $sponsored_points = array();
@@ -5926,13 +5911,6 @@ class JG_Map_Ajax_Handlers {
             if (isset($stats[$point['type']])) {
                 $stats[$point['type']]++;
             }
-        }
-
-        // DEBUG: Log final result
-        error_log('[JG SIDEBAR DEBUG] Final result points count: ' . count($result));
-        error_log('[JG SIDEBAR DEBUG] Stats: ' . json_encode($stats));
-        if (!empty($result)) {
-            error_log('[JG SIDEBAR DEBUG] First result point: ' . json_encode($result[0]));
         }
 
         wp_send_json_success(array(
