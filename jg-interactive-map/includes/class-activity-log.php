@@ -75,8 +75,6 @@ class JG_Map_Activity_Log {
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
-
-        error_log('[JG MAP] Activity log table created: ' . $table);
     }
 
     /**

@@ -412,37 +412,17 @@ class JG_Map_Sync_Manager {
     }
 
     /**
-     * Log error message
-     *
-     * @param string $message Error message
-     * @param array $context Additional context
+     * Log error message (disabled for production)
      */
     private function log_error($message, $context = array()) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[JG Map Sync Manager ERROR] ' . $message . ' | Context: ' . json_encode($context));
-        }
-
-        // Also log to activity log if available
-        if (class_exists('JG_Map_Activity_Log')) {
-            JG_Map_Activity_Log::log(
-                'sync_error',
-                0, // system action
-                $message,
-                $context
-            );
-        }
+        // Logging disabled
     }
 
     /**
-     * Log debug message
-     *
-     * @param string $message Debug message
-     * @param array $context Additional context
+     * Log debug message (disabled for production)
      */
     private function log_debug($message, $context = array()) {
-        if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
-            error_log('[JG Map Sync Manager] ' . $message . ' | Context: ' . json_encode($context));
-        }
+        // Logging disabled
     }
 
     /**

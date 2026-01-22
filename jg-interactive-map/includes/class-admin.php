@@ -116,11 +116,6 @@ class JG_Map_Admin {
             'publish'
         ));
 
-        // Debug logging (temporary - can be removed after fixing)
-        if (current_user_can('manage_options')) {
-            error_log('[JG MAP ADMIN BAR] Pending counts: points=' . $pending_points . ', edits=' . $pending_edits . ', reports=' . $pending_reports . ', deletions=' . $pending_deletions);
-        }
-
         $total_pending = intval($pending_points) + intval($pending_edits) + intval($pending_reports) + intval($pending_deletions);
 
         if ($total_pending === 0) {
@@ -3977,8 +3972,6 @@ class JG_Map_Admin {
 
                 var counts = data.jg_map_notifications;
                 var total = counts.total;
-
-                console.log('[JG MAP] Heartbeat notification update:', counts);
 
                 // Update admin bar
                 var adminBarItem = $('#wp-admin-bar-jg-map-notifications');

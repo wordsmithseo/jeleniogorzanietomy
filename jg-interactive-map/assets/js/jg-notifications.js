@@ -6,11 +6,8 @@
 (function($) {
     'use strict';
 
-    console.log('[JG MAP TOPBAR] Real-time notifications initialized');
-
     // Global function to refresh notifications immediately
     window.jgRefreshNotifications = function() {
-        console.log('[JG MAP TOPBAR] Manual refresh requested');
         return $.ajax({
             url: jgNotificationsConfig.ajaxUrl,
             type: 'POST',
@@ -20,24 +17,15 @@
             },
             success: function(response) {
                 if (response.success) {
-                    console.log('[JG MAP TOPBAR] Notification data received:', response.data);
                     updateNotifications(response.data);
-                } else {
-                    console.error('[JG MAP TOPBAR] Invalid response:', response);
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error('[JG MAP TOPBAR] Failed to refresh notifications:', error);
             }
         });
     };
 
     function updateNotifications(counts) {
-        console.log('[JG MAP TOPBAR] Updating notifications:', counts);
-
         var container = $('#jg-top-bar-notifications');
         if (!container.length) {
-            console.warn('[JG MAP TOPBAR] Container not found');
             return;
         }
 
