@@ -148,10 +148,16 @@
             },
             success: function(response) {
                 console.log('[JG SIDEBAR] Points loaded:', response);
+                console.log('[JG SIDEBAR] DEBUG - response.data:', response.data);
+                console.log('[JG SIDEBAR] DEBUG - response.data.points:', response.data ? response.data.points : 'NO DATA');
+                console.log('[JG SIDEBAR] DEBUG - points length:', response.data && response.data.points ? response.data.points.length : 0);
 
                 if (response.success && response.data) {
                     sidebarPoints = response.data.points;
+                    console.log('[JG SIDEBAR] DEBUG - sidebarPoints assigned:', sidebarPoints);
+                    console.log('[JG SIDEBAR] DEBUG - sidebarPoints length:', sidebarPoints ? sidebarPoints.length : 0);
                     updateStats(response.data.stats);
+                    console.log('[JG SIDEBAR] DEBUG - Calling renderPoints with', sidebarPoints ? sidebarPoints.length : 0, 'points');
                     renderPoints(sidebarPoints);
                 } else {
                     console.error('[JG SIDEBAR] Failed to load points:', response);
@@ -184,17 +190,26 @@
      * Render points list
      */
     function renderPoints(points) {
+        console.log('[JG SIDEBAR] renderPoints called with:', points);
+        console.log('[JG SIDEBAR] renderPoints - points type:', typeof points);
+        console.log('[JG SIDEBAR] renderPoints - points length:', points ? points.length : 'NULL/UNDEFINED');
+
         const $list = $('#jg-sidebar-list');
         $list.empty();
 
         if (!points || points.length === 0) {
+            console.log('[JG SIDEBAR] renderPoints - No points, showing empty message');
             $list.html('<div class="jg-sidebar-empty">Brak pinezek spełniających kryteria</div>');
             return;
         }
 
+        console.log('[JG SIDEBAR] renderPoints - Processing', points.length, 'points');
+
         // Separate sponsored and regular pins
         const sponsoredPoints = points.filter(p => p.is_promo);
         const regularPoints = points.filter(p => !p.is_promo);
+
+        console.log('[JG SIDEBAR] renderPoints - Sponsored:', sponsoredPoints.length, 'Regular:', regularPoints.length);
 
         // Add ONE random sponsored pin in "Polecamy" section
         if (sponsoredPoints.length > 0) {
