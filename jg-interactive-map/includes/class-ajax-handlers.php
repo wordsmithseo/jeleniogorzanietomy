@@ -5781,14 +5781,9 @@ class JG_Map_Ajax_Handlers {
         $my_places = isset($_POST['my_places']) ? (bool)$_POST['my_places'] : false;
         $sort_by = isset($_POST['sort_by']) ? sanitize_text_field($_POST['sort_by']) : 'date_desc';
 
-        // Get all published points
-        $points = JG_Map_Database::get_published_points($is_admin);
-
-        // If regular user is logged in, add their pending points
-        if (!$is_admin && $current_user_id > 0) {
-            $user_pending_points = JG_Map_Database::get_user_pending_points($current_user_id);
-            $points = array_merge($points, $user_pending_points);
-        }
+        // SIDEBAR SHOWS ONLY PUBLISHED POINTS (not pending)
+        // Pending points are visible only on the map for moderation
+        $points = JG_Map_Database::get_published_points(false);
 
         // PERFORMANCE OPTIMIZATION: Batch load votes for all points to avoid N+1 queries
         $point_ids = array_column($points, 'id');
