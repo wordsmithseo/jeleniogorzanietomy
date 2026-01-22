@@ -20,8 +20,6 @@
      * Initialize sidebar
      */
     function init() {
-        console.log('[JG SIDEBAR] Initializing sidebar widget');
-
         // Setup event listeners
         setupEventListeners();
 
@@ -33,11 +31,6 @@
      * Setup event listeners for filters and sorting
      */
     function setupEventListeners() {
-        console.log('[JG SIDEBAR] Setting up event listeners');
-        console.log('[JG SIDEBAR] Sidebar element:', $('#jg-map-sidebar').length);
-        console.log('[JG SIDEBAR] Collapsible headers found:', $('.jg-sidebar-collapsible-header').length);
-        console.log('[JG SIDEBAR] Headers HTML:', $('.jg-sidebar-collapsible-header').html());
-
         // Type filters
         $('[data-sidebar-type]').on('change', function() {
             updateTypeFilters();
@@ -62,7 +55,6 @@
         $('#jg-map-sidebar').on('click', '.jg-sidebar-collapsible-header', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[JG SIDEBAR] Method 1 - Collapsible header clicked via delegation');
             toggleCollapsible($(this));
         });
 
@@ -70,7 +62,6 @@
         $(document).on('click', '.jg-sidebar-collapsible-header', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[JG SIDEBAR] Method 2 - Collapsible header clicked via document');
             toggleCollapsible($(this));
         });
 
@@ -78,7 +69,6 @@
         $('.jg-sidebar-collapsible-header').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[JG SIDEBAR] Method 3 - Collapsible header clicked directly');
             toggleCollapsible($(this));
         });
     }
@@ -90,14 +80,7 @@
         const $content = $header.next('.jg-sidebar-collapsible-content');
         const $icon = $header.find('.jg-sidebar-toggle-icon');
 
-        console.log('[JG SIDEBAR] Toggle called', {
-            header: $header.length,
-            content: $content.length,
-            icon: $icon.length
-        });
-
         if ($content.length === 0) {
-            console.error('[JG SIDEBAR] No content element found!');
             return;
         }
 
@@ -130,8 +113,6 @@
      * Load points from server
      */
     function loadPoints() {
-        console.log('[JG SIDEBAR] Loading points with filters:', currentFilters);
-
         // Show loading
         $('#jg-sidebar-loading').show();
         $('#jg-sidebar-list').hide();
@@ -147,14 +128,11 @@
                 sort_by: currentFilters.sortBy
             },
             success: function(response) {
-                console.log('[JG SIDEBAR] Points loaded:', response);
-
                 if (response.success && response.data) {
                     sidebarPoints = response.data.points;
                     updateStats(response.data.stats);
                     renderPoints(sidebarPoints);
                 } else {
-                    console.error('[JG SIDEBAR] Failed to load points:', response);
                     showError('Nie udało się załadować listy pinezek');
                 }
 
@@ -162,7 +140,6 @@
                 $('#jg-sidebar-list').show();
             },
             error: function(xhr, status, error) {
-                console.error('[JG SIDEBAR] AJAX error:', error);
                 showError('Błąd połączenia z serwerem');
                 $('#jg-sidebar-loading').hide();
                 $('#jg-sidebar-list').show();
@@ -417,11 +394,8 @@
     function setupSync() {
         // Check if WordPress Heartbeat API is available
         if (typeof wp === 'undefined' || !wp.heartbeat) {
-            console.log('[JG SIDEBAR SYNC] WordPress Heartbeat API not available');
             return;
         }
-
-        console.log('[JG SIDEBAR SYNC] Initializing real-time synchronization');
 
         let lastSyncCheck = Math.floor(Date.now() / 1000);
         let refreshPending = false;
@@ -435,10 +409,6 @@
             }
 
             const syncData = data.jg_map_sync;
-            console.log('[JG SIDEBAR SYNC] Heartbeat tick received:', {
-                new_points: syncData.new_points,
-                events: syncData.sync_events ? syncData.sync_events.length : 0
-            });
 
             // Update last check timestamp
             lastSyncCheck = syncData.server_time || Math.floor(Date.now() / 1000);
@@ -448,7 +418,6 @@
                               (syncData.sync_events && syncData.sync_events.length > 0);
 
             if (hasChanges) {
-                console.log('[JG SIDEBAR SYNC] Changes detected - scheduling refresh');
                 scheduleRefresh();
             }
         });
@@ -460,7 +429,6 @@
         function scheduleRefresh() {
             // If refresh is already pending, just extend the timeout
             if (refreshPending) {
-                console.log('[JG SIDEBAR SYNC] Refresh already pending, extending timeout');
                 clearTimeout(refreshTimeout);
             }
 
@@ -468,13 +436,10 @@
 
             // Wait 500ms before refreshing to batch multiple rapid changes
             refreshTimeout = setTimeout(function() {
-                console.log('[JG SIDEBAR SYNC] Executing scheduled refresh');
                 loadPoints();
                 refreshPending = false;
             }, 500);
         }
-
-        console.log('[JG SIDEBAR SYNC] Real-time synchronization initialized successfully');
     }
 
     // Initialize on DOM ready

@@ -6,27 +6,10 @@
 (function($) {
   'use strict';
 
-  // Debug mode - set to false in production
-  var DEBUG = window.JG_MAP_DEBUG || false;
-
-  // Debug logging wrapper
-  function debugLog() {
-    if (DEBUG && console && console.log) {
-      console.log.apply(console, arguments);
-    }
-  }
-
-  function debugWarn() {
-    if (DEBUG && console && console.warn) {
-      console.warn.apply(console, arguments);
-    }
-  }
-
-  function debugError() {
-    if (DEBUG && console && console.error) {
-      console.error.apply(console, arguments);
-    }
-  }
+  // Debug logging disabled for production
+  function debugLog() {}
+  function debugWarn() {}
+  function debugError() {}
 
   // Unregister Service Worker to fix caching issues
   if ('serviceWorker' in navigator) {
@@ -2455,16 +2438,13 @@
       var isInitialLoad = true; // Track if this is the first load
 
       function draw(list, skipFitBounds) {
-        console.log('[JG MAP DRAW] Called with', list.length, 'points');
 
         // Wait for cluster to be ready (created in map.whenReady)
         if (!clusterReady || !cluster) {
-          console.log('[JG MAP DRAW] Cluster not ready, storing pending data');
           pendingData = list;
 
           // FIX: If list is empty, hide loader immediately (no need to wait for cluster)
           if (!list || list.length === 0) {
-            console.log('[JG MAP DRAW] Empty list, hiding loader immediately');
             hideLoading();
             showMap();
           }
@@ -2473,17 +2453,13 @@
         }
 
         // ALWAYS clear cluster first, even if list is empty
-        console.log('[JG MAP DRAW] Clearing cluster layers...');
         try {
           cluster.clearLayers();
-          console.log('[JG MAP DRAW] Cluster cleared successfully');
         } catch (e) {
-          console.error('[JG MAP DRAW] Error clearing cluster:', e);
         }
 
         // If empty list, show map and return
         if (!list || list.length === 0) {
-          console.log('[JG MAP DRAW] Empty list after clearing cluster, showing map');
           showMap();
           hideLoading();
           checkDeepLink();
@@ -3415,11 +3391,8 @@
        */
       function openVisitorsModal(p) {
         // Fetch visitors list
-        console.log('[Visitors Modal] Fetching visitors for point:', p.id);
         api('jg_get_point_visitors', { point_id: p.id }).then(function(visitors) {
-          console.log('[Visitors Modal] API response:', visitors);
           if (!visitors) {
-            console.error('[Visitors Modal] No data returned');
             showAlert('Błąd pobierania listy odwiedzających');
             return;
           }
@@ -3520,12 +3493,10 @@
         }
 
         statsRefreshInterval = setInterval(function() {
-          console.log('[Stats Auto-Refresh] Interval tick - fetching stats for point:', p.id);
 
           // Check if stats modal is still open (not visitors modal or user modal)
           var lastUpdateEl = qs('#stats-last-update', modalReport);
           if (!lastUpdateEl) {
-            console.log('[Stats Auto-Refresh] Stats modal not visible, skipping refresh');
             return;
           }
 
@@ -3538,13 +3509,10 @@
 
           // Fetch updated stats for this specific point
           api('jg_get_point_stats', { point_id: p.id }).then(function(updatedPoint) {
-            console.log('[Stats Auto-Refresh] API response received for point:', p.id, updatedPoint);
             if (!updatedPoint || !updatedPoint.stats) {
-              console.error('[Stats Auto-Refresh] Invalid response:', updatedPoint);
               return;
             }
 
-            console.log('[Stats Auto-Refresh] Old views:', p.stats.views, 'New views:', updatedPoint.stats.views);
 
             // Update ALL point data (stats, images, social media, phone, website, etc.)
             p.stats = updatedPoint.stats;
@@ -3559,20 +3527,16 @@
             p.cta_type = updatedPoint.cta_type;
 
             // Re-render modal content
-            console.log('[Stats Auto-Refresh] Re-rendering stats content');
             var updatedHtml = renderStatsContent(p);
 
             // Update only the content part (not the header)
             // First find the modal container, then the content div
             var modal = qs('.jg-modal', modalReport);
             if (!modal) {
-              console.error('[Stats Auto-Refresh] Modal container not found!');
               return;
             }
             var contentDiv = modal.querySelector('div:last-child');
-            console.log('[Stats Auto-Refresh] contentDiv found:', !!contentDiv);
             if (!contentDiv) {
-              console.error('[Stats Auto-Refresh] contentDiv not found!');
               return;
             }
 
@@ -3589,16 +3553,12 @@
             var tempDiv = document.createElement('div');
             tempDiv.innerHTML = updatedHtml;
             var newContent = tempDiv.querySelector('div:last-child');
-            console.log('[Stats Auto-Refresh] newContent found:', !!newContent);
             if (!newContent) {
-              console.error('[Stats Auto-Refresh] newContent not found!');
               return;
             }
 
             // Replace content (handles structural changes like new social media fields)
-            console.log('[Stats Auto-Refresh] Replacing content in DOM');
             contentDiv.innerHTML = newContent.innerHTML;
-            console.log('[Stats Auto-Refresh] DOM updated successfully');
 
             // Re-attach click handler to unique visitors card after content update
             var uniqueVisitorsCard = qs('#unique-visitors-card', modalReport);
@@ -3628,7 +3588,6 @@
               lastUpdateEl.style.color = '#10b981'; // Green on success
             }
           }).catch(function(err) {
-            console.error('[Stats Auto-Refresh] Error fetching stats:', err);
             // Update timestamp to show error
             var lastUpdateEl = qs('#stats-last-update', modalReport);
             if (lastUpdateEl) {
@@ -5840,12 +5799,10 @@
       }
 
       function apply(skipFitBounds) {
-        console.log('[JG MAP APPLY] Called with ALL.length =', ALL ? ALL.length : 0, 'dataLoaded =', dataLoaded);
 
         // CRITICAL FIX: Don't apply filters if data not yet loaded
         // Allow empty arrays if data was actually loaded (could be no points in DB)
         if (!dataLoaded) {
-          console.log('[JG MAP APPLY] Data not loaded yet, skipping');
           return;
         }
 
@@ -5863,7 +5820,6 @@
           myPlacesOnly = !!(myPlaces && myPlaces.checked);
         }
 
-        console.log('[JG MAP APPLY] Filters:', { enabled: enabled, promoOnly: promoOnly, myPlacesOnly: myPlacesOnly });
 
         // Filter logic:
         // 1. "Tylko sponsorowane" checkbox -> show ONLY sponsored
@@ -5907,7 +5863,6 @@
         var sponsoredCount = list.filter(function(p) { return p.sponsored; }).length;
         var nonSponsoredCount = list.length - sponsoredCount;
 
-        console.log('[JG MAP APPLY] Filtered list.length =', list.length);
         pendingData = list;
         draw(list, skipFitBounds);
       }
@@ -6254,7 +6209,6 @@
       // Wrap in document.ready to ensure wp.heartbeat is fully initialized
       $(document).ready(function() {
         if (typeof wp !== 'undefined' && wp.heartbeat) {
-          console.log('[JG MAP SYNC] Initializing real-time synchronization');
 
           // Set heartbeat interval to 15 seconds (optimal for real-time updates)
           wp.heartbeat.interval(15);
@@ -6263,37 +6217,31 @@
           $(document).on('heartbeat-send.jgMapSync', function(e, data) {
             data.jg_map_check = true;
             data.jg_map_last_check = lastSyncCheck;
-            console.log('[JG MAP SYNC] Heartbeat send - checking for updates since', lastSyncCheck);
           });
 
           // Process heartbeat response - REAL-TIME sync events
           $(document).on('heartbeat-tick.jgMapSync', function(e, data) {
             if (!data.jg_map_sync) {
-              console.log('[JG MAP SYNC] No sync data in heartbeat response');
               return;
             }
 
             var syncData = data.jg_map_sync;
-            console.log('[JG MAP SYNC] Heartbeat tick received:', syncData);
 
             // Update last check timestamp
             lastSyncCheck = syncData.server_time || Math.floor(Date.now() / 1000);
 
             // Check if there are new/updated points
             if (syncData.new_points > 0 || (syncData.sync_events && syncData.sync_events.length > 0)) {
-              console.log('[JG MAP SYNC] Changes detected! New points:', syncData.new_points, 'Events:', syncData.sync_events ? syncData.sync_events.length : 0);
 
               // Show "syncing" status
               updateSyncStatus('syncing');
 
               // INSTANT refresh - FORCE full refresh to ensure deleted points are removed
               refreshData(true).then(function() {
-                console.log('[JG MAP SYNC] Map refreshed successfully');
 
                 // Show "completed" status
                 updateSyncStatus('completed');
               }).catch(function(err) {
-                console.error('[JG MAP SYNC] Refresh failed:', err);
                 updateSyncStatus('online'); // Return to online on error
               });
             } else {
@@ -6303,14 +6251,12 @@
 
             // Update pending counts for admins
             if (CFG.isAdmin && syncData.pending_counts) {
-              console.log('[JG MAP SYNC] Admin pending counts:', syncData.pending_counts);
               // Notification system will handle this via jg-notifications.js
             }
           });
 
           // Handle connection errors
           $(document).on('heartbeat-error.jgMapSync', function() {
-            console.warn('[JG MAP SYNC] Heartbeat error - connection lost');
             updateSyncStatus('Błąd połączenia');
           });
 
@@ -6321,14 +6267,11 @@
           // This ensures sync check happens instantly on page load
           setTimeout(function() {
             if (typeof wp !== 'undefined' && wp.heartbeat) {
-              console.log('[JG MAP SYNC] Forcing immediate first heartbeat tick');
               wp.heartbeat.connectNow();
             }
           }, 100); // Small delay to ensure everything is initialized
 
-          console.log('[JG MAP SYNC] Real-time synchronization initialized successfully');
         } else {
-          console.warn('[JG MAP SYNC] WordPress Heartbeat API not available - falling back to polling');
           updateSyncStatus('Brak Heartbeat API');
 
           // Fallback: Polling every 10 seconds if heartbeat not available - FORCE refresh
@@ -6340,7 +6283,6 @@
         // Check for updates when page becomes visible
         document.addEventListener('visibilitychange', function() {
           if (!document.hidden) {
-            console.log('[JG MAP SYNC] Page visible - refreshing data');
             // FORCE refresh when returning to tab to ensure we have latest data
             refreshData(true);
           }

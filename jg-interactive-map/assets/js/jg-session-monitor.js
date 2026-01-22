@@ -221,7 +221,6 @@
       },
       error: function() {
         // Silent fail - don't interrupt user experience
-        console.warn('[JG Session Monitor] Failed to check session status');
       }
     });
   }
@@ -235,8 +234,6 @@
 
     // Then check every 10 seconds
     setInterval(checkSessionStatus, checkInterval);
-
-    console.log('[JG Session Monitor] Started monitoring user session');
   }
 
   // Start when DOM is ready

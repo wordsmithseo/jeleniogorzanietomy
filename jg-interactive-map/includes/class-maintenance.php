@@ -170,7 +170,6 @@ class JG_Map_Maintenance {
 
         if ($count > 0) {
             foreach ($invalid_points as $point) {
-                error_log('[JG MAP MAINTENANCE] Invalid coordinates for point #' . $point->id . ': lat=' . $point->lat . ', lng=' . $point->lng);
             }
         }
 
@@ -195,7 +194,6 @@ class JG_Map_Maintenance {
         $count = count($empty_points);
 
         if ($count > 0) {
-            error_log('[JG MAP MAINTENANCE] Found ' . $count . ' points with empty content');
             foreach ($empty_points as $point) {
             }
         }
@@ -330,16 +328,13 @@ class JG_Map_Maintenance {
         $count = count($expired_reports);
 
         if ($count > 0) {
-            error_log('[JG MAP MAINTENANCE] Found ' . $count . ' expired resolved reports to delete');
 
             foreach ($expired_reports as $report) {
-                error_log('[JG MAP MAINTENANCE] Auto-deleting resolved report: ' . $report->case_id . ' - ' . $report->title);
 
                 // Delete the report completely (will also delete related data)
                 JG_Map_Database::delete_point($report->id);
             }
 
-            error_log('[JG MAP MAINTENANCE] Successfully deleted ' . $count . ' expired resolved reports');
         }
 
         return $count;
@@ -365,16 +360,13 @@ class JG_Map_Maintenance {
         $count = count($expired_reports);
 
         if ($count > 0) {
-            error_log('[JG MAP MAINTENANCE] Found ' . $count . ' expired rejected reports to delete');
 
             foreach ($expired_reports as $report) {
-                error_log('[JG MAP MAINTENANCE] Auto-deleting rejected report: ' . $report->case_id . ' - ' . $report->title);
 
                 // Delete the report completely (will also delete related data)
                 JG_Map_Database::delete_point($report->id);
             }
 
-            error_log('[JG MAP MAINTENANCE] Successfully deleted ' . $count . ' expired rejected reports');
         }
 
         return $count;
@@ -439,13 +431,11 @@ class JG_Map_Maintenance {
             if (!in_array($filename, $used_files)) {
                 if (@unlink($file_path)) {
                     $deleted_count++;
-                    error_log('[JG MAP MAINTENANCE] Deleted orphaned image: ' . $filename);
                 }
             }
         }
 
         if ($deleted_count > 0) {
-            error_log('[JG MAP MAINTENANCE] Deleted ' . $deleted_count . ' orphaned images');
         }
 
         return $deleted_count;
@@ -460,7 +450,6 @@ class JG_Map_Maintenance {
             $deleted = JG_Map_Activity_Log::cleanup_old_logs(90);
 
             if ($deleted > 0) {
-                error_log('[JG MAP MAINTENANCE] Deleted ' . $deleted . ' old activity log entries');
             }
 
             return $deleted;
@@ -483,7 +472,6 @@ class JG_Map_Maintenance {
         ", date('Y-m-d H:i:s', strtotime('-90 days'))));
 
         if ($deleted > 0) {
-            error_log('[JG MAP MAINTENANCE] Deleted ' . $deleted . ' old point visit records');
         }
 
         return $deleted;
@@ -513,7 +501,6 @@ class JG_Map_Maintenance {
         $total_deleted = $orphaned + $old_votes;
 
         if ($total_deleted > 0) {
-            error_log('[JG MAP MAINTENANCE] Deleted ' . $total_deleted . ' old/orphaned relevance votes');
         }
 
         return $total_deleted;
@@ -554,7 +541,6 @@ class JG_Map_Maintenance {
         }
 
         if ($deleted > 0) {
-            error_log('[JG MAP MAINTENANCE] Deleted ' . $deleted . ' expired transients');
         }
 
         return $deleted;
