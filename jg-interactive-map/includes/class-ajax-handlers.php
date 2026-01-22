@@ -5227,7 +5227,7 @@ class JG_Map_Ajax_Handlers {
         global $wpdb;
         $points_table = $wpdb->prefix . 'jg_map_points';
         $sponsored_count = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $points_table WHERE author_id = %d AND is_sponsored = 1 AND status = 'publish'",
+            "SELECT COUNT(*) FROM $points_table WHERE author_id = %d AND is_promo = 1 AND status = 'publish'",
             $user_id
         ));
 
