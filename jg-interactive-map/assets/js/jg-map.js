@@ -1160,8 +1160,12 @@
             }
 
             // Process pending data if any (regardless of markers)
-            if (pendingData && pendingData.length > 0) {
-              setTimeout(function() { draw(pendingData); }, 300);
+            // FIX: Check for null instead of length to handle empty arrays too
+            if (pendingData !== null) {
+              setTimeout(function() {
+                draw(pendingData);
+                pendingData = null; // Clear after processing
+              }, 300);
             }
           } catch (e) {
             debugError('[JG MAP] Błąd tworzenia clustera:', e);
@@ -2457,6 +2461,14 @@
         if (!clusterReady || !cluster) {
           console.log('[JG MAP DRAW] Cluster not ready, storing pending data');
           pendingData = list;
+
+          // FIX: If list is empty, hide loader immediately (no need to wait for cluster)
+          if (!list || list.length === 0) {
+            console.log('[JG MAP DRAW] Empty list, hiding loader immediately');
+            hideLoading();
+            showMap();
+          }
+
           return;
         }
 
