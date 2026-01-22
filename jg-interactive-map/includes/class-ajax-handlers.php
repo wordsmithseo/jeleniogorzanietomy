@@ -1160,6 +1160,13 @@ class JG_Map_Ajax_Handlers {
             // Send email notification to admin
             $this->notify_admin_new_point($point_id);
 
+            // Queue sync event for real-time updates
+            JG_Map_Sync_Manager::get_instance()->queue_point_created($point_id, array(
+                'point_title' => $saved_point['title'],
+                'point_type' => $type,
+                'status' => $saved_point['status']
+            ));
+
             $response = array(
                 'message' => 'Punkt dodany do moderacji',
                 'point_id' => $point_id,
