@@ -2344,29 +2344,6 @@
       function fetchAndProcessPoints(version) {
         return fetchPoints().then(function(data) {
 
-          // Data mapping validation (debug mode only)
-          if (DEBUG && data && data.length > 0) {
-            var sample = data[0];
-            var mappedKeys = [
-              'id', 'title', 'slug', 'excerpt', 'content', 'lat', 'lng', 'address',
-              'type', 'category', 'sponsored', 'sponsored_until', 'website', 'phone',
-              'cta_enabled', 'cta_type', 'status', 'status_label', 'report_status',
-              'report_status_label', 'author_id', 'author_name', 'author_hidden',
-              'images', 'featured_image_index', 'votes', 'my_vote', 'date', 'admin',
-              'admin_note', 'is_pending', 'is_edit', 'edit_info', 'is_deletion_requested',
-              'deletion_info', 'reports_count', 'user_has_reported', 'reporter_info', 'case_id',
-              'resolved_delete_at', 'resolved_summary', 'rejected_reason', 'rejected_delete_at', 'stats',
-              'facebook_url', 'instagram_url', 'linkedin_url', 'tiktok_url'
-            ];
-            var apiKeys = Object.keys(sample);
-            var unmapped = apiKeys.filter(function(k) { return mappedKeys.indexOf(k) === -1; });
-            if (unmapped.length > 0) {
-              debugWarn('[JG MAP] WARNING: API response contains unmapped fields:', unmapped);
-              debugWarn('[JG MAP] These fields are sent by backend but not included in frontend data mapping.');
-              debugWarn('[JG MAP] Add them to fetchAndProcessPoints() mapping to make them available in frontend.');
-            }
-          }
-
           ALL = (data || []).map(function(r) {
             return {
               id: r.id,
