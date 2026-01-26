@@ -225,8 +225,8 @@
         // Image (if available), star icon for sponsored, or "no photo" placeholder
         let imageHtml = '';
         if (point.featured_image) {
-            imageHtml = `<div class="jg-sidebar-item__image">
-                <img src="${point.featured_image}" alt="${escapeHtml(point.title)}" loading="lazy" />
+            imageHtml = `<div class="jg-sidebar-item__image" style="position:relative;width:80px;height:80px;flex-shrink:0;overflow:hidden;border-radius:8px;background:#f3f4f6">
+                <img src="${point.featured_image}" alt="${escapeHtml(point.title)}" loading="lazy" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center" />
             </div>`;
         } else if (point.is_promo) {
             // Show gold star for sponsored places without image
