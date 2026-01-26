@@ -295,6 +295,15 @@ class JG_Map_Ajax_Handlers {
             $points = array_merge($points, $user_pending_points);
         }
 
+        // SECURITY: For unauthenticated users, ensure ONLY published points are returned
+        // This is a safety filter in case of cache issues or edge cases
+        if ($current_user_id === 0) {
+            $points = array_filter($points, function($point) {
+                return $point['status'] === 'publish';
+            });
+            $points = array_values($points); // Re-index array
+        }
+
         // PERFORMANCE OPTIMIZATION: Batch load all related data to avoid N+1 queries
         $point_ids = array();
         $owner_point_ids = array(); // Points owned by current user (need rejected histories)
@@ -570,16 +579,17 @@ class JG_Map_Ajax_Handlers {
                     'author_email' => $author_email,
                     'ip' => $point['ip_address'] ?: '(brak)'
                 ) : null,
-                'admin_note' => $point['admin_note'],
-                'is_pending' => $is_pending,
-                'is_edit' => $is_edit,
-                'edit_info' => $edit_info,
-                'is_deletion_requested' => $is_deletion_requested,
-                'deletion_info' => $deletion_info,
-                'is_own_place' => $is_own_place,
-                'reports_count' => $reports_count,
-                'user_has_reported' => $user_has_reported,
-                'reporter_info' => $reporter_info,
+                // SECURITY: For unauthenticated users, always hide moderation data
+                'admin_note' => ($current_user_id > 0) ? $point['admin_note'] : null,
+                'is_pending' => ($current_user_id > 0) ? $is_pending : false,
+                'is_edit' => ($current_user_id > 0) ? $is_edit : false,
+                'edit_info' => ($current_user_id > 0) ? $edit_info : null,
+                'is_deletion_requested' => ($current_user_id > 0) ? $is_deletion_requested : false,
+                'deletion_info' => ($current_user_id > 0) ? $deletion_info : null,
+                'is_own_place' => ($current_user_id > 0) ? $is_own_place : false,
+                'reports_count' => ($current_user_id > 0) ? $reports_count : 0,
+                'user_has_reported' => ($current_user_id > 0) ? $user_has_reported : false,
+                'reporter_info' => ($current_user_id > 0) ? $reporter_info : null,
                 'stats' => ($is_admin || $is_own_place) ? array(
                     'views' => intval($point['stats_views'] ?? 0),
                     'phone_clicks' => intval($point['stats_phone_clicks'] ?? 0),
