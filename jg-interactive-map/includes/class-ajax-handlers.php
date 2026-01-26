@@ -285,23 +285,26 @@ class JG_Map_Ajax_Handlers {
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $current_user_id = get_current_user_id();
 
+        // DEBUG: Log user context for troubleshooting
+        error_log('[JG_MAP DEBUG] get_points() called - is_admin: ' . ($is_admin ? 'YES' : 'NO') . ', user_id: ' . $current_user_id);
+
         // For admins: get all points (published + pending)
         // For regular users: get published points + their own pending points
         $points = JG_Map_Database::get_published_points($is_admin);
 
+        // DEBUG: Log how many points returned and their statuses
+        $status_counts = array();
+        foreach ($points as $p) {
+            $s = $p['status'] ?? 'unknown';
+            $status_counts[$s] = ($status_counts[$s] ?? 0) + 1;
+        }
+        error_log('[JG_MAP DEBUG] get_published_points(' . ($is_admin ? 'true' : 'false') . ') returned ' . count($points) . ' points. Statuses: ' . json_encode($status_counts));
+
         // If regular user is logged in, add their pending points
         if (!$is_admin && $current_user_id > 0) {
             $user_pending_points = JG_Map_Database::get_user_pending_points($current_user_id);
+            error_log('[JG_MAP DEBUG] get_user_pending_points(' . $current_user_id . ') returned ' . count($user_pending_points) . ' points');
             $points = array_merge($points, $user_pending_points);
-        }
-
-        // SECURITY: For unauthenticated users, ensure ONLY published points are returned
-        // This is a safety filter in case of cache issues or edge cases
-        if ($current_user_id === 0) {
-            $points = array_filter($points, function($point) {
-                return $point['status'] === 'publish';
-            });
-            $points = array_values($points); // Re-index array
         }
 
         // PERFORMANCE OPTIMIZATION: Batch load all related data to avoid N+1 queries
