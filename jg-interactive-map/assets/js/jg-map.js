@@ -6207,6 +6207,27 @@
             // Update last check timestamp
             lastSyncCheck = syncData.server_time || Math.floor(Date.now() / 1000);
 
+            // CRITICAL: Detect session change (login/logout)
+            // If user_id changed, we need to refresh data because visibility rules differ
+            var serverUserId = syncData.current_user_id || 0;
+            var clientUserId = +CFG.currentUserId || 0;
+
+            if (serverUserId !== clientUserId) {
+              // Session changed! Update CFG and force full refresh
+              CFG.currentUserId = serverUserId;
+              CFG.isLoggedIn = serverUserId > 0;
+              CFG.isAdmin = !!syncData.is_admin;
+
+              // Force refresh to get correct data for new session
+              updateSyncStatus('syncing');
+              refreshData(true).then(function() {
+                updateSyncStatus('completed');
+              }).catch(function() {
+                updateSyncStatus('online');
+              });
+              return; // Skip normal sync logic, we already refreshed
+            }
+
             // Check if there are new/updated points
             if (syncData.new_points > 0 || (syncData.sync_events && syncData.sync_events.length > 0)) {
 

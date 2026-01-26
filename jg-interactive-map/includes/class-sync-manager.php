@@ -360,7 +360,10 @@ class JG_Map_Sync_Manager {
             'sync_events' => $sync_events,
             'pending_counts' => $pending_counts,
             'last_modified' => get_option('jg_map_last_modified', time()),
-            'server_time' => time()
+            'server_time' => time(),
+            // Include current user info for session change detection
+            'current_user_id' => get_current_user_id(),
+            'is_admin' => current_user_can('manage_options') || current_user_can('jg_map_moderate')
         );
 
         return $response;
