@@ -656,6 +656,9 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
+        // DEBUG: Temporarily disable transient cache to diagnose visibility issues
+        // TODO: Re-enable cache after fixing the issue
+        /*
         // PERFORMANCE OPTIMIZATION: Use transient cache (30 seconds)
         // Cache key includes $include_pending to avoid conflicts
         $cache_key = $include_pending ? 'jg_map_points_with_pending' : 'jg_map_points_published';
@@ -664,6 +667,7 @@ class JG_Map_Database {
         if ($cached_results !== false) {
             return $cached_results;
         }
+        */
 
         // Exclude trashed points from all queries
         $status_condition = $include_pending
@@ -683,8 +687,8 @@ class JG_Map_Database {
 
         $results = $wpdb->get_results($sql, ARRAY_A);
 
-        // Cache results for 30 seconds
-        set_transient($cache_key, $results, 30);
+        // DEBUG: Cache disabled temporarily
+        // set_transient($cache_key, $results, 30);
 
         return $results;
     }
