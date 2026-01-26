@@ -6234,7 +6234,24 @@
 
           // Handle connection errors
           $(document).on('heartbeat-error.jgMapSync', function() {
-            updateSyncStatus('Błąd połączenia');
+            // For guests (not logged in), show "Online" instead of error
+            // Sync is not critical for guests, they just view published points
+            if (!CFG.isLoggedIn) {
+              updateSyncStatus('online');
+            } else {
+              updateSyncStatus('Błąd połączenia');
+            }
+          });
+
+          // Track if first heartbeat response was received
+          var firstHeartbeatReceived = false;
+
+          // Mark first heartbeat as received when we get a response
+          $(document).on('heartbeat-tick.jgMapSync-first', function(e, data) {
+            if (data.jg_map_sync) {
+              firstHeartbeatReceived = true;
+              $(document).off('heartbeat-tick.jgMapSync-first');
+            }
           });
 
           // Initial status
@@ -6248,8 +6265,21 @@
             }
           }, 100); // Small delay to ensure everything is initialized
 
+          // Fallback: If no heartbeat response after 5 seconds, show "Online" for guests
+          // This handles cases where heartbeat might not work for unauthenticated users
+          setTimeout(function() {
+            if (!firstHeartbeatReceived && !CFG.isLoggedIn) {
+              updateSyncStatus('online');
+            }
+          }, 5000);
+
         } else {
-          updateSyncStatus('Brak Heartbeat API');
+          // No heartbeat available - for guests show "Online", for logged-in users show message
+          if (!CFG.isLoggedIn) {
+            updateSyncStatus('online');
+          } else {
+            updateSyncStatus('Brak Heartbeat API');
+          }
 
           // Fallback: Polling every 10 seconds if heartbeat not available - FORCE refresh
           setInterval(function() {

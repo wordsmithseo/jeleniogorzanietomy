@@ -75,8 +75,10 @@ class JG_Map_Sync_Manager {
      * Constructor - Initialize hooks
      */
     private function __construct() {
-        // Register heartbeat handler
+        // Register heartbeat handler for logged-in users
         add_filter('heartbeat_received', array($this, 'heartbeat_handler'), 10, 2);
+        // Register heartbeat handler for non-logged-in users (guests)
+        add_filter('heartbeat_nopriv_received', array($this, 'heartbeat_handler'), 10, 2);
 
         // Register cleanup cron
         add_action('jg_map_sync_cleanup', array($this, 'cleanup_old_queue_entries'));
