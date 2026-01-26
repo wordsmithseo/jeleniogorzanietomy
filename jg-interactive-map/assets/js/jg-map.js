@@ -11,6 +11,80 @@
   function debugWarn() {}
   function debugError() {}
 
+  // Helper function to generate category select options from config
+  function generateCategoryOptions(selectedValue) {
+    var categories = (window.JG_MAP_CFG && JG_MAP_CFG.reportCategories) || {};
+    var reasons = (window.JG_MAP_CFG && JG_MAP_CFG.reportReasons) || {};
+    var html = '<option value="">-- Wybierz kategorię --</option>';
+
+    // Group reasons by category
+    var grouped = {};
+    for (var key in reasons) {
+      if (reasons.hasOwnProperty(key)) {
+        var reason = reasons[key];
+        var group = reason.group || 'other';
+        if (!grouped[group]) {
+          grouped[group] = [];
+        }
+        grouped[group].push({
+          key: key,
+          label: reason.label,
+          icon: reason.icon || '📌'
+        });
+      }
+    }
+
+    // Generate optgroups
+    for (var catKey in categories) {
+      if (categories.hasOwnProperty(catKey) && grouped[catKey]) {
+        html += '<optgroup label="' + categories[catKey] + '">';
+        for (var i = 0; i < grouped[catKey].length; i++) {
+          var r = grouped[catKey][i];
+          var selected = (selectedValue === r.key) ? ' selected' : '';
+          html += '<option value="' + r.key + '"' + selected + '>' + r.icon + ' ' + r.label + '</option>';
+        }
+        html += '</optgroup>';
+      }
+    }
+
+    // Add uncategorized reasons (if any)
+    if (grouped[''] || grouped['other']) {
+      var uncategorized = grouped[''] || grouped['other'] || [];
+      if (uncategorized.length > 0) {
+        html += '<optgroup label="Inne">';
+        for (var j = 0; j < uncategorized.length; j++) {
+          var u = uncategorized[j];
+          var sel = (selectedValue === u.key) ? ' selected' : '';
+          html += '<option value="' + u.key + '"' + sel + '>' + u.icon + ' ' + u.label + '</option>';
+        }
+        html += '</optgroup>';
+      }
+    }
+
+    return html;
+  }
+
+  // Helper function to get category emoji map from config
+  function getCategoryEmojis() {
+    var reasons = (window.JG_MAP_CFG && JG_MAP_CFG.reportReasons) || {};
+    var emojis = {};
+    for (var key in reasons) {
+      if (reasons.hasOwnProperty(key)) {
+        emojis[key] = reasons[key].icon || '📌';
+      }
+    }
+    return emojis;
+  }
+
+  // Helper function to get category label by key
+  function getCategoryLabel(key) {
+    var reasons = (window.JG_MAP_CFG && JG_MAP_CFG.reportReasons) || {};
+    if (reasons[key]) {
+      return (reasons[key].icon || '📌') + ' ' + reasons[key].label;
+    }
+    return key;
+  }
+
   // Unregister Service Worker to fix caching issues
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
@@ -1341,32 +1415,7 @@
                 '<option value="miejsce">Miejsce</option>' +
                 '</select></label>' +
                 '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
-                '<option value="">-- Wybierz kategorię --</option>' +
-                '<optgroup label="Zgłoszenie usterek infrastruktury">' +
-                '<option value="dziura_w_jezdni">🕳️ Dziura w jezdni</option>' +
-                '<option value="uszkodzone_chodniki">🚶 Uszkodzone chodniki</option>' +
-                '<option value="znaki_drogowe">🚸 Brakujące lub zniszczone znaki drogowe</option>' +
-                '<option value="oswietlenie">💡 Awarie oświetlenia ulicznego</option>' +
-                '</optgroup>' +
-                '<optgroup label="Porządek i bezpieczeństwo">' +
-                '<option value="dzikie_wysypisko">🗑️ Dzikie wysypisko śmieci</option>' +
-                '<option value="przepelniony_kosz">♻️ Przepełniony kosz na śmieci</option>' +
-                '<option value="graffiti">🎨 Graffiti</option>' +
-                '<option value="sliski_chodnik">⚠️ Śliski chodnik</option>' +
-                '</optgroup>' +
-                '<optgroup label="Zieleń i estetyka miasta">' +
-                '<option value="nasadzenie_drzew">🌳 Potrzeba nasadzenia drzew</option>' +
-                '<option value="nieprzycięta_gałąź">🌿 Nieprzycięta gałąź zagrażająca niebezpieczeństwu</option>' +
-                '</optgroup>' +
-                '<optgroup label="Transport i komunikacja">' +
-                '<option value="brak_przejscia">🚦 Brak przejścia dla pieszych</option>' +
-                '<option value="przystanek_autobusowy">🚏 Potrzeba przystanku autobusowego</option>' +
-                '<option value="organizacja_ruchu">🚗 Problem z organizacją ruchu</option>' +
-                '<option value="korki">🚙 Powtarzające się korki</option>' +
-                '</optgroup>' +
-                '<optgroup label="Inicjatywy społeczne i rozwojowe">' +
-                '<option value="mala_infrastruktura">🎪 Propozycja nowych obiektów małej infrastruktury</option>' +
-                '</optgroup>' +
+                generateCategoryOptions('') +
                 '</select></label>' +
                 '<label class="cols-2">Opis <textarea name="content" rows="4" maxlength="200" id="add-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><div id="add-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">0 / 200 znaków</div></label>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
@@ -1805,24 +1854,8 @@
 
         var labelHtml = '<span class="' + labelClass + '">' + esc(p.title || 'Bez nazwy') + suffix + '</span>';
 
-        // Category emoji mapping for reports
-        var categoryEmojis = {
-          'dziura_w_jezdni': '🕳️',
-          'uszkodzone_chodniki': '🚶',
-          'znaki_drogowe': '🚸',
-          'oswietlenie': '💡',
-          'dzikie_wysypisko': '🗑️',
-          'przepelniony_kosz': '♻️',
-          'graffiti': '🎨',
-          'sliski_chodnik': '⚠️',
-          'nasadzenie_drzew': '🌳',
-          'nieprzycięta_gałąź': '🌿',
-          'brak_przejscia': '🚦',
-          'przystanek_autobusowy': '🚏',
-          'organizacja_ruchu': '🚗',
-          'korki': '🚙',
-          'mala_infrastruktura': '🎪'
-        };
+        // Category emoji mapping for reports (dynamic from config)
+        var categoryEmojis = getCategoryEmojis();
 
         // Image or light gold circle for sponsored pins, warning emoji for user-reported, category emoji for reports, or nothing for others
         var centerContent = '';
@@ -3956,32 +3989,7 @@
               '<option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option>' +
               '</select></label>' +
               '<label class="cols-2" id="edit-category-field" style="' + (p.type === 'zgloszenie' ? 'display:block' : 'display:none') + '"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="edit-category-select" ' + (p.type === 'zgloszenie' ? 'required' : '') + ' style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
-              '<option value="">-- Wybierz kategorię --</option>' +
-              '<optgroup label="Zgłoszenie usterek infrastruktury">' +
-              '<option value="dziura_w_jezdni"' + (p.category === 'dziura_w_jezdni' ? ' selected' : '') + '>🕳️ Dziura w jezdni</option>' +
-              '<option value="uszkodzone_chodniki"' + (p.category === 'uszkodzone_chodniki' ? ' selected' : '') + '>🚶 Uszkodzone chodniki</option>' +
-              '<option value="znaki_drogowe"' + (p.category === 'znaki_drogowe' ? ' selected' : '') + '>🚸 Brakujące lub zniszczone znaki drogowe</option>' +
-              '<option value="oswietlenie"' + (p.category === 'oswietlenie' ? ' selected' : '') + '>💡 Awarie oświetlenia ulicznego</option>' +
-              '</optgroup>' +
-              '<optgroup label="Utrzymanie porządku i estetyki">' +
-              '<option value="dzikie_wysypisko"' + (p.category === 'dzikie_wysypisko' ? ' selected' : '') + '>🗑️ Dzikie wysypisko śmieci</option>' +
-              '<option value="przepelniony_kosz"' + (p.category === 'przepelniony_kosz' ? ' selected' : '') + '>♻️ Przepełniony kosz na śmieci</option>' +
-              '<option value="graffiti"' + (p.category === 'graffiti' ? ' selected' : '') + '>🎨 Graffiti</option>' +
-              '<option value="sliski_chodnik"' + (p.category === 'sliski_chodnik' ? ' selected' : '') + '>⚠️ Śliski chodnik (lód/liście)</option>' +
-              '</optgroup>' +
-              '<optgroup label="Zieleń miejska">' +
-              '<option value="nasadzenie_drzew"' + (p.category === 'nasadzenie_drzew' ? ' selected' : '') + '>🌳 Potrzeba nasadzenia drzew</option>' +
-              '<option value="nieprzycięta_gałąź"' + (p.category === 'nieprzycięta_gałąź' ? ' selected' : '') + '>🌿 Nieprzycięta gałąź zagrażająca niebezpieczeństwu</option>' +
-              '</optgroup>' +
-              '<optgroup label="Transport i komunikacja">' +
-              '<option value="brak_przejscia"' + (p.category === 'brak_przejscia' ? ' selected' : '') + '>🚦 Brak przejścia dla pieszych</option>' +
-              '<option value="przystanek_autobusowy"' + (p.category === 'przystanek_autobusowy' ? ' selected' : '') + '>🚏 Potrzeba przystanku autobusowego</option>' +
-              '<option value="organizacja_ruchu"' + (p.category === 'organizacja_ruchu' ? ' selected' : '') + '>🚗 Problem z organizacją ruchu</option>' +
-              '<option value="korki"' + (p.category === 'korki' ? ' selected' : '') + '>🚙 Powtarzające się korki</option>' +
-              '</optgroup>' +
-              '<optgroup label="Inicjatywy obywatelskie">' +
-              '<option value="mala_infrastruktura"' + (p.category === 'mala_infrastruktura' ? ' selected' : '') + '>🎪 Propozycja nowych obiektów małej infrastruktury (ławki, place zabaw, stojaki rowerowe)</option>' +
-              '</optgroup>' +
+              generateCategoryOptions(p.category || '') +
               '</select></label>' +
               '<input type="hidden" name="address" id="edit-address-input" value="' + esc(p.address || '') + '">' +
               '<label class="cols-2">Opis <textarea name="content" rows="6" maxlength="' + maxDescLength + '" id="edit-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea><div id="edit-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">' + currentDescLength + ' / ' + maxDescLength + ' znaków</div></label>' +
@@ -7054,32 +7062,7 @@
               '<option value="miejsce">Miejsce</option>' +
               '</select></label>' +
               '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
-              '<option value="">-- Wybierz kategorię --</option>' +
-              '<optgroup label="Zgłoszenie usterek infrastruktury">' +
-              '<option value="dziura_w_jezdni">🕳️ Dziura w jezdni</option>' +
-              '<option value="uszkodzone_chodniki">🚶 Uszkodzone chodniki</option>' +
-              '<option value="znaki_drogowe">🚸 Brakujące lub zniszczone znaki drogowe</option>' +
-              '<option value="oswietlenie">💡 Awarie oświetlenia ulicznego</option>' +
-              '</optgroup>' +
-              '<optgroup label="Porządek i bezpieczeństwo">' +
-              '<option value="dzikie_wysypisko">🗑️ Dzikie wysypisko śmieci</option>' +
-              '<option value="przepelniony_kosz">♻️ Przepełniony kosz na śmieci</option>' +
-              '<option value="graffiti">🎨 Graffiti</option>' +
-              '<option value="sliski_chodnik">⚠️ Śliski chodnik</option>' +
-              '</optgroup>' +
-              '<optgroup label="Zieleń i estetyka miasta">' +
-              '<option value="nasadzenie_drzew">🌳 Potrzeba nasadzenia drzew</option>' +
-              '<option value="nieprzycięta_gałąź">🌿 Nieprzycięta gałąź zagrażająca niebezpieczeństwu</option>' +
-              '</optgroup>' +
-              '<optgroup label="Transport i komunikacja">' +
-              '<option value="brak_przejscia">🚦 Brak przejścia dla pieszych</option>' +
-              '<option value="przystanek_autobusowy">🚏 Potrzeba przystanku autobusowego</option>' +
-              '<option value="organizacja_ruchu">🚗 Problem z organizacją ruchu</option>' +
-              '<option value="korki">🚙 Powtarzające się korki</option>' +
-              '</optgroup>' +
-              '<optgroup label="Inicjatywy społeczne i rozwojowe">' +
-              '<option value="mala_infrastruktura">🎪 Propozycja nowych obiektów małej infrastruktury (ławki, place zabaw, stojaki rowerowe)</option>' +
-              '</optgroup>' +
+              generateCategoryOptions('') +
               '</select></label>' +
               '<label class="cols-2">Opis* (max 200 znaków)<textarea name="content" id="add-content-input" required maxlength="200" placeholder="Opisz miejsce..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;resize:vertical;min-height:80px"></textarea><div id="add-content-counter" style="font-size:11px;color:#666;margin-top:4px">0 / 200 znaków</div></label>' +
               '<label class="cols-2">Zdjęcia (opcjonalne, max 6)<input type="file" name="images" id="add-images-input" accept="image/*" multiple style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
