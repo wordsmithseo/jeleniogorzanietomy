@@ -2112,6 +2112,7 @@
 
 /* Item Image */
 .jg-sidebar-item__image {
+  position: relative;
   flex-shrink: 0;
   width: 80px;
   height: 80px;
@@ -2121,6 +2122,9 @@
 }
 
 .jg-sidebar-item__image img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
