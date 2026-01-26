@@ -947,8 +947,7 @@ class JG_Interactive_Map {
         echo '<?xml version="1.0" encoding="UTF-8"?>';
         echo "\n";
         ?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <?php foreach ($points as $point):
     // Determine URL path based on point type
     $type_path = 'miejsce'; // default
