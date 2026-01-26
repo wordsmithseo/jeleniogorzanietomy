@@ -1185,6 +1185,20 @@
   text-align: center;
 }
 
+/* Own point vote display (no buttons, just count) */
+.jg-vote--own {
+  background: #f3f4f6;
+  padding: 8px 16px;
+  border-radius: 8px;
+  gap: 6px;
+}
+
+.jg-vote-own-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
 /* Gallery */
 .jg-gallery {
   display: grid;
@@ -2110,6 +2124,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
 /* Star icon for sponsored places without image */
@@ -2123,6 +2138,29 @@
 .jg-sidebar-star-icon {
   font-size: 40px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* "No photo" placeholder for items without images */
+.jg-sidebar-item__image--no-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  gap: 4px;
+}
+
+.jg-sidebar-no-photo-icon {
+  font-size: 24px;
+  opacity: 0.6;
+}
+
+.jg-sidebar-no-photo-text {
+  font-size: 10px;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Item Content */

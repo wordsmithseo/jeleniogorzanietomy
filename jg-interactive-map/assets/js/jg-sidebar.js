@@ -222,16 +222,22 @@
             $item.addClass('jg-sidebar-item--sponsored');
         }
 
-        // Image (if available) or star icon for sponsored without image
+        // Image (if available), star icon for sponsored, or "no photo" placeholder
         let imageHtml = '';
         if (point.featured_image) {
             imageHtml = `<div class="jg-sidebar-item__image">
-                <img src="${point.featured_image}" alt="${point.title}" />
+                <img src="${point.featured_image}" alt="${escapeHtml(point.title)}" loading="lazy" />
             </div>`;
         } else if (point.is_promo) {
             // Show gold star for sponsored places without image
             imageHtml = `<div class="jg-sidebar-item__image jg-sidebar-item__image--star">
                 <span class="jg-sidebar-star-icon">⭐</span>
+            </div>`;
+        } else {
+            // Show "no photo" placeholder for non-sponsored places without image
+            imageHtml = `<div class="jg-sidebar-item__image jg-sidebar-item__image--no-photo">
+                <span class="jg-sidebar-no-photo-icon">📷</span>
+                <span class="jg-sidebar-no-photo-text">brak zdjęcia</span>
             </div>`;
         }
 

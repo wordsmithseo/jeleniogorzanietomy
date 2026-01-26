@@ -478,6 +478,9 @@ class JG_Map_Database {
             $wpdb->query("ALTER TABLE `$safe_table` MODIFY COLUMN report_status varchar(50) DEFAULT 'added'");
         }
 
+        // Run migration to strip slashes from existing data (one-time)
+        self::migrate_strip_slashes();
+
         // Cache the schema version to avoid running these checks on every page load
         update_option('jg_map_schema_version', $current_schema_version);
     }
@@ -521,6 +524,31 @@ class JG_Map_Database {
             }
         }
 
+    }
+
+    /**
+     * Migration: Strip slashes from existing data that was saved with WordPress magic quotes
+     * This fixes the issue where quotes appear as \" in the database
+     */
+    public static function migrate_strip_slashes() {
+        // Check if migration already ran
+        if (get_option('jg_map_slashes_migrated', false)) {
+            return;
+        }
+
+        global $wpdb;
+        $table = self::get_points_table();
+
+        // Update title, content, address fields that contain escaped quotes
+        $wpdb->query("UPDATE $table SET title = REPLACE(title, '\\\\\"', '\"') WHERE title LIKE '%\\\\\"%'");
+        $wpdb->query("UPDATE $table SET title = REPLACE(title, \"\\\\\'\", \"'\") WHERE title LIKE '%\\\\\\'%'");
+        $wpdb->query("UPDATE $table SET content = REPLACE(content, '\\\\\"', '\"') WHERE content LIKE '%\\\\\"%'");
+        $wpdb->query("UPDATE $table SET content = REPLACE(content, \"\\\\\'\", \"'\") WHERE content LIKE '%\\\\\\'%'");
+        $wpdb->query("UPDATE $table SET address = REPLACE(address, '\\\\\"', '\"') WHERE address LIKE '%\\\\\"%'");
+        $wpdb->query("UPDATE $table SET address = REPLACE(address, \"\\\\\'\", \"'\") WHERE address LIKE '%\\\\\\'%'");
+
+        // Mark migration as complete
+        update_option('jg_map_slashes_migrated', true);
     }
 
     /**
