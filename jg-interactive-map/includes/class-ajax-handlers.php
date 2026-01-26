@@ -275,6 +275,14 @@ class JG_Map_Ajax_Handlers {
     public function get_points() {
         global $wpdb;
 
+        // CRITICAL: Prevent external caching (CDN, server cache, browser cache)
+        // Response varies per user, so it MUST NOT be cached externally
+        nocache_headers();
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
+        header('Vary: Cookie');
+
         // Force schema check and slug generation on first request (ensures backward compatibility)
         static $schema_checked = false;
         if (!$schema_checked) {
