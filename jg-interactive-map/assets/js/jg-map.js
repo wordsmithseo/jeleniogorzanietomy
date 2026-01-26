@@ -30,13 +30,15 @@
         });
       }
 
-      // Clear localStorage cache (both old and new versions)
+      // Clear localStorage cache (old versions without user_id check)
       try {
         localStorage.removeItem('jg_map_cache');
         localStorage.removeItem('jg_map_cache_version');
         localStorage.removeItem('jg_map_cache_v2');
         localStorage.removeItem('jg_map_cache_version_v2');
-        // v3 will be used from now on, but clear old versions on page load
+        // v5 had bug - didn't check user_id, causing admin data to show to guests
+        localStorage.removeItem('jg_map_cache_v5');
+        localStorage.removeItem('jg_map_cache_version_v5');
       } catch (e) {
         debugError('[JG MAP] Failed to clear localStorage:', e);
       }
@@ -2233,19 +2235,31 @@
       var ALL = [];
       var dataLoaded = false; // Track if data has been loaded (even if empty)
       var lastModified = 0;
-      // v5: Added reports_count field - invalidating cache to force reload
-      var CACHE_KEY = 'jg_map_cache_v5';
-      var CACHE_VERSION_KEY = 'jg_map_cache_version_v5';
+      // v6: Added user_id to cache to prevent showing admin data to guests
+      var CACHE_KEY = 'jg_map_cache_v6';
+      var CACHE_VERSION_KEY = 'jg_map_cache_version_v6';
+      var CACHE_USER_KEY = 'jg_map_cache_user_v6';
 
       // Try to load from cache
       function loadFromCache() {
         try {
           var cached = localStorage.getItem(CACHE_KEY);
           var cachedVersion = localStorage.getItem(CACHE_VERSION_KEY);
-          if (cached && cachedVersion) {
+          var cachedUserId = localStorage.getItem(CACHE_USER_KEY);
+
+          // CRITICAL: Only use cache if user_id matches current session
+          // This prevents showing admin/owner data to guests after logout
+          var currentUserId = (+CFG.currentUserId || 0).toString();
+
+          if (cached && cachedVersion && cachedUserId === currentUserId) {
             var data = JSON.parse(cached);
             lastModified = parseInt(cachedVersion);
             return data;
+          } else if (cachedUserId !== currentUserId) {
+            // User changed - clear old cache
+            localStorage.removeItem(CACHE_KEY);
+            localStorage.removeItem(CACHE_VERSION_KEY);
+            localStorage.removeItem(CACHE_USER_KEY);
           }
         } catch (e) {
           debugError('[JG MAP] Cache load error:', e);
@@ -2256,8 +2270,10 @@
       // Save to cache
       function saveToCache(data, version) {
         try {
+          var currentUserId = (+CFG.currentUserId || 0).toString();
           localStorage.setItem(CACHE_KEY, JSON.stringify(data));
           localStorage.setItem(CACHE_VERSION_KEY, version.toString());
+          localStorage.setItem(CACHE_USER_KEY, currentUserId);
           lastModified = version;
         } catch (e) {
           debugError('[JG MAP] Cache save error:', e);
