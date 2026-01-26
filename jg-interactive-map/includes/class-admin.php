@@ -3819,13 +3819,32 @@ class JG_Map_Admin {
         $categories = JG_Map_Ajax_Handlers::get_category_groups();
         $reasons = JG_Map_Ajax_Handlers::get_report_categories();
 
-        // Common emoji list for picker
+        // Extended emoji list for picker - organized by category
         $common_emojis = array(
-            '📌', '🕳️', '🛣️', '🚶', '🚸', '💡', '🔧', '⚠️', '🗑️', '♻️',
-            '🎨', '🌳', '🌿', '🏞️', '🌱', '🌸', '🚦', '🚏', '🚌', '🚗',
-            '🚙', '🚲', '🪑', '🎠', '🎪', '💧', '⛲', '🔊', '🐕', '🐈',
-            '🏢', '🏠', '🏥', '🏫', '🏛️', '🌉', '🅿️', '🚋', '✨', '⭐',
-            '❗', '❓', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪'
+            // Infrastructure & Roads
+            '📌', '🕳️', '🛣️', '🚶', '🚸', '💡', '🔧', '⚠️', '🔩', '🪛', '🔨', '⛏️', '🪚', '🧱', '🏗️',
+            // Waste & Environment
+            '🗑️', '♻️', '🧹', '🧺', '🪣', '🚮', '☢️', '☣️', '🌫️', '💨',
+            // Art & Vandalism
+            '🎨', '🖌️', '🖼️', '✏️', '🔏',
+            // Nature & Greenery
+            '🌳', '🌲', '🌴', '🌿', '🍀', '🍃', '🍂', '🍁', '🌾', '🌻', '🌺', '🌸', '🌷', '🌹', '💐', '🏞️', '🌱', '🪴', '🪻', '🪷',
+            // Transport
+            '🚦', '🚥', '🚏', '🚌', '🚎', '🚐', '🚗', '🚙', '🚕', '🚖', '🛻', '🚚', '🚛', '🚜', '🏎️', '🏍️', '🛵', '🚲', '🛴', '🚋', '🚃', '🚈', '🚇', '🚊', '🚝', '🚆', '🚂', '✈️', '🛫', '🛬', '🛩️', '🚁', '🚀', '🛶', '⛵', '🚤', '🛥️', '⛴️', '🚢',
+            // Buildings & Places
+            '🏢', '🏠', '🏡', '🏘️', '🏚️', '🏭', '🏬', '🏣', '🏤', '🏥', '🏦', '🏨', '🏩', '🏪', '🏫', '🏛️', '⛪', '🕌', '🕍', '🛕', '⛩️', '🏰', '🏯', '🗼', '🗽', '⛲', '🎡', '🎢', '🎠', '🎪',
+            // Urban furniture
+            '🪑', '🛋️', '🪞', '🚪', '🛗', '🪜', '🧳',
+            // Water & Weather
+            '💧', '💦', '🌊', '🌧️', '⛈️', '🌩️', '❄️', '☃️', '⛄', '🌨️', '🌪️', '🌈', '☀️', '🌤️', '⛅', '🌥️', '☁️', '🌦️',
+            // Safety & Warning
+            '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🟤', '❗', '❓', '‼️', '⁉️', '🚨', '🔔', '🔕', '📢', '📣', '🆘', '🛑', '⛔', '🚫', '🚷', '🚳', '🚯', '🚱', '🚭',
+            // Animals
+            '🐕', '🐈', '🐦', '🐤', '🐧', '🦆', '🦅', '🦉', '🐝', '🦋', '🐛', '🐜', '🐞', '🦗', '🕷️', '🐀', '🐁', '🐿️', '🦔', '🦇',
+            // Sport & Recreation
+            '⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉', '🎱', '🏓', '🏸', '🥅', '⛳', '🏒', '🥊', '🎣', '🤿', '🎿', '⛷️', '🏂', '🛷', '⛸️', '🏋️', '🤸', '🧘', '🏃', '🚴',
+            // Other useful
+            '✨', '⭐', '🌟', '💫', '🔥', '💥', '🎵', '🎶', '🔊', '🔇', '📱', '💻', '🖥️', '⌨️', '🖱️', '🖨️', '📷', '📹', '📺', '📻', '🔦', '💰', '💳', '📦', '📫', '📮', '🗳️', '📋', '📝', '✅', '❎', '➕', '➖', '➗', '✖️', '💯', '🔢', '🔤', '🔠', '🔣', 'ℹ️', '🆕', '🆓', '🆙', '🆗', '🆒', '🆖', '📍', '🏁', '🎯', '💎', '🔑', '🗝️', '🔓', '🔒'
         );
         ?>
         <div class="wrap">
@@ -3855,12 +3874,15 @@ class JG_Map_Admin {
                 .jg-add-form.visible { display: block; }
                 .jg-add-form label { display: block; margin-bottom: 5px; font-weight: 500; }
                 .jg-add-form input[type="text"], .jg-add-form select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
-                .jg-emoji-picker { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; max-height: 120px; overflow-y: auto; }
-                .jg-emoji-btn { padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; font-size: 18px; background: none; transition: all 0.2s; }
+                .jg-emoji-picker { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; max-height: 200px; overflow-y: auto; }
+                .jg-emoji-btn { padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; font-size: 16px; background: none; transition: all 0.2s; line-height: 1; }
                 .jg-emoji-btn:hover { background: #e3f2fd; }
                 .jg-emoji-btn.selected { background: #2196f3; border-color: #1976d2; }
                 .jg-icon-preview { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
                 .jg-icon-preview .preview { font-size: 32px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #ddd; border-radius: 8px; }
+                .jg-manual-emoji { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+                .jg-manual-emoji input { width: 60px; font-size: 24px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
+                .jg-manual-emoji .hint { font-size: 11px; color: #666; }
                 .jg-icon-mode { display: flex; gap: 10px; margin-bottom: 10px; }
                 .jg-icon-mode label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
                 .jg-btn-row { display: flex; gap: 10px; margin-top: 15px; }
@@ -3979,6 +4001,10 @@ class JG_Map_Admin {
                             <button type="button" class="jg-emoji-btn" onclick="jgSelectEmoji('<?php echo $emoji; ?>')"><?php echo $emoji; ?></button>
                             <?php endforeach; ?>
                         </div>
+                        <div class="jg-manual-emoji" id="manual-emoji-input" style="display: none;">
+                            <input type="text" id="new-reason-icon-manual" maxlength="4" placeholder="📌" oninput="jgManualEmojiInput(this)">
+                            <span class="hint">Wklej emoji lub wpisz bezpośrednio</span>
+                        </div>
                         <input type="hidden" id="new-reason-icon" value="">
 
                         <div class="jg-btn-row">
@@ -4016,6 +4042,10 @@ class JG_Map_Admin {
                             <?php foreach ($common_emojis as $emoji): ?>
                             <button type="button" class="jg-emoji-btn" onclick="jgSelectEmojiEdit('<?php echo $emoji; ?>')"><?php echo $emoji; ?></button>
                             <?php endforeach; ?>
+                        </div>
+                        <div class="jg-manual-emoji" id="edit-manual-emoji-input" style="display: none;">
+                            <input type="text" id="edit-reason-icon-manual" maxlength="4" placeholder="📌" oninput="jgManualEmojiInputEdit(this)">
+                            <span class="hint">Wklej emoji lub wpisz bezpośrednio</span>
                         </div>
                         <input type="hidden" id="edit-reason-icon" value="">
 
@@ -4222,21 +4252,37 @@ class JG_Map_Admin {
                 window.jgToggleIconMode = function() {
                     const mode = document.querySelector('input[name="icon-mode"]:checked').value;
                     const picker = document.getElementById('emoji-picker');
+                    const manualInput = document.getElementById('manual-emoji-input');
                     const hint = document.getElementById('icon-hint');
 
                     if (mode === 'manual') {
                         picker.style.display = 'flex';
-                        hint.textContent = 'Wybierz ikonę z listy poniżej';
+                        manualInput.style.display = 'flex';
+                        hint.textContent = 'Wybierz ikonę z listy lub wklej własną poniżej';
                     } else {
                         picker.style.display = 'none';
+                        manualInput.style.display = 'none';
                         hint.textContent = 'Ikona zostanie dobrana automatycznie na podstawie nazwy';
                         jgSuggestIcon();
+                    }
+                };
+
+                window.jgManualEmojiInput = function(input) {
+                    const emoji = input.value.trim();
+                    if (emoji) {
+                        document.getElementById('icon-preview').textContent = emoji;
+                        document.getElementById('new-reason-icon').value = emoji;
+                        // Deselect all picker buttons
+                        document.querySelectorAll('#emoji-picker .jg-emoji-btn').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
                     }
                 };
 
                 window.jgSelectEmoji = function(emoji) {
                     document.getElementById('icon-preview').textContent = emoji;
                     document.getElementById('new-reason-icon').value = emoji;
+                    document.getElementById('new-reason-icon-manual').value = emoji;
 
                     document.querySelectorAll('#emoji-picker .jg-emoji-btn').forEach(btn => {
                         btn.classList.toggle('selected', btn.textContent === emoji);
@@ -4299,10 +4345,12 @@ class JG_Map_Admin {
                     document.getElementById('edit-reason-group').value = reason.group || '';
                     document.getElementById('edit-icon-preview').textContent = reason.icon || '📌';
                     document.getElementById('edit-reason-icon').value = reason.icon || '';
+                    document.getElementById('edit-reason-icon-manual').value = reason.icon || '';
 
                     // Default to manual mode when editing since we have an existing icon
                     document.querySelector('input[name="edit-icon-mode"][value="manual"]').checked = true;
                     document.getElementById('edit-emoji-picker').style.display = 'flex';
+                    document.getElementById('edit-manual-emoji-input').style.display = 'flex';
 
                     // Highlight current emoji
                     document.querySelectorAll('#edit-emoji-picker .jg-emoji-btn').forEach(btn => {
@@ -4348,18 +4396,34 @@ class JG_Map_Admin {
                 window.jgToggleIconModeEdit = function() {
                     const mode = document.querySelector('input[name="edit-icon-mode"]:checked').value;
                     const picker = document.getElementById('edit-emoji-picker');
+                    const manualInput = document.getElementById('edit-manual-emoji-input');
 
                     if (mode === 'manual') {
                         picker.style.display = 'flex';
+                        manualInput.style.display = 'flex';
                     } else {
                         picker.style.display = 'none';
+                        manualInput.style.display = 'none';
                         jgSuggestIconEdit();
+                    }
+                };
+
+                window.jgManualEmojiInputEdit = function(input) {
+                    const emoji = input.value.trim();
+                    if (emoji) {
+                        document.getElementById('edit-icon-preview').textContent = emoji;
+                        document.getElementById('edit-reason-icon').value = emoji;
+                        // Deselect all picker buttons
+                        document.querySelectorAll('#edit-emoji-picker .jg-emoji-btn').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
                     }
                 };
 
                 window.jgSelectEmojiEdit = function(emoji) {
                     document.getElementById('edit-icon-preview').textContent = emoji;
                     document.getElementById('edit-reason-icon').value = emoji;
+                    document.getElementById('edit-reason-icon-manual').value = emoji;
 
                     document.querySelectorAll('#edit-emoji-picker .jg-emoji-btn').forEach(btn => {
                         btn.classList.toggle('selected', btn.textContent === emoji);

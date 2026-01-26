@@ -283,7 +283,9 @@ class JG_Map_Enqueue {
                     'loginRequired' => __('Musisz być zalogowany', 'jg-map'),
                     'confirmReport' => __('Czy na pewno zgłosić to miejsce?', 'jg-map'),
                     'confirmDelete' => __('Czy na pewno usunąć?', 'jg-map'),
-                )
+                ),
+                'reportCategories' => JG_Map_Ajax_Handlers::get_category_groups(),
+                'reportReasons' => JG_Map_Ajax_Handlers::get_report_categories()
             )
         );
 
