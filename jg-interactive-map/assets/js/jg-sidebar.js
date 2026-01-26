@@ -276,7 +276,7 @@
                 </div>
                 <div class="jg-sidebar-item__footer">
                     ${votesHtml}
-                    <div class="jg-sidebar-item__date">${formatDate(point.created_at)}</div>
+                    <div class="jg-sidebar-item__date">${point.date.human}</div>
                 </div>
             </div>
         `);
@@ -349,33 +349,6 @@
     function showError(message) {
         const $list = $('#jg-sidebar-list');
         $list.html(`<div class="jg-sidebar-error">${escapeHtml(message)}</div>`);
-    }
-
-    /**
-     * Format date for display
-     */
-    function formatDate(dateString) {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffTime = Math.abs(now - date);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 0) {
-            return 'Dzisiaj';
-        } else if (diffDays === 1) {
-            return 'Wczoraj';
-        } else if (diffDays < 7) {
-            return diffDays + ' dni temu';
-        } else if (diffDays < 30) {
-            const weeks = Math.floor(diffDays / 7);
-            return weeks === 1 ? '1 tydzień temu' : weeks + ' tygodnie temu';
-        } else if (diffDays < 365) {
-            const months = Math.floor(diffDays / 30);
-            return months === 1 ? '1 miesiąc temu' : months + ' miesięcy temu';
-        } else {
-            const years = Math.floor(diffDays / 365);
-            return years === 1 ? '1 rok temu' : years + ' lat temu';
-        }
     }
 
     /**
