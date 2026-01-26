@@ -11,10 +11,10 @@ if (!defined('ABSPATH')) {
 class JG_Map_Ajax_Handlers {
 
     /**
-     * Report categories configuration
-     * Maps category keys to their display labels and group
+     * Default report categories configuration
+     * Used as fallback if no custom categories are defined
      */
-    public static function get_report_categories() {
+    private static function get_default_report_categories() {
         return array(
             // Zgłoszenie usterek infrastruktury
             'dziura_w_jezdni' => array('label' => 'Dziura w jezdni', 'group' => 'infrastructure', 'icon' => '🕳️'),
@@ -44,9 +44,10 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Get category groups for display
+     * Default category groups
+     * Used as fallback if no custom groups are defined
      */
-    public static function get_category_groups() {
+    private static function get_default_category_groups() {
         return array(
             'infrastructure' => 'Zgłoszenie usterek infrastruktury',
             'safety' => 'Porządek i bezpieczeństwo',
@@ -54,6 +55,130 @@ class JG_Map_Ajax_Handlers {
             'transport' => 'Transport i komunikacja',
             'initiatives' => 'Inicjatywy społeczne i rozwojowe'
         );
+    }
+
+    /**
+     * Report categories configuration
+     * Maps category keys to their display labels and group
+     * Reads from WordPress options, falls back to defaults
+     */
+    public static function get_report_categories() {
+        $custom_categories = get_option('jg_map_report_reasons', null);
+        if ($custom_categories !== null && is_array($custom_categories)) {
+            return $custom_categories;
+        }
+        return self::get_default_report_categories();
+    }
+
+    /**
+     * Get category groups for display
+     * Reads from WordPress options, falls back to defaults
+     */
+    public static function get_category_groups() {
+        $custom_groups = get_option('jg_map_report_categories', null);
+        if ($custom_groups !== null && is_array($custom_groups)) {
+            return $custom_groups;
+        }
+        return self::get_default_category_groups();
+    }
+
+    /**
+     * Initialize default report settings if not already set
+     */
+    public static function init_default_report_settings() {
+        if (get_option('jg_map_report_reasons', null) === null) {
+            update_option('jg_map_report_reasons', self::get_default_report_categories());
+        }
+        if (get_option('jg_map_report_categories', null) === null) {
+            update_option('jg_map_report_categories', self::get_default_category_groups());
+        }
+    }
+
+    /**
+     * Auto-suggest icon based on label name
+     * Returns an emoji that best matches the text content
+     */
+    public static function suggest_icon_for_label($label) {
+        $label_lower = mb_strtolower($label, 'UTF-8');
+
+        // Icon mapping based on keywords
+        $icon_mappings = array(
+            // Infrastructure
+            'dziura' => '🕳️',
+            'jezdnia' => '🛣️',
+            'droga' => '🛣️',
+            'chodnik' => '🚶',
+            'znak' => '🚸',
+            'drogowy' => '🚸',
+            'oświetlenie' => '💡',
+            'światło' => '💡',
+            'lampa' => '💡',
+            'latarnia' => '💡',
+            'most' => '🌉',
+            'budynek' => '🏢',
+            'parking' => '🅿️',
+
+            // Safety & order
+            'wysypisko' => '🗑️',
+            'śmieci' => '🗑️',
+            'kosz' => '♻️',
+            'graffiti' => '🎨',
+            'wandalizm' => '🎨',
+            'śliski' => '⚠️',
+            'niebezpiecz' => '⚠️',
+            'zagrożenie' => '⚠️',
+            'awaria' => '🔧',
+            'uszkodz' => '🔧',
+
+            // Greenery
+            'drzewo' => '🌳',
+            'nasadzenie' => '🌳',
+            'zieleń' => '🌿',
+            'gałąź' => '🌿',
+            'krzew' => '🌿',
+            'park' => '🏞️',
+            'trawnik' => '🌱',
+            'kwiat' => '🌸',
+
+            // Transport
+            'przejście' => '🚦',
+            'pieszy' => '🚦',
+            'przystanek' => '🚏',
+            'autobus' => '🚌',
+            'tramwaj' => '🚋',
+            'ruch' => '🚗',
+            'korek' => '🚙',
+            'rower' => '🚲',
+            'ścieżka' => '🚲',
+
+            // Initiatives
+            'ławka' => '🪑',
+            'plac zabaw' => '🎠',
+            'zabaw' => '🎠',
+            'stojak' => '🚲',
+            'infrastruktura' => '🎪',
+            'propozycja' => '💡',
+
+            // General
+            'woda' => '💧',
+            'fontanna' => '⛲',
+            'hałas' => '🔊',
+            'zapach' => '👃',
+            'zwierzę' => '🐕',
+            'pies' => '🐕',
+            'kot' => '🐈',
+            'ptaki' => '🐦',
+        );
+
+        // Search for matching keywords
+        foreach ($icon_mappings as $keyword => $icon) {
+            if (mb_strpos($label_lower, $keyword) !== false) {
+                return $icon;
+            }
+        }
+
+        // Default icon
+        return '📌';
     }
 
     /**
@@ -167,6 +292,15 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_delete_user', array($this, 'admin_delete_user'), 1);
         add_action('wp_ajax_jg_admin_restore_point', array($this, 'admin_restore_point'), 1);
         add_action('wp_ajax_jg_admin_empty_trash', array($this, 'admin_empty_trash'), 1);
+
+        // Report reasons management (admin only)
+        add_action('wp_ajax_jg_save_report_category', array($this, 'save_report_category'), 1);
+        add_action('wp_ajax_jg_update_report_category', array($this, 'update_report_category'), 1);
+        add_action('wp_ajax_jg_delete_report_category', array($this, 'delete_report_category'), 1);
+        add_action('wp_ajax_jg_save_report_reason', array($this, 'save_report_reason'), 1);
+        add_action('wp_ajax_jg_update_report_reason', array($this, 'update_report_reason'), 1);
+        add_action('wp_ajax_jg_delete_report_reason', array($this, 'delete_report_reason'), 1);
+        add_action('wp_ajax_jg_suggest_reason_icon', array($this, 'suggest_reason_icon'), 1);
     }
 
     /**
@@ -6332,5 +6466,342 @@ class JG_Map_Ajax_Handlers {
             'message' => sprintf('Kosz został opróżniony. Usunięto %d miejsc.', $deleted_count),
             'deleted_count' => $deleted_count
         ));
+    }
+
+    /**
+     * Save new report category
+     */
+    public function save_report_category() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_report_reasons_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+        $label = sanitize_text_field($_POST['label'] ?? '');
+
+        if (empty($key) || empty($label)) {
+            wp_send_json_error('Klucz i nazwa są wymagane');
+            return;
+        }
+
+        $categories = self::get_category_groups();
+
+        if (isset($categories[$key])) {
+            wp_send_json_error('Kategoria o tym kluczu już istnieje');
+            return;
+        }
+
+        $categories[$key] = $label;
+        update_option('jg_map_report_categories', $categories);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'add_report_category',
+                'settings',
+                0,
+                sprintf('Dodano kategorię zgłoszeń: %s (%s)', $label, $key)
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Kategoria została dodana'));
+    }
+
+    /**
+     * Update existing report category
+     */
+    public function update_report_category() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_report_reasons_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+        $label = sanitize_text_field($_POST['label'] ?? '');
+
+        if (empty($key) || empty($label)) {
+            wp_send_json_error('Klucz i nazwa są wymagane');
+            return;
+        }
+
+        $categories = self::get_category_groups();
+
+        if (!isset($categories[$key])) {
+            wp_send_json_error('Kategoria nie istnieje');
+            return;
+        }
+
+        $old_label = $categories[$key];
+        $categories[$key] = $label;
+        update_option('jg_map_report_categories', $categories);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'update_report_category',
+                'settings',
+                0,
+                sprintf('Zaktualizowano kategorię zgłoszeń: %s -> %s', $old_label, $label)
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Kategoria została zaktualizowana'));
+    }
+
+    /**
+     * Delete report category
+     */
+    public function delete_report_category() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_report_reasons_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+
+        if (empty($key)) {
+            wp_send_json_error('Klucz kategorii jest wymagany');
+            return;
+        }
+
+        $categories = self::get_category_groups();
+
+        if (!isset($categories[$key])) {
+            wp_send_json_error('Kategoria nie istnieje');
+            return;
+        }
+
+        $deleted_label = $categories[$key];
+        unset($categories[$key]);
+        update_option('jg_map_report_categories', $categories);
+
+        // Unlink reasons from this category
+        $reasons = self::get_report_categories();
+        $unlinked = 0;
+        foreach ($reasons as $rkey => $reason) {
+            if (isset($reason['group']) && $reason['group'] === $key) {
+                $reasons[$rkey]['group'] = '';
+                $unlinked++;
+            }
+        }
+        if ($unlinked > 0) {
+            update_option('jg_map_report_reasons', $reasons);
+        }
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'delete_report_category',
+                'settings',
+                0,
+                sprintf('Usunięto kategorię zgłoszeń: %s (odłączono %d powodów)', $deleted_label, $unlinked)
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Kategoria została usunięta'));
+    }
+
+    /**
+     * Save new report reason
+     */
+    public function save_report_reason() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_report_reasons_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+        $label = sanitize_text_field($_POST['label'] ?? '');
+        $group = sanitize_key($_POST['group'] ?? '');
+        $icon = sanitize_text_field($_POST['icon'] ?? '📌');
+
+        if (empty($key) || empty($label)) {
+            wp_send_json_error('Klucz i nazwa są wymagane');
+            return;
+        }
+
+        $reasons = self::get_report_categories();
+
+        if (isset($reasons[$key])) {
+            wp_send_json_error('Powód o tym kluczu już istnieje');
+            return;
+        }
+
+        $reasons[$key] = array(
+            'label' => $label,
+            'group' => $group,
+            'icon' => $icon
+        );
+        update_option('jg_map_report_reasons', $reasons);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'add_report_reason',
+                'settings',
+                0,
+                sprintf('Dodano powód zgłoszenia: %s %s (%s)', $icon, $label, $key)
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Powód został dodany'));
+    }
+
+    /**
+     * Update existing report reason
+     */
+    public function update_report_reason() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_report_reasons_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+        $label = sanitize_text_field($_POST['label'] ?? '');
+        $group = sanitize_key($_POST['group'] ?? '');
+        $icon = sanitize_text_field($_POST['icon'] ?? '📌');
+
+        if (empty($key) || empty($label)) {
+            wp_send_json_error('Klucz i nazwa są wymagane');
+            return;
+        }
+
+        $reasons = self::get_report_categories();
+
+        if (!isset($reasons[$key])) {
+            wp_send_json_error('Powód nie istnieje');
+            return;
+        }
+
+        $old_label = $reasons[$key]['label'];
+        $reasons[$key] = array(
+            'label' => $label,
+            'group' => $group,
+            'icon' => $icon
+        );
+        update_option('jg_map_report_reasons', $reasons);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'update_report_reason',
+                'settings',
+                0,
+                sprintf('Zaktualizowano powód zgłoszenia: %s -> %s %s', $old_label, $icon, $label)
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Powód został zaktualizowany'));
+    }
+
+    /**
+     * Delete report reason
+     */
+    public function delete_report_reason() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_report_reasons_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+
+        if (empty($key)) {
+            wp_send_json_error('Klucz powodu jest wymagany');
+            return;
+        }
+
+        $reasons = self::get_report_categories();
+
+        if (!isset($reasons[$key])) {
+            wp_send_json_error('Powód nie istnieje');
+            return;
+        }
+
+        $deleted_reason = $reasons[$key];
+        unset($reasons[$key]);
+        update_option('jg_map_report_reasons', $reasons);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'delete_report_reason',
+                'settings',
+                0,
+                sprintf('Usunięto powód zgłoszenia: %s %s', $deleted_reason['icon'] ?? '📌', $deleted_reason['label'])
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Powód został usunięty'));
+    }
+
+    /**
+     * Suggest icon for reason label
+     */
+    public function suggest_reason_icon() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_report_reasons_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $label = sanitize_text_field($_POST['label'] ?? '');
+
+        if (empty($label)) {
+            wp_send_json_success(array('icon' => '📌'));
+            return;
+        }
+
+        $icon = self::suggest_icon_for_label($label);
+
+        wp_send_json_success(array('icon' => $icon));
     }
 }
