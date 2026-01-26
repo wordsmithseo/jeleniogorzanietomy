@@ -4961,10 +4961,14 @@
         var canEdit = (CFG.isAdmin || (+CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id));
         var myVote = p.my_vote || '';
 
-        // Don't show voting for promo points
+        // Don't show voting for promo points or own points
         var voteHtml = '';
-        if (!p.sponsored) {
+        var isOwnPoint = +CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id;
+        if (!p.sponsored && !isOwnPoint) {
           voteHtml = '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>';
+        } else if (!p.sponsored && isOwnPoint) {
+          // Show vote count without buttons for own points
+          voteHtml = '<div class="jg-vote jg-vote--own"><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><span class="jg-vote-own-label">głosów</span></div>';
         }
 
         // Community verification badge (based on votes)

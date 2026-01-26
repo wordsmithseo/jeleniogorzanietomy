@@ -293,25 +293,13 @@ class JG_Map_Ajax_Handlers {
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $current_user_id = get_current_user_id();
 
-        // DEBUG: Log user context for troubleshooting
-        error_log('[JG_MAP DEBUG] get_points() called - is_admin: ' . ($is_admin ? 'YES' : 'NO') . ', user_id: ' . $current_user_id);
-
         // For admins: get all points (published + pending)
         // For regular users: get published points + their own pending points
         $points = JG_Map_Database::get_published_points($is_admin);
 
-        // DEBUG: Log how many points returned and their statuses
-        $status_counts = array();
-        foreach ($points as $p) {
-            $s = $p['status'] ?? 'unknown';
-            $status_counts[$s] = ($status_counts[$s] ?? 0) + 1;
-        }
-        error_log('[JG_MAP DEBUG] get_published_points(' . ($is_admin ? 'true' : 'false') . ') returned ' . count($points) . ' points. Statuses: ' . json_encode($status_counts));
-
         // If regular user is logged in, add their pending points
         if (!$is_admin && $current_user_id > 0) {
             $user_pending_points = JG_Map_Database::get_user_pending_points($current_user_id);
-            error_log('[JG_MAP DEBUG] get_user_pending_points(' . $current_user_id . ') returned ' . count($user_pending_points) . ' points');
             $points = array_merge($points, $user_pending_points);
         }
 
@@ -1035,12 +1023,13 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Validate required fields
-        $title = sanitize_text_field($_POST['title'] ?? '');
+        // Use wp_unslash() to remove WordPress magic quotes before sanitizing
+        $title = sanitize_text_field(wp_unslash($_POST['title'] ?? ''));
         $lat = floatval($_POST['lat'] ?? 0);
         $lng = floatval($_POST['lng'] ?? 0);
         // Type already sanitized above for limit check
-        $content = wp_kses_post($_POST['content'] ?? '');
-        $address = sanitize_text_field($_POST['address'] ?? '');
+        $content = wp_kses_post(wp_unslash($_POST['content'] ?? ''));
+        $address = sanitize_text_field(wp_unslash($_POST['address'] ?? ''));
         $public_name = isset($_POST['public_name']);
         $category = sanitize_text_field($_POST['category'] ?? '');
 
@@ -1246,13 +1235,14 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        $title = sanitize_text_field($_POST['title'] ?? '');
+        // Use wp_unslash() to remove WordPress magic quotes before sanitizing
+        $title = sanitize_text_field(wp_unslash($_POST['title'] ?? ''));
         $type = sanitize_text_field($_POST['type'] ?? '');
-        $content = wp_kses_post($_POST['content'] ?? '');
+        $content = wp_kses_post(wp_unslash($_POST['content'] ?? ''));
         $category = sanitize_text_field($_POST['category'] ?? '');
         $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : null;
         $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : null;
-        $address = sanitize_text_field($_POST['address'] ?? '');
+        $address = sanitize_text_field(wp_unslash($_POST['address'] ?? ''));
         $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
 
@@ -1539,7 +1529,7 @@ class JG_Map_Ajax_Handlers {
 
         $user_id = get_current_user_id();
         $point_id = intval($_POST['post_id'] ?? 0);
-        $reason = sanitize_textarea_field($_POST['reason'] ?? '');
+        $reason = sanitize_textarea_field(wp_unslash($_POST['reason'] ?? ''));
 
         $point = JG_Map_Database::get_point($point_id);
         if (!$point) {
@@ -1660,6 +1650,17 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Check if user is the author of the point - can't vote on own places
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+        if (intval($point['author_id']) === $user_id) {
+            wp_send_json_error(array('message' => 'Nie możesz głosować na własne miejsca'));
+            exit;
+        }
+
         // Get current vote
         $current_vote = JG_Map_Database::get_user_vote($point_id, $user_id);
 
@@ -1724,7 +1725,7 @@ class JG_Map_Ajax_Handlers {
         $user_id = get_current_user_id();
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $point_id = intval($_POST['post_id'] ?? 0);
-        $reason = sanitize_textarea_field($_POST['reason'] ?? '');
+        $reason = sanitize_textarea_field(wp_unslash($_POST['reason'] ?? ''));
 
         if (!$point_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -1878,7 +1879,7 @@ class JG_Map_Ajax_Handlers {
 
         $point_id = intval($_POST['post_id'] ?? 0);
         $action_type = sanitize_text_field($_POST['action_type'] ?? '');
-        $reason = sanitize_textarea_field($_POST['reason'] ?? '');
+        $reason = sanitize_textarea_field(wp_unslash($_POST['reason'] ?? ''));
 
         if (!$point_id || !in_array($action_type, array('keep', 'remove', 'edit'))) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -1940,9 +1941,10 @@ class JG_Map_Ajax_Handlers {
         $this->check_admin();
 
         $point_id = intval($_POST['post_id'] ?? 0);
-        $title = sanitize_text_field($_POST['title'] ?? '');
+        // Use wp_unslash() to remove WordPress magic quotes before sanitizing
+        $title = sanitize_text_field(wp_unslash($_POST['title'] ?? ''));
         $type = sanitize_text_field($_POST['type'] ?? '');
-        $content = wp_kses_post($_POST['content'] ?? '');
+        $content = wp_kses_post(wp_unslash($_POST['content'] ?? ''));
         $website = sanitize_text_field($_POST['website'] ?? '');
         $phone = sanitize_text_field($_POST['phone'] ?? '');
 
@@ -2160,7 +2162,7 @@ class JG_Map_Ajax_Handlers {
         $this->check_admin();
 
         $point_id = intval($_POST['post_id'] ?? 0);
-        $note = sanitize_textarea_field($_POST['note'] ?? '');
+        $note = sanitize_textarea_field(wp_unslash($_POST['note'] ?? ''));
 
         if (!$point_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -2190,8 +2192,8 @@ class JG_Map_Ajax_Handlers {
 
         $point_id = intval($_POST['post_id'] ?? 0);
         $new_status = sanitize_text_field($_POST['new_status'] ?? '');
-        $resolved_summary = isset($_POST['resolved_summary']) ? sanitize_textarea_field($_POST['resolved_summary']) : '';
-        $rejection_reason = isset($_POST['rejection_reason']) ? sanitize_textarea_field($_POST['rejection_reason']) : '';
+        $resolved_summary = isset($_POST['resolved_summary']) ? sanitize_textarea_field(wp_unslash($_POST['resolved_summary'])) : '';
+        $rejection_reason = isset($_POST['rejection_reason']) ? sanitize_textarea_field(wp_unslash($_POST['rejection_reason'])) : '';
 
         if (!$point_id || !in_array($new_status, array('added', 'needs_better_documentation', 'reported', 'resolved', 'rejected'))) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -2324,7 +2326,7 @@ class JG_Map_Ajax_Handlers {
         $this->check_admin();
 
         $point_id = intval($_POST['post_id'] ?? 0);
-        $reason = sanitize_textarea_field($_POST['reason'] ?? '');
+        $reason = sanitize_textarea_field(wp_unslash($_POST['reason'] ?? ''));
 
         $point = JG_Map_Database::get_point($point_id);
 
@@ -3291,7 +3293,7 @@ class JG_Map_Ajax_Handlers {
         $this->check_admin();
 
         $history_id = intval($_POST['history_id'] ?? 0);
-        $reason = sanitize_textarea_field($_POST['reason'] ?? '');
+        $reason = sanitize_textarea_field(wp_unslash($_POST['reason'] ?? ''));
 
         if (!$history_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -3424,7 +3426,7 @@ class JG_Map_Ajax_Handlers {
 
         $user_id = get_current_user_id();
         $history_id = intval($_POST['history_id'] ?? 0);
-        $reason = sanitize_textarea_field($_POST['reason'] ?? '');
+        $reason = sanitize_textarea_field(wp_unslash($_POST['reason'] ?? ''));
 
         if (!$history_id) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
@@ -3597,7 +3599,7 @@ class JG_Map_Ajax_Handlers {
 
         $history_id = intval($_POST['history_id'] ?? 0);
         $point_id = intval($_POST['post_id'] ?? 0);
-        $reason = sanitize_textarea_field($_POST['reason'] ?? '');
+        $reason = sanitize_textarea_field(wp_unslash($_POST['reason'] ?? ''));
 
         global $wpdb;
 
