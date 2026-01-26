@@ -6447,7 +6447,10 @@ class JG_Map_Ajax_Handlers {
                 'lng' => $point['lng'],
                 'is_promo' => (bool)$point['is_promo'],
                 'votes_count' => $point['votes_count'],
-                'created_at' => $point['created_at'],
+                'date' => array(
+                    'raw' => $point['created_at'],
+                    'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu'
+                ),
                 'featured_image' => $this->get_featured_image_url($point)
             );
         }
