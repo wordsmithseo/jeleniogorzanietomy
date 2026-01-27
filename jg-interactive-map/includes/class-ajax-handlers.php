@@ -1563,6 +1563,13 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Sponsored places can only be edited by owner or admin
+        $is_sponsored = (bool)$point['is_promo'];
+        if ($is_sponsored && !$is_admin && !$is_owner) {
+            wp_send_json_error(array('message' => 'Miejsca sponsorowane mogą być edytowane tylko przez właściciela'));
+            exit;
+        }
+
         // Use wp_unslash() to remove WordPress magic quotes before sanitizing
         $title = sanitize_text_field(wp_unslash($_POST['title'] ?? ''));
         $type = sanitize_text_field($_POST['type'] ?? '');

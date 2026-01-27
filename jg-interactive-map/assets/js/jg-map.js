@@ -3977,10 +3977,26 @@
             var maxDescLength = isSponsored ? 1000 : 200;
             var currentDescLength = contentText.length;
 
+            // Check if user is editing someone else's place (requires approval)
+            var isEditingOthersPlace = +CFG.currentUserId > 0 && +CFG.currentUserId !== +p.author_id;
+            var approvalNoticeHtml = '';
+            if (isEditingOthersPlace && !limits.is_admin) {
+              approvalNoticeHtml = '<div class="cols-2" style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin-bottom:12px">' +
+                '<div style="display:flex;align-items:flex-start;gap:10px">' +
+                '<span style="font-size:24px">ℹ️</span>' +
+                '<div>' +
+                '<strong style="color:#92400e;display:block;margin-bottom:4px">Edycja cudzego miejsca</strong>' +
+                '<span style="color:#78350f;font-size:13px">Twoja propozycja zmian musi zostać zatwierdzona przez właściciela miejsca oraz moderatora przed publikacją.</span>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+            }
+
             var formHtml = '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header>' +
               '<form id="edit-form" class="jg-grid cols-2">' +
               '<input type="hidden" name="lat" id="edit-lat-input" value="' + p.lat + '">' +
               '<input type="hidden" name="lng" id="edit-lng-input" value="' + p.lng + '">' +
+              approvalNoticeHtml +
               limitsHtml +
               '<label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
               '<label>Typ* <select name="type" id="edit-type-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
@@ -4966,12 +4982,14 @@
         var promoClass = p.sponsored ? ' jg-modal--promo' : '';
         var typeClass = ' jg-modal--' + (p.type || 'zgloszenie');
         // FIX: Convert currentUserId to number for comparison (wp_localize_script converts to string)
-        var canEdit = (CFG.isAdmin || (+CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id));
+        var isOwnPoint = +CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id;
+        // Anyone logged in can edit non-sponsored places (edits to others' places require approval)
+        // Sponsored places can only be edited by owner or admin
+        var canEdit = CFG.isAdmin || isOwnPoint || (+CFG.currentUserId > 0 && !p.sponsored);
         var myVote = p.my_vote || '';
 
         // Don't show voting for promo points or own points
         var voteHtml = '';
-        var isOwnPoint = +CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id;
         if (!p.sponsored && !isOwnPoint) {
           voteHtml = '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>';
         } else if (!p.sponsored && isOwnPoint) {
@@ -5087,9 +5105,9 @@
           }
         }
 
-        // Add deletion request button for authors (non-admins)
+        // Add deletion request button for authors only (non-admins)
         var deletionBtn = '';
-        if (canEdit && !CFG.isAdmin && !p.is_deletion_requested) {
+        if (isOwnPoint && !CFG.isAdmin && !p.is_deletion_requested) {
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
         }
 
@@ -5232,7 +5250,7 @@
 
         // Stats button for sponsored places (owner + admins only)
         var statsBtn = '';
-        if (p.sponsored && canEdit) {
+        if (p.sponsored && (isOwnPoint || CFG.isAdmin)) {
           statsBtn = '<button id="btn-stats" class="jg-btn jg-btn--ghost">📊 Statystyki</button>';
         }
 
