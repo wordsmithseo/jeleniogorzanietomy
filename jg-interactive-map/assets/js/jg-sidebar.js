@@ -16,6 +16,11 @@
         sortBy: 'date_desc'
     };
 
+    // Fingerprint of current data for change detection
+    let currentDataFingerprint = null;
+    // Current sponsored pin ID to maintain consistency
+    let currentSponsoredId = null;
+
     /**
      * Initialize sidebar
      */
@@ -110,12 +115,30 @@
     }
 
     /**
-     * Load points from server
+     * Generate fingerprint of points data for change detection
+     * Returns a string that uniquely identifies the current state
      */
-    function loadPoints() {
-        // Show loading
-        $('#jg-sidebar-loading').show();
-        $('#jg-sidebar-list').hide();
+    function generateFingerprint(points, stats) {
+        if (!points || points.length === 0) {
+            return 'empty';
+        }
+
+        // Build fingerprint from point IDs, votes, and stats
+        const pointsData = points.map(p => `${p.id}:${p.votes_count}:${p.is_promo ? 1 : 0}`).join(',');
+        const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
+        return pointsData + statsData;
+    }
+
+    /**
+     * Load points from server
+     * @param {boolean} silent - If true, skip loading indicator (for sync refreshes)
+     */
+    function loadPoints(silent) {
+        // Show loading only if not silent
+        if (!silent) {
+            $('#jg-sidebar-loading').show();
+            $('#jg-sidebar-list').hide();
+        }
 
         $.ajax({
             url: JG_MAP_CFG.ajax,
@@ -129,20 +152,33 @@
             },
             success: function(response) {
                 if (response.success && response.data) {
-                    sidebarPoints = response.data.points;
-                    updateStats(response.data.stats);
-                    renderPoints(sidebarPoints);
-                } else {
+                    const newPoints = response.data.points;
+                    const newStats = response.data.stats;
+                    const newFingerprint = generateFingerprint(newPoints, newStats);
+
+                    // Only re-render if data actually changed
+                    if (newFingerprint !== currentDataFingerprint) {
+                        currentDataFingerprint = newFingerprint;
+                        sidebarPoints = newPoints;
+                        updateStats(newStats);
+                        renderPoints(sidebarPoints);
+                    }
+                    // If silent and no changes, do nothing (no flicker)
+                } else if (!silent) {
                     showError('Nie udało się załadować listy pinezek');
                 }
 
-                $('#jg-sidebar-loading').hide();
-                $('#jg-sidebar-list').show();
+                if (!silent) {
+                    $('#jg-sidebar-loading').hide();
+                    $('#jg-sidebar-list').show();
+                }
             },
             error: function(xhr, status, error) {
-                showError('Błąd połączenia z serwerem');
-                $('#jg-sidebar-loading').hide();
-                $('#jg-sidebar-list').show();
+                if (!silent) {
+                    showError('Błąd połączenia z serwerem');
+                    $('#jg-sidebar-loading').hide();
+                    $('#jg-sidebar-list').show();
+                }
             }
         });
     }
@@ -166,6 +202,7 @@
 
         if (!points || points.length === 0) {
             $list.html('<div class="jg-sidebar-empty">Brak pinezek spełniających kryteria</div>');
+            currentSponsoredId = null;
             return;
         }
 
@@ -173,15 +210,26 @@
         const sponsoredPoints = points.filter(p => p.is_promo);
         const regularPoints = points.filter(p => !p.is_promo);
 
-        // Add ONE random sponsored pin in "Polecamy" section
+        // Add ONE sponsored pin in "Polecamy" section
         if (sponsoredPoints.length > 0) {
-            // Pick one random sponsored place
-            const randomIndex = Math.floor(Math.random() * sponsoredPoints.length);
-            const randomSponsored = sponsoredPoints[randomIndex];
+            // Try to keep the same sponsored pin if it's still available
+            let selectedSponsored = null;
+            if (currentSponsoredId !== null) {
+                selectedSponsored = sponsoredPoints.find(p => p.id === currentSponsoredId);
+            }
+
+            // If not found or first load, pick a random one
+            if (!selectedSponsored) {
+                const randomIndex = Math.floor(Math.random() * sponsoredPoints.length);
+                selectedSponsored = sponsoredPoints[randomIndex];
+                currentSponsoredId = selectedSponsored.id;
+            }
 
             $list.append('<div class="jg-sidebar-section-title">Polecamy:</div>');
-            const $item = createPointItem(randomSponsored);
+            const $item = createPointItem(selectedSponsored);
             $list.append($item);
+        } else {
+            currentSponsoredId = null;
         }
 
         // Add regular pins section if there are regular pins
@@ -404,6 +452,7 @@
         /**
          * Schedule a refresh with debouncing to prevent excessive updates
          * If multiple changes come in rapid succession, we only refresh once
+         * Uses silent mode to avoid flickering - only re-renders if data changed
          */
         function scheduleRefresh() {
             // If refresh is already pending, just extend the timeout
@@ -414,8 +463,9 @@
             refreshPending = true;
 
             // Wait 500ms before refreshing to batch multiple rapid changes
+            // Use silent=true to avoid flickering - only re-renders if data changed
             refreshTimeout = setTimeout(function() {
-                loadPoints();
+                loadPoints(true);
                 refreshPending = false;
             }, 500);
         }
