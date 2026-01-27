@@ -2544,7 +2544,7 @@
               hasReports: (p.reports_count || 0) > 0,
               reportsCount: p.reports_count || 0,
               isDeletionRequested: !!p.is_deletion_requested,
-              isEdit: p.has_pending_edit || false
+              isEdit: !!p.is_edit
             };
 
             var m = L.marker([lat, lng], markerOptions);
@@ -4819,6 +4819,49 @@
             '</div>';
         }
 
+        // Show external edit info to place owner (when someone else edited their place)
+        if (!CFG.isAdmin && p.is_own_place && p.is_edit && p.edit_info && p.edit_info.is_external_edit && p.edit_info.owner_approval_status === 'pending') {
+          var ownerChanges = [];
+          if (p.edit_info.prev_title !== p.edit_info.new_title) {
+            ownerChanges.push('<div><strong>Tytuł:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(p.edit_info.prev_title) + '</span><br><span style="color:#16a34a">→ ' + esc(p.edit_info.new_title) + '</span></div>');
+          }
+          if (p.edit_info.prev_type !== p.edit_info.new_type) {
+            var typeLabelsOwner = { zgloszenie: 'Zgłoszenie', ciekawostka: 'Ciekawostka', miejsce: 'Miejsce' };
+            ownerChanges.push('<div><strong>Typ:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (typeLabelsOwner[p.edit_info.prev_type] || p.edit_info.prev_type) + '</span><br><span style="color:#16a34a">→ ' + (typeLabelsOwner[p.edit_info.new_type] || p.edit_info.new_type) + '</span></div>');
+          }
+          if (p.edit_info.prev_content !== p.edit_info.new_content) {
+            var prevContentOwner = p.edit_info.prev_content.replace(/<\/?[^>]+(>|$)/g, '');
+            var newContentOwner = p.edit_info.new_content.replace(/<\/?[^>]+(>|$)/g, '');
+            ownerChanges.push('<div><strong>Opis:</strong><br>' +
+              '<div style="max-height:100px;overflow-y:auto;padding:8px;background:#fee;border-radius:4px;margin-top:4px">' +
+              '<strong style="color:#dc2626">Poprzedni:</strong><br>' + (prevContentOwner ? esc(prevContentOwner) : '<em>brak</em>') + '</div>' +
+              '<div style="max-height:100px;overflow-y:auto;padding:8px;background:#d1fae5;border-radius:4px;margin-top:8px">' +
+              '<strong style="color:#16a34a">Nowy:</strong><br>' + (newContentOwner ? esc(newContentOwner) : '<em>brak</em>') + '</div>' +
+              '</div>');
+          }
+          if (p.edit_info.new_images && p.edit_info.new_images.length > 0) {
+            var ownerImagesHtml = '<div><strong>Nowe zdjęcia (' + p.edit_info.new_images.length + '):</strong><br>' +
+              '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:8px">';
+            p.edit_info.new_images.forEach(function(img) {
+              var thumbUrl = typeof img === 'object' ? (img.thumb || img.full) : img;
+              ownerImagesHtml += '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:2px solid #16a34a">' +
+                '<img src="' + esc(thumbUrl) + '" style="width:100%;height:100%;object-fit:cover" alt="Nowe zdjęcie"></div>';
+            });
+            ownerImagesHtml += '</div></div>';
+            ownerChanges.push(ownerImagesHtml);
+          }
+
+          editInfo = '<div style="background:#faf5ff;border:2px solid #9333ea;border-radius:8px;padding:12px;margin:16px 0">' +
+            '<div style="font-weight:700;margin-bottom:8px;color:#6b21a8">📝 Propozycja zmian od użytkownika <strong>' + esc(p.edit_info.editor_name) + '</strong></div>' +
+            '<div style="font-size:12px;color:#7c3aed;margin-bottom:12px">Zgłoszone ' + esc(p.edit_info.edited_at) + '</div>' +
+            (ownerChanges.length > 0 ? ownerChanges.join('<hr style="margin:12px 0;border:none;border-top:1px solid #e9d5ff">') : '<div style="color:#6b21a8">Brak zmian w podstawowych polach</div>') +
+            '<div style="margin-top:16px;padding-top:12px;border-top:2px solid #e9d5ff;display:flex;gap:8px;flex-wrap:wrap">' +
+            '<button class="jg-btn jg-btn--primary" id="btn-owner-approve-edit" data-history-id="' + p.edit_info.history_id + '">✓ Zatwierdź zmiany</button>' +
+            '<button class="jg-btn jg-btn--danger" id="btn-owner-reject-edit" data-history-id="' + p.edit_info.history_id + '">✗ Odrzuć</button>' +
+            '</div>' +
+            '</div>';
+        }
+
         // Deletion request info
         var deletionInfo = '';
         if (CFG.isAdmin && p.is_deletion_requested && p.deletion_info) {
@@ -5818,6 +5861,75 @@
               });
             };
           }
+        }
+
+        // Owner approval handlers (for external edits to owner's place)
+        var btnOwnerApproveEdit = qs('#btn-owner-approve-edit', modalView);
+        var btnOwnerRejectEdit = qs('#btn-owner-reject-edit', modalView);
+
+        if (btnOwnerApproveEdit) {
+          btnOwnerApproveEdit.onclick = function() {
+            var historyId = this.getAttribute('data-history-id');
+            showConfirm('Zatwierdzić proponowane zmiany?').then(function(confirmed) {
+              if (!confirmed) return;
+
+              btnOwnerApproveEdit.disabled = true;
+              btnOwnerApproveEdit.textContent = 'Zatwierdzanie...';
+
+              api('jg_owner_approve_edit', { history_id: historyId })
+                .then(function(result) {
+                  return refreshAll();
+                })
+                .then(function() {
+                  close(modalView);
+                  showAlert(result && result.message ? result.message : 'Edycja zatwierdzona');
+                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                  if (updatedPoint) {
+                    setTimeout(function() {
+                      openDetails(updatedPoint);
+                    }, 200);
+                  }
+                })
+                .catch(function(err) {
+                  showAlert('Błąd: ' + (err.message || '?'));
+                  btnOwnerApproveEdit.disabled = false;
+                  btnOwnerApproveEdit.textContent = '✓ Zatwierdź zmiany';
+                });
+            });
+          };
+        }
+
+        if (btnOwnerRejectEdit) {
+          btnOwnerRejectEdit.onclick = function() {
+            var historyId = this.getAttribute('data-history-id');
+            showRejectReasonModal('Powód odrzucenia proponowanych zmian')
+              .then(function(reason) {
+                if (reason === null) return;
+
+                btnOwnerRejectEdit.disabled = true;
+                btnOwnerRejectEdit.textContent = 'Odrzucanie...';
+
+                api('jg_owner_reject_edit', { history_id: historyId, reason: reason })
+                  .then(function(result) {
+                    return refreshAll();
+                  })
+                  .then(function() {
+                    close(modalView);
+                    showAlert('Propozycja zmian została odrzucona');
+                    var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                    if (updatedPoint) {
+                      setTimeout(function() {
+                        openDetails(updatedPoint);
+                      }, 200);
+                    }
+                  })
+                  .catch(function(err) {
+                    showAlert('Błąd: ' + (err.message || '?'));
+                    btnOwnerRejectEdit.disabled = false;
+                    btnOwnerRejectEdit.textContent = '✗ Odrzuć';
+                  });
+              });
+          };
         }
       }
 

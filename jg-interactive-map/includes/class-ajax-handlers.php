@@ -789,8 +789,25 @@ class JG_Map_Ajax_Handlers {
                                 }
                             }
 
+                            // Get editor info (the person who submitted the edit)
+                            $editor_id = intval($pending_history['user_id']);
+                            $editor = get_userdata($editor_id);
+                            $editor_name = $editor ? $editor->display_name : 'Nieznany użytkownik';
+
+                            // Check if this is an edit by someone other than the owner
+                            $is_external_edit = ($editor_id !== $current_user_id);
+
+                            // Check if owner approval is required and its status
+                            $requires_owner_approval = !empty($pending_history['point_owner_id']);
+                            $owner_approval_status = $pending_history['owner_approval_status'] ?? 'pending';
+
                             $edit_info = array(
                                 'history_id' => intval($pending_history['id']),
+                                'editor_id' => $editor_id,
+                                'editor_name' => $editor_name,
+                                'is_external_edit' => $is_external_edit,
+                                'requires_owner_approval' => $requires_owner_approval,
+                                'owner_approval_status' => $owner_approval_status,
                                 'prev_title' => $old_values['title'] ?? '',
                                 'prev_type' => $old_values['type'] ?? '',
                                 'prev_category' => $old_values['category'] ?? null,
@@ -3711,41 +3728,163 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Update owner approval status
-        $wpdb->update(
-            $table,
-            array(
-                'owner_approval_status' => 'approved',
-                'owner_approval_at' => current_time('mysql'),
-                'owner_approval_by' => $user_id
-            ),
-            array('id' => $history_id)
-        );
+        // Check if owner is also admin/moderator - if so, fully approve the edit
+        $owner_id = intval($history['point_owner_id']);
+        $owner_is_admin = user_can($owner_id, 'manage_options') || user_can($owner_id, 'jg_map_moderate');
 
-        // Get point info for notification
+        // Get point info
         $point = JG_Map_Database::get_point($history['point_id']);
         $editor = get_userdata($history['user_id']);
 
-        // Notify editor that owner approved, now waiting for moderator
-        if ($editor && $editor->user_email) {
-            $subject = 'Portal Jeleniogórzanie to my - Właściciel zaakceptował twoją edycję';
-            $message = "Właściciel miejsca \"{$point['title']}\" zaakceptował twoją propozycję zmian.\n\n";
-            $message .= "Twoja edycja oczekuje teraz na zatwierdzenie przez moderatora.";
-            wp_mail($editor->user_email, $subject, $message);
+        if ($owner_is_admin) {
+            // Owner is admin/mod - fully approve the edit (owner + admin approval in one step)
+            $new_values = json_decode($history['new_values'], true);
+
+            if (!$new_values || !isset($new_values['title'])) {
+                wp_send_json_error(array('message' => 'Nieprawidłowe dane edycji'));
+                exit;
+            }
+
+            // Prepare update data
+            $update_data = array(
+                'title' => $new_values['title'],
+                'type' => $new_values['type'],
+                'content' => $new_values['content'],
+                'excerpt' => wp_trim_words($new_values['content'], 20)
+            );
+
+            // Add category if present (for reports)
+            if (isset($new_values['category'])) {
+                if ($new_values['type'] === 'zgloszenie' && !empty($new_values['category'])) {
+                    $update_data['category'] = $new_values['category'];
+                } else {
+                    $update_data['category'] = null;
+                }
+            }
+
+            // Add lat/lng if changed
+            if (isset($new_values['lat']) && isset($new_values['lng'])) {
+                $update_data['lat'] = $new_values['lat'];
+                $update_data['lng'] = $new_values['lng'];
+            }
+            if (isset($new_values['address'])) {
+                $update_data['address'] = $new_values['address'];
+            }
+
+            // Add website, phone, social media, and CTA if point is sponsored
+            $is_sponsored = (bool)$point['is_promo'];
+            if ($is_sponsored) {
+                if (isset($new_values['website'])) {
+                    $update_data['website'] = $new_values['website'];
+                }
+                if (isset($new_values['phone'])) {
+                    $update_data['phone'] = $new_values['phone'];
+                }
+                if (isset($new_values['facebook_url'])) {
+                    $update_data['facebook_url'] = $new_values['facebook_url'];
+                }
+                if (isset($new_values['instagram_url'])) {
+                    $update_data['instagram_url'] = $new_values['instagram_url'];
+                }
+                if (isset($new_values['linkedin_url'])) {
+                    $update_data['linkedin_url'] = $new_values['linkedin_url'];
+                }
+                if (isset($new_values['tiktok_url'])) {
+                    $update_data['tiktok_url'] = $new_values['tiktok_url'];
+                }
+                if (isset($new_values['cta_enabled'])) {
+                    $update_data['cta_enabled'] = $new_values['cta_enabled'];
+                }
+                if (isset($new_values['cta_type'])) {
+                    $update_data['cta_type'] = $new_values['cta_type'];
+                }
+            }
+
+            // Handle new images if present
+            if (isset($new_values['new_images'])) {
+                $new_images = json_decode($new_values['new_images'], true) ?: array();
+                if (!empty($new_images)) {
+                    $existing_images = json_decode($point['images'] ?? '[]', true) ?: array();
+                    $all_images = array_merge($existing_images, $new_images);
+                    $max_images = $is_sponsored ? 12 : 6;
+                    $all_images = array_slice($all_images, 0, $max_images);
+                    $update_data['images'] = json_encode($all_images);
+                }
+            }
+
+            // Update point with new values
+            JG_Map_Database::update_point($history['point_id'], $update_data);
+
+            // Update history - set both owner approval and full approval
+            $wpdb->update(
+                $table,
+                array(
+                    'owner_approval_status' => 'approved',
+                    'owner_approval_at' => current_time('mysql'),
+                    'owner_approval_by' => $user_id,
+                    'status' => 'approved',
+                    'resolved_at' => current_time('mysql'),
+                    'resolved_by' => $user_id
+                ),
+                array('id' => $history_id)
+            );
+
+            // Notify editor that edit was fully approved
+            if ($editor && $editor->user_email) {
+                $subject = 'Portal Jeleniogórzanie to my - Twoja edycja została zaakceptowana';
+                $message = "Twoja edycja miejsca \"{$point['title']}\" została zaakceptowana przez właściciela.\n\n";
+                $message .= "Zmiany są już widoczne na mapie.";
+                wp_mail($editor->user_email, $subject, $message);
+            }
+
+            // Queue sync event
+            JG_Map_Sync_Manager::get_instance()->queue_edit_approved($history['point_id'], array(
+                'history_id' => $history_id,
+                'point_title' => $point['title']
+            ));
+
+            // Log action
+            JG_Map_Activity_Log::log(
+                'owner_approve_edit',
+                'history',
+                $history_id,
+                sprintf('Właściciel (admin/mod) zaakceptował i zatwierdził edycję miejsca: %s', $point['title'])
+            );
+
+            wp_send_json_success(array('message' => 'Edycja zaakceptowana i zatwierdzona. Zmiany są już widoczne.'));
+        } else {
+            // Owner is regular user - only owner approval, still needs admin approval
+            $wpdb->update(
+                $table,
+                array(
+                    'owner_approval_status' => 'approved',
+                    'owner_approval_at' => current_time('mysql'),
+                    'owner_approval_by' => $user_id
+                ),
+                array('id' => $history_id)
+            );
+
+            // Notify editor that owner approved, now waiting for moderator
+            if ($editor && $editor->user_email) {
+                $subject = 'Portal Jeleniogórzanie to my - Właściciel zaakceptował twoją edycję';
+                $message = "Właściciel miejsca \"{$point['title']}\" zaakceptował twoją propozycję zmian.\n\n";
+                $message .= "Twoja edycja oczekuje teraz na zatwierdzenie przez moderatora.";
+                wp_mail($editor->user_email, $subject, $message);
+            }
+
+            // Notify admin that edit is ready for final approval
+            $this->notify_admin_edit($history['point_id']);
+
+            // Log action
+            JG_Map_Activity_Log::log(
+                'owner_approve_edit',
+                'history',
+                $history_id,
+                sprintf('Właściciel zaakceptował propozycję edycji miejsca: %s', $point['title'])
+            );
+
+            wp_send_json_success(array('message' => 'Edycja zaakceptowana. Oczekuje teraz na zatwierdzenie moderatora.'));
         }
-
-        // Notify admin that edit is ready for final approval
-        $this->notify_admin_edit($history['point_id']);
-
-        // Log action
-        JG_Map_Activity_Log::log(
-            'owner_approve_edit',
-            'history',
-            $history_id,
-            sprintf('Właściciel zaakceptował propozycję edycji miejsca: %s', $point['title'])
-        );
-
-        wp_send_json_success(array('message' => 'Edycja zaakceptowana. Oczekuje teraz na zatwierdzenie moderatora.'));
     }
 
     /**
