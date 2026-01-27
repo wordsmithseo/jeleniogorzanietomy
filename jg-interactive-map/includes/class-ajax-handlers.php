@@ -759,7 +759,7 @@ class JG_Map_Ajax_Handlers {
             $status_label = $this->get_status_label($point['status']);
             $report_status_label = $this->get_report_status_label($point['report_status']);
 
-            // Check if pending or edit - for admins/moderators OR for place owner
+            // Check if pending or edit - for admins/moderators, place owner, OR the editor who submitted the edit
             $is_pending = false;
             $edit_info = null;
             $deletion_info = null;
@@ -767,11 +767,23 @@ class JG_Map_Ajax_Handlers {
             $is_deletion_requested = false;
             $is_own_place = ($current_user_id > 0 && $current_user_id == $point['author_id']);
 
-            if ($is_admin || $is_own_place) {
-                $is_pending = ($point['status'] === 'pending');
+            // Get ALL pending history entries from batch-loaded data
+            $pending_histories = isset($pending_histories_map[$point_id]) ? $pending_histories_map[$point_id] : array();
 
-                // Get ALL pending history entries from batch-loaded data (can be multiple: edit + deletion)
-                $pending_histories = isset($pending_histories_map[$point_id]) ? $pending_histories_map[$point_id] : array();
+            // Check if current user submitted any pending edit for this point
+            $user_pending_edit = null;
+            if ($current_user_id > 0 && !empty($pending_histories)) {
+                foreach ($pending_histories as $ph) {
+                    if ($ph['action_type'] === 'edit' && intval($ph['user_id']) === $current_user_id) {
+                        $user_pending_edit = $ph;
+                        break;
+                    }
+                }
+            }
+
+            // Show edit info if: admin, owner, or the editor who submitted it
+            if ($is_admin || $is_own_place || $user_pending_edit !== null) {
+                $is_pending = ($point['status'] === 'pending');
 
                 // Loop through all pending changes and populate edit_info and/or deletion_info
                 if (!empty($pending_histories)) {
@@ -794,8 +806,12 @@ class JG_Map_Ajax_Handlers {
                             $editor = get_userdata($editor_id);
                             $editor_name = $editor ? $editor->display_name : 'Nieznany użytkownik';
 
+                            // Check if current user is the editor
+                            $is_my_edit = ($editor_id === $current_user_id);
+
                             // Check if this is an edit by someone other than the owner
-                            $is_external_edit = ($editor_id !== $current_user_id);
+                            $point_owner_id = intval($point['author_id']);
+                            $is_external_edit = ($editor_id !== $point_owner_id);
 
                             // Check if owner approval is required and its status
                             $requires_owner_approval = !empty($pending_history['point_owner_id']);
@@ -805,6 +821,7 @@ class JG_Map_Ajax_Handlers {
                                 'history_id' => intval($pending_history['id']),
                                 'editor_id' => $editor_id,
                                 'editor_name' => $editor_name,
+                                'is_my_edit' => $is_my_edit,
                                 'is_external_edit' => $is_external_edit,
                                 'requires_owner_approval' => $requires_owner_approval,
                                 'owner_approval_status' => $owner_approval_status,
