@@ -4819,8 +4819,37 @@
             '</div>';
         }
 
+        // Show pending edit status to the editor who submitted the edit (not owner, not admin)
+        if (!CFG.isAdmin && !p.is_own_place && p.is_edit && p.edit_info && p.edit_info.is_my_edit) {
+          var ownerStatus = '';
+          var adminStatus = '';
+
+          if (p.edit_info.requires_owner_approval) {
+            if (p.edit_info.owner_approval_status === 'approved') {
+              ownerStatus = '<div style="display:flex;align-items:center;gap:6px"><span style="color:#16a34a;font-size:18px">✓</span><span>Właściciel <strong style="color:#16a34a">zaakceptował</strong></span></div>';
+              adminStatus = '<div style="display:flex;align-items:center;gap:6px"><span style="color:#f59e0b;font-size:18px">⏳</span><span>Moderator <strong style="color:#f59e0b">oczekuje</strong></span></div>';
+            } else {
+              ownerStatus = '<div style="display:flex;align-items:center;gap:6px"><span style="color:#f59e0b;font-size:18px">⏳</span><span>Właściciel <strong style="color:#f59e0b">oczekuje</strong></span></div>';
+              adminStatus = '<div style="display:flex;align-items:center;gap:6px"><span style="color:#9ca3af;font-size:18px">○</span><span style="color:#9ca3af">Moderator (czeka na właściciela)</span></div>';
+            }
+          } else {
+            adminStatus = '<div style="display:flex;align-items:center;gap:6px"><span style="color:#f59e0b;font-size:18px">⏳</span><span>Moderator <strong style="color:#f59e0b">oczekuje</strong></span></div>';
+          }
+
+          editInfo = '<div style="background:#faf5ff;border:2px solid #9333ea;border-radius:8px;padding:12px;margin:16px 0">' +
+            '<div style="font-weight:700;margin-bottom:8px;color:#6b21a8">📝 Twoja propozycja zmian oczekuje na zatwierdzenie</div>' +
+            '<div style="font-size:12px;color:#7c3aed;margin-bottom:12px">Zgłoszone ' + esc(p.edit_info.edited_at) + '</div>' +
+            '<div style="background:#f3e8ff;padding:12px;border-radius:8px;display:flex;flex-direction:column;gap:8px">' +
+            ownerStatus +
+            adminStatus +
+            '</div>' +
+            '</div>';
+        }
+
         // Show external edit info to place owner (when someone else edited their place)
-        if (!CFG.isAdmin && p.is_own_place && p.is_edit && p.edit_info && p.edit_info.is_external_edit && p.edit_info.owner_approval_status === 'pending') {
+        // Works for both regular owners and admin-owners
+        var isOwnerViewingExternalEdit = p.is_own_place && p.is_edit && p.edit_info && p.edit_info.is_external_edit && p.edit_info.owner_approval_status === 'pending';
+        if (isOwnerViewingExternalEdit) {
           var ownerChanges = [];
           if (p.edit_info.prev_title !== p.edit_info.new_title) {
             ownerChanges.push('<div><strong>Tytuł:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(p.edit_info.prev_title) + '</span><br><span style="color:#16a34a">→ ' + esc(p.edit_info.new_title) + '</span></div>');
