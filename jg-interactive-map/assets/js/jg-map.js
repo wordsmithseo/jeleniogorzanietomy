@@ -4983,8 +4983,9 @@
         var typeClass = ' jg-modal--' + (p.type || 'zgloszenie');
         // FIX: Convert currentUserId to number for comparison (wp_localize_script converts to string)
         var isOwnPoint = +CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id;
-        // Anyone logged in can edit any place (edits to others' places require approval)
-        var canEdit = CFG.isAdmin || +CFG.currentUserId > 0;
+        // Anyone logged in can edit non-sponsored places (edits to others' places require approval)
+        // Sponsored places can only be edited by owner or admin
+        var canEdit = CFG.isAdmin || isOwnPoint || (+CFG.currentUserId > 0 && !p.sponsored);
         var myVote = p.my_vote || '';
 
         // Don't show voting for promo points or own points
