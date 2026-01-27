@@ -3496,12 +3496,29 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Check if this edit requires owner approval and if it has been granted
+        $current_user_id = get_current_user_id();
         if ($history['point_owner_id'] !== null) {
             if ($history['owner_approval_status'] !== 'approved') {
-                wp_send_json_error(array(
-                    'message' => 'Ta edycja wymaga najpierw zatwierdzenia przez właściciela miejsca'
-                ));
-                exit;
+                // Check if current admin is also the owner - if so, auto-approve as owner
+                if (intval($history['point_owner_id']) === $current_user_id) {
+                    // Admin is the owner - automatically set owner approval
+                    $wpdb->update(
+                        $table,
+                        array(
+                            'owner_approval_status' => 'approved',
+                            'owner_approval_at' => current_time('mysql'),
+                            'owner_approval_by' => $current_user_id
+                        ),
+                        array('id' => $history_id)
+                    );
+                    // Refresh history data
+                    $history['owner_approval_status'] = 'approved';
+                } else {
+                    wp_send_json_error(array(
+                        'message' => 'Ta edycja wymaga najpierw zatwierdzenia przez właściciela miejsca'
+                    ));
+                    exit;
+                }
             }
         }
 
