@@ -4437,6 +4437,197 @@
         };
       }
 
+      // Modal for changing point owner with user search
+      function openChangeOwnerModal(p, parentModal) {
+        var currentPage = 1;
+        var searchTerm = '';
+        var selectedUserId = null;
+
+        function renderUserList(users, total, page, totalPages) {
+          var html = '';
+          if (users.length === 0) {
+            html = '<div style="padding:20px;text-align:center;color:#6b7280">Brak wyników</div>';
+          } else {
+            html = '<div style="display:flex;flex-direction:column;gap:8px">';
+            users.forEach(function(user) {
+              var isSelected = selectedUserId === user.id;
+              html += '<div class="user-item" data-user-id="' + user.id + '" style="padding:12px;border:2px solid ' + (isSelected ? '#2563eb' : '#e5e7eb') + ';border-radius:8px;cursor:pointer;background:' + (isSelected ? '#eff6ff' : '#fff') + ';transition:all 0.2s">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                '<div>' +
+                '<div style="font-weight:600;color:#1f2937">' + esc(user.display_name) + '</div>' +
+                '<div style="font-size:12px;color:#6b7280">' + esc(user.email) + '</div>' +
+                '</div>' +
+                '<div style="font-size:11px;color:#9ca3af">ID: ' + user.id + '</div>' +
+                '</div>' +
+                '</div>';
+            });
+            html += '</div>';
+
+            // Pagination
+            if (totalPages > 1) {
+              html += '<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb">';
+              html += '<button id="prev-page" class="jg-btn jg-btn--ghost" ' + (page <= 1 ? 'disabled' : '') + ' style="padding:6px 12px">← Poprzednia</button>';
+              html += '<span style="color:#6b7280">Strona ' + page + ' z ' + totalPages + ' (' + total + ' użytkowników)</span>';
+              html += '<button id="next-page" class="jg-btn jg-btn--ghost" ' + (page >= totalPages ? 'disabled' : '') + ' style="padding:6px 12px">Następna →</button>';
+              html += '</div>';
+            }
+          }
+          return html;
+        }
+
+        function loadUsers(page, search) {
+          var listContainer = qs('#user-list-container');
+          if (listContainer) {
+            listContainer.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7280">Ładowanie...</div>';
+          }
+
+          api('jg_admin_search_users', { page: page, search: search })
+            .then(function(result) {
+              if (listContainer) {
+                listContainer.innerHTML = renderUserList(result.users, result.total, result.page, result.total_pages);
+                attachUserListHandlers();
+              }
+            })
+            .catch(function(err) {
+              if (listContainer) {
+                listContainer.innerHTML = '<div style="padding:20px;text-align:center;color:#dc2626">Błąd: ' + (err.message || '?') + '</div>';
+              }
+            });
+        }
+
+        function attachUserListHandlers() {
+          var modal = qs('#change-owner-modal');
+          if (!modal) return;
+
+          // User selection
+          var userItems = modal.querySelectorAll('.user-item');
+          userItems.forEach(function(item) {
+            item.onclick = function() {
+              var userId = parseInt(this.getAttribute('data-user-id'), 10);
+              selectedUserId = userId;
+              // Update visual selection
+              userItems.forEach(function(u) {
+                u.style.borderColor = '#e5e7eb';
+                u.style.background = '#fff';
+              });
+              this.style.borderColor = '#2563eb';
+              this.style.background = '#eff6ff';
+              // Enable save button
+              var saveBtn = qs('#save-owner-btn', modal);
+              if (saveBtn) saveBtn.disabled = false;
+            };
+          });
+
+          // Pagination
+          var prevBtn = qs('#prev-page', modal);
+          var nextBtn = qs('#next-page', modal);
+          if (prevBtn) {
+            prevBtn.onclick = function() {
+              if (currentPage > 1) {
+                currentPage--;
+                loadUsers(currentPage, searchTerm);
+              }
+            };
+          }
+          if (nextBtn) {
+            nextBtn.onclick = function() {
+              currentPage++;
+              loadUsers(currentPage, searchTerm);
+            };
+          }
+        }
+
+        var modalHtml = '<div id="change-owner-modal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10001;display:flex;align-items:center;justify-content:center">' +
+          '<div style="background:#fff;border-radius:12px;width:90%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.3)">' +
+          '<div style="padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">' +
+          '<h3 style="margin:0;font-size:18px;color:#1f2937">👤 Zmień właściciela</h3>' +
+          '<button id="close-owner-modal" style="background:none;border:none;font-size:24px;cursor:pointer;color:#6b7280;padding:0;line-height:1">&times;</button>' +
+          '</div>' +
+          '<div style="padding:16px 20px;border-bottom:1px solid #e5e7eb">' +
+          '<input type="text" id="user-search-input" placeholder="Szukaj użytkownika (nazwa, email)..." style="width:100%;padding:10px 14px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px">' +
+          '</div>' +
+          '<div id="user-list-container" style="flex:1;overflow-y:auto;padding:16px 20px;min-height:200px">' +
+          '<div style="padding:20px;text-align:center;color:#6b7280">Ładowanie...</div>' +
+          '</div>' +
+          '<div style="padding:16px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:8px">' +
+          '<button id="cancel-owner-btn" class="jg-btn jg-btn--ghost">Anuluj</button>' +
+          '<button id="save-owner-btn" class="jg-btn jg-btn--primary" disabled>Zmień właściciela</button>' +
+          '</div>' +
+          '</div>' +
+          '</div>';
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        var modal = qs('#change-owner-modal');
+
+        // Load initial users
+        loadUsers(1, '');
+
+        // Search handler with debounce
+        var searchInput = qs('#user-search-input', modal);
+        var searchTimeout = null;
+        if (searchInput) {
+          searchInput.oninput = function() {
+            clearTimeout(searchTimeout);
+            var value = this.value.trim();
+            searchTimeout = setTimeout(function() {
+              searchTerm = value;
+              currentPage = 1;
+              selectedUserId = null;
+              var saveBtn = qs('#save-owner-btn', modal);
+              if (saveBtn) saveBtn.disabled = true;
+              loadUsers(1, value);
+            }, 300);
+          };
+          searchInput.focus();
+        }
+
+        // Close handlers
+        var closeBtn = qs('#close-owner-modal', modal);
+        var cancelBtn = qs('#cancel-owner-btn', modal);
+        function closeModal() {
+          if (modal && modal.parentNode) {
+            modal.parentNode.removeChild(modal);
+          }
+        }
+        if (closeBtn) closeBtn.onclick = closeModal;
+        if (cancelBtn) cancelBtn.onclick = closeModal;
+        modal.onclick = function(e) {
+          if (e.target === modal) closeModal();
+        };
+
+        // Save handler
+        var saveBtn = qs('#save-owner-btn', modal);
+        if (saveBtn) {
+          saveBtn.onclick = function() {
+            if (!selectedUserId) return;
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Zapisywanie...';
+
+            api('jg_admin_change_owner', { point_id: p.id, new_owner_id: selectedUserId })
+              .then(function(result) {
+                showAlert(result.message || 'Właściciel zmieniony');
+                closeModal();
+                return refreshAll();
+              })
+              .then(function() {
+                close(parentModal);
+                var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                if (updatedPoint) {
+                  setTimeout(function() {
+                    openDetails(updatedPoint);
+                  }, 200);
+                }
+              })
+              .catch(function(err) {
+                showAlert('Błąd: ' + (err.message || '?'));
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Zmień właściciela';
+              });
+          };
+        }
+      }
+
       function openSponsoredModal(p) {
         return openPromoModal(p); // Backward compatibility wrapper
       }
@@ -5835,41 +6026,11 @@
             };
           }
 
-          // Change owner handler
+          // Change owner handler - opens modal with user search
           var btnChangeOwner = qs('#btn-change-owner', modalView);
           if (btnChangeOwner) {
             btnChangeOwner.onclick = function() {
-              var newOwnerId = prompt('Podaj ID nowego właściciela:');
-              if (!newOwnerId || newOwnerId.trim() === '') return;
-
-              newOwnerId = parseInt(newOwnerId.trim(), 10);
-              if (isNaN(newOwnerId) || newOwnerId <= 0) {
-                showAlert('Nieprawidłowe ID użytkownika');
-                return;
-              }
-
-              btnChangeOwner.disabled = true;
-              btnChangeOwner.textContent = 'Zapisywanie...';
-
-              api('jg_admin_change_owner', { point_id: p.id, new_owner_id: newOwnerId })
-                .then(function(result) {
-                  showAlert(result.message || 'Właściciel zmieniony');
-                  return refreshAll();
-                })
-                .then(function() {
-                  close(modalView);
-                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
-                  if (updatedPoint) {
-                    setTimeout(function() {
-                      openDetails(updatedPoint);
-                    }, 200);
-                  }
-                })
-                .catch(function(err) {
-                  showAlert('Błąd: ' + (err.message || '?'));
-                  btnChangeOwner.disabled = false;
-                  btnChangeOwner.textContent = '👤 Zmień właściciela';
-                });
+              openChangeOwnerModal(p, modalView);
             };
           }
 
