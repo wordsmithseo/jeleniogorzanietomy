@@ -4808,7 +4808,35 @@
           }
 
           if (changes.length > 0) {
-            editInfo = '<div style="background:#faf5ff;border:2px solid #9333ea;border-radius:8px;padding:12px;margin:16px 0"><div style="font-weight:700;margin-bottom:8px;color:#6b21a8">📝 Zmiany oczekujące (edytowano ' + esc(p.edit_info.edited_at) + '):</div>' + changes.join('<hr style="margin:12px 0;border:none;border-top:1px solid #e9d5ff">') + '</div>';
+            // Build approval status info for external edits (multi-stage approval)
+            var approvalStatusHtml = '';
+            if (p.edit_info.is_external_edit && p.edit_info.requires_owner_approval) {
+              var ownerStatusAdmin = '';
+              var adminStatusAdmin = '';
+
+              if (p.edit_info.owner_approval_status === 'approved') {
+                ownerStatusAdmin = '<div style="display:flex;align-items:center;gap:6px"><span style="color:#16a34a;font-size:16px">✓</span><span>Właściciel <strong style="color:#16a34a">zaakceptował</strong></span></div>';
+                adminStatusAdmin = '<div style="display:flex;align-items:center;gap:6px"><span style="color:#f59e0b;font-size:16px">⏳</span><span>Moderator <strong style="color:#f59e0b">oczekuje na Twoją decyzję</strong></span></div>';
+              } else {
+                ownerStatusAdmin = '<div style="display:flex;align-items:center;gap:6px"><span style="color:#f59e0b;font-size:16px">⏳</span><span>Właściciel <strong style="color:#f59e0b">jeszcze nie zaakceptował</strong></span></div>';
+                adminStatusAdmin = '<div style="display:flex;align-items:center;gap:6px"><span style="color:#9ca3af;font-size:16px">○</span><span style="color:#9ca3af">Moderator (czeka na właściciela)</span></div>';
+              }
+
+              approvalStatusHtml = '<div style="background:#f3e8ff;padding:10px;border-radius:6px;margin-top:12px;border:1px solid #e9d5ff">' +
+                '<div style="font-size:12px;color:#7c3aed;font-weight:600;margin-bottom:8px">📋 Edycja zewnętrzna - status akceptacji:</div>' +
+                '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">' +
+                ownerStatusAdmin +
+                adminStatusAdmin +
+                '</div>' +
+                '</div>';
+            }
+
+            editInfo = '<div style="background:#faf5ff;border:2px solid #9333ea;border-radius:8px;padding:12px;margin:16px 0">' +
+              '<div style="font-weight:700;margin-bottom:8px;color:#6b21a8">📝 Zmiany oczekujące od: <strong>' + esc(p.edit_info.editor_name || 'Nieznany użytkownik') + '</strong></div>' +
+              '<div style="font-size:12px;color:#7c3aed;margin-bottom:8px">Edytowano ' + esc(p.edit_info.edited_at) + '</div>' +
+              changes.join('<hr style="margin:12px 0;border:none;border-top:1px solid #e9d5ff">') +
+              approvalStatusHtml +
+              '</div>';
           }
         }
 
