@@ -7208,12 +7208,7 @@ class JG_Map_Ajax_Handlers {
      */
     public function admin_toggle_edit_lock() {
         $this->verify_nonce();
-
-        try {
-            $this->check_admin();
-        } catch (Exception $e) {
-            throw $e;
-        }
+        $this->check_admin();
 
         $point_id = intval($_POST['point_id'] ?? 0);
 
@@ -7225,11 +7220,11 @@ class JG_Map_Ajax_Handlers {
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
-        // First check if point exists (without edit_locked column in case it doesn't exist yet)
+        // First check if point exists
         $point = $wpdb->get_row($wpdb->prepare("SELECT id, title FROM $table WHERE id = %d", $point_id), ARRAY_A);
 
         if (!$point) {
-            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            wp_send_json_error(array('message' => 'Punkt nie istnieje (ID: ' . $point_id . ')'));
             exit;
         }
 
@@ -7244,22 +7239,31 @@ class JG_Map_Ajax_Handlers {
 
         // Toggle the lock
         $new_status = $current_status ? 0 : 1;
-        $wpdb->update(
+        $result = $wpdb->update(
             $table,
             array('edit_locked' => $new_status),
             array('id' => $point_id)
         );
 
-        // Log the action
-        JG_Map_Activity_Log::log(
-            $new_status ? 'lock_edit' : 'unlock_edit',
-            'point',
-            $point_id,
-            sprintf('%s blokadę edycji miejsca: %s', $new_status ? 'Włączono' : 'Wyłączono', $point['title'])
-        );
+        if ($result === false) {
+            wp_send_json_error(array('message' => 'Błąd zapisu do bazy danych'));
+            exit;
+        }
 
-        // Queue sync
-        JG_Map_Sync_Manager::get_instance()->queue_point_updated($point_id);
+        // Log the action (with error handling)
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                $new_status ? 'lock_edit' : 'unlock_edit',
+                'point',
+                $point_id,
+                sprintf('%s blokadę edycji miejsca: %s', $new_status ? 'Włączono' : 'Wyłączono', $point['title'])
+            );
+        }
+
+        // Queue sync (with error handling)
+        if (class_exists('JG_Map_Sync_Manager')) {
+            JG_Map_Sync_Manager::get_instance()->queue_point_updated($point_id);
+        }
 
         wp_send_json_success(array(
             'message' => $new_status ? 'Blokada edycji włączona' : 'Blokada edycji wyłączona',
