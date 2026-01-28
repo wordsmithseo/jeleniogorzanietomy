@@ -2294,8 +2294,22 @@
           var currentUserId = (+CFG.currentUserId || 0).toString();
 
           if (cached && cachedVersion && cachedUserId === currentUserId) {
+            var parsedVersion = parseInt(cachedVersion);
+
+            // FIX: Detect and clear old cache with millisecond timestamps
+            // Timestamps in seconds should be < 10 billion (year ~2286)
+            // Timestamps in milliseconds would be > 1 trillion
+            if (parsedVersion > 10000000000) {
+              // This is likely a millisecond timestamp from old code - clear it
+              debugLog('[JG MAP] Clearing cache with invalid timestamp (ms instead of s)');
+              localStorage.removeItem(CACHE_KEY);
+              localStorage.removeItem(CACHE_VERSION_KEY);
+              localStorage.removeItem(CACHE_USER_KEY);
+              return null;
+            }
+
             var data = JSON.parse(cached);
-            lastModified = parseInt(cachedVersion);
+            lastModified = parsedVersion;
             return data;
           } else if (cachedUserId !== currentUserId) {
             // User changed - clear old cache
@@ -2457,8 +2471,8 @@
             };
           });
 
-          // Always save to cache with current timestamp
-          var cacheVersion = version || Date.now();
+          // Always save to cache with current timestamp (in seconds to match server)
+          var cacheVersion = version || Math.floor(Date.now() / 1000);
           saveToCache(ALL, cacheVersion);
 
           dataLoaded = true; // Mark data as loaded
@@ -6561,9 +6575,10 @@
 
         // Deep-linked point will be checked by draw() after map is fully ready
 
-        // Then check for updates in background
-        refreshData(false).catch(function(err) {
-          debugError('[JG MAP] Background update failed:', err);
+        // Always fetch fresh data on page load (not just check for updates)
+        // This ensures users always see current pin state, regardless of cache
+        refreshData(true).catch(function(err) {
+          debugError('[JG MAP] Background refresh failed:', err);
         });
       } else {
         // No cache, fetch fresh data
