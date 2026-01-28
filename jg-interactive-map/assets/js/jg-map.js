@@ -5934,13 +5934,18 @@
               btnOwnerApproveEdit.disabled = true;
               btnOwnerApproveEdit.textContent = 'Zatwierdzanie...';
 
+              var successMessage = 'Edycja zatwierdzona';
+
               api('jg_owner_approve_edit', { history_id: historyId })
                 .then(function(result) {
+                  if (result && result.message) {
+                    successMessage = result.message;
+                  }
                   return refreshAll();
                 })
                 .then(function() {
                   close(modalView);
-                  showAlert(result && result.message ? result.message : 'Edycja zatwierdzona');
+                  showAlert(successMessage);
                   var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
                   if (updatedPoint) {
                     setTimeout(function() {
