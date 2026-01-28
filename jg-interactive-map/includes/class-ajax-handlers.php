@@ -486,6 +486,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_delete_user', array($this, 'admin_delete_user'), 1);
         add_action('wp_ajax_jg_admin_restore_point', array($this, 'admin_restore_point'), 1);
         add_action('wp_ajax_jg_admin_empty_trash', array($this, 'admin_empty_trash'), 1);
+        add_action('wp_ajax_jg_admin_toggle_edit_lock', array($this, 'admin_toggle_edit_lock'), 1);
+        add_action('wp_ajax_jg_admin_change_owner', array($this, 'admin_change_owner'), 1);
 
         // Report reasons management (admin only)
         add_action('wp_ajax_jg_save_report_category', array($this, 'save_report_category'), 1);
@@ -948,6 +950,7 @@ class JG_Map_Ajax_Handlers {
                 'is_deletion_requested' => ($current_user_id > 0) ? $is_deletion_requested : false,
                 'deletion_info' => ($current_user_id > 0) ? $deletion_info : null,
                 'is_own_place' => ($current_user_id > 0) ? $is_own_place : false,
+                'edit_locked' => (bool)($point['edit_locked'] ?? 0),
                 'reports_count' => ($current_user_id > 0) ? $reports_count : 0,
                 'user_has_reported' => ($current_user_id > 0) ? $user_has_reported : false,
                 'reporter_info' => ($current_user_id > 0) ? $reporter_info : null,
@@ -1601,6 +1604,13 @@ class JG_Map_Ajax_Handlers {
         $is_sponsored = (bool)$point['is_promo'];
         if ($is_sponsored && !$is_admin && !$is_owner) {
             wp_send_json_error(array('message' => 'Miejsca sponsorowane mogą być edytowane tylko przez właściciela'));
+            exit;
+        }
+
+        // Edit-locked places can only be edited by admins
+        $is_edit_locked = (bool)($point['edit_locked'] ?? 0);
+        if ($is_edit_locked && !$is_admin) {
+            wp_send_json_error(array('message' => 'To miejsce ma zablokowaną możliwość edycji'));
             exit;
         }
 
@@ -7190,5 +7200,127 @@ class JG_Map_Ajax_Handlers {
         $icon = self::suggest_icon_for_label($label);
 
         wp_send_json_success(array('icon' => $icon));
+    }
+
+    /**
+     * Toggle edit lock on a point (admin/moderator only)
+     */
+    public function admin_toggle_edit_lock() {
+        $this->verify_nonce();
+
+        try {
+            $this->check_admin();
+        } catch (Exception $e) {
+            throw $e;
+        }
+
+        $point_id = intval($_POST['point_id'] ?? 0);
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe ID punktu'));
+            exit;
+        }
+
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        // Get current lock status
+        $point = $wpdb->get_row($wpdb->prepare("SELECT id, title, edit_locked FROM $table WHERE id = %d", $point_id), ARRAY_A);
+
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        // Toggle the lock
+        $new_status = $point['edit_locked'] ? 0 : 1;
+        $wpdb->update(
+            $table,
+            array('edit_locked' => $new_status),
+            array('id' => $point_id)
+        );
+
+        // Log the action
+        JG_Map_Activity_Log::log(
+            $new_status ? 'lock_edit' : 'unlock_edit',
+            'point',
+            $point_id,
+            sprintf('%s blokadę edycji miejsca: %s', $new_status ? 'Włączono' : 'Wyłączono', $point['title'])
+        );
+
+        // Queue sync
+        JG_Map_Sync_Manager::get_instance()->queue_point_updated($point_id);
+
+        wp_send_json_success(array(
+            'message' => $new_status ? 'Blokada edycji włączona' : 'Blokada edycji wyłączona',
+            'edit_locked' => (bool)$new_status
+        ));
+    }
+
+    /**
+     * Change point owner (admin/moderator only)
+     */
+    public function admin_change_owner() {
+        $this->verify_nonce();
+
+        try {
+            $this->check_admin();
+        } catch (Exception $e) {
+            throw $e;
+        }
+
+        $point_id = intval($_POST['point_id'] ?? 0);
+        $new_owner_id = intval($_POST['new_owner_id'] ?? 0);
+
+        if (!$point_id || !$new_owner_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        // Check if new owner exists
+        $new_owner = get_userdata($new_owner_id);
+        if (!$new_owner) {
+            wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        // Get current point data
+        $point = $wpdb->get_row($wpdb->prepare("SELECT id, title, author_id FROM $table WHERE id = %d", $point_id), ARRAY_A);
+
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        $old_owner_id = $point['author_id'];
+        $old_owner = get_userdata($old_owner_id);
+        $old_owner_name = $old_owner ? $old_owner->display_name : 'Nieznany';
+
+        // Update owner
+        $wpdb->update(
+            $table,
+            array('author_id' => $new_owner_id),
+            array('id' => $point_id)
+        );
+
+        // Log the action
+        JG_Map_Activity_Log::log(
+            'change_owner',
+            'point',
+            $point_id,
+            sprintf('Zmieniono właściciela miejsca "%s" z %s na %s', $point['title'], $old_owner_name, $new_owner->display_name)
+        );
+
+        // Queue sync
+        JG_Map_Sync_Manager::get_instance()->queue_point_updated($point_id);
+
+        wp_send_json_success(array(
+            'message' => 'Właściciel został zmieniony na: ' . $new_owner->display_name,
+            'new_owner_id' => $new_owner_id,
+            'new_owner_name' => $new_owner->display_name
+        ));
     }
 }
