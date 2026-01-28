@@ -216,7 +216,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.8.0'; // Added owner approval columns for two-stage edit approval
+        $current_schema_version = '3.9.0'; // Added edit_locked column for locking pins from being edited
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -690,6 +690,14 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
+        // Ensure edit_locked column exists (in case migration hasn't run yet)
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'edit_locked'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
+            // Clear cache after adding column to ensure fresh data
+            self::invalidate_points_cache();
+        }
+
         // PERFORMANCE OPTIMIZATION: Use transient cache (30 seconds)
         // Cache key includes $include_pending to avoid conflicts
         $cache_key = $include_pending ? 'jg_map_points_with_pending' : 'jg_map_points_published';
@@ -705,7 +713,7 @@ class JG_Map_Database {
             : "status = 'publish' AND status != 'trash'";
 
         $sql = "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                       resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                       resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, edit_locked, is_deletion_requested, deletion_reason,
                        deletion_requested_at, is_promo, promo_until, website, phone,
                        cta_enabled, cta_type, admin_note, images, featured_image_index,
                        facebook_url, instagram_url, linkedin_url, tiktok_url,
@@ -738,9 +746,15 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
+        // Ensure edit_locked column exists (in case migration hasn't run yet)
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'edit_locked'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
+        }
+
         $sql = $wpdb->prepare(
             "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                    resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                    resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, edit_locked, is_deletion_requested, deletion_reason,
                     deletion_requested_at, is_promo, promo_until, website, phone,
                     cta_enabled, cta_type, admin_note, images, featured_image_index,
                     facebook_url, instagram_url, linkedin_url, tiktok_url,
@@ -767,10 +781,16 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
+        // Ensure edit_locked column exists (in case migration hasn't run yet)
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'edit_locked'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
+        }
+
         return $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                        resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, is_deletion_requested, deletion_reason,
+                        resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, edit_locked, is_deletion_requested, deletion_reason,
                         deletion_requested_at, is_promo, promo_until, website, phone,
                         cta_enabled, cta_type, admin_note, images, featured_image_index,
                         facebook_url, instagram_url, linkedin_url, tiktok_url,
