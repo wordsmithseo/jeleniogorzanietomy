@@ -781,6 +781,15 @@
         });
       }
 
+      // Helper to format category slug to readable text
+      // e.g. 'niepoprawnie_zaparkowane_auto' -> 'Niepoprawnie zaparkowane auto'
+      function formatCategorySlug(slug) {
+        if (!slug) return '';
+        // Replace underscores with spaces and capitalize first letter
+        var text = slug.replace(/_/g, ' ');
+        return text.charAt(0).toUpperCase() + text.slice(1);
+      }
+
       function open(bg, html, opts) {
         if (!bg) return;
         var c = qs('.jg-modal, .jg-lightbox', bg);
@@ -2443,7 +2452,8 @@
               instagram_url: r.instagram_url || null,
               linkedin_url: r.linkedin_url || null,
               tiktok_url: r.tiktok_url || null,
-              is_own_place: !!r.is_own_place
+              is_own_place: !!r.is_own_place,
+              edit_locked: !!r.edit_locked
             };
           });
 
@@ -4722,8 +4732,8 @@
               'korki': '🚙 Powtarzające się korki',
               'mala_infrastruktura': '🎪 Propozycja nowych obiektów małej infrastruktury'
             };
-            var prevCategory = p.edit_info.prev_category ? (categoryLabels[p.edit_info.prev_category] || p.edit_info.prev_category) : '(brak)';
-            var newCategory = p.edit_info.new_category ? (categoryLabels[p.edit_info.new_category] || p.edit_info.new_category) : '(brak)';
+            var prevCategory = p.edit_info.prev_category ? (categoryLabels[p.edit_info.prev_category] || formatCategorySlug(p.edit_info.prev_category)) : '(brak)';
+            var newCategory = p.edit_info.new_category ? (categoryLabels[p.edit_info.new_category] || formatCategorySlug(p.edit_info.new_category)) : '(brak)';
             changes.push('<div><strong>Kategoria zgłoszenia:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + prevCategory + '</span><br><span style="color:#16a34a">→ ' + newCategory + '</span></div>');
           }
           if (p.edit_info.prev_content !== p.edit_info.new_content) {
@@ -5085,6 +5095,8 @@
 
           controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-sponsored">' + (p.sponsored ? 'Usuń sponsorowanie' : 'Sponsorowane') + '</button>';
           controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-author">' + (p.author_hidden ? 'Ujawnij' : 'Ukryj') + ' autora</button>';
+          controls += '<button class="jg-btn jg-btn--ghost" id="btn-toggle-edit-lock">' + (p.edit_locked ? '🔓 Odblokuj edycję' : '🔒 Zablokuj edycję') + '</button>';
+          controls += '<button class="jg-btn jg-btn--ghost" id="btn-change-owner">👤 Zmień właściciela</button>';
           if (p.type === 'zgloszenie') {
             controls += '<button class="jg-btn jg-btn--ghost" id="btn-change-status">Zmień status</button>';
           }
@@ -5101,7 +5113,8 @@
         var isOwnPoint = +CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id;
         // Anyone logged in can edit non-sponsored places (edits to others' places require approval)
         // Sponsored places can only be edited by owner or admin
-        var canEdit = CFG.isAdmin || isOwnPoint || (+CFG.currentUserId > 0 && !p.sponsored);
+        // Edit-locked places can only be edited by admins
+        var canEdit = CFG.isAdmin || (isOwnPoint && !p.edit_locked) || (+CFG.currentUserId > 0 && !p.sponsored && !p.edit_locked);
         var myVote = p.my_vote || '';
 
         // Don't show voting for promo points or own points
@@ -5254,7 +5267,7 @@
             'korki': '🚙 Powtarzające się korki',
             'mala_infrastruktura': '🎪 Propozycja nowych obiektów małej infrastruktury'
           };
-          var categoryLabel = categoryLabels[p.category] || p.category;
+          var categoryLabel = categoryLabels[p.category] || formatCategorySlug(p.category);
           categoryInfo = '<div style="margin:12px 0;padding:14px 18px;background:linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%);border-left:4px solid #f59e0b;border-radius:8px;box-shadow:0 2px 6px rgba(245,158,11,0.15)"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#92400e;margin-bottom:6px;font-weight:600">Kategoria zgłoszenia</div><div style="font-size:16px;color:#78350f;font-weight:600">' + categoryLabel + '</div></div>';
         }
 
@@ -5351,7 +5364,7 @@
             'mala_infrastruktura': 'Mała infrastruktura'
           };
           var emoji = categoryEmoji[p.category] || '📌';
-          var catLabel = categoryLabelsShort[p.category] || p.category;
+          var catLabel = categoryLabelsShort[p.category] || formatCategorySlug(p.category);
           categoryBadgeHeader = '<div style="font-size:1rem;padding:6px 14px;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;color:#78350f;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:8px"><span>' + emoji + '</span><span>' + catLabel + '</span></div>';
         }
 
@@ -5785,6 +5798,77 @@
                   showAlert('Błąd: ' + (err.message || '?'));
                   btnNote.disabled = false;
                   btnNote.textContent = p.admin_note ? 'Edytuj notatkę' : 'Dodaj notatkę';
+                });
+            };
+          }
+
+          // Edit lock toggle handler
+          var btnEditLock = qs('#btn-toggle-edit-lock', modalView);
+          if (btnEditLock) {
+            btnEditLock.onclick = function() {
+              var action = p.edit_locked ? 'odblokować' : 'zablokować';
+              showConfirm('Czy na pewno chcesz ' + action + ' edycję tego miejsca?').then(function(confirmed) {
+                if (!confirmed) return;
+
+                btnEditLock.disabled = true;
+                btnEditLock.textContent = 'Zapisywanie...';
+
+                api('jg_admin_toggle_edit_lock', { point_id: p.id })
+                  .then(function(result) {
+                    return refreshAll();
+                  })
+                  .then(function() {
+                    close(modalView);
+                    var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                    if (updatedPoint) {
+                      setTimeout(function() {
+                        openDetails(updatedPoint);
+                      }, 200);
+                    }
+                  })
+                  .catch(function(err) {
+                    showAlert('Błąd: ' + (err.message || '?'));
+                    btnEditLock.disabled = false;
+                    btnEditLock.textContent = p.edit_locked ? '🔓 Odblokuj edycję' : '🔒 Zablokuj edycję';
+                  });
+              });
+            };
+          }
+
+          // Change owner handler
+          var btnChangeOwner = qs('#btn-change-owner', modalView);
+          if (btnChangeOwner) {
+            btnChangeOwner.onclick = function() {
+              var newOwnerId = prompt('Podaj ID nowego właściciela:');
+              if (!newOwnerId || newOwnerId.trim() === '') return;
+
+              newOwnerId = parseInt(newOwnerId.trim(), 10);
+              if (isNaN(newOwnerId) || newOwnerId <= 0) {
+                showAlert('Nieprawidłowe ID użytkownika');
+                return;
+              }
+
+              btnChangeOwner.disabled = true;
+              btnChangeOwner.textContent = 'Zapisywanie...';
+
+              api('jg_admin_change_owner', { point_id: p.id, new_owner_id: newOwnerId })
+                .then(function(result) {
+                  showAlert(result.message || 'Właściciel zmieniony');
+                  return refreshAll();
+                })
+                .then(function() {
+                  close(modalView);
+                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                  if (updatedPoint) {
+                    setTimeout(function() {
+                      openDetails(updatedPoint);
+                    }, 200);
+                  }
+                })
+                .catch(function(err) {
+                  showAlert('Błąd: ' + (err.message || '?'));
+                  btnChangeOwner.disabled = false;
+                  btnChangeOwner.textContent = '👤 Zmień właściciela';
                 });
             };
           }

@@ -64,6 +64,7 @@ class JG_Map_Database {
             rejected_delete_at datetime DEFAULT NULL,
             author_id bigint(20) UNSIGNED NOT NULL,
             author_hidden tinyint(1) DEFAULT 0,
+            edit_locked tinyint(1) DEFAULT 0,
             is_promo tinyint(1) DEFAULT 0,
             promo_until datetime DEFAULT NULL,
             admin_note text,
@@ -467,6 +468,11 @@ class JG_Map_Database {
         // Check if rejected_delete_at column exists (for auto-deletion of rejected reports after 7 days)
         if (!$column_exists('rejected_delete_at')) {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN rejected_delete_at datetime DEFAULT NULL AFTER rejected_reason");
+        }
+
+        // Check if edit_locked column exists (for locking pins from being edited)
+        if (!$column_exists('edit_locked')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
         }
 
         // Modify report_status column to support longer status names (needs_better_documentation = 27 chars)
