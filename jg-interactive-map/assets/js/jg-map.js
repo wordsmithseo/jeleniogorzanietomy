@@ -2442,7 +2442,8 @@
               facebook_url: r.facebook_url || null,
               instagram_url: r.instagram_url || null,
               linkedin_url: r.linkedin_url || null,
-              tiktok_url: r.tiktok_url || null
+              tiktok_url: r.tiktok_url || null,
+              is_own_place: !!r.is_own_place
             };
           });
 
