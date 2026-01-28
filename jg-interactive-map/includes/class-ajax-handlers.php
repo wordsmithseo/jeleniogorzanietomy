@@ -488,6 +488,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_empty_trash', array($this, 'admin_empty_trash'), 1);
         add_action('wp_ajax_jg_admin_toggle_edit_lock', array($this, 'admin_toggle_edit_lock'), 1);
         add_action('wp_ajax_jg_admin_change_owner', array($this, 'admin_change_owner'), 1);
+        add_action('wp_ajax_jg_admin_search_users', array($this, 'admin_search_users'), 1);
 
         // Report reasons management (admin only)
         add_action('wp_ajax_jg_save_report_category', array($this, 'save_report_category'), 1);
@@ -7224,16 +7225,25 @@ class JG_Map_Ajax_Handlers {
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
-        // Get current lock status
-        $point = $wpdb->get_row($wpdb->prepare("SELECT id, title, edit_locked FROM $table WHERE id = %d", $point_id), ARRAY_A);
+        // First check if point exists (without edit_locked column in case it doesn't exist yet)
+        $point = $wpdb->get_row($wpdb->prepare("SELECT id, title FROM $table WHERE id = %d", $point_id), ARRAY_A);
 
         if (!$point) {
             wp_send_json_error(array('message' => 'Punkt nie istnieje'));
             exit;
         }
 
+        // Ensure edit_locked column exists
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'edit_locked'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
+        }
+
+        // Get current lock status
+        $current_status = intval($wpdb->get_var($wpdb->prepare("SELECT edit_locked FROM $table WHERE id = %d", $point_id)));
+
         // Toggle the lock
-        $new_status = $point['edit_locked'] ? 0 : 1;
+        $new_status = $current_status ? 0 : 1;
         $wpdb->update(
             $table,
             array('edit_locked' => $new_status),
@@ -7321,6 +7331,59 @@ class JG_Map_Ajax_Handlers {
             'message' => 'Właściciel został zmieniony na: ' . $new_owner->display_name,
             'new_owner_id' => $new_owner_id,
             'new_owner_name' => $new_owner->display_name
+        ));
+    }
+
+    /**
+     * Search users for owner change modal (admin/moderator only)
+     */
+    public function admin_search_users() {
+        $this->verify_nonce();
+
+        try {
+            $this->check_admin();
+        } catch (Exception $e) {
+            throw $e;
+        }
+
+        $search = sanitize_text_field($_POST['search'] ?? '');
+        $page = max(1, intval($_POST['page'] ?? 1));
+        $per_page = 10;
+        $offset = ($page - 1) * $per_page;
+
+        $args = array(
+            'number' => $per_page,
+            'offset' => $offset,
+            'orderby' => 'display_name',
+            'order' => 'ASC',
+            'fields' => array('ID', 'display_name', 'user_email', 'user_registered')
+        );
+
+        if (!empty($search)) {
+            $args['search'] = '*' . $search . '*';
+            $args['search_columns'] = array('user_login', 'user_email', 'display_name');
+        }
+
+        $user_query = new WP_User_Query($args);
+        $users = $user_query->get_results();
+        $total = $user_query->get_total();
+
+        $users_data = array();
+        foreach ($users as $user) {
+            $users_data[] = array(
+                'id' => $user->ID,
+                'display_name' => $user->display_name,
+                'email' => $user->user_email,
+                'registered' => date('Y-m-d', strtotime($user->user_registered))
+            );
+        }
+
+        wp_send_json_success(array(
+            'users' => $users_data,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $per_page,
+            'total_pages' => ceil($total / $per_page)
         ));
     }
 }
