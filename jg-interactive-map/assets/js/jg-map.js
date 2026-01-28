@@ -4921,8 +4921,9 @@
         }
 
         // Show status to owner after they approved but admin hasn't yet
-        var isOwnerWaitingForAdmin = p.is_own_place && p.is_edit && p.edit_info && p.edit_info.is_external_edit && p.edit_info.owner_approval_status === 'approved';
-        if (isOwnerWaitingForAdmin && !CFG.isAdmin) {
+        // This includes any owner_approval_status that is NOT 'pending' (handles 'approved' and any other value)
+        var isOwnerWaitingForAdmin = !CFG.isAdmin && p.is_own_place && p.is_edit && p.edit_info && p.edit_info.is_external_edit && p.edit_info.owner_approval_status && p.edit_info.owner_approval_status !== 'pending';
+        if (isOwnerWaitingForAdmin) {
           editInfo = '<div style="background:#faf5ff;border:2px solid #9333ea;border-radius:8px;padding:12px;margin:16px 0">' +
             '<div style="font-weight:700;margin-bottom:8px;color:#6b21a8">📝 Propozycja zmian od użytkownika <strong>' + esc(p.edit_info.editor_name) + '</strong></div>' +
             '<div style="font-size:12px;color:#7c3aed;margin-bottom:12px">Zgłoszone ' + esc(p.edit_info.edited_at) + '</div>' +
