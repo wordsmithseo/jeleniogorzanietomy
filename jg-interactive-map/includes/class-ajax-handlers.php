@@ -3512,13 +3512,22 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Check if this edit requires owner approval and if it has been granted
+        // Check if this edit requires owner approval
         $current_user_id = get_current_user_id();
         if ($history['point_owner_id'] !== null) {
             if ($history['owner_approval_status'] !== 'approved') {
-                // Check if current admin is also the owner - if so, auto-approve as owner
-                if (intval($history['point_owner_id']) === $current_user_id) {
-                    // Admin is the owner - automatically set owner approval
+                // Owner hasn't approved yet - check if owner is admin/mod
+                $owner_id = intval($history['point_owner_id']);
+                $owner_user = get_userdata($owner_id);
+                $owner_is_admin_or_mod = false;
+
+                if ($owner_user) {
+                    $owner_is_admin_or_mod = in_array('administrator', $owner_user->roles) ||
+                                             in_array('jg_moderator', $owner_user->roles);
+                }
+
+                if ($owner_is_admin_or_mod) {
+                    // Owner is admin/mod - admin approval can bypass owner approval
                     $wpdb->update(
                         $table,
                         array(
@@ -3528,9 +3537,9 @@ class JG_Map_Ajax_Handlers {
                         ),
                         array('id' => $history_id)
                     );
-                    // Refresh history data
                     $history['owner_approval_status'] = 'approved';
                 } else {
+                    // Owner is regular user - owner approval is required first
                     wp_send_json_error(array(
                         'message' => 'Ta edycja wymaga najpierw zatwierdzenia przez właściciela miejsca'
                     ));
