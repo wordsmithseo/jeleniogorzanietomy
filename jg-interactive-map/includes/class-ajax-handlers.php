@@ -852,6 +852,12 @@ class JG_Map_Ajax_Handlers {
                                 'new_cta_enabled' => $new_values['cta_enabled'] ?? null,
                                 'prev_cta_type' => $old_values['cta_type'] ?? null,
                                 'new_cta_type' => $new_values['cta_type'] ?? null,
+                                'prev_address' => $old_values['address'] ?? null,
+                                'new_address' => $new_values['address'] ?? null,
+                                'prev_lat' => $old_values['lat'] ?? null,
+                                'new_lat' => $new_values['lat'] ?? null,
+                                'prev_lng' => $old_values['lng'] ?? null,
+                                'new_lng' => $new_values['lng'] ?? null,
                                 'new_images' => $new_images,
                                 'edited_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
                             );
