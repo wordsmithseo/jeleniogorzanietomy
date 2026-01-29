@@ -1835,14 +1835,11 @@ class JG_Map_Ajax_Handlers {
                 'new_images' => json_encode($new_images) // Store new images separately for moderation
             );
 
-            // Add lat/lng/address if changed (from geocoding)
-            if ($lat !== null && $lng !== null) {
-                $new_values['lat'] = $lat;
-                $new_values['lng'] = $lng;
-            }
-            if (!empty($address)) {
-                $new_values['address'] = $address;
-            }
+            // Always include lat/lng/address in new_values for proper comparison in admin panel
+            // Use new values if provided (from geocoding), otherwise use current point values
+            $new_values['lat'] = ($lat !== null) ? $lat : $point['lat'];
+            $new_values['lng'] = ($lng !== null) ? $lng : $point['lng'];
+            $new_values['address'] = !empty($address) ? $address : ($point['address'] ?? '');
 
             // Add website, phone, social media, and CTA if point is sponsored
             $is_sponsored = (bool)$point['is_promo'];
