@@ -5416,12 +5416,47 @@
           if (p.is_edit && p.edit_info) {
             pendingCount++;
             var editedAt = p.edit_info.edited_at || 'niedawno';
+            var ei = p.edit_info;
+
+            // Build list of changes
+            var changesList = [];
+            if (ei.prev_title !== ei.new_title) {
+              changesList.push('<div style="margin:4px 0"><strong>Tytuł:</strong> <span style="color:#991b1b;text-decoration:line-through">' + esc(ei.prev_title || '(brak)') + '</span> → <span style="color:#166534">' + esc(ei.new_title || '(brak)') + '</span></div>');
+            }
+            if (ei.prev_type !== ei.new_type) {
+              changesList.push('<div style="margin:4px 0"><strong>Typ:</strong> <span style="color:#991b1b">' + esc(ei.prev_type || '(brak)') + '</span> → <span style="color:#166534">' + esc(ei.new_type || '(brak)') + '</span></div>');
+            }
+            if (ei.prev_category !== ei.new_category) {
+              changesList.push('<div style="margin:4px 0"><strong>Kategoria:</strong> <span style="color:#991b1b">' + esc(ei.prev_category || '(brak)') + '</span> → <span style="color:#166534">' + esc(ei.new_category || '(brak)') + '</span></div>');
+            }
+            if (ei.prev_content !== ei.new_content) {
+              changesList.push('<div style="margin:4px 0"><strong>Opis:</strong> <em style="color:#6b7280">(zmieniony)</em></div>');
+            }
+            if (ei.prev_address !== ei.new_address && (ei.prev_address || ei.new_address)) {
+              changesList.push('<div style="margin:4px 0"><strong>📍 Adres:</strong> <span style="color:#991b1b">' + esc(ei.prev_address || '(brak)') + '</span> → <span style="color:#166534">' + esc(ei.new_address || '(brak)') + '</span></div>');
+            }
+            if ((ei.prev_lat !== ei.new_lat || ei.prev_lng !== ei.new_lng) && ei.new_lat && ei.new_lng) {
+              var oldPos = (ei.prev_lat || '?') + ', ' + (ei.prev_lng || '?');
+              var newPos = ei.new_lat + ', ' + ei.new_lng;
+              if (oldPos !== newPos) {
+                changesList.push('<div style="margin:4px 0"><strong>🗺️ Pozycja:</strong> <span style="color:#991b1b">' + oldPos + '</span> → <span style="color:#166534">' + newPos + '</span></div>');
+              }
+            }
+            if (ei.new_images && ei.new_images.length > 0) {
+              changesList.push('<div style="margin:4px 0"><strong>🖼️ Nowe zdjęcia:</strong> +' + ei.new_images.length + '</div>');
+            }
+
+            var changesHtml = changesList.length > 0
+              ? '<div style="font-size:12px;color:#4c1d95;margin-top:8px;padding-top:8px;border-top:1px solid #e9d5ff">' + changesList.join('') + '</div>'
+              : '';
+
             pendingChanges.push(
               '<div style="background:#faf5ff;border-left:4px solid #9333ea;padding:12px;border-radius:6px;margin-bottom:8px">' +
               '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px">' +
               '<div style="flex:1">' +
               '<div style="font-weight:700;color:#6b21a8;margin-bottom:4px">📝 Edycja oczekuje</div>' +
               '<div style="font-size:13px;color:#7e22ce">Edytowano: <strong>' + esc(editedAt) + '</strong></div>' +
+              changesHtml +
               '</div>' +
               '<div style="display:flex;gap:6px;flex-shrink:0">' +
               '<button class="jg-btn" id="btn-approve-edit" style="background:#15803d;padding:8px 12px;font-size:13px;white-space:nowrap">✓ Akceptuj edycję</button>' +
