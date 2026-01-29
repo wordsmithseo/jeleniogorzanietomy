@@ -1200,21 +1200,21 @@
 }
 
 .jg-vote--own .cnt {
-  font-size: 3rem;
+  font-size: 2rem;
   font-weight: 600;
   min-width: auto;
   line-height: 1;
 }
 
 .jg-vote-own-label {
-  font-size: 2rem;
+  font-size: 1rem;
   color: #64748b;
   font-weight: 500;
   line-height: 1;
 }
 
 .jg-vote-own-icon {
-  font-size: 2rem;
+  font-size: 1rem;
 }
 
 /* Gallery */
