@@ -2337,6 +2337,11 @@ class JG_Map_Ajax_Handlers {
         $cta_enabled = isset($_POST['cta_enabled']) ? 1 : 0;
         $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
+        // Address/location data
+        $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : null;
+        $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : null;
+        $address = sanitize_text_field(wp_unslash($_POST['address'] ?? ''));
+
         $point = JG_Map_Database::get_point($point_id);
         if (!$point) {
             wp_send_json_error(array('message' => 'Punkt nie istnieje'));
@@ -2382,6 +2387,17 @@ class JG_Map_Ajax_Handlers {
             'content' => $content,
             'excerpt' => wp_trim_words($content, 20)
         );
+
+        // Add lat/lng if provided (from address geocoding)
+        if ($lat !== null && $lng !== null) {
+            $update_data['lat'] = $lat;
+            $update_data['lng'] = $lng;
+        }
+
+        // Add address if provided
+        if (!empty($address)) {
+            $update_data['address'] = $address;
+        }
 
         // Add website, phone, social media, and CTA if point is sponsored
         $is_sponsored = (bool)$point['is_promo'];
@@ -3610,6 +3626,17 @@ class JG_Map_Ajax_Handlers {
                 // Clear category if changing from report to other type
                 $update_data['category'] = null;
             }
+        }
+
+        // Add lat/lng if present (from address geocoding)
+        if (isset($new_values['lat']) && isset($new_values['lng'])) {
+            $update_data['lat'] = floatval($new_values['lat']);
+            $update_data['lng'] = floatval($new_values['lng']);
+        }
+
+        // Add address if present
+        if (isset($new_values['address'])) {
+            $update_data['address'] = $new_values['address'];
         }
 
         // Add website, phone, social media, and CTA if point is sponsored and they are in new_values

@@ -1258,6 +1258,13 @@ class JG_Map_Admin {
                         if (isset($old_values['tiktok_url']) && isset($new_values['tiktok_url']) && $old_values['tiktok_url'] !== $new_values['tiktok_url']) {
                             $changes[] = 'TikTok';
                         }
+                        if (isset($old_values['address']) && isset($new_values['address']) && $old_values['address'] !== $new_values['address']) {
+                            $changes[] = 'Adres';
+                        }
+                        if ((isset($old_values['lat']) && isset($new_values['lat']) && floatval($old_values['lat']) !== floatval($new_values['lat'])) ||
+                            (isset($old_values['lng']) && isset($new_values['lng']) && floatval($old_values['lng']) !== floatval($new_values['lng']))) {
+                            $changes[] = 'Pozycja na mapie';
+                        }
 
                         // Calculate priority badge
                         $report_count = intval($edit['report_count']);
@@ -1367,6 +1374,15 @@ class JG_Map_Admin {
                     }
                     if (old_values.tiktok_url !== undefined && new_values.tiktok_url !== undefined && old_values.tiktok_url !== new_values.tiktok_url) {
                         html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>TikTok</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.tiktok_url || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.tiktok_url || '(brak)') + '</td></tr>';
+                    }
+                    if (old_values.address !== undefined && new_values.address !== undefined && old_values.address !== new_values.address) {
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>📍 Adres</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.address || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.address || '(brak)') + '</td></tr>';
+                    }
+                    if ((old_values.lat !== undefined && new_values.lat !== undefined && parseFloat(old_values.lat) !== parseFloat(new_values.lat)) ||
+                        (old_values.lng !== undefined && new_values.lng !== undefined && parseFloat(old_values.lng) !== parseFloat(new_values.lng))) {
+                        var oldPos = (old_values.lat || '?') + ', ' + (old_values.lng || '?');
+                        var newPos = (new_values.lat || '?') + ', ' + (new_values.lng || '?');
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>🗺️ Pozycja na mapie</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + oldPos + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + newPos + '</td></tr>';
                     }
                     html += '</table>';
 
