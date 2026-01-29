@@ -4200,10 +4200,10 @@
               return;
             }
 
-            // Debounce search by 300ms
+            // Debounce search by 200ms (same as FAB)
             editAddressTimeout = setTimeout(function() {
               searchEditAddressSuggestions(query);
-            }, 300);
+            }, 200);
           });
 
           // Handle keyboard navigation
@@ -4229,13 +4229,22 @@
             }
           });
 
-          // Search address suggestions function
+          // Search address suggestions function (using $.ajax like FAB for faster response)
           function searchEditAddressSuggestions(query) {
-            api('jg_search_address', { query: query })
-              .then(function(results) {
+            $.ajax({
+              url: CFG.ajax,
+              type: 'POST',
+              data: {
+                action: 'jg_search_address',
+                _ajax_nonce: CFG.nonce,
+                query: query
+              },
+              success: function(response) {
                 editAddressSuggestions.innerHTML = '';
 
-                if (results && results.length > 0) {
+                if (response.success && response.data && response.data.length > 0) {
+                  var results = response.data;
+
                   results.forEach(function(result) {
                     var item = document.createElement('div');
                     item.className = 'edit-suggestion-item';
@@ -4286,11 +4295,12 @@
                 } else {
                   editAddressSuggestions.style.display = 'none';
                 }
-              })
-              .catch(function(err) {
-                console.error('[JG Edit] Address search error:', err);
+              },
+              error: function(xhr, status, error) {
+                console.error('[JG Edit] Address search error:', status, error);
                 editAddressSuggestions.style.display = 'none';
-              });
+              }
+            });
           }
 
           // Select address and update coordinates
