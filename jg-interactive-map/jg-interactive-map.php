@@ -375,7 +375,7 @@ class JG_Interactive_Map {
 
         $point = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT id, title, slug, content, excerpt, lat, lng, type, status,
+                "SELECT id, title, slug, content, excerpt, lat, lng, address, type, status,
                         author_id, is_promo, website, phone, images, featured_image_index,
                         facebook_url, instagram_url, linkedin_url, tiktok_url, created_at
                  FROM $table
@@ -711,7 +711,9 @@ class JG_Interactive_Map {
         },
         "address": {
             "@type": "PostalAddress",
+            <?php if (!empty($point['address'])): ?>"streetAddress": <?php echo json_encode($point['address']); ?>,<?php endif; ?>
             "addressLocality": "Jelenia Góra",
+            "addressRegion": "Dolnośląskie",
             "addressCountry": "PL"
         }
     }
@@ -728,6 +730,9 @@ class JG_Interactive_Map {
     <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>">
     <?php endif; ?>
     <div><?php echo wp_kses_post($point['content']); ?></div>
+    <?php if (!empty($point['address'])): ?>
+    <p><strong>Adres:</strong> <?php echo esc_html($point['address']); ?></p>
+    <?php endif; ?>
     <p><strong>Lokalizacja:</strong> <?php echo esc_html($point['lat']); ?>, <?php echo esc_html($point['lng']); ?></p>
     <?php if (!empty($point['website'])): ?>
     <p><a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener">Odwiedź stronę</a></p>
@@ -863,7 +868,11 @@ class JG_Interactive_Map {
             },
             "address": {
                 "@type": "PostalAddress",
+                <?php if (!empty($point['address'])): ?>
+                "streetAddress": <?php echo json_encode($point['address']); ?>,
+                <?php endif; ?>
                 "addressLocality": "Jelenia Góra",
+                "addressRegion": "Dolnośląskie",
                 "addressCountry": "PL"
             }
             <?php if (!empty($point['phone'])): ?>
