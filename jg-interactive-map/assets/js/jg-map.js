@@ -4019,8 +4019,6 @@
 
             var formHtml = '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header>' +
               '<form id="edit-form" class="jg-grid cols-2">' +
-              '<input type="hidden" name="lat" id="edit-lat-input" value="' + p.lat + '">' +
-              '<input type="hidden" name="lng" id="edit-lng-input" value="' + p.lng + '">' +
               approvalNoticeHtml +
               limitsHtml +
               '<label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
@@ -4032,7 +4030,17 @@
               '<label class="cols-2" id="edit-category-field" style="' + (p.type === 'zgloszenie' ? 'display:block' : 'display:none') + '"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="edit-category-select" ' + (p.type === 'zgloszenie' ? 'required' : '') + ' style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
               generateCategoryOptions(p.category || '') +
               '</select></label>' +
-              '<input type="hidden" name="address" id="edit-address-input" value="' + esc(p.address || '') + '">' +
+              '<div class="cols-2" style="position:relative">' +
+              '<label style="display:block;margin-bottom:4px">Adres (korekta pozycji pinezki)</label>' +
+              '<input type="text" name="address" id="edit-address-input" value="' + esc(p.address || '') + '" placeholder="Wpisz adres, aby skorygować pozycję..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px" autocomplete="off">' +
+              '<input type="hidden" name="lat" id="edit-lat-input" value="' + p.lat + '">' +
+              '<input type="hidden" name="lng" id="edit-lng-input" value="' + p.lng + '">' +
+              '<input type="hidden" id="edit-original-lat" value="' + p.lat + '">' +
+              '<input type="hidden" id="edit-original-lng" value="' + p.lng + '">' +
+              '<input type="hidden" id="edit-original-address" value="' + esc(p.address || '') + '">' +
+              '<div id="edit-address-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 6px rgba(0,0,0,0.1)"></div>' +
+              '<small id="edit-address-hint" style="display:block;margin-top:4px;color:#666">Obecny adres. Wpisz nowy adres aby zmienić pozycję pinezki.</small>' +
+              '</div>' +
               '<label class="cols-2">Opis <textarea name="content" rows="6" maxlength="' + maxDescLength + '" id="edit-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea><div id="edit-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">' + currentDescLength + ' / ' + maxDescLength + ' znaków</div></label>' +
               sponsoredContactHtml +
               existingImagesHtml +
@@ -4149,6 +4157,174 @@
             ctaEnabledCheckbox.addEventListener('change', function() {
               ctaTypeSelection.style.display = ctaEnabledCheckbox.checked ? '' : 'none';
             });
+          }
+        }
+
+        // Address autocomplete and geocoding for edit form
+        var editAddressInput = qs('#edit-address-input', modalEdit);
+        var editAddressSuggestions = qs('#edit-address-suggestions', modalEdit);
+        var editAddressHint = qs('#edit-address-hint', modalEdit);
+        var editLatInput = qs('#edit-lat-input', modalEdit);
+        var editLngInput = qs('#edit-lng-input', modalEdit);
+        var editOriginalLat = qs('#edit-original-lat', modalEdit);
+        var editOriginalLng = qs('#edit-original-lng', modalEdit);
+        var editOriginalAddress = qs('#edit-original-address', modalEdit);
+        var editAddressTimeout = null;
+        var editSelectedSuggestion = null;
+
+        if (editAddressInput && editAddressSuggestions) {
+          // Handle input for autocomplete
+          editAddressInput.addEventListener('input', function() {
+            var query = this.value.trim();
+            editSelectedSuggestion = null;
+
+            // Clear previous timeout
+            if (editAddressTimeout) {
+              clearTimeout(editAddressTimeout);
+            }
+
+            // Check if address has changed from original
+            var originalAddress = editOriginalAddress ? editOriginalAddress.value : '';
+            if (query === originalAddress) {
+              // Reset to original coordinates
+              editLatInput.value = editOriginalLat.value;
+              editLngInput.value = editOriginalLng.value;
+              editAddressHint.textContent = 'Obecny adres. Wpisz nowy adres aby zmienić pozycję pinezki.';
+              editAddressHint.style.color = '#666';
+              editAddressSuggestions.style.display = 'none';
+              return;
+            }
+
+            if (query.length < 3) {
+              editAddressSuggestions.style.display = 'none';
+              return;
+            }
+
+            // Debounce search by 300ms
+            editAddressTimeout = setTimeout(function() {
+              searchEditAddressSuggestions(query);
+            }, 300);
+          });
+
+          // Handle keyboard navigation
+          editAddressInput.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              var items = editAddressSuggestions.querySelectorAll('.edit-suggestion-item');
+              if (items.length > 0) {
+                items[0].focus();
+              }
+            } else if (e.key === 'Escape') {
+              editAddressSuggestions.style.display = 'none';
+            } else if (e.key === 'Enter' && editSelectedSuggestion) {
+              e.preventDefault();
+              selectEditAddress(editSelectedSuggestion);
+            }
+          });
+
+          // Close suggestions when clicking outside
+          document.addEventListener('click', function(e) {
+            if (!editAddressInput.contains(e.target) && !editAddressSuggestions.contains(e.target)) {
+              editAddressSuggestions.style.display = 'none';
+            }
+          });
+
+          // Search address suggestions function
+          function searchEditAddressSuggestions(query) {
+            api('jg_search_address', { query: query })
+              .then(function(results) {
+                editAddressSuggestions.innerHTML = '';
+
+                if (results && results.length > 0) {
+                  results.forEach(function(result) {
+                    var item = document.createElement('div');
+                    item.className = 'edit-suggestion-item';
+                    item.setAttribute('tabindex', '0');
+                    item.style.cssText = 'padding:10px 12px;cursor:pointer;font-size:13px;color:#374151;border-bottom:1px solid #f3f4f6;transition:background 0.2s';
+                    item.textContent = result.display_name;
+
+                    item.addEventListener('mouseenter', function() {
+                      this.style.background = '#fef3c7';
+                      editSelectedSuggestion = result;
+                    });
+
+                    item.addEventListener('mouseleave', function() {
+                      this.style.background = '#fff';
+                    });
+
+                    item.addEventListener('click', function() {
+                      selectEditAddress(result);
+                    });
+
+                    item.addEventListener('keydown', function(e) {
+                      if (e.key === 'Enter') {
+                        selectEditAddress(result);
+                      } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        var next = this.nextElementSibling;
+                        if (next && next.classList.contains('edit-suggestion-item')) {
+                          next.focus();
+                        }
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        var prev = this.previousElementSibling;
+                        if (prev && prev.classList.contains('edit-suggestion-item')) {
+                          prev.focus();
+                        } else {
+                          editAddressInput.focus();
+                        }
+                      } else if (e.key === 'Escape') {
+                        editAddressSuggestions.style.display = 'none';
+                        editAddressInput.focus();
+                      }
+                    });
+
+                    editAddressSuggestions.appendChild(item);
+                  });
+
+                  editAddressSuggestions.style.display = 'block';
+                } else {
+                  editAddressSuggestions.style.display = 'none';
+                }
+              })
+              .catch(function(err) {
+                console.error('[JG Edit] Address search error:', err);
+                editAddressSuggestions.style.display = 'none';
+              });
+          }
+
+          // Select address and update coordinates
+          function selectEditAddress(result) {
+            var lat = parseFloat(result.lat);
+            var lng = parseFloat(result.lon);
+
+            // Build clean address from components
+            var addressParts = [];
+            if (result.address) {
+              if (result.address.road) {
+                var road = result.address.road;
+                if (result.address.house_number) {
+                  road += ' ' + result.address.house_number;
+                }
+                addressParts.push(road);
+              }
+              if (result.address.city || result.address.town || result.address.village) {
+                addressParts.push(result.address.city || result.address.town || result.address.village);
+              }
+            }
+            var cleanAddress = addressParts.length > 0 ? addressParts.join(', ') : result.display_name;
+
+            // Update form fields
+            editAddressInput.value = cleanAddress;
+            editLatInput.value = lat;
+            editLngInput.value = lng;
+
+            // Update hint to show coordinates changed
+            editAddressHint.innerHTML = '<span style="color:#15803d;font-weight:500">&#10003; Nowa pozycja: ' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</span>';
+
+            // Hide suggestions
+            editAddressSuggestions.style.display = 'none';
+            editSelectedSuggestion = null;
           }
         }
 
