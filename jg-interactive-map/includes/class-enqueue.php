@@ -47,6 +47,9 @@ class JG_Map_Enqueue {
         // Handle email activation
         add_action('template_redirect', array($this, 'handle_email_activation'));
         add_action('template_redirect', array($this, 'handle_password_reset'));
+
+        // Block non-admin users from accessing /wp-admin/
+        add_action('admin_init', array($this, 'block_non_admin_access'));
     }
 
     /**
@@ -55,6 +58,31 @@ class JG_Map_Enqueue {
      */
     public function hide_admin_bar_for_users() {
         show_admin_bar(false);
+    }
+
+    /**
+     * Block non-admin users from accessing /wp-admin/
+     * Only users with manage_options or jg_map_moderate capability can access
+     */
+    public function block_non_admin_access() {
+        // Allow AJAX requests (admin-ajax.php is used by frontend)
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return;
+        }
+
+        // Allow admin-post.php for form submissions
+        if (isset($GLOBALS['pagenow']) && $GLOBALS['pagenow'] === 'admin-post.php') {
+            return;
+        }
+
+        // Check if user has admin or moderator permissions
+        if (current_user_can('manage_options') || current_user_can('jg_map_moderate')) {
+            return;
+        }
+
+        // Redirect non-admin users to home page
+        wp_safe_redirect(home_url());
+        exit;
     }
 
     /**
