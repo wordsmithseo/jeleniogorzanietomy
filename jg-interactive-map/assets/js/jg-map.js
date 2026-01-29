@@ -887,9 +887,9 @@
       if (elMap.dataset.lng) lng = parseFloat(elMap.dataset.lng);
       if (elMap.dataset.zoom) zoom = parseInt(elMap.dataset.zoom);
 
-      // Define bounds for Jelenia Góra region (stricter)
-      var southWest = L.latLng(50.82, 15.62);
-      var northEast = L.latLng(50.96, 15.82);
+      // Define bounds for Jelenia Góra region (includes all districts like Jagniątków)
+      var southWest = L.latLng(50.75, 15.58);
+      var northEast = L.latLng(50.98, 15.85);
       var bounds = L.latLngBounds(southWest, northEast);
 
       // Detect mobile device
