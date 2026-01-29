@@ -1426,7 +1426,7 @@
                 '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
                 generateCategoryOptions('') +
                 '</select></label>' +
-                '<label class="cols-2">Opis <textarea name="content" rows="4" maxlength="200" id="add-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><div id="add-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">0 / 200 znaków</div></label>' +
+                '<label class="cols-2">Opis <textarea name="content" rows="4" maxlength="800" id="add-content-input" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><div id="add-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">0 / 800 znaków</div></label>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
                 '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images[]" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
                 '<div class="cols-2" id="add-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
@@ -1456,7 +1456,7 @@
               if (contentInput && contentCounter) {
                 contentInput.addEventListener('input', function() {
                   var length = this.value.length;
-                  var maxLength = 200;
+                  var maxLength = 800;
                   contentCounter.textContent = length + ' / ' + maxLength + ' znaków';
                   if (length > maxLength * 0.9) {
                     contentCounter.style.color = '#d97706';
@@ -3999,7 +3999,7 @@
             }
 
             // Determine max length for description based on sponsored status
-            var maxDescLength = isSponsored ? 1000 : 200;
+            var maxDescLength = isSponsored ? 3000 : 800;
             var currentDescLength = contentText.length;
 
             // Check if user is editing someone else's place (requires approval)
@@ -5327,8 +5327,8 @@
         if (!p.sponsored && !isOwnPoint) {
           voteHtml = '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>';
         } else if (!p.sponsored && isOwnPoint) {
-          // Show vote count without buttons for own points
-          voteHtml = '<div class="jg-vote jg-vote--own"><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><span class="jg-vote-own-label">głosów</span></div>';
+          // Show compact vote count for own points (no voting buttons)
+          voteHtml = '<div class="jg-vote jg-vote--own"><span style="font-size:14px">👥</span><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><span class="jg-vote-own-label">głosów</span></div>';
         }
 
         // Community verification badge (based on votes)
@@ -7535,7 +7535,7 @@
               '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
               generateCategoryOptions('') +
               '</select></label>' +
-              '<label class="cols-2">Opis* (max 200 znaków)<textarea name="content" id="add-content-input" required maxlength="200" placeholder="Opisz miejsce..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;resize:vertical;min-height:80px"></textarea><div id="add-content-counter" style="font-size:11px;color:#666;margin-top:4px">0 / 200 znaków</div></label>' +
+              '<label class="cols-2">Opis* (max 800 znaków)<textarea name="content" id="add-content-input" required maxlength="800" placeholder="Opisz miejsce..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;resize:vertical;min-height:80px"></textarea><div id="add-content-counter" style="font-size:11px;color:#666;margin-top:4px">0 / 800 znaków</div></label>' +
               '<label class="cols-2">Zdjęcia (opcjonalne, max 6)<input type="file" name="images" id="add-images-input" accept="image/*" multiple style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
               '<div id="add-images-preview" class="cols-2" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
               '<div class="cols-2" style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">' +
@@ -7614,7 +7614,7 @@
             if (contentInput && contentCounter) {
               contentInput.addEventListener('input', function() {
                 var length = this.value.length;
-                var maxLength = 200;
+                var maxLength = 800;
                 contentCounter.textContent = length + ' / ' + maxLength + ' znaków';
                 if (length > maxLength * 0.9) {
                   contentCounter.style.color = '#d97706';

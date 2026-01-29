@@ -110,25 +110,18 @@ class JG_Interactive_Map {
     }
 
     /**
-     * Set email sender name for emails from this plugin
+     * Set email sender name for all emails from this WordPress site
+     * Replaces default "WordPress" sender with our brand name
      */
     public function set_email_from_name($from_name) {
-        // Check if this is called from plugin context using a more efficient method
-        if (doing_filter('jg_map_email')) {
-            return 'Jeleniogorzanie to my';
-        }
-        return $from_name;
+        return 'Jeleniogórzanie to my';
     }
 
     /**
-     * Set email sender address for emails from this plugin
+     * Set email sender address for all emails from this WordPress site
      */
     public function set_email_from($from_email) {
-        // Check if this is called from plugin context
-        if (doing_filter('jg_map_email')) {
-            return 'powiadomienia@jeleniogorzanietomy.pl';
-        }
-        return $from_email;
+        return 'powiadomienia@jeleniogorzanietomy.pl';
     }
 
     /**
