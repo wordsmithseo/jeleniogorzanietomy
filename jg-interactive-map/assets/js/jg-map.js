@@ -2401,6 +2401,11 @@
         // First refresh map data to get latest points
         return refreshData(true).then(function() {
 
+          // Refresh sidebar if function exists
+          if (typeof window.jgSidebarRefresh === 'function') {
+            window.jgSidebarRefresh();
+          }
+
           // Then refresh notifications if function exists (for admins/moderators)
           if (typeof window.jgRefreshNotifications === 'function') {
             return window.jgRefreshNotifications().then(function() {
