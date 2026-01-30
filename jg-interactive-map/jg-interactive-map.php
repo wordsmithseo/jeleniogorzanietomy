@@ -415,6 +415,22 @@ class JG_Interactive_Map {
             global $jg_current_point;
             $jg_current_point = $point;
 
+            // Disable Yoast SEO Open Graph and canonical for point pages
+            // This prevents Yoast from outputting incorrect meta tags (e.g., from /publikacje/ page)
+            // We output our own tags via add_point_meta_tags()
+            add_filter('wpseo_opengraph_url', '__return_false');
+            add_filter('wpseo_canonical', '__return_false');
+            add_filter('wpseo_opengraph_title', '__return_false');
+            add_filter('wpseo_opengraph_desc', '__return_false');
+            add_filter('wpseo_opengraph_site_name', '__return_false');
+            add_filter('wpseo_opengraph_type', '__return_false');
+            add_filter('wpseo_opengraph_image', '__return_false');
+            add_filter('wpseo_metadesc', '__return_false');
+            // Disable twitter card from Yoast
+            add_filter('wpseo_twitter_title', '__return_false');
+            add_filter('wpseo_twitter_description', '__return_false');
+            add_filter('wpseo_twitter_image', '__return_false');
+
             // Start output buffering to capture entire page
             $render_start = microtime(true);
             ob_start();
@@ -657,6 +673,23 @@ class JG_Interactive_Map {
             }
         }
 
+        // Fallback image for og:image when point has no images
+        if (empty($first_image)) {
+            $site_icon_id = get_option('site_icon');
+            if ($site_icon_id) {
+                $first_image = wp_get_attachment_image_url($site_icon_id, 'full');
+            }
+            if (empty($first_image)) {
+                $custom_logo_id = get_theme_mod('custom_logo');
+                if ($custom_logo_id) {
+                    $first_image = wp_get_attachment_image_url($custom_logo_id, 'full');
+                }
+            }
+            if (empty($first_image)) {
+                $first_image = home_url('/wp-content/uploads/jg-og-default.png');
+            }
+        }
+
         // Meta description for Google search results (max 160 chars recommended)
         if (!empty($point['excerpt'])) {
             $description = wp_trim_words(strip_tags($point['excerpt']), 25);
@@ -693,9 +726,7 @@ class JG_Interactive_Map {
     <meta property="og:title" content="<?php echo esc_attr($point['title']); ?>">
     <meta property="og:description" content="<?php echo esc_attr($description); ?>">
     <meta property="og:url" content="<?php echo esc_url($url); ?>">
-    <?php if ($first_image): ?>
     <meta property="og:image" content="<?php echo esc_url($first_image); ?>">
-    <?php endif; ?>
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -703,7 +734,7 @@ class JG_Interactive_Map {
         "name": <?php echo json_encode($point['title']); ?>,
         "description": <?php echo json_encode($description); ?>,
         "url": <?php echo json_encode($url); ?>,
-        <?php if ($first_image): ?>"image": <?php echo json_encode($first_image); ?>,<?php endif; ?>
+        "image": <?php echo json_encode($first_image); ?>,
         "geo": {
             "@type": "GeoCoordinates",
             "latitude": <?php echo json_encode($point['lat']); ?>,
@@ -797,6 +828,27 @@ class JG_Interactive_Map {
             }
         }
 
+        // Fallback image for og:image when point has no images
+        // Facebook requires og:image to be explicitly set
+        if (empty($first_image)) {
+            // Try site icon first (usually PNG)
+            $site_icon_id = get_option('site_icon');
+            if ($site_icon_id) {
+                $first_image = wp_get_attachment_image_url($site_icon_id, 'full');
+            }
+            // Try custom logo next
+            if (empty($first_image)) {
+                $custom_logo_id = get_theme_mod('custom_logo');
+                if ($custom_logo_id) {
+                    $first_image = wp_get_attachment_image_url($custom_logo_id, 'full');
+                }
+            }
+            // Final fallback: default placeholder
+            if (empty($first_image)) {
+                $first_image = home_url('/wp-content/uploads/jg-og-default.png');
+            }
+        }
+
         // Meta description for Google search results (max 160 chars recommended)
         if (!empty($point['excerpt'])) {
             $description = wp_trim_words(strip_tags($point['excerpt']), 25);
@@ -827,21 +879,17 @@ class JG_Interactive_Map {
         <meta property="og:url" content="<?php echo esc_url($url); ?>">
         <meta property="og:site_name" content="<?php bloginfo('name'); ?>">
         <meta property="og:locale" content="pl_PL">
-        <?php if ($first_image): ?>
         <meta property="og:image" content="<?php echo esc_url($first_image); ?>">
         <meta property="og:image:secure_url" content="<?php echo esc_url($first_image); ?>">
         <meta property="og:image:alt" content="<?php echo esc_attr($point['title']); ?>">
         <meta property="og:image:type" content="image/jpeg">
-        <?php endif; ?>
 
         <!-- Twitter Card -->
         <meta name="twitter:card" content="summary_large_image">
         <meta name="twitter:title" content="<?php echo esc_attr($point['title']); ?>">
         <meta name="twitter:description" content="<?php echo esc_attr($description); ?>">
-        <?php if ($first_image): ?>
         <meta name="twitter:image" content="<?php echo esc_url($first_image); ?>">
         <meta name="twitter:image:alt" content="<?php echo esc_attr($point['title']); ?>">
-        <?php endif; ?>
 
         <!-- Geo tags -->
         <meta name="geo.position" content="<?php echo esc_attr($point['lat'] . ';' . $point['lng']); ?>">
@@ -858,9 +906,7 @@ class JG_Interactive_Map {
             "name": <?php echo json_encode($point['title']); ?>,
             "description": <?php echo json_encode($description); ?>,
             "url": <?php echo json_encode($url); ?>,
-            <?php if ($first_image): ?>
             "image": <?php echo json_encode($first_image); ?>,
-            <?php endif; ?>
             "geo": {
                 "@type": "GeoCoordinates",
                 "latitude": <?php echo json_encode($point['lat']); ?>,
