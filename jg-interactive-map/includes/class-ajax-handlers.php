@@ -1411,6 +1411,11 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        if (empty($content)) {
+            wp_send_json_error(array('message' => 'Opis miejsca jest wymagany'));
+            exit;
+        }
+
         // Validate category for reports (zgłoszenie)
         if ($type === 'zgloszenie') {
             if (empty($category)) {
@@ -1643,6 +1648,11 @@ class JG_Map_Ajax_Handlers {
 
         if (empty($title)) {
             wp_send_json_error(array('message' => 'Tytuł jest wymagany'));
+            exit;
+        }
+
+        if (empty($content)) {
+            wp_send_json_error(array('message' => 'Opis miejsca jest wymagany'));
             exit;
         }
 
