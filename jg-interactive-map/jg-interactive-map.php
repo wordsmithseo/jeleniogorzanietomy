@@ -107,6 +107,11 @@ class JG_Interactive_Map {
         add_action('template_redirect', array($this, 'handle_point_page'));
         add_action('template_redirect', array($this, 'handle_sitemap'));
         add_action('wp_head', array($this, 'add_point_meta_tags'));
+
+        // Register map sitemap in Yoast sitemap index for better discoverability
+        add_filter('wpseo_sitemap_index', array($this, 'add_map_sitemap_to_yoast_index'));
+        // Add map sitemap to robots.txt
+        add_filter('robots_txt', array($this, 'add_map_sitemap_to_robots'), 10, 2);
     }
 
     /**
@@ -430,6 +435,9 @@ class JG_Interactive_Map {
             add_filter('wpseo_twitter_title', '__return_false');
             add_filter('wpseo_twitter_description', '__return_false');
             add_filter('wpseo_twitter_image', '__return_false');
+            // Disable Yoast JSON-LD schema to prevent duplicate/conflicting breadcrumbs
+            add_filter('wpseo_json_ld_output', '__return_false');
+            add_filter('wpseo_schema_graph', '__return_empty_array');
 
             // Start output buffering to capture entire page
             $render_start = microtime(true);
@@ -727,26 +735,72 @@ class JG_Interactive_Map {
     <meta property="og:description" content="<?php echo esc_attr($description); ?>">
     <meta property="og:url" content="<?php echo esc_url($url); ?>">
     <meta property="og:image" content="<?php echo esc_url($first_image); ?>">
+    <?php
+    // Determine type label for breadcrumbs
+    $type_labels = array(
+        'miejsce' => 'Miejsca',
+        'ciekawostka' => 'Ciekawostki',
+        'zgloszenie' => 'Zgłoszenia'
+    );
+    $type_label = isset($type_labels[$point['type']]) ? $type_labels[$point['type']] : 'Mapa';
+    ?>
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
-        "@type": "<?php echo $point['type'] === 'miejsce' ? 'LocalBusiness' : 'Place'; ?>",
-        "name": <?php echo json_encode($point['title']); ?>,
-        "description": <?php echo json_encode($description); ?>,
-        "url": <?php echo json_encode($url); ?>,
-        "image": <?php echo json_encode($first_image); ?>,
-        "geo": {
-            "@type": "GeoCoordinates",
-            "latitude": <?php echo json_encode($point['lat']); ?>,
-            "longitude": <?php echo json_encode($point['lng']); ?>
-        },
-        "address": {
-            "@type": "PostalAddress",
-            <?php if (!empty($point['address'])): ?>"streetAddress": <?php echo json_encode($point['address']); ?>,<?php endif; ?>
-            "addressLocality": "Jelenia Góra",
-            "addressRegion": "Dolnośląskie",
-            "addressCountry": "PL"
-        }
+        "@graph": [
+            {
+                "@type": "<?php echo $point['type'] === 'miejsce' ? 'LocalBusiness' : 'Place'; ?>",
+                "@id": <?php echo json_encode($url . '#place'); ?>,
+                "name": <?php echo json_encode($point['title']); ?>,
+                "description": <?php echo json_encode($description); ?>,
+                "url": <?php echo json_encode($url); ?>,
+                "image": <?php echo json_encode($first_image); ?>,
+                "geo": {
+                    "@type": "GeoCoordinates",
+                    "latitude": <?php echo json_encode($point['lat']); ?>,
+                    "longitude": <?php echo json_encode($point['lng']); ?>
+                },
+                "address": {
+                    "@type": "PostalAddress",
+                    <?php if (!empty($point['address'])): ?>"streetAddress": <?php echo json_encode($point['address']); ?>,<?php endif; ?>
+                    "addressLocality": "Jelenia Góra",
+                    "addressRegion": "Dolnośląskie",
+                    "addressCountry": "PL"
+                }
+            },
+            {
+                "@type": "BreadcrumbList",
+                "@id": <?php echo json_encode($url . '#breadcrumb'); ?>,
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "Strona główna",
+                        "item": <?php echo json_encode(home_url('/')); ?>
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": <?php echo json_encode($type_label); ?>,
+                        "item": <?php echo json_encode(home_url('/mapa/')); ?>
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": <?php echo json_encode($point['title']); ?>
+                    }
+                ]
+            },
+            {
+                "@type": "WebPage",
+                "@id": <?php echo json_encode($url . '#webpage'); ?>,
+                "url": <?php echo json_encode($url); ?>,
+                "name": <?php echo json_encode($point['title'] . ' - Jelenia Góra'); ?>,
+                "isPartOf": {"@id": <?php echo json_encode(home_url('/#website')); ?>},
+                "breadcrumb": {"@id": <?php echo json_encode($url . '#breadcrumb'); ?>},
+                "inLanguage": "pl-PL"
+            }
+        ]
     }
     </script>
     <style>
@@ -899,37 +953,124 @@ class JG_Interactive_Map {
         <link rel="canonical" href="<?php echo esc_url($url); ?>">
 
         <!-- Schema.org JSON-LD structured data -->
+        <?php
+        // Determine type label for breadcrumbs
+        $type_labels = array(
+            'miejsce' => 'Miejsca',
+            'ciekawostka' => 'Ciekawostki',
+            'zgloszenie' => 'Zgłoszenia'
+        );
+        $type_label = isset($type_labels[$point['type']]) ? $type_labels[$point['type']] : 'Mapa';
+        ?>
         <script type="application/ld+json">
         {
             "@context": "https://schema.org",
-            "@type": "<?php echo $point['type'] === 'miejsce' ? 'LocalBusiness' : 'Place'; ?>",
-            "name": <?php echo json_encode($point['title']); ?>,
-            "description": <?php echo json_encode($description); ?>,
-            "url": <?php echo json_encode($url); ?>,
-            "image": <?php echo json_encode($first_image); ?>,
-            "geo": {
-                "@type": "GeoCoordinates",
-                "latitude": <?php echo json_encode($point['lat']); ?>,
-                "longitude": <?php echo json_encode($point['lng']); ?>
-            },
-            "address": {
-                "@type": "PostalAddress",
-                <?php if (!empty($point['address'])): ?>
-                "streetAddress": <?php echo json_encode($point['address']); ?>,
-                <?php endif; ?>
-                "addressLocality": "Jelenia Góra",
-                "addressRegion": "Dolnośląskie",
-                "addressCountry": "PL"
-            }
-            <?php if (!empty($point['phone'])): ?>
-            ,"telephone": <?php echo json_encode($point['phone']); ?>
-            <?php endif; ?>
-            <?php if (!empty($point['website'])): ?>
-            ,"sameAs": <?php echo json_encode($point['website']); ?>
-            <?php endif; ?>
+            "@graph": [
+                {
+                    "@type": "<?php echo $point['type'] === 'miejsce' ? 'LocalBusiness' : 'Place'; ?>",
+                    "@id": <?php echo json_encode($url . '#place'); ?>,
+                    "name": <?php echo json_encode($point['title']); ?>,
+                    "description": <?php echo json_encode($description); ?>,
+                    "url": <?php echo json_encode($url); ?>,
+                    "image": <?php echo json_encode($first_image); ?>,
+                    "geo": {
+                        "@type": "GeoCoordinates",
+                        "latitude": <?php echo json_encode($point['lat']); ?>,
+                        "longitude": <?php echo json_encode($point['lng']); ?>
+                    },
+                    "address": {
+                        "@type": "PostalAddress",
+                        <?php if (!empty($point['address'])): ?>
+                        "streetAddress": <?php echo json_encode($point['address']); ?>,
+                        <?php endif; ?>
+                        "addressLocality": "Jelenia Góra",
+                        "addressRegion": "Dolnośląskie",
+                        "addressCountry": "PL"
+                    }
+                    <?php if (!empty($point['phone'])): ?>
+                    ,"telephone": <?php echo json_encode($point['phone']); ?>
+                    <?php endif; ?>
+                    <?php if (!empty($point['website'])): ?>
+                    ,"sameAs": <?php echo json_encode($point['website']); ?>
+                    <?php endif; ?>
+                },
+                {
+                    "@type": "BreadcrumbList",
+                    "@id": <?php echo json_encode($url . '#breadcrumb'); ?>,
+                    "itemListElement": [
+                        {
+                            "@type": "ListItem",
+                            "position": 1,
+                            "name": "Strona główna",
+                            "item": <?php echo json_encode(home_url('/')); ?>
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "name": <?php echo json_encode($type_label); ?>,
+                            "item": <?php echo json_encode(home_url('/mapa/')); ?>
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 3,
+                            "name": <?php echo json_encode($point['title']); ?>
+                        }
+                    ]
+                },
+                {
+                    "@type": "WebPage",
+                    "@id": <?php echo json_encode($url . '#webpage'); ?>,
+                    "url": <?php echo json_encode($url); ?>,
+                    "name": <?php echo json_encode($point['title'] . ' - Jelenia Góra'); ?>,
+                    "isPartOf": {"@id": <?php echo json_encode(home_url('/#website')); ?>},
+                    "breadcrumb": {"@id": <?php echo json_encode($url . '#breadcrumb'); ?>},
+                    "inLanguage": "pl-PL"
+                }
+            ]
         }
         </script>
         <?php
+    }
+
+    /**
+     * Add map sitemap to Yoast sitemap index
+     * This helps Google discover the map sitemap through Yoast's main sitemap
+     */
+    public function add_map_sitemap_to_yoast_index($sitemap_index) {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        // Get the most recent update date from published points
+        $last_modified = $wpdb->get_var(
+            "SELECT MAX(updated_at) FROM $table WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''"
+        );
+
+        if ($last_modified) {
+            $lastmod = get_date_from_gmt($last_modified, 'c');
+        } else {
+            $lastmod = current_time('c');
+        }
+
+        $sitemap_url = home_url('/jg-map-sitemap.xml');
+        $sitemap_index .= '<sitemap>' . "\n";
+        $sitemap_index .= "\t" . '<loc>' . esc_url($sitemap_url) . '</loc>' . "\n";
+        $sitemap_index .= "\t" . '<lastmod>' . esc_html($lastmod) . '</lastmod>' . "\n";
+        $sitemap_index .= '</sitemap>' . "\n";
+
+        return $sitemap_index;
+    }
+
+    /**
+     * Add map sitemap reference to robots.txt
+     * This provides an additional way for crawlers to discover the sitemap
+     */
+    public function add_map_sitemap_to_robots($output, $public) {
+        if ($public) {
+            $sitemap_url = home_url('/jg-map-sitemap.xml');
+            $output .= "\n# JG Interactive Map Sitemap\n";
+            $output .= "Sitemap: " . esc_url($sitemap_url) . "\n";
+        }
+        return $output;
     }
 
     /**
