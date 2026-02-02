@@ -123,8 +123,9 @@
             return 'empty';
         }
 
-        // Build fingerprint from point IDs, votes, and stats
-        const pointsData = points.map(p => `${p.id}:${p.votes_count}:${p.is_promo ? 1 : 0}`).join(',');
+        // Build fingerprint from point IDs, votes, promo status, and updated_at
+        // Including updated_at ensures sidebar re-renders when pin data is edited
+        const pointsData = points.map(p => `${p.id}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.updated_at || ''}`).join(',');
         const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
         return pointsData + statsData;
     }
