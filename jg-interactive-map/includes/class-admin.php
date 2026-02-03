@@ -2805,7 +2805,6 @@ class JG_Map_Admin {
         $table_history = $wpdb->prefix . 'jg_map_history';
         $table_votes = $wpdb->prefix . 'jg_map_votes';
         $table_reports = $wpdb->prefix . 'jg_map_reports';
-        $table_relevance_votes = $wpdb->prefix . 'jg_map_relevance_votes';
 
         // Build stats for each user
         $user_stats = array();
@@ -2867,13 +2866,6 @@ class JG_Map_Admin {
                 $user->ID
             ));
             if ($last_report) $last_actions[] = $last_report;
-
-            // Last relevance vote
-            $last_relevance = $wpdb->get_var($wpdb->prepare(
-                "SELECT created_at FROM $table_relevance_votes WHERE user_id = %d ORDER BY created_at DESC LIMIT 1",
-                $user->ID
-            ));
-            if ($last_relevance) $last_actions[] = $last_relevance;
 
             // Get the most recent action
             $last_action = !empty($last_actions) ? max($last_actions) : null;

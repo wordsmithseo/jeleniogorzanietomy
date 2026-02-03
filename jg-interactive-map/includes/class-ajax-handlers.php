@@ -5421,7 +5421,6 @@ class JG_Map_Ajax_Handlers {
         $table_votes = $wpdb->prefix . 'jg_map_votes';
         $table_reports = $wpdb->prefix . 'jg_map_reports';
         $table_history = $wpdb->prefix . 'jg_map_history';
-        $table_relevance_votes = $wpdb->prefix . 'jg_map_relevance_votes';
         $table_point_visits = $wpdb->prefix . 'jg_map_point_visits';
 
         // Count added places (published)
@@ -5482,17 +5481,6 @@ class JG_Map_Ajax_Handlers {
             $user_id
         ));
 
-        // Count relevance votes (nadal aktualne)
-        $relevance_votes_yes = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table_relevance_votes WHERE user_id = %d AND vote_type = 'yes'",
-            $user_id
-        ));
-
-        $relevance_votes_no = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table_relevance_votes WHERE user_id = %d AND vote_type = 'no'",
-            $user_id
-        ));
-
         // Count visits to places
         $places_visited = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(DISTINCT point_id) FROM $table_point_visits WHERE user_id = %d",
@@ -5550,8 +5538,6 @@ class JG_Map_Ajax_Handlers {
                 'upvotes_received' => intval($upvotes_received),
                 'downvotes_received' => intval($downvotes_received),
                 'reports_submitted' => intval($reports_submitted),
-                'relevance_votes_yes' => intval($relevance_votes_yes),
-                'relevance_votes_no' => intval($relevance_votes_no),
                 'places_visited' => intval($places_visited)
             )
         ));
