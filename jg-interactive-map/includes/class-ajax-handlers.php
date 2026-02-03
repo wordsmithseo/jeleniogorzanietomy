@@ -490,6 +490,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_request_deletion', array($this, 'request_deletion'));
         add_action('wp_ajax_jg_get_daily_limits', array($this, 'get_daily_limits'));
         add_action('wp_ajax_jg_map_get_current_user', array($this, 'get_current_user'));
+        add_action('wp_ajax_jg_map_get_my_stats', array($this, 'get_my_stats'));
         add_action('wp_ajax_jg_map_update_profile', array($this, 'update_profile'));
         add_action('wp_ajax_jg_map_delete_profile', array($this, 'delete_profile'));
 
@@ -5394,7 +5395,160 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Update user profile (email and password only)
+     * Get current user statistics for profile modal
+     */
+    public function get_my_stats() {
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Musisz być zalogowany');
+            exit;
+        }
+
+        global $wpdb;
+        $user_id = get_current_user_id();
+        $current_user = wp_get_current_user();
+
+        $table_points = $wpdb->prefix . 'jg_map_points';
+        $table_votes = $wpdb->prefix . 'jg_map_votes';
+        $table_reports = $wpdb->prefix . 'jg_map_reports';
+        $table_history = $wpdb->prefix . 'jg_map_history';
+        $table_relevance_votes = $wpdb->prefix . 'jg_map_relevance_votes';
+        $table_point_visits = $wpdb->prefix . 'jg_map_point_visits';
+
+        // Count added places (published)
+        $places_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_points WHERE author_id = %d AND status = 'publish'",
+            $user_id
+        ));
+
+        // Count pending places
+        $pending_places_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_points WHERE author_id = %d AND status = 'pending'",
+            $user_id
+        ));
+
+        // Count edits submitted
+        $edits_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_history WHERE user_id = %d AND action_type = 'edit'",
+            $user_id
+        ));
+
+        // Count approved edits
+        $approved_edits_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_history WHERE user_id = %d AND action_type = 'edit' AND status = 'approved'",
+            $user_id
+        ));
+
+        // Count photos added
+        $photos_data = $wpdb->get_results($wpdb->prepare(
+            "SELECT images FROM $table_points WHERE author_id = %d AND status = 'publish' AND images IS NOT NULL AND images != ''",
+            $user_id
+        ), ARRAY_A);
+
+        $photos_count = 0;
+        foreach ($photos_data as $point_data) {
+            if (!empty($point_data['images'])) {
+                $images = json_decode($point_data['images'], true);
+                if (is_array($images)) {
+                    $photos_count += count($images);
+                }
+            }
+        }
+
+        // Count upvotes given
+        $upvotes_given = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_votes WHERE user_id = %d AND vote_type = 'up'",
+            $user_id
+        ));
+
+        // Count downvotes given
+        $downvotes_given = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_votes WHERE user_id = %d AND vote_type = 'down'",
+            $user_id
+        ));
+
+        // Count reports submitted
+        $reports_submitted = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_reports WHERE user_id = %d",
+            $user_id
+        ));
+
+        // Count relevance votes (nadal aktualne)
+        $relevance_votes_yes = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_relevance_votes WHERE user_id = %d AND vote_type = 'yes'",
+            $user_id
+        ));
+
+        $relevance_votes_no = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_relevance_votes WHERE user_id = %d AND vote_type = 'no'",
+            $user_id
+        ));
+
+        // Count visits to places
+        $places_visited = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT point_id) FROM $table_point_visits WHERE user_id = %d",
+            $user_id
+        ));
+
+        // Get votes received on user's places
+        $upvotes_received = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_votes v
+             INNER JOIN $table_points p ON v.point_id = p.id
+             WHERE p.author_id = %d AND v.vote_type = 'up'",
+            $user_id
+        ));
+
+        $downvotes_received = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_votes v
+             INNER JOIN $table_points p ON v.point_id = p.id
+             WHERE p.author_id = %d AND v.vote_type = 'down'",
+            $user_id
+        ));
+
+        // User metadata
+        $is_admin = current_user_can('manage_options');
+        $is_moderator = current_user_can('jg_map_moderate');
+
+        // Check if user has sponsored places
+        $has_sponsored = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_points WHERE author_id = %d AND is_promo = 1 AND status = 'publish'",
+            $user_id
+        )) > 0;
+
+        $role = 'Użytkownik';
+        if ($is_admin) {
+            $role = 'Administrator';
+        } elseif ($is_moderator) {
+            $role = 'Moderator';
+        }
+
+        wp_send_json_success(array(
+            'user_id' => $user_id,
+            'display_name' => $current_user->display_name,
+            'member_since' => $current_user->user_registered . ' UTC',
+            'role' => $role,
+            'is_admin' => $is_admin,
+            'is_moderator' => $is_moderator,
+            'has_sponsored' => $has_sponsored,
+            'stats' => array(
+                'places_added' => intval($places_count),
+                'places_pending' => intval($pending_places_count),
+                'edits_submitted' => intval($edits_count),
+                'edits_approved' => intval($approved_edits_count),
+                'photos_added' => intval($photos_count),
+                'upvotes_given' => intval($upvotes_given),
+                'downvotes_given' => intval($downvotes_given),
+                'upvotes_received' => intval($upvotes_received),
+                'downvotes_received' => intval($downvotes_received),
+                'reports_submitted' => intval($reports_submitted),
+                'relevance_votes_yes' => intval($relevance_votes_yes),
+                'relevance_votes_no' => intval($relevance_votes_no),
+                'places_visited' => intval($places_visited)
+            )
+        ));
+    }
+
+    /**
+     * Update user profile (password only)
      */
     public function update_profile() {
         if (!is_user_logged_in()) {
@@ -5403,37 +5557,18 @@ class JG_Map_Ajax_Handlers {
         }
 
         $user_id = get_current_user_id();
-        $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
         $password = isset($_POST['password']) ? $_POST['password'] : '';
 
-        if (empty($email)) {
-            wp_send_json_error('Proszę podać adres email');
+        if (empty($password)) {
+            wp_send_json_error('Proszę podać nowe hasło');
             exit;
         }
 
-        // Validate email
-        if (!is_email($email)) {
-            wp_send_json_error('Nieprawidłowy adres email');
-            exit;
-        }
-
-        // Check if email is already used by another user
-        $email_exists = email_exists($email);
-        if ($email_exists && $email_exists != $user_id) {
-            wp_send_json_error('Ten adres email jest już używany przez innego użytkownika');
-            exit;
-        }
-
-        // Update user data (only email, no display name change)
+        // Update user data (only password)
         $user_data = array(
             'ID' => $user_id,
-            'user_email' => $email
+            'user_pass' => $password
         );
-
-        // Add password if provided
-        if (!empty($password)) {
-            $user_data['user_pass'] = $password;
-        }
 
         $result = wp_update_user($user_data);
 
@@ -5442,7 +5577,7 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        wp_send_json_success('Profil został zaktualizowany');
+        wp_send_json_success('Hasło zostało zmienione');
     }
 
     /**
