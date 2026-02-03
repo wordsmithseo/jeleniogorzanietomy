@@ -5901,46 +5901,20 @@
         var tColors = typeColors[p.type] || { bg: '#f3f4f6', border: '#6b7280', text: '#374151' };
         typeBadge = '<div style="font-size:1rem;padding:6px 14px;background:' + tColors.bg + ';border:1px solid ' + tColors.border + ';border-radius:8px;color:' + tColors.text + ';font-weight:600;white-space:nowrap">' + (typeLabels[p.type] || p.type) + '</div>';
 
-        // Category badge for header (next to type, only for zgloszenie)
+        // Category badge for header (for all types with category)
         var categoryBadgeHeader = '';
-        if (p.type === 'zgloszenie' && p.category) {
-          var categoryEmoji = {
-            'dziura_w_jezdni': '🕳️',
-            'uszkodzone_chodniki': '🚶',
-            'znaki_drogowe': '🚸',
-            'oswietlenie': '💡',
-            'dzikie_wysypisko': '🗑️',
-            'przepelniony_kosz': '♻️',
-            'graffiti': '🎨',
-            'sliski_chodnik': '⚠️',
-            'nasadzenie_drzew': '🌳',
-            'nieprzycięta_gałąź': '🌿',
-            'brak_przejscia': '🚦',
-            'przystanek_autobusowy': '🚏',
-            'organizacja_ruchu': '🚗',
-            'korki': '🚙',
-            'mala_infrastruktura': '🎪'
+        if (p.category) {
+          var categoryEmojis = getCategoryEmojis();
+          var emoji = categoryEmojis[p.category] || '📌';
+          var catLabel = getCategoryLabel(p.category, p.type);
+          // Different colors for different types
+          var catBadgeColors = {
+            'zgloszenie': { bg: '#fef3c7', border: '#f59e0b', text: '#78350f' },
+            'miejsce': { bg: '#dcfce7', border: '#22c55e', text: '#166534' },
+            'ciekawostka': { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' }
           };
-          var categoryLabelsShort = {
-            'dziura_w_jezdni': 'Dziura w jezdni',
-            'uszkodzone_chodniki': 'Uszkodzone chodniki',
-            'znaki_drogowe': 'Znaki drogowe',
-            'oswietlenie': 'Oświetlenie',
-            'dzikie_wysypisko': 'Dzikie wysypisko',
-            'przepelniony_kosz': 'Przepełniony kosz',
-            'graffiti': 'Graffiti',
-            'sliski_chodnik': 'Śliski chodnik',
-            'nasadzenie_drzew': 'Nasadzenie drzew',
-            'nieprzycięta_gałąź': 'Nieprzycięta gałąź',
-            'brak_przejscia': 'Brak przejścia',
-            'przystanek_autobusowy': 'Przystanek',
-            'organizacja_ruchu': 'Organizacja ruchu',
-            'korki': 'Korki',
-            'mala_infrastruktura': 'Mała infrastruktura'
-          };
-          var emoji = categoryEmoji[p.category] || '📌';
-          var catLabel = categoryLabelsShort[p.category] || formatCategorySlug(p.category);
-          categoryBadgeHeader = '<div style="font-size:1rem;padding:6px 14px;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;color:#78350f;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:8px"><span>' + emoji + '</span><span>' + catLabel + '</span></div>';
+          var catColors = catBadgeColors[p.type] || { bg: '#f3f4f6', border: '#6b7280', text: '#374151' };
+          categoryBadgeHeader = '<div style="font-size:1rem;padding:6px 14px;background:' + catColors.bg + ';border:1px solid ' + catColors.border + ';border-radius:8px;color:' + catColors.text + ';font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:8px">' + catLabel + '</div>';
         }
 
         // Remove large category card from body since it's now in header
@@ -6972,10 +6946,9 @@
           curiosityCategoriesContainer.innerHTML = html;
         }
 
-        // Show category filters container if there are categories
-        if (categoryFiltersContainer && (Object.keys(placeCategories).length > 0 || Object.keys(curiosityCategories).length > 0)) {
-          categoryFiltersContainer.style.display = 'block';
-        }
+        // Keep category filters container hidden by default
+        // It will only be shown when user clicks expand button and there's content
+        // Container stays hidden until a dropdown inside it is shown
 
         // Add event listeners to expand buttons
         var expandBtns = document.querySelectorAll('.jg-filter-expand-btn');
@@ -6985,10 +6958,19 @@
             e.stopPropagation();
             var target = this.getAttribute('data-expand-target');
             var dropdown = document.getElementById('jg-' + target);
-            if (dropdown) {
+            if (dropdown && dropdown.innerHTML.trim()) {
               var isVisible = dropdown.style.display !== 'none';
-              dropdown.style.display = isVisible ? 'none' : 'block';
+              dropdown.style.display = isVisible ? 'none' : 'flex';
               this.textContent = isVisible ? '▼' : '▲';
+
+              // Show/hide parent container based on any visible dropdown
+              if (categoryFiltersContainer) {
+                var anyVisible = false;
+                categoryFiltersContainer.querySelectorAll('.jg-category-dropdown').forEach(function(d) {
+                  if (d.style.display !== 'none' && d.innerHTML.trim()) anyVisible = true;
+                });
+                categoryFiltersContainer.style.display = anyVisible ? 'flex' : 'none';
+              }
             }
           });
         });
@@ -8004,6 +7986,12 @@
               '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
               generateCategoryOptions('') +
               '</select></label>' +
+              '<label class="cols-2" id="add-place-category-field" style="display:none"><span>Kategoria miejsca (opcjonalna)</span> <select name="place_category" id="add-place-category-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+              generatePlaceCategoryOptions('') +
+              '</select></label>' +
+              '<label class="cols-2" id="add-curiosity-category-field" style="display:none"><span>Kategoria ciekawostki (opcjonalna)</span> <select name="curiosity_category" id="add-curiosity-category-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+              generateCuriosityCategoryOptions('') +
+              '</select></label>' +
               '<label class="cols-2">Opis* (max 800 znaków)<textarea name="content" id="add-content-input" required maxlength="800" placeholder="Opisz miejsce..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;resize:vertical;min-height:80px"></textarea><div id="add-content-counter" style="font-size:11px;color:#666;margin-top:4px">0 / 800 znaków</div></label>' +
               '<label class="cols-2">Zdjęcia (opcjonalne, max 6)<input type="file" name="images" id="add-images-input" accept="image/*" multiple style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
               '<div id="add-images-preview" class="cols-2" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
@@ -8137,17 +8125,30 @@
             var typeSelect = qs('#add-type-select', modalAdd);
             var categoryField = qs('#add-category-field', modalAdd);
             var categorySelect = qs('#add-category-select', modalAdd);
+            var placeCategoryField = qs('#add-place-category-field', modalAdd);
+            var placeCategorySelect = qs('#add-place-category-select', modalAdd);
+            var curiosityCategoryField = qs('#add-curiosity-category-field', modalAdd);
+            var curiosityCategorySelect = qs('#add-curiosity-category-select', modalAdd);
 
             if (typeSelect && categoryField && categorySelect) {
               // Function to toggle category field visibility
               function toggleCategoryField() {
-                if (typeSelect.value === 'zgloszenie') {
+                var selectedType = typeSelect.value;
+
+                // Hide all category fields first
+                categoryField.style.display = 'none';
+                categorySelect.removeAttribute('required');
+                if (placeCategoryField) placeCategoryField.style.display = 'none';
+                if (curiosityCategoryField) curiosityCategoryField.style.display = 'none';
+
+                // Show appropriate field based on type
+                if (selectedType === 'zgloszenie') {
                   categoryField.style.display = 'block';
                   categorySelect.setAttribute('required', 'required');
-                } else {
-                  categoryField.style.display = 'none';
-                  categorySelect.removeAttribute('required');
-                  categorySelect.value = ''; // Clear selection when hidden
+                } else if (selectedType === 'miejsce' && placeCategoryField) {
+                  placeCategoryField.style.display = 'block';
+                } else if (selectedType === 'ciekawostka' && curiosityCategoryField) {
+                  curiosityCategoryField.style.display = 'block';
                 }
               }
 
@@ -8166,6 +8167,15 @@
               var fd = new FormData(form);
               fd.append('action', 'jg_submit_point');
               fd.append('_ajax_nonce', CFG.nonce);
+
+              // Set category based on type
+              var selectedType = fd.get('type');
+              if (selectedType === 'miejsce' && placeCategorySelect && placeCategorySelect.value) {
+                fd.set('category', placeCategorySelect.value);
+              } else if (selectedType === 'ciekawostka' && curiosityCategorySelect && curiosityCategorySelect.value) {
+                fd.set('category', curiosityCategorySelect.value);
+              }
+              // For zgloszenie, the category is already in the form as 'category'
 
               fetch(CFG.ajax, {
                 method: 'POST',

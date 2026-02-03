@@ -1582,10 +1582,10 @@ class JG_Map_Ajax_Handlers {
             'updated_at' => current_time('mysql', true)   // GMT time for consistency
         );
 
-        // Add category if it's a report (zgłoszenie)
-        if ($type === 'zgloszenie' && !empty($category)) {
+        // Add category for all types (zgłoszenie, miejsce, ciekawostka)
+        // Category is required for zgłoszenie, optional for others
+        if (!empty($category)) {
             $point_data['category'] = $category;
-        } else {
         }
 
         $point_id = JG_Map_Database::insert_point($point_data);
@@ -1791,11 +1791,11 @@ class JG_Map_Ajax_Handlers {
                 'excerpt' => wp_trim_words($content, 20)
             );
 
-            // Add category if it's a report (zgłoszenie)
-            if ($type === 'zgloszenie' && !empty($category)) {
+            // Add category for all types (zgłoszenie, miejsce, ciekawostka)
+            // Category is required for zgłoszenie, optional for others
+            if (!empty($category)) {
                 $update_data['category'] = $category;
             } else {
-                // Clear category if changing from report to other type
                 $update_data['category'] = null;
             }
 
