@@ -430,8 +430,10 @@ class JG_Interactive_Map {
             add_filter('wpseo_opengraph_site_name', '__return_false');
             add_filter('wpseo_opengraph_type', '__return_false');
             add_filter('wpseo_opengraph_image', '__return_false');
+            add_filter('wpseo_opengraph_locale', '__return_false');
             add_filter('wpseo_metadesc', '__return_false');
             // Disable twitter card from Yoast
+            add_filter('wpseo_twitter_card', '__return_false');
             add_filter('wpseo_twitter_title', '__return_false');
             add_filter('wpseo_twitter_description', '__return_false');
             add_filter('wpseo_twitter_image', '__return_false');
