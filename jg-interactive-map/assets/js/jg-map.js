@@ -6972,10 +6972,9 @@
           curiosityCategoriesContainer.innerHTML = html;
         }
 
-        // Show category filters container if there are categories
-        if (categoryFiltersContainer && (Object.keys(placeCategories).length > 0 || Object.keys(curiosityCategories).length > 0)) {
-          categoryFiltersContainer.style.display = 'block';
-        }
+        // Keep category filters container hidden by default
+        // It will only be shown when user clicks expand button and there's content
+        // Container stays hidden until a dropdown inside it is shown
 
         // Add event listeners to expand buttons
         var expandBtns = document.querySelectorAll('.jg-filter-expand-btn');
@@ -6985,10 +6984,19 @@
             e.stopPropagation();
             var target = this.getAttribute('data-expand-target');
             var dropdown = document.getElementById('jg-' + target);
-            if (dropdown) {
+            if (dropdown && dropdown.innerHTML.trim()) {
               var isVisible = dropdown.style.display !== 'none';
-              dropdown.style.display = isVisible ? 'none' : 'block';
+              dropdown.style.display = isVisible ? 'none' : 'flex';
               this.textContent = isVisible ? '▼' : '▲';
+
+              // Show/hide parent container based on any visible dropdown
+              if (categoryFiltersContainer) {
+                var anyVisible = false;
+                categoryFiltersContainer.querySelectorAll('.jg-category-dropdown').forEach(function(d) {
+                  if (d.style.display !== 'none' && d.innerHTML.trim()) anyVisible = true;
+                });
+                categoryFiltersContainer.style.display = anyVisible ? 'flex' : 'none';
+              }
             }
           });
         });
