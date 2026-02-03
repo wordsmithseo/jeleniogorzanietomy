@@ -313,7 +313,9 @@ class JG_Map_Enqueue {
                     'confirmDelete' => __('Czy na pewno usunąć?', 'jg-map'),
                 ),
                 'reportCategories' => JG_Map_Ajax_Handlers::get_category_groups(),
-                'reportReasons' => JG_Map_Ajax_Handlers::get_report_categories()
+                'reportReasons' => JG_Map_Ajax_Handlers::get_report_categories(),
+                'placeCategories' => JG_Map_Ajax_Handlers::get_place_categories(),
+                'curiosityCategories' => JG_Map_Ajax_Handlers::get_curiosity_categories()
             )
         );
 

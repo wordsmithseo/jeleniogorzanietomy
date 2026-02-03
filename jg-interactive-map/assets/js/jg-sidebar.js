@@ -13,7 +13,9 @@
     let currentFilters = {
         types: ['miejsce', 'ciekawostka', 'zgloszenie'],
         myPlaces: false,
-        sortBy: 'date_desc'
+        sortBy: 'date_desc',
+        placeCategories: [],
+        curiosityCategories: []
     };
 
     // Fingerprint of current data for change detection
@@ -25,11 +27,50 @@
      * Initialize sidebar
      */
     function init() {
+        // Generate category filter checkboxes
+        initCategoryFilters();
+
         // Setup event listeners
         setupEventListeners();
 
         // Load initial data
         loadPoints();
+    }
+
+    /**
+     * Initialize category filter checkboxes from config
+     */
+    function initCategoryFilters() {
+        const placeCategories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
+        const curiosityCategories = (window.JG_MAP_CFG && JG_MAP_CFG.curiosityCategories) || {};
+
+        // Generate place category filters
+        const $placeContainer = $('[data-category-type="miejsce"]');
+        if ($placeContainer.length && Object.keys(placeCategories).length > 0) {
+            let html = '';
+            for (const key in placeCategories) {
+                if (placeCategories.hasOwnProperty(key)) {
+                    const cat = placeCategories[key];
+                    html += '<label class="jg-sidebar-filter-label"><input type="checkbox" data-sidebar-place-category="' + key + '" checked><span class="jg-sidebar-filter-icon">' + (cat.icon || '📍') + '</span><span class="jg-sidebar-filter-text">' + cat.label + '</span></label>';
+                }
+            }
+            $placeContainer.html(html);
+            $('#jg-sidebar-place-categories').show();
+        }
+
+        // Generate curiosity category filters
+        const $curiosityContainer = $('[data-category-type="ciekawostka"]');
+        if ($curiosityContainer.length && Object.keys(curiosityCategories).length > 0) {
+            let html = '';
+            for (const key in curiosityCategories) {
+                if (curiosityCategories.hasOwnProperty(key)) {
+                    const cat = curiosityCategories[key];
+                    html += '<label class="jg-sidebar-filter-label"><input type="checkbox" data-sidebar-curiosity-category="' + key + '" checked><span class="jg-sidebar-filter-icon">' + (cat.icon || '💡') + '</span><span class="jg-sidebar-filter-text">' + cat.label + '</span></label>';
+                }
+            }
+            $curiosityContainer.html(html);
+            $('#jg-sidebar-curiosity-categories').show();
+        }
     }
 
     /**
@@ -45,6 +86,18 @@
         // My places filter
         $('[data-sidebar-my-places]').on('change', function() {
             currentFilters.myPlaces = $(this).is(':checked');
+            loadPoints();
+        });
+
+        // Place category filters
+        $(document).on('change', '[data-sidebar-place-category]', function() {
+            updatePlaceCategoryFilters();
+            loadPoints();
+        });
+
+        // Curiosity category filters
+        $(document).on('change', '[data-sidebar-curiosity-category]', function() {
+            updateCuriosityCategoryFilters();
             loadPoints();
         });
 
@@ -115,6 +168,28 @@
     }
 
     /**
+     * Update place category filters based on checkboxes
+     */
+    function updatePlaceCategoryFilters() {
+        const categories = [];
+        $('[data-sidebar-place-category]:checked').each(function() {
+            categories.push($(this).attr('data-sidebar-place-category'));
+        });
+        currentFilters.placeCategories = categories;
+    }
+
+    /**
+     * Update curiosity category filters based on checkboxes
+     */
+    function updateCuriosityCategoryFilters() {
+        const categories = [];
+        $('[data-sidebar-curiosity-category]:checked').each(function() {
+            categories.push($(this).attr('data-sidebar-curiosity-category'));
+        });
+        currentFilters.curiosityCategories = categories;
+    }
+
+    /**
      * Generate fingerprint of points data for change detection
      * Returns a string that uniquely identifies the current state
      */
@@ -148,7 +223,9 @@
                 _ajax_nonce: JG_MAP_CFG.nonce,
                 type_filters: currentFilters.types,
                 my_places: currentFilters.myPlaces,
-                sort_by: currentFilters.sortBy
+                sort_by: currentFilters.sortBy,
+                place_categories: currentFilters.placeCategories,
+                curiosity_categories: currentFilters.curiosityCategories
             },
             success: function(response) {
                 if (response.success && response.data) {

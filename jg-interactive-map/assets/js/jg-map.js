@@ -64,21 +64,81 @@
     return html;
   }
 
-  // Helper function to get category emoji map from config
+  // Helper function to get category emoji map from config (all types)
   function getCategoryEmojis() {
     var reasons = (window.JG_MAP_CFG && JG_MAP_CFG.reportReasons) || {};
+    var placeCategories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
+    var curiosityCategories = (window.JG_MAP_CFG && JG_MAP_CFG.curiosityCategories) || {};
     var emojis = {};
+
+    // Report categories
     for (var key in reasons) {
       if (reasons.hasOwnProperty(key)) {
         emojis[key] = reasons[key].icon || '📌';
       }
     }
+
+    // Place categories
+    for (var key in placeCategories) {
+      if (placeCategories.hasOwnProperty(key)) {
+        emojis[key] = placeCategories[key].icon || '📍';
+      }
+    }
+
+    // Curiosity categories
+    for (var key in curiosityCategories) {
+      if (curiosityCategories.hasOwnProperty(key)) {
+        emojis[key] = curiosityCategories[key].icon || '💡';
+      }
+    }
+
     return emojis;
   }
 
-  // Helper function to get category label by key
-  function getCategoryLabel(key) {
+  // Helper function to generate place category select options
+  function generatePlaceCategoryOptions(selectedValue) {
+    var categories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
+    var html = '<option value="">-- Wybierz kategorię (opcjonalnie) --</option>';
+
+    for (var key in categories) {
+      if (categories.hasOwnProperty(key)) {
+        var cat = categories[key];
+        var selected = (selectedValue === key) ? ' selected' : '';
+        html += '<option value="' + key + '"' + selected + '>' + (cat.icon || '📍') + ' ' + cat.label + '</option>';
+      }
+    }
+
+    return html;
+  }
+
+  // Helper function to generate curiosity category select options
+  function generateCuriosityCategoryOptions(selectedValue) {
+    var categories = (window.JG_MAP_CFG && JG_MAP_CFG.curiosityCategories) || {};
+    var html = '<option value="">-- Wybierz kategorię (opcjonalnie) --</option>';
+
+    for (var key in categories) {
+      if (categories.hasOwnProperty(key)) {
+        var cat = categories[key];
+        var selected = (selectedValue === key) ? ' selected' : '';
+        html += '<option value="' + key + '"' + selected + '>' + (cat.icon || '💡') + ' ' + cat.label + '</option>';
+      }
+    }
+
+    return html;
+  }
+
+  // Helper function to get category label by key (all types)
+  function getCategoryLabel(key, type) {
     var reasons = (window.JG_MAP_CFG && JG_MAP_CFG.reportReasons) || {};
+    var placeCategories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
+    var curiosityCategories = (window.JG_MAP_CFG && JG_MAP_CFG.curiosityCategories) || {};
+
+    if (type === 'miejsce' && placeCategories[key]) {
+      return (placeCategories[key].icon || '📍') + ' ' + placeCategories[key].label;
+    }
+    if (type === 'ciekawostka' && curiosityCategories[key]) {
+      return (curiosityCategories[key].icon || '💡') + ' ' + curiosityCategories[key].label;
+    }
     if (reasons[key]) {
       return (reasons[key].icon || '📌') + ' ' + reasons[key].label;
     }
@@ -1426,6 +1486,12 @@
                 '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
                 generateCategoryOptions('') +
                 '</select></label>' +
+                '<label class="cols-2" id="add-place-category-field" style="display:none"><span>Kategoria miejsca</span> <select name="place_category" id="add-place-category-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+                generatePlaceCategoryOptions('') +
+                '</select></label>' +
+                '<label class="cols-2" id="add-curiosity-category-field" style="display:none"><span>Kategoria ciekawostki</span> <select name="curiosity_category" id="add-curiosity-category-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+                generateCuriosityCategoryOptions('') +
+                '</select></label>' +
                 '<label class="cols-2">Opis* <textarea name="content" rows="4" maxlength="800" id="add-content-input" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><div id="add-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">0 / 800 znaków</div></label>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
                 '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images[]" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
@@ -1510,17 +1576,30 @@
               var typeSelect = qs('#add-type-select', modalAdd);
               var categoryField = qs('#add-category-field', modalAdd);
               var categorySelect = qs('#add-category-select', modalAdd);
+              var placeCategoryField = qs('#add-place-category-field', modalAdd);
+              var placeCategorySelect = qs('#add-place-category-select', modalAdd);
+              var curiosityCategoryField = qs('#add-curiosity-category-field', modalAdd);
+              var curiosityCategorySelect = qs('#add-curiosity-category-select', modalAdd);
 
               if (typeSelect && categoryField && categorySelect) {
                 // Function to toggle category field visibility
                 function toggleCategoryField() {
-                  if (typeSelect.value === 'zgloszenie') {
+                  var selectedType = typeSelect.value;
+
+                  // Hide all category fields first
+                  categoryField.style.display = 'none';
+                  categorySelect.removeAttribute('required');
+                  if (placeCategoryField) placeCategoryField.style.display = 'none';
+                  if (curiosityCategoryField) curiosityCategoryField.style.display = 'none';
+
+                  // Show appropriate field based on type
+                  if (selectedType === 'zgloszenie') {
                     categoryField.style.display = 'block';
                     categorySelect.setAttribute('required', 'required');
-                  } else {
-                    categoryField.style.display = 'none';
-                    categorySelect.removeAttribute('required');
-                    categorySelect.value = '';
+                  } else if (selectedType === 'miejsce' && placeCategoryField) {
+                    placeCategoryField.style.display = 'block';
+                  } else if (selectedType === 'ciekawostka' && curiosityCategoryField) {
+                    curiosityCategoryField.style.display = 'block';
                   }
                 }
 
@@ -1588,6 +1667,27 @@
             var fd = new FormData(form);
             fd.append('action', 'jg_submit_point');
             fd.append('_ajax_nonce', CFG.nonce);
+
+            // Set category based on type
+            var selectedType = fd.get('type');
+            if (selectedType === 'miejsce') {
+              var placeCategory = fd.get('place_category');
+              if (placeCategory) {
+                fd.set('category', placeCategory);
+              }
+              fd.delete('place_category');
+              fd.delete('curiosity_category');
+            } else if (selectedType === 'ciekawostka') {
+              var curiosityCategory = fd.get('curiosity_category');
+              if (curiosityCategory) {
+                fd.set('category', curiosityCategory);
+              }
+              fd.delete('place_category');
+              fd.delete('curiosity_category');
+            } else {
+              fd.delete('place_category');
+              fd.delete('curiosity_category');
+            }
 
             // DEBUG: Log FormData contents (more compatible approach)
             var formDataObj = {};
@@ -1922,8 +2022,8 @@
             'box-shadow:0 2px 4px rgba(0,0,0,0.3);' +
             'z-index:2;';
           centerContent = '<div class="jg-pin-emoji" style="' + emojiStyle + '">⚠️</div>';
-        } else if (p.type === 'zgloszenie' && p.category && categoryEmojis[p.category]) {
-          // Show category emoji for reports with white background
+        } else if (p.category && categoryEmojis[p.category]) {
+          // Show category emoji for all types with category (zgłoszenia, miejsca, ciekawostki)
           var emojiFontSize = 20;
           var emojiStyle = 'position:absolute;' +
             'top:' + (pinHeight * 0.40) + 'px;' +
@@ -4033,7 +4133,13 @@
               '<option value="miejsce"' + (p.type === 'miejsce' ? ' selected' : '') + '>Miejsce</option>' +
               '</select></label>' +
               '<label class="cols-2" id="edit-category-field" style="' + (p.type === 'zgloszenie' ? 'display:block' : 'display:none') + '"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="edit-category-select" ' + (p.type === 'zgloszenie' ? 'required' : '') + ' style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
-              generateCategoryOptions(p.category || '') +
+              generateCategoryOptions(p.type === 'zgloszenie' ? (p.category || '') : '') +
+              '</select></label>' +
+              '<label class="cols-2" id="edit-place-category-field" style="' + (p.type === 'miejsce' ? 'display:block' : 'display:none') + '"><span>Kategoria miejsca</span> <select name="place_category" id="edit-place-category-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+              generatePlaceCategoryOptions(p.type === 'miejsce' ? (p.category || '') : '') +
+              '</select></label>' +
+              '<label class="cols-2" id="edit-curiosity-category-field" style="' + (p.type === 'ciekawostka' ? 'display:block' : 'display:none') + '"><span>Kategoria ciekawostki</span> <select name="curiosity_category" id="edit-curiosity-category-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+              generateCuriosityCategoryOptions(p.type === 'ciekawostka' ? (p.category || '') : '') +
               '</select></label>' +
               '<div class="cols-2" style="position:relative">' +
               '<label style="display:block;margin-bottom:4px">Adres (korekta pozycji pinezki)</label>' +
@@ -4135,16 +4241,29 @@
         var editTypeSelect = qs('#edit-type-select', modalEdit);
         var editCategoryField = qs('#edit-category-field', modalEdit);
         var editCategorySelect = qs('#edit-category-select', modalEdit);
+        var editPlaceCategoryField = qs('#edit-place-category-field', modalEdit);
+        var editPlaceCategorySelect = qs('#edit-place-category-select', modalEdit);
+        var editCuriosityCategoryField = qs('#edit-curiosity-category-field', modalEdit);
+        var editCuriosityCategorySelect = qs('#edit-curiosity-category-select', modalEdit);
 
         if (editTypeSelect && editCategoryField && editCategorySelect) {
           function toggleEditCategoryField() {
-            if (editTypeSelect.value === 'zgloszenie') {
+            var selectedType = editTypeSelect.value;
+
+            // Hide all category fields first
+            editCategoryField.style.display = 'none';
+            editCategorySelect.removeAttribute('required');
+            if (editPlaceCategoryField) editPlaceCategoryField.style.display = 'none';
+            if (editCuriosityCategoryField) editCuriosityCategoryField.style.display = 'none';
+
+            // Show appropriate field based on type
+            if (selectedType === 'zgloszenie') {
               editCategoryField.style.display = 'block';
               editCategorySelect.setAttribute('required', 'required');
-            } else {
-              editCategoryField.style.display = 'none';
-              editCategorySelect.removeAttribute('required');
-              editCategorySelect.value = ''; // Clear selection when hidden
+            } else if (selectedType === 'miejsce' && editPlaceCategoryField) {
+              editPlaceCategoryField.style.display = 'block';
+            } else if (selectedType === 'ciekawostka' && editCuriosityCategoryField) {
+              editCuriosityCategoryField.style.display = 'block';
             }
           }
 
@@ -4360,6 +4479,31 @@
           fd.append('action', fromReports ? 'jg_admin_edit_and_resolve_reports' : 'jg_update_point');
           fd.append('_ajax_nonce', CFG.nonce);
           fd.append('post_id', p.id);
+
+          // Set category based on type
+          var selectedType = fd.get('type');
+          if (selectedType === 'miejsce') {
+            var placeCategory = fd.get('place_category');
+            if (placeCategory) {
+              fd.set('category', placeCategory);
+            } else {
+              fd.set('category', '');
+            }
+            fd.delete('place_category');
+            fd.delete('curiosity_category');
+          } else if (selectedType === 'ciekawostka') {
+            var curiosityCategory = fd.get('curiosity_category');
+            if (curiosityCategory) {
+              fd.set('category', curiosityCategory);
+            } else {
+              fd.set('category', '');
+            }
+            fd.delete('place_category');
+            fd.delete('curiosity_category');
+          } else {
+            fd.delete('place_category');
+            fd.delete('curiosity_category');
+          }
 
           fetch(CFG.ajax, {
             method: 'POST',
@@ -6510,6 +6654,8 @@
         var enabled = {};
         var promoOnly = false;
         var myPlacesOnly = false;
+        var enabledPlaceCategories = {};
+        var enabledCuriosityCategories = {};
 
         if (elFilters) {
           elFilters.querySelectorAll('input[data-type]').forEach(function(cb) {
@@ -6520,6 +6666,16 @@
           var myPlaces = elFilters.querySelector('input[data-my-places]');
           myPlacesOnly = !!(myPlaces && myPlaces.checked);
         }
+
+        // Get enabled place categories
+        document.querySelectorAll('input[data-map-place-category]').forEach(function(cb) {
+          if (cb.checked) enabledPlaceCategories[cb.getAttribute('data-map-place-category')] = true;
+        });
+
+        // Get enabled curiosity categories
+        document.querySelectorAll('input[data-map-curiosity-category]').forEach(function(cb) {
+          if (cb.checked) enabledCuriosityCategories[cb.getAttribute('data-map-curiosity-category')] = true;
+        });
 
 
         // Filter logic:
@@ -6557,7 +6713,27 @@
           }
 
           // If type filters enabled -> check if this point's type is enabled
-          return !!enabled[p.type];
+          if (!enabled[p.type]) {
+            return false;
+          }
+
+          // Category filters for places
+          if (p.type === 'miejsce' && Object.keys(enabledPlaceCategories).length > 0) {
+            // If point has no category, show it (backwards compatibility)
+            // If point has category, check if it's enabled
+            if (p.category && !enabledPlaceCategories[p.category]) {
+              return false;
+            }
+          }
+
+          // Category filters for curiosities
+          if (p.type === 'ciekawostka' && Object.keys(enabledCuriosityCategories).length > 0) {
+            if (p.category && !enabledCuriosityCategories[p.category]) {
+              return false;
+            }
+          }
+
+          return true;
         });
 
         // Debug logging
@@ -6754,10 +6930,77 @@
               apply(true); // Skip fitBounds on filter change
             });
           });
+
+          // Initialize category filters
+          initMapCategoryFilters();
         } else {
           debugError('[JG MAP] Filter container not found!');
         }
       }, 500);
+
+      // Initialize category filters for the main map
+      function initMapCategoryFilters() {
+        var placeCategories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
+        var curiosityCategories = (window.JG_MAP_CFG && JG_MAP_CFG.curiosityCategories) || {};
+        var categoryFiltersContainer = document.getElementById('jg-category-filters');
+        var placeCategoriesContainer = document.getElementById('jg-place-categories');
+        var curiosityCategoriesContainer = document.getElementById('jg-curiosity-categories');
+
+        // Generate place category checkboxes
+        if (placeCategoriesContainer && Object.keys(placeCategories).length > 0) {
+          var html = '<div class="jg-category-dropdown-header">Kategorie miejsc:</div><div class="jg-category-checkboxes">';
+          for (var key in placeCategories) {
+            if (placeCategories.hasOwnProperty(key)) {
+              var cat = placeCategories[key];
+              html += '<label class="jg-category-filter-label"><input type="checkbox" data-map-place-category="' + key + '" checked><span class="jg-filter-icon">' + (cat.icon || '📍') + '</span><span>' + cat.label + '</span></label>';
+            }
+          }
+          html += '</div>';
+          placeCategoriesContainer.innerHTML = html;
+        }
+
+        // Generate curiosity category checkboxes
+        if (curiosityCategoriesContainer && Object.keys(curiosityCategories).length > 0) {
+          var html = '<div class="jg-category-dropdown-header">Kategorie ciekawostek:</div><div class="jg-category-checkboxes">';
+          for (var key in curiosityCategories) {
+            if (curiosityCategories.hasOwnProperty(key)) {
+              var cat = curiosityCategories[key];
+              html += '<label class="jg-category-filter-label"><input type="checkbox" data-map-curiosity-category="' + key + '" checked><span class="jg-filter-icon">' + (cat.icon || '💡') + '</span><span>' + cat.label + '</span></label>';
+            }
+          }
+          html += '</div>';
+          curiosityCategoriesContainer.innerHTML = html;
+        }
+
+        // Show category filters container if there are categories
+        if (categoryFiltersContainer && (Object.keys(placeCategories).length > 0 || Object.keys(curiosityCategories).length > 0)) {
+          categoryFiltersContainer.style.display = 'block';
+        }
+
+        // Add event listeners to expand buttons
+        var expandBtns = document.querySelectorAll('.jg-filter-expand-btn');
+        expandBtns.forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var target = this.getAttribute('data-expand-target');
+            var dropdown = document.getElementById('jg-' + target);
+            if (dropdown) {
+              var isVisible = dropdown.style.display !== 'none';
+              dropdown.style.display = isVisible ? 'none' : 'block';
+              this.textContent = isVisible ? '▼' : '▲';
+            }
+          });
+        });
+
+        // Add event listeners to category checkboxes
+        var categoryCheckboxes = document.querySelectorAll('input[data-map-place-category], input[data-map-curiosity-category]');
+        categoryCheckboxes.forEach(function(cb) {
+          cb.addEventListener('change', function() {
+            apply(true);
+          });
+        });
+      }
 
       // EARLY CHECK: If there's a deep link, scroll to map FIRST before loading anything
       (function earlyScrollCheck() {

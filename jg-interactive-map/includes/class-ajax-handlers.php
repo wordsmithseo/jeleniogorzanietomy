@@ -44,6 +44,54 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Default place categories configuration
+     */
+    private static function get_default_place_categories() {
+        return array(
+            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️'),
+            'kultura' => array('label' => 'Kultura', 'icon' => '🏛️'),
+            'uslugi' => array('label' => 'Usługi', 'icon' => '🏢'),
+            'sport' => array('label' => 'Sport i rekreacja', 'icon' => '⚽'),
+            'historia' => array('label' => 'Historia i zabytki', 'icon' => '🏰'),
+            'zielen' => array('label' => 'Zieleń', 'icon' => '🌲')
+        );
+    }
+
+    /**
+     * Default curiosity categories configuration
+     */
+    private static function get_default_curiosity_categories() {
+        return array(
+            'historyczne' => array('label' => 'Historyczne', 'icon' => '📜'),
+            'przyrodnicze' => array('label' => 'Przyrodnicze', 'icon' => '🦋'),
+            'architektoniczne' => array('label' => 'Architektoniczne', 'icon' => '🏰'),
+            'legendy' => array('label' => 'Legendy i historie', 'icon' => '📖')
+        );
+    }
+
+    /**
+     * Get place categories
+     */
+    public static function get_place_categories() {
+        $custom_categories = get_option('jg_map_place_categories', null);
+        if ($custom_categories !== null && is_array($custom_categories)) {
+            return $custom_categories;
+        }
+        return self::get_default_place_categories();
+    }
+
+    /**
+     * Get curiosity categories
+     */
+    public static function get_curiosity_categories() {
+        $custom_categories = get_option('jg_map_curiosity_categories', null);
+        if ($custom_categories !== null && is_array($custom_categories)) {
+            return $custom_categories;
+        }
+        return self::get_default_curiosity_categories();
+    }
+
+    /**
      * Default category groups
      * Used as fallback if no custom groups are defined
      */
@@ -6575,6 +6623,10 @@ class JG_Map_Ajax_Handlers {
         $my_places = isset($_POST['my_places']) ? filter_var($_POST['my_places'], FILTER_VALIDATE_BOOLEAN) : false;
         $sort_by = isset($_POST['sort_by']) ? sanitize_text_field($_POST['sort_by']) : 'date_desc';
 
+        // Category filters
+        $place_categories = isset($_POST['place_categories']) ? array_map('sanitize_text_field', (array)$_POST['place_categories']) : array();
+        $curiosity_categories = isset($_POST['curiosity_categories']) ? array_map('sanitize_text_field', (array)$_POST['curiosity_categories']) : array();
+
         // SIDEBAR SHOWS ONLY PUBLISHED POINTS (not pending)
         // Pending points are visible only on the map for moderation
         $points = JG_Map_Database::get_published_points(false);
@@ -6609,6 +6661,24 @@ class JG_Map_Ajax_Handlers {
             if (!empty($type_filters)) {
                 $matches_type = in_array($point['type'], $type_filters);
                 if (!$matches_type && !$is_sponsored) {
+                    continue;
+                }
+            }
+
+            // Category filters for places
+            if ($point['type'] === 'miejsce' && !empty($place_categories) && !$is_sponsored) {
+                $point_category = isset($point['category']) ? $point['category'] : '';
+                // If point has no category, show it only if no category filter is selected
+                // If point has category, show it only if it matches selected categories
+                if (!empty($point_category) && !in_array($point_category, $place_categories)) {
+                    continue;
+                }
+            }
+
+            // Category filters for curiosities
+            if ($point['type'] === 'ciekawostka' && !empty($curiosity_categories) && !$is_sponsored) {
+                $point_category = isset($point['category']) ? $point['category'] : '';
+                if (!empty($point_category) && !in_array($point_category, $curiosity_categories)) {
                     continue;
                 }
             }
