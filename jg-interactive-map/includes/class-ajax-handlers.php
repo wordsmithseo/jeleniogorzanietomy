@@ -547,6 +547,16 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_update_report_reason', array($this, 'update_report_reason'), 1);
         add_action('wp_ajax_jg_delete_report_reason', array($this, 'delete_report_reason'), 1);
         add_action('wp_ajax_jg_suggest_reason_icon', array($this, 'suggest_reason_icon'), 1);
+
+        // Track last login time
+        add_action('wp_login', array($this, 'track_last_login'), 10, 2);
+    }
+
+    /**
+     * Track last login time
+     */
+    public function track_last_login($user_login, $user) {
+        update_user_meta($user->ID, 'jg_map_last_login', current_time('mysql', true));
     }
 
     /**
