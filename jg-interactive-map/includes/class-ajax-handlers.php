@@ -548,6 +548,16 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_delete_report_reason', array($this, 'delete_report_reason'), 1);
         add_action('wp_ajax_jg_suggest_reason_icon', array($this, 'suggest_reason_icon'), 1);
 
+        // Place categories management (admin only)
+        add_action('wp_ajax_jg_save_place_category', array($this, 'save_place_category'), 1);
+        add_action('wp_ajax_jg_update_place_category', array($this, 'update_place_category'), 1);
+        add_action('wp_ajax_jg_delete_place_category', array($this, 'delete_place_category'), 1);
+
+        // Curiosity categories management (admin only)
+        add_action('wp_ajax_jg_save_curiosity_category', array($this, 'save_curiosity_category'), 1);
+        add_action('wp_ajax_jg_update_curiosity_category', array($this, 'update_curiosity_category'), 1);
+        add_action('wp_ajax_jg_delete_curiosity_category', array($this, 'delete_curiosity_category'), 1);
+
         // Track last login time
         add_action('wp_login', array($this, 'track_last_login'), 10, 2);
     }
@@ -7630,5 +7640,305 @@ class JG_Map_Ajax_Handlers {
             'per_page' => $per_page,
             'total_pages' => ceil($total / $per_page)
         ));
+    }
+
+    /**
+     * Save new place category
+     */
+    public function save_place_category() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_place_categories_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+        $label = sanitize_text_field($_POST['label'] ?? '');
+        $icon = sanitize_text_field($_POST['icon'] ?? '📍');
+
+        if (empty($key) || empty($label)) {
+            wp_send_json_error('Klucz i nazwa są wymagane');
+            return;
+        }
+
+        $categories = self::get_place_categories();
+
+        if (isset($categories[$key])) {
+            wp_send_json_error('Kategoria o tym kluczu już istnieje');
+            return;
+        }
+
+        $categories[$key] = array(
+            'label' => $label,
+            'icon' => $icon
+        );
+        update_option('jg_map_place_categories', $categories);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'add_place_category',
+                'settings',
+                0,
+                sprintf('Dodano kategorię miejsc: %s %s (%s)', $icon, $label, $key)
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Kategoria została dodana'));
+    }
+
+    /**
+     * Update existing place category
+     */
+    public function update_place_category() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_place_categories_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+        $label = sanitize_text_field($_POST['label'] ?? '');
+        $icon = sanitize_text_field($_POST['icon'] ?? '📍');
+
+        if (empty($key) || empty($label)) {
+            wp_send_json_error('Klucz i nazwa są wymagane');
+            return;
+        }
+
+        $categories = self::get_place_categories();
+
+        if (!isset($categories[$key])) {
+            wp_send_json_error('Kategoria nie istnieje');
+            return;
+        }
+
+        $old_label = $categories[$key]['label'];
+        $categories[$key] = array(
+            'label' => $label,
+            'icon' => $icon
+        );
+        update_option('jg_map_place_categories', $categories);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'update_place_category',
+                'settings',
+                0,
+                sprintf('Zaktualizowano kategorię miejsc: %s -> %s %s', $old_label, $icon, $label)
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Kategoria została zaktualizowana'));
+    }
+
+    /**
+     * Delete place category
+     */
+    public function delete_place_category() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_place_categories_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+
+        if (empty($key)) {
+            wp_send_json_error('Klucz kategorii jest wymagany');
+            return;
+        }
+
+        $categories = self::get_place_categories();
+
+        if (!isset($categories[$key])) {
+            wp_send_json_error('Kategoria nie istnieje');
+            return;
+        }
+
+        $deleted_category = $categories[$key];
+        unset($categories[$key]);
+        update_option('jg_map_place_categories', $categories);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'delete_place_category',
+                'settings',
+                0,
+                sprintf('Usunięto kategorię miejsc: %s %s', $deleted_category['icon'] ?? '📍', $deleted_category['label'])
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Kategoria została usunięta'));
+    }
+
+    /**
+     * Save new curiosity category
+     */
+    public function save_curiosity_category() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_curiosity_categories_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+        $label = sanitize_text_field($_POST['label'] ?? '');
+        $icon = sanitize_text_field($_POST['icon'] ?? '📖');
+
+        if (empty($key) || empty($label)) {
+            wp_send_json_error('Klucz i nazwa są wymagane');
+            return;
+        }
+
+        $categories = self::get_curiosity_categories();
+
+        if (isset($categories[$key])) {
+            wp_send_json_error('Kategoria o tym kluczu już istnieje');
+            return;
+        }
+
+        $categories[$key] = array(
+            'label' => $label,
+            'icon' => $icon
+        );
+        update_option('jg_map_curiosity_categories', $categories);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'add_curiosity_category',
+                'settings',
+                0,
+                sprintf('Dodano kategorię ciekawostek: %s %s (%s)', $icon, $label, $key)
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Kategoria została dodana'));
+    }
+
+    /**
+     * Update existing curiosity category
+     */
+    public function update_curiosity_category() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_curiosity_categories_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+        $label = sanitize_text_field($_POST['label'] ?? '');
+        $icon = sanitize_text_field($_POST['icon'] ?? '📖');
+
+        if (empty($key) || empty($label)) {
+            wp_send_json_error('Klucz i nazwa są wymagane');
+            return;
+        }
+
+        $categories = self::get_curiosity_categories();
+
+        if (!isset($categories[$key])) {
+            wp_send_json_error('Kategoria nie istnieje');
+            return;
+        }
+
+        $old_label = $categories[$key]['label'];
+        $categories[$key] = array(
+            'label' => $label,
+            'icon' => $icon
+        );
+        update_option('jg_map_curiosity_categories', $categories);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'update_curiosity_category',
+                'settings',
+                0,
+                sprintf('Zaktualizowano kategorię ciekawostek: %s -> %s %s', $old_label, $icon, $label)
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Kategoria została zaktualizowana'));
+    }
+
+    /**
+     * Delete curiosity category
+     */
+    public function delete_curiosity_category() {
+        // Verify admin
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_map_curiosity_categories_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+
+        $key = sanitize_key($_POST['key'] ?? '');
+
+        if (empty($key)) {
+            wp_send_json_error('Klucz kategorii jest wymagany');
+            return;
+        }
+
+        $categories = self::get_curiosity_categories();
+
+        if (!isset($categories[$key])) {
+            wp_send_json_error('Kategoria nie istnieje');
+            return;
+        }
+
+        $deleted_category = $categories[$key];
+        unset($categories[$key]);
+        update_option('jg_map_curiosity_categories', $categories);
+
+        // Log activity
+        if (class_exists('JG_Map_Activity_Log')) {
+            JG_Map_Activity_Log::log(
+                'delete_curiosity_category',
+                'settings',
+                0,
+                sprintf('Usunięto kategorię ciekawostek: %s %s', $deleted_category['icon'] ?? '📖', $deleted_category['label'])
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Kategoria została usunięta'));
     }
 }
