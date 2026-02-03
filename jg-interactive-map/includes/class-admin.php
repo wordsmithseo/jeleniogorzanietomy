@@ -2801,6 +2801,11 @@ class JG_Map_Admin {
         // Get all users with their statistics
         $users = get_users(array('orderby' => 'registered', 'order' => 'DESC'));
 
+        // Tables for activity tracking
+        $table_history = $wpdb->prefix . 'jg_map_history';
+        $table_votes = $wpdb->prefix . 'jg_map_votes';
+        $table_reports = $wpdb->prefix . 'jg_map_reports';
+
         // Build stats for each user
         $user_stats = array();
         foreach ($users as $user) {
@@ -2827,12 +2832,52 @@ class JG_Map_Admin {
                 }
             }
 
+            // Get last login (from user meta)
+            $last_login = get_user_meta($user->ID, 'jg_map_last_login', true);
+
+            // Get last action (most recent activity across tables)
+            $last_actions = array();
+
+            // Last point added/modified
+            $last_point = $wpdb->get_var($wpdb->prepare(
+                "SELECT GREATEST(COALESCE(created_at, '1970-01-01'), COALESCE(updated_at, '1970-01-01'))
+                 FROM $points_table WHERE author_id = %d ORDER BY GREATEST(COALESCE(created_at, '1970-01-01'), COALESCE(updated_at, '1970-01-01')) DESC LIMIT 1",
+                $user->ID
+            ));
+            if ($last_point && $last_point !== '1970-01-01') $last_actions[] = $last_point;
+
+            // Last edit submitted
+            $last_edit = $wpdb->get_var($wpdb->prepare(
+                "SELECT created_at FROM $table_history WHERE user_id = %d ORDER BY created_at DESC LIMIT 1",
+                $user->ID
+            ));
+            if ($last_edit) $last_actions[] = $last_edit;
+
+            // Last vote
+            $last_vote = $wpdb->get_var($wpdb->prepare(
+                "SELECT created_at FROM $table_votes WHERE user_id = %d ORDER BY created_at DESC LIMIT 1",
+                $user->ID
+            ));
+            if ($last_vote) $last_actions[] = $last_vote;
+
+            // Last report
+            $last_report = $wpdb->get_var($wpdb->prepare(
+                "SELECT created_at FROM $table_reports WHERE user_id = %d ORDER BY created_at DESC LIMIT 1",
+                $user->ID
+            ));
+            if ($last_report) $last_actions[] = $last_report;
+
+            // Get the most recent action
+            $last_action = !empty($last_actions) ? max($last_actions) : null;
+
             $user_stats[$user->ID] = array(
                 'points' => $points_count,
                 'pending' => $pending_count,
                 'ban_status' => $ban_status,
                 'ban_until' => $ban_until,
-                'restrictions' => $restrictions
+                'restrictions' => $restrictions,
+                'last_login' => $last_login,
+                'last_action' => $last_action
             );
         }
 
@@ -2965,12 +3010,14 @@ class JG_Map_Admin {
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Użytkownik</th>
-                        <th>Miejsca</th>
-                        <th>Status</th>
-                        <th>Blokady</th>
-                        <th>Akcje</th>
+                        <th style="width:4%">ID</th>
+                        <th style="width:18%">Użytkownik</th>
+                        <th style="width:10%">Miejsca</th>
+                        <th style="width:12%">Ostatnie logowanie</th>
+                        <th style="width:12%">Ostatnia akcja</th>
+                        <th style="width:12%">Status</th>
+                        <th style="width:18%">Blokady</th>
+                        <th style="width:8%">Akcje</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -2988,6 +3035,22 @@ class JG_Map_Admin {
                                 <span style="background:#e5e7eb;padding:4px 8px;border-radius:4px"><?php echo $stats['points']; ?> opubl.</span>
                                 <?php if ($stats['pending'] > 0): ?>
                                     <span style="background:#fbbf24;padding:4px 8px;border-radius:4px;margin-left:4px"><?php echo $stats['pending']; ?> oczek.</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($stats['last_login'])): ?>
+                                    <span style="font-size:12px"><?php echo get_date_from_gmt($stats['last_login'], 'd.m.Y'); ?></span>
+                                    <br><small style="color:#666"><?php echo get_date_from_gmt($stats['last_login'], 'H:i'); ?></small>
+                                <?php else: ?>
+                                    <span style="color:#999;font-size:12px">Brak danych</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($stats['last_action'])): ?>
+                                    <span style="font-size:12px"><?php echo get_date_from_gmt($stats['last_action'], 'd.m.Y'); ?></span>
+                                    <br><small style="color:#666"><?php echo get_date_from_gmt($stats['last_action'], 'H:i'); ?></small>
+                                <?php else: ?>
+                                    <span style="color:#999;font-size:12px">Brak aktywności</span>
                                 <?php endif; ?>
                             </td>
                             <td>

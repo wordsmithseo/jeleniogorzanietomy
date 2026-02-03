@@ -977,21 +977,11 @@
             '</div>' +
             // Other activity section
             '<h3 style="margin:20px 0 16px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">📋 Inne aktywności</h3>' +
-            '<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px">' +
+            '<div style="display:grid;grid-template-columns:1fr;gap:12px">' +
             // Reports
             '<div style="padding:12px;background:#fef2f2;border-radius:8px;text-align:center">' +
-            '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">🚨 Zgłoszenia</div>' +
+            '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">🚨 Wysłane zgłoszenia</div>' +
             '<div style="font-weight:700;font-size:20px;color:#dc2626">' + stats.reports_submitted + '</div>' +
-            '</div>' +
-            // Relevance votes - yes
-            '<div style="padding:12px;background:#ecfdf5;border-radius:8px;text-align:center">' +
-            '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">✅ Aktualne</div>' +
-            '<div style="font-weight:700;font-size:20px;color:#059669">' + stats.relevance_votes_yes + '</div>' +
-            '</div>' +
-            // Relevance votes - no
-            '<div style="padding:12px;background:#fef2f2;border-radius:8px;text-align:center">' +
-            '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">❌ Nieaktualne</div>' +
-            '<div style="font-weight:700;font-size:20px;color:#dc2626">' + stats.relevance_votes_no + '</div>' +
             '</div>' +
             '</div>' +
             '</div>' +
