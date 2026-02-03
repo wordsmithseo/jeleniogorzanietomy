@@ -453,9 +453,9 @@ class JG_Map_Enqueue {
                     }
                     ?>
                     <span class="jg-top-bar-user">
-                        Zalogowano jako:&nbsp;<strong><?php echo esc_html($current_user->display_name); ?></strong><?php echo $role_icon; ?>
+                        Zalogowano jako:&nbsp;<strong><a href="#" id="jg-my-profile-link" style="color:inherit;text-decoration:none;cursor:pointer" data-user-id="<?php echo esc_attr($current_user->ID); ?>"><?php echo esc_html($current_user->display_name); ?></a></strong><?php echo $role_icon; ?>
                     </span>
-                    <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
+                    <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Zmień hasło</button>
 
                     <!-- Notifications container for real-time updates -->
                     <div id="jg-top-bar-notifications"<?php echo empty($mod_notifications) ? ' class="jg-notifications-empty"' : ''; ?>>

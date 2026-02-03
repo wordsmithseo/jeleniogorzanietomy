@@ -688,16 +688,12 @@
     }
 
     var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
-      '<h2 style="margin:0;font-size:20px;font-weight:600">Edycja profilu</h2>' +
+      '<h2 style="margin:0;font-size:20px;font-weight:600">Zmiana hasła</h2>' +
       '</div>' +
       '<div class="jg-modal-body" style="padding:24px">' +
       '<form id="jg-edit-profile-form">' +
       '<div class="jg-form-group" style="margin-bottom:20px">' +
-      '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Adres email</label>' +
-      '<input type="email" id="profile-email" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-      '</div>' +
-      '<div class="jg-form-group" style="margin-bottom:20px">' +
-      '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nowe hasło <span style="font-weight:400;color:#666;font-size:12px">(pozostaw puste, aby nie zmieniać)</span></label>' +
+      '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nowe hasło</label>' +
       '<input type="password" id="profile-password" class="jg-input" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
       '</div>' +
       '<div class="jg-form-group" style="margin-bottom:20px">' +
@@ -713,7 +709,7 @@
 
     open(modalEdit, html);
 
-    // Load current user data
+    // Load current user data to check if can delete profile
     $.ajax({
       url: CFG.ajax,
       type: 'POST',
@@ -723,8 +719,6 @@
       },
       success: function(response) {
         if (response.success && response.data) {
-          document.getElementById('profile-email').value = response.data.email || '';
-
           // Add delete profile button if user can delete their profile (not admin/moderator)
           if (response.data.can_delete_profile) {
             var deleteBtn = '<button class="jg-btn jg-btn--danger" id="delete-profile-btn" style="padding:10px 20px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-right:auto" onmouseover="this.style.background=\'#b91c1c\'" onmouseout="this.style.background=\'#dc2626\'">Usuń profil</button>';
@@ -738,18 +732,17 @@
       }
     });
 
-    // Save profile
+    // Save profile (password only)
     document.getElementById('save-profile-btn').addEventListener('click', function() {
-      var email = document.getElementById('profile-email').value;
       var password = document.getElementById('profile-password').value;
       var passwordConfirm = document.getElementById('profile-password-confirm').value;
 
-      if (!email) {
-        showAlert('Proszę wypełnić adres email');
+      if (!password) {
+        showAlert('Proszę podać nowe hasło');
         return;
       }
 
-      if (password && password !== passwordConfirm) {
+      if (password !== passwordConfirm) {
         showAlert('Hasła nie pasują do siebie');
         return;
       }
@@ -760,17 +753,15 @@
         data: {
           action: 'jg_map_update_profile',
           nonce: CFG.nonce,
-          email: email,
           password: password
         },
         success: function(response) {
           if (response.success) {
-            showAlert('Profil został zaktualizowany').then(function() {
+            showAlert('Hasło zostało zmienione').then(function() {
               close(modalEdit);
-              location.reload();
             });
           } else {
-            showAlert(response.data || 'Wystąpił błąd podczas aktualizacji profilu');
+            showAlert(response.data || 'Wystąpił błąd podczas zmiany hasła');
           }
         },
         error: function() {
@@ -875,11 +866,166 @@
     });
   }
 
+  // Open my profile modal with statistics
+  function openMyProfileModal() {
+    ensureModalsExist();
+    var CFG = window.JG_AUTH_CFG || {};
+    var modalEdit = document.getElementById('jg-map-modal-edit');
+    if (!modalEdit) {
+      alert('Nie można otworzyć modala profilu.');
+      return;
+    }
+
+    // Show loading state
+    var loadingHtml = '<div class="jg-modal-header" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+      '<h2 style="margin:0;font-size:20px;font-weight:600">Mój profil</h2>' +
+      '</div>' +
+      '<div style="padding:40px;text-align:center">' +
+      '<div style="display:inline-block;width:40px;height:40px;border:3px solid #e5e7eb;border-top-color:#667eea;border-radius:50%;animation:jg-spin 1s linear infinite"></div>' +
+      '<div style="margin-top:12px;color:#6b7280">Ładowanie statystyk...</div>' +
+      '</div>' +
+      '<style>@keyframes jg-spin { to { transform: rotate(360deg); } }</style>';
+
+    open(modalEdit, loadingHtml);
+
+    // Fetch user stats
+    $.ajax({
+      url: CFG.ajax,
+      type: 'POST',
+      data: {
+        action: 'jg_map_get_my_stats',
+        nonce: CFG.nonce
+      },
+      success: function(response) {
+        if (response.success && response.data) {
+          var data = response.data;
+          var stats = data.stats;
+          var memberSince = data.member_since ? new Date(data.member_since).toLocaleDateString('pl-PL') : '-';
+
+          var roleIcon = '';
+          if (data.is_admin) {
+            roleIcon = '<span style="color:#fbbf24;font-size:18px;margin-left:8px" title="Administrator">⭐</span>';
+          } else if (data.is_moderator) {
+            roleIcon = '<span style="color:#60a5fa;font-size:18px;margin-left:8px" title="Moderator">🛡️</span>';
+          }
+          if (data.has_sponsored) {
+            roleIcon += '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:#f59e0b;border-radius:50%;color:#fff;font-size:14px;margin-left:6px;font-weight:bold" title="Użytkownik sponsorowany">$</span>';
+          }
+
+          var html = '<div class="jg-modal-header" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;padding:20px 24px;border-radius:8px 8px 0 0;position:relative">' +
+            '<h2 style="margin:0;font-size:20px;font-weight:600">👤 ' + esc(data.display_name) + roleIcon + '</h2>' +
+            '<div style="font-size:14px;margin-top:4px;opacity:0.9">' + esc(data.role) + '</div>' +
+            '<button id="jg-profile-close" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#fff;font-size:24px;cursor:pointer;opacity:0.8;line-height:1">&times;</button>' +
+            '</div>' +
+            '<div style="padding:20px;max-height:70vh;overflow-y:auto">' +
+            // Basic info
+            '<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:12px;margin-bottom:20px">' +
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📅 Członek od</div>' +
+            '<div style="font-weight:600">' + memberSince + '</div>' +
+            '</div>' +
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">🏷️ Rola</div>' +
+            '<div style="font-weight:600">' + esc(data.role) + '</div>' +
+            '</div>' +
+            '</div>' +
+            // Stats section
+            '<h3 style="margin:0 0 16px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">📊 Podsumowanie aktywności</h3>' +
+            '<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:12px">' +
+            // Places
+            '<div style="padding:16px;background:#ecfdf5;border-radius:8px;border-left:4px solid #10b981">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📍 Dodane miejsca</div>' +
+            '<div style="font-weight:700;font-size:24px;color:#059669">' + stats.places_added + '</div>' +
+            (stats.places_pending > 0 ? '<div style="font-size:11px;color:#9ca3af;margin-top:2px">+ ' + stats.places_pending + ' oczekujących</div>' : '') +
+            '</div>' +
+            // Edits
+            '<div style="padding:16px;background:#fef3c7;border-radius:8px;border-left:4px solid #f59e0b">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📝 Edycje</div>' +
+            '<div style="font-weight:700;font-size:24px;color:#d97706">' + stats.edits_submitted + '</div>' +
+            (stats.edits_approved > 0 ? '<div style="font-size:11px;color:#9ca3af;margin-top:2px">' + stats.edits_approved + ' zatwierdzonych</div>' : '') +
+            '</div>' +
+            // Photos
+            '<div style="padding:16px;background:#fce7f3;border-radius:8px;border-left:4px solid #ec4899">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📷 Dodane zdjęcia</div>' +
+            '<div style="font-weight:700;font-size:24px;color:#db2777">' + stats.photos_added + '</div>' +
+            '</div>' +
+            // Visited places
+            '<div style="padding:16px;background:#e0e7ff;border-radius:8px;border-left:4px solid #6366f1">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">🗺️ Odwiedzone miejsca</div>' +
+            '<div style="font-weight:700;font-size:24px;color:#4f46e5">' + stats.places_visited + '</div>' +
+            '</div>' +
+            '</div>' +
+            // Votes section
+            '<h3 style="margin:20px 0 16px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">👍 Głosowanie</h3>' +
+            '<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:12px">' +
+            // Votes given
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+            '<div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">Oddane głosy</div>' +
+            '<div style="display:flex;gap:16px">' +
+            '<div><span style="color:#10b981;font-weight:600">👍 ' + stats.upvotes_given + '</span></div>' +
+            '<div><span style="color:#ef4444;font-weight:600">👎 ' + stats.downvotes_given + '</span></div>' +
+            '</div>' +
+            '</div>' +
+            // Votes received
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+            '<div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">Otrzymane głosy</div>' +
+            '<div style="display:flex;gap:16px">' +
+            '<div><span style="color:#10b981;font-weight:600">👍 ' + stats.upvotes_received + '</span></div>' +
+            '<div><span style="color:#ef4444;font-weight:600">👎 ' + stats.downvotes_received + '</span></div>' +
+            '</div>' +
+            '</div>' +
+            '</div>' +
+            // Other activity section
+            '<h3 style="margin:20px 0 16px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">📋 Inne aktywności</h3>' +
+            '<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px">' +
+            // Reports
+            '<div style="padding:12px;background:#fef2f2;border-radius:8px;text-align:center">' +
+            '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">🚨 Zgłoszenia</div>' +
+            '<div style="font-weight:700;font-size:20px;color:#dc2626">' + stats.reports_submitted + '</div>' +
+            '</div>' +
+            // Relevance votes - yes
+            '<div style="padding:12px;background:#ecfdf5;border-radius:8px;text-align:center">' +
+            '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">✅ Aktualne</div>' +
+            '<div style="font-weight:700;font-size:20px;color:#059669">' + stats.relevance_votes_yes + '</div>' +
+            '</div>' +
+            // Relevance votes - no
+            '<div style="padding:12px;background:#fef2f2;border-radius:8px;text-align:center">' +
+            '<div style="font-size:11px;color:#6b7280;margin-bottom:4px">❌ Nieaktualne</div>' +
+            '<div style="font-weight:700;font-size:20px;color:#dc2626">' + stats.relevance_votes_no + '</div>' +
+            '</div>' +
+            '</div>' +
+            '</div>' +
+            '<div style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;justify-content:flex-end;border-radius:0 0 8px 8px">' +
+            '<button id="jg-profile-close-btn" style="padding:10px 20px;background:#667eea;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#5a67d8\'" onmouseout="this.style.background=\'#667eea\'">Zamknij</button>' +
+            '</div>';
+
+          open(modalEdit, html);
+
+          // Add close handlers
+          document.getElementById('jg-profile-close').addEventListener('click', function() {
+            close(modalEdit);
+          });
+          document.getElementById('jg-profile-close-btn').addEventListener('click', function() {
+            close(modalEdit);
+          });
+        } else {
+          showAlert(response.data || 'Wystąpił błąd podczas pobierania statystyk');
+          close(modalEdit);
+        }
+      },
+      error: function() {
+        showAlert('Wystąpił błąd podczas komunikacji z serwerem');
+        close(modalEdit);
+      }
+    });
+  }
+
   // Initialize buttons when DOM is ready
   function initAuthButtons() {
     var loginBtn = document.getElementById('jg-login-btn');
     var registerBtn = document.getElementById('jg-register-btn');
     var editProfileBtn = document.getElementById('jg-edit-profile-btn');
+    var myProfileLink = document.getElementById('jg-my-profile-link');
 
     // Only attach if jg-map.js hasn't already handled them
     if (loginBtn && !loginBtn.jgHandlerAttached) {
@@ -895,6 +1041,14 @@
     if (editProfileBtn && !editProfileBtn.jgHandlerAttached) {
       editProfileBtn.addEventListener('click', openEditProfileModal);
       editProfileBtn.jgHandlerAttached = true;
+    }
+
+    if (myProfileLink && !myProfileLink.jgHandlerAttached) {
+      myProfileLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        openMyProfileModal();
+      });
+      myProfileLink.jgHandlerAttached = true;
     }
   }
 
