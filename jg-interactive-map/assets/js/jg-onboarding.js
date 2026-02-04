@@ -391,6 +391,39 @@
   }
 
   // ====================================
+  // MOBILE COLLAPSIBLE FILTERS
+  // ====================================
+
+  function initMobileFilters() {
+    if (window.innerWidth > 768) return;
+
+    var wrapper = document.getElementById('jg-map-filters-wrapper');
+    if (!wrapper || wrapper.querySelector('.jg-mobile-filters-toggle')) return;
+
+    // Create toggle button
+    var toggle = document.createElement('button');
+    toggle.className = 'jg-mobile-filters-toggle';
+    toggle.type = 'button';
+    toggle.innerHTML = '<span>Filtry i wyszukiwanie</span><span class="jg-toggle-arrow">&#x25BC;</span>';
+
+    // Start collapsed
+    wrapper.classList.add('collapsed');
+
+    toggle.addEventListener('click', function() {
+      var isCollapsed = wrapper.classList.contains('collapsed');
+      if (isCollapsed) {
+        wrapper.classList.remove('collapsed');
+        toggle.classList.add('expanded');
+      } else {
+        wrapper.classList.add('collapsed');
+        toggle.classList.remove('expanded');
+      }
+    });
+
+    wrapper.insertBefore(toggle, wrapper.firstChild);
+  }
+
+  // ====================================
   // INITIALIZATION
   // ====================================
 
@@ -399,6 +432,7 @@
     if (!mapEl) return;
 
     initHelpPanel(mapEl);
+    initMobileFilters();
 
     // Show welcome modal on first visit
     if (!getFlag(WELCOME_KEY)) {
