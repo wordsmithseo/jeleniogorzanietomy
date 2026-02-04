@@ -286,6 +286,15 @@ class JG_Map_Enqueue {
             true
         );
 
+        // Onboarding & help system (depends on main map script)
+        wp_enqueue_script(
+            'jg-map-onboarding',
+            JG_MAP_PLUGIN_URL . 'assets/js/jg-onboarding.js',
+            array('jg-map-script'),
+            JG_MAP_VERSION,
+            true
+        );
+
         // Localize script with config
         wp_localize_script(
             'jg-map-script',

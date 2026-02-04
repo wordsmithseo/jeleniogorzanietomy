@@ -566,23 +566,69 @@
   }
 
   .jg-search-panel {
-    position: static; /* Change from absolute to static - flows after filters */
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
     width: 100%;
-    max-height: 0; /* Start collapsed */
     height: auto;
-    transform: none;
-    overflow: hidden;
-    transition: max-height 0.3s ease-in-out;
-    visibility: visible; /* Always visible in DOM flow */
+    max-height: 70vh;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-in-out;
+    visibility: visible;
     pointer-events: auto;
+    z-index: 10000;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
   }
 
   .jg-search-panel.active {
-    max-height: 500px; /* Expand to show content */
+    transform: translateY(0);
   }
 
   .jg-search-results {
-    max-height: 300px;
+    max-height: 45vh;
+    overflow-y: auto;
+  }
+
+  /* Mobile: collapsible filters */
+  .jg-mobile-filters-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #8d2324 0%, #a02829 100%) !important;
+    color: #fff !important;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 600;
+    border-radius: 12px;
+    margin-bottom: 6px;
+  }
+
+  .jg-mobile-filters-toggle span {
+    color: #fff !important;
+  }
+
+  .jg-mobile-filters-toggle .jg-toggle-arrow {
+    transition: transform 0.2s;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  .jg-mobile-filters-toggle.expanded .jg-toggle-arrow {
+    transform: rotate(180deg);
+    color: #fff !important;
+  }
+
+  #jg-map-filters-wrapper.collapsed #jg-map-filters,
+  #jg-map-filters-wrapper.collapsed #jg-category-filters {
+    display: none !important;
   }
 
   /* Mobile filters - icon only */
@@ -946,6 +992,16 @@
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: auto !important;
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  #jg-help-fab {
+    bottom: 15px !important;
+    left: 15px !important;
+  }
+
+  #jg-help-btn {
     width: 56px !important;
     height: 56px !important;
   }
@@ -2722,5 +2778,498 @@
   .jg-sidebar-item__badge {
     font-size: 8px;
     padding: 2px 4px;
+  }
+}
+
+/* ========================================
+   ONBOARDING & HELP SYSTEM
+   ======================================== */
+
+/* Welcome Modal */
+.jg-onboarding-modal {
+  max-width: 560px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.jg-onboarding-header {
+  background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
+  color: #fff;
+  padding: 32px 28px 24px;
+  text-align: center;
+}
+
+.jg-onboarding-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.jg-onboarding-header p {
+  margin: 0;
+  font-size: 0.95rem;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.jg-onboarding-steps {
+  padding: 24px 28px;
+}
+
+.jg-onboarding-step {
+  display: none;
+}
+
+.jg-onboarding-step.active {
+  display: block;
+}
+
+.jg-onboarding-step h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.jg-onboarding-type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.jg-onboarding-type-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.jg-onboarding-type-item .jg-onb-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-height: 36px;
+}
+
+.jg-onboarding-type-item strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #111;
+  margin-bottom: 2px;
+}
+
+.jg-onboarding-type-item p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.jg-onboarding-how-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  counter-reset: onb-step;
+}
+
+.jg-onboarding-how-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  counter-increment: onb-step;
+}
+
+.jg-onboarding-how-item::before {
+  content: counter(onb-step);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #8d2324;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.jg-onboarding-how-item span {
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+/* Onboarding footer / nav */
+.jg-onboarding-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px 24px;
+  gap: 12px;
+}
+
+.jg-onboarding-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.jg-onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d1d5db;
+  transition: background 0.2s;
+}
+
+.jg-onboarding-dot.active {
+  background: #8d2324;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.jg-onboarding-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.jg-onboarding-nav .jg-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.jg-onboarding-btn-primary {
+  background: #8d2324 !important;
+}
+
+.jg-onboarding-btn-primary:hover {
+  background: #a02829 !important;
+}
+
+/* Help Panel (positioned above the ? FAB inside #jg-map) */
+.jg-help-panel {
+  position: absolute;
+  bottom: 100px;
+  left: 30px;
+  width: 360px;
+  max-height: 70vh;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  z-index: 9999;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: jgHelpSlideUp 0.25s ease-out;
+}
+
+@keyframes jgHelpSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jg-help-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  background: #8d2324;
+  color: #fff;
+}
+
+.jg-help-panel-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.jg-help-panel-header .jg-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0 4px;
+  opacity: 0.8;
+  line-height: 1;
+}
+
+.jg-help-panel-header .jg-close:hover {
+  opacity: 1;
+}
+
+.jg-help-panel-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.jg-help-section {
+  margin-bottom: 20px;
+}
+
+.jg-help-section:last-child {
+  margin-bottom: 0;
+}
+
+.jg-help-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #8d2324;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jg-help-section--footer {
+  text-align: center;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Help types */
+.jg-help-types {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jg-help-type {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.jg-help-type-icon {
+  flex-shrink: 0;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Colored pin dots for point types (help panel) */
+.jg-pin-dot {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.jg-pin-dot--zgloszenie {
+  background: linear-gradient(135deg, #000 0%, #1f1f1f 50%, #000 100%);
+}
+
+.jg-pin-dot--ciekawostka {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1e40af 100%);
+}
+
+.jg-pin-dot--miejsce {
+  background: linear-gradient(135deg, #15803d 0%, #22c55e 50%, #15803d 100%);
+}
+
+.jg-help-type strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #111;
+}
+
+.jg-help-type p {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* Onboarding icon variants */
+.jg-onb-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+}
+
+.jg-onb-icon svg {
+  display: block;
+}
+
+.jg-onb-icon--round {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  color: #fff;
+}
+
+/* Help steps */
+.jg-help-steps {
+  margin: 0;
+  padding-left: 20px;
+  list-style: decimal;
+}
+
+.jg-help-steps li {
+  font-size: 0.85rem;
+  color: #374151;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.jg-help-tip {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Help features */
+.jg-help-features {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jg-help-features li {
+  font-size: 0.85rem;
+  color: #374151;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #8d2324;
+}
+
+.jg-help-features li strong {
+  color: #111;
+}
+
+/* Contextual Tips (matches plugin brand) */
+.jg-tip-container {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9997;
+  animation: jgTipSlideUp 0.3s ease-out;
+  pointer-events: auto;
+}
+
+@keyframes jgTipSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.jg-tip-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(141, 35, 36, 0.35);
+  max-width: 440px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+.jg-tip-dismiss {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  line-height: 1;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.jg-tip-dismiss:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Responsive adjustments for onboarding */
+@media (max-width: 768px) {
+  .jg-help-panel {
+    left: 8px;
+    right: 8px;
+    bottom: 80px;
+    width: auto;
+    max-height: 60vh;
+  }
+
+  .jg-tip-container {
+    bottom: 80px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    width: auto;
+  }
+
+  @keyframes jgTipSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .jg-tip-content {
+    max-width: 100%;
+    font-size: 0.85rem;
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .jg-onboarding-modal {
+    max-width: 95vw !important;
+  }
+
+  .jg-onboarding-header {
+    padding: 24px 20px 18px;
+  }
+
+  .jg-onboarding-steps {
+    padding: 18px 20px;
+  }
+
+  .jg-onboarding-footer {
+    padding: 12px 20px 18px;
+    flex-direction: column;
+  }
+
+  .jg-tip-content {
+    max-width: 100%;
+    font-size: 0.82rem;
   }
 }
