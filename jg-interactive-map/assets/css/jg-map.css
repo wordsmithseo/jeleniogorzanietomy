@@ -597,26 +597,33 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
-    background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
-    color: #fff;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #8d2324 0%, #a02829 100%) !important;
+    color: #fff !important;
     border: none;
     width: 100%;
     cursor: pointer;
-    font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    font-size: 14px;
+    line-height: 1.4;
     font-weight: 600;
-    border-radius: 8px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+  }
+
+  .jg-mobile-filters-toggle span {
+    color: #fff !important;
   }
 
   .jg-mobile-filters-toggle .jg-toggle-arrow {
     transition: transform 0.2s;
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.7) !important;
   }
 
   .jg-mobile-filters-toggle.expanded .jg-toggle-arrow {
     transform: rotate(180deg);
-    color: #fff;
+    color: #fff !important;
   }
 
   #jg-map-filters-wrapper.collapsed #jg-map-filters,
@@ -985,6 +992,16 @@
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: auto !important;
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  #jg-help-fab {
+    bottom: 15px !important;
+    left: 15px !important;
+  }
+
+  #jg-help-btn {
     width: 56px !important;
     height: 56px !important;
   }
