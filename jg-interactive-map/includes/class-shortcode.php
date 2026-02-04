@@ -127,6 +127,84 @@ class JG_Map_Shortcode {
                     <div class="jg-modal-message-buttons"></div>
                 </div>
             </div>
+
+            <!-- Onboarding: Welcome Modal -->
+            <div id="jg-onboarding-modal" class="jg-modal-bg" style="z-index:99998">
+                <div class="jg-modal jg-onboarding-modal">
+                    <div id="jg-onboarding-content"></div>
+                </div>
+            </div>
+
+            <!-- Onboarding: Help Button -->
+            <button id="jg-help-btn" class="jg-help-btn" title="<?php _e('Pomoc', 'jg-map'); ?>">?</button>
+
+            <!-- Onboarding: Help Panel -->
+            <div id="jg-help-panel" class="jg-help-panel" style="display:none">
+                <div class="jg-help-panel-header">
+                    <h3><?php _e('Jak korzystać z mapy?', 'jg-map'); ?></h3>
+                    <button id="jg-help-panel-close" class="jg-close">&times;</button>
+                </div>
+                <div class="jg-help-panel-body">
+                    <div class="jg-help-section">
+                        <h4><?php _e('Typy punktów', 'jg-map'); ?></h4>
+                        <div class="jg-help-types">
+                            <div class="jg-help-type">
+                                <span class="jg-help-type-icon jg-help-type--zgloszenie">⚠️</span>
+                                <div>
+                                    <strong><?php _e('Zgłoszenie', 'jg-map'); ?></strong>
+                                    <p><?php _e('Problemy infrastrukturalne, bezpieczeństwo, dziury w drogach, uszkodzone chodniki, nielegalne wysypiska.', 'jg-map'); ?></p>
+                                </div>
+                            </div>
+                            <div class="jg-help-type">
+                                <span class="jg-help-type-icon jg-help-type--ciekawostka">💡</span>
+                                <div>
+                                    <strong><?php _e('Ciekawostka', 'jg-map'); ?></strong>
+                                    <p><?php _e('Ciekawe miejsca, historia, architektura, legendy i opowieści z okolicy.', 'jg-map'); ?></p>
+                                </div>
+                            </div>
+                            <div class="jg-help-type">
+                                <span class="jg-help-type-icon jg-help-type--miejsce">📍</span>
+                                <div>
+                                    <strong><?php _e('Miejsce', 'jg-map'); ?></strong>
+                                    <p><?php _e('Gastronomia, kultura, usługi, sport, zabytki, przyroda i inne ważne lokalizacje.', 'jg-map'); ?></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="jg-help-section">
+                        <h4><?php _e('Dodawanie punktów', 'jg-map'); ?></h4>
+                        <ol class="jg-help-steps">
+                            <li><?php _e('Zaloguj się na swoje konto', 'jg-map'); ?></li>
+                            <li><?php _e('Przybliż mapę do maksymalnego poziomu (zoom 17+)', 'jg-map'); ?></li>
+                            <li><?php _e('Kliknij na mapę w wybranym miejscu', 'jg-map'); ?></li>
+                            <li><?php _e('Wypełnij formularz i dodaj zdjęcia', 'jg-map'); ?></li>
+                            <li><?php _e('Punkt trafi do moderacji i pojawi się po zatwierdzeniu', 'jg-map'); ?></li>
+                        </ol>
+                        <p class="jg-help-tip"><?php _e('Możesz też użyć przycisku + w prawym dolnym rogu mapy, aby szybko dodać punkt po adresie.', 'jg-map'); ?></p>
+                    </div>
+                    <div class="jg-help-section">
+                        <h4><?php _e('Inne funkcje', 'jg-map'); ?></h4>
+                        <ul class="jg-help-features">
+                            <li><strong><?php _e('Głosowanie', 'jg-map'); ?></strong> — <?php _e('oceniaj punkty kciukiem w górę lub w dół', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Filtrowanie', 'jg-map'); ?></strong> — <?php _e('użyj checkboxów nad mapą, aby pokazać/ukryć typy punktów', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Wyszukiwanie', 'jg-map'); ?></strong> — <?php _e('wpisz nazwę w pole wyszukiwania, aby znaleźć punkt', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Zgłaszanie', 'jg-map'); ?></strong> — <?php _e('zgłoś nieodpowiednią treść przyciskiem w szczegółach punktu', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Edycja', 'jg-map'); ?></strong> — <?php _e('edytuj własne punkty (zmiany wymagają ponownej moderacji)', 'jg-map'); ?></li>
+                        </ul>
+                    </div>
+                    <div class="jg-help-section jg-help-section--footer">
+                        <button id="jg-help-restart-onboarding" class="jg-btn jg-btn--ghost"><?php _e('Pokaż powitanie ponownie', 'jg-map'); ?></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onboarding: Contextual Tips -->
+            <div id="jg-tip-container" class="jg-tip-container" style="display:none">
+                <div class="jg-tip-content">
+                    <span id="jg-tip-text"></span>
+                    <button id="jg-tip-dismiss" class="jg-tip-dismiss">&times;</button>
+                </div>
+            </div>
         </div>
         <?php
         return ob_get_clean();
