@@ -598,25 +598,25 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 12px;
-    background: #f9fafb;
+    background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
+    color: #fff;
     border: none;
     width: 100%;
     cursor: pointer;
     font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    color: #374151;
     font-weight: 600;
     border-radius: 8px;
-    margin-bottom: 0;
   }
 
   .jg-mobile-filters-toggle .jg-toggle-arrow {
     transition: transform 0.2s;
     font-size: 12px;
-    color: #6b7280;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .jg-mobile-filters-toggle.expanded .jg-toggle-arrow {
     transform: rotate(180deg);
+    color: #fff;
   }
 
   #jg-map-filters-wrapper.collapsed #jg-map-filters,
