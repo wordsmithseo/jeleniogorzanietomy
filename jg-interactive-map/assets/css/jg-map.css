@@ -974,11 +974,14 @@
   /* Fix Leaflet zoom control visibility on mobile */
   .leaflet-control-zoom {
     display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
     visibility: visible !important;
     opacity: 1 !important;
     z-index: 1000 !important;
     margin-left: 10px !important;
     margin-top: 10px !important;
+    overflow: hidden !important;
   }
 
   .leaflet-control-zoom a {
@@ -991,6 +994,8 @@
     justify-content: center !important;
     visibility: visible !important;
     opacity: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   /* Ensure zoom buttons are always visible and not hidden by map interactions */
