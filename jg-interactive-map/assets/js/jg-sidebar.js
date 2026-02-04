@@ -198,8 +198,8 @@
             return 'empty';
         }
 
-        // Build fingerprint from point IDs, votes, and stats
-        const pointsData = points.map(p => `${p.id}:${p.votes_count}:${p.is_promo ? 1 : 0}`).join(',');
+        // Build fingerprint from all visible/editable fields so any change triggers re-render
+        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}`).join(',');
         const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
         return pointsData + statsData;
     }
