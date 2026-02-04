@@ -1011,7 +1011,63 @@
         crossOrigin: true
       });
 
+      var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '© Esri',
+        maxZoom: 19,
+        crossOrigin: true
+      });
+
+      var currentLayerIsSatellite = false;
       tileLayer.addTo(map);
+
+      // Map/Satellite toggle control
+      var MapToggleControl = L.Control.extend({
+        options: { position: 'topright' },
+        onAdd: function() {
+          var container = L.DomUtil.create('div', 'jg-map-toggle-control leaflet-bar');
+          container.innerHTML =
+            '<div class="jg-map-toggle">' +
+              '<span class="jg-map-toggle-label jg-map-toggle-label--active" data-layer="map">Mapa</span>' +
+              '<div class="jg-map-toggle-switch" data-active="map">' +
+                '<div class="jg-map-toggle-thumb"></div>' +
+              '</div>' +
+              '<span class="jg-map-toggle-label" data-layer="satellite">Satelita</span>' +
+            '</div>';
+
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+
+          var toggle = container.querySelector('.jg-map-toggle-switch');
+          var labelMap = container.querySelector('[data-layer="map"]');
+          var labelSat = container.querySelector('[data-layer="satellite"]');
+
+          function switchLayer() {
+            if (currentLayerIsSatellite) {
+              map.removeLayer(satelliteLayer);
+              tileLayer.addTo(map);
+              currentLayerIsSatellite = false;
+              toggle.setAttribute('data-active', 'map');
+              labelMap.classList.add('jg-map-toggle-label--active');
+              labelSat.classList.remove('jg-map-toggle-label--active');
+            } else {
+              map.removeLayer(tileLayer);
+              satelliteLayer.addTo(map);
+              currentLayerIsSatellite = true;
+              toggle.setAttribute('data-active', 'satellite');
+              labelSat.classList.add('jg-map-toggle-label--active');
+              labelMap.classList.remove('jg-map-toggle-label--active');
+            }
+          }
+
+          toggle.addEventListener('click', switchLayer);
+          labelMap.addEventListener('click', function() { if (currentLayerIsSatellite) switchLayer(); });
+          labelSat.addEventListener('click', function() { if (!currentLayerIsSatellite) switchLayer(); });
+
+          return container;
+        }
+      });
+
+      map.addControl(new MapToggleControl());
 
       var cluster = null;
       var markers = [];
