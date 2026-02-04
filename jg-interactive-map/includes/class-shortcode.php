@@ -135,8 +135,12 @@ class JG_Map_Shortcode {
                 </div>
             </div>
 
-            <!-- Onboarding: Help Button -->
-            <button id="jg-help-btn" class="jg-help-btn" title="<?php _e('Pomoc', 'jg-map'); ?>">?</button>
+            <!-- Onboarding: Help Button (FAB-style, bottom-left) -->
+            <div id="jg-help-fab" class="jg-help-fab">
+                <button id="jg-help-btn" class="jg-help-fab-btn" title="<?php _e('Pomoc', 'jg-map'); ?>">
+                    <span class="jg-help-fab-icon">?</span>
+                </button>
+            </div>
 
             <!-- Onboarding: Help Panel -->
             <div id="jg-help-panel" class="jg-help-panel" style="display:none">
@@ -149,21 +153,21 @@ class JG_Map_Shortcode {
                         <h4><?php _e('Typy punktów', 'jg-map'); ?></h4>
                         <div class="jg-help-types">
                             <div class="jg-help-type">
-                                <span class="jg-help-type-icon jg-help-type--zgloszenie">⚠️</span>
+                                <span class="jg-help-type-icon"><span class="jg-pin-dot jg-pin-dot--zgloszenie"></span></span>
                                 <div>
                                     <strong><?php _e('Zgłoszenie', 'jg-map'); ?></strong>
                                     <p><?php _e('Problemy infrastrukturalne, bezpieczeństwo, dziury w drogach, uszkodzone chodniki, nielegalne wysypiska.', 'jg-map'); ?></p>
                                 </div>
                             </div>
                             <div class="jg-help-type">
-                                <span class="jg-help-type-icon jg-help-type--ciekawostka">💡</span>
+                                <span class="jg-help-type-icon"><span class="jg-pin-dot jg-pin-dot--ciekawostka"></span></span>
                                 <div>
                                     <strong><?php _e('Ciekawostka', 'jg-map'); ?></strong>
                                     <p><?php _e('Ciekawe miejsca, historia, architektura, legendy i opowieści z okolicy.', 'jg-map'); ?></p>
                                 </div>
                             </div>
                             <div class="jg-help-type">
-                                <span class="jg-help-type-icon jg-help-type--miejsce">📍</span>
+                                <span class="jg-help-type-icon"><span class="jg-pin-dot jg-pin-dot--miejsce"></span></span>
                                 <div>
                                     <strong><?php _e('Miejsce', 'jg-map'); ?></strong>
                                     <p><?php _e('Gastronomia, kultura, usługi, sport, zabytki, przyroda i inne ważne lokalizacje.', 'jg-map'); ?></p>
@@ -185,11 +189,11 @@ class JG_Map_Shortcode {
                     <div class="jg-help-section">
                         <h4><?php _e('Inne funkcje', 'jg-map'); ?></h4>
                         <ul class="jg-help-features">
-                            <li><strong><?php _e('Głosowanie', 'jg-map'); ?></strong> — <?php _e('oceniaj punkty kciukiem w górę lub w dół', 'jg-map'); ?></li>
-                            <li><strong><?php _e('Filtrowanie', 'jg-map'); ?></strong> — <?php _e('użyj checkboxów nad mapą, aby pokazać/ukryć typy punktów', 'jg-map'); ?></li>
-                            <li><strong><?php _e('Wyszukiwanie', 'jg-map'); ?></strong> — <?php _e('wpisz nazwę w pole wyszukiwania, aby znaleźć punkt', 'jg-map'); ?></li>
-                            <li><strong><?php _e('Zgłaszanie', 'jg-map'); ?></strong> — <?php _e('zgłoś nieodpowiednią treść przyciskiem w szczegółach punktu', 'jg-map'); ?></li>
-                            <li><strong><?php _e('Edycja', 'jg-map'); ?></strong> — <?php _e('edytuj własne punkty (zmiany wymagają ponownej moderacji)', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Głosowanie', 'jg-map'); ?></strong> <?php _e('oceniaj punkty kciukiem w górę lub w dół', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Filtrowanie', 'jg-map'); ?></strong> <?php _e('użyj checkboxów nad mapą, aby pokazać/ukryć typy punktów', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Wyszukiwanie', 'jg-map'); ?></strong> <?php _e('wpisz nazwę w pole wyszukiwania, aby znaleźć punkt', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Zgłaszanie', 'jg-map'); ?></strong> <?php _e('zgłoś nieodpowiednią treść przyciskiem w szczegółach punktu', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Edycja', 'jg-map'); ?></strong> <?php _e('edytuj własne punkty (zmiany wymagają ponownej moderacji)', 'jg-map'); ?></li>
                         </ul>
                     </div>
                     <div class="jg-help-section jg-help-section--footer">

@@ -2792,9 +2792,12 @@
 }
 
 .jg-onboarding-type-item .jg-onb-icon {
-  font-size: 28px;
-  line-height: 1;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-height: 36px;
 }
 
 .jg-onboarding-type-item strong {
@@ -2893,41 +2896,50 @@
   background: #a02829 !important;
 }
 
-/* Help Button (floating) */
-.jg-help-btn {
+/* Help FAB Button (mirrors the + FAB in bottom-right) */
+.jg-help-fab {
   position: absolute;
-  bottom: 90px;
-  left: 12px;
-  width: 40px;
-  height: 40px;
+  bottom: 30px;
+  left: 30px;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.jg-help-fab-btn {
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: #fff;
-  color: #8d2324;
-  border: 2px solid #8d2324;
-  font-size: 20px;
-  font-weight: 700;
+  background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
+  border: none;
   cursor: pointer;
-  z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  line-height: 1;
+  box-shadow: 0 4px 12px rgba(141, 35, 36, 0.4);
+  transition: all 0.3s ease;
+  outline: none;
 }
 
-.jg-help-btn:hover {
-  background: #8d2324;
+.jg-help-fab-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(141, 35, 36, 0.5);
+}
+
+.jg-help-fab-icon {
   color: #fff;
-  transform: scale(1.1);
+  font-size: 24px;
+  font-weight: 700;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  line-height: 1;
 }
 
 /* Help Panel */
 .jg-help-panel {
   position: absolute;
-  bottom: 140px;
-  left: 12px;
+  bottom: 95px;
+  left: 30px;
   width: 360px;
   max-height: 70vh;
   background: #fff;
@@ -3024,11 +3036,32 @@
 }
 
 .jg-help-type-icon {
-  font-size: 24px;
-  line-height: 1;
   flex-shrink: 0;
   width: 32px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Colored pin dots for point types (help panel) */
+.jg-pin-dot {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.jg-pin-dot--zgloszenie {
+  background: linear-gradient(135deg, #000 0%, #1f1f1f 50%, #000 100%);
+}
+
+.jg-pin-dot--ciekawostka {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1e40af 100%);
+}
+
+.jg-pin-dot--miejsce {
+  background: linear-gradient(135deg, #15803d 0%, #22c55e 50%, #15803d 100%);
 }
 
 .jg-help-type strong {
@@ -3042,6 +3075,28 @@
   font-size: 0.8rem;
   color: #6b7280;
   line-height: 1.4;
+}
+
+/* Onboarding icon variants */
+.jg-onb-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+}
+
+.jg-onb-icon svg {
+  display: block;
+}
+
+.jg-onb-icon--round {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  color: #fff;
 }
 
 /* Help steps */
@@ -3076,20 +3131,15 @@
   font-size: 0.85rem;
   color: #374151;
   line-height: 1.5;
-  margin-bottom: 6px;
-  padding-left: 16px;
-  position: relative;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #8d2324;
 }
 
-.jg-help-features li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 8px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #8d2324;
+.jg-help-features li strong {
+  color: #111;
 }
 
 /* Contextual Tips */
@@ -3145,10 +3195,24 @@
 
 /* Responsive adjustments for help panel */
 @media (max-width: 480px) {
+  .jg-help-fab {
+    bottom: 20px;
+    left: 16px;
+  }
+
+  .jg-help-fab-btn {
+    width: 46px;
+    height: 46px;
+  }
+
+  .jg-help-fab-icon {
+    font-size: 20px;
+  }
+
   .jg-help-panel {
     left: 8px;
     right: 8px;
-    bottom: 130px;
+    bottom: 80px;
     width: auto;
     max-height: 60vh;
   }
@@ -3172,9 +3236,5 @@
 
   .jg-tip-content {
     max-width: 90vw;
-  }
-
-  .jg-help-btn {
-    bottom: 80px;
   }
 }
