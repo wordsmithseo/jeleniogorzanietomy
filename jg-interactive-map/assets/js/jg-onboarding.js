@@ -223,12 +223,54 @@
   }
 
   // ====================================
-  // HELP PANEL
+  // HELP FAB + PANEL
   // ====================================
 
-  function initHelpPanel() {
-    var helpBtn = document.getElementById('jg-help-btn');
+  // Create the help FAB dynamically and append to #jg-map
+  // (mirrors how the + FAB is built in jg-map.js)
+  function createHelpFAB(mapEl) {
+    var container = document.createElement('div');
+    container.id = 'jg-help-fab';
+    container.style.cssText = 'position:absolute;bottom:30px;left:30px;z-index:9998;display:flex;flex-direction:column;align-items:flex-start;gap:12px;';
+
+    // Prevent map interactions when clicking the FAB area
+    var stopEvents = function(e) { e.stopPropagation(); };
+    container.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); });
+    container.addEventListener('wheel', function(e) { e.stopPropagation(); e.preventDefault(); }, { passive: false });
+    container.addEventListener('dblclick', stopEvents);
+    container.addEventListener('mousedown', stopEvents);
+
+    var btn = document.createElement('button');
+    btn.id = 'jg-help-btn';
+    btn.title = 'Pomoc';
+    btn.style.cssText = 'width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#8d2324 0%,#a02829 100%);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(141,35,36,0.4);transition:all 0.3s ease;outline:none;';
+    btn.innerHTML = '<span style="color:#fff;font-size:26px;font-weight:700;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;line-height:1;">?</span>';
+
+    btn.addEventListener('mouseenter', function() {
+      btn.style.transform = 'scale(1.1)';
+      btn.style.boxShadow = '0 6px 16px rgba(141,35,36,0.5)';
+    });
+    btn.addEventListener('mouseleave', function() {
+      btn.style.transform = 'scale(1)';
+      btn.style.boxShadow = '0 4px 12px rgba(141,35,36,0.4)';
+    });
+
+    container.appendChild(btn);
+    mapEl.appendChild(container);
+
+    return btn;
+  }
+
+  function initHelpPanel(mapEl) {
+    // Move help panel and tip container into #jg-map so they position inside the map
     var helpPanel = document.getElementById('jg-help-panel');
+    var tipContainer = document.getElementById('jg-tip-container');
+    if (helpPanel) mapEl.appendChild(helpPanel);
+    if (tipContainer) mapEl.appendChild(tipContainer);
+
+    // Create FAB button dynamically inside #jg-map
+    var helpBtn = createHelpFAB(mapEl);
+
     var closeBtn = document.getElementById('jg-help-panel-close');
     var restartBtn = document.getElementById('jg-help-restart-onboarding');
 
@@ -356,7 +398,7 @@
     var mapEl = document.getElementById('jg-map');
     if (!mapEl) return;
 
-    initHelpPanel();
+    initHelpPanel(mapEl);
 
     // Show welcome modal on first visit
     if (!getFlag(WELCOME_KEY)) {

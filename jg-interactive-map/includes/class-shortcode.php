@@ -135,14 +135,7 @@ class JG_Map_Shortcode {
                 </div>
             </div>
 
-            <!-- Onboarding: Help Button (FAB-style, bottom-left) -->
-            <div id="jg-help-fab" class="jg-help-fab">
-                <button id="jg-help-btn" class="jg-help-fab-btn" title="<?php _e('Pomoc', 'jg-map'); ?>">
-                    <span class="jg-help-fab-icon">?</span>
-                </button>
-            </div>
-
-            <!-- Onboarding: Help Panel -->
+            <!-- Onboarding: Help Panel (will be moved into #jg-map by JS) -->
             <div id="jg-help-panel" class="jg-help-panel" style="display:none">
                 <div class="jg-help-panel-header">
                     <h3><?php _e('Jak korzystać z mapy?', 'jg-map'); ?></h3>
@@ -202,7 +195,7 @@ class JG_Map_Shortcode {
                 </div>
             </div>
 
-            <!-- Onboarding: Contextual Tips -->
+            <!-- Onboarding: Contextual Tips (will be moved into #jg-map by JS) -->
             <div id="jg-tip-container" class="jg-tip-container" style="display:none">
                 <div class="jg-tip-content">
                     <span id="jg-tip-text"></span>

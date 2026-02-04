@@ -2896,56 +2896,17 @@
   background: #a02829 !important;
 }
 
-/* Help FAB Button (mirrors the + FAB in bottom-right) */
-.jg-help-fab {
-  position: absolute;
-  bottom: 30px;
-  left: 30px;
-  z-index: 9998;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.jg-help-fab-btn {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(141, 35, 36, 0.4);
-  transition: all 0.3s ease;
-  outline: none;
-}
-
-.jg-help-fab-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 20px rgba(141, 35, 36, 0.5);
-}
-
-.jg-help-fab-icon {
-  color: #fff;
-  font-size: 24px;
-  font-weight: 700;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  line-height: 1;
-}
-
-/* Help Panel */
+/* Help Panel (positioned above the ? FAB inside #jg-map) */
 .jg-help-panel {
   position: absolute;
-  bottom: 95px;
+  bottom: 100px;
   left: 30px;
   width: 360px;
   max-height: 70vh;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-  z-index: 1001;
+  z-index: 9999;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -3193,22 +3154,8 @@
   color: #fff;
 }
 
-/* Responsive adjustments for help panel */
+/* Responsive adjustments for onboarding */
 @media (max-width: 480px) {
-  .jg-help-fab {
-    bottom: 20px;
-    left: 16px;
-  }
-
-  .jg-help-fab-btn {
-    width: 46px;
-    height: 46px;
-  }
-
-  .jg-help-fab-icon {
-    font-size: 20px;
-  }
-
   .jg-help-panel {
     left: 8px;
     right: 8px;
