@@ -359,10 +359,9 @@
                 <span class="jg-sidebar-star-icon">⭐</span>
             </div>`;
         } else {
-            // Show "no photo" placeholder for non-sponsored places without image
-            imageHtml = `<div class="jg-sidebar-item__image jg-sidebar-item__image--no-photo">
-                <span class="jg-sidebar-no-photo-icon">📷</span>
-                <span class="jg-sidebar-no-photo-text">brak zdjęcia</span>
+            // Show placeholder image for non-sponsored places without image
+            imageHtml = `<div class="jg-sidebar-item__image" style="position:relative;width:80px;height:80px;flex-shrink:0;overflow:hidden;border-radius:8px;background:#f3f4f6">
+                <img src="${JG_MAP_CFG.noPhotoSidebar}" alt="${escapeHtml(point.title)}" loading="lazy" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center" />
             </div>`;
         }
 

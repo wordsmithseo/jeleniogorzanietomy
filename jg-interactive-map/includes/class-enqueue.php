@@ -324,7 +324,8 @@ class JG_Map_Enqueue {
                 'reportCategories' => JG_Map_Ajax_Handlers::get_category_groups(),
                 'reportReasons' => JG_Map_Ajax_Handlers::get_report_categories(),
                 'placeCategories' => JG_Map_Ajax_Handlers::get_place_categories(),
-                'curiosityCategories' => JG_Map_Ajax_Handlers::get_curiosity_categories()
+                'curiosityCategories' => JG_Map_Ajax_Handlers::get_curiosity_categories(),
+                'noPhotoSidebar' => home_url('/wp-content/uploads/2026/02/no_photo_sidebar.jpg')
             )
         );
 
