@@ -566,10 +566,14 @@
 /* Mobile responsive */
 @media (max-width: 768px) {
   /* Fix map height on mobile - Grid doesn't work well, use fixed height */
-  .jg-wrap {
+  .jg-wrap,
+  #jg-map-wrap {
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
   }
 
   .jg-map {
@@ -577,6 +581,7 @@
     min-height: 400px !important;
     max-height: 80dvh !important;
     overflow: hidden !important;
+    flex-shrink: 0 !important;
   }
 
   /* Top bar mobile responsive */
@@ -3322,5 +3327,291 @@
   .jg-tip-content {
     max-width: 100%;
     font-size: 0.82rem;
+  }
+}
+
+/* Mobile: Override Elementor container heights for map */
+@media (max-width: 768px) {
+  .elementor-element .jg-wrap,
+  .elementor-widget .jg-wrap,
+  .elementor-element #jg-map-wrap,
+  .elementor-widget #jg-map-wrap {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+
+  /* Ensure the map container inside Elementor behaves correctly */
+  .elementor-element .jg-map,
+  .elementor-widget .jg-map,
+  .elementor-element #jg-map,
+  .elementor-widget #jg-map {
+    height: 80dvh !important;
+    min-height: 400px !important;
+    max-height: 80dvh !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* ========================================
+   APPROVAL NOTIFICATION MODAL
+   Eye-catching modal for point approval
+   ======================================== */
+
+.jg-approval-modal-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999;
+  animation: jgApprovalFadeIn 0.3s ease-out;
+}
+
+.jg-approval-modal-bg.jg-approval-modal-closing {
+  animation: jgApprovalFadeOut 0.3s ease-out forwards;
+}
+
+@keyframes jgApprovalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes jgApprovalFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.jg-approval-modal {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  animation: jgApprovalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.jg-approval-modal-bg.jg-approval-modal-closing .jg-approval-modal {
+  animation: jgApprovalSlideDown 0.3s ease-out forwards;
+}
+
+@keyframes jgApprovalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes jgApprovalSlideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+}
+
+.jg-approval-modal-icon {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -40px auto 0;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+  animation: jgApprovalPulse 2s ease-in-out infinite;
+}
+
+@keyframes jgApprovalPulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgba(16, 185, 129, 0.6);
+  }
+}
+
+.jg-approval-checkmark {
+  font-size: 40px;
+  color: #fff;
+  font-weight: 700;
+  animation: jgCheckmarkPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+@keyframes jgCheckmarkPop {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.jg-approval-modal-content {
+  padding: 24px 28px 20px;
+}
+
+.jg-approval-modal-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 12px 0 8px;
+  background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.jg-approval-modal-subtitle {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0 0 20px;
+}
+
+.jg-approval-modal-point {
+  background: #f3f4f6;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.jg-approval-modal-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 20px;
+  align-self: flex-start;
+}
+
+.jg-approval-modal-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  text-align: left;
+  word-break: break-word;
+}
+
+.jg-approval-modal-info {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.jg-approval-modal-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 28px 24px;
+  justify-content: center;
+}
+
+.jg-approval-modal-actions .jg-btn {
+  flex: 1;
+  max-width: 160px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.jg-approval-modal-actions .jg-btn:not(.jg-btn--ghost) {
+  background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
+  border-color: #8d2324;
+  box-shadow: 0 4px 12px rgba(141, 35, 36, 0.3);
+}
+
+.jg-approval-modal-actions .jg-btn:not(.jg-btn--ghost):hover {
+  background: linear-gradient(135deg, #a02829 0%, #8d2324 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(141, 35, 36, 0.4);
+}
+
+/* Confetti container */
+.jg-approval-confetti {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+@keyframes jgConfettiFall {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(400px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Responsive adjustments for approval modal */
+@media (max-width: 480px) {
+  .jg-approval-modal {
+    max-width: 95%;
+  }
+
+  .jg-approval-modal-icon {
+    width: 70px;
+    height: 70px;
+    margin: -35px auto 0;
+  }
+
+  .jg-approval-checkmark {
+    font-size: 32px;
+  }
+
+  .jg-approval-modal-title {
+    font-size: 24px;
+  }
+
+  .jg-approval-modal-content {
+    padding: 20px 20px 16px;
+  }
+
+  .jg-approval-modal-actions {
+    flex-direction: column;
+    padding: 12px 20px 20px;
+  }
+
+  .jg-approval-modal-actions .jg-btn {
+    max-width: none;
   }
 }
