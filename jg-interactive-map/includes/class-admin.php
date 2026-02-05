@@ -3296,10 +3296,10 @@ class JG_Map_Admin {
                         success: function(response) {
                             if (response.success) {
                                 var data = response.data;
-                                $('#limit-places-display').text(data.places_remaining);
-                                $('#limit-reports-display').text(data.reports_remaining);
-                                $('#limit-places-input').val(data.places_remaining);
-                                $('#limit-reports-input').val(data.reports_remaining);
+                                $('#limit-places-display').text(data.places_remaining + ' / ' + data.places_limit);
+                                $('#limit-reports-display').text(data.reports_remaining + ' / ' + data.reports_limit);
+                                $('#limit-places-input').val(data.places_limit);
+                                $('#limit-reports-input').val(data.reports_limit);
                             }
                         }
                     });
@@ -3462,8 +3462,8 @@ class JG_Map_Admin {
                         },
                         success: function(response) {
                             if (response.success) {
-                                $('#limit-places-display').text(response.data.places_remaining);
-                                $('#limit-reports-display').text(response.data.reports_remaining);
+                                $('#limit-places-display').text(response.data.places_remaining + ' / ' + response.data.places_limit);
+                                $('#limit-reports-display').text(response.data.reports_remaining + ' / ' + response.data.reports_limit);
                                 showMessage('Limity ustawione pomyślnie!', false);
                             } else {
                                 showMessage(response.data.message || 'Błąd', true);
@@ -3488,8 +3488,8 @@ class JG_Map_Admin {
                         },
                         success: function(response) {
                             if (response.success) {
-                                $('#limit-places-display').text('5');
-                                $('#limit-reports-display').text('5');
+                                $('#limit-places-display').text(response.data.places_remaining + ' / 5');
+                                $('#limit-reports-display').text(response.data.reports_remaining + ' / 5');
                                 $('#limit-places-input').val(5);
                                 $('#limit-reports-input').val(5);
                                 showMessage('Limity zresetowane do domyślnych!', false);

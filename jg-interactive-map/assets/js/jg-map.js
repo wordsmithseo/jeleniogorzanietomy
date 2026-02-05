@@ -318,6 +318,151 @@
     });
   }
 
+  /**
+   * Show beautiful approval notification modal
+   * This modal is displayed when a user's point or edit is approved by a moderator
+   * @param {string} pointTitle - Title of the approved point
+   * @param {string} pointType - Type of point (miejsce, ciekawostka, zgloszenie)
+   * @param {number} pointId - ID of the point
+   * @param {string} approvalType - Type of approval: 'point' or 'edit'
+   */
+  function showApprovalNotification(pointTitle, pointType, pointId, approvalType) {
+    approvalType = approvalType || 'point';
+
+    // Prevent showing duplicates - track shown notifications
+    if (!window._jgApprovalNotifications) {
+      window._jgApprovalNotifications = {};
+    }
+    var notificationKey = approvalType + '_' + pointId;
+    if (window._jgApprovalNotifications[notificationKey]) {
+      return; // Already shown
+    }
+    window._jgApprovalNotifications[notificationKey] = true;
+
+    // Create modal container if it doesn't exist
+    var existingModal = document.getElementById('jg-approval-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    // Get type label and icon
+    var typeLabels = {
+      'miejsce': { label: 'Miejsce', icon: '📍', color: '#10b981' },
+      'ciekawostka': { label: 'Ciekawostka', icon: '💡', color: '#3b82f6' },
+      'zgloszenie': { label: 'Zgłoszenie', icon: '⚠️', color: '#f59e0b' }
+    };
+    var typeInfo = typeLabels[pointType] || typeLabels['miejsce'];
+
+    // Set messages based on approval type
+    var titleText = approvalType === 'edit' ? 'Edycja zatwierdzona!' : 'Gratulacje!';
+    var subtitleText = approvalType === 'edit'
+      ? 'Twoja edycja została zaakceptowana'
+      : 'Twoje miejsce zostało zaakceptowane';
+    var infoText = approvalType === 'edit'
+      ? 'Wprowadzone przez Ciebie zmiany są teraz widoczne na mapie.'
+      : 'Twój punkt jest teraz widoczny na mapie dla wszystkich użytkowników.';
+
+    // Create modal HTML with animations
+    var modalHtml = '<div id="jg-approval-modal" class="jg-approval-modal-bg">' +
+      '<div class="jg-approval-modal">' +
+        '<div class="jg-approval-modal-icon">' +
+          '<span class="jg-approval-checkmark">✓</span>' +
+        '</div>' +
+        '<div class="jg-approval-modal-content">' +
+          '<h2 class="jg-approval-modal-title">' + titleText + '</h2>' +
+          '<p class="jg-approval-modal-subtitle">' + subtitleText + '</p>' +
+          '<div class="jg-approval-modal-point">' +
+            '<span class="jg-approval-modal-type" style="background:' + typeInfo.color + '">' +
+              typeInfo.icon + ' ' + typeInfo.label +
+            '</span>' +
+            '<span class="jg-approval-modal-name">' + escapeHtml(pointTitle) + '</span>' +
+          '</div>' +
+          '<p class="jg-approval-modal-info">' + infoText + '</p>' +
+        '</div>' +
+        '<div class="jg-approval-modal-actions">' +
+          '<button class="jg-btn jg-btn--ghost" id="jg-approval-close">Zamknij</button>' +
+          '<button class="jg-btn" id="jg-approval-view">Zobacz na mapie</button>' +
+        '</div>' +
+        '<div class="jg-approval-confetti"></div>' +
+      '</div>' +
+    '</div>';
+
+    // Insert modal into DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    var modal = document.getElementById('jg-approval-modal');
+
+    // Animate confetti
+    setTimeout(function() {
+      createConfettiAnimation(modal.querySelector('.jg-approval-confetti'));
+    }, 100);
+
+    // Event handlers
+    var closeBtn = document.getElementById('jg-approval-close');
+    var viewBtn = document.getElementById('jg-approval-view');
+
+    closeBtn.onclick = function() {
+      modal.classList.add('jg-approval-modal-closing');
+      setTimeout(function() {
+        modal.remove();
+      }, 300);
+    };
+
+    viewBtn.onclick = function() {
+      modal.classList.add('jg-approval-modal-closing');
+      setTimeout(function() {
+        modal.remove();
+        // Navigate to the point on map by reloading with URL parameter
+        if (pointId) {
+          var currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set('jg_view_point', pointId);
+          window.location.href = currentUrl.toString();
+        }
+      }, 300);
+    };
+
+    // Close on background click
+    modal.onclick = function(e) {
+      if (e.target === modal) {
+        closeBtn.onclick();
+      }
+    };
+
+    // Auto-close after 15 seconds
+    setTimeout(function() {
+      if (document.getElementById('jg-approval-modal')) {
+        closeBtn.onclick();
+      }
+    }, 15000);
+  }
+
+  /**
+   * Create simple confetti animation
+   */
+  function createConfettiAnimation(container) {
+    if (!container) return;
+
+    var colors = ['#8d2324', '#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+    var confettiCount = 50;
+
+    for (var i = 0; i < confettiCount; i++) {
+      var confetti = document.createElement('div');
+      confetti.className = 'jg-confetti-piece';
+      confetti.style.cssText =
+        'position:absolute;' +
+        'width:' + (Math.random() * 8 + 4) + 'px;' +
+        'height:' + (Math.random() * 8 + 4) + 'px;' +
+        'background:' + colors[Math.floor(Math.random() * colors.length)] + ';' +
+        'left:' + (Math.random() * 100) + '%;' +
+        'top:-10px;' +
+        'border-radius:' + (Math.random() > 0.5 ? '50%' : '2px') + ';' +
+        'animation:jgConfettiFall ' + (Math.random() * 2 + 2) + 's ease-out forwards;' +
+        'animation-delay:' + (Math.random() * 0.5) + 's;' +
+        'transform:rotate(' + (Math.random() * 360) + 'deg);';
+      container.appendChild(confetti);
+    }
+  }
+
   function showError(msg) {
     debugError('[JG MAP]', msg);
     if (loadingEl) loadingEl.style.display = 'none';
@@ -2984,10 +3129,10 @@
         // Fetch user daily limits
         api('jg_admin_get_user_limits', { user_id: userId })
           .then(function(result) {
-            qs('#ulimit-places', modalAuthor).textContent = result.places_remaining;
-            qs('#ulimit-reports', modalAuthor).textContent = result.reports_remaining;
-            qs('#ulimit-places-input', modalAuthor).value = result.places_remaining;
-            qs('#ulimit-reports-input', modalAuthor).value = result.reports_remaining;
+            qs('#ulimit-places', modalAuthor).textContent = result.places_remaining + ' / ' + result.places_limit;
+            qs('#ulimit-reports', modalAuthor).textContent = result.reports_remaining + ' / ' + result.reports_limit;
+            qs('#ulimit-places-input', modalAuthor).value = result.places_limit;
+            qs('#ulimit-reports-input', modalAuthor).value = result.reports_limit;
           })
           .catch(function(err) {
             qs('#ulimit-places', modalAuthor).textContent = '?';
@@ -3150,8 +3295,8 @@
             reports_limit: reportsLimit
           })
             .then(function(result) {
-              qs('#ulimit-places', modalAuthor).textContent = result.places_remaining;
-              qs('#ulimit-reports', modalAuthor).textContent = result.reports_remaining;
+              qs('#ulimit-places', modalAuthor).textContent = result.places_remaining + ' / ' + result.places_limit;
+              qs('#ulimit-reports', modalAuthor).textContent = result.reports_remaining + ' / ' + result.reports_limit;
               msg.textContent = 'Limity ustawione!';
               msg.style.color = '#15803d';
               this.disabled = false;
@@ -3178,8 +3323,8 @@
               reports_limit: 5
             })
               .then(function(result) {
-                qs('#ulimit-places', modalAuthor).textContent = '5';
-                qs('#ulimit-reports', modalAuthor).textContent = '5';
+                qs('#ulimit-places', modalAuthor).textContent = result.places_remaining + ' / 5';
+                qs('#ulimit-reports', modalAuthor).textContent = result.reports_remaining + ' / 5';
                 qs('#ulimit-places-input', modalAuthor).value = 5;
                 qs('#ulimit-reports-input', modalAuthor).value = 5;
                 msg.textContent = 'Limity zresetowane!';
@@ -7232,6 +7377,36 @@
                 updateSyncStatus('online');
               });
               return; // Skip normal sync logic, we already refreshed
+            }
+
+            // Check for approval events for the current user
+            if (syncData.sync_events && syncData.sync_events.length > 0 && CFG.currentUserId) {
+              syncData.sync_events.forEach(function(event) {
+                // Point approval notification
+                if (event.event_type === 'point_approved' && event.metadata) {
+                  var authorId = event.metadata.author_id || event.metadata.user_id;
+                  if (authorId && parseInt(authorId) === parseInt(CFG.currentUserId)) {
+                    showApprovalNotification(
+                      event.metadata.point_title || 'Twoje miejsce',
+                      event.metadata.point_type || 'miejsce',
+                      event.point_id,
+                      'point'
+                    );
+                  }
+                }
+                // Edit approval notification
+                if (event.event_type === 'edit_approved' && event.metadata) {
+                  var editorId = event.metadata.editor_id;
+                  if (editorId && parseInt(editorId) === parseInt(CFG.currentUserId)) {
+                    showApprovalNotification(
+                      event.metadata.point_title || 'Twoja edycja',
+                      event.metadata.point_type || 'miejsce',
+                      event.point_id,
+                      'edit'
+                    );
+                  }
+                }
+              });
             }
 
             // Check if there are new/updated points

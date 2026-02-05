@@ -1344,15 +1344,19 @@ class JG_Map_Ajax_Handlers {
             update_user_meta($user_id, 'jg_map_daily_reset', $today);
         }
 
-        $limits = array(
+        // Get custom limits or use defaults
+        $default_limits = array(
             'places' => 5,  // Places + Curiosities combined
             'reports' => 5  // Reports
         );
 
+        $custom_limit = get_user_meta($user_id, 'jg_map_daily_' . $limit_type . '_limit', true);
+        $limit = ($custom_limit !== '' && $custom_limit !== false) ? intval($custom_limit) : $default_limits[$limit_type];
+
         $meta_key = 'jg_map_daily_' . $limit_type;
         $current_count = intval(get_user_meta($user_id, $meta_key, true));
 
-        if ($current_count >= $limits[$limit_type]) {
+        if ($current_count >= $limit) {
             return false;
         }
 
@@ -1409,12 +1413,18 @@ class JG_Map_Ajax_Handlers {
         $places_used = intval(get_user_meta($user_id, 'jg_map_daily_places', true));
         $reports_used = intval(get_user_meta($user_id, 'jg_map_daily_reports', true));
 
+        // Get custom limits or use defaults
+        $custom_places_limit = get_user_meta($user_id, 'jg_map_daily_places_limit', true);
+        $custom_reports_limit = get_user_meta($user_id, 'jg_map_daily_reports_limit', true);
+        $places_limit = ($custom_places_limit !== '' && $custom_places_limit !== false) ? intval($custom_places_limit) : 5;
+        $reports_limit = ($custom_reports_limit !== '' && $custom_reports_limit !== false) ? intval($custom_reports_limit) : 5;
+
         // Get monthly photo usage
         $photo_data = $this->get_monthly_photo_usage($user_id);
 
         wp_send_json_success(array(
-            'places_remaining' => max(0, 5 - $places_used),
-            'reports_remaining' => max(0, 5 - $reports_used),
+            'places_remaining' => max(0, $places_limit - $places_used),
+            'reports_remaining' => max(0, $reports_limit - $reports_used),
             'photo_used_mb' => $photo_data['used_mb'],
             'photo_limit_mb' => $photo_data['limit_mb'],
             'is_admin' => false
@@ -2779,7 +2789,8 @@ class JG_Map_Ajax_Handlers {
         // Queue sync event via dedicated sync manager
         JG_Map_Sync_Manager::get_instance()->queue_point_approved($point_id, array(
             'point_title' => $point['title'],
-            'point_type' => $point['type']
+            'point_type' => $point['type'],
+            'author_id' => intval($point['author_id'])
         ));
 
         // Log action
@@ -3786,7 +3797,9 @@ class JG_Map_Ajax_Handlers {
         // Queue sync event via dedicated sync manager
         JG_Map_Sync_Manager::get_instance()->queue_edit_approved($history['point_id'], array(
             'history_id' => $history_id,
-            'point_title' => $point['title']
+            'point_title' => $point['title'],
+            'point_type' => $point['type'],
+            'editor_id' => intval($history['user_id'])
         ));
 
         // Log action
@@ -4003,7 +4016,9 @@ class JG_Map_Ajax_Handlers {
             // Queue sync event
             JG_Map_Sync_Manager::get_instance()->queue_edit_approved($history['point_id'], array(
                 'history_id' => $history_id,
-                'point_title' => $point['title']
+                'point_title' => $point['title'],
+                'point_type' => $point['type'],
+                'editor_id' => intval($history['user_id'])
             ));
 
             // Log action
@@ -4828,9 +4843,17 @@ class JG_Map_Ajax_Handlers {
         $places_used = intval(get_user_meta($user_id, 'jg_map_daily_places', true));
         $reports_used = intval(get_user_meta($user_id, 'jg_map_daily_reports', true));
 
+        // Get custom limits or use defaults
+        $custom_places_limit = get_user_meta($user_id, 'jg_map_daily_places_limit', true);
+        $custom_reports_limit = get_user_meta($user_id, 'jg_map_daily_reports_limit', true);
+        $places_limit = ($custom_places_limit !== '' && $custom_places_limit !== false) ? intval($custom_places_limit) : 5;
+        $reports_limit = ($custom_reports_limit !== '' && $custom_reports_limit !== false) ? intval($custom_reports_limit) : 5;
+
         wp_send_json_success(array(
-            'places_remaining' => max(0, 5 - $places_used),
-            'reports_remaining' => max(0, 5 - $reports_used),
+            'places_remaining' => max(0, $places_limit - $places_used),
+            'reports_remaining' => max(0, $reports_limit - $reports_used),
+            'places_limit' => $places_limit,
+            'reports_limit' => $reports_limit,
             'is_admin' => false
         ));
     }
@@ -4863,25 +4886,23 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Calculate how many were already used
+        // Store the actual custom limits
+        update_user_meta($user_id, 'jg_map_daily_places_limit', $places_limit);
+        update_user_meta($user_id, 'jg_map_daily_reports_limit', $reports_limit);
+
+        // Get current usage
         $today = date('Y-m-d');
         $last_reset = get_user_meta($user_id, 'jg_map_daily_reset', true);
 
         // Reset if needed
         if ($last_reset !== $today) {
+            update_user_meta($user_id, 'jg_map_daily_places', 0);
+            update_user_meta($user_id, 'jg_map_daily_reports', 0);
             update_user_meta($user_id, 'jg_map_daily_reset', $today);
         }
 
         $places_used = intval(get_user_meta($user_id, 'jg_map_daily_places', true));
         $reports_used = intval(get_user_meta($user_id, 'jg_map_daily_reports', true));
-
-        // Set the "used" counter so that remaining = desired limit
-        // remaining = 5 - used, so used = 5 - remaining
-        $places_to_set = max(0, 5 - $places_limit);
-        $reports_to_set = max(0, 5 - $reports_limit);
-
-        update_user_meta($user_id, 'jg_map_daily_places', $places_to_set);
-        update_user_meta($user_id, 'jg_map_daily_reports', $reports_to_set);
 
         // Log action
         JG_Map_Activity_Log::log(
@@ -4893,8 +4914,10 @@ class JG_Map_Ajax_Handlers {
 
         wp_send_json_success(array(
             'message' => 'Limity ustawione',
-            'places_remaining' => $places_limit,
-            'reports_remaining' => $reports_limit
+            'places_remaining' => max(0, $places_limit - $places_used),
+            'reports_remaining' => max(0, $reports_limit - $reports_used),
+            'places_limit' => $places_limit,
+            'reports_limit' => $reports_limit
         ));
     }
 
