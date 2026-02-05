@@ -946,22 +946,7 @@ class JG_Interactive_Map {
         // Fallback image for og:image when point has no images
         // Facebook requires og:image to be explicitly set
         if (empty($first_image)) {
-            // Try site icon first (usually PNG)
-            $site_icon_id = get_option('site_icon');
-            if ($site_icon_id) {
-                $first_image = wp_get_attachment_image_url($site_icon_id, 'full');
-            }
-            // Try custom logo next
-            if (empty($first_image)) {
-                $custom_logo_id = get_theme_mod('custom_logo');
-                if ($custom_logo_id) {
-                    $first_image = wp_get_attachment_image_url($custom_logo_id, 'full');
-                }
-            }
-            // Final fallback: default placeholder
-            if (empty($first_image)) {
-                $first_image = home_url('/wp-content/uploads/jg-og-default.png');
-            }
+            $first_image = home_url('/wp-content/uploads/2026/02/no_photo.jpg');
         }
 
         // Try to get image dimensions for og:image:width/height (cached)
