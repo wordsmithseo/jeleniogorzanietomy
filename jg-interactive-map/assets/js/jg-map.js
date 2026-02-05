@@ -1118,7 +1118,7 @@
         maxZoom: 19,
         maxBounds: bounds,
         maxBoundsViscosity: 1.0,
-        tap: isMobile, // Enable tap on mobile
+        tap: false, // Disabled - causes false clicks from scroll gestures on mobile
         touchZoom: isMobile // Enable pinch zoom on mobile
       }).setView([lat, lng], zoom);
 
@@ -1126,32 +1126,55 @@
       if (isMobile) {
         var mapContainer = elMap;
 
+        var isDraggingMap = false;
+
         mapContainer.addEventListener('touchstart', function(e) {
           if (e.touches.length === 1) {
             // One finger - disable map dragging to allow page scroll
-            map.dragging.disable();
+            if (isDraggingMap) {
+              map.dragging.disable();
+              isDraggingMap = false;
+            }
           } else if (e.touches.length >= 2) {
             // Two or more fingers - enable map dragging
             map.dragging.enable();
+            isDraggingMap = true;
+          }
+        }, { passive: true });
+
+        mapContainer.addEventListener('touchmove', function(e) {
+          // React to finger count changes during gesture
+          if (e.touches.length >= 2 && !isDraggingMap) {
+            map.dragging.enable();
+            isDraggingMap = true;
+          } else if (e.touches.length < 2 && isDraggingMap) {
+            map.dragging.disable();
+            isDraggingMap = false;
           }
         }, { passive: true });
 
         mapContainer.addEventListener('touchend', function(e) {
-          // When fingers are lifted, disable dragging
-          if (e.touches.length < 2) {
-            map.dragging.disable();
+          // When all fingers are lifted, disable dragging
+          if (e.touches.length === 0) {
+            if (isDraggingMap) {
+              map.dragging.disable();
+              isDraggingMap = false;
+            }
           }
         }, { passive: true });
 
         mapContainer.addEventListener('touchcancel', function(e) {
           // If touch is cancelled, disable dragging
-          map.dragging.disable();
+          if (isDraggingMap) {
+            map.dragging.disable();
+            isDraggingMap = false;
+          }
         }, { passive: true });
       }
 
       // Enforce bounds strictly - reset view if user tries to go outside
       map.on('drag', function() {
-        map.panInsideBounds(bounds, { animate: false });
+        map.panInsideBounds(bounds, { animate: isMobile });
       });
 
       map.on('zoomend', function() {

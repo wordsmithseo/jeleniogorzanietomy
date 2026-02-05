@@ -526,12 +526,12 @@ class JG_Map_Enqueue {
                     touch-action: manipulation;
                 }
 
-                /* Allow touch gestures on the map container */
+                /* Allow scroll and pinch-zoom on the map container */
                 #jg-map-container,
                 #jg-map-container *,
                 .leaflet-container,
                 .leaflet-container * {
-                    touch-action: auto !important;
+                    touch-action: pan-x pan-y pinch-zoom !important;
                 }
             }
         </style>
