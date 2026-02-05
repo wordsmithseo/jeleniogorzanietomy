@@ -319,6 +319,16 @@
   }
 
   /**
+   * Escape HTML entities to prevent XSS
+   */
+  function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  /**
    * Show beautiful approval notification modal
    * This modal is displayed when a user's point or edit is approved by a moderator
    * @param {string} pointTitle - Title of the approved point
@@ -7380,33 +7390,56 @@
             }
 
             // Check for approval events for the current user
-            if (syncData.sync_events && syncData.sync_events.length > 0 && CFG.currentUserId) {
-              syncData.sync_events.forEach(function(event) {
-                // Point approval notification
-                if (event.event_type === 'point_approved' && event.metadata) {
-                  var authorId = event.metadata.author_id || event.metadata.user_id;
-                  if (authorId && parseInt(authorId) === parseInt(CFG.currentUserId)) {
-                    showApprovalNotification(
-                      event.metadata.point_title || 'Twoje miejsce',
-                      event.metadata.point_type || 'miejsce',
-                      event.point_id,
-                      'point'
-                    );
+            if (syncData.sync_events && syncData.sync_events.length > 0) {
+              if (CFG.debug) {
+                console.log('[JG MAP] Sync events received:', syncData.sync_events);
+                console.log('[JG MAP] Current user ID:', CFG.currentUserId);
+              }
+
+              if (CFG.currentUserId) {
+                syncData.sync_events.forEach(function(event) {
+                  if (CFG.debug) {
+                    console.log('[JG MAP] Processing event:', event.event_type, event.metadata);
                   }
-                }
-                // Edit approval notification
-                if (event.event_type === 'edit_approved' && event.metadata) {
-                  var editorId = event.metadata.editor_id;
-                  if (editorId && parseInt(editorId) === parseInt(CFG.currentUserId)) {
-                    showApprovalNotification(
-                      event.metadata.point_title || 'Twoja edycja',
-                      event.metadata.point_type || 'miejsce',
-                      event.point_id,
-                      'edit'
-                    );
+
+                  // Point approval notification
+                  if (event.event_type === 'point_approved' && event.metadata) {
+                    var authorId = event.metadata.author_id || event.metadata.user_id;
+                    if (CFG.debug) {
+                      console.log('[JG MAP] Point approved - author_id:', authorId, 'currentUserId:', CFG.currentUserId);
+                    }
+                    if (authorId && parseInt(authorId) === parseInt(CFG.currentUserId)) {
+                      if (CFG.debug) {
+                        console.log('[JG MAP] Showing approval notification for point:', event.point_id);
+                      }
+                      showApprovalNotification(
+                        event.metadata.point_title || 'Twoje miejsce',
+                        event.metadata.point_type || 'miejsce',
+                        event.point_id,
+                        'point'
+                      );
+                    }
                   }
-                }
-              });
+                  // Edit approval notification
+                  if (event.event_type === 'edit_approved' && event.metadata) {
+                    var editorId = event.metadata.editor_id;
+                    if (CFG.debug) {
+                      console.log('[JG MAP] Edit approved - editor_id:', editorId, 'currentUserId:', CFG.currentUserId);
+                    }
+                    if (editorId && parseInt(editorId) === parseInt(CFG.currentUserId)) {
+                      if (CFG.debug) {
+                        console.log('[JG MAP] Showing approval notification for edit:', event.point_id);
+                      }
+                      showApprovalNotification(
+                        event.metadata.point_title || 'Twoja edycja',
+                        event.metadata.point_type || 'miejsce',
+                        event.point_id,
+                        'edit'
+                      );
+                    }
+                  }
+                });
+              }
             }
 
             // Check if there are new/updated points
