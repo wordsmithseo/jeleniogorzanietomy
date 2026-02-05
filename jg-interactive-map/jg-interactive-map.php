@@ -382,7 +382,7 @@ class JG_Interactive_Map {
             $wpdb->prepare(
                 "SELECT id, title, slug, content, excerpt, lat, lng, address, type, status,
                         author_id, is_promo, website, phone, images, featured_image_index,
-                        facebook_url, instagram_url, linkedin_url, tiktok_url, created_at
+                        facebook_url, instagram_url, linkedin_url, tiktok_url, created_at, updated_at
                  FROM $table
                  WHERE slug = %s AND status = 'publish'
                  LIMIT 1",
@@ -616,7 +616,7 @@ class JG_Interactive_Map {
             </div>
 
             <?php if ($first_image): ?>
-                <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" class="jg-point-image">
+                <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" class="jg-point-image" data-pin-description="<?php echo esc_attr($point['title'] . ' - ' . $type_label . ' w Jeleniej Górze'); ?>">
             <?php endif; ?>
 
             <div class="jg-point-content">
@@ -712,6 +712,14 @@ class JG_Interactive_Map {
         $type_path = ($point['type'] === 'ciekawostka') ? 'ciekawostka' : (($point['type'] === 'zgloszenie') ? 'zgloszenie' : 'miejsce');
         $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
 
+        // Singular type label (for data-pin-description and article:section)
+        $type_labels_singular = array(
+            'miejsce' => 'Miejsce',
+            'ciekawostka' => 'Ciekawostka',
+            'zgloszenie' => 'Zgłoszenie'
+        );
+        $type_label_singular = isset($type_labels_singular[$point['type']]) ? $type_labels_singular[$point['type']] : 'Punkt';
+
         // Determine robots directive (same logic as add_point_meta_tags)
         $robots_content = 'index, follow'; // Default
         if (get_option('blog_public') == '0') {
@@ -736,9 +744,28 @@ class JG_Interactive_Map {
     <meta property="og:title" content="<?php echo esc_attr($point['title']); ?>">
     <meta property="og:description" content="<?php echo esc_attr($description); ?>">
     <meta property="og:url" content="<?php echo esc_url($url); ?>">
+    <meta property="og:site_name" content="<?php bloginfo('name'); ?>">
+    <meta property="og:locale" content="pl_PL">
     <meta property="og:image" content="<?php echo esc_url($first_image); ?>">
+    <meta property="og:image:secure_url" content="<?php echo esc_url($first_image); ?>">
+    <meta property="og:image:alt" content="<?php echo esc_attr($point['title']); ?>">
+    <meta property="og:image:type" content="<?php echo esc_attr($this->detect_image_type($first_image)); ?>">
+    <meta property="article:published_time" content="<?php echo esc_attr(get_date_from_gmt($point['created_at'], 'c')); ?>">
+    <?php if (!empty($point['updated_at'])): ?>
+    <meta property="article:modified_time" content="<?php echo esc_attr(get_date_from_gmt($point['updated_at'], 'c')); ?>">
+    <meta property="og:updated_time" content="<?php echo esc_attr(get_date_from_gmt($point['updated_at'], 'c')); ?>">
+    <?php endif; ?>
+    <meta property="article:section" content="<?php echo esc_attr($type_label_singular); ?>">
+    <meta property="article:tag" content="Jelenia Góra">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?php echo esc_attr($point['title']); ?>">
+    <meta name="twitter:description" content="<?php echo esc_attr($description); ?>">
+    <meta name="twitter:image" content="<?php echo esc_url($first_image); ?>">
+    <meta name="twitter:image:alt" content="<?php echo esc_attr($point['title']); ?>">
+    <meta name="geo.position" content="<?php echo esc_attr($point['lat'] . ';' . $point['lng']); ?>">
+    <meta name="ICBM" content="<?php echo esc_attr($point['lat'] . ', ' . $point['lng']); ?>">
     <?php
-    // Determine type label for breadcrumbs
+    // Plural type label (for breadcrumbs)
     $type_labels = array(
         'miejsce' => 'Miejsca',
         'ciekawostka' => 'Ciekawostki',
@@ -769,6 +796,22 @@ class JG_Interactive_Map {
                     "addressRegion": "Dolnośląskie",
                     "addressCountry": "PL"
                 }
+                <?php if (!empty($point['phone'])): ?>
+                ,"telephone": <?php echo json_encode($point['phone']); ?>
+                <?php endif; ?>
+                <?php if (!empty($point['website'])): ?>
+                ,"url": <?php echo json_encode($point['website']); ?>
+                <?php endif; ?>
+                <?php
+                $same_as_fb = array();
+                if (!empty($point['facebook_url'])) $same_as_fb[] = $point['facebook_url'];
+                if (!empty($point['instagram_url'])) $same_as_fb[] = $point['instagram_url'];
+                if (!empty($point['linkedin_url'])) $same_as_fb[] = $point['linkedin_url'];
+                if (!empty($point['tiktok_url'])) $same_as_fb[] = $point['tiktok_url'];
+                if (!empty($point['website'])) $same_as_fb[] = $point['website'];
+                if (!empty($same_as_fb)): ?>
+                ,"sameAs": <?php echo json_encode($same_as_fb); ?>
+                <?php endif; ?>
             },
             {
                 "@type": "BreadcrumbList",
@@ -814,7 +857,7 @@ class JG_Interactive_Map {
 <body>
     <h1><?php echo esc_html($point['title']); ?></h1>
     <?php if ($first_image): ?>
-    <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>">
+    <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" data-pin-description="<?php echo esc_attr($point['title'] . ' - ' . $type_label_singular . ' w Jeleniej Górze'); ?>">
     <?php endif; ?>
     <div><?php echo wp_kses_post($point['content']); ?></div>
     <?php if (!empty($point['address'])): ?>
@@ -829,6 +872,22 @@ class JG_Interactive_Map {
     <?php endif; ?>
 </body>
 </html><?php
+    }
+
+    /**
+     * Detect image MIME type from URL extension
+     */
+    private function detect_image_type($url) {
+        $extension = strtolower(pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
+        $types = array(
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'webp' => 'image/webp',
+            'svg'  => 'image/svg+xml',
+        );
+        return isset($types[$extension]) ? $types[$extension] : 'image/jpeg';
     }
 
     /**
@@ -905,6 +964,30 @@ class JG_Interactive_Map {
             }
         }
 
+        // Try to get image dimensions for og:image:width/height (cached)
+        $img_width = 0;
+        $img_height = 0;
+        if (!empty($first_image)) {
+            $cache_key = 'jg_img_dim_' . md5($first_image);
+            $cached = get_transient($cache_key);
+            if ($cached !== false) {
+                $img_width = $cached['w'];
+                $img_height = $cached['h'];
+            } else {
+                // Convert URL to local path for faster access
+                $upload_dir = wp_upload_dir();
+                $local_path = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], $first_image);
+                if (file_exists($local_path)) {
+                    $size = @getimagesize($local_path);
+                    if ($size) {
+                        $img_width = $size[0];
+                        $img_height = $size[1];
+                    }
+                }
+                set_transient($cache_key, array('w' => $img_width, 'h' => $img_height), DAY_IN_SECONDS);
+            }
+        }
+
         // Meta description for Google search results (max 160 chars recommended)
         if (!empty($point['excerpt'])) {
             $description = wp_trim_words(strip_tags($point['excerpt']), 25);
@@ -924,6 +1007,14 @@ class JG_Interactive_Map {
 
         $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
 
+        // Determine type labels (used in OG article:section and JSON-LD breadcrumbs)
+        $type_labels = array(
+            'miejsce' => 'Miejsca',
+            'ciekawostka' => 'Ciekawostki',
+            'zgloszenie' => 'Zgłoszenia'
+        );
+        $type_label = isset($type_labels[$point['type']]) ? $type_labels[$point['type']] : 'Mapa';
+
         ?>
         <meta name="description" content="<?php echo esc_attr($description); ?>">
         <meta name="robots" content="<?php echo esc_attr($robots_content); ?>">
@@ -938,7 +1029,20 @@ class JG_Interactive_Map {
         <meta property="og:image" content="<?php echo esc_url($first_image); ?>">
         <meta property="og:image:secure_url" content="<?php echo esc_url($first_image); ?>">
         <meta property="og:image:alt" content="<?php echo esc_attr($point['title']); ?>">
-        <meta property="og:image:type" content="image/jpeg">
+        <meta property="og:image:type" content="<?php echo esc_attr($this->detect_image_type($first_image)); ?>">
+        <?php if ($img_width > 0 && $img_height > 0): ?>
+        <meta property="og:image:width" content="<?php echo (int)$img_width; ?>">
+        <meta property="og:image:height" content="<?php echo (int)$img_height; ?>">
+        <?php endif; ?>
+
+        <!-- Article metadata for Rich Pins -->
+        <meta property="article:published_time" content="<?php echo esc_attr(get_date_from_gmt($point['created_at'], 'c')); ?>">
+        <?php if (!empty($point['updated_at'])): ?>
+        <meta property="article:modified_time" content="<?php echo esc_attr(get_date_from_gmt($point['updated_at'], 'c')); ?>">
+        <meta property="og:updated_time" content="<?php echo esc_attr(get_date_from_gmt($point['updated_at'], 'c')); ?>">
+        <?php endif; ?>
+        <meta property="article:section" content="<?php echo esc_attr($type_label); ?>">
+        <meta property="article:tag" content="Jelenia Góra">
 
         <!-- Twitter Card -->
         <meta name="twitter:card" content="summary_large_image">
@@ -955,15 +1059,6 @@ class JG_Interactive_Map {
         <link rel="canonical" href="<?php echo esc_url($url); ?>">
 
         <!-- Schema.org JSON-LD structured data -->
-        <?php
-        // Determine type label for breadcrumbs
-        $type_labels = array(
-            'miejsce' => 'Miejsca',
-            'ciekawostka' => 'Ciekawostki',
-            'zgloszenie' => 'Zgłoszenia'
-        );
-        $type_label = isset($type_labels[$point['type']]) ? $type_labels[$point['type']] : 'Mapa';
-        ?>
         <script type="application/ld+json">
         {
             "@context": "https://schema.org",
@@ -993,7 +1088,18 @@ class JG_Interactive_Map {
                     ,"telephone": <?php echo json_encode($point['phone']); ?>
                     <?php endif; ?>
                     <?php if (!empty($point['website'])): ?>
-                    ,"sameAs": <?php echo json_encode($point['website']); ?>
+                    ,"url": <?php echo json_encode($point['website']); ?>
+                    <?php endif; ?>
+                    <?php
+                    // sameAs should reference social media profiles, not the business website
+                    $same_as = array();
+                    if (!empty($point['facebook_url'])) $same_as[] = $point['facebook_url'];
+                    if (!empty($point['instagram_url'])) $same_as[] = $point['instagram_url'];
+                    if (!empty($point['linkedin_url'])) $same_as[] = $point['linkedin_url'];
+                    if (!empty($point['tiktok_url'])) $same_as[] = $point['tiktok_url'];
+                    if (!empty($point['website'])) $same_as[] = $point['website'];
+                    if (!empty($same_as)): ?>
+                    ,"sameAs": <?php echo json_encode($same_as); ?>
                     <?php endif; ?>
                 },
                 {
@@ -1101,9 +1207,9 @@ class JG_Interactive_Map {
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
-        // Get all published points with slug - with error handling
+        // Get all published points with slug and images - with error handling
         $points = $wpdb->get_results(
-            "SELECT id, title, slug, type, updated_at
+            "SELECT id, title, slug, type, images, featured_image_index, updated_at
              FROM $table
              WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''
              ORDER BY updated_at DESC",
@@ -1138,7 +1244,8 @@ class JG_Interactive_Map {
         echo '<?xml version="1.0" encoding="UTF-8"?>';
         echo "\n";
         ?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 <?php foreach ($points as $point):
     // Determine URL path based on point type
     $type_path = 'miejsce'; // default
@@ -1150,12 +1257,36 @@ class JG_Interactive_Map {
 
     $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
     $lastmod = get_date_from_gmt($point['updated_at'], 'Y-m-d');
+
+    // Parse images for image sitemap extension
+    $point_images = json_decode($point['images'], true) ?: array();
+    $sitemap_images = array();
+    foreach ($point_images as $img) {
+        $img_url = '';
+        if (is_array($img)) {
+            $img_url = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
+        } else {
+            $img_url = $img;
+        }
+        if ($img_url && strpos($img_url, 'http') !== 0) {
+            $img_url = home_url($img_url);
+        }
+        if ($img_url) {
+            $sitemap_images[] = $img_url;
+        }
+    }
 ?>
     <url>
         <loc><?php echo esc_url($url); ?></loc>
         <lastmod><?php echo $lastmod; ?></lastmod>
         <changefreq>weekly</changefreq>
         <priority><?php echo $point['type'] === 'miejsce' ? '0.8' : '0.6'; ?></priority>
+<?php foreach ($sitemap_images as $sitemap_img): ?>
+        <image:image>
+            <image:loc><?php echo esc_url($sitemap_img); ?></image:loc>
+            <image:title><?php echo esc_html($point['title']); ?></image:title>
+        </image:image>
+<?php endforeach; ?>
     </url>
 <?php endforeach; ?>
 </urlset>
