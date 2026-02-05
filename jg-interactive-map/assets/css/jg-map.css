@@ -2071,11 +2071,11 @@
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   max-width: 100%;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden; /* Prevent horizontal overflow */
   box-sizing: border-box; /* Ensure height includes padding and border */
   min-height: 0; /* Allow flex children to shrink below content size */
   margin: 0 !important;
@@ -2106,6 +2106,7 @@
   align-items: center;
   gap: 12px;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .jg-sidebar-stat {
@@ -2135,6 +2136,7 @@
   padding: 12px 15px;
   border-bottom: 1px solid #e5e7eb;
   background: #fafafa;
+  flex-shrink: 0;
 }
 
 /* Collapsible header styles - Use stronger selector to ensure it applies */
@@ -2297,7 +2299,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 10px;
-  min-height: 0; /* Fix for Firefox flex overflow bug */
+  min-height: 200px; /* Ensure list stays visible when filters are expanded */
 }
 
 /* Custom scrollbar for sidebar list */
