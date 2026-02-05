@@ -2844,8 +2844,11 @@
 /* Welcome Modal */
 .jg-onboarding-modal {
   max-width: 560px !important;
+  max-height: min(85vh, 600px) !important;
   padding: 0 !important;
   overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .jg-onboarding-header {
@@ -2853,6 +2856,7 @@
   color: #fff;
   padding: 32px 28px 24px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .jg-onboarding-header h2 {
@@ -2870,6 +2874,9 @@
 
 .jg-onboarding-steps {
   padding: 24px 28px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .jg-onboarding-step {
@@ -2968,6 +2975,9 @@
   justify-content: space-between;
   padding: 16px 28px 24px;
   gap: 12px;
+  flex-shrink: 0;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
 }
 
 .jg-onboarding-dots {
@@ -3327,6 +3337,107 @@
   .jg-tip-content {
     max-width: 100%;
     font-size: 0.82rem;
+  }
+}
+
+/* Compact onboarding for smaller viewport heights (laptops) */
+@media (max-height: 700px) {
+  .jg-onboarding-modal {
+    max-height: 90vh !important;
+  }
+
+  .jg-onboarding-header {
+    padding: 20px 24px 16px;
+  }
+
+  .jg-onboarding-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .jg-onboarding-header p {
+    font-size: 0.875rem;
+  }
+
+  .jg-onboarding-steps {
+    padding: 16px 24px;
+  }
+
+  .jg-onboarding-step h3 {
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+  }
+
+  .jg-onboarding-type-list {
+    gap: 8px;
+  }
+
+  .jg-onboarding-type-item {
+    padding: 10px;
+  }
+
+  .jg-onboarding-type-item p {
+    font-size: 0.8rem;
+  }
+
+  .jg-onboarding-how-list {
+    gap: 8px;
+  }
+
+  .jg-onboarding-how-item::before {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+
+  .jg-onboarding-how-item span {
+    font-size: 0.85rem;
+  }
+
+  .jg-onboarding-footer {
+    padding: 12px 24px 16px;
+  }
+
+  .jg-onboarding-nav .jg-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+/* Very small viewport height */
+@media (max-height: 550px) {
+  .jg-onboarding-modal {
+    max-height: 95vh !important;
+  }
+
+  .jg-onboarding-header {
+    padding: 14px 20px 12px;
+  }
+
+  .jg-onboarding-header h2 {
+    font-size: 1.15rem;
+    margin-bottom: 4px;
+  }
+
+  .jg-onboarding-header p {
+    font-size: 0.8rem;
+  }
+
+  .jg-onboarding-steps {
+    padding: 12px 20px;
+  }
+
+  .jg-onboarding-type-item {
+    padding: 8px;
+    gap: 10px;
+  }
+
+  .jg-onboarding-type-item .jg-onb-icon {
+    width: 28px;
+    min-height: 28px;
+  }
+
+  .jg-onboarding-footer {
+    padding: 10px 20px 12px;
   }
 }
 
