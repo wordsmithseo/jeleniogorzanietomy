@@ -3482,6 +3482,9 @@
   justify-content: center;
   z-index: 999999;
   animation: jgApprovalFadeIn 0.3s ease-out;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .jg-approval-modal-bg.jg-approval-modal-closing {
@@ -3511,11 +3514,14 @@
   border-radius: 20px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   max-width: 420px;
-  width: 90%;
+  width: 100%;
+  max-height: calc(100vh - 40px);
   text-align: center;
   position: relative;
   overflow: hidden;
+  overflow-y: auto;
   animation: jgApprovalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin: auto;
 }
 
 .jg-approval-modal-bg.jg-approval-modal-closing .jg-approval-modal {
@@ -3693,7 +3699,88 @@
   }
 }
 
-/* Responsive adjustments for approval modal */
+/* Responsive adjustments for approval modal - small height screens (laptops) */
+@media (max-height: 700px) {
+  .jg-approval-modal-bg {
+    padding: 10px;
+    align-items: flex-start;
+  }
+
+  .jg-approval-modal {
+    margin-top: 20px;
+    max-height: calc(100vh - 40px);
+  }
+
+  .jg-approval-modal-icon {
+    width: 60px;
+    height: 60px;
+    margin: -30px auto 0;
+  }
+
+  .jg-approval-checkmark {
+    font-size: 28px;
+  }
+
+  .jg-approval-modal-title {
+    font-size: 22px;
+    margin: 8px 0 6px;
+  }
+
+  .jg-approval-modal-subtitle {
+    font-size: 14px;
+    margin: 0 0 14px;
+  }
+
+  .jg-approval-modal-content {
+    padding: 16px 20px 14px;
+  }
+
+  .jg-approval-modal-point {
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+
+  .jg-approval-modal-info {
+    font-size: 13px;
+  }
+
+  .jg-approval-modal-actions {
+    padding: 12px 20px 16px;
+    gap: 10px;
+  }
+
+  .jg-approval-modal-actions .jg-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
+/* Responsive adjustments for approval modal - very small height screens */
+@media (max-height: 550px) {
+  .jg-approval-modal-icon {
+    width: 50px;
+    height: 50px;
+    margin: -25px auto 0;
+  }
+
+  .jg-approval-checkmark {
+    font-size: 24px;
+  }
+
+  .jg-approval-modal-title {
+    font-size: 20px;
+  }
+
+  .jg-approval-modal-content {
+    padding: 12px 16px 10px;
+  }
+
+  .jg-approval-modal-actions {
+    padding: 10px 16px 14px;
+  }
+}
+
+/* Responsive adjustments for approval modal - narrow screens */
 @media (max-width: 480px) {
   .jg-approval-modal {
     max-width: 95%;
@@ -3724,5 +3811,34 @@
 
   .jg-approval-modal-actions .jg-btn {
     max-width: none;
+  }
+}
+
+/* Combined small height AND narrow width */
+@media (max-height: 600px) and (max-width: 480px) {
+  .jg-approval-modal-icon {
+    width: 50px;
+    height: 50px;
+    margin: -25px auto 0;
+  }
+
+  .jg-approval-checkmark {
+    font-size: 24px;
+  }
+
+  .jg-approval-modal-title {
+    font-size: 20px;
+  }
+
+  .jg-approval-modal-subtitle {
+    font-size: 13px;
+  }
+
+  .jg-approval-modal-content {
+    padding: 12px 16px 10px;
+  }
+
+  .jg-approval-modal-actions {
+    padding: 10px 16px 14px;
   }
 }
