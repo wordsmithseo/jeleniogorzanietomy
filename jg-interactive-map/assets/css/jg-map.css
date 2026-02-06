@@ -576,11 +576,47 @@ body.jg-fullscreen-active {
   background: #fff;
 }
 
+/* Hide the filter bar in fullscreen - map takes full area */
+#jg-map-wrap.jg-fullscreen #jg-map-filters-wrapper {
+  display: none !important;
+}
+
 #jg-map-wrap.jg-fullscreen .jg-map {
   flex: 1 !important;
   height: 100% !important;
   max-height: none !important;
   border-radius: 0 !important;
+}
+
+/* ── Fullscreen: Floating filter button (mobile) ── */
+.jg-fs-filter-btn {
+  display: none;
+}
+
+/* ── Fullscreen: Floating filter panel ── */
+.jg-fs-filter-panel {
+  display: none;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 1002;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.jg-fs-filter-panel.active {
+  display: block;
+}
+
+.jg-fs-filter-panel .jg-filters {
+  margin-bottom: 0;
 }
 
 /* Desktop fullscreen: sidebar as rounded overlay panel inside the map */
@@ -615,28 +651,49 @@ body.jg-fullscreen-active {
   }
 }
 
-/* Mobile fullscreen: map fills entire screen */
+/* Mobile fullscreen */
 @media (max-width: 768px) {
-  #jg-map-wrap.jg-fullscreen {
-    grid-template-rows: 1fr !important;
-  }
-
   #jg-map-wrap.jg-fullscreen .jg-map {
     height: 100dvh !important;
     max-height: 100dvh !important;
     min-height: 100dvh !important;
   }
 
-  /* Filters bar stays on top as overlay - ABOVE all Leaflet controls */
-  #jg-map-wrap.jg-fullscreen #jg-map-filters-wrapper {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 10001 !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
+  /* Floating filter button visible in fullscreen on mobile */
+  .jg-fs-filter-btn {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1001;
+    background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: opacity 0.2s;
+    line-height: 1.4;
+  }
+
+  .jg-fs-filter-btn.visible {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .jg-fs-filter-btn:active {
+    opacity: 0.85;
+  }
+
+  .jg-fs-filter-panel {
+    top: 50px;
+    left: 8px;
+    right: 8px;
   }
 
   .jg-fullscreen-control {

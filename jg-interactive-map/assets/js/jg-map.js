@@ -1281,15 +1281,110 @@
           var sidebarOriginalParent = sidebar ? sidebar.parentNode : null;
           var sidebarOriginalNext = sidebar ? sidebar.nextSibling : null;
 
+          // Create floating filter button for mobile fullscreen
+          var fsFilterBtn = document.createElement('button');
+          fsFilterBtn.className = 'jg-fs-filter-btn';
+          fsFilterBtn.type = 'button';
+          fsFilterBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg><span>Filtry</span>';
+          elMap.appendChild(fsFilterBtn);
+
+          // Create floating filter panel
+          var fsFilterPanel = document.createElement('div');
+          fsFilterPanel.className = 'jg-fs-filter-panel';
+          elMap.appendChild(fsFilterPanel);
+
+          fsFilterBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fsFilterPanel.classList.toggle('active');
+          });
+
+          // Close panel when clicking on the map
+          elMap.addEventListener('click', function() {
+            if (fsFilterPanel.classList.contains('active')) {
+              fsFilterPanel.classList.remove('active');
+            }
+          });
+
+          fsFilterPanel.addEventListener('click', function(e) {
+            e.stopPropagation();
+          });
+
           function enterFullscreen() {
             isFullscreen = true;
             mapWrap.classList.add('jg-fullscreen');
             document.body.classList.add('jg-fullscreen-active');
             if (sidebar) {
-              // Move sidebar into the map element so it's contained within the map area
               elMap.appendChild(sidebar);
               sidebar.classList.add('jg-sidebar-fullscreen-overlay');
             }
+
+            // Clone filters into the floating panel
+            var filtersEl = document.getElementById('jg-map-filters');
+            var categoryFiltersEl = document.getElementById('jg-category-filters');
+            if (filtersEl) {
+              var filtersClone = filtersEl.cloneNode(true);
+              filtersClone.id = 'jg-fs-filters-clone';
+              filtersClone.style.display = '';
+              fsFilterPanel.innerHTML = '';
+              fsFilterPanel.appendChild(filtersClone);
+
+              // Sync checkbox clicks from clone to original
+              var cloneCheckboxes = filtersClone.querySelectorAll('input[type="checkbox"]');
+              cloneCheckboxes.forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                  var origCb;
+                  if (cb.dataset.type) {
+                    origCb = filtersEl.querySelector('input[data-type="' + cb.dataset.type + '"]');
+                  } else if (cb.hasAttribute('data-my-places')) {
+                    origCb = filtersEl.querySelector('input[data-my-places]');
+                  } else if (cb.hasAttribute('data-promo')) {
+                    origCb = filtersEl.querySelector('input[data-promo]');
+                  }
+                  if (origCb) {
+                    origCb.checked = cb.checked;
+                    origCb.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                });
+              });
+
+              // Sync search input
+              var cloneSearch = filtersClone.querySelector('#jg-search-input');
+              if (cloneSearch) {
+                cloneSearch.id = 'jg-fs-search-input';
+                var origSearch = document.getElementById('jg-search-input');
+                cloneSearch.addEventListener('input', function() {
+                  if (origSearch) origSearch.value = cloneSearch.value;
+                });
+                cloneSearch.addEventListener('keydown', function(ev) {
+                  if (ev.key === 'Enter' && origSearch) {
+                    origSearch.value = cloneSearch.value;
+                    origSearch.dispatchEvent(new Event('input', { bubbles: true }));
+                    var origBtn = document.getElementById('jg-search-btn');
+                    if (origBtn) origBtn.click();
+                    fsFilterPanel.classList.remove('active');
+                  }
+                });
+                var cloneSearchBtn = filtersClone.querySelector('.jg-search-btn');
+                if (cloneSearchBtn) {
+                  cloneSearchBtn.addEventListener('click', function(ev) {
+                    ev.preventDefault();
+                    if (origSearch) {
+                      origSearch.value = cloneSearch.value;
+                      origSearch.dispatchEvent(new Event('input', { bubbles: true }));
+                      var origBtn = document.getElementById('jg-search-btn');
+                      if (origBtn) origBtn.click();
+                    }
+                    fsFilterPanel.classList.remove('active');
+                  });
+                }
+              }
+            }
+
+            // Show filter button on mobile
+            if (window.innerWidth <= 768) {
+              fsFilterBtn.classList.add('visible');
+            }
+
             btn.innerHTML = exitIcon;
             btn.title = 'Zamknij pełny ekran';
             setTimeout(function() { map.invalidateSize(); }, 350);
@@ -1301,13 +1396,15 @@
             document.body.classList.remove('jg-fullscreen-active');
             if (sidebar) {
               sidebar.classList.remove('jg-sidebar-fullscreen-overlay');
-              // Move sidebar back to its original position in the DOM
               if (sidebarOriginalNext) {
                 sidebarOriginalParent.insertBefore(sidebar, sidebarOriginalNext);
               } else {
                 sidebarOriginalParent.appendChild(sidebar);
               }
             }
+            fsFilterBtn.classList.remove('visible');
+            fsFilterPanel.classList.remove('active');
+            fsFilterPanel.innerHTML = '';
             btn.innerHTML = enterIcon;
             btn.title = 'Pełny ekran';
             setTimeout(function() { map.invalidateSize(); }, 350);
