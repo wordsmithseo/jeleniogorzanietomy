@@ -1118,6 +1118,7 @@
         maxZoom: 19,
         maxBounds: bounds,
         maxBoundsViscosity: 1.0,
+        bounceAtZoomLimits: false, // Prevent elastic bounce at min/max zoom on mobile
         tap: isMobile, // Enable tap on mobile
         touchZoom: isMobile // Enable pinch zoom on mobile
       }).setView([lat, lng], zoom);
@@ -1172,21 +1173,52 @@
         crossOrigin: true
       });
 
-      var currentLayerIsSatellite = false;
-      tileLayer.addTo(map);
+      // Cookie helpers for map layer preference
+      function setMapCookie(name, value, days) {
+        var expires = '';
+        if (days) {
+          var date = new Date();
+          date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+          expires = '; expires=' + date.toUTCString();
+        }
+        document.cookie = name + '=' + encodeURIComponent(value) + expires + '; path=/; SameSite=Lax';
+      }
+
+      function getMapCookie(name) {
+        var nameEQ = name + '=';
+        var ca = document.cookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+          var c = ca[i].trim();
+          if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length));
+        }
+        return null;
+      }
+
+      // Restore saved layer preference from cookie
+      var savedLayer = getMapCookie('jg_map_layer');
+      var currentLayerIsSatellite = (savedLayer === 'satellite');
+
+      if (currentLayerIsSatellite) {
+        satelliteLayer.addTo(map);
+      } else {
+        tileLayer.addTo(map);
+      }
 
       // Map/Satellite toggle control
       var MapToggleControl = L.Control.extend({
         options: { position: 'topright' },
         onAdd: function() {
           var container = L.DomUtil.create('div', 'jg-map-toggle-control leaflet-bar');
+          var activeMap = currentLayerIsSatellite ? '' : ' jg-map-toggle-label--active';
+          var activeSat = currentLayerIsSatellite ? ' jg-map-toggle-label--active' : '';
+          var activeData = currentLayerIsSatellite ? 'satellite' : 'map';
           container.innerHTML =
             '<div class="jg-map-toggle">' +
-              '<span class="jg-map-toggle-label jg-map-toggle-label--active" data-layer="map">Mapa</span>' +
-              '<div class="jg-map-toggle-switch" data-active="map">' +
+              '<span class="jg-map-toggle-label' + activeMap + '" data-layer="map">Mapa</span>' +
+              '<div class="jg-map-toggle-switch" data-active="' + activeData + '">' +
                 '<div class="jg-map-toggle-thumb"></div>' +
               '</div>' +
-              '<span class="jg-map-toggle-label" data-layer="satellite">Satelita</span>' +
+              '<span class="jg-map-toggle-label' + activeSat + '" data-layer="satellite">Satelita</span>' +
             '</div>';
 
           L.DomEvent.disableClickPropagation(container);
@@ -1204,6 +1236,7 @@
               toggle.setAttribute('data-active', 'map');
               labelMap.classList.add('jg-map-toggle-label--active');
               labelSat.classList.remove('jg-map-toggle-label--active');
+              setMapCookie('jg_map_layer', 'map', 365);
             } else {
               map.removeLayer(tileLayer);
               satelliteLayer.addTo(map);
@@ -1211,6 +1244,7 @@
               toggle.setAttribute('data-active', 'satellite');
               labelSat.classList.add('jg-map-toggle-label--active');
               labelMap.classList.remove('jg-map-toggle-label--active');
+              setMapCookie('jg_map_layer', 'satellite', 365);
             }
           }
 
@@ -1223,6 +1257,312 @@
       });
 
       map.addControl(new MapToggleControl());
+
+      // Fullscreen control - positioned next to zoom controls (topleft)
+      var isFullscreen = false;
+      var FullscreenControl = L.Control.extend({
+        options: { position: 'topleft' },
+        onAdd: function() {
+          var container = L.DomUtil.create('div', 'jg-fullscreen-control leaflet-bar');
+          var btn = L.DomUtil.create('a', 'jg-fullscreen-btn', container);
+          btn.href = '#';
+          btn.title = 'Pełny ekran';
+          btn.setAttribute('role', 'button');
+          btn.setAttribute('aria-label', 'Pełny ekran');
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 1 1 1 1 4"/><polyline points="12 1 15 1 15 4"/><polyline points="4 15 1 15 1 12"/><polyline points="12 15 15 15 15 12"/></svg>';
+
+          var exitIcon = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 4 4 4 1"/><polyline points="15 4 12 4 12 1"/><polyline points="1 12 4 12 4 15"/><polyline points="15 12 12 12 12 15"/></svg>';
+          var enterIcon = btn.innerHTML;
+
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+
+          var mapWrap = document.getElementById('jg-map-wrap');
+          var sidebar = document.getElementById('jg-map-sidebar');
+          var sidebarOriginalParent = sidebar ? sidebar.parentNode : null;
+          var sidebarOriginalNext = sidebar ? sidebar.nextSibling : null;
+
+          // Create floating filter icon button for mobile fullscreen (below map/satellite toggle)
+          var fsFilterBtn = document.createElement('button');
+          fsFilterBtn.className = 'jg-fs-filter-btn';
+          fsFilterBtn.type = 'button';
+          fsFilterBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg><span>Filtry</span>';
+          elMap.appendChild(fsFilterBtn);
+
+          // Create filter icon button for mobile (small square, like a Leaflet control)
+          var fsFilterIconBtn = document.createElement('button');
+          fsFilterIconBtn.className = 'jg-fs-filter-icon-btn';
+          fsFilterIconBtn.type = 'button';
+          fsFilterIconBtn.title = 'Filtry i wyszukiwanie';
+          fsFilterIconBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
+          elMap.appendChild(fsFilterIconBtn);
+
+          // Create floating filter panel (used on both mobile and desktop fullscreen)
+          var fsFilterPanel = document.createElement('div');
+          fsFilterPanel.className = 'jg-fs-filter-panel';
+          elMap.appendChild(fsFilterPanel);
+
+          // Create notification circles container (desktop fullscreen)
+          var fsNotifContainer = document.createElement('div');
+          fsNotifContainer.className = 'jg-fs-notif-container';
+          elMap.appendChild(fsNotifContainer);
+
+          // Create fullscreen search results panel
+          var fsSearchPanel = document.createElement('div');
+          fsSearchPanel.className = 'jg-fs-search-results-panel';
+          fsSearchPanel.innerHTML = '<div class="jg-fs-search-header"><span class="jg-fs-search-title">Wyniki wyszukiwania</span><span class="jg-fs-search-count"></span><button class="jg-fs-search-close" type="button">&times;</button></div><div class="jg-fs-search-list"></div>';
+          elMap.appendChild(fsSearchPanel);
+
+          fsSearchPanel.querySelector('.jg-fs-search-close').addEventListener('click', function() {
+            fsSearchPanel.classList.remove('active');
+            var origClose = document.getElementById('jg-search-close-btn');
+            if (origClose) origClose.click();
+          });
+
+          fsFilterBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fsFilterPanel.classList.toggle('active');
+          });
+
+          // Mobile filter icon button toggles the filter panel visibility
+          fsFilterIconBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (fsFilterPanel.classList.contains('mobile-visible')) {
+              fsFilterPanel.classList.remove('mobile-visible');
+            } else {
+              fsFilterPanel.classList.add('mobile-visible');
+            }
+          });
+
+          // Close mobile filter panel when clicking on the map
+          elMap.addEventListener('click', function() {
+            if (fsFilterPanel.classList.contains('active') && window.innerWidth <= 768) {
+              fsFilterPanel.classList.remove('active');
+            }
+          });
+
+          fsFilterPanel.addEventListener('click', function(e) {
+            e.stopPropagation();
+          });
+
+          // Observe original search panel for fullscreen search results mirroring
+          var origSearchPanel = document.getElementById('jg-search-panel');
+          if (origSearchPanel) {
+            var searchObserver = new MutationObserver(function() {
+              if (!isFullscreen) return;
+              if (origSearchPanel.classList.contains('active')) {
+                // Mirror search results
+                var origResults = document.getElementById('jg-search-results');
+                var origCount = document.getElementById('jg-search-panel-count');
+                if (origResults) {
+                  fsSearchPanel.querySelector('.jg-fs-search-list').innerHTML = origResults.innerHTML;
+                }
+                if (origCount) {
+                  fsSearchPanel.querySelector('.jg-fs-search-count').textContent = origCount.textContent;
+                }
+                fsSearchPanel.classList.add('active');
+
+                // Re-bind click handlers on cloned results
+                var resultItems = fsSearchPanel.querySelectorAll('.jg-search-result-item');
+                resultItems.forEach(function(item) {
+                  item.addEventListener('click', function() {
+                    var origItems = origResults.querySelectorAll('.jg-search-result-item');
+                    var idx = Array.prototype.indexOf.call(resultItems, item);
+                    if (origItems[idx]) origItems[idx].click();
+                    fsSearchPanel.classList.remove('active');
+                  });
+                });
+              } else {
+                fsSearchPanel.classList.remove('active');
+              }
+            });
+            searchObserver.observe(origSearchPanel, { attributes: true, attributeFilter: ['class'] });
+          }
+
+          // Notification syncing for fullscreen mode
+          function syncNotifications() {
+            if (!isFullscreen || window.innerWidth <= 768) {
+              fsNotifContainer.innerHTML = '';
+              return;
+            }
+            var topBarNotifs = document.querySelectorAll('#jg-top-bar-notifications .jg-top-bar-notif');
+            var html = '';
+            topBarNotifs.forEach(function(notif) {
+              var badge = notif.querySelector('.jg-notif-badge');
+              var icon = notif.querySelector('span:first-child');
+              if (badge && icon) {
+                var iconText = icon.textContent.trim().split(' ')[0]; // Get emoji
+                html += '<a href="' + notif.getAttribute('href') + '" class="jg-fs-notif-circle" title="' + icon.textContent.trim() + '">' +
+                  '<span class="jg-fs-notif-icon">' + iconText + '</span>' +
+                  '<span class="jg-fs-notif-badge">' + badge.textContent + '</span>' +
+                  '</a>';
+              }
+            });
+            fsNotifContainer.innerHTML = html;
+
+            // Position notifications to the left of the filter panel
+            if (fsFilterPanel.offsetWidth > 0) {
+              var panelRect = fsFilterPanel.getBoundingClientRect();
+              var mapRect = elMap.getBoundingClientRect();
+              var leftPos = panelRect.left - mapRect.left - 56; // 44px circle + 12px gap
+              fsNotifContainer.style.left = Math.max(12, leftPos) + 'px';
+            }
+          }
+
+          function enterFullscreen() {
+            isFullscreen = true;
+            mapWrap.classList.add('jg-fullscreen');
+            document.body.classList.add('jg-fullscreen-active');
+            if (sidebar) {
+              // Save original inline height and override for fullscreen
+              sidebar._origHeight = sidebar.style.height;
+              sidebar.style.setProperty('height', 'calc(100% - 24px)', 'important');
+              elMap.appendChild(sidebar);
+              sidebar.classList.add('jg-sidebar-fullscreen-overlay');
+              // Prevent scroll wheel on sidebar from zooming the map
+              L.DomEvent.disableScrollPropagation(sidebar);
+            }
+
+            // Build filter panel content
+            var filtersEl = document.getElementById('jg-map-filters');
+            if (filtersEl) {
+              var filtersClone = filtersEl.cloneNode(true);
+              filtersClone.id = 'jg-fs-filters-clone';
+              filtersClone.style.display = '';
+              fsFilterPanel.innerHTML = '';
+
+              // Add collapsible header on both desktop and mobile, collapsed by default
+              var header = document.createElement('div');
+              header.className = 'jg-fs-panel-header';
+              header.innerHTML = '<span>Filtry i wyszukiwanie</span><span class="jg-fs-panel-arrow">&#x25BC;</span>';
+              fsFilterPanel.appendChild(header);
+
+              var content = document.createElement('div');
+              content.className = 'jg-fs-panel-content jg-fs-panel-collapsed';
+              content.appendChild(filtersClone);
+              fsFilterPanel.appendChild(content);
+
+              header.addEventListener('click', function() {
+                content.classList.toggle('jg-fs-panel-collapsed');
+                header.classList.toggle('expanded');
+              });
+
+              // Sync checkbox clicks from clone to original
+              var cloneCheckboxes = filtersClone.querySelectorAll('input[type="checkbox"]');
+              cloneCheckboxes.forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                  var origCb;
+                  if (cb.dataset.type) {
+                    origCb = filtersEl.querySelector('input[data-type="' + cb.dataset.type + '"]');
+                  } else if (cb.hasAttribute('data-my-places')) {
+                    origCb = filtersEl.querySelector('input[data-my-places]');
+                  } else if (cb.hasAttribute('data-promo')) {
+                    origCb = filtersEl.querySelector('input[data-promo]');
+                  }
+                  if (origCb) {
+                    origCb.checked = cb.checked;
+                    origCb.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                });
+              });
+
+              // Sync search input
+              var cloneSearch = filtersClone.querySelector('#jg-search-input');
+              if (cloneSearch) {
+                cloneSearch.id = 'jg-fs-search-input';
+                var origSearch = document.getElementById('jg-search-input');
+                cloneSearch.addEventListener('input', function() {
+                  if (origSearch) origSearch.value = cloneSearch.value;
+                });
+                cloneSearch.addEventListener('keydown', function(ev) {
+                  if (ev.key === 'Enter' && origSearch) {
+                    origSearch.value = cloneSearch.value;
+                    origSearch.dispatchEvent(new Event('input', { bubbles: true }));
+                    var origBtn = document.getElementById('jg-search-btn');
+                    if (origBtn) origBtn.click();
+                    if (window.innerWidth <= 768) fsFilterPanel.classList.remove('active');
+                  }
+                });
+                var cloneSearchBtn = filtersClone.querySelector('.jg-search-btn');
+                if (cloneSearchBtn) {
+                  cloneSearchBtn.addEventListener('click', function(ev) {
+                    ev.preventDefault();
+                    if (origSearch) {
+                      origSearch.value = cloneSearch.value;
+                      origSearch.dispatchEvent(new Event('input', { bubbles: true }));
+                      var origBtn = document.getElementById('jg-search-btn');
+                      if (origBtn) origBtn.click();
+                    }
+                    if (window.innerWidth <= 768) fsFilterPanel.classList.remove('active');
+                  });
+                }
+              }
+            }
+
+            // Desktop: show filter panel directly; Mobile: show icon button (panel toggled by button)
+            if (window.innerWidth > 768) {
+              fsFilterPanel.classList.add('desktop-visible');
+              syncNotifications();
+            } else {
+              fsFilterIconBtn.classList.add('visible');
+            }
+
+            btn.innerHTML = exitIcon;
+            btn.title = 'Zamknij pełny ekran';
+            setTimeout(function() { map.invalidateSize(); }, 350);
+          }
+
+          function exitFullscreen() {
+            isFullscreen = false;
+            mapWrap.classList.remove('jg-fullscreen');
+            document.body.classList.remove('jg-fullscreen-active');
+            if (sidebar) {
+              sidebar.classList.remove('jg-sidebar-fullscreen-overlay');
+              // Restore original inline height
+              if (sidebar._origHeight !== undefined) {
+                sidebar.style.setProperty('height', sidebar._origHeight, 'important');
+              }
+              if (sidebarOriginalNext) {
+                sidebarOriginalParent.insertBefore(sidebar, sidebarOriginalNext);
+              } else {
+                sidebarOriginalParent.appendChild(sidebar);
+              }
+            }
+            fsFilterBtn.classList.remove('visible');
+            fsFilterIconBtn.classList.remove('visible');
+            fsFilterPanel.classList.remove('active');
+            fsFilterPanel.classList.remove('desktop-visible');
+            fsFilterPanel.classList.remove('mobile-visible');
+            fsFilterPanel.innerHTML = '';
+            fsNotifContainer.innerHTML = '';
+            fsSearchPanel.classList.remove('active');
+            fsSearchPanel.querySelector('.jg-fs-search-list').innerHTML = '';
+            btn.innerHTML = enterIcon;
+            btn.title = 'Pełny ekran';
+            setTimeout(function() { map.invalidateSize(); }, 350);
+          }
+
+          L.DomEvent.on(btn, 'click', function(e) {
+            L.DomEvent.preventDefault(e);
+            if (isFullscreen) {
+              exitFullscreen();
+            } else {
+              enterFullscreen();
+            }
+          });
+
+          // ESC key to exit fullscreen
+          document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isFullscreen) {
+              exitFullscreen();
+            }
+          });
+
+          return container;
+        }
+      });
+
+      map.addControl(new FullscreenControl());
 
       var cluster = null;
       var markers = [];
