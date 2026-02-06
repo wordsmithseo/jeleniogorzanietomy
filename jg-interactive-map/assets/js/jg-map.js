@@ -3749,6 +3749,15 @@
       }
 
       /**
+       * Send event to Google Analytics (via Site Kit gtag)
+       */
+      function trackGA(eventName, params) {
+        if (typeof gtag === 'function') {
+          gtag('event', eventName, params || {});
+        }
+      }
+
+      /**
        * Track statistics for sponsored pins
        * Excludes tracking for point owner
        */
@@ -6503,6 +6512,15 @@
           trackStat(p.id, 'view', { is_unique: isUnique }, p.author_id);
         }
 
+        // GA: track pin view for ALL pins
+        trackGA('pin_view', {
+          pin_id: p.id,
+          pin_title: p.title || '',
+          pin_type: p.type || '',
+          pin_category: p.category || '',
+          pin_sponsored: p.sponsored ? 'yes' : 'no'
+        });
+
         // Close button handler - track time spent
         qs('#dlg-close', modalView).onclick = function() {
           // Track time spent before closing (for sponsored pins)
@@ -6539,6 +6557,9 @@
               if (p.sponsored) {
                 trackStat(p.id, 'gallery_click', { image_index: idx }, p.author_id);
               }
+
+              // GA: track gallery click for all pins
+              trackGA('pin_gallery_click', { pin_id: p.id, pin_title: p.title || '', image_index: idx });
 
               openLightbox(fullUrl);
             });
@@ -6655,6 +6676,29 @@
               trackStat(p.id, 'cta_click', null, p.author_id);
             });
           }
+        }
+
+        // GA: track contact clicks for ALL pins (phone, website, social, CTA)
+        modalView.querySelectorAll('a[href^="tel:"]').forEach(function(link) {
+          link.addEventListener('click', function() {
+            trackGA('pin_phone_click', { pin_id: p.id, pin_title: p.title || '' });
+          });
+        });
+        modalView.querySelectorAll('a[href^="http"]:not(.jg-social-link):not(.jg-btn-cta-sponsored)').forEach(function(link) {
+          link.addEventListener('click', function() {
+            trackGA('pin_website_click', { pin_id: p.id, pin_title: p.title || '', url: this.href });
+          });
+        });
+        modalView.querySelectorAll('.jg-social-link').forEach(function(link) {
+          link.addEventListener('click', function() {
+            trackGA('pin_social_click', { pin_id: p.id, pin_title: p.title || '', platform: this.getAttribute('data-social') || '' });
+          });
+        });
+        var ctaBtnGA = modalView.querySelector('.jg-btn-cta-sponsored');
+        if (ctaBtnGA) {
+          ctaBtnGA.addEventListener('click', function() {
+            trackGA('pin_cta_click', { pin_id: p.id, pin_title: p.title || '' });
+          });
         }
 
         // Setup voting handlers only if not promo
