@@ -1278,39 +1278,54 @@
 
           var mapWrap = document.getElementById('jg-map-wrap');
           var sidebar = document.getElementById('jg-map-sidebar');
+          var sidebarOriginalParent = sidebar ? sidebar.parentNode : null;
+          var sidebarOriginalNext = sidebar ? sidebar.nextSibling : null;
+
+          function enterFullscreen() {
+            isFullscreen = true;
+            mapWrap.classList.add('jg-fullscreen');
+            document.body.classList.add('jg-fullscreen-active');
+            if (sidebar) {
+              // Move sidebar into the map element so it's contained within the map area
+              elMap.appendChild(sidebar);
+              sidebar.classList.add('jg-sidebar-fullscreen-overlay');
+            }
+            btn.innerHTML = exitIcon;
+            btn.title = 'Zamknij pełny ekran';
+            setTimeout(function() { map.invalidateSize(); }, 350);
+          }
+
+          function exitFullscreen() {
+            isFullscreen = false;
+            mapWrap.classList.remove('jg-fullscreen');
+            document.body.classList.remove('jg-fullscreen-active');
+            if (sidebar) {
+              sidebar.classList.remove('jg-sidebar-fullscreen-overlay');
+              // Move sidebar back to its original position in the DOM
+              if (sidebarOriginalNext) {
+                sidebarOriginalParent.insertBefore(sidebar, sidebarOriginalNext);
+              } else {
+                sidebarOriginalParent.appendChild(sidebar);
+              }
+            }
+            btn.innerHTML = enterIcon;
+            btn.title = 'Pełny ekran';
+            setTimeout(function() { map.invalidateSize(); }, 350);
+          }
 
           L.DomEvent.on(btn, 'click', function(e) {
             L.DomEvent.preventDefault(e);
-            isFullscreen = !isFullscreen;
-
             if (isFullscreen) {
-              mapWrap.classList.add('jg-fullscreen');
-              document.body.classList.add('jg-fullscreen-active');
-              if (sidebar) sidebar.classList.add('jg-sidebar-fullscreen-overlay');
-              btn.innerHTML = exitIcon;
-              btn.title = 'Zamknij pełny ekran';
+              exitFullscreen();
             } else {
-              mapWrap.classList.remove('jg-fullscreen');
-              document.body.classList.remove('jg-fullscreen-active');
-              if (sidebar) sidebar.classList.remove('jg-sidebar-fullscreen-overlay');
-              btn.innerHTML = enterIcon;
-              btn.title = 'Pełny ekran';
+              enterFullscreen();
             }
-
-            // Invalidate map size after transition
-            setTimeout(function() { map.invalidateSize(); }, 350);
           });
 
           // ESC key to exit fullscreen
           document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && isFullscreen) {
-              isFullscreen = false;
-              mapWrap.classList.remove('jg-fullscreen');
-              document.body.classList.remove('jg-fullscreen-active');
-              if (sidebar) sidebar.classList.remove('jg-sidebar-fullscreen-overlay');
-              btn.innerHTML = enterIcon;
-              btn.title = 'Pełny ekran';
-              setTimeout(function() { map.invalidateSize(); }, 350);
+              exitFullscreen();
             }
           });
 

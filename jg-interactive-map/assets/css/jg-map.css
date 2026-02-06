@@ -583,18 +583,17 @@ body.jg-fullscreen-active {
   border-radius: 0 !important;
 }
 
-/* Desktop fullscreen: sidebar as rounded overlay panel on the map */
+/* Desktop fullscreen: sidebar as rounded overlay panel inside the map */
 @media (min-width: 769px) {
   .jg-sidebar-fullscreen-overlay {
-    position: fixed !important;
-    top: 16px !important;
-    right: 16px !important;
-    bottom: 16px !important;
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
     width: 380px !important;
     max-width: 30vw !important;
-    height: calc(100vh - 32px) !important;
-    height: calc(100dvh - 32px) !important;
-    z-index: 99991 !important;
+    height: calc(100% - 24px) !important;
+    z-index: 1001 !important;
     border-radius: 16px !important;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
     background: rgba(255, 255, 255, 0.97) !important;
@@ -609,7 +608,6 @@ body.jg-fullscreen-active {
     transition: right 0.3s ease !important;
   }
 
-  /* If sidebar panel is narrower, use fixed width fallback */
   @supports (width: min(380px, 30vw)) {
     body.jg-fullscreen-active #jg-fab-container {
       right: calc(min(380px, 30vw) + 40px) !important;
@@ -629,26 +627,16 @@ body.jg-fullscreen-active {
     min-height: 100dvh !important;
   }
 
-  /* Filters bar stays on top as overlay */
+  /* Filters bar stays on top as overlay - ABOVE all Leaflet controls */
   #jg-map-wrap.jg-fullscreen #jg-map-filters-wrapper {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    z-index: 1000 !important;
+    z-index: 10001 !important;
     background: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
-  }
-
-  /* Push zoom & fullscreen controls below the filter bar in fullscreen */
-  #jg-map-wrap.jg-fullscreen .leaflet-top.leaflet-left {
-    top: 60px !important;
-  }
-
-  /* Push map/satellite toggle below the filter bar in fullscreen */
-  #jg-map-wrap.jg-fullscreen .leaflet-top.leaflet-right {
-    top: 60px !important;
   }
 
   .jg-fullscreen-control {
