@@ -519,6 +519,124 @@
   border-radius: 0 0 10px 10px !important;
 }
 
+/* ── Fullscreen Control ── */
+.jg-fullscreen-control {
+  border: none !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  margin-left: 14px !important;
+  margin-top: 6px !important;
+}
+
+.jg-fullscreen-btn {
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-size: 18px !important;
+  color: #111827 !important;
+  background: #fff !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 0.2s, color 0.2s !important;
+  cursor: pointer !important;
+  border-radius: 10px !important;
+  text-decoration: none !important;
+}
+
+.jg-fullscreen-btn:hover {
+  background: #8d2324 !important;
+  color: #fff !important;
+}
+
+.jg-fullscreen-btn svg {
+  pointer-events: none;
+}
+
+/* ── Fullscreen Mode ── */
+body.jg-fullscreen-active {
+  overflow: hidden !important;
+}
+
+#jg-map-wrap.jg-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  z-index: 99990 !important;
+  border-radius: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: #fff;
+}
+
+#jg-map-wrap.jg-fullscreen .jg-map {
+  flex: 1 !important;
+  height: 100% !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+}
+
+/* Desktop fullscreen: sidebar as overlay on the right */
+@media (min-width: 769px) {
+  .jg-sidebar-fullscreen-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 400px !important;
+    max-width: 35vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    z-index: 99991 !important;
+    border-radius: 0 !important;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15) !important;
+    background: #fff !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* Mobile fullscreen: map fills entire screen, sidebar hidden */
+@media (max-width: 768px) {
+  #jg-map-wrap.jg-fullscreen {
+    grid-template-rows: 1fr !important;
+  }
+
+  #jg-map-wrap.jg-fullscreen .jg-map {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 100dvh !important;
+  }
+
+  #jg-map-wrap.jg-fullscreen #jg-map-filters-wrapper {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+
+  .jg-fullscreen-control {
+    margin-left: 10px !important;
+    margin-top: 4px !important;
+  }
+
+  .jg-fullscreen-btn {
+    width: 32px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+  }
+}
+
 /* Responsive navbar - Better spacing on narrow monitors (laptops) */
 @media (max-width: 1280px) {
   .jg-custom-top-bar {

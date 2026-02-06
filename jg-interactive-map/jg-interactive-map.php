@@ -1218,10 +1218,35 @@ class JG_Interactive_Map {
         // Set HTTP status code explicitly
         status_header(200);
 
-        // Set headers for XML sitemap - no cache for debugging
-        nocache_headers();
+        // Set proper caching headers for sitemap
+        // Allow Google and other crawlers to cache the sitemap for 1 hour
+        // This fixes Search Console not updating - nocache_headers() was preventing Google from caching
         header('Content-Type: application/xml; charset=UTF-8');
         header('X-Robots-Tag: index, follow');
+        header('Cache-Control: public, max-age=3600, s-maxage=3600');
+        header('Pragma: public');
+
+        // Add Last-Modified header based on most recent point update
+        $last_modified_date = !empty($points) ? $points[0]['updated_at'] : current_time('mysql', true);
+        $last_modified_ts = strtotime($last_modified_date);
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $last_modified_ts) . ' GMT');
+
+        // Add ETag for conditional requests
+        $etag = '"jg-sitemap-' . md5($last_modified_date . count($points)) . '"';
+        header('ETag: ' . $etag);
+
+        // Support conditional requests (304 Not Modified)
+        if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
+            status_header(304);
+            exit;
+        }
+        if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+            $if_modified = strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']);
+            if ($if_modified >= $last_modified_ts) {
+                status_header(304);
+                exit;
+            }
+        }
 
         // Start output buffering to capture the entire XML
         ob_start();

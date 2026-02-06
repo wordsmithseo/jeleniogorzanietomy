@@ -1172,21 +1172,52 @@
         crossOrigin: true
       });
 
-      var currentLayerIsSatellite = false;
-      tileLayer.addTo(map);
+      // Cookie helpers for map layer preference
+      function setMapCookie(name, value, days) {
+        var expires = '';
+        if (days) {
+          var date = new Date();
+          date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+          expires = '; expires=' + date.toUTCString();
+        }
+        document.cookie = name + '=' + encodeURIComponent(value) + expires + '; path=/; SameSite=Lax';
+      }
+
+      function getMapCookie(name) {
+        var nameEQ = name + '=';
+        var ca = document.cookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+          var c = ca[i].trim();
+          if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length));
+        }
+        return null;
+      }
+
+      // Restore saved layer preference from cookie
+      var savedLayer = getMapCookie('jg_map_layer');
+      var currentLayerIsSatellite = (savedLayer === 'satellite');
+
+      if (currentLayerIsSatellite) {
+        satelliteLayer.addTo(map);
+      } else {
+        tileLayer.addTo(map);
+      }
 
       // Map/Satellite toggle control
       var MapToggleControl = L.Control.extend({
         options: { position: 'topright' },
         onAdd: function() {
           var container = L.DomUtil.create('div', 'jg-map-toggle-control leaflet-bar');
+          var activeMap = currentLayerIsSatellite ? '' : ' jg-map-toggle-label--active';
+          var activeSat = currentLayerIsSatellite ? ' jg-map-toggle-label--active' : '';
+          var activeData = currentLayerIsSatellite ? 'satellite' : 'map';
           container.innerHTML =
             '<div class="jg-map-toggle">' +
-              '<span class="jg-map-toggle-label jg-map-toggle-label--active" data-layer="map">Mapa</span>' +
-              '<div class="jg-map-toggle-switch" data-active="map">' +
+              '<span class="jg-map-toggle-label' + activeMap + '" data-layer="map">Mapa</span>' +
+              '<div class="jg-map-toggle-switch" data-active="' + activeData + '">' +
                 '<div class="jg-map-toggle-thumb"></div>' +
               '</div>' +
-              '<span class="jg-map-toggle-label" data-layer="satellite">Satelita</span>' +
+              '<span class="jg-map-toggle-label' + activeSat + '" data-layer="satellite">Satelita</span>' +
             '</div>';
 
           L.DomEvent.disableClickPropagation(container);
@@ -1204,6 +1235,7 @@
               toggle.setAttribute('data-active', 'map');
               labelMap.classList.add('jg-map-toggle-label--active');
               labelSat.classList.remove('jg-map-toggle-label--active');
+              setMapCookie('jg_map_layer', 'map', 365);
             } else {
               map.removeLayer(tileLayer);
               satelliteLayer.addTo(map);
@@ -1211,6 +1243,7 @@
               toggle.setAttribute('data-active', 'satellite');
               labelSat.classList.add('jg-map-toggle-label--active');
               labelMap.classList.remove('jg-map-toggle-label--active');
+              setMapCookie('jg_map_layer', 'satellite', 365);
             }
           }
 
@@ -1223,6 +1256,69 @@
       });
 
       map.addControl(new MapToggleControl());
+
+      // Fullscreen control - positioned next to zoom controls (topleft)
+      var isFullscreen = false;
+      var FullscreenControl = L.Control.extend({
+        options: { position: 'topleft' },
+        onAdd: function() {
+          var container = L.DomUtil.create('div', 'jg-fullscreen-control leaflet-bar');
+          var btn = L.DomUtil.create('a', 'jg-fullscreen-btn', container);
+          btn.href = '#';
+          btn.title = 'Pełny ekran';
+          btn.setAttribute('role', 'button');
+          btn.setAttribute('aria-label', 'Pełny ekran');
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 1 1 1 1 4"/><polyline points="12 1 15 1 15 4"/><polyline points="4 15 1 15 1 12"/><polyline points="12 15 15 15 15 12"/></svg>';
+
+          var exitIcon = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 4 4 4 1"/><polyline points="15 4 12 4 12 1"/><polyline points="1 12 4 12 4 15"/><polyline points="15 12 12 12 12 15"/></svg>';
+          var enterIcon = btn.innerHTML;
+
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+
+          var mapWrap = document.getElementById('jg-map-wrap');
+          var sidebar = document.getElementById('jg-map-sidebar');
+
+          L.DomEvent.on(btn, 'click', function(e) {
+            L.DomEvent.preventDefault(e);
+            isFullscreen = !isFullscreen;
+
+            if (isFullscreen) {
+              mapWrap.classList.add('jg-fullscreen');
+              document.body.classList.add('jg-fullscreen-active');
+              if (sidebar) sidebar.classList.add('jg-sidebar-fullscreen-overlay');
+              btn.innerHTML = exitIcon;
+              btn.title = 'Zamknij pełny ekran';
+            } else {
+              mapWrap.classList.remove('jg-fullscreen');
+              document.body.classList.remove('jg-fullscreen-active');
+              if (sidebar) sidebar.classList.remove('jg-sidebar-fullscreen-overlay');
+              btn.innerHTML = enterIcon;
+              btn.title = 'Pełny ekran';
+            }
+
+            // Invalidate map size after transition
+            setTimeout(function() { map.invalidateSize(); }, 350);
+          });
+
+          // ESC key to exit fullscreen
+          document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isFullscreen) {
+              isFullscreen = false;
+              mapWrap.classList.remove('jg-fullscreen');
+              document.body.classList.remove('jg-fullscreen-active');
+              if (sidebar) sidebar.classList.remove('jg-sidebar-fullscreen-overlay');
+              btn.innerHTML = enterIcon;
+              btn.title = 'Pełny ekran';
+              setTimeout(function() { map.invalidateSize(); }, 350);
+            }
+          });
+
+          return container;
+        }
+      });
+
+      map.addControl(new FullscreenControl());
 
       var cluster = null;
       var markers = [];
