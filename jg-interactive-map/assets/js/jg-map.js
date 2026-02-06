@@ -1118,6 +1118,7 @@
         maxZoom: 19,
         maxBounds: bounds,
         maxBoundsViscosity: 1.0,
+        bounceAtZoomLimits: false, // Prevent elastic bounce at min/max zoom on mobile
         tap: isMobile, // Enable tap on mobile
         touchZoom: isMobile // Enable pinch zoom on mobile
       }).setView([lat, lng], zoom);
@@ -1288,19 +1289,36 @@
           fsFilterBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg><span>Filtry</span>';
           elMap.appendChild(fsFilterBtn);
 
-          // Create floating filter panel
+          // Create floating filter panel (used on both mobile and desktop fullscreen)
           var fsFilterPanel = document.createElement('div');
           fsFilterPanel.className = 'jg-fs-filter-panel';
           elMap.appendChild(fsFilterPanel);
+
+          // Create notification circles container (desktop fullscreen)
+          var fsNotifContainer = document.createElement('div');
+          fsNotifContainer.className = 'jg-fs-notif-container';
+          elMap.appendChild(fsNotifContainer);
+
+          // Create fullscreen search results panel
+          var fsSearchPanel = document.createElement('div');
+          fsSearchPanel.className = 'jg-fs-search-results-panel';
+          fsSearchPanel.innerHTML = '<div class="jg-fs-search-header"><span class="jg-fs-search-title">Wyniki wyszukiwania</span><span class="jg-fs-search-count"></span><button class="jg-fs-search-close" type="button">&times;</button></div><div class="jg-fs-search-list"></div>';
+          elMap.appendChild(fsSearchPanel);
+
+          fsSearchPanel.querySelector('.jg-fs-search-close').addEventListener('click', function() {
+            fsSearchPanel.classList.remove('active');
+            var origClose = document.getElementById('jg-search-close-btn');
+            if (origClose) origClose.click();
+          });
 
           fsFilterBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             fsFilterPanel.classList.toggle('active');
           });
 
-          // Close panel when clicking on the map
+          // Close mobile filter panel when clicking on the map
           elMap.addEventListener('click', function() {
-            if (fsFilterPanel.classList.contains('active')) {
+            if (fsFilterPanel.classList.contains('active') && window.innerWidth <= 768) {
               fsFilterPanel.classList.remove('active');
             }
           });
@@ -1308,6 +1326,70 @@
           fsFilterPanel.addEventListener('click', function(e) {
             e.stopPropagation();
           });
+
+          // Observe original search panel for fullscreen search results mirroring
+          var origSearchPanel = document.getElementById('jg-search-panel');
+          if (origSearchPanel) {
+            var searchObserver = new MutationObserver(function() {
+              if (!isFullscreen) return;
+              if (origSearchPanel.classList.contains('active')) {
+                // Mirror search results
+                var origResults = document.getElementById('jg-search-results');
+                var origCount = document.getElementById('jg-search-panel-count');
+                if (origResults) {
+                  fsSearchPanel.querySelector('.jg-fs-search-list').innerHTML = origResults.innerHTML;
+                }
+                if (origCount) {
+                  fsSearchPanel.querySelector('.jg-fs-search-count').textContent = origCount.textContent;
+                }
+                fsSearchPanel.classList.add('active');
+
+                // Re-bind click handlers on cloned results
+                var resultItems = fsSearchPanel.querySelectorAll('.jg-search-result-item');
+                resultItems.forEach(function(item) {
+                  item.addEventListener('click', function() {
+                    var origItems = origResults.querySelectorAll('.jg-search-result-item');
+                    var idx = Array.prototype.indexOf.call(resultItems, item);
+                    if (origItems[idx]) origItems[idx].click();
+                    fsSearchPanel.classList.remove('active');
+                  });
+                });
+              } else {
+                fsSearchPanel.classList.remove('active');
+              }
+            });
+            searchObserver.observe(origSearchPanel, { attributes: true, attributeFilter: ['class'] });
+          }
+
+          // Notification syncing for fullscreen mode
+          function syncNotifications() {
+            if (!isFullscreen || window.innerWidth <= 768) {
+              fsNotifContainer.innerHTML = '';
+              return;
+            }
+            var topBarNotifs = document.querySelectorAll('#jg-top-bar-notifications .jg-top-bar-notif');
+            var html = '';
+            topBarNotifs.forEach(function(notif) {
+              var badge = notif.querySelector('.jg-notif-badge');
+              var icon = notif.querySelector('span:first-child');
+              if (badge && icon) {
+                var iconText = icon.textContent.trim().split(' ')[0]; // Get emoji
+                html += '<a href="' + notif.getAttribute('href') + '" class="jg-fs-notif-circle" title="' + icon.textContent.trim() + '">' +
+                  '<span class="jg-fs-notif-icon">' + iconText + '</span>' +
+                  '<span class="jg-fs-notif-badge">' + badge.textContent + '</span>' +
+                  '</a>';
+              }
+            });
+            fsNotifContainer.innerHTML = html;
+
+            // Position notifications to the left of the filter panel
+            if (fsFilterPanel.offsetWidth > 0) {
+              var panelRect = fsFilterPanel.getBoundingClientRect();
+              var mapRect = elMap.getBoundingClientRect();
+              var leftPos = panelRect.left - mapRect.left - 56; // 44px circle + 12px gap
+              fsNotifContainer.style.left = Math.max(12, leftPos) + 'px';
+            }
+          }
 
           function enterFullscreen() {
             isFullscreen = true;
@@ -1318,15 +1400,33 @@
               sidebar.classList.add('jg-sidebar-fullscreen-overlay');
             }
 
-            // Clone filters into the floating panel
+            // Build filter panel content
             var filtersEl = document.getElementById('jg-map-filters');
-            var categoryFiltersEl = document.getElementById('jg-category-filters');
             if (filtersEl) {
               var filtersClone = filtersEl.cloneNode(true);
               filtersClone.id = 'jg-fs-filters-clone';
               filtersClone.style.display = '';
               fsFilterPanel.innerHTML = '';
-              fsFilterPanel.appendChild(filtersClone);
+
+              // On desktop: add collapsible header, collapsed by default
+              if (window.innerWidth > 768) {
+                var header = document.createElement('div');
+                header.className = 'jg-fs-panel-header';
+                header.innerHTML = '<span>Filtry i wyszukiwanie</span><span class="jg-fs-panel-arrow">&#x25BC;</span>';
+                fsFilterPanel.appendChild(header);
+
+                var content = document.createElement('div');
+                content.className = 'jg-fs-panel-content jg-fs-panel-collapsed';
+                content.appendChild(filtersClone);
+                fsFilterPanel.appendChild(content);
+
+                header.addEventListener('click', function() {
+                  content.classList.toggle('jg-fs-panel-collapsed');
+                  header.classList.toggle('expanded');
+                });
+              } else {
+                fsFilterPanel.appendChild(filtersClone);
+              }
 
               // Sync checkbox clicks from clone to original
               var cloneCheckboxes = filtersClone.querySelectorAll('input[type="checkbox"]');
@@ -1361,7 +1461,7 @@
                     origSearch.dispatchEvent(new Event('input', { bubbles: true }));
                     var origBtn = document.getElementById('jg-search-btn');
                     if (origBtn) origBtn.click();
-                    fsFilterPanel.classList.remove('active');
+                    if (window.innerWidth <= 768) fsFilterPanel.classList.remove('active');
                   }
                 });
                 var cloneSearchBtn = filtersClone.querySelector('.jg-search-btn');
@@ -1374,7 +1474,7 @@
                       var origBtn = document.getElementById('jg-search-btn');
                       if (origBtn) origBtn.click();
                     }
-                    fsFilterPanel.classList.remove('active');
+                    if (window.innerWidth <= 768) fsFilterPanel.classList.remove('active');
                   });
                 }
               }
@@ -1383,6 +1483,7 @@
             // Desktop: show filter panel always; Mobile: show filter toggle button
             if (window.innerWidth > 768) {
               fsFilterPanel.classList.add('desktop-visible');
+              syncNotifications();
             } else {
               fsFilterBtn.classList.add('visible');
             }
@@ -1408,6 +1509,9 @@
             fsFilterPanel.classList.remove('active');
             fsFilterPanel.classList.remove('desktop-visible');
             fsFilterPanel.innerHTML = '';
+            fsNotifContainer.innerHTML = '';
+            fsSearchPanel.classList.remove('active');
+            fsSearchPanel.querySelector('.jg-fs-search-list').innerHTML = '';
             btn.innerHTML = enterIcon;
             btn.title = 'Pełny ekran';
             setTimeout(function() { map.invalidateSize(); }, 350);

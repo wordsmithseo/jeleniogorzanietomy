@@ -349,13 +349,13 @@
   height: calc(100% - 70px);
   background: #fff;
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 10000;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
   transition: transform 0.3s ease-in-out;
-  visibility: hidden; /* Hide panel when outside viewport */
-  pointer-events: none; /* Disable interactions when hidden */
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .jg-search-panel.active {
@@ -641,10 +641,12 @@ body.jg-fullscreen-active {
     bottom: auto;
     left: auto;
     width: auto;
-    min-width: 320px;
+    min-width: 260px;
     max-width: calc(100% - min(380px, 30vw) - 120px);
     max-height: calc(100% - 24px);
     border-radius: 16px;
+    padding: 0;
+    overflow: visible;
   }
 
   /* Desktop: filter panel always visible in fullscreen (no button needed) */
@@ -652,16 +654,212 @@ body.jg-fullscreen-active {
     display: block;
   }
 
-  /* Filters inside the floating panel: vertical layout for narrower panel */
+  /* ── Collapsible filter panel header ── */
+  .jg-fs-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    user-select: none;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    border-radius: 16px;
+    transition: border-radius 0.2s;
+  }
+
+  .jg-fs-panel-header:hover {
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  .jg-fs-panel-header.expanded {
+    border-radius: 16px 16px 0 0;
+  }
+
+  .jg-fs-panel-arrow {
+    font-size: 11px;
+    color: #9ca3af;
+    transition: transform 0.2s;
+  }
+
+  .jg-fs-panel-header.expanded .jg-fs-panel-arrow {
+    transform: rotate(180deg);
+  }
+
+  .jg-fs-panel-content {
+    padding: 0 12px 12px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+    max-height: 600px;
+    opacity: 1;
+  }
+
+  .jg-fs-panel-content.jg-fs-panel-collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+  }
+
+  /* Filters inside the panel: vertical layout, left-aligned */
   .jg-fs-filter-panel .jg-filters {
     flex-direction: column;
-    gap: 6px;
-    padding: 8px;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 4px 0;
     background: transparent;
+    margin-bottom: 0;
+  }
+
+  .jg-fs-filter-panel .jg-filter-label {
+    justify-content: flex-start;
+    width: 100%;
   }
 
   .jg-fs-filter-panel .jg-search {
     width: 100%;
+    margin-top: 4px;
+  }
+
+  /* ── Notification circles (desktop fullscreen) ── */
+  .jg-fs-notif-container {
+    display: none;
+  }
+
+  body.jg-fullscreen-active .jg-fs-notif-container:not(:empty) {
+    display: flex;
+    position: absolute;
+    top: 12px;
+    z-index: 1003;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: auto;
+  }
+
+  .jg-fs-notif-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    text-decoration: none;
+    position: relative;
+    transition: transform 0.15s, background 0.15s;
+    cursor: pointer;
+  }
+
+  .jg-fs-notif-circle:hover {
+    transform: scale(1.08);
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .jg-fs-notif-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .jg-fs-notif-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  }
+
+  /* ── Fullscreen search results panel (desktop) ── */
+  .jg-fs-search-results-panel {
+    display: none;
+    position: absolute;
+    z-index: 1002;
+    top: auto;
+    right: calc(min(380px, 30vw) + 24px);
+    bottom: 12px;
+    width: 340px;
+    max-width: calc(100% - min(380px, 30vw) - 120px);
+    max-height: 50%;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    flex-direction: column;
+  }
+
+  .jg-fs-search-results-panel.active {
+    display: flex;
+  }
+
+  .jg-fs-search-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #8d2324;
+    color: #fff;
+    flex-shrink: 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .jg-fs-search-title {
+    font-size: 14px;
+    font-weight: 600;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  }
+
+  .jg-fs-search-count {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  }
+
+  .jg-fs-search-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+
+  .jg-fs-search-close:hover {
+    color: #fff;
+  }
+
+  .jg-fs-search-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .jg-fs-search-list .jg-search-result-item {
+    cursor: pointer;
+  }
+
+  .jg-fs-search-list .jg-search-result-item:hover {
+    background: #f9fafb;
   }
 
   /* Move FAB to the left of the sidebar panel in fullscreen */
@@ -685,11 +883,11 @@ body.jg-fullscreen-active {
     min-height: 100dvh !important;
   }
 
-  /* Floating filter button visible in fullscreen on mobile */
+  /* Floating filter button - ONLY visible in fullscreen on mobile */
   .jg-fs-filter-btn {
-    display: none;
+    display: none !important;
     position: absolute;
-    top: 10px;
+    top: 46px;
     right: 10px;
     z-index: 1001;
     background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
@@ -706,8 +904,9 @@ body.jg-fullscreen-active {
     line-height: 1.4;
   }
 
-  .jg-fs-filter-btn.visible {
-    display: flex;
+  /* Only show when fullscreen is active AND visible class is set */
+  body.jg-fullscreen-active .jg-fs-filter-btn.visible {
+    display: flex !important;
     align-items: center;
     gap: 6px;
   }
