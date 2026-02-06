@@ -583,26 +583,41 @@ body.jg-fullscreen-active {
   border-radius: 0 !important;
 }
 
-/* Desktop fullscreen: sidebar as overlay on the right */
+/* Desktop fullscreen: sidebar as rounded overlay panel on the map */
 @media (min-width: 769px) {
   .jg-sidebar-fullscreen-overlay {
     position: fixed !important;
-    top: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 400px !important;
-    max-width: 35vw !important;
-    height: 100vh !important;
-    height: 100dvh !important;
+    top: 16px !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    width: 380px !important;
+    max-width: 30vw !important;
+    height: calc(100vh - 32px) !important;
+    height: calc(100dvh - 32px) !important;
     z-index: 99991 !important;
-    border-radius: 0 !important;
-    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15) !important;
-    background: #fff !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
     overflow-y: auto !important;
+  }
+
+  /* Move FAB to the left of the sidebar panel in fullscreen */
+  body.jg-fullscreen-active #jg-fab-container {
+    right: calc(30vw + 40px) !important;
+    transition: right 0.3s ease !important;
+  }
+
+  /* If sidebar panel is narrower, use fixed width fallback */
+  @supports (width: min(380px, 30vw)) {
+    body.jg-fullscreen-active #jg-fab-container {
+      right: calc(min(380px, 30vw) + 40px) !important;
+    }
   }
 }
 
-/* Mobile fullscreen: map fills entire screen, sidebar hidden */
+/* Mobile fullscreen: map fills entire screen */
 @media (max-width: 768px) {
   #jg-map-wrap.jg-fullscreen {
     grid-template-rows: 1fr !important;
@@ -614,6 +629,7 @@ body.jg-fullscreen-active {
     min-height: 100dvh !important;
   }
 
+  /* Filters bar stays on top as overlay */
   #jg-map-wrap.jg-fullscreen #jg-map-filters-wrapper {
     position: absolute !important;
     top: 0 !important;
@@ -623,6 +639,16 @@ body.jg-fullscreen-active {
     background: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
+  }
+
+  /* Push zoom & fullscreen controls below the filter bar in fullscreen */
+  #jg-map-wrap.jg-fullscreen .leaflet-top.leaflet-left {
+    top: 60px !important;
+  }
+
+  /* Push map/satellite toggle below the filter bar in fullscreen */
+  #jg-map-wrap.jg-fullscreen .leaflet-top.leaflet-right {
+    top: 60px !important;
   }
 
   .jg-fullscreen-control {
