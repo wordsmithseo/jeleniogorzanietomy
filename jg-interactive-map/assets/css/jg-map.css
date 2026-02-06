@@ -576,7 +576,7 @@ body.jg-fullscreen-active {
   background: #fff;
 }
 
-/* Hide the filter bar in fullscreen - map takes full area */
+/* Hide the original filter bar in fullscreen - replaced by floating panels */
 #jg-map-wrap.jg-fullscreen #jg-map-filters-wrapper {
   display: none !important;
 }
@@ -597,9 +597,6 @@ body.jg-fullscreen-active {
 .jg-fs-filter-panel {
   display: none;
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
   z-index: 1002;
   background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(12px);
@@ -607,7 +604,6 @@ body.jg-fullscreen-active {
   border-radius: 14px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   padding: 12px;
-  max-height: 80vh;
   overflow-y: auto;
 }
 
@@ -619,7 +615,7 @@ body.jg-fullscreen-active {
   margin-bottom: 0;
 }
 
-/* Desktop fullscreen: sidebar as rounded overlay panel inside the map */
+/* Desktop fullscreen: sidebar + filter panel as floating overlays */
 @media (min-width: 769px) {
   .jg-sidebar-fullscreen-overlay {
     position: absolute !important;
@@ -636,6 +632,36 @@ body.jg-fullscreen-active {
     backdrop-filter: blur(12px) !important;
     -webkit-backdrop-filter: blur(12px) !important;
     overflow-y: auto !important;
+  }
+
+  /* Desktop filter panel: floating to the left of the sidebar */
+  .jg-fs-filter-panel {
+    top: 12px;
+    right: calc(min(380px, 30vw) + 24px);
+    bottom: auto;
+    left: auto;
+    width: auto;
+    min-width: 320px;
+    max-width: calc(100% - min(380px, 30vw) - 120px);
+    max-height: calc(100% - 24px);
+    border-radius: 16px;
+  }
+
+  /* Desktop: filter panel always visible in fullscreen (no button needed) */
+  .jg-fs-filter-panel.desktop-visible {
+    display: block;
+  }
+
+  /* Filters inside the floating panel: vertical layout for narrower panel */
+  .jg-fs-filter-panel .jg-filters {
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    background: transparent;
+  }
+
+  .jg-fs-filter-panel .jg-search {
+    width: 100%;
   }
 
   /* Move FAB to the left of the sidebar panel in fullscreen */
@@ -694,6 +720,7 @@ body.jg-fullscreen-active {
     top: 50px;
     left: 8px;
     right: 8px;
+    max-height: 70vh;
   }
 
   .jg-fullscreen-control {

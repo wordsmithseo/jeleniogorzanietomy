@@ -1380,8 +1380,10 @@
               }
             }
 
-            // Show filter button on mobile
-            if (window.innerWidth <= 768) {
+            // Desktop: show filter panel always; Mobile: show filter toggle button
+            if (window.innerWidth > 768) {
+              fsFilterPanel.classList.add('desktop-visible');
+            } else {
               fsFilterBtn.classList.add('visible');
             }
 
@@ -1404,6 +1406,7 @@
             }
             fsFilterBtn.classList.remove('visible');
             fsFilterPanel.classList.remove('active');
+            fsFilterPanel.classList.remove('desktop-visible');
             fsFilterPanel.innerHTML = '';
             btn.innerHTML = enterIcon;
             btn.title = 'Pełny ekran';
