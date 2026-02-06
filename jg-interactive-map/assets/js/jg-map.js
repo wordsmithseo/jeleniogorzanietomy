@@ -1408,25 +1408,21 @@
               filtersClone.style.display = '';
               fsFilterPanel.innerHTML = '';
 
-              // On desktop: add collapsible header, collapsed by default
-              if (window.innerWidth > 768) {
-                var header = document.createElement('div');
-                header.className = 'jg-fs-panel-header';
-                header.innerHTML = '<span>Filtry i wyszukiwanie</span><span class="jg-fs-panel-arrow">&#x25BC;</span>';
-                fsFilterPanel.appendChild(header);
+              // Add collapsible header on both desktop and mobile, collapsed by default
+              var header = document.createElement('div');
+              header.className = 'jg-fs-panel-header';
+              header.innerHTML = '<span>Filtry i wyszukiwanie</span><span class="jg-fs-panel-arrow">&#x25BC;</span>';
+              fsFilterPanel.appendChild(header);
 
-                var content = document.createElement('div');
-                content.className = 'jg-fs-panel-content jg-fs-panel-collapsed';
-                content.appendChild(filtersClone);
-                fsFilterPanel.appendChild(content);
+              var content = document.createElement('div');
+              content.className = 'jg-fs-panel-content jg-fs-panel-collapsed';
+              content.appendChild(filtersClone);
+              fsFilterPanel.appendChild(content);
 
-                header.addEventListener('click', function() {
-                  content.classList.toggle('jg-fs-panel-collapsed');
-                  header.classList.toggle('expanded');
-                });
-              } else {
-                fsFilterPanel.appendChild(filtersClone);
-              }
+              header.addEventListener('click', function() {
+                content.classList.toggle('jg-fs-panel-collapsed');
+                header.classList.toggle('expanded');
+              });
 
               // Sync checkbox clicks from clone to original
               var cloneCheckboxes = filtersClone.querySelectorAll('input[type="checkbox"]');
@@ -1480,12 +1476,12 @@
               }
             }
 
-            // Desktop: show filter panel always; Mobile: show filter toggle button
+            // Show filter panel on both desktop and mobile (both use collapsible header)
             if (window.innerWidth > 768) {
               fsFilterPanel.classList.add('desktop-visible');
               syncNotifications();
             } else {
-              fsFilterBtn.classList.add('visible');
+              fsFilterPanel.classList.add('mobile-visible');
             }
 
             btn.innerHTML = exitIcon;
@@ -1508,6 +1504,7 @@
             fsFilterBtn.classList.remove('visible');
             fsFilterPanel.classList.remove('active');
             fsFilterPanel.classList.remove('desktop-visible');
+            fsFilterPanel.classList.remove('mobile-visible');
             fsFilterPanel.innerHTML = '';
             fsNotifContainer.innerHTML = '';
             fsSearchPanel.classList.remove('active');

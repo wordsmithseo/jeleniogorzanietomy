@@ -583,14 +583,15 @@ body.jg-fullscreen-active {
 
 #jg-map-wrap.jg-fullscreen .jg-map {
   flex: 1 !important;
-  height: 100% !important;
+  height: 0 !important;
+  min-height: 0 !important;
   max-height: none !important;
   border-radius: 0 !important;
 }
 
-/* ── Fullscreen: Floating filter button (mobile) ── */
+/* ── Fullscreen: Floating filter button (legacy, hidden) ── */
 .jg-fs-filter-btn {
-  display: none;
+  display: none !important;
 }
 
 /* ── Fullscreen: Floating filter panel ── */
@@ -883,43 +884,125 @@ body.jg-fullscreen-active {
     min-height: 100dvh !important;
   }
 
-  /* Floating filter button - ONLY visible in fullscreen on mobile */
-  .jg-fs-filter-btn {
-    display: none !important;
+  /* Mobile: collapsible filter panel - same design as desktop */
+  body.jg-fullscreen-active .jg-fs-filter-panel.mobile-visible {
+    display: block !important;
     position: absolute;
-    top: 46px;
+    top: 10px;
     right: 10px;
-    z-index: 1001;
-    background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 8px 14px;
+    left: auto;
+    bottom: auto;
+    width: calc(100% - 80px);
+    max-width: 320px;
+    max-height: calc(100dvh - 24px);
+    z-index: 1002;
+    padding: 0;
+    border-radius: 14px;
+    overflow: visible;
+  }
+
+  /* Mobile: filter panel header styling */
+  .jg-fs-filter-panel .jg-fs-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
     font-size: 13px;
     font-weight: 600;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    transition: opacity 0.2s;
-    line-height: 1.4;
+    color: #374151;
+    border-radius: 14px;
+    transition: border-radius 0.2s;
   }
 
-  /* Only show when fullscreen is active AND visible class is set */
-  body.jg-fullscreen-active .jg-fs-filter-btn.visible {
-    display: flex !important;
-    align-items: center;
-    gap: 6px;
+  .jg-fs-filter-panel .jg-fs-panel-header:hover {
+    background: rgba(0, 0, 0, 0.03);
   }
 
-  .jg-fs-filter-btn:active {
-    opacity: 0.85;
+  .jg-fs-filter-panel .jg-fs-panel-header.expanded {
+    border-radius: 14px 14px 0 0;
   }
 
-  .jg-fs-filter-panel {
-    top: 50px;
-    left: 8px;
-    right: 8px;
-    max-height: 70vh;
+  .jg-fs-filter-panel .jg-fs-panel-arrow {
+    font-size: 10px;
+    color: #9ca3af;
+    transition: transform 0.2s;
+  }
+
+  .jg-fs-filter-panel .jg-fs-panel-header.expanded .jg-fs-panel-arrow {
+    transform: rotate(180deg);
+  }
+
+  .jg-fs-filter-panel .jg-fs-panel-content {
+    padding: 0 10px 10px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+    max-height: 500px;
+    opacity: 1;
+  }
+
+  .jg-fs-filter-panel .jg-fs-panel-content.jg-fs-panel-collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+  }
+
+  /* Mobile: filters vertical layout inside panel */
+  .jg-fs-filter-panel .jg-filters {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 4px 0;
+    background: transparent;
+    margin-bottom: 0;
+  }
+
+  .jg-fs-filter-panel .jg-filter-label {
+    justify-content: flex-start;
+    width: 100%;
+    padding: 8px;
+  }
+
+  .jg-fs-filter-panel .jg-filter-text {
+    display: inline !important;
+  }
+
+  .jg-fs-filter-panel .jg-search {
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  /* Mobile fullscreen search results panel */
+  body.jg-fullscreen-active .jg-fs-search-results-panel {
+    display: none;
+    position: absolute;
+    z-index: 1002;
+    top: auto;
+    right: 10px;
+    bottom: 12px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+    max-height: 45dvh;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    flex-direction: column;
+  }
+
+  body.jg-fullscreen-active .jg-fs-search-results-panel.active {
+    display: flex;
+  }
+
+  body.jg-fullscreen-active .jg-fs-search-header {
+    padding: 10px 14px;
+    border-radius: 14px 14px 0 0;
   }
 
   .jg-fullscreen-control {
