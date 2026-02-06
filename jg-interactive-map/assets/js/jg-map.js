@@ -1282,12 +1282,20 @@
           var sidebarOriginalParent = sidebar ? sidebar.parentNode : null;
           var sidebarOriginalNext = sidebar ? sidebar.nextSibling : null;
 
-          // Create floating filter button for mobile fullscreen
+          // Create floating filter icon button for mobile fullscreen (below map/satellite toggle)
           var fsFilterBtn = document.createElement('button');
           fsFilterBtn.className = 'jg-fs-filter-btn';
           fsFilterBtn.type = 'button';
           fsFilterBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg><span>Filtry</span>';
           elMap.appendChild(fsFilterBtn);
+
+          // Create filter icon button for mobile (small square, like a Leaflet control)
+          var fsFilterIconBtn = document.createElement('button');
+          fsFilterIconBtn.className = 'jg-fs-filter-icon-btn';
+          fsFilterIconBtn.type = 'button';
+          fsFilterIconBtn.title = 'Filtry i wyszukiwanie';
+          fsFilterIconBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
+          elMap.appendChild(fsFilterIconBtn);
 
           // Create floating filter panel (used on both mobile and desktop fullscreen)
           var fsFilterPanel = document.createElement('div');
@@ -1314,6 +1322,16 @@
           fsFilterBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             fsFilterPanel.classList.toggle('active');
+          });
+
+          // Mobile filter icon button toggles the filter panel visibility
+          fsFilterIconBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (fsFilterPanel.classList.contains('mobile-visible')) {
+              fsFilterPanel.classList.remove('mobile-visible');
+            } else {
+              fsFilterPanel.classList.add('mobile-visible');
+            }
           });
 
           // Close mobile filter panel when clicking on the map
@@ -1396,6 +1414,9 @@
             mapWrap.classList.add('jg-fullscreen');
             document.body.classList.add('jg-fullscreen-active');
             if (sidebar) {
+              // Save original inline height and override for fullscreen
+              sidebar._origHeight = sidebar.style.height;
+              sidebar.style.setProperty('height', 'calc(100% - 24px)', 'important');
               elMap.appendChild(sidebar);
               sidebar.classList.add('jg-sidebar-fullscreen-overlay');
               // Prevent scroll wheel on sidebar from zooming the map
@@ -1478,12 +1499,12 @@
               }
             }
 
-            // Show filter panel on both desktop and mobile (both use collapsible header)
+            // Desktop: show filter panel directly; Mobile: show icon button (panel toggled by button)
             if (window.innerWidth > 768) {
               fsFilterPanel.classList.add('desktop-visible');
               syncNotifications();
             } else {
-              fsFilterPanel.classList.add('mobile-visible');
+              fsFilterIconBtn.classList.add('visible');
             }
 
             btn.innerHTML = exitIcon;
@@ -1497,6 +1518,10 @@
             document.body.classList.remove('jg-fullscreen-active');
             if (sidebar) {
               sidebar.classList.remove('jg-sidebar-fullscreen-overlay');
+              // Restore original inline height
+              if (sidebar._origHeight !== undefined) {
+                sidebar.style.setProperty('height', sidebar._origHeight, 'important');
+              }
               if (sidebarOriginalNext) {
                 sidebarOriginalParent.insertBefore(sidebar, sidebarOriginalNext);
               } else {
@@ -1504,6 +1529,7 @@
               }
             }
             fsFilterBtn.classList.remove('visible');
+            fsFilterIconBtn.classList.remove('visible');
             fsFilterPanel.classList.remove('active');
             fsFilterPanel.classList.remove('desktop-visible');
             fsFilterPanel.classList.remove('mobile-visible');
