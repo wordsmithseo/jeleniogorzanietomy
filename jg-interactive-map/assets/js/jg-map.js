@@ -1398,6 +1398,8 @@
             if (sidebar) {
               elMap.appendChild(sidebar);
               sidebar.classList.add('jg-sidebar-fullscreen-overlay');
+              // Prevent scroll wheel on sidebar from zooming the map
+              L.DomEvent.disableScrollPropagation(sidebar);
             }
 
             // Build filter panel content

@@ -625,7 +625,9 @@ body.jg-fullscreen-active {
     bottom: 12px !important;
     width: 380px !important;
     max-width: 30vw !important;
-    height: calc(100% - 24px) !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
     z-index: 1001 !important;
     border-radius: 16px !important;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
@@ -633,6 +635,9 @@ body.jg-fullscreen-active {
     backdrop-filter: blur(12px) !important;
     -webkit-backdrop-filter: blur(12px) !important;
     overflow-y: auto !important;
+    flex-grow: 0 !important;
+    flex-shrink: 1 !important;
+    flex-basis: auto !important;
   }
 
   /* Desktop filter panel: floating to the left of the sidebar */
@@ -884,21 +889,37 @@ body.jg-fullscreen-active {
     min-height: 100dvh !important;
   }
 
-  /* Mobile: collapsible filter panel - same design as desktop */
+  /* Mobile: collapsible filter panel - to the left of the map/satellite toggle */
   body.jg-fullscreen-active .jg-fs-filter-panel.mobile-visible {
     display: block !important;
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 8px;
+    right: 130px;
     left: auto;
     bottom: auto;
-    width: calc(100% - 80px);
-    max-width: 320px;
+    width: auto;
+    min-width: 0;
+    max-width: calc(100% - 200px);
     max-height: calc(100dvh - 24px);
     z-index: 1002;
     padding: 0;
-    border-radius: 14px;
+    border-radius: 10px;
     overflow: visible;
+  }
+
+  /* Compact header on mobile */
+  body.jg-fullscreen-active .jg-fs-filter-panel.mobile-visible .jg-fs-panel-header {
+    padding: 7px 12px;
+    font-size: 12px;
+    border-radius: 10px;
+  }
+
+  body.jg-fullscreen-active .jg-fs-filter-panel.mobile-visible .jg-fs-panel-header.expanded {
+    border-radius: 10px 10px 0 0;
+  }
+
+  body.jg-fullscreen-active .jg-fs-filter-panel.mobile-visible .jg-fs-panel-content {
+    padding: 0 10px 10px;
   }
 
   /* Mobile: filter panel header styling */
