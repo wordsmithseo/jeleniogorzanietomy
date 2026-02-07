@@ -7,6 +7,40 @@
 
 ---
 
+## QUICK WINS — Natychmiastowe działania na szybki wzrost
+
+> Poniższe 5 działań ma najwyższy stosunek efekt/wysiłek i powinno być wdrożone jako pierwsze.
+
+### [ZROBIONE] 1. Przyciski udostępniania na punktach
+- Facebook share, WhatsApp share, kopiuj link — na każdym punkcie mapy
+- OG tagi już działają świetnie → każdy udostępniony punkt = darmowa reklama w feedzie
+- **Status: WDROŻONE** (jg-map.js + jg-map.css)
+
+### [DO ZROBIENIA] 2. Współpraca z Jelonka.com i lokalnymi portalami
+- Jeden artykuł na Jelonce = setki/tysiące mieszkańców JG
+- Format: „Zgłoszenie tygodnia" — cykliczna rubryka
+- Pitch: „Mapa problemów Jeleniej Góry — sprawdź co zgłaszają mieszkańcy"
+- **Koszt: 0 kodu — jedno zgłoszenie mailowe + pitch**
+
+### [DO ZROBIENIA] 3. Grupy facebookowe Jeleniej Góry
+- Grupy „Jelenia Góra — informacje" mają tysiące członków
+- Wartościowe posty z konkretem: „47 dziur w drogach — zobacz mapę"
+- Screenshot mapy + link = click magnet
+- **Koszt: 0 kodu — 2-3 posty tygodniowo**
+
+### [DO ZROBIENIA] 4. Wyzwanie sezonowe „Zimowy Patrol"
+- Banner na mapie: „Zgłoś nieodśnieżony chodnik!"
+- Hashtag + post na FB + mail do lokalnych mediów
+- Urgency przez ograniczenie czasowe
+- **Koszt: kilka godzin pracy**
+
+### [DO ZROBIENIA] 5. Natywny share (Web Share API)
+- Na urządzeniach mobilnych: natywny dialog udostępniania systemu
+- Backup: obecne przyciski FB/WhatsApp/link
+- **Koszt: 1-2h pracy**
+
+---
+
 ## Spis treści
 
 1. [Analiza obecnego stanu](#1-analiza-obecnego-stanu)
