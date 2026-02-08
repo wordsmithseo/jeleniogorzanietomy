@@ -401,85 +401,53 @@ class JG_Interactive_Map {
 
         $db_time = microtime(true) - $start_time;
 
-        // Check if visitor is a bot
-        $is_bot = $this->is_bot();
+        // Serve the same full HTML page to ALL visitors (bots and humans alike)
+        // This avoids cloaking (serving different content to search engines vs users)
+        // which can prevent Google from indexing the pages
 
-        if ($is_bot) {
-            // Bots get full HTML page with meta tags for SEO
+        // Ensure HTTP 200 status
+        status_header(200);
 
-            // Check if headers already sent
-            if (headers_sent($file, $line)) {
-            }
+        // Prevent WordPress from doing redirects or 404 handling
+        remove_action('template_redirect', 'redirect_canonical');
 
-            // Ensure HTTP 200 status
-            status_header(200);
+        global $jg_current_point;
+        $jg_current_point = $point;
 
-            // Prevent WordPress from doing redirects or 404 handling
-            remove_action('template_redirect', 'redirect_canonical');
+        // Disable Yoast SEO Open Graph and canonical for point pages
+        // This prevents Yoast from outputting incorrect meta tags (e.g., from /publikacje/ page)
+        // We output our own tags via add_point_meta_tags()
+        add_filter('wpseo_opengraph_url', '__return_false');
+        add_filter('wpseo_canonical', '__return_false');
+        add_filter('wpseo_opengraph_title', '__return_false');
+        add_filter('wpseo_opengraph_desc', '__return_false');
+        add_filter('wpseo_opengraph_site_name', '__return_false');
+        add_filter('wpseo_opengraph_type', '__return_false');
+        add_filter('wpseo_opengraph_image', '__return_false');
+        add_filter('wpseo_opengraph_locale', '__return_false');
+        add_filter('wpseo_metadesc', '__return_false');
+        // Disable twitter card from Yoast
+        add_filter('wpseo_twitter_card', '__return_false');
+        add_filter('wpseo_twitter_title', '__return_false');
+        add_filter('wpseo_twitter_description', '__return_false');
+        add_filter('wpseo_twitter_image', '__return_false');
+        // Disable Yoast JSON-LD schema to prevent duplicate/conflicting breadcrumbs
+        add_filter('wpseo_json_ld_output', '__return_false');
+        add_filter('wpseo_schema_graph', '__return_empty_array');
 
-            global $jg_current_point;
-            $jg_current_point = $point;
+        // Render the full point page
+        ob_start();
 
-            // Disable Yoast SEO Open Graph and canonical for point pages
-            // This prevents Yoast from outputting incorrect meta tags (e.g., from /publikacje/ page)
-            // We output our own tags via add_point_meta_tags()
-            add_filter('wpseo_opengraph_url', '__return_false');
-            add_filter('wpseo_canonical', '__return_false');
-            add_filter('wpseo_opengraph_title', '__return_false');
-            add_filter('wpseo_opengraph_desc', '__return_false');
-            add_filter('wpseo_opengraph_site_name', '__return_false');
-            add_filter('wpseo_opengraph_type', '__return_false');
-            add_filter('wpseo_opengraph_image', '__return_false');
-            add_filter('wpseo_opengraph_locale', '__return_false');
-            add_filter('wpseo_metadesc', '__return_false');
-            // Disable twitter card from Yoast
-            add_filter('wpseo_twitter_card', '__return_false');
-            add_filter('wpseo_twitter_title', '__return_false');
-            add_filter('wpseo_twitter_description', '__return_false');
-            add_filter('wpseo_twitter_image', '__return_false');
-            // Disable Yoast JSON-LD schema to prevent duplicate/conflicting breadcrumbs
-            add_filter('wpseo_json_ld_output', '__return_false');
-            add_filter('wpseo_schema_graph', '__return_empty_array');
-
-            // Start output buffering to capture entire page
-            $render_start = microtime(true);
-            ob_start();
-
-            try {
-                $this->render_point_page($point, $request_id, $user_agent_short);
-
-                // Get the rendered content
-                $html_output = ob_get_clean();
-                $html_size = strlen($html_output);
-                $render_time = microtime(true) - $render_start;
-                $total_time = microtime(true) - $start_time;
-
-
-                // Check for PHP errors in output
-                if (stripos($html_output, 'fatal error') !== false ||
-                    stripos($html_output, 'parse error') !== false ||
-                    stripos($html_output, 'warning:') !== false) {
-                }
-
-                // Check if HTML is reasonable size (not empty, not too small)
-                if ($html_size < 100) {
-                }
-
-                // Output the captured HTML
-                echo $html_output;
-
-            } catch (Exception $e) {
-                ob_end_clean();
-
-                // Fallback: render minimal HTML
-                $this->render_fallback_page($point, $request_id, $user_agent_short);
-            }
-            exit;
-        } else {
-            // Humans get redirected to map with modal
-            wp_redirect(home_url('/#point-' . $point['id']));
-            exit;
+        try {
+            $this->render_point_page($point, $request_id, $user_agent_short);
+            $html_output = ob_get_clean();
+            echo $html_output;
+        } catch (Exception $e) {
+            ob_end_clean();
+            // Fallback: render minimal HTML
+            $this->render_fallback_page($point, $request_id, $user_agent_short);
         }
+        exit;
     }
 
     /**
@@ -603,6 +571,17 @@ class JG_Interactive_Map {
             .jg-point-cta a:hover {
                 background: #a02829;
             }
+            .jg-point-map-link {
+                background: #2563eb !important;
+            }
+            .jg-point-map-link:hover {
+                background: #1d4ed8 !important;
+            }
+            .jg-point-address {
+                color: #555;
+                font-size: 16px;
+                margin-bottom: 20px;
+            }
         </style>
 
         <div class="jg-single-point">
@@ -623,19 +602,24 @@ class JG_Interactive_Map {
                 <?php echo wp_kses_post($point['content']); ?>
             </div>
 
-            <?php if (!empty($point['website']) || !empty($point['phone'])): ?>
-                <div class="jg-point-cta">
-                    <?php if (!empty($point['website'])): ?>
-                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener">
-                            🌐 Odwiedź stronę
-                        </a>
-                    <?php endif; ?>
-                    <?php if (!empty($point['phone'])): ?>
-                        <a href="tel:<?php echo esc_attr($point['phone']); ?>">
-                            📞 <?php echo esc_html($point['phone']); ?>
-                        </a>
-                    <?php endif; ?>
-                </div>
+            <div class="jg-point-cta">
+                <a href="<?php echo esc_url(home_url('/#point-' . $point['id'])); ?>" class="jg-point-map-link">
+                    Zobacz na mapie
+                </a>
+                <?php if (!empty($point['website'])): ?>
+                    <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener">
+                        Odwiedź stronę
+                    </a>
+                <?php endif; ?>
+                <?php if (!empty($point['phone'])): ?>
+                    <a href="tel:<?php echo esc_attr($point['phone']); ?>">
+                        <?php echo esc_html($point['phone']); ?>
+                    </a>
+                <?php endif; ?>
+            </div>
+
+            <?php if (!empty($point['address'])): ?>
+                <p class="jg-point-address"><?php echo esc_html($point['address']); ?></p>
             <?php endif; ?>
 
             <div id="jg-point-map-<?php echo $point['id']; ?>" class="jg-point-map"></div>
@@ -852,6 +836,11 @@ class JG_Interactive_Map {
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
         h1 { color: #8d2324; }
         img { max-width: 100%; height: auto; }
+        .jg-fb-cta { margin: 20px 0; }
+        .jg-fb-cta a { display: inline-block; padding: 10px 20px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; margin-right: 10px; margin-bottom: 8px; }
+        .jg-fb-cta a:hover { background: #1d4ed8; }
+        .jg-fb-cta a.jg-fb-site { background: #8d2324; }
+        .jg-fb-cta a.jg-fb-site:hover { background: #a02829; }
     </style>
 </head>
 <body>
@@ -860,16 +849,19 @@ class JG_Interactive_Map {
     <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" data-pin-description="<?php echo esc_attr($point['title'] . ' - ' . $type_label_singular . ' w Jeleniej Górze'); ?>">
     <?php endif; ?>
     <div><?php echo wp_kses_post($point['content']); ?></div>
+    <div class="jg-fb-cta">
+        <a href="<?php echo esc_url(home_url('/#point-' . $point['id'])); ?>">Zobacz na mapie</a>
+        <?php if (!empty($point['website'])): ?>
+        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-fb-site">Odwiedź stronę</a>
+        <?php endif; ?>
+        <?php if (!empty($point['phone'])): ?>
+        <a href="tel:<?php echo esc_attr($point['phone']); ?>"><?php echo esc_html($point['phone']); ?></a>
+        <?php endif; ?>
+    </div>
     <?php if (!empty($point['address'])): ?>
     <p><strong>Adres:</strong> <?php echo esc_html($point['address']); ?></p>
     <?php endif; ?>
     <p><strong>Lokalizacja:</strong> <?php echo esc_html($point['lat']); ?>, <?php echo esc_html($point['lng']); ?></p>
-    <?php if (!empty($point['website'])): ?>
-    <p><a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener">Odwiedź stronę</a></p>
-    <?php endif; ?>
-    <?php if (!empty($point['phone'])): ?>
-    <p><a href="tel:<?php echo esc_attr($point['phone']); ?>">Telefon: <?php echo esc_html($point['phone']); ?></a></p>
-    <?php endif; ?>
 </body>
 </html><?php
     }
