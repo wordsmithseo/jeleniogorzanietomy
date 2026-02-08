@@ -435,17 +435,7 @@ class JG_Interactive_Map {
         add_filter('wpseo_json_ld_output', '__return_false');
         add_filter('wpseo_schema_graph', '__return_empty_array');
 
-        // Fix body classes: remove wrong elementor-page-* class that loads CSS for another page
-        add_filter('body_class', function($classes) {
-            $classes = array_filter($classes, function($class) {
-                // Remove elementor-page-* (loads wrong page's CSS) and blog class
-                return !preg_match('/^elementor-page-\d+$/', $class) && $class !== 'blog';
-            });
-            $classes[] = 'jg-point-page';
-            return $classes;
-        }, 999);
-
-        // Render the full point page
+        // Render the full point page (standalone HTML, no Elementor header/footer)
         ob_start();
 
         try {
@@ -461,26 +451,9 @@ class JG_Interactive_Map {
     }
 
     /**
-     * Render single point page
+     * Render single point page (standalone, no Elementor header/footer)
      */
     private function render_point_page($point, $request_id = 'unknown', $user_agent_short = '') {
-        $header_start = microtime(true);
-
-        // Set page title for SEO
-        add_filter('pre_get_document_title', function() use ($point) {
-            $type_labels = array(
-                'miejsce' => 'Miejsce',
-                'ciekawostka' => 'Ciekawostka',
-                'zgloszenie' => 'Zgłoszenie'
-            );
-            $type_label = isset($type_labels[$point['type']]) ? $type_labels[$point['type']] : 'Punkt';
-            return $point['title'] . ' - ' . $type_label . ' w Jeleniej Górze';
-        }, 999);
-
-        // Get site header
-        get_header();
-        $header_time = microtime(true) - $header_start;
-
         $images = json_decode($point['images'], true) ?: array();
         $featured_index = isset($point['featured_image_index']) ? (int)$point['featured_image_index'] : 0;
 
@@ -491,14 +464,11 @@ class JG_Interactive_Map {
 
             if (isset($images[$img_index])) {
                 $img = $images[$img_index];
-                // Support both old format (string URL) and new format (object with thumb/full)
                 if (is_array($img)) {
                     $first_image = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
                 } else {
                     $first_image = $img;
                 }
-
-                // Ensure absolute URL
                 if ($first_image && strpos($first_image, 'http') !== 0) {
                     $first_image = home_url($first_image);
                 }
@@ -549,104 +519,147 @@ class JG_Interactive_Map {
         $type_path = ($point['type'] === 'ciekawostka') ? 'ciekawostka' : (($point['type'] === 'zgloszenie') ? 'zgloszenie' : 'miejsce');
         $share_url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
 
-        ?>
-        <main id="content" class="site-main" role="main">
-        <style>
-            /* Neutralize WP/Elementor global layout styles on this page */
-            .jg-point-page .site-main { margin-block-start: 0 !important; margin-block-end: 0 !important; }
-            .jg-point-page .site-main > * { margin-block-start: 0 !important; margin-block-end: 0 !important; }
+        // Page title
+        $page_title = esc_html($point['title']) . ' - ' . esc_html($type_label) . ' w Jeleniej Górze';
 
-            /* Reset Elementor/WP overrides within our container */
-            .jg-sp,
-            .jg-sp * { box-sizing: border-box !important; }
-            .jg-sp { max-width: 800px; margin: 0 auto !important; padding: 24px 20px 40px !important; background: #fff; }
-            .jg-sp a { text-decoration: none !important; }
-            .jg-sp a:hover { text-decoration: none !important; }
-            .jg-sp div, .jg-sp span { margin-block-start: 0 !important; margin-block-end: 0 !important; }
-            .jg-sp p { margin: 0 0 12px 0 !important; }
-            .jg-sp h1 { margin: 0 !important; padding: 0 !important; border: none !important; }
+        // Site logo URL
+        $logo_url = '';
+        $custom_logo_id = get_theme_mod('custom_logo');
+        if ($custom_logo_id) {
+            $logo_url = wp_get_attachment_image_url($custom_logo_id, 'full');
+        }
 
-            /* Map CTA Banner - prominent at top */
-            .jg-sp-map-cta {
-                display: flex !important; align-items: center; justify-content: space-between; gap: 12px;
-                background: linear-gradient(135deg, <?php echo $type_color; ?>, <?php echo $type_color; ?>cc) !important;
-                color: #fff !important; padding: 18px 24px !important; border-radius: 12px;
-                margin-bottom: 28px !important; text-decoration: none !important;
-                transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-            }
-            .jg-sp-map-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); color: #fff !important; }
-            .jg-sp-map-cta-text { font-size: 18px; font-weight: 700; color: #fff !important; line-height: 1.3; }
-            .jg-sp-map-cta-sub { font-size: 13px; opacity: 0.9; margin-top: 4px; color: #fff !important; }
-            .jg-sp-map-cta-arrow { font-size: 28px; flex-shrink: 0; color: #fff !important; }
+        ?><!doctype html>
+<html lang="pl-PL">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title><?php echo $page_title; ?></title>
+    <?php
+    // This fires add_point_meta_tags() which outputs OG, Twitter, canonical, schema.org etc.
+    wp_head();
+    ?>
+    <style>
+        /* Standalone point page styles - no Elementor dependency */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #111; background: #f9fafb; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+        a { text-decoration: none; color: inherit; }
+        img { max-width: 100%; height: auto; display: block; }
 
-            /* Header with badges */
-            .jg-sp-header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px !important; flex-wrap: wrap; }
-            .jg-sp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.5; }
+        /* Minimal site header */
+        .jg-sp-site-header {
+            background: #fff; border-bottom: 1px solid #e5e7eb; padding: 12px 20px;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .jg-sp-site-header a { display: flex; align-items: center; gap: 10px; }
+        .jg-sp-site-logo { height: 40px; width: auto; }
+        .jg-sp-site-name { font-size: 16px; font-weight: 700; color: #111; }
+        .jg-sp-site-nav a {
+            font-size: 14px; font-weight: 600; color: #fff; background: <?php echo $type_color; ?>;
+            padding: 8px 16px; border-radius: 8px; transition: opacity 0.15s;
+        }
+        .jg-sp-site-nav a:hover { opacity: 0.85; }
 
-            /* Title */
-            .jg-sp-title { font-size: 2rem !important; font-weight: 800 !important; color: #111 !important; margin: 0 0 8px 0 !important; line-height: 1.2 !important; }
-            .jg-sp-date { font-size: 13px; color: #9ca3af; margin-bottom: 18px !important; }
+        /* Main content container */
+        .jg-sp { max-width: 800px; margin: 0 auto; padding: 28px 20px 48px; background: #fff; min-height: calc(100vh - 130px); }
 
-            /* Content */
-            .jg-sp-content { font-size: 16px; line-height: 1.75; color: #374151; margin-bottom: 24px !important; word-wrap: break-word; }
+        /* Map CTA Banner */
+        .jg-sp-map-cta {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            background: linear-gradient(135deg, <?php echo $type_color; ?>, <?php echo $type_color; ?>cc);
+            color: #fff; padding: 18px 24px; border-radius: 12px;
+            margin-bottom: 28px; transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        .jg-sp-map-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+        .jg-sp-map-cta-text { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.3; }
+        .jg-sp-map-cta-sub { font-size: 13px; opacity: 0.9; margin-top: 4px; color: #fff; }
+        .jg-sp-map-cta-arrow { font-size: 28px; flex-shrink: 0; color: #fff; }
 
-            /* Contact & Social */
-            .jg-sp-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 24px !important; }
-            .jg-sp-contact-link { color: #2563eb !important; font-size: 15px; display: inline-flex !important; align-items: center; gap: 6px; }
-            .jg-sp-contact-link:hover { text-decoration: underline !important; }
-            .jg-sp-social {
-                display: inline-flex !important; align-items: center; justify-content: center;
-                width: 40px !important; height: 40px !important; border-radius: 50% !important;
-                color: #fff !important; font-size: 16px; font-weight: 700;
-                transition: opacity 0.15s; line-height: 1;
-            }
-            .jg-sp-social:hover { opacity: 0.8; color: #fff !important; }
-            .jg-sp-social svg { width: 20px; height: 20px; fill: #fff; }
+        /* Header with badges */
+        .jg-sp-header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px; flex-wrap: wrap; }
+        .jg-sp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.5; }
 
-            /* Address */
-            .jg-sp-address { font-size: 15px; color: #6b7280; margin-bottom: 24px !important; }
+        /* Title */
+        .jg-sp-title { font-size: 2rem; font-weight: 800; color: #111; margin: 0 0 8px 0; line-height: 1.2; }
+        .jg-sp-date { font-size: 13px; color: #9ca3af; margin-bottom: 18px; }
 
-            /* Gallery - grid matching modal */
-            .jg-sp-gallery { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 28px !important; }
-            .jg-sp-gallery-item {
-                position: relative; width: 100%; padding-bottom: 100%; /* 1:1 aspect ratio fallback */
-                border-radius: 12px; overflow: hidden; border: 2px solid #e5e7eb;
-            }
-            .jg-sp-gallery-item.is-featured { border-color: #fbbf24; border-width: 3px; }
-            .jg-sp-gallery-item a { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-            .jg-sp-gallery-img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
+        /* Content */
+        .jg-sp-content { font-size: 16px; line-height: 1.75; color: #374151; margin-bottom: 24px; word-wrap: break-word; }
+        .jg-sp-content p { margin: 0 0 12px 0; }
 
-            /* Featured image (shown when only 1 image or as hero) */
-            .jg-sp-hero-img {
-                width: 100%; max-height: 500px; object-fit: cover; border-radius: 12px;
-                margin-bottom: 24px !important; display: block;
-            }
+        /* Contact & Social */
+        .jg-sp-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 24px; }
+        .jg-sp-contact-link { color: #2563eb; font-size: 15px; display: inline-flex; align-items: center; gap: 6px; }
+        .jg-sp-contact-link:hover { text-decoration: underline; }
+        .jg-sp-social {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 50%;
+            color: #fff; transition: opacity 0.15s;
+        }
+        .jg-sp-social:hover { opacity: 0.8; }
+        .jg-sp-social svg { width: 20px; height: 20px; fill: #fff; }
 
-            /* Share */
-            .jg-sp-share { display: flex; align-items: center; gap: 8px; margin-bottom: 28px !important; flex-wrap: wrap; }
-            .jg-sp-share-btn {
-                display: inline-flex !important; align-items: center; gap: 6px;
-                padding: 8px 16px !important; border-radius: 8px; font-size: 13px; font-weight: 600;
-                color: #fff !important; transition: opacity 0.15s;
-                border: none; cursor: pointer; line-height: 1.4;
-            }
-            .jg-sp-share-btn:hover { opacity: 0.85; color: #fff !important; }
-            .jg-sp-share-btn--fb { background: #1877f2 !important; }
-            .jg-sp-share-btn--wa { background: #25d366 !important; }
-            .jg-sp-share-btn--copy { background: #6b7280 !important; }
+        /* Address */
+        .jg-sp-address { font-size: 15px; color: #6b7280; margin-bottom: 24px; }
 
-            /* Map embed */
-            .jg-sp-map { width: 100%; height: 300px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e5e7eb; }
+        /* Gallery grid */
+        .jg-sp-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 28px; }
+        .jg-sp-gallery-item {
+            position: relative; width: 100%; padding-bottom: 100%;
+            border-radius: 12px; overflow: hidden; border: 2px solid #e5e7eb;
+        }
+        .jg-sp-gallery-item.is-featured { border-color: #fbbf24; border-width: 3px; }
+        .jg-sp-gallery-item a { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .jg-sp-gallery-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-            @media (max-width: 640px) {
-                .jg-sp { padding: 16px 12px 32px; }
-                .jg-sp-title { font-size: 1.5rem !important; }
-                .jg-sp-map-cta { padding: 14px 16px !important; }
-                .jg-sp-map-cta-text { font-size: 16px; }
-                .jg-sp-gallery { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
-                .jg-sp-hero-img { max-height: 300px; }
-            }
-        </style>
+        /* Hero image (single image) */
+        .jg-sp-hero-img { width: 100%; max-height: 500px; object-fit: cover; border-radius: 12px; margin-bottom: 24px; }
+
+        /* Share buttons */
+        .jg-sp-share { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+        .jg-sp-share-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+            color: #fff; border: none; cursor: pointer; transition: opacity 0.15s; line-height: 1.4;
+        }
+        .jg-sp-share-btn:hover { opacity: 0.85; }
+        .jg-sp-share-btn--fb { background: #1877f2; }
+        .jg-sp-share-btn--wa { background: #25d366; }
+        .jg-sp-share-btn--copy { background: #6b7280; }
+
+        /* Footer */
+        .jg-sp-site-footer {
+            background: #1f2937; color: #9ca3af; text-align: center;
+            padding: 24px 20px; font-size: 13px; line-height: 1.6;
+        }
+        .jg-sp-site-footer a { color: #d1d5db; text-decoration: underline; }
+        .jg-sp-site-footer a:hover { color: #fff; }
+
+        @media (max-width: 640px) {
+            .jg-sp { padding: 16px 12px 32px; }
+            .jg-sp-title { font-size: 1.5rem; }
+            .jg-sp-map-cta { padding: 14px 16px; }
+            .jg-sp-map-cta-text { font-size: 16px; }
+            .jg-sp-gallery { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+            .jg-sp-hero-img { max-height: 300px; }
+            .jg-sp-site-name { display: none; }
+        }
+    </style>
+</head>
+<body>
+        <!-- Minimal site header -->
+        <header class="jg-sp-site-header">
+            <a href="<?php echo esc_url(home_url('/')); ?>">
+                <?php if ($logo_url): ?>
+                    <img src="<?php echo esc_url($logo_url); ?>" alt="<?php bloginfo('name'); ?>" class="jg-sp-site-logo">
+                <?php endif; ?>
+                <span class="jg-sp-site-name"><?php bloginfo('name'); ?></span>
+            </a>
+            <nav class="jg-sp-site-nav">
+                <a href="<?php echo esc_url(home_url('/#point-' . $point['id'])); ?>">Otwórz na mapie</a>
+            </nav>
+        </header>
 
         <div class="jg-sp">
             <!-- Prominent "View on Map" CTA at top -->
@@ -658,7 +671,7 @@ class JG_Interactive_Map {
                 <span class="jg-sp-map-cta-arrow">&rarr;</span>
             </a>
 
-            <!-- Header with badges (like modal header) -->
+            <!-- Header with badges -->
             <div class="jg-sp-header">
                 <?php if ($point['is_promo']): ?>
                     <span class="jg-sp-badge" style="background:#fbbf24;color:#111">Miejsce sponsorowane</span>
@@ -677,7 +690,7 @@ class JG_Interactive_Map {
                 <?php echo wp_kses_post($point['content']); ?>
             </div>
 
-            <!-- Contact info & social links (like modal) -->
+            <!-- Contact info & social links -->
             <?php if (!empty($point['website']) || !empty($point['phone']) || !empty($point['facebook_url']) || !empty($point['instagram_url']) || !empty($point['linkedin_url']) || !empty($point['tiktok_url'])): ?>
                 <div class="jg-sp-contact">
                     <?php if (!empty($point['website'])): ?>
@@ -721,35 +734,24 @@ class JG_Interactive_Map {
                 </div>
             <?php endif; ?>
 
-            <!-- Share bar (like modal) -->
+            <!-- Share bar -->
             <div class="jg-sp-share">
                 <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode($share_url); ?>" target="_blank" rel="noopener" class="jg-sp-share-btn jg-sp-share-btn--fb">Facebook</a>
                 <a href="https://wa.me/?text=<?php echo urlencode($point['title'] . ' - ' . $share_url); ?>" target="_blank" rel="noopener" class="jg-sp-share-btn jg-sp-share-btn--wa">WhatsApp</a>
                 <button class="jg-sp-share-btn jg-sp-share-btn--copy" onclick="navigator.clipboard.writeText('<?php echo esc_js($share_url); ?>').then(function(){var b=event.target;b.textContent='Skopiowano!';setTimeout(function(){b.textContent='Kopiuj link'},2000)})">Kopiuj link</button>
             </div>
-
-            <!-- Small embedded map -->
-            <div id="jg-point-map-<?php echo $point['id']; ?>" class="jg-sp-map"></div>
-
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    if (typeof L !== 'undefined') {
-                        var map = L.map('jg-point-map-<?php echo $point['id']; ?>').setView([<?php echo $point['lat']; ?>, <?php echo $point['lng']; ?>], 16);
-                        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '&copy; OpenStreetMap'
-                        }).addTo(map);
-                        L.marker([<?php echo $point['lat']; ?>, <?php echo $point['lng']; ?>]).addTo(map);
-                    }
-                });
-            </script>
         </div>
-        </main>
 
+        <!-- Minimal footer -->
+        <footer class="jg-sp-site-footer">
+            &copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?> &mdash;
+            <a href="<?php echo esc_url(home_url('/')); ?>">Wróć do mapy</a>
+        </footer>
+
+        <?php wp_footer(); ?>
+</body>
+</html>
         <?php
-        $footer_start = microtime(true);
-        // Get site footer
-        get_footer();
-        $footer_time = microtime(true) - $footer_start;
     }
 
     /**
