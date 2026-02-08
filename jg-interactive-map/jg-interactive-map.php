@@ -435,6 +435,16 @@ class JG_Interactive_Map {
         add_filter('wpseo_json_ld_output', '__return_false');
         add_filter('wpseo_schema_graph', '__return_empty_array');
 
+        // Fix body classes: remove wrong elementor-page-* class that loads CSS for another page
+        add_filter('body_class', function($classes) {
+            $classes = array_filter($classes, function($class) {
+                // Remove elementor-page-* (loads wrong page's CSS) and blog class
+                return !preg_match('/^elementor-page-\d+$/', $class) && $class !== 'blog';
+            });
+            $classes[] = 'jg-point-page';
+            return $classes;
+        }, 999);
+
         // Render the full point page
         ob_start();
 
@@ -540,15 +550,21 @@ class JG_Interactive_Map {
         $share_url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
 
         ?>
+        <main id="content" class="site-main" role="main">
         <style>
+            /* Neutralize WP/Elementor global layout styles on this page */
+            .jg-point-page .site-main { margin-block-start: 0 !important; margin-block-end: 0 !important; }
+            .jg-point-page .site-main > * { margin-block-start: 0 !important; margin-block-end: 0 !important; }
+
             /* Reset Elementor/WP overrides within our container */
             .jg-sp,
-            .jg-sp * { box-sizing: border-box; }
-            .jg-sp { max-width: 800px; margin: 0 auto; padding: 24px 20px 40px; }
+            .jg-sp * { box-sizing: border-box !important; }
+            .jg-sp { max-width: 800px; margin: 0 auto !important; padding: 24px 20px 40px !important; background: #fff; }
             .jg-sp a { text-decoration: none !important; }
             .jg-sp a:hover { text-decoration: none !important; }
-            .jg-sp p { margin: 0 0 12px 0; }
-            .jg-sp h1 { margin: 0; padding: 0; }
+            .jg-sp div, .jg-sp span { margin-block-start: 0 !important; margin-block-end: 0 !important; }
+            .jg-sp p { margin: 0 0 12px 0 !important; }
+            .jg-sp h1 { margin: 0 !important; padding: 0 !important; border: none !important; }
 
             /* Map CTA Banner - prominent at top */
             .jg-sp-map-cta {
@@ -727,6 +743,7 @@ class JG_Interactive_Map {
                 });
             </script>
         </div>
+        </main>
 
         <?php
         $footer_start = microtime(true);
