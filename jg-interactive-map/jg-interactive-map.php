@@ -472,12 +472,11 @@ class JG_Interactive_Map {
         $header_time = microtime(true) - $header_start;
 
         $images = json_decode($point['images'], true) ?: array();
+        $featured_index = isset($point['featured_image_index']) ? (int)$point['featured_image_index'] : 0;
 
         // Get featured image (or first image as fallback) - ensure it's a full URL
         $first_image = '';
         if (!empty($images)) {
-            // Use featured image index if set, otherwise use first image (index 0)
-            $featured_index = isset($point['featured_image_index']) ? (int)$point['featured_image_index'] : 0;
             $img_index = isset($images[$featured_index]) ? $featured_index : 0;
 
             if (isset($images[$img_index])) {
@@ -496,7 +495,30 @@ class JG_Interactive_Map {
             }
         }
 
-        // Type labels
+        // Prepare all images as full URLs
+        $all_images = array();
+        foreach ($images as $idx => $img) {
+            $thumb_url = '';
+            $full_url = '';
+            if (is_array($img)) {
+                $full_url = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
+                $thumb_url = isset($img['thumb']) ? $img['thumb'] : $full_url;
+            } else {
+                $full_url = $img;
+                $thumb_url = $img;
+            }
+            if ($full_url && strpos($full_url, 'http') !== 0) {
+                $full_url = home_url($full_url);
+            }
+            if ($thumb_url && strpos($thumb_url, 'http') !== 0) {
+                $thumb_url = home_url($thumb_url);
+            }
+            if ($full_url) {
+                $all_images[] = array('full' => $full_url, 'thumb' => $thumb_url, 'is_featured' => ($idx === $featured_index));
+            }
+        }
+
+        // Type labels and colors (matching modal)
         $type_labels = array(
             'miejsce' => 'Miejsce',
             'ciekawostka' => 'Ciekawostka',
@@ -504,132 +526,165 @@ class JG_Interactive_Map {
         );
         $type_label = isset($type_labels[$point['type']]) ? $type_labels[$point['type']] : 'Punkt';
 
+        $type_colors = array(
+            'miejsce' => '#8d2324',
+            'ciekawostka' => '#3b82f6',
+            'zgloszenie' => '#ef4444'
+        );
+        $type_color = isset($type_colors[$point['type']]) ? $type_colors[$point['type']] : '#6b7280';
+        $badge_bg = $point['is_promo'] ? '#fbbf24' : $type_color;
+        $badge_color = $point['is_promo'] ? '#111' : '#fff';
+
+        // Build share URL
+        $type_path = ($point['type'] === 'ciekawostka') ? 'ciekawostka' : (($point['type'] === 'zgloszenie') ? 'zgloszenie' : 'miejsce');
+        $share_url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
+
         ?>
         <style>
-            .jg-single-point {
-                max-width: 1200px;
-                margin: 40px auto;
-                padding: 0 20px;
-            }
-            .jg-point-header {
-                margin-bottom: 30px;
-            }
-            .jg-point-type {
-                display: inline-block;
-                padding: 6px 12px;
-                background: <?php echo $point['is_promo'] ? '#fbbf24' : ($point['type'] === 'miejsce' ? '#8d2324' : ($point['type'] === 'ciekawostka' ? '#3b82f6' : '#ef4444')); ?>;
-                color: <?php echo $point['is_promo'] ? '#111' : '#fff'; ?>;
-                border-radius: 4px;
-                font-size: 14px;
-                font-weight: 600;
-                margin-bottom: 10px;
-            }
-            .jg-point-title {
-                font-size: 42px;
-                font-weight: 700;
-                margin: 0 0 15px 0;
-                color: #111;
-            }
-            .jg-point-meta {
-                color: #666;
-                font-size: 14px;
-                margin-bottom: 20px;
-            }
-            .jg-point-content {
-                font-size: 18px;
-                line-height: 1.7;
-                color: #333;
-                margin-bottom: 30px;
-            }
-            .jg-point-image {
-                width: 100%;
-                max-width: 800px;
-                height: auto;
-                border-radius: 8px;
-                margin-bottom: 30px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            }
-            .jg-point-map {
-                width: 100%;
-                height: 400px;
-                border-radius: 8px;
-                margin-bottom: 30px;
-            }
-            .jg-point-cta {
-                margin-top: 30px;
-            }
-            .jg-point-cta a {
-                display: inline-block;
-                padding: 12px 24px;
-                background: #8d2324;
-                color: #fff;
-                text-decoration: none;
-                border-radius: 6px;
-                font-weight: 600;
-                transition: background 0.2s;
-            }
-            .jg-point-cta a:hover {
-                background: #a02829;
-            }
-            .jg-point-map-link {
-                background: #2563eb !important;
-            }
-            .jg-point-map-link:hover {
-                background: #1d4ed8 !important;
-            }
-            .jg-point-address {
-                color: #555;
-                font-size: 16px;
-                margin-bottom: 20px;
+            .jg-sp { max-width: 800px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+            /* Map CTA Banner */
+            .jg-sp-map-cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(135deg, <?php echo $type_color; ?>, <?php echo $type_color; ?>dd); color: #fff; padding: 16px 24px; border-radius: 12px; margin-bottom: 24px; text-decoration: none; transition: transform 0.15s, box-shadow 0.15s; }
+            .jg-sp-map-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); color: #fff; text-decoration: none; }
+            .jg-sp-map-cta-text { font-size: 18px; font-weight: 700; }
+            .jg-sp-map-cta-sub { font-size: 13px; opacity: 0.9; margin-top: 2px; }
+            .jg-sp-map-cta-arrow { font-size: 28px; flex-shrink: 0; }
+
+            /* Header */
+            .jg-sp-header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px; flex-wrap: wrap; }
+            .jg-sp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+            .jg-sp-promo-badge { background: #fbbf24; color: #111; }
+
+            /* Title */
+            .jg-sp-title { font-size: 2rem; font-weight: 800; color: #111; margin: 0 0 8px 0; line-height: 1.2; }
+            .jg-sp-date { font-size: 13px; color: #9ca3af; margin-bottom: 16px; }
+
+            /* Content */
+            .jg-sp-content { font-size: 16px; line-height: 1.7; color: #374151; margin-bottom: 20px; word-wrap: break-word; }
+            .jg-sp-content p { margin: 0 0 12px 0; }
+
+            /* Contact & Social */
+            .jg-sp-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
+            .jg-sp-contact a { color: #2563eb; text-decoration: none; font-size: 15px; display: inline-flex; align-items: center; gap: 6px; }
+            .jg-sp-contact a:hover { text-decoration: underline; }
+            .jg-sp-social { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; color: #fff !important; text-decoration: none !important; font-size: 18px; transition: opacity 0.15s; }
+            .jg-sp-social:hover { opacity: 0.85; }
+
+            /* Address */
+            .jg-sp-address { font-size: 15px; color: #6b7280; margin-bottom: 20px; }
+
+            /* Gallery */
+            .jg-sp-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 24px; }
+            .jg-sp-gallery-item { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 2px solid #e5e7eb; }
+            .jg-sp-gallery-item.is-featured { border-color: #fbbf24; }
+            .jg-sp-gallery-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+            /* Share */
+            .jg-sp-share { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+            .jg-sp-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; color: #fff; transition: opacity 0.15s; border: none; cursor: pointer; }
+            .jg-sp-share-btn:hover { opacity: 0.85; color: #fff; text-decoration: none; }
+            .jg-sp-share-btn--fb { background: #1877f2; }
+            .jg-sp-share-btn--wa { background: #25d366; }
+            .jg-sp-share-btn--copy { background: #6b7280; }
+
+            /* Map embed */
+            .jg-sp-map { width: 100%; height: 300px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e5e7eb; }
+
+            @media (max-width: 640px) {
+                .jg-sp { padding: 12px; }
+                .jg-sp-title { font-size: 1.5rem; }
+                .jg-sp-map-cta { padding: 14px 18px; }
+                .jg-sp-gallery { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
             }
         </style>
 
-        <div class="jg-single-point">
-            <div class="jg-point-header">
-                <span class="jg-point-type"><?php echo esc_html($type_label); ?></span>
-                <h1 class="jg-point-title"><?php echo esc_html($point['title']); ?></h1>
-                <div class="jg-point-meta">
-                    📍 <?php echo esc_html($point['lat']); ?>, <?php echo esc_html($point['lng']); ?>
-                    · 📅 <?php echo get_date_from_gmt($point['created_at'], 'd.m.Y'); ?>
+        <div class="jg-sp">
+            <!-- Prominent "View on Map" CTA at top -->
+            <a href="<?php echo esc_url(home_url('/#point-' . $point['id'])); ?>" class="jg-sp-map-cta">
+                <div>
+                    <div class="jg-sp-map-cta-text">Zobacz na mapie interaktywnej</div>
+                    <div class="jg-sp-map-cta-sub"><?php echo esc_html($point['title']); ?> &mdash; <?php echo esc_html($type_label); ?> w Jeleniej Górze</div>
                 </div>
+                <span class="jg-sp-map-cta-arrow">&rarr;</span>
+            </a>
+
+            <!-- Header with badges (like modal header) -->
+            <div class="jg-sp-header">
+                <?php if ($point['is_promo']): ?>
+                    <span class="jg-sp-badge jg-sp-promo-badge">Miejsce sponsorowane</span>
+                <?php endif; ?>
+                <span class="jg-sp-badge" style="background:<?php echo $badge_bg; ?>;color:<?php echo $badge_color; ?>"><?php echo esc_html($type_label); ?></span>
             </div>
 
-            <?php if ($first_image): ?>
-                <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" class="jg-point-image" data-pin-description="<?php echo esc_attr($point['title'] . ' - ' . $type_label . ' w Jeleniej Górze'); ?>">
-            <?php endif; ?>
+            <!-- Title -->
+            <h1 class="jg-sp-title"><?php echo esc_html($point['title']); ?></h1>
 
-            <div class="jg-point-content">
+            <!-- Date -->
+            <div class="jg-sp-date"><?php echo get_date_from_gmt($point['created_at'], 'd.m.Y'); ?></div>
+
+            <!-- Content -->
+            <div class="jg-sp-content">
                 <?php echo wp_kses_post($point['content']); ?>
             </div>
 
-            <div class="jg-point-cta">
-                <a href="<?php echo esc_url(home_url('/#point-' . $point['id'])); ?>" class="jg-point-map-link">
-                    Zobacz na mapie
-                </a>
-                <?php if (!empty($point['website'])): ?>
-                    <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener">
-                        Odwiedź stronę
-                    </a>
-                <?php endif; ?>
-                <?php if (!empty($point['phone'])): ?>
-                    <a href="tel:<?php echo esc_attr($point['phone']); ?>">
-                        <?php echo esc_html($point['phone']); ?>
-                    </a>
-                <?php endif; ?>
-            </div>
-
-            <?php if (!empty($point['address'])): ?>
-                <p class="jg-point-address"><?php echo esc_html($point['address']); ?></p>
+            <!-- Contact info & social links (like modal) -->
+            <?php if (!empty($point['website']) || !empty($point['phone']) || !empty($point['facebook_url']) || !empty($point['instagram_url']) || !empty($point['linkedin_url']) || !empty($point['tiktok_url'])): ?>
+                <div class="jg-sp-contact">
+                    <?php if (!empty($point['website'])): ?>
+                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener">&#127760; <?php echo esc_html(parse_url($point['website'], PHP_URL_HOST) ?: $point['website']); ?></a>
+                    <?php endif; ?>
+                    <?php if (!empty($point['phone'])): ?>
+                        <a href="tel:<?php echo esc_attr($point['phone']); ?>">&#128222; <?php echo esc_html($point['phone']); ?></a>
+                    <?php endif; ?>
+                    <?php if (!empty($point['facebook_url'])): ?>
+                        <a href="<?php echo esc_url($point['facebook_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#1877f2" title="Facebook">f</a>
+                    <?php endif; ?>
+                    <?php if (!empty($point['instagram_url'])): ?>
+                        <a href="<?php echo esc_url($point['instagram_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)" title="Instagram">&#9679;</a>
+                    <?php endif; ?>
+                    <?php if (!empty($point['linkedin_url'])): ?>
+                        <a href="<?php echo esc_url($point['linkedin_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#0077b5" title="LinkedIn">in</a>
+                    <?php endif; ?>
+                    <?php if (!empty($point['tiktok_url'])): ?>
+                        <a href="<?php echo esc_url($point['tiktok_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#000" title="TikTok">&#9835;</a>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
 
-            <div id="jg-point-map-<?php echo $point['id']; ?>" class="jg-point-map"></div>
+            <!-- Address -->
+            <?php if (!empty($point['address'])): ?>
+                <div class="jg-sp-address">&#128205; <?php echo esc_html($point['address']); ?></div>
+            <?php endif; ?>
+
+            <!-- Image Gallery (grid like modal) -->
+            <?php if (!empty($all_images)): ?>
+                <div class="jg-sp-gallery">
+                    <?php foreach ($all_images as $img_data): ?>
+                        <div class="jg-sp-gallery-item<?php echo $img_data['is_featured'] ? ' is-featured' : ''; ?>">
+                            <a href="<?php echo esc_url($img_data['full']); ?>" target="_blank">
+                                <img src="<?php echo esc_url($img_data['thumb']); ?>" alt="<?php echo esc_attr($point['title']); ?>" class="jg-sp-gallery-img" loading="lazy">
+                            </a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- Share bar (like modal) -->
+            <div class="jg-sp-share">
+                <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo urlencode($share_url); ?>" target="_blank" rel="noopener" class="jg-sp-share-btn jg-sp-share-btn--fb">Facebook</a>
+                <a href="https://wa.me/?text=<?php echo urlencode($point['title'] . ' - ' . $share_url); ?>" target="_blank" rel="noopener" class="jg-sp-share-btn jg-sp-share-btn--wa">WhatsApp</a>
+                <button class="jg-sp-share-btn jg-sp-share-btn--copy" onclick="navigator.clipboard.writeText('<?php echo esc_js($share_url); ?>').then(function(){var b=event.target;b.textContent='Skopiowano!';setTimeout(function(){b.textContent='Kopiuj link'},2000)})">Kopiuj link</button>
+            </div>
+
+            <!-- Small embedded map -->
+            <div id="jg-point-map-<?php echo $point['id']; ?>" class="jg-sp-map"></div>
 
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
                     if (typeof L !== 'undefined') {
                         var map = L.map('jg-point-map-<?php echo $point['id']; ?>').setView([<?php echo $point['lat']; ?>, <?php echo $point['lng']; ?>], 16);
                         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '© OpenStreetMap'
+                            attribution: '&copy; OpenStreetMap'
                         }).addTo(map);
                         L.marker([<?php echo $point['lat']; ?>, <?php echo $point['lng']; ?>]).addTo(map);
                     }
