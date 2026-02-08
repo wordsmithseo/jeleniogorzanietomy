@@ -1980,6 +1980,12 @@ body.jg-fullscreen-active {
   color: #fff;
 }
 
+.jg-share-btn svg {
+  fill: #fff;
+  color: #fff;
+  stroke: #fff;
+}
+
 .jg-share-btn:hover {
   transform: scale(1.12);
 }
