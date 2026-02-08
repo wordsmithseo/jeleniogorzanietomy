@@ -541,60 +541,94 @@ class JG_Interactive_Map {
 
         ?>
         <style>
-            .jg-sp { max-width: 800px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+            /* Reset Elementor/WP overrides within our container */
+            .jg-sp,
+            .jg-sp * { box-sizing: border-box; }
+            .jg-sp { max-width: 800px; margin: 0 auto; padding: 24px 20px 40px; }
+            .jg-sp a { text-decoration: none !important; }
+            .jg-sp a:hover { text-decoration: none !important; }
+            .jg-sp p { margin: 0 0 12px 0; }
+            .jg-sp h1 { margin: 0; padding: 0; }
 
-            /* Map CTA Banner */
-            .jg-sp-map-cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(135deg, <?php echo $type_color; ?>, <?php echo $type_color; ?>dd); color: #fff; padding: 16px 24px; border-radius: 12px; margin-bottom: 24px; text-decoration: none; transition: transform 0.15s, box-shadow 0.15s; }
-            .jg-sp-map-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); color: #fff; text-decoration: none; }
-            .jg-sp-map-cta-text { font-size: 18px; font-weight: 700; }
-            .jg-sp-map-cta-sub { font-size: 13px; opacity: 0.9; margin-top: 2px; }
-            .jg-sp-map-cta-arrow { font-size: 28px; flex-shrink: 0; }
+            /* Map CTA Banner - prominent at top */
+            .jg-sp-map-cta {
+                display: flex !important; align-items: center; justify-content: space-between; gap: 12px;
+                background: linear-gradient(135deg, <?php echo $type_color; ?>, <?php echo $type_color; ?>cc) !important;
+                color: #fff !important; padding: 18px 24px !important; border-radius: 12px;
+                margin-bottom: 28px !important; text-decoration: none !important;
+                transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            }
+            .jg-sp-map-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); color: #fff !important; }
+            .jg-sp-map-cta-text { font-size: 18px; font-weight: 700; color: #fff !important; line-height: 1.3; }
+            .jg-sp-map-cta-sub { font-size: 13px; opacity: 0.9; margin-top: 4px; color: #fff !important; }
+            .jg-sp-map-cta-arrow { font-size: 28px; flex-shrink: 0; color: #fff !important; }
 
-            /* Header */
-            .jg-sp-header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px; flex-wrap: wrap; }
-            .jg-sp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-            .jg-sp-promo-badge { background: #fbbf24; color: #111; }
+            /* Header with badges */
+            .jg-sp-header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px !important; flex-wrap: wrap; }
+            .jg-sp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.5; }
 
             /* Title */
-            .jg-sp-title { font-size: 2rem; font-weight: 800; color: #111; margin: 0 0 8px 0; line-height: 1.2; }
-            .jg-sp-date { font-size: 13px; color: #9ca3af; margin-bottom: 16px; }
+            .jg-sp-title { font-size: 2rem !important; font-weight: 800 !important; color: #111 !important; margin: 0 0 8px 0 !important; line-height: 1.2 !important; }
+            .jg-sp-date { font-size: 13px; color: #9ca3af; margin-bottom: 18px !important; }
 
             /* Content */
-            .jg-sp-content { font-size: 16px; line-height: 1.7; color: #374151; margin-bottom: 20px; word-wrap: break-word; }
-            .jg-sp-content p { margin: 0 0 12px 0; }
+            .jg-sp-content { font-size: 16px; line-height: 1.75; color: #374151; margin-bottom: 24px !important; word-wrap: break-word; }
 
             /* Contact & Social */
-            .jg-sp-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
-            .jg-sp-contact a { color: #2563eb; text-decoration: none; font-size: 15px; display: inline-flex; align-items: center; gap: 6px; }
-            .jg-sp-contact a:hover { text-decoration: underline; }
-            .jg-sp-social { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; color: #fff !important; text-decoration: none !important; font-size: 18px; transition: opacity 0.15s; }
-            .jg-sp-social:hover { opacity: 0.85; }
+            .jg-sp-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 24px !important; }
+            .jg-sp-contact-link { color: #2563eb !important; font-size: 15px; display: inline-flex !important; align-items: center; gap: 6px; }
+            .jg-sp-contact-link:hover { text-decoration: underline !important; }
+            .jg-sp-social {
+                display: inline-flex !important; align-items: center; justify-content: center;
+                width: 40px !important; height: 40px !important; border-radius: 50% !important;
+                color: #fff !important; font-size: 16px; font-weight: 700;
+                transition: opacity 0.15s; line-height: 1;
+            }
+            .jg-sp-social:hover { opacity: 0.8; color: #fff !important; }
+            .jg-sp-social svg { width: 20px; height: 20px; fill: #fff; }
 
             /* Address */
-            .jg-sp-address { font-size: 15px; color: #6b7280; margin-bottom: 20px; }
+            .jg-sp-address { font-size: 15px; color: #6b7280; margin-bottom: 24px !important; }
 
-            /* Gallery */
-            .jg-sp-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 24px; }
-            .jg-sp-gallery-item { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 2px solid #e5e7eb; }
-            .jg-sp-gallery-item.is-featured { border-color: #fbbf24; }
-            .jg-sp-gallery-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+            /* Gallery - grid matching modal */
+            .jg-sp-gallery { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 28px !important; }
+            .jg-sp-gallery-item {
+                position: relative; width: 100%; padding-bottom: 100%; /* 1:1 aspect ratio fallback */
+                border-radius: 12px; overflow: hidden; border: 2px solid #e5e7eb;
+            }
+            .jg-sp-gallery-item.is-featured { border-color: #fbbf24; border-width: 3px; }
+            .jg-sp-gallery-item a { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+            .jg-sp-gallery-img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
+
+            /* Featured image (shown when only 1 image or as hero) */
+            .jg-sp-hero-img {
+                width: 100%; max-height: 500px; object-fit: cover; border-radius: 12px;
+                margin-bottom: 24px !important; display: block;
+            }
 
             /* Share */
-            .jg-sp-share { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
-            .jg-sp-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; color: #fff; transition: opacity 0.15s; border: none; cursor: pointer; }
-            .jg-sp-share-btn:hover { opacity: 0.85; color: #fff; text-decoration: none; }
-            .jg-sp-share-btn--fb { background: #1877f2; }
-            .jg-sp-share-btn--wa { background: #25d366; }
-            .jg-sp-share-btn--copy { background: #6b7280; }
+            .jg-sp-share { display: flex; align-items: center; gap: 8px; margin-bottom: 28px !important; flex-wrap: wrap; }
+            .jg-sp-share-btn {
+                display: inline-flex !important; align-items: center; gap: 6px;
+                padding: 8px 16px !important; border-radius: 8px; font-size: 13px; font-weight: 600;
+                color: #fff !important; transition: opacity 0.15s;
+                border: none; cursor: pointer; line-height: 1.4;
+            }
+            .jg-sp-share-btn:hover { opacity: 0.85; color: #fff !important; }
+            .jg-sp-share-btn--fb { background: #1877f2 !important; }
+            .jg-sp-share-btn--wa { background: #25d366 !important; }
+            .jg-sp-share-btn--copy { background: #6b7280 !important; }
 
             /* Map embed */
             .jg-sp-map { width: 100%; height: 300px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e5e7eb; }
 
             @media (max-width: 640px) {
-                .jg-sp { padding: 12px; }
-                .jg-sp-title { font-size: 1.5rem; }
-                .jg-sp-map-cta { padding: 14px 18px; }
+                .jg-sp { padding: 16px 12px 32px; }
+                .jg-sp-title { font-size: 1.5rem !important; }
+                .jg-sp-map-cta { padding: 14px 16px !important; }
+                .jg-sp-map-cta-text { font-size: 16px; }
                 .jg-sp-gallery { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+                .jg-sp-hero-img { max-height: 300px; }
             }
         </style>
 
@@ -611,7 +645,7 @@ class JG_Interactive_Map {
             <!-- Header with badges (like modal header) -->
             <div class="jg-sp-header">
                 <?php if ($point['is_promo']): ?>
-                    <span class="jg-sp-badge jg-sp-promo-badge">Miejsce sponsorowane</span>
+                    <span class="jg-sp-badge" style="background:#fbbf24;color:#111">Miejsce sponsorowane</span>
                 <?php endif; ?>
                 <span class="jg-sp-badge" style="background:<?php echo $badge_bg; ?>;color:<?php echo $badge_color; ?>"><?php echo esc_html($type_label); ?></span>
             </div>
@@ -631,22 +665,22 @@ class JG_Interactive_Map {
             <?php if (!empty($point['website']) || !empty($point['phone']) || !empty($point['facebook_url']) || !empty($point['instagram_url']) || !empty($point['linkedin_url']) || !empty($point['tiktok_url'])): ?>
                 <div class="jg-sp-contact">
                     <?php if (!empty($point['website'])): ?>
-                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener">&#127760; <?php echo esc_html(parse_url($point['website'], PHP_URL_HOST) ?: $point['website']); ?></a>
+                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-sp-contact-link">&#127760; <?php echo esc_html(parse_url($point['website'], PHP_URL_HOST) ?: $point['website']); ?></a>
                     <?php endif; ?>
                     <?php if (!empty($point['phone'])): ?>
-                        <a href="tel:<?php echo esc_attr($point['phone']); ?>">&#128222; <?php echo esc_html($point['phone']); ?></a>
+                        <a href="tel:<?php echo esc_attr($point['phone']); ?>" class="jg-sp-contact-link">&#128222; <?php echo esc_html($point['phone']); ?></a>
                     <?php endif; ?>
                     <?php if (!empty($point['facebook_url'])): ?>
-                        <a href="<?php echo esc_url($point['facebook_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#1877f2" title="Facebook">f</a>
+                        <a href="<?php echo esc_url($point['facebook_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#1877f2" title="Facebook"><svg viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/></svg></a>
                     <?php endif; ?>
                     <?php if (!empty($point['instagram_url'])): ?>
-                        <a href="<?php echo esc_url($point['instagram_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)" title="Instagram">&#9679;</a>
+                        <a href="<?php echo esc_url($point['instagram_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)" title="Instagram"><svg viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg></a>
                     <?php endif; ?>
                     <?php if (!empty($point['linkedin_url'])): ?>
-                        <a href="<?php echo esc_url($point['linkedin_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#0077b5" title="LinkedIn">in</a>
+                        <a href="<?php echo esc_url($point['linkedin_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#0077b5" title="LinkedIn"><svg viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M100.28 448H7.4V148.9h92.88zM53.79 108.1C24.09 108.1 0 83.5 0 53.8a53.79 53.79 0 0 1 107.58 0c0 29.7-24.1 54.3-53.79 54.3zM447.9 448h-92.68V302.4c0-34.7-.7-79.2-48.29-79.2-48.29 0-55.69 37.7-55.69 76.7V448h-92.78V148.9h89.08v40.8h1.3c12.4-23.5 42.69-48.3 87.83-48.3 93.97 0 111.28 61.9 111.28 142.3V448z"/></svg></a>
                     <?php endif; ?>
                     <?php if (!empty($point['tiktok_url'])): ?>
-                        <a href="<?php echo esc_url($point['tiktok_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#000" title="TikTok">&#9835;</a>
+                        <a href="<?php echo esc_url($point['tiktok_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#000" title="TikTok"><svg viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z"/></svg></a>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
@@ -656,8 +690,10 @@ class JG_Interactive_Map {
                 <div class="jg-sp-address">&#128205; <?php echo esc_html($point['address']); ?></div>
             <?php endif; ?>
 
-            <!-- Image Gallery (grid like modal) -->
-            <?php if (!empty($all_images)): ?>
+            <!-- Image: hero if 1 image, gallery grid if multiple -->
+            <?php if (count($all_images) === 1): ?>
+                <img src="<?php echo esc_url($all_images[0]['full']); ?>" alt="<?php echo esc_attr($point['title']); ?>" class="jg-sp-hero-img">
+            <?php elseif (count($all_images) > 1): ?>
                 <div class="jg-sp-gallery">
                     <?php foreach ($all_images as $img_data): ?>
                         <div class="jg-sp-gallery-item<?php echo $img_data['is_featured'] ? ' is-featured' : ''; ?>">
