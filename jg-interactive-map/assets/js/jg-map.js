@@ -2852,30 +2852,34 @@
             });
 
             if (point) {
+              // Check if coming from point page (skip pulsing animation)
+              var fromPoint = urlParams.get('from') === 'point';
 
               // STEP 1: Map is already scrolled to by earlyScrollCheck()
               // STEP 2: Wait for map to be ready, then zoom
               setTimeout(function() {
                 // Zoom to point with maximum zoom level
-                map.setView([point.lat, point.lng], 19, { animate: true });
+                map.setView([point.lat, point.lng], 19, { animate: !fromPoint });
 
-                // STEP 3: Wait for zoom animation, then show pulsing marker
-                setTimeout(function() {
-                  // Add pulsing red circle around the point
-                  addPulsingMarker(point.lat, point.lng, function() {
+                var openAndClean = function() {
+                  openDetails(point);
+                  // Clean URL (remove parameters and hash) after modal opens
+                  if (history.replaceState) {
+                    var cleanUrl = window.location.origin + window.location.pathname;
+                    history.replaceState(null, '', cleanUrl);
+                  }
+                };
 
-                    // STEP 4: Open modal immediately after pulsing animation
-                    // Open modal after animation - use openDetails, not viewPoint!
-                    openDetails(point);
-
-                    // Clean URL (remove point_id parameter or hash) after modal opens
-                    if (history.replaceState) {
-                      var cleanUrl = window.location.origin + window.location.pathname;
-                      history.replaceState(null, '', cleanUrl);
-                    }
-                  });
-                }, 800); // Wait for zoom animation
-              }, 300); // Map is already loaded and scrolled, just wait for initialization
+                if (fromPoint) {
+                  // Coming from point page: skip pulsing, open modal immediately
+                  setTimeout(openAndClean, 100);
+                } else {
+                  // Normal deep link: show pulsing marker first
+                  setTimeout(function() {
+                    addPulsingMarker(point.lat, point.lng, openAndClean);
+                  }, 800); // Wait for zoom animation
+                }
+              }, fromPoint ? 100 : 300);
             } else {
               debugWarn('[JG MAP] Point not found with id:', pointId);
             }

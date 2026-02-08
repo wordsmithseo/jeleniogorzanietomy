@@ -642,13 +642,13 @@ class JG_Interactive_Map {
                 <span class="jg-sp-site-name"><?php bloginfo('name'); ?></span>
             </a>
             <nav class="jg-sp-site-nav">
-                <a href="<?php echo esc_url(home_url('/#point-' . $point['id'])); ?>">Otwórz na mapie</a>
+                <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>">Otwórz na mapie</a>
             </nav>
         </header>
 
         <div class="jg-sp">
             <!-- Prominent "View on Map" CTA with auto-redirect countdown -->
-            <a href="<?php echo esc_url(home_url('/#point-' . $point['id'])); ?>" id="jg-sp-cta" class="jg-sp-map-cta">
+            <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" id="jg-sp-cta" class="jg-sp-map-cta">
                 <div>
                     <div class="jg-sp-map-cta-text">Zobacz na mapie interaktywnej <span id="jg-sp-countdown">(5)</span></div>
                     <div class="jg-sp-map-cta-sub"><?php echo esc_html($point['title']); ?> &mdash; <?php echo esc_html($type_label); ?> w Jeleniej Górze</div>
@@ -968,7 +968,7 @@ class JG_Interactive_Map {
     <?php endif; ?>
     <div><?php echo wp_kses_post($point['content']); ?></div>
     <div class="jg-fb-cta">
-        <a href="<?php echo esc_url(home_url('/#point-' . $point['id'])); ?>">Zobacz na mapie</a>
+        <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>">Zobacz na mapie</a>
         <?php if (!empty($point['website'])): ?>
         <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-fb-site">Odwiedź stronę</a>
         <?php endif; ?>
