@@ -414,28 +414,8 @@ class JG_Interactive_Map {
         global $jg_current_point;
         $jg_current_point = $point;
 
-        // Disable Yoast SEO Open Graph and canonical for point pages
-        // This prevents Yoast from outputting incorrect meta tags (e.g., from /publikacje/ page)
-        // We output our own tags via add_point_meta_tags()
-        add_filter('wpseo_opengraph_url', '__return_false');
-        add_filter('wpseo_canonical', '__return_false');
-        add_filter('wpseo_opengraph_title', '__return_false');
-        add_filter('wpseo_opengraph_desc', '__return_false');
-        add_filter('wpseo_opengraph_site_name', '__return_false');
-        add_filter('wpseo_opengraph_type', '__return_false');
-        add_filter('wpseo_opengraph_image', '__return_false');
-        add_filter('wpseo_opengraph_locale', '__return_false');
-        add_filter('wpseo_metadesc', '__return_false');
-        // Disable twitter card from Yoast
-        add_filter('wpseo_twitter_card', '__return_false');
-        add_filter('wpseo_twitter_title', '__return_false');
-        add_filter('wpseo_twitter_description', '__return_false');
-        add_filter('wpseo_twitter_image', '__return_false');
-        // Disable Yoast JSON-LD schema to prevent duplicate/conflicting breadcrumbs
-        add_filter('wpseo_json_ld_output', '__return_false');
-        add_filter('wpseo_schema_graph', '__return_empty_array');
-
-        // Render the full point page (standalone HTML, no Elementor header/footer)
+        // Render the full point page (standalone HTML, no wp_head/wp_footer)
+        // No Yoast filter overrides needed since we don't call wp_head()
         ob_start();
 
         try {
@@ -536,9 +516,13 @@ class JG_Interactive_Map {
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title><?php echo $page_title; ?></title>
     <?php
-    // This fires add_point_meta_tags() which outputs OG, Twitter, canonical, schema.org etc.
-    wp_head();
+    // Output SEO meta tags directly (OG, Twitter, canonical, schema.org)
+    // We do NOT call wp_head() because it loads all Elementor/WP CSS and scripts
+    $this->add_point_meta_tags();
     ?>
+    <link rel="icon" href="<?php echo esc_url(get_site_icon_url(32)); ?>" sizes="32x32">
+    <link rel="icon" href="<?php echo esc_url(get_site_icon_url(192)); ?>" sizes="192x192">
+    <link rel="apple-touch-icon" href="<?php echo esc_url(get_site_icon_url(180)); ?>">
     <style>
         /* Standalone point page styles - no Elementor dependency */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -748,7 +732,7 @@ class JG_Interactive_Map {
             <a href="<?php echo esc_url(home_url('/')); ?>">Wróć do mapy</a>
         </footer>
 
-        <?php wp_footer(); ?>
+
 </body>
 </html>
         <?php
