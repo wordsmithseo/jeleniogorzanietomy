@@ -730,17 +730,15 @@
             }
 
             // Placeholder rows for empty positions
-            var placeholderIcons = ['🎯', '🚀', '💪', '🌟', '🔥', '✨', '💎', '🎖️', '🏅', '🎪'];
-            var placeholderTexts = ['Tu może być Twoja nazwa!', 'Dołącz do rankingu!', 'Dodaj miejsca i awansuj!', 'Czekamy na Ciebie!', 'Pokaż się na mapie!', 'Zdobądź to miejsce!', 'Zostań odkrywcą!', 'Eksploruj Jelenią Górę!', 'Podziel się wiedzą!', 'Twoja szansa czeka!'];
             for (var k = ranking.length; k < 10; k++) {
               var emptyPos = k + 1;
               rowsHtml += '<div class="jg-ranking-row jg-ranking-empty">' +
                 '<div class="jg-ranking-pos">' + emptyPos + '</div>' +
                 '<div class="jg-ranking-info">' +
-                '<div class="jg-ranking-name jg-ranking-empty-name">' + placeholderIcons[k] + ' ' + placeholderTexts[k] + '</div>' +
-                '<div class="jg-ranking-meta"><span class="jg-ranking-empty-hint">Dodaj miejsca na mapie, aby się tu znaleźć</span></div>' +
+                '<div class="jg-ranking-empty-bar"></div>' +
+                '<div class="jg-ranking-empty-bar jg-ranking-empty-bar--short"></div>' +
                 '</div>' +
-                '<div class="jg-ranking-count jg-ranking-empty-count">—</div>' +
+                '<div class="jg-ranking-count jg-ranking-empty-count"></div>' +
                 '</div>';
             }
 

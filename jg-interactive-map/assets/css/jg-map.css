@@ -4949,42 +4949,39 @@ body.jg-fullscreen-active {
 
 /* Ranking empty placeholder rows */
 .jg-ranking-empty {
-  background: repeating-linear-gradient(
-    -45deg,
-    #f9fafb,
-    #f9fafb 8px,
-    #f3f4f6 8px,
-    #f3f4f6 16px
-  );
-  border: 1px dashed #d1d5db;
-  opacity: 0.75;
+  background: #f9fafb;
+  border: 1px dashed #e5e7eb;
+  opacity: 0.55;
 }
 
 .jg-ranking-empty:hover {
   transform: none;
   box-shadow: none;
-  opacity: 0.9;
 }
 
 .jg-ranking-empty .jg-ranking-pos {
   background: #e5e7eb;
-  color: #9ca3af;
+  color: #cbd5e1;
 }
 
-.jg-ranking-empty-name {
-  color: #9ca3af !important;
-  font-style: italic;
-  font-weight: 500 !important;
+.jg-ranking-empty-bar {
+  height: 12px;
+  width: 65%;
+  background: #e5e7eb;
+  border-radius: 6px;
 }
 
-.jg-ranking-empty-hint {
-  color: #b0b7c3;
-  font-size: 11px;
+.jg-ranking-empty-bar--short {
+  width: 40%;
+  height: 8px;
+  margin-top: 6px;
 }
 
 .jg-ranking-empty-count {
-  color: #d1d5db !important;
-  font-size: 18px !important;
+  width: 28px;
+  height: 12px;
+  background: #e5e7eb;
+  border-radius: 6px;
 }
 
 /* Ranking button styling */
