@@ -4943,6 +4943,65 @@ JAVASCRIPT;
                     <strong>Uwaga:</strong> Ręczne uruchomienie konserwacji może chwilę potrwać. Strona zostanie automatycznie przeładowana po zakończeniu.
                 </p>
             </div>
+
+            <?php
+            // XP sync success notice
+            if (isset($_GET['xp_sync_done'])) {
+                echo '<div class="notice notice-success is-dismissible" style="margin-top:20px"><p>Synchronizacja doświadczenia i osiągnięć zakończona pomyślnie!</p></div>';
+            }
+            $last_sync = get_option('jg_map_last_xp_sync', null);
+            ?>
+
+            <div style="background:#fff;padding:20px;border:1px solid #ccd0d4;border-radius:4px;margin-top:20px;">
+                <h2>Synchronizacja doświadczenia i osiągnięć</h2>
+                <p>Przelicz XP i odblokuj osiągnięcia na podstawie rzeczywistych akcji użytkowników w bazie danych.
+                Używaj tej opcji gdy:</p>
+                <ul style="padding-left:20px;">
+                    <li>System poziomów został dodany do istniejącej instalacji (użytkownicy mieli konta przed wprowadzeniem poziomów)</li>
+                    <li>Zmieniono ilość XP przyznawanych za poszczególne akcje i chcesz przeliczyć</li>
+                    <li>Dodano nowe osiągnięcia i chcesz sprawdzić, kto już je spełnia</li>
+                    <li>Dane XP wyglądają na niespójne z rzeczywistą aktywnością użytkowników</li>
+                </ul>
+
+                <?php if ($last_sync): ?>
+                <h3>Ostatnia synchronizacja</h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Data:</th>
+                        <td><?php echo $last_sync['time']; ?> (<?php echo human_time_diff(strtotime($last_sync['time']), current_time('timestamp')); ?> temu)</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Przeliczenie XP:</th>
+                        <td>
+                            Przetworzono <strong><?php echo $last_sync['xp']['users_processed']; ?></strong> użytkowników,
+                            zaktualizowano <strong><?php echo $last_sync['xp']['users_updated']; ?></strong>,
+                            przyznano łącznie <strong><?php echo number_format($last_sync['xp']['total_xp_awarded']); ?></strong> XP
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Osiągnięcia:</th>
+                        <td>
+                            Sprawdzono <strong><?php echo $last_sync['achievements']['users_checked']; ?></strong> użytkowników,
+                            odblokowano <strong><?php echo $last_sync['achievements']['new_achievements_awarded']; ?></strong> nowych osiągnięć
+                        </td>
+                    </tr>
+                </table>
+                <?php endif; ?>
+
+                <h3>Uruchom synchronizację</h3>
+                <p>Przelicza XP od nowa na podstawie rzeczywistych danych (punkty, głosy, zdjęcia, raporty, edycje), a następnie odblokuje wszystkie osiągnięcia, których warunki użytkownicy już spełniają.</p>
+                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=jg-map-maintenance&jg_sync_xp=1'), 'jg_sync_xp'); ?>"
+                   class="button button-primary"
+                   onclick="return confirm('Czy na pewno chcesz przeliczyć XP i osiągnięcia dla wszystkich użytkowników? Istniejące dane XP zostaną nadpisane obliczeniami na podstawie rzeczywistych akcji.');">
+                    Przelicz XP i osiągnięcia
+                </a>
+
+                <p style="margin-top:20px;padding:15px;background:#eff6ff;border-left:4px solid #3b82f6;color:#1e40af;">
+                    <strong>Info:</strong> Przeliczenie nadpisze obecne XP użytkowników wartościami obliczonymi z ich rzeczywistych akcji.
+                    Osiągnięcia odblokowane retroaktywnie nie wyświetlą powiadomień (aby nie spamować użytkowników).
+                    XP za „codzienny login" nie jest możliwe do odtworzenia retroaktywnie.
+                </p>
+            </div>
         </div>
         <?php
     }

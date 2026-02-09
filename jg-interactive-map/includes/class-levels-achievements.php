@@ -676,6 +676,260 @@ class JG_Map_Levels_Achievements {
         wp_send_json_success('Saved');
     }
 
+    // =========================================================================
+    // RECALCULATION / SYNC
+    // =========================================================================
+
+    /**
+     * Recalculate XP for all users based on actual actions in the database.
+     * Clears xp_log and rebuilds XP from scratch by counting real data.
+     * Returns summary array.
+     */
+    public static function recalculate_all_xp() {
+        global $wpdb;
+        $table_points = $wpdb->prefix . 'jg_map_points';
+        $table_votes  = $wpdb->prefix . 'jg_map_votes';
+        $table_reports = $wpdb->prefix . 'jg_map_reports';
+        $table_history = $wpdb->prefix . 'jg_map_history';
+        $table_user_xp = $wpdb->prefix . 'jg_map_user_xp';
+        $table_xp_log  = $wpdb->prefix . 'jg_map_xp_log';
+
+        // Get XP amounts from config
+        $sources = self::get_xp_sources();
+        $xp_map = array();
+        foreach ($sources as $s) {
+            $xp_map[$s['key']] = intval($s['xp']);
+        }
+
+        // Collect all user IDs that have any activity
+        $user_ids = array();
+
+        // Users who submitted points
+        $point_authors = $wpdb->get_col("SELECT DISTINCT author_id FROM $table_points WHERE author_id > 0");
+        $user_ids = array_merge($user_ids, $point_authors);
+
+        // Users who voted
+        $voters = $wpdb->get_col("SELECT DISTINCT user_id FROM $table_votes WHERE user_id > 0");
+        $user_ids = array_merge($user_ids, $voters);
+
+        // Users who reported
+        $reporters = $wpdb->get_col("SELECT DISTINCT user_id FROM $table_reports WHERE user_id > 0");
+        $user_ids = array_merge($user_ids, $reporters);
+
+        $user_ids = array_unique(array_map('intval', $user_ids));
+
+        // Clear existing XP log and user XP
+        $wpdb->query("TRUNCATE TABLE $table_xp_log");
+        $wpdb->query("TRUNCATE TABLE $table_user_xp");
+
+        $users_updated = 0;
+        $total_xp_awarded = 0;
+
+        foreach ($user_ids as $uid) {
+            $xp = 0;
+
+            // submit_point: count published points by this user
+            if (!empty($xp_map['submit_point'])) {
+                $count = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $table_points WHERE author_id = %d AND status = 'publish'",
+                    $uid
+                ));
+                $xp += intval($count) * $xp_map['submit_point'];
+            }
+
+            // point_approved: same as published points (approved = published)
+            if (!empty($xp_map['point_approved'])) {
+                $count = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $table_points WHERE author_id = %d AND status = 'publish'",
+                    $uid
+                ));
+                $xp += intval($count) * $xp_map['point_approved'];
+            }
+
+            // add_photo: count photos in user's published points
+            if (!empty($xp_map['add_photo'])) {
+                $photos_data = $wpdb->get_results($wpdb->prepare(
+                    "SELECT images FROM $table_points WHERE author_id = %d AND status = 'publish' AND images IS NOT NULL AND images != ''",
+                    $uid
+                ), ARRAY_A);
+                $photo_count = 0;
+                foreach ($photos_data as $pd) {
+                    $imgs = json_decode($pd['images'], true);
+                    if (is_array($imgs)) {
+                        $photo_count += count($imgs);
+                    }
+                }
+                $xp += $photo_count * $xp_map['add_photo'];
+            }
+
+            // vote_on_point: count votes cast by this user
+            if (!empty($xp_map['vote_on_point'])) {
+                $count = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $table_votes WHERE user_id = %d",
+                    $uid
+                ));
+                $xp += intval($count) * $xp_map['vote_on_point'];
+            }
+
+            // receive_upvote: count upvotes received on user's points (excluding self-votes)
+            if (!empty($xp_map['receive_upvote'])) {
+                $count = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $table_votes v
+                     INNER JOIN $table_points p ON v.point_id = p.id
+                     WHERE p.author_id = %d AND v.vote_type = 'up' AND v.user_id != %d",
+                    $uid, $uid
+                ));
+                $xp += intval($count) * $xp_map['receive_upvote'];
+            }
+
+            // edit_point: count edit history entries
+            if (!empty($xp_map['edit_point'])) {
+                $count = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $table_history WHERE user_id = %d AND action_type = 'edit'",
+                    $uid
+                ));
+                $xp += intval($count) * $xp_map['edit_point'];
+            }
+
+            // report_point: count reports submitted
+            if (!empty($xp_map['report_point'])) {
+                $count = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $table_reports WHERE user_id = %d",
+                    $uid
+                ));
+                $xp += intval($count) * $xp_map['report_point'];
+            }
+
+            // daily_login: not retroactively countable, skip
+
+            if ($xp > 0) {
+                $level = self::calculate_level($xp);
+                $wpdb->insert($table_user_xp, array(
+                    'user_id' => $uid,
+                    'xp' => $xp,
+                    'level' => $level
+                ));
+                $users_updated++;
+                $total_xp_awarded += $xp;
+            }
+        }
+
+        return array(
+            'users_processed' => count($user_ids),
+            'users_updated' => $users_updated,
+            'total_xp_awarded' => $total_xp_awarded
+        );
+    }
+
+    /**
+     * Re-check achievements for all users who have XP records.
+     * Does NOT create notifications (to avoid spam on mass-sync).
+     * Returns summary array.
+     */
+    public static function recheck_all_achievements() {
+        global $wpdb;
+        $table_user_xp = $wpdb->prefix . 'jg_map_user_xp';
+        $table_achievements = $wpdb->prefix . 'jg_map_achievements';
+        $table_user_achievements = $wpdb->prefix . 'jg_map_user_achievements';
+        $table_points = $wpdb->prefix . 'jg_map_points';
+        $table_votes  = $wpdb->prefix . 'jg_map_votes';
+
+        $user_ids = $wpdb->get_col("SELECT user_id FROM $table_user_xp");
+        $achievements = $wpdb->get_results("SELECT * FROM $table_achievements ORDER BY sort_order ASC", ARRAY_A);
+
+        $new_achievements = 0;
+
+        foreach ($user_ids as $uid) {
+            $uid = intval($uid);
+
+            // Get already earned
+            $earned_ids = $wpdb->get_col($wpdb->prepare(
+                "SELECT achievement_id FROM $table_user_achievements WHERE user_id = %d",
+                $uid
+            ));
+
+            // Get user stats
+            $user_xp = self::get_user_xp_data($uid);
+
+            $points_count = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table_points WHERE author_id = %d AND status = 'publish'",
+                $uid
+            ));
+
+            $votes_count = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table_votes WHERE user_id = %d",
+                $uid
+            ));
+
+            $photos_data = $wpdb->get_results($wpdb->prepare(
+                "SELECT images FROM $table_points WHERE author_id = %d AND status = 'publish' AND images IS NOT NULL AND images != ''",
+                $uid
+            ), ARRAY_A);
+            $photos_count = 0;
+            foreach ($photos_data as $pd) {
+                $imgs = json_decode($pd['images'], true);
+                if (is_array($imgs)) {
+                    $photos_count += count($imgs);
+                }
+            }
+
+            $types = $wpdb->get_col($wpdb->prepare(
+                "SELECT DISTINCT type FROM $table_points WHERE author_id = %d AND status = 'publish'",
+                $uid
+            ));
+            $has_all_types = (in_array('miejsce', $types) && in_array('ciekawostka', $types) && in_array('zgloszenie', $types));
+
+            $received_upvotes = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table_votes v
+                 INNER JOIN $table_points p ON v.point_id = p.id
+                 WHERE p.author_id = %d AND v.vote_type = 'up'",
+                $uid
+            ));
+
+            foreach ($achievements as $ach) {
+                if (in_array($ach['id'], $earned_ids)) {
+                    continue;
+                }
+
+                $earned = false;
+                switch ($ach['condition_type']) {
+                    case 'points_count':
+                        $earned = ($points_count >= intval($ach['condition_value']));
+                        break;
+                    case 'votes_count':
+                        $earned = ($votes_count >= intval($ach['condition_value']));
+                        break;
+                    case 'photos_count':
+                        $earned = ($photos_count >= intval($ach['condition_value']));
+                        break;
+                    case 'level':
+                        $earned = ($user_xp['level'] >= intval($ach['condition_value']));
+                        break;
+                    case 'all_types':
+                        $earned = $has_all_types;
+                        break;
+                    case 'received_upvotes':
+                        $earned = ($received_upvotes >= intval($ach['condition_value']));
+                        break;
+                }
+
+                if ($earned) {
+                    $wpdb->insert($table_user_achievements, array(
+                        'user_id' => $uid,
+                        'achievement_id' => intval($ach['id']),
+                        'notified' => 1 // Mark as already notified (no spam)
+                    ));
+                    $new_achievements++;
+                }
+            }
+        }
+
+        return array(
+            'users_checked' => count($user_ids),
+            'new_achievements_awarded' => $new_achievements
+        );
+    }
+
     public function ajax_delete_achievement() {
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
