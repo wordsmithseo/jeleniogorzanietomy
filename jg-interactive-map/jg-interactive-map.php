@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.10.0
+ * Version: 3.11.0
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.10.0');
+define('JG_MAP_VERSION', '3.11.0');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -67,6 +67,7 @@ class JG_Interactive_Map {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-sync-manager.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-manager.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-admin.php';
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-levels-achievements.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-enqueue.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-shortcode.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-ajax-handlers.php';
@@ -155,6 +156,7 @@ class JG_Interactive_Map {
         JG_Map_Ajax_Handlers::get_instance();
         JG_Map_Admin::get_instance();
         JG_Map_Banner_Admin::init();
+        JG_Map_Levels_Achievements::get_instance();
     }
 
     /**

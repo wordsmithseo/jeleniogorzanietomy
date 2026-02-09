@@ -1670,6 +1670,17 @@ class JG_Map_Ajax_Handlers {
                 'status' => $saved_point['status']
             ));
 
+            // Award XP for submitting a point
+            JG_Map_Levels_Achievements::award_xp($user_id, 'submit_point', $point_id);
+
+            // Award XP for photos if images were uploaded
+            if (!empty($_FILES['images'])) {
+                $photo_count = is_array($_FILES['images']['name']) ? count(array_filter($_FILES['images']['name'])) : 1;
+                for ($i = 0; $i < $photo_count; $i++) {
+                    JG_Map_Levels_Achievements::award_xp($user_id, 'add_photo', $point_id);
+                }
+            }
+
             $response = array(
                 'message' => 'Punkt dodany do moderacji',
                 'point_id' => $point_id,
@@ -2015,6 +2026,9 @@ class JG_Map_Ajax_Handlers {
                 $this->notify_admin_edit($point_id);
             }
 
+            // Award XP for editing
+            JG_Map_Levels_Achievements::award_xp($user_id, 'edit_point', $point_id);
+
             $success_msg = !$is_owner
                 ? 'Edycja wysłana do zatwierdzenia przez właściciela miejsca'
                 : 'Edycja wysłana do moderacji';
@@ -2181,6 +2195,18 @@ class JG_Map_Ajax_Handlers {
 
         JG_Map_Database::set_vote($point_id, $user_id, $new_vote);
 
+        // Award XP for voting (only when casting a new vote, not removing)
+        if (!empty($new_vote) && empty($current_vote)) {
+            JG_Map_Levels_Achievements::award_xp($user_id, 'vote_on_point', $point_id);
+            // Award XP to the point author for receiving an upvote
+            if ($new_vote === 'up') {
+                $author_id = intval($point['author_id']);
+                if ($author_id && $author_id !== $user_id) {
+                    JG_Map_Levels_Achievements::award_xp($author_id, 'receive_upvote', $point_id);
+                }
+            }
+        }
+
         $votes_count = JG_Map_Database::get_votes_count($point_id);
 
         // Check if votes dropped to -100 or below - auto-report to moderation
@@ -2276,6 +2302,9 @@ class JG_Map_Ajax_Handlers {
         $email = $user ? $user->user_email : '';
 
         JG_Map_Database::add_report($point_id, $user_id, $email, $reason);
+
+        // Award XP for reporting
+        JG_Map_Levels_Achievements::award_xp($user_id, 'report_point', $point_id);
 
         // Increment daily report counter for regular users
         if (!$is_admin) {
@@ -2838,6 +2867,12 @@ class JG_Map_Ajax_Handlers {
 
         // Notify author
         $this->notify_author_approved($point_id);
+
+        // Award XP for point approval to the author
+        $author_id = intval($point['author_id']);
+        if ($author_id) {
+            JG_Map_Levels_Achievements::award_xp($author_id, 'point_approved', $point_id);
+        }
 
         wp_send_json_success(array('message' => 'Punkt zaakceptowany'));
     }

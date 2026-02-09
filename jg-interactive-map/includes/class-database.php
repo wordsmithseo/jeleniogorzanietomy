@@ -198,6 +198,10 @@ class JG_Map_Database {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-manager.php';
         JG_Map_Banner_Manager::create_table();
 
+        // Create levels & achievements tables
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-levels-achievements.php';
+        JG_Map_Levels_Achievements::create_tables();
+
         // Add custom capabilities to administrator role
         $admin = get_role('administrator');
         if ($admin) {
@@ -216,7 +220,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.9.0'; // Added edit_locked column for locking pins from being edited
+        $current_schema_version = '3.11.0'; // Added levels & achievements system
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -255,6 +259,10 @@ class JG_Map_Database {
         // Ensure banners table exists (for existing installations)
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-manager.php';
         JG_Map_Banner_Manager::create_table();
+
+        // Ensure levels & achievements tables exist (for existing installations)
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-levels-achievements.php';
+        JG_Map_Levels_Achievements::create_tables();
 
         // Helper function to check if column exists
         $column_exists = function($column_name) use ($wpdb, $safe_table) {

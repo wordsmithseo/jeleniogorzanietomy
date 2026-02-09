@@ -4094,8 +4094,17 @@
             photosHtml += '</div>';
           }
 
+          // Build modal HTML with placeholder for level data
           var modalHtml = '<header style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:20px;border-radius:12px 12px 0 0">' +
-            '<h3 style="margin:0;color:#fff;font-size:20px">👤 ' + esc(user.username) + '</h3>' +
+            '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+            '<h3 style="margin:0;color:#fff;font-size:20px;flex-shrink:0">👤 ' + esc(user.username) + '</h3>' +
+            '<span id="jg-user-level-badge" class="jg-level-badge" style="display:none"></span>' +
+            '<div id="jg-user-xp-bar-wrap" class="jg-xp-bar-wrap" style="display:none;flex:1;min-width:120px">' +
+            '<div class="jg-xp-bar"><div class="jg-xp-bar-fill" id="jg-user-xp-fill" style="width:0%"></div></div>' +
+            '<div class="jg-xp-bar-text" id="jg-user-xp-text"></div>' +
+            '</div>' +
+            '<div id="jg-user-achievements-panel" class="jg-achievements-panel" style="display:none;cursor:pointer" title="Kliknij aby zobaczyć wszystkie osiągnięcia"></div>' +
+            '</div>' +
             '<button class="jg-close" id="user-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
             '</header>' +
             '<div style="padding:20px;max-height:70vh;overflow-y:auto">' +
@@ -4127,6 +4136,65 @@
           qs('#user-modal-close', modalReport).onclick = function() {
             close(modalReport);
           };
+
+          // Load level info asynchronously
+          api('jg_get_user_level_info', { user_id: userId }).then(function(levelData) {
+            if (!levelData) return;
+
+            // Show level badge
+            var badge = document.getElementById('jg-user-level-badge');
+            if (badge) {
+              badge.textContent = 'Poz. ' + levelData.level;
+              badge.style.display = 'inline-block';
+            }
+
+            // Show XP progress bar
+            var barWrap = document.getElementById('jg-user-xp-bar-wrap');
+            var barFill = document.getElementById('jg-user-xp-fill');
+            var barText = document.getElementById('jg-user-xp-text');
+            if (barWrap && barFill && barText) {
+              barWrap.style.display = 'block';
+              barFill.style.width = levelData.progress + '%';
+              barText.textContent = levelData.xp_in_level + ' / ' + levelData.xp_needed + ' XP';
+            }
+
+            // Show recent achievements
+            var achPanel = document.getElementById('jg-user-achievements-panel');
+            if (achPanel && levelData.recent_achievements && levelData.recent_achievements.length > 0) {
+              var achHtml = '';
+              var rarityGlows = {
+                'common': '0 0 8px rgba(209,213,219,0.8)',
+                'uncommon': '0 0 8px rgba(16,185,129,0.8)',
+                'rare': '0 0 8px rgba(59,130,246,0.8)',
+                'epic': '0 0 8px rgba(139,92,246,0.8)',
+                'legendary': '0 0 10px rgba(245,158,11,0.9), 0 0 20px rgba(245,158,11,0.4)'
+              };
+              var rarityBorders = {
+                'common': '#d1d5db',
+                'uncommon': '#10b981',
+                'rare': '#3b82f6',
+                'epic': '#8b5cf6',
+                'legendary': '#f59e0b'
+              };
+              for (var a = 0; a < levelData.recent_achievements.length; a++) {
+                var ach = levelData.recent_achievements[a];
+                var glow = rarityGlows[ach.rarity] || rarityGlows.common;
+                var border = rarityBorders[ach.rarity] || rarityBorders.common;
+                achHtml += '<div class="jg-achievement-icon" title="' + esc(ach.name) + ': ' + esc(ach.description) + '" style="border-color:' + border + ';box-shadow:' + glow + '">' +
+                  '<span>' + esc(ach.icon) + '</span></div>';
+              }
+              if (levelData.total_achievements > 4) {
+                achHtml += '<div class="jg-achievement-more">+' + (levelData.total_achievements - 4) + '</div>';
+              }
+              achPanel.innerHTML = achHtml;
+              achPanel.style.display = 'flex';
+
+              // Click to open all achievements modal
+              achPanel.onclick = function() {
+                openAllAchievementsModal(userId);
+              };
+            }
+          }).catch(function() {});
 
           // Points pagination handlers
           var pointsPrev = modalReport.querySelector('.jg-user-modal-points-prev');
@@ -4166,6 +4234,62 @@
           }
         }).catch(function(err) {
           showAlert((err && err.message) || 'Błąd pobierania informacji o użytkowniku');
+        });
+      }
+
+      /**
+       * Open all achievements modal for a user
+       */
+      function openAllAchievementsModal(userId) {
+        api('jg_get_user_achievements', { user_id: userId }).then(function(achievements) {
+          if (!achievements || !Array.isArray(achievements)) return;
+
+          var rarityLabels = {
+            'common': 'Zwykłe',
+            'uncommon': 'Niepospolite',
+            'rare': 'Rzadkie',
+            'epic': 'Epickie',
+            'legendary': 'Legendarne'
+          };
+          var rarityColors = {
+            'common': '#d1d5db',
+            'uncommon': '#10b981',
+            'rare': '#3b82f6',
+            'epic': '#8b5cf6',
+            'legendary': '#f59e0b'
+          };
+
+          var html = '<header style="background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);padding:20px;border-radius:12px 12px 0 0">' +
+            '<h3 style="margin:0;color:#fff;font-size:20px">🏆 Osiągnięcia</h3>' +
+            '<button class="jg-close" id="ach-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
+            '</header>' +
+            '<div style="padding:20px;max-height:70vh;overflow-y:auto">' +
+            '<div class="jg-achievements-grid">';
+
+          for (var i = 0; i < achievements.length; i++) {
+            var a = achievements[i];
+            var color = rarityColors[a.rarity] || rarityColors.common;
+            var label = rarityLabels[a.rarity] || 'Zwykłe';
+            var earned = a.earned;
+            var earnedDate = a.earned_at ? new Date(a.earned_at).toLocaleDateString('pl-PL') : '';
+
+            html += '<div class="jg-achievement-card' + (earned ? '' : ' jg-achievement-locked') + '" style="border-color:' + color + '">' +
+              '<div class="jg-achievement-card-icon" style="box-shadow:' + (earned ? '0 0 12px ' + color : 'none') + ';border-color:' + color + '">' +
+              '<span style="font-size:28px">' + (earned ? esc(a.icon) : '🔒') + '</span></div>' +
+              '<div class="jg-achievement-card-info">' +
+              '<div class="jg-achievement-card-name">' + esc(a.name) + '</div>' +
+              '<div class="jg-achievement-card-desc">' + esc(a.description) + '</div>' +
+              '<div class="jg-achievement-card-rarity" style="color:' + color + '">' + label + '</div>' +
+              (earnedDate ? '<div class="jg-achievement-card-date">Zdobyto: ' + earnedDate + '</div>' : '') +
+              '</div></div>';
+          }
+
+          html += '</div></div>';
+
+          open(modalReportsList, html);
+          qs('#ach-modal-close', modalReportsList).onclick = function() {
+            close(modalReportsList);
+          };
         });
       }
 
@@ -9030,6 +9154,130 @@
 
       // Create FAB on init
       createFAB();
+
+      // =========================================================
+      // LEVEL-UP & ACHIEVEMENT NOTIFICATION SYSTEM
+      // =========================================================
+      function checkLevelNotifications() {
+        if (!CFG.nonce) return; // Not logged in
+        api('jg_check_level_notifications', {}).then(function(data) {
+          if (!data || !data.notifications || data.notifications.length === 0) return;
+          showNextNotification(data.notifications, 0);
+        }).catch(function() {});
+      }
+
+      function showNextNotification(notifications, index) {
+        if (index >= notifications.length) return;
+        var n = notifications[index];
+
+        if (n.type === 'level_up') {
+          showLevelUpModal(n, function() {
+            dismissNotification(n.id);
+            showNextNotification(notifications, index + 1);
+          });
+        } else if (n.type === 'achievement') {
+          showAchievementModal(n, function() {
+            dismissNotification(n.id);
+            showNextNotification(notifications, index + 1);
+          });
+        } else {
+          dismissNotification(n.id);
+          showNextNotification(notifications, index + 1);
+        }
+      }
+
+      function dismissNotification(id) {
+        api('jg_dismiss_level_notification', { notification_id: id }).catch(function() {});
+      }
+
+      function showLevelUpModal(notification, onClose) {
+        var d = notification.data;
+        var modalAlert = document.getElementById('jg-modal-alert');
+        if (!modalAlert) { onClose(); return; }
+
+        var content = modalAlert.querySelector('.jg-modal-message-content');
+        var buttons = modalAlert.querySelector('.jg-modal-message-buttons');
+
+        content.innerHTML = '<div class="jg-levelup-modal">' +
+          '<div class="jg-levelup-icon">⬆️</div>' +
+          '<div class="jg-levelup-title">Nowy poziom!</div>' +
+          '<div class="jg-levelup-level">' + d.new_level + '</div>' +
+          '<div class="jg-levelup-subtitle">Gratulacje! Awansowałeś z poziomu ' + d.old_level + ' na poziom ' + d.new_level + '!</div>' +
+          '</div>';
+
+        buttons.innerHTML = '<button class="jg-btn jg-btn--primary" id="jg-levelup-ok" style="padding:10px 32px;background:#667eea;border:none;color:#fff;border-radius:8px;font-weight:600;cursor:pointer;font-size:15px">Świetnie!</button>';
+
+        modalAlert.classList.add('active');
+
+        document.getElementById('jg-levelup-ok').onclick = function() {
+          modalAlert.classList.remove('active');
+          if (onClose) onClose();
+        };
+
+        modalAlert.onclick = function(e) {
+          if (e.target === modalAlert) {
+            modalAlert.classList.remove('active');
+            if (onClose) onClose();
+          }
+        };
+      }
+
+      function showAchievementModal(notification, onClose) {
+        var d = notification.data;
+        var modalAlert = document.getElementById('jg-modal-alert');
+        if (!modalAlert) { onClose(); return; }
+
+        var rarityColors = {
+          'common': '#d1d5db',
+          'uncommon': '#10b981',
+          'rare': '#3b82f6',
+          'epic': '#8b5cf6',
+          'legendary': '#f59e0b'
+        };
+        var rarityLabels = {
+          'common': 'Zwykłe',
+          'uncommon': 'Niepospolite',
+          'rare': 'Rzadkie',
+          'epic': 'Epickie',
+          'legendary': 'Legendarne'
+        };
+        var color = rarityColors[d.rarity] || rarityColors.common;
+        var label = rarityLabels[d.rarity] || 'Zwykłe';
+
+        var content = modalAlert.querySelector('.jg-modal-message-content');
+        var buttons = modalAlert.querySelector('.jg-modal-message-buttons');
+
+        content.innerHTML = '<div class="jg-achievement-modal">' +
+          '<div class="jg-achievement-modal-icon" style="border-color:' + color + ';box-shadow:0 0 20px ' + color + ', 0 0 40px ' + color + '44">' +
+          '<span style="font-size:48px">' + esc(d.icon) + '</span></div>' +
+          '<div class="jg-achievement-modal-title">Nowe osiągnięcie!</div>' +
+          '<div class="jg-achievement-modal-name" style="color:' + color + '">' + esc(d.name) + '</div>' +
+          '<div class="jg-achievement-modal-desc">' + esc(d.description) + '</div>' +
+          '<div class="jg-achievement-modal-rarity" style="color:' + color + '">' + label + '</div>' +
+          '</div>';
+
+        buttons.innerHTML = '<button class="jg-btn jg-btn--primary" id="jg-ach-ok" style="padding:10px 32px;background:' + color + ';border:none;color:#fff;border-radius:8px;font-weight:600;cursor:pointer;font-size:15px">Wspaniale!</button>';
+
+        modalAlert.classList.add('active');
+
+        document.getElementById('jg-ach-ok').onclick = function() {
+          modalAlert.classList.remove('active');
+          if (onClose) onClose();
+        };
+
+        modalAlert.onclick = function(e) {
+          if (e.target === modalAlert) {
+            modalAlert.classList.remove('active');
+            if (onClose) onClose();
+          }
+        };
+      }
+
+      // Check for pending notifications on page load (after 2 second delay)
+      setTimeout(checkLevelNotifications, 2000);
+
+      // Also check periodically (every 60 seconds)
+      setInterval(checkLevelNotifications, 60000);
 
       // Export map and openDetails as global functions for use by sidebar widget
       window.jgMap = map;
