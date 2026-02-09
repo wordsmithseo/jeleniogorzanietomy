@@ -480,6 +480,7 @@ class JG_Map_Enqueue {
                         <span class="jg-top-bar-level-num">Poz. <?php echo $user_level; ?></span>
                         <span class="jg-top-bar-xp-bar"><span class="jg-top-bar-xp-fill" style="width:<?php echo $xp_progress; ?>%"></span></span>
                     </span>
+                    <button id="jg-ranking-btn" class="jg-top-bar-btn">Ranking</button>
                     <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
 
                     <!-- Notifications container for real-time updates -->
