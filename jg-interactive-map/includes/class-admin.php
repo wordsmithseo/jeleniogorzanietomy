@@ -398,6 +398,24 @@ class JG_Map_Admin {
             'jg-map-curiosity-categories',
             array($this, 'render_curiosity_categories_page')
         );
+
+        add_submenu_page(
+            'jg-map-places',
+            'Doświadczenie (XP)',
+            'Doświadczenie (XP)',
+            'manage_options',
+            'jg-map-xp-editor',
+            array($this, 'render_xp_editor_page')
+        );
+
+        add_submenu_page(
+            'jg-map-places',
+            'Osiągnięcia',
+            'Osiągnięcia',
+            'manage_options',
+            'jg-map-achievements-editor',
+            array($this, 'render_achievements_editor_page')
+        );
     }
 
     /**
@@ -5505,6 +5523,283 @@ JAVASCRIPT;
                         } else {
                             alert(data.data || 'Błąd usuwania');
                         }
+                    });
+                };
+            })();
+            </script>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render XP Editor page
+     */
+    public function render_xp_editor_page() {
+        $nonce = wp_create_nonce('jg_map_admin_nonce');
+        ?>
+        <div class="wrap">
+            <h1>Edytor doświadczenia (XP)</h1>
+            <p>Konfiguruj za jakie akcje użytkownicy otrzymują doświadczenie (XP) i ile punktów przyznawać.</p>
+            <p><strong>Formuła poziomów:</strong> Poziom N wymaga N&sup2; &times; 100 XP (np. poziom 2 = 400 XP, poziom 5 = 2500 XP, poziom 10 = 10000 XP)</p>
+
+            <div id="jg-xp-editor" style="max-width:800px;margin-top:20px">
+                <table class="wp-list-table widefat fixed striped" id="jg-xp-table">
+                    <thead>
+                        <tr>
+                            <th style="width:200px">Klucz akcji</th>
+                            <th>Opis</th>
+                            <th style="width:100px">XP</th>
+                            <th style="width:80px">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jg-xp-tbody"></tbody>
+                </table>
+                <p style="margin-top:12px">
+                    <button class="button" id="jg-xp-add-row">+ Dodaj źródło XP</button>
+                    <button class="button button-primary" id="jg-xp-save" style="margin-left:8px">Zapisz zmiany</button>
+                    <span id="jg-xp-status" style="margin-left:12px;color:#059669;font-weight:600;display:none">Zapisano!</span>
+                </p>
+            </div>
+
+            <script>
+            (function() {
+                var ajaxUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
+                var nonce = '<?php echo $nonce; ?>';
+                var tbody = document.getElementById('jg-xp-tbody');
+
+                function renderRow(source) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td><input type="text" value="' + esc(source.key) + '" class="xp-key regular-text" style="width:100%"></td>' +
+                        '<td><input type="text" value="' + esc(source.label) + '" class="xp-label regular-text" style="width:100%"></td>' +
+                        '<td><input type="number" value="' + (source.xp || 0) + '" class="xp-amount" style="width:80px" min="0"></td>' +
+                        '<td><button class="button xp-remove" style="color:#dc2626">Usuń</button></td>';
+                    tr.querySelector('.xp-remove').onclick = function() { tr.remove(); };
+                    tbody.appendChild(tr);
+                }
+
+                function esc(s) {
+                    var d = document.createElement('div');
+                    d.textContent = s || '';
+                    return d.innerHTML.replace(/"/g, '&quot;');
+                }
+
+                // Load
+                fetch(ajaxUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ action: 'jg_admin_get_xp_sources', _ajax_nonce: nonce })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && Array.isArray(data.data)) {
+                        data.data.forEach(renderRow);
+                    }
+                });
+
+                document.getElementById('jg-xp-add-row').onclick = function() {
+                    renderRow({ key: '', label: '', xp: 0 });
+                };
+
+                document.getElementById('jg-xp-save').onclick = function() {
+                    var rows = tbody.querySelectorAll('tr');
+                    var sources = [];
+                    rows.forEach(function(tr) {
+                        sources.push({
+                            key: tr.querySelector('.xp-key').value,
+                            label: tr.querySelector('.xp-label').value,
+                            xp: parseInt(tr.querySelector('.xp-amount').value) || 0
+                        });
+                    });
+
+                    fetch(ajaxUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({
+                            action: 'jg_admin_save_xp_sources',
+                            _ajax_nonce: nonce,
+                            sources: JSON.stringify(sources)
+                        })
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        var status = document.getElementById('jg-xp-status');
+                        if (data.success) {
+                            status.textContent = 'Zapisano!';
+                            status.style.color = '#059669';
+                        } else {
+                            status.textContent = 'Błąd: ' + (data.data || 'nieznany');
+                            status.style.color = '#dc2626';
+                        }
+                        status.style.display = 'inline';
+                        setTimeout(function() { status.style.display = 'none'; }, 3000);
+                    });
+                };
+            })();
+            </script>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Achievements Editor page
+     */
+    public function render_achievements_editor_page() {
+        $nonce = wp_create_nonce('jg_map_admin_nonce');
+        ?>
+        <div class="wrap">
+            <h1>Edytor osiągnięć</h1>
+            <p>Konfiguruj osiągnięcia dostępne dla użytkowników. Rzadkość determinuje kolor poświaty wokół osiągnięcia.</p>
+
+            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#f3f4f6;border:2px solid #d1d5db;font-size:13px">
+                    <span style="width:10px;height:10px;border-radius:50%;background:#d1d5db;box-shadow:0 0 6px #d1d5db"></span> Zwykłe (common)
+                </span>
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#ecfdf5;border:2px solid #10b981;font-size:13px">
+                    <span style="width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981"></span> Niepospolite (uncommon)
+                </span>
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#eff6ff;border:2px solid #3b82f6;font-size:13px">
+                    <span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;box-shadow:0 0 6px #3b82f6"></span> Rzadkie (rare)
+                </span>
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#faf5ff;border:2px solid #8b5cf6;font-size:13px">
+                    <span style="width:10px;height:10px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 6px #8b5cf6"></span> Epickie (epic)
+                </span>
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#fffbeb;border:2px solid #f59e0b;font-size:13px">
+                    <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;box-shadow:0 0 6px #f59e0b"></span> Legendarne (legendary)
+                </span>
+            </div>
+
+            <div id="jg-ach-editor" style="max-width:1100px;margin-top:12px">
+                <table class="wp-list-table widefat fixed striped" id="jg-ach-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px">ID</th>
+                            <th style="width:120px">Slug</th>
+                            <th style="width:160px">Nazwa</th>
+                            <th>Opis</th>
+                            <th style="width:50px">Ikona</th>
+                            <th style="width:120px">Rzadkość</th>
+                            <th style="width:140px">Warunek</th>
+                            <th style="width:70px">Wartość</th>
+                            <th style="width:60px">Kolejn.</th>
+                            <th style="width:80px">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jg-ach-tbody"></tbody>
+                </table>
+                <p style="margin-top:12px">
+                    <button class="button" id="jg-ach-add-row">+ Dodaj osiągnięcie</button>
+                    <button class="button button-primary" id="jg-ach-save" style="margin-left:8px">Zapisz zmiany</button>
+                    <span id="jg-ach-status" style="margin-left:12px;color:#059669;font-weight:600;display:none">Zapisano!</span>
+                </p>
+            </div>
+
+            <script>
+            (function() {
+                var ajaxUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
+                var nonce = '<?php echo $nonce; ?>';
+                var tbody = document.getElementById('jg-ach-tbody');
+
+                var rarityOptions = '<option value="common">Zwykłe (biała)</option><option value="uncommon">Niepospolite (zielona)</option><option value="rare">Rzadkie (niebieska)</option><option value="epic">Epickie (fioletowa)</option><option value="legendary">Legendarne (złota)</option>';
+                var conditionOptions = '<option value="points_count">Liczba punktów</option><option value="votes_count">Liczba głosów</option><option value="photos_count">Liczba zdjęć</option><option value="level">Poziom</option><option value="all_types">Wszystkie typy</option><option value="received_upvotes">Otrzymane upvote\'y</option>';
+
+                function esc(s) {
+                    var d = document.createElement('div');
+                    d.textContent = s || '';
+                    return d.innerHTML.replace(/"/g, '&quot;');
+                }
+
+                function renderRow(ach) {
+                    var tr = document.createElement('tr');
+                    tr.dataset.id = ach.id || '';
+                    tr.innerHTML =
+                        '<td>' + (ach.id || '<em>nowe</em>') + '<input type="hidden" class="ach-id" value="' + (ach.id || '') + '"></td>' +
+                        '<td><input type="text" value="' + esc(ach.slug) + '" class="ach-slug" style="width:100%"></td>' +
+                        '<td><input type="text" value="' + esc(ach.name) + '" class="ach-name" style="width:100%"></td>' +
+                        '<td><input type="text" value="' + esc(ach.description) + '" class="ach-desc" style="width:100%"></td>' +
+                        '<td><input type="text" value="' + esc(ach.icon) + '" class="ach-icon" style="width:40px;text-align:center;font-size:18px"></td>' +
+                        '<td><select class="ach-rarity">' + rarityOptions + '</select></td>' +
+                        '<td><select class="ach-condition">' + conditionOptions + '</select></td>' +
+                        '<td><input type="number" value="' + (ach.condition_value || 1) + '" class="ach-value" style="width:60px" min="1"></td>' +
+                        '<td><input type="number" value="' + (ach.sort_order || 0) + '" class="ach-sort" style="width:50px"></td>' +
+                        '<td><button class="button ach-remove" style="color:#dc2626">Usuń</button></td>';
+
+                    // Set select values
+                    if (ach.rarity) tr.querySelector('.ach-rarity').value = ach.rarity;
+                    if (ach.condition_type) tr.querySelector('.ach-condition').value = ach.condition_type;
+
+                    tr.querySelector('.ach-remove').onclick = function() {
+                        var id = tr.dataset.id;
+                        if (id) {
+                            if (!confirm('Usunąć osiągnięcie?')) return;
+                            fetch(ajaxUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: new URLSearchParams({ action: 'jg_admin_delete_achievement', _ajax_nonce: nonce, achievement_id: id })
+                            }).then(function() { tr.remove(); });
+                        } else {
+                            tr.remove();
+                        }
+                    };
+
+                    tbody.appendChild(tr);
+                }
+
+                // Load
+                fetch(ajaxUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ action: 'jg_admin_get_achievements', _ajax_nonce: nonce })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && Array.isArray(data.data)) {
+                        data.data.forEach(renderRow);
+                    }
+                });
+
+                document.getElementById('jg-ach-add-row').onclick = function() {
+                    renderRow({ id: '', slug: '', name: '', description: '', icon: '🏆', rarity: 'common', condition_type: 'points_count', condition_value: 1, sort_order: 0 });
+                };
+
+                document.getElementById('jg-ach-save').onclick = function() {
+                    var rows = tbody.querySelectorAll('tr');
+                    var achievements = [];
+                    rows.forEach(function(tr) {
+                        achievements.push({
+                            id: tr.querySelector('.ach-id').value || '',
+                            slug: tr.querySelector('.ach-slug').value,
+                            name: tr.querySelector('.ach-name').value,
+                            description: tr.querySelector('.ach-desc').value,
+                            icon: tr.querySelector('.ach-icon').value,
+                            rarity: tr.querySelector('.ach-rarity').value,
+                            condition_type: tr.querySelector('.ach-condition').value,
+                            condition_value: parseInt(tr.querySelector('.ach-value').value) || 1,
+                            sort_order: parseInt(tr.querySelector('.ach-sort').value) || 0
+                        });
+                    });
+
+                    fetch(ajaxUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({
+                            action: 'jg_admin_save_achievements',
+                            _ajax_nonce: nonce,
+                            achievements: JSON.stringify(achievements)
+                        })
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        var status = document.getElementById('jg-ach-status');
+                        if (data.success) {
+                            status.textContent = 'Zapisano!';
+                            status.style.color = '#059669';
+                            // Reload to get proper IDs
+                            setTimeout(function() { location.reload(); }, 1000);
+                        } else {
+                            status.textContent = 'Błąd: ' + (data.data || 'nieznany');
+                            status.style.color = '#dc2626';
+                        }
+                        status.style.display = 'inline';
                     });
                 };
             })();

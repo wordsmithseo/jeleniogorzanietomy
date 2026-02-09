@@ -4420,3 +4420,271 @@ body.jg-fullscreen-active {
     padding: 10px 16px 14px;
   }
 }
+
+/* =========================================================
+   LEVELS, XP & ACHIEVEMENTS
+   ========================================================= */
+
+/* Level badge in user modal header */
+.jg-level-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255,255,255,0.25);
+  backdrop-filter: blur(4px);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* XP progress bar in header */
+.jg-xp-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jg-xp-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.jg-xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.jg-xp-bar-text {
+  font-size: 10px;
+  color: rgba(255,255,255,0.8);
+  text-align: right;
+  line-height: 1;
+}
+
+/* Achievements panel (in user modal header) */
+.jg-achievements-panel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.jg-achievement-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(4px);
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.jg-achievement-icon:hover {
+  transform: scale(1.15);
+}
+
+.jg-achievement-icon span {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.jg-achievement-more {
+  font-size: 11px;
+  color: rgba(255,255,255,0.8);
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+/* Achievements grid (full modal) */
+.jg-achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.jg-achievement-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.jg-achievement-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.jg-achievement-locked {
+  opacity: 0.45;
+  filter: grayscale(60%);
+}
+
+.jg-achievement-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #f9fafb;
+}
+
+.jg-achievement-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.jg-achievement-card-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #111;
+  margin-bottom: 2px;
+}
+
+.jg-achievement-card-desc {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.jg-achievement-card-rarity {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jg-achievement-card-date {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+/* Level-up notification modal */
+.jg-levelup-modal {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.jg-levelup-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  animation: jg-levelup-bounce 0.6s ease;
+}
+
+.jg-levelup-title {
+  font-size: 14px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.jg-levelup-level {
+  font-size: 64px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.jg-levelup-subtitle {
+  font-size: 15px;
+  color: #374151;
+}
+
+@keyframes jg-levelup-bounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Achievement earned notification modal */
+.jg-achievement-modal {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.jg-achievement-modal-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  background: #f9fafb;
+  animation: jg-ach-pulse 1.2s ease infinite;
+}
+
+.jg-achievement-modal-title {
+  font-size: 14px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.jg-achievement-modal-name {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.jg-achievement-modal-desc {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.jg-achievement-modal-rarity {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@keyframes jg-ach-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Mobile adjustments for level/achievements */
+@media (max-width: 640px) {
+  .jg-achievements-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jg-xp-bar-wrap {
+    min-width: 80px !important;
+  }
+
+  .jg-achievements-panel {
+    margin-top: 8px;
+    width: 100%;
+  }
+}
