@@ -2250,6 +2250,7 @@ class JG_Map_Admin {
                         <th>Rola WordPress</th>
                         <th>Moderator</th>
                         <th>Użytkownik testowy</th>
+                        <th>Poziom użytkownika</th>
                         <th>Akcje</th>
                     </tr>
                 </thead>
@@ -2259,6 +2260,8 @@ class JG_Map_Admin {
                         $is_moderator = user_can($user->ID, 'jg_map_moderate');
                         $is_test_user = user_can($user->ID, 'jg_map_bypass_maintenance');
                         $roles = implode(', ', $user->roles);
+                        $user_xp_data = JG_Map_Levels_Achievements::get_user_xp_data($user->ID);
+                        $user_level = $user_xp_data['level'];
                         ?>
                         <tr>
                             <td><?php echo $user->ID; ?></td>
@@ -2282,6 +2285,9 @@ class JG_Map_Admin {
                                 <?php else: ?>
                                     <span style="background:#e5e7eb;color:#6b7280;padding:4px 8px;border-radius:4px;font-size:12px">Nie</span>
                                 <?php endif; ?>
+                            </td>
+                            <td>
+                                <span style="background:#fbbf24;color:#78350f;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:700">Poz. <?php echo $user_level; ?></span>
                             </td>
                             <td>
                                 <?php if (!$is_admin): ?>

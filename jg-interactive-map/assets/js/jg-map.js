@@ -541,6 +541,7 @@
       var modalEdit = document.getElementById('jg-map-modal-edit');
       var modalAuthor = document.getElementById('jg-map-modal-author');
       var modalStatus = document.getElementById('jg-map-modal-status');
+      var modalRanking = document.getElementById('jg-map-modal-ranking');
       var lightbox = document.getElementById('jg-map-lightbox');
 
       // Stats modal refresh interval
@@ -670,6 +671,99 @@
           });
         });
         editProfileBtn.jgHandlerAttached = true;
+      }
+
+      // Ranking button handler
+      var rankingBtn = document.getElementById('jg-ranking-btn');
+      if (rankingBtn && !rankingBtn.jgHandlerAttached) {
+        rankingBtn.addEventListener('click', function() {
+          var modalRanking = document.getElementById('jg-map-modal-ranking');
+          if (!modalRanking) return;
+
+          // Show loading state
+          var loadingHtml = '<header class="jg-ranking-header">' +
+            '<div class="jg-ranking-header-inner">' +
+            '<h3 class="jg-ranking-title">🏆 Ranking użytkowników</h3>' +
+            '</div>' +
+            '<button class="jg-close" id="ranking-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
+            '</header>' +
+            '<div style="padding:40px;text-align:center;color:#6b7280">Ładowanie rankingu...</div>';
+          open(modalRanking, loadingHtml);
+          qs('#ranking-modal-close', modalRanking).onclick = function() { close(modalRanking); };
+
+          api('jg_get_ranking', {}).then(function(ranking) {
+            if (!ranking || !ranking.length) {
+              var emptyHtml = '<header class="jg-ranking-header">' +
+                '<div class="jg-ranking-header-inner">' +
+                '<h3 class="jg-ranking-title">🏆 Ranking użytkowników</h3>' +
+                '</div>' +
+                '<button class="jg-close" id="ranking-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
+                '</header>' +
+                '<div style="padding:40px;text-align:center;color:#6b7280">Brak danych rankingu.</div>';
+              open(modalRanking, emptyHtml);
+              qs('#ranking-modal-close', modalRanking).onclick = function() { close(modalRanking); };
+              return;
+            }
+
+            var rowsHtml = '';
+            for (var i = 0; i < ranking.length; i++) {
+              var r = ranking[i];
+              var pos = i + 1;
+              var rowClass = 'jg-ranking-row';
+              if (pos === 1) rowClass += ' jg-ranking-gold';
+              else if (pos === 2) rowClass += ' jg-ranking-silver';
+              else if (pos === 3) rowClass += ' jg-ranking-bronze';
+
+              var starHtml = pos === 1 ? '<span class="jg-ranking-star">⭐</span> ' : '';
+
+              rowsHtml += '<div class="' + rowClass + '" data-user-id="' + r.user_id + '">' +
+                '<div class="jg-ranking-pos">' + pos + '</div>' +
+                '<div class="jg-ranking-info">' +
+                '<div class="jg-ranking-name">' + starHtml + '<a href="#" class="jg-ranking-user-link" data-user-id="' + r.user_id + '">' + esc(r.display_name) + '</a></div>' +
+                '<div class="jg-ranking-meta">' +
+                '<span class="jg-ranking-level">Poz. ' + r.level + '</span>' +
+                '<span class="jg-ranking-places">📍 ' + r.places_count + ' miejsc</span>' +
+                '</div>' +
+                '</div>' +
+                '<div class="jg-ranking-count">' + r.places_count + '</div>' +
+                '</div>';
+            }
+
+            var html = '<header class="jg-ranking-header">' +
+              '<div class="jg-ranking-header-inner">' +
+              '<div class="jg-ranking-trophy">🏆</div>' +
+              '<div>' +
+              '<h3 class="jg-ranking-title">Ranking użytkowników</h3>' +
+              '<p class="jg-ranking-subtitle">Top 10 najbardziej aktywnych użytkowników</p>' +
+              '</div>' +
+              '</div>' +
+              '<button class="jg-close" id="ranking-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
+              '</header>' +
+              '<div class="jg-ranking-body">' +
+              '<div class="jg-ranking-list">' + rowsHtml + '</div>' +
+              '</div>';
+
+            open(modalRanking, html);
+
+            qs('#ranking-modal-close', modalRanking).onclick = function() { close(modalRanking); };
+
+            // Click handler for user links
+            var userLinks = modalRanking.querySelectorAll('.jg-ranking-user-link');
+            for (var j = 0; j < userLinks.length; j++) {
+              (function(link) {
+                link.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  close(modalRanking);
+                  var uid = parseInt(link.getAttribute('data-user-id'));
+                  if (uid) openUserModal(uid);
+                });
+              })(userLinks[j]);
+            }
+          }).catch(function() {
+            showAlert('Błąd pobierania rankingu');
+          });
+        });
+        rankingBtn.jgHandlerAttached = true;
       }
 
       // Open login modal function - reusable
@@ -1080,7 +1174,7 @@
         }
       }
 
-      [modalAdd, modalView, modalReport, modalReportsList, modalEdit, modalAuthor, modalStatus, lightbox].forEach(function(bg) {
+      [modalAdd, modalView, modalReport, modalReportsList, modalEdit, modalAuthor, modalStatus, modalRanking, lightbox].forEach(function(bg) {
         if (!bg) return;
         bg.addEventListener('click', function(e) {
           if (e.target === bg) close(bg);
@@ -1089,7 +1183,7 @@
 
       document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-          [modalAdd, modalView, modalReport, modalReportsList, modalEdit, modalAuthor, modalStatus, lightbox].forEach(close);
+          [modalAdd, modalView, modalReport, modalReportsList, modalEdit, modalAuthor, modalStatus, modalRanking, lightbox].forEach(close);
         }
       });
 

@@ -472,6 +472,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_get_point_visitors', array($this, 'get_point_visitors'));
         add_action('wp_ajax_jg_get_user_info', array($this, 'get_user_info'));
         add_action('wp_ajax_nopriv_jg_get_user_info', array($this, 'get_user_info'));
+        add_action('wp_ajax_jg_get_ranking', array($this, 'get_ranking'));
+        add_action('wp_ajax_nopriv_jg_get_ranking', array($this, 'get_ranking'));
         add_action('wp_ajax_jg_get_sidebar_points', array($this, 'get_sidebar_points'));
         add_action('wp_ajax_nopriv_jg_get_sidebar_points', array($this, 'get_sidebar_points'));
         add_action('wp_ajax_jg_banner_impression', array($this, 'track_banner_impression'));
@@ -1358,6 +1360,40 @@ class JG_Map_Ajax_Handlers {
         );
 
         wp_send_json_success($result);
+    }
+
+    /**
+     * Get top 10 users ranking by number of published places
+     */
+    public function get_ranking() {
+        global $wpdb;
+        $table_points = $wpdb->prefix . 'jg_map_points';
+        $table_xp = $wpdb->prefix . 'jg_map_user_xp';
+
+        $results = $wpdb->get_results(
+            "SELECT p.author_id, u.display_name, COUNT(*) as places_count,
+                    COALESCE(xp.level, 1) as user_level
+             FROM $table_points p
+             INNER JOIN {$wpdb->users} u ON u.ID = p.author_id
+             LEFT JOIN $table_xp xp ON xp.user_id = p.author_id
+             WHERE p.status = 'publish'
+             GROUP BY p.author_id
+             ORDER BY places_count DESC, user_level DESC
+             LIMIT 10",
+            ARRAY_A
+        );
+
+        $ranking = array();
+        foreach ($results as $row) {
+            $ranking[] = array(
+                'user_id' => intval($row['author_id']),
+                'display_name' => $row['display_name'],
+                'places_count' => intval($row['places_count']),
+                'level' => intval($row['user_level'])
+            );
+        }
+
+        wp_send_json_success($ranking);
     }
 
     /**
