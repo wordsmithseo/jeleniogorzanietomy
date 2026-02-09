@@ -5546,17 +5546,16 @@ JAVASCRIPT;
                 <table class="wp-list-table widefat fixed striped" id="jg-xp-table">
                     <thead>
                         <tr>
-                            <th style="width:200px">Klucz akcji</th>
-                            <th>Opis</th>
+                            <th style="width:240px">Akcja</th>
+                            <th>Opis (opcjonalny)</th>
                             <th style="width:100px">XP</th>
-                            <th style="width:80px">Akcje</th>
+                            <th style="width:80px">Aktywna</th>
                         </tr>
                     </thead>
                     <tbody id="jg-xp-tbody"></tbody>
                 </table>
                 <p style="margin-top:12px">
-                    <button class="button" id="jg-xp-add-row">+ Dodaj źródło XP</button>
-                    <button class="button button-primary" id="jg-xp-save" style="margin-left:8px">Zapisz zmiany</button>
+                    <button class="button button-primary" id="jg-xp-save">Zapisz zmiany</button>
                     <span id="jg-xp-status" style="margin-left:12px;color:#059669;font-weight:600;display:none">Zapisano!</span>
                 </p>
             </div>
@@ -5567,13 +5566,27 @@ JAVASCRIPT;
                 var nonce = '<?php echo $nonce; ?>';
                 var tbody = document.getElementById('jg-xp-tbody');
 
-                function renderRow(source) {
+                var availableActions = [
+                    { key: 'submit_point', name: 'Dodanie punktu', defaultXp: 50 },
+                    { key: 'point_approved', name: 'Zatwierdzenie punktu przez admina', defaultXp: 30 },
+                    { key: 'receive_upvote', name: 'Otrzymanie głosu w górę', defaultXp: 5 },
+                    { key: 'vote_on_point', name: 'Oddanie głosu na punkt', defaultXp: 2 },
+                    { key: 'add_photo', name: 'Dodanie zdjęcia do punktu', defaultXp: 10 },
+                    { key: 'edit_point', name: 'Edycja punktu', defaultXp: 15 },
+                    { key: 'daily_login', name: 'Dzienny login', defaultXp: 5 },
+                    { key: 'report_point', name: 'Zgłoszenie punktu', defaultXp: 10 }
+                ];
+
+                function renderRow(action, savedData) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td><input type="text" value="' + esc(source.key) + '" class="xp-key regular-text" style="width:100%"></td>' +
-                        '<td><input type="text" value="' + esc(source.label) + '" class="xp-label regular-text" style="width:100%"></td>' +
-                        '<td><input type="number" value="' + (source.xp || 0) + '" class="xp-amount" style="width:80px" min="0"></td>' +
-                        '<td><button class="button xp-remove" style="color:#dc2626">Usuń</button></td>';
-                    tr.querySelector('.xp-remove').onclick = function() { tr.remove(); };
+                    var isActive = savedData !== null;
+                    var xpVal = isActive ? (savedData.xp || 0) : action.defaultXp;
+                    var labelVal = isActive && savedData.label ? savedData.label : '';
+                    tr.setAttribute('data-key', action.key);
+                    tr.innerHTML = '<td><strong>' + esc(action.key) + '</strong><br><span style="color:#6b7280;font-size:12px">' + esc(action.name) + '</span></td>' +
+                        '<td><input type="text" value="' + esc(labelVal) + '" class="xp-label regular-text" style="width:100%" placeholder="' + esc(action.name) + '"></td>' +
+                        '<td><input type="number" value="' + xpVal + '" class="xp-amount" style="width:80px" min="0"></td>' +
+                        '<td style="text-align:center"><input type="checkbox" class="xp-active"' + (isActive ? ' checked' : '') + '></td>';
                     tbody.appendChild(tr);
                 }
 
@@ -5583,7 +5596,7 @@ JAVASCRIPT;
                     return d.innerHTML.replace(/"/g, '&quot;');
                 }
 
-                // Load
+                // Load saved sources, then render all available actions
                 fetch(ajaxUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -5591,22 +5604,25 @@ JAVASCRIPT;
                 })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
+                    var saved = {};
                     if (data.success && Array.isArray(data.data)) {
-                        data.data.forEach(renderRow);
+                        data.data.forEach(function(s) { saved[s.key] = s; });
                     }
+                    availableActions.forEach(function(action) {
+                        renderRow(action, saved[action.key] || null);
+                    });
                 });
-
-                document.getElementById('jg-xp-add-row').onclick = function() {
-                    renderRow({ key: '', label: '', xp: 0 });
-                };
 
                 document.getElementById('jg-xp-save').onclick = function() {
                     var rows = tbody.querySelectorAll('tr');
                     var sources = [];
                     rows.forEach(function(tr) {
+                        if (!tr.querySelector('.xp-active').checked) return;
+                        var key = tr.getAttribute('data-key');
+                        var action = availableActions.find(function(a) { return a.key === key; });
                         sources.push({
-                            key: tr.querySelector('.xp-key').value,
-                            label: tr.querySelector('.xp-label').value,
+                            key: key,
+                            label: tr.querySelector('.xp-label').value || (action ? action.name : key),
                             xp: parseInt(tr.querySelector('.xp-amount').value) || 0
                         });
                     });
