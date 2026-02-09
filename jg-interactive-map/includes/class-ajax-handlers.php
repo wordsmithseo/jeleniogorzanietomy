@@ -1248,11 +1248,34 @@ class JG_Map_Ajax_Handlers {
         $current_user_id = get_current_user_id();
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
 
+        // Pagination params
+        $points_page = isset($_POST['points_page']) ? max(1, intval($_POST['points_page'])) : 1;
+        $photos_page = isset($_POST['photos_page']) ? max(1, intval($_POST['photos_page'])) : 1;
+        $points_per_page = 10;
+        $photos_per_page = 12;
+
         // Get user's points count
         $points_count = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM $table_points WHERE author_id = %d AND status = 'publish'",
             $user_id
         ));
+
+        // Get pin type counts
+        $type_counts_raw = $wpdb->get_results($wpdb->prepare(
+            "SELECT type, COUNT(*) as cnt FROM $table_points WHERE author_id = %d AND status = 'publish' GROUP BY type",
+            $user_id
+        ), ARRAY_A);
+
+        $type_counts = array(
+            'miejsce' => 0,
+            'ciekawostka' => 0,
+            'zgloszenie' => 0
+        );
+        foreach ($type_counts_raw as $row) {
+            if (isset($type_counts[$row['type']])) {
+                $type_counts[$row['type']] = intval($row['cnt']);
+            }
+        }
 
         // Get user's last activity (last point created)
         $last_activity = $wpdb->get_var($wpdb->prepare(
@@ -1260,13 +1283,14 @@ class JG_Map_Ajax_Handlers {
             $user_id
         ));
 
-        // Get user's points (for listing)
+        // Get user's points with pagination
+        $points_offset = ($points_page - 1) * $points_per_page;
         $user_points = $wpdb->get_results($wpdb->prepare(
             "SELECT id, title, type, created_at FROM $table_points
              WHERE author_id = %d AND status = 'publish'
              ORDER BY created_at DESC
-             LIMIT 10",
-            $user_id
+             LIMIT %d OFFSET %d",
+            $user_id, $points_per_page, $points_offset
         ), ARRAY_A);
 
         $points_list = array();
@@ -1299,6 +1323,10 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
+        $photos_total = count($all_photos);
+        $photos_offset = ($photos_page - 1) * $photos_per_page;
+        $photos_paged = array_slice($all_photos, $photos_offset, $photos_per_page);
+
         // Get restrictions (if admin or own profile)
         $restrictions = null;
         if ($is_admin || $current_user_id == $user_id) {
@@ -1316,8 +1344,15 @@ class JG_Map_Ajax_Handlers {
             'member_since' => $user->user_registered . ' UTC',
             'last_activity' => $last_activity ? $last_activity . ' UTC' : null,
             'points_count' => intval($points_count),
+            'type_counts' => $type_counts,
             'points' => $points_list,
-            'photos' => $all_photos,
+            'points_total' => intval($points_count),
+            'points_page' => $points_page,
+            'points_pages' => max(1, ceil(intval($points_count) / $points_per_page)),
+            'photos' => $photos_paged,
+            'photos_total' => $photos_total,
+            'photos_page' => $photos_page,
+            'photos_pages' => max(1, ceil($photos_total / $photos_per_page)),
             'restrictions' => $restrictions,
             'is_admin' => $is_admin
         );

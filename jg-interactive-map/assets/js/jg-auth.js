@@ -1036,7 +1036,12 @@
     if (myProfileLink && !myProfileLink.jgHandlerAttached) {
       myProfileLink.addEventListener('click', function(e) {
         e.preventDefault();
-        openMyProfileModal();
+        var userId = parseInt(myProfileLink.getAttribute('data-user-id'), 10);
+        if (userId && typeof window.openUserModal === 'function') {
+          window.openUserModal(userId);
+        } else {
+          openMyProfileModal();
+        }
       });
       myProfileLink.jgHandlerAttached = true;
     }
