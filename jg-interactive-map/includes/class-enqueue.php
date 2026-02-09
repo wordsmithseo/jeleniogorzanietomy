@@ -462,8 +462,23 @@ class JG_Map_Enqueue {
                         }
                     }
                     ?>
+                    <?php
+                    // Get user level & XP data for top bar
+                    $user_xp_data = JG_Map_Levels_Achievements::get_user_xp_data($current_user->ID);
+                    $user_level = $user_xp_data['level'];
+                    $user_xp = $user_xp_data['xp'];
+                    $current_level_xp = JG_Map_Levels_Achievements::xp_for_level($user_level);
+                    $next_level_xp = JG_Map_Levels_Achievements::xp_for_level($user_level + 1);
+                    $xp_in_level = $user_xp - $current_level_xp;
+                    $xp_needed = $next_level_xp - $current_level_xp;
+                    $xp_progress = $xp_needed > 0 ? min(100, round(($xp_in_level / $xp_needed) * 100)) : 100;
+                    ?>
                     <span class="jg-top-bar-user">
                         Zalogowano jako:&nbsp;<strong><a href="#" id="jg-my-profile-link" style="color:inherit;text-decoration:none;cursor:pointer" data-user-id="<?php echo esc_attr($current_user->ID); ?>"><?php echo esc_html($current_user->display_name); ?></a></strong><?php echo $role_icon; ?>
+                    </span>
+                    <span class="jg-top-bar-level" title="Poziom <?php echo $user_level; ?> — <?php echo $xp_in_level; ?>/<?php echo $xp_needed; ?> XP do następnego poziomu">
+                        <span class="jg-top-bar-level-num">Poz. <?php echo $user_level; ?></span>
+                        <span class="jg-top-bar-xp-bar"><span class="jg-top-bar-xp-fill" style="width:<?php echo $xp_progress; ?>%"></span></span>
                     </span>
                     <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
 
