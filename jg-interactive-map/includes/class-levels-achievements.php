@@ -170,9 +170,11 @@ class JG_Map_Levels_Achievements {
 
     /**
      * XP required to reach a given level (cumulative).
-     * Formula: level^2 * 100 (so level 2 = 400, level 3 = 900, etc.)
+     * Level 1 starts at 0 XP. Level 2 = 400, level 3 = 900, etc.
+     * Formula: level^2 * 100 (but level 1 = 0)
      */
     public static function xp_for_level($level) {
+        if ($level <= 1) return 0;
         return ($level * $level) * 100;
     }
 
