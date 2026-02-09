@@ -27,8 +27,9 @@ class JG_Map_Maintenance {
         // Hook the maintenance function
         add_action(self::CRON_HOOK, array(__CLASS__, 'run_maintenance'));
 
-        // Add manual trigger for admins (for testing)
+        // Add manual triggers for admins
         add_action('admin_init', array(__CLASS__, 'handle_manual_trigger'));
+        add_action('admin_init', array(__CLASS__, 'handle_xp_sync_trigger'));
     }
 
     /**
@@ -46,6 +47,33 @@ class JG_Map_Maintenance {
 
             self::run_maintenance();
             wp_redirect(admin_url('admin.php?page=jg-map-maintenance&maintenance_done=1'));
+            exit;
+        }
+    }
+
+    /**
+     * Handle XP/achievements recalculation trigger from admin
+     */
+    public static function handle_xp_sync_trigger() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        if (isset($_GET['jg_sync_xp']) && $_GET['jg_sync_xp'] === '1') {
+            if (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'jg_sync_xp')) {
+                wp_die('Security check failed');
+            }
+
+            $xp_result = JG_Map_Levels_Achievements::recalculate_all_xp();
+            $ach_result = JG_Map_Levels_Achievements::recheck_all_achievements();
+
+            update_option('jg_map_last_xp_sync', array(
+                'time' => current_time('mysql'),
+                'xp' => $xp_result,
+                'achievements' => $ach_result
+            ));
+
+            wp_redirect(admin_url('admin.php?page=jg-map-maintenance&xp_sync_done=1'));
             exit;
         }
     }

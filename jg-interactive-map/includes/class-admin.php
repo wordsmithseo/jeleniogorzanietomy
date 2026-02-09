@@ -4943,6 +4943,65 @@ JAVASCRIPT;
                     <strong>Uwaga:</strong> Ręczne uruchomienie konserwacji może chwilę potrwać. Strona zostanie automatycznie przeładowana po zakończeniu.
                 </p>
             </div>
+
+            <?php
+            // XP sync success notice
+            if (isset($_GET['xp_sync_done'])) {
+                echo '<div class="notice notice-success is-dismissible" style="margin-top:20px"><p>Synchronizacja doświadczenia i osiągnięć zakończona pomyślnie!</p></div>';
+            }
+            $last_sync = get_option('jg_map_last_xp_sync', null);
+            ?>
+
+            <div style="background:#fff;padding:20px;border:1px solid #ccd0d4;border-radius:4px;margin-top:20px;">
+                <h2>Synchronizacja doświadczenia i osiągnięć</h2>
+                <p>Przelicz XP i odblokuj osiągnięcia na podstawie rzeczywistych akcji użytkowników w bazie danych.
+                Używaj tej opcji gdy:</p>
+                <ul style="padding-left:20px;">
+                    <li>System poziomów został dodany do istniejącej instalacji (użytkownicy mieli konta przed wprowadzeniem poziomów)</li>
+                    <li>Zmieniono ilość XP przyznawanych za poszczególne akcje i chcesz przeliczyć</li>
+                    <li>Dodano nowe osiągnięcia i chcesz sprawdzić, kto już je spełnia</li>
+                    <li>Dane XP wyglądają na niespójne z rzeczywistą aktywnością użytkowników</li>
+                </ul>
+
+                <?php if ($last_sync): ?>
+                <h3>Ostatnia synchronizacja</h3>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Data:</th>
+                        <td><?php echo $last_sync['time']; ?> (<?php echo human_time_diff(strtotime($last_sync['time']), current_time('timestamp')); ?> temu)</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Przeliczenie XP:</th>
+                        <td>
+                            Przetworzono <strong><?php echo $last_sync['xp']['users_processed']; ?></strong> użytkowników,
+                            zaktualizowano <strong><?php echo $last_sync['xp']['users_updated']; ?></strong>,
+                            przyznano łącznie <strong><?php echo number_format($last_sync['xp']['total_xp_awarded']); ?></strong> XP
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Osiągnięcia:</th>
+                        <td>
+                            Sprawdzono <strong><?php echo $last_sync['achievements']['users_checked']; ?></strong> użytkowników,
+                            odblokowano <strong><?php echo $last_sync['achievements']['new_achievements_awarded']; ?></strong> nowych osiągnięć
+                        </td>
+                    </tr>
+                </table>
+                <?php endif; ?>
+
+                <h3>Uruchom synchronizację</h3>
+                <p>Przelicza XP od nowa na podstawie rzeczywistych danych (punkty, głosy, zdjęcia, raporty, edycje), a następnie odblokuje wszystkie osiągnięcia, których warunki użytkownicy już spełniają.</p>
+                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=jg-map-maintenance&jg_sync_xp=1'), 'jg_sync_xp'); ?>"
+                   class="button button-primary"
+                   onclick="return confirm('Czy na pewno chcesz przeliczyć XP i osiągnięcia dla wszystkich użytkowników? Istniejące dane XP zostaną nadpisane obliczeniami na podstawie rzeczywistych akcji.');">
+                    Przelicz XP i osiągnięcia
+                </a>
+
+                <p style="margin-top:20px;padding:15px;background:#eff6ff;border-left:4px solid #3b82f6;color:#1e40af;">
+                    <strong>Info:</strong> Przeliczenie nadpisze obecne XP użytkowników wartościami obliczonymi z ich rzeczywistych akcji.
+                    Osiągnięcia odblokowane retroaktywnie nie wyświetlą powiadomień (aby nie spamować użytkowników).
+                    XP za „codzienny login" nie jest możliwe do odtworzenia retroaktywnie.
+                </p>
+            </div>
         </div>
         <?php
     }
@@ -5546,17 +5605,16 @@ JAVASCRIPT;
                 <table class="wp-list-table widefat fixed striped" id="jg-xp-table">
                     <thead>
                         <tr>
-                            <th style="width:200px">Klucz akcji</th>
-                            <th>Opis</th>
+                            <th style="width:240px">Akcja</th>
+                            <th>Opis (opcjonalny)</th>
                             <th style="width:100px">XP</th>
-                            <th style="width:80px">Akcje</th>
+                            <th style="width:80px">Aktywna</th>
                         </tr>
                     </thead>
                     <tbody id="jg-xp-tbody"></tbody>
                 </table>
                 <p style="margin-top:12px">
-                    <button class="button" id="jg-xp-add-row">+ Dodaj źródło XP</button>
-                    <button class="button button-primary" id="jg-xp-save" style="margin-left:8px">Zapisz zmiany</button>
+                    <button class="button button-primary" id="jg-xp-save">Zapisz zmiany</button>
                     <span id="jg-xp-status" style="margin-left:12px;color:#059669;font-weight:600;display:none">Zapisano!</span>
                 </p>
             </div>
@@ -5567,13 +5625,27 @@ JAVASCRIPT;
                 var nonce = '<?php echo $nonce; ?>';
                 var tbody = document.getElementById('jg-xp-tbody');
 
-                function renderRow(source) {
+                var availableActions = [
+                    { key: 'submit_point', name: 'Dodanie punktu', defaultXp: 50 },
+                    { key: 'point_approved', name: 'Zatwierdzenie punktu przez admina', defaultXp: 30 },
+                    { key: 'receive_upvote', name: 'Otrzymanie głosu w górę', defaultXp: 5 },
+                    { key: 'vote_on_point', name: 'Oddanie głosu na punkt', defaultXp: 2 },
+                    { key: 'add_photo', name: 'Dodanie zdjęcia do punktu', defaultXp: 10 },
+                    { key: 'edit_point', name: 'Edycja punktu', defaultXp: 15 },
+                    { key: 'daily_login', name: 'Dzienny login', defaultXp: 5 },
+                    { key: 'report_point', name: 'Zgłoszenie punktu', defaultXp: 10 }
+                ];
+
+                function renderRow(action, savedData) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td><input type="text" value="' + esc(source.key) + '" class="xp-key regular-text" style="width:100%"></td>' +
-                        '<td><input type="text" value="' + esc(source.label) + '" class="xp-label regular-text" style="width:100%"></td>' +
-                        '<td><input type="number" value="' + (source.xp || 0) + '" class="xp-amount" style="width:80px" min="0"></td>' +
-                        '<td><button class="button xp-remove" style="color:#dc2626">Usuń</button></td>';
-                    tr.querySelector('.xp-remove').onclick = function() { tr.remove(); };
+                    var isActive = savedData !== null;
+                    var xpVal = isActive ? (savedData.xp || 0) : action.defaultXp;
+                    var labelVal = isActive && savedData.label ? savedData.label : '';
+                    tr.setAttribute('data-key', action.key);
+                    tr.innerHTML = '<td><strong>' + esc(action.key) + '</strong><br><span style="color:#6b7280;font-size:12px">' + esc(action.name) + '</span></td>' +
+                        '<td><input type="text" value="' + esc(labelVal) + '" class="xp-label regular-text" style="width:100%" placeholder="' + esc(action.name) + '"></td>' +
+                        '<td><input type="number" value="' + xpVal + '" class="xp-amount" style="width:80px" min="0"></td>' +
+                        '<td style="text-align:center"><input type="checkbox" class="xp-active"' + (isActive ? ' checked' : '') + '></td>';
                     tbody.appendChild(tr);
                 }
 
@@ -5583,7 +5655,7 @@ JAVASCRIPT;
                     return d.innerHTML.replace(/"/g, '&quot;');
                 }
 
-                // Load
+                // Load saved sources, then render all available actions
                 fetch(ajaxUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -5591,22 +5663,25 @@ JAVASCRIPT;
                 })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
+                    var saved = {};
                     if (data.success && Array.isArray(data.data)) {
-                        data.data.forEach(renderRow);
+                        data.data.forEach(function(s) { saved[s.key] = s; });
                     }
+                    availableActions.forEach(function(action) {
+                        renderRow(action, saved[action.key] || null);
+                    });
                 });
-
-                document.getElementById('jg-xp-add-row').onclick = function() {
-                    renderRow({ key: '', label: '', xp: 0 });
-                };
 
                 document.getElementById('jg-xp-save').onclick = function() {
                     var rows = tbody.querySelectorAll('tr');
                     var sources = [];
                     rows.forEach(function(tr) {
+                        if (!tr.querySelector('.xp-active').checked) return;
+                        var key = tr.getAttribute('data-key');
+                        var action = availableActions.find(function(a) { return a.key === key; });
                         sources.push({
-                            key: tr.querySelector('.xp-key').value,
-                            label: tr.querySelector('.xp-label').value,
+                            key: key,
+                            label: tr.querySelector('.xp-label').value || (action ? action.name : key),
                             xp: parseInt(tr.querySelector('.xp-amount').value) || 0
                         });
                     });
