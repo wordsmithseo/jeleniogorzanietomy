@@ -558,8 +558,7 @@ class JG_Interactive_Map {
             box-shadow: 0 2px 8px rgba(0,0,0,0.12);
         }
         .jg-sp-map-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
-        .jg-sp-map-cta-text { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.3; transition: all 0.3s; }
-        #jg-sp-countdown { font-variant-numeric: tabular-nums; }
+        .jg-sp-map-cta-text { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.3; }
         .jg-sp-map-cta-sub { font-size: 13px; opacity: 0.9; margin-top: 4px; color: #fff; }
         .jg-sp-map-cta-arrow { font-size: 28px; flex-shrink: 0; color: #fff; }
 
@@ -649,10 +648,10 @@ class JG_Interactive_Map {
         </header>
 
         <div class="jg-sp">
-            <!-- Prominent "View on Map" CTA with auto-redirect countdown -->
-            <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" id="jg-sp-cta" class="jg-sp-map-cta">
+            <!-- Prominent "View on Map" CTA (manual click only, no auto-redirect) -->
+            <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" class="jg-sp-map-cta">
                 <div>
-                    <div class="jg-sp-map-cta-text">Zobacz na mapie interaktywnej <span id="jg-sp-countdown">(5)</span></div>
+                    <div class="jg-sp-map-cta-text">Zobacz na mapie interaktywnej</div>
                     <div class="jg-sp-map-cta-sub"><?php echo esc_html($point['title']); ?> &mdash; <?php echo esc_html($type_label); ?> w Jeleniej Górze</div>
                 </div>
                 <span class="jg-sp-map-cta-arrow">&rarr;</span>
@@ -735,30 +734,6 @@ class JG_Interactive_Map {
             <a href="<?php echo esc_url(home_url('/')); ?>">Wróć do mapy</a>
         </footer>
 
-        <script>
-        (function(){
-            var seconds = 5;
-            var cta = document.getElementById('jg-sp-cta');
-            var counter = document.getElementById('jg-sp-countdown');
-            if (!cta || !counter) return;
-            var timer = setInterval(function(){
-                seconds--;
-                if (seconds > 0) {
-                    counter.textContent = '(' + seconds + ')';
-                } else {
-                    clearInterval(timer);
-                    counter.textContent = '';
-                    window.location.href = cta.href;
-                }
-            }, 1000);
-            // Stop countdown if user scrolls (they're reading the content)
-            document.addEventListener('scroll', function stop() {
-                clearInterval(timer);
-                counter.textContent = '';
-                document.removeEventListener('scroll', stop);
-            });
-        })();
-        </script>
 </body>
 </html>
         <?php
