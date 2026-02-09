@@ -1378,6 +1378,7 @@ class JG_Map_Ajax_Handlers {
              LEFT JOIN $table_points p ON p.author_id = u.ID AND p.status = 'publish'
              LEFT JOIN $table_xp xp ON xp.user_id = u.ID
              GROUP BY u.ID
+             HAVING places_count > 0 OR COALESCE(xp.xp, 0) > 0
              ORDER BY places_count DESC, user_level DESC, u.user_registered ASC
              LIMIT 10",
             ARRAY_A
