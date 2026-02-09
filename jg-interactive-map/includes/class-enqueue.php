@@ -476,7 +476,18 @@ class JG_Map_Enqueue {
                     <span class="jg-top-bar-user">
                         Zalogowano jako:&nbsp;<strong><a href="#" id="jg-my-profile-link" style="color:inherit;text-decoration:none;cursor:pointer" data-user-id="<?php echo esc_attr($current_user->ID); ?>"><?php echo esc_html($current_user->display_name); ?></a></strong><?php echo $role_icon; ?>
                     </span>
-                    <span class="jg-top-bar-level" title="Poziom <?php echo $user_level; ?> — <?php echo $xp_in_level; ?>/<?php echo $xp_needed; ?> XP do następnego poziomu">
+                    <?php
+                    // Level color tiers (Forza Horizon style prestige colors)
+                    if ($user_level >= 50) $level_tier = 'prestige-legend';
+                    elseif ($user_level >= 40) $level_tier = 'prestige-ruby';
+                    elseif ($user_level >= 30) $level_tier = 'prestige-diamond';
+                    elseif ($user_level >= 20) $level_tier = 'prestige-purple';
+                    elseif ($user_level >= 15) $level_tier = 'prestige-emerald';
+                    elseif ($user_level >= 10) $level_tier = 'prestige-gold';
+                    elseif ($user_level >= 5) $level_tier = 'prestige-silver';
+                    else $level_tier = 'prestige-bronze';
+                    ?>
+                    <span class="jg-top-bar-level jg-level-<?php echo $level_tier; ?>" title="Poziom <?php echo $user_level; ?> — <?php echo $xp_in_level; ?>/<?php echo $xp_needed; ?> XP do następnego poziomu">
                         <span class="jg-top-bar-level-num">Poz. <?php echo $user_level; ?></span>
                         <span class="jg-top-bar-xp-bar"><span class="jg-top-bar-xp-fill" style="width:<?php echo $xp_progress; ?>%"></span></span>
                     </span>
