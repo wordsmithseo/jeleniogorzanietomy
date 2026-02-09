@@ -3986,8 +3986,11 @@
       /**
        * Open user profile modal
        */
-      function openUserModal(userId) {
-        api('jg_get_user_info', { user_id: userId }).then(function(user) {
+      function openUserModal(userId, pointsPage, photosPage) {
+        pointsPage = pointsPage || 1;
+        photosPage = photosPage || 1;
+
+        api('jg_get_user_info', { user_id: userId, points_page: pointsPage, photos_page: photosPage }).then(function(user) {
           if (!user) {
             showAlert('Błąd pobierania informacji o użytkowniku');
             return;
@@ -3995,9 +3998,27 @@
           var memberSince = user.member_since ? new Date(user.member_since).toLocaleDateString('pl-PL') : '-';
           var lastActivity = user.last_activity ? new Date(user.last_activity).toLocaleDateString('pl-PL') : 'Brak aktywności';
 
+          // Pin type statistics
+          var tc = user.type_counts || {};
+          var typeStatsHtml = '<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-bottom:20px">' +
+            '<div style="padding:14px;background:#ecfdf5;border-radius:8px;text-align:center;border-left:4px solid #10b981">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📍 Miejsca</div>' +
+            '<div style="font-weight:700;font-size:22px;color:#059669">' + (tc.miejsce || 0) + '</div>' +
+            '</div>' +
+            '<div style="padding:14px;background:#fef3c7;border-radius:8px;text-align:center;border-left:4px solid #f59e0b">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">💡 Ciekawostki</div>' +
+            '<div style="font-weight:700;font-size:22px;color:#d97706">' + (tc.ciekawostka || 0) + '</div>' +
+            '</div>' +
+            '<div style="padding:14px;background:#fce7f3;border-radius:8px;text-align:center;border-left:4px solid #ec4899">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📢 Zgłoszenia</div>' +
+            '<div style="font-weight:700;font-size:22px;color:#db2777">' + (tc.zgloszenie || 0) + '</div>' +
+            '</div>' +
+            '</div>';
+
+          // Points list
           var pointsHtml = '';
           if (user.points && user.points.length > 0) {
-            pointsHtml = '<div style="max-height:300px;overflow-y:auto;margin-top:12px">';
+            pointsHtml = '<div style="margin-top:12px">';
             for (var i = 0; i < user.points.length; i++) {
               var point = user.points[i];
               var typeLabels = {
@@ -4017,16 +4038,25 @@
                 '</div>';
             }
             pointsHtml += '</div>';
+
+            // Points pagination
+            if (user.points_pages > 1) {
+              pointsHtml += '<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px">';
+              pointsHtml += '<button class="jg-user-modal-points-prev" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (pointsPage <= 1 ? ';opacity:0.4;pointer-events:none' : '') + '">&laquo; Poprzednie</button>';
+              pointsHtml += '<span style="font-size:13px;color:#6b7280">Strona ' + user.points_page + ' z ' + user.points_pages + '</span>';
+              pointsHtml += '<button class="jg-user-modal-points-next" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (pointsPage >= user.points_pages ? ';opacity:0.4;pointer-events:none' : '') + '">Następne &raquo;</button>';
+              pointsHtml += '</div>';
+            }
           } else {
             pointsHtml = '<div style="padding:20px;text-align:center;color:#9ca3af">Brak dodanych miejsc</div>';
           }
 
           // Photo gallery
           var photosHtml = '';
-          if (user.photos && user.photos.length > 0) {
+          if (user.photos_total > 0) {
             photosHtml = '<div>' +
-              '<h4 style="margin:20px 0 12px 0;color:#374151">📷 Galeria zdjęć (' + user.photos.length + ')</h4>' +
-              '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));gap:12px;max-height:400px;overflow-y:auto">';
+              '<h4 style="margin:20px 0 12px 0;color:#374151">📷 Galeria zdjęć (' + user.photos_total + ')</h4>' +
+              '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));gap:12px">';
 
             for (var j = 0; j < user.photos.length; j++) {
               var photo = user.photos[j];
@@ -4050,14 +4080,25 @@
               }
             }
 
-            photosHtml += '</div></div>';
+            photosHtml += '</div>';
+
+            // Photos pagination
+            if (user.photos_pages > 1) {
+              photosHtml += '<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px">';
+              photosHtml += '<button class="jg-user-modal-photos-prev" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (photosPage <= 1 ? ';opacity:0.4;pointer-events:none' : '') + '">&laquo; Poprzednie</button>';
+              photosHtml += '<span style="font-size:13px;color:#6b7280">Strona ' + user.photos_page + ' z ' + user.photos_pages + '</span>';
+              photosHtml += '<button class="jg-user-modal-photos-next" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (photosPage >= user.photos_pages ? ';opacity:0.4;pointer-events:none' : '') + '">Następne &raquo;</button>';
+              photosHtml += '</div>';
+            }
+
+            photosHtml += '</div>';
           }
 
           var modalHtml = '<header style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:20px;border-radius:12px 12px 0 0">' +
             '<h3 style="margin:0;color:#fff;font-size:20px">👤 ' + esc(user.username) + '</h3>' +
             '<button class="jg-close" id="user-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
             '</header>' +
-            '<div style="padding:20px">' +
+            '<div style="padding:20px;max-height:70vh;overflow-y:auto">' +
             '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:20px">' +
             '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
             '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📅 Członek od</div>' +
@@ -4072,8 +4113,10 @@
             '<div style="font-weight:600;font-size:24px">' + user.points_count + '</div>' +
             '</div>' +
             '</div>' +
+            '<h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">📊 Statystyki pinezek</h4>' +
+            typeStatsHtml +
             '<div>' +
-            '<h4 style="margin:0 0 8px 0;color:#374151">Ostatnio dodane miejsca (max 10)</h4>' +
+            '<h4 style="margin:0 0 8px 0;color:#374151">Dodane miejsca</h4>' +
             pointsHtml +
             '</div>' +
             photosHtml +
@@ -4084,6 +4127,26 @@
           qs('#user-modal-close', modalReport).onclick = function() {
             close(modalReport);
           };
+
+          // Points pagination handlers
+          var pointsPrev = modalReport.querySelector('.jg-user-modal-points-prev');
+          var pointsNext = modalReport.querySelector('.jg-user-modal-points-next');
+          if (pointsPrev && pointsPage > 1) {
+            pointsPrev.onclick = function() { openUserModal(userId, pointsPage - 1, photosPage); };
+          }
+          if (pointsNext && pointsPage < user.points_pages) {
+            pointsNext.onclick = function() { openUserModal(userId, pointsPage + 1, photosPage); };
+          }
+
+          // Photos pagination handlers
+          var photosPrev = modalReport.querySelector('.jg-user-modal-photos-prev');
+          var photosNext = modalReport.querySelector('.jg-user-modal-photos-next');
+          if (photosPrev && photosPage > 1) {
+            photosPrev.onclick = function() { openUserModal(userId, pointsPage, photosPage - 1); };
+          }
+          if (photosNext && photosPage < user.photos_pages) {
+            photosNext.onclick = function() { openUserModal(userId, pointsPage, photosPage + 1); };
+          }
 
           // Add click handlers for photo gallery
           var photoItems = modalReport.querySelectorAll('.user-photo-item');
@@ -8971,6 +9034,7 @@
       // Export map and openDetails as global functions for use by sidebar widget
       window.jgMap = map;
       window.openDetails = openDetails;
+      window.openUserModal = openUserModal;
 
     } catch (e) {
       showError('Błąd: ' + e.message);
