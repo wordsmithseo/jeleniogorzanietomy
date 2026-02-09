@@ -36,25 +36,26 @@
 .jg-top-bar-level {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-right: 2px;
+  gap: 0.4rem;
+  margin-right: 0.15rem;
   flex-shrink: 0;
 }
 
 .jg-top-bar-level-num {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 800;
   color: #fbbf24;
   white-space: nowrap;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .jg-top-bar-xp-bar {
   display: inline-block;
-  width: 60px;
-  height: 6px;
+  width: 4.5rem;
+  height: 0.45rem;
   background: rgba(255,255,255,0.18);
-  border-radius: 3px;
+  border-radius: 0.25rem;
   overflow: hidden;
   vertical-align: middle;
 }
@@ -63,8 +64,75 @@
   display: block;
   height: 100%;
   background: linear-gradient(90deg, #fbbf24, #f59e0b);
-  border-radius: 3px;
+  border-radius: 0.25rem;
   transition: width 0.4s ease;
+}
+
+/* Level color tiers - Forza Horizon prestige style */
+.jg-level-prestige-bronze .jg-top-bar-level-num {
+  color: #cd7f32;
+}
+.jg-level-prestige-bronze .jg-top-bar-xp-fill {
+  background: linear-gradient(90deg, #cd7f32, #a0522d);
+}
+
+.jg-level-prestige-silver .jg-top-bar-level-num {
+  color: #c0c0c0;
+}
+.jg-level-prestige-silver .jg-top-bar-xp-fill {
+  background: linear-gradient(90deg, #b0b0b0, #d4d4d4);
+}
+
+.jg-level-prestige-gold .jg-top-bar-level-num {
+  color: #fbbf24;
+  text-shadow: 0 1px 4px rgba(251,191,36,0.4);
+}
+.jg-level-prestige-gold .jg-top-bar-xp-fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.jg-level-prestige-emerald .jg-top-bar-level-num {
+  color: #34d399;
+  text-shadow: 0 1px 4px rgba(52,211,153,0.4);
+}
+.jg-level-prestige-emerald .jg-top-bar-xp-fill {
+  background: linear-gradient(90deg, #34d399, #10b981);
+}
+
+.jg-level-prestige-purple .jg-top-bar-level-num {
+  color: #a78bfa;
+  text-shadow: 0 1px 4px rgba(167,139,250,0.4);
+}
+.jg-level-prestige-purple .jg-top-bar-xp-fill {
+  background: linear-gradient(90deg, #a78bfa, #8b5cf6);
+}
+
+.jg-level-prestige-diamond .jg-top-bar-level-num {
+  color: #67e8f9;
+  text-shadow: 0 1px 4px rgba(103,232,249,0.4);
+}
+.jg-level-prestige-diamond .jg-top-bar-xp-fill {
+  background: linear-gradient(90deg, #67e8f9, #22d3ee);
+}
+
+.jg-level-prestige-ruby .jg-top-bar-level-num {
+  color: #fb7185;
+  text-shadow: 0 1px 4px rgba(251,113,133,0.4);
+}
+.jg-level-prestige-ruby .jg-top-bar-xp-fill {
+  background: linear-gradient(90deg, #fb7185, #e11d48);
+}
+
+.jg-level-prestige-legend .jg-top-bar-level-num {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b, #fb7185, #a78bfa, #67e8f9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 1px 2px rgba(251,191,36,0.3));
+}
+.jg-level-prestige-legend .jg-top-bar-xp-fill {
+  background: linear-gradient(90deg, #fbbf24, #fb7185, #a78bfa, #67e8f9);
 }
 
 .jg-top-bar-btn {
@@ -1181,12 +1249,12 @@ body.jg-fullscreen-active {
 
   /* Compact level indicator on mobile */
   .jg-top-bar-xp-bar {
-    width: 36px;
-    height: 5px;
+    width: 3rem;
+    height: 0.35rem;
   }
 
   .jg-top-bar-level-num {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
 
   .jg-search-panel {

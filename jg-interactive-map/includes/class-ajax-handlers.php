@@ -1371,14 +1371,15 @@ class JG_Map_Ajax_Handlers {
         $table_xp = $wpdb->prefix . 'jg_map_user_xp';
 
         $results = $wpdb->get_results(
-            "SELECT p.author_id, u.display_name, COUNT(*) as places_count,
+            "SELECT u.ID as user_id, u.display_name,
+                    COUNT(p.id) as places_count,
                     COALESCE(xp.level, 1) as user_level
-             FROM $table_points p
-             INNER JOIN {$wpdb->users} u ON u.ID = p.author_id
-             LEFT JOIN $table_xp xp ON xp.user_id = p.author_id
-             WHERE p.status = 'publish'
-             GROUP BY p.author_id
-             ORDER BY places_count DESC, user_level DESC
+             FROM {$wpdb->users} u
+             LEFT JOIN $table_points p ON p.author_id = u.ID AND p.status = 'publish'
+             LEFT JOIN $table_xp xp ON xp.user_id = u.ID
+             GROUP BY u.ID
+             HAVING places_count > 0 OR COALESCE(xp.xp, 0) > 0
+             ORDER BY places_count DESC, user_level DESC, u.user_registered ASC
              LIMIT 10",
             ARRAY_A
         );
@@ -1386,7 +1387,7 @@ class JG_Map_Ajax_Handlers {
         $ranking = array();
         foreach ($results as $row) {
             $ranking[] = array(
-                'user_id' => intval($row['author_id']),
+                'user_id' => intval($row['user_id']),
                 'display_name' => $row['display_name'],
                 'places_count' => intval($row['places_count']),
                 'level' => intval($row['user_level'])
