@@ -1373,12 +1373,13 @@ class JG_Map_Ajax_Handlers {
         $results = $wpdb->get_results(
             "SELECT u.ID as user_id, u.display_name,
                     COUNT(p.id) as places_count,
-                    COALESCE(xp.level, 1) as user_level
+                    COALESCE(MAX(xp.level), 1) as user_level,
+                    COALESCE(MAX(xp.xp), 0) as total_xp
              FROM {$wpdb->users} u
              LEFT JOIN $table_points p ON p.author_id = u.ID AND p.status = 'publish'
              LEFT JOIN $table_xp xp ON xp.user_id = u.ID
              GROUP BY u.ID
-             HAVING places_count > 0 OR COALESCE(xp.xp, 0) > 0
+             HAVING places_count > 0 OR total_xp > 0
              ORDER BY places_count DESC, user_level DESC, u.user_registered ASC
              LIMIT 10",
             ARRAY_A
