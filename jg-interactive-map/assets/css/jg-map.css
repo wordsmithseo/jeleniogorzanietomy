@@ -4881,7 +4881,7 @@ body.jg-fullscreen-active {
    ======================================== */
 
 .jg-ranking-header {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
   padding: 20px 24px;
   border-radius: 12px 12px 0 0;
   display: flex;
@@ -4897,7 +4897,7 @@ body.jg-fullscreen-active {
 }
 
 .jg-ranking-trophy {
-  font-size: 38px;
+  font-size: 2.5rem;
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
@@ -4905,7 +4905,7 @@ body.jg-fullscreen-active {
 .jg-ranking-title {
   margin: 0;
   color: #fff;
-  font-size: 20px;
+  font-size: 1.35rem;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
@@ -4913,7 +4913,7 @@ body.jg-fullscreen-active {
 .jg-ranking-subtitle {
   margin: 4px 0 0 0;
   color: rgba(255,255,255,0.85);
-  font-size: 13px;
+  font-size: 0.875rem;
 }
 
 .jg-ranking-body {
@@ -4954,13 +4954,22 @@ body.jg-fullscreen-active {
 .jg-ranking-gold .jg-ranking-pos {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #fff;
-  font-size: 16px;
+  font-size: 1.1rem;
   box-shadow: 0 2px 8px rgba(245,158,11,0.4);
 }
 
 .jg-ranking-gold .jg-ranking-name {
-  font-size: 16px;
+  font-size: 1.1rem;
   font-weight: 700;
+  color: #78350f;
+}
+
+.jg-ranking-silver .jg-ranking-name {
+  color: #4c1d95;
+}
+
+.jg-ranking-bronze .jg-ranking-name {
+  color: #065f46;
 }
 
 /* 2nd place - purple */
@@ -4997,7 +5006,7 @@ body.jg-fullscreen-active {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 0.9375rem;
   color: #6b7280;
   background: #e5e7eb;
   flex-shrink: 0;
@@ -5010,7 +5019,7 @@ body.jg-fullscreen-active {
 
 .jg-ranking-name {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 1rem;
   color: #111827;
   white-space: nowrap;
   overflow: hidden;
@@ -5018,7 +5027,7 @@ body.jg-fullscreen-active {
 }
 
 .jg-ranking-star {
-  font-size: 14px;
+  font-size: 0.9375rem;
 }
 
 .jg-ranking-user-link {
@@ -5036,7 +5045,7 @@ body.jg-fullscreen-active {
   display: flex;
   gap: 12px;
   margin-top: 3px;
-  font-size: 12px;
+  font-size: 0.8125rem;
   color: #6b7280;
 }
 
@@ -5050,7 +5059,7 @@ body.jg-fullscreen-active {
 }
 
 .jg-ranking-count {
-  font-size: 22px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #374151;
   flex-shrink: 0;
@@ -5118,11 +5127,11 @@ body.jg-fullscreen-active {
   }
 
   .jg-ranking-trophy {
-    font-size: 30px;
+    font-size: 2rem;
   }
 
   .jg-ranking-title {
-    font-size: 18px;
+    font-size: 1.2rem;
   }
 
   #jg-map-modal-ranking .jg-modal {
@@ -5138,15 +5147,15 @@ body.jg-fullscreen-active {
   }
 
   .jg-ranking-trophy {
-    font-size: 26px;
+    font-size: 1.75rem;
   }
 
   .jg-ranking-title {
-    font-size: 16px;
+    font-size: 1.1rem;
   }
 
   .jg-ranking-subtitle {
-    font-size: 11px;
+    font-size: 0.75rem;
   }
 
   .jg-ranking-body {
@@ -5161,28 +5170,28 @@ body.jg-fullscreen-active {
   .jg-ranking-pos {
     width: 30px;
     height: 30px;
-    font-size: 12px;
+    font-size: 0.8125rem;
   }
 
   .jg-ranking-gold .jg-ranking-pos {
-    font-size: 14px;
+    font-size: 0.9375rem;
   }
 
   .jg-ranking-name {
-    font-size: 13px;
+    font-size: 0.875rem;
   }
 
   .jg-ranking-gold .jg-ranking-name {
-    font-size: 14px;
+    font-size: 0.9375rem;
   }
 
   .jg-ranking-meta {
     gap: 8px;
-    font-size: 11px;
+    font-size: 0.75rem;
   }
 
   .jg-ranking-count {
-    font-size: 18px;
+    font-size: 1.2rem;
     min-width: 30px;
   }
 
