@@ -1722,6 +1722,11 @@ class JG_Map_Ajax_Handlers {
                 }
             }
 
+            // Ping search engines if point was published immediately (admin)
+            if ($saved_point['status'] === 'publish') {
+                JG_Interactive_Map::ping_search_engines($point_id);
+            }
+
             $response = array(
                 'message' => 'Punkt dodany do moderacji',
                 'point_id' => $point_id,
@@ -2914,6 +2919,9 @@ class JG_Map_Ajax_Handlers {
         if ($author_id) {
             JG_Map_Levels_Achievements::award_xp($author_id, 'point_approved', $point_id);
         }
+
+        // Ping search engines about updated content
+        JG_Interactive_Map::ping_search_engines($point_id);
 
         wp_send_json_success(array('message' => 'Punkt zaakceptowany'));
     }
@@ -7183,6 +7191,9 @@ class JG_Map_Ajax_Handlers {
             $point_id,
             sprintf('Przywrócono miejsce z kosza: %s', $point['title'])
         );
+
+        // Ping search engines about restored content
+        JG_Interactive_Map::ping_search_engines($point_id);
 
         wp_send_json_success(array('message' => 'Miejsce przywrócone z kosza'));
     }
