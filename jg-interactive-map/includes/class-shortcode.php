@@ -31,6 +31,7 @@ class JG_Map_Shortcode {
     private function __construct() {
         add_shortcode('jg_map', array($this, 'render_map'));
         add_shortcode('jg_map_sidebar', array($this, 'render_sidebar'));
+        add_shortcode('jg_map_directory', array($this, 'render_directory'));
         add_shortcode('jg_banner', array($this, 'render_banner'));
     }
 
@@ -204,35 +205,58 @@ class JG_Map_Shortcode {
             </div>
         </div>
         <?php
-        // Add crawlable HTML directory of all published points for SEO internal linking
-        // Google discovers pages primarily through <a href> links, not just sitemaps
-        echo $this->render_points_directory();
-
         return ob_get_clean();
     }
 
     /**
-     * Render HTML directory of all published points for SEO internal linking.
-     * Without this, Google only knows about pin pages from the sitemap (weak signal)
-     * and won't crawl/index them automatically.
+     * Render directory shortcode - crawlable HTML listing of all published points.
+     * Provides internal links that Google needs to discover and index pin pages.
+     *
+     * Usage: [jg_map_directory] or [jg_map_directory per_page="50"]
      */
-    private function render_points_directory() {
+    public function render_directory($atts) {
+        $atts = shortcode_atts(
+            array(
+                'per_page' => 50,
+            ),
+            $atts,
+            'jg_map_directory'
+        );
+
+        $per_page = max(10, min(100, (int) $atts['per_page']));
+        $current_page = max(1, (int) (isset($_GET['katalog-strona']) ? $_GET['katalog-strona'] : 1));
+        $offset = ($current_page - 1) * $per_page;
+
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
+        // Get total count
+        $total = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM $table WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''"
+        );
+
+        if ($total === 0) {
+            return '<p>Brak miejsc w katalogu.</p>';
+        }
+
+        $total_pages = (int) ceil($total / $per_page);
+        $current_page = min($current_page, $total_pages);
+        $offset = ($current_page - 1) * $per_page;
+
+        // Get paginated points
         $points = $wpdb->get_results(
-            "SELECT title, slug, type, address, created_at
-             FROM $table
-             WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''
-             ORDER BY type ASC, title ASC",
+            $wpdb->prepare(
+                "SELECT title, slug, type, address
+                 FROM $table
+                 WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''
+                 ORDER BY type ASC, title ASC
+                 LIMIT %d OFFSET %d",
+                $per_page,
+                $offset
+            ),
             ARRAY_A
         );
 
-        if (empty($points)) {
-            return '';
-        }
-
-        // Group by type
         $type_labels = array(
             'miejsce' => 'Miejsca',
             'ciekawostka' => 'Ciekawostki',
@@ -244,32 +268,87 @@ class JG_Map_Shortcode {
             'zgloszenie' => 'zgloszenie'
         );
 
+        // Group by type
         $grouped = array();
         foreach ($points as $p) {
             $grouped[$p['type']][] = $p;
         }
 
+        // Get current page URL without katalog-strona param
+        $base_url = remove_query_arg('katalog-strona');
+
         ob_start();
         ?>
-        <div class="jg-directory" style="margin-top:32px; padding:24px 20px; background:#fff; border-radius:12px; border:1px solid #e5e7eb;">
-            <h2 style="font-size:1.25rem; font-weight:700; color:#111; margin:0 0 16px;">Katalog miejsc w Jeleniej Górze</h2>
+        <div class="jg-directory">
+            <style>
+                .jg-directory { padding: 4px 0; }
+                .jg-dir-section { margin-bottom: 24px; }
+                .jg-dir-section h3 { font-size: 0.8rem; font-weight: 600; color: #6b7280; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+                .jg-dir-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0; }
+                .jg-dir-item { font-size: 14px; line-height: 1.6; padding: 4px 0; }
+                .jg-dir-item:not(:last-child)::after { content: "·"; margin: 0 10px; color: #d1d5db; }
+                .jg-dir-item a { color: #2563eb; text-decoration: none; }
+                .jg-dir-item a:hover { text-decoration: underline; }
+                .jg-dir-addr { color: #9ca3af; font-size: 12px; }
+                .jg-dir-pagination { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+                .jg-dir-pagination a, .jg-dir-pagination span {
+                    display: inline-flex; align-items: center; justify-content: center;
+                    min-width: 36px; height: 36px; padding: 0 10px;
+                    border-radius: 8px; font-size: 14px; font-weight: 500; text-decoration: none;
+                }
+                .jg-dir-pagination a { color: #2563eb; background: #f3f4f6; }
+                .jg-dir-pagination a:hover { background: #e5e7eb; }
+                .jg-dir-pagination .current { color: #fff; background: #2563eb; font-weight: 700; }
+                .jg-dir-pagination .dots { color: #9ca3af; background: none; }
+                .jg-dir-info { font-size: 13px; color: #9ca3af; margin-top: 8px; }
+            </style>
+
             <?php foreach ($type_labels as $type => $label): ?>
                 <?php if (!empty($grouped[$type])): ?>
-                    <div style="margin-bottom:20px;">
-                        <h3 style="font-size:1rem; font-weight:600; color:#6b7280; margin:0 0 8px; text-transform:uppercase; letter-spacing:0.5px; font-size:0.8rem;"><?php echo esc_html($label); ?></h3>
-                        <ul style="list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:6px 16px;">
+                    <div class="jg-dir-section">
+                        <h3><?php echo esc_html($label); ?></h3>
+                        <ul class="jg-dir-list">
                             <?php foreach ($grouped[$type] as $p):
                                 $path = isset($type_paths[$p['type']]) ? $type_paths[$p['type']] : 'miejsce';
                                 $url = home_url('/' . $path . '/' . $p['slug'] . '/');
                             ?>
-                                <li style="font-size:14px; line-height:1.8;">
-                                    <a href="<?php echo esc_url($url); ?>" style="color:#2563eb; text-decoration:none;"><?php echo esc_html($p['title']); ?></a>
+                                <li class="jg-dir-item">
+                                    <a href="<?php echo esc_url($url); ?>"><?php echo esc_html($p['title']); ?></a><?php
+                                    if (!empty($p['address'])): ?> <span class="jg-dir-addr"><?php echo esc_html($p['address']); ?></span><?php endif; ?>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
                     </div>
                 <?php endif; ?>
             <?php endforeach; ?>
+
+            <?php if ($total_pages > 1): ?>
+                <nav class="jg-dir-pagination" aria-label="Paginacja katalogu">
+                    <?php if ($current_page > 1): ?>
+                        <a href="<?php echo esc_url(add_query_arg('katalog-strona', $current_page - 1, $base_url)); ?>">&larr;</a>
+                    <?php endif; ?>
+
+                    <?php
+                    // Show pagination with ellipsis for large page counts
+                    $range = 2; // pages around current
+                    for ($i = 1; $i <= $total_pages; $i++):
+                        if ($i === 1 || $i === $total_pages || abs($i - $current_page) <= $range):
+                            if ($i === $current_page): ?>
+                                <span class="current"><?php echo $i; ?></span>
+                            <?php else: ?>
+                                <a href="<?php echo esc_url(add_query_arg('katalog-strona', $i, $base_url)); ?>"><?php echo $i; ?></a>
+                            <?php endif;
+                        elseif ($i === 2 || $i === $total_pages - 1): ?>
+                            <span class="dots">&hellip;</span>
+                        <?php endif;
+                    endfor; ?>
+
+                    <?php if ($current_page < $total_pages): ?>
+                        <a href="<?php echo esc_url(add_query_arg('katalog-strona', $current_page + 1, $base_url)); ?>">&rarr;</a>
+                    <?php endif; ?>
+                </nav>
+                <div class="jg-dir-info">Strona <?php echo $current_page; ?> z <?php echo $total_pages; ?> &middot; <?php echo $total; ?> miejsc</div>
+            <?php endif; ?>
         </div>
         <?php
         return ob_get_clean();
