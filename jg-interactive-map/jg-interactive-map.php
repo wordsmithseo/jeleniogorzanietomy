@@ -359,6 +359,16 @@ class JG_Interactive_Map {
     public function handle_point_page() {
         $point_slug = get_query_var('jg_map_point');
 
+        // Fallback: parse URL directly if rewrite rules aren't working
+        // This mirrors the approach used in handle_sitemap() and ensures
+        // point pages remain accessible even when rewrite rules are flushed/broken
+        if (empty($point_slug) && isset($_SERVER['REQUEST_URI'])) {
+            $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            if (preg_match('#^/(miejsce|ciekawostka|zgloszenie)/([^/]+)/?$#', $request_uri, $matches)) {
+                $point_slug = sanitize_title($matches[2]);
+            }
+        }
+
         if (empty($point_slug)) {
             return;
         }
@@ -728,6 +738,11 @@ class JG_Interactive_Map {
             </div>
         </div>
 
+        <?php
+        // Internal links: show other published points for Google to crawl
+        $this->render_related_points($point);
+        ?>
+
         <!-- Minimal footer -->
         <footer class="jg-sp-site-footer">
             &copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?> &mdash;
@@ -736,6 +751,76 @@ class JG_Interactive_Map {
 
 </body>
 </html>
+        <?php
+    }
+
+    /**
+     * Render related points section with internal links for SEO crawling.
+     * Shows nearby points of the same type + recent points of other types.
+     */
+    private function render_related_points($current_point) {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        // Get up to 6 other published points (3 same type, 3 other types)
+        $same_type = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT title, slug, type, address FROM $table
+                 WHERE status = 'publish' AND slug IS NOT NULL AND slug != '' AND id != %d AND type = %s
+                 ORDER BY updated_at DESC LIMIT 3",
+                (int) $current_point['id'],
+                $current_point['type']
+            ),
+            ARRAY_A
+        );
+
+        $other_type = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT title, slug, type, address FROM $table
+                 WHERE status = 'publish' AND slug IS NOT NULL AND slug != '' AND id != %d AND type != %s
+                 ORDER BY updated_at DESC LIMIT 3",
+                (int) $current_point['id'],
+                $current_point['type']
+            ),
+            ARRAY_A
+        );
+
+        $related = array_merge($same_type ?: array(), $other_type ?: array());
+
+        if (empty($related)) {
+            return;
+        }
+
+        $type_paths = array(
+            'miejsce' => 'miejsce',
+            'ciekawostka' => 'ciekawostka',
+            'zgloszenie' => 'zgloszenie'
+        );
+        $type_labels = array(
+            'miejsce' => 'Miejsce',
+            'ciekawostka' => 'Ciekawostka',
+            'zgloszenie' => 'Zgłoszenie'
+        );
+
+        ?>
+        <div style="max-width:800px;margin:0 auto;padding:24px 20px 0;">
+            <h2 style="font-size:18px;font-weight:700;color:#374151;margin-bottom:16px;">Inne miejsca w Jeleniej Górze</h2>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
+                <?php foreach ($related as $r):
+                    $path = isset($type_paths[$r['type']]) ? $type_paths[$r['type']] : 'miejsce';
+                    $url = home_url('/' . $path . '/' . $r['slug'] . '/');
+                    $label = isset($type_labels[$r['type']]) ? $type_labels[$r['type']] : '';
+                ?>
+                <a href="<?php echo esc_url($url); ?>" style="display:block;padding:14px 16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;transition:border-color 0.15s;">
+                    <div style="font-size:14px;font-weight:600;color:#111;line-height:1.4;"><?php echo esc_html($r['title']); ?></div>
+                    <?php if (!empty($r['address'])): ?>
+                    <div style="font-size:12px;color:#9ca3af;margin-top:4px;"><?php echo esc_html($r['address']); ?></div>
+                    <?php endif; ?>
+                    <div style="font-size:11px;color:#6b7280;margin-top:4px;"><?php echo esc_html($label); ?></div>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
         <?php
     }
 
@@ -957,6 +1042,7 @@ class JG_Interactive_Map {
     <p><strong>Adres:</strong> <?php echo esc_html($point['address']); ?></p>
     <?php endif; ?>
     <p><strong>Lokalizacja:</strong> <?php echo esc_html($point['lat']); ?>, <?php echo esc_html($point['lng']); ?></p>
+    <?php $this->render_related_points($point); ?>
 </body>
 </html><?php
     }
@@ -1397,6 +1483,51 @@ class JG_Interactive_Map {
 
         echo $xml_content;
         exit;
+    }
+
+    /**
+     * Ping search engines about updated sitemap after a point is published.
+     * Uses non-blocking requests to avoid slowing down the approval flow.
+     *
+     * @param int $point_id The ID of the published point
+     */
+    public static function ping_search_engines($point_id) {
+        $sitemap_url = home_url('/jg-map-sitemap.xml');
+        $encoded_sitemap = urlencode($sitemap_url);
+
+        // Build the point URL for IndexNow
+        $point = JG_Map_Database::get_point($point_id);
+        $point_url = '';
+        if ($point && !empty($point['slug'])) {
+            $type_path = 'miejsce';
+            if ($point['type'] === 'ciekawostka') {
+                $type_path = 'ciekawostka';
+            } elseif ($point['type'] === 'zgloszenie') {
+                $type_path = 'zgloszenie';
+            }
+            $point_url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
+        }
+
+        // Ping Google sitemap endpoint (best-effort, non-blocking)
+        wp_remote_get(
+            'https://www.google.com/ping?sitemap=' . $encoded_sitemap,
+            array('timeout' => 5, 'blocking' => false)
+        );
+
+        // Ping Bing/IndexNow sitemap endpoint (best-effort, non-blocking)
+        wp_remote_get(
+            'https://www.bing.com/ping?sitemap=' . $encoded_sitemap,
+            array('timeout' => 5, 'blocking' => false)
+        );
+
+        // Ping IndexNow if key is configured (Bing, Yandex, Seznam, Naver)
+        $indexnow_key = get_option('jg_map_indexnow_key', '');
+        if (!empty($indexnow_key) && !empty($point_url)) {
+            wp_remote_get(
+                'https://api.indexnow.org/indexnow?url=' . urlencode($point_url) . '&key=' . urlencode($indexnow_key),
+                array('timeout' => 5, 'blocking' => false)
+            );
+        }
     }
 }
 
