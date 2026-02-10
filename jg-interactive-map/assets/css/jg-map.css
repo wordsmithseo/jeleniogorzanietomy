@@ -5210,3 +5210,58 @@ body.jg-fullscreen-active {
     display: inline-block;
   }
 }
+
+/* Business promotion section in place modal */
+.jg-business-promo {
+  margin-top: 14px;
+  padding: 16px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.jg-business-promo__icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.jg-business-promo__text {
+  flex: 1;
+  min-width: 180px;
+}
+
+.jg-business-promo__text strong {
+  color: #1e40af;
+  font-size: 1rem;
+}
+
+.jg-business-promo__btn {
+  align-self: center;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+
+.jg-business-promo__btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.jg-business-promo__btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}

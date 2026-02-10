@@ -6821,7 +6821,21 @@
             '</div>';
         }
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + voteHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        // Business promotion section for non-sponsored business places
+        var businessPromoHtml = '';
+        var businessCategories = ['gastronomia', 'uslugi', 'sport', 'kultura'];
+        if (p.type === 'miejsce' && !p.sponsored && p.category && businessCategories.indexOf(p.category) !== -1) {
+          businessPromoHtml = '<div class="jg-business-promo">' +
+            '<div class="jg-business-promo__icon">💼</div>' +
+            '<div class="jg-business-promo__text">' +
+              '<strong>Jesteś właścicielem tego biznesu?</strong>' +
+              '<p style="margin:6px 0 0;font-size:0.9rem;color:#4b5563">Promuj swoją firmę! Lepsza widoczność na mapie, możliwość dodania danych kontaktowych i priorytet w wyświetlaniu w naszym portalu.</p>' +
+            '</div>' +
+            '<button id="btn-business-promo" class="jg-business-promo__btn">Dowiedz się więcej</button>' +
+          '</div>';
+        }
+
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + voteHtml + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
@@ -6882,6 +6896,37 @@
             trackGA('share', { method: method, pin_id: p.id, pin_type: p.type || '' });
           });
         });
+
+        // Business promotion button handler
+        var promoBtn = qs('#btn-business-promo', modalView);
+        if (promoBtn) {
+          promoBtn.onclick = function() {
+            promoBtn.disabled = true;
+            promoBtn.textContent = 'Wysyłanie...';
+            api('jg_request_promotion', {
+              point_id: p.id,
+              point_title: p.title || '',
+              point_category: p.category || '',
+              point_address: p.address || '',
+              point_lat: p.lat || '',
+              point_lng: p.lng || ''
+            }).then(function() {
+              showAlert('<div style="text-align:center">' +
+                '<div style="font-size:3rem;margin-bottom:12px">✅</div>' +
+                '<h3 style="margin:0 0 8px;color:#065f46">Prośba o ofertę została przesłana!</h3>' +
+                '<p style="margin:0;color:#4b5563">Otrzymasz odpowiedź w ciągu <strong>24 godzin roboczych</strong> na adres e-mail powiązany z Twoim kontem.</p>' +
+              '</div>');
+              promoBtn.textContent = 'Wysłano ✓';
+              promoBtn.style.background = '#d1fae5';
+              promoBtn.style.color = '#065f46';
+              promoBtn.style.borderColor = '#10b981';
+            }).catch(function(err) {
+              promoBtn.disabled = false;
+              promoBtn.textContent = 'Dowiedz się więcej';
+              showAlert(err || 'Wystąpił błąd podczas wysyłania prośby. Spróbuj ponownie.');
+            });
+          };
+        }
 
         // Close button handler - track time spent
         qs('#dlg-close', modalView).onclick = function() {
