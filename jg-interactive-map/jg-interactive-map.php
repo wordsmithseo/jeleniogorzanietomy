@@ -105,8 +105,13 @@ class JG_Interactive_Map {
         add_action('init', array($this, 'add_rewrite_rules'));
         add_action('init', array($this, 'check_rewrite_flush'), 999); // Run late to ensure rewrite rules are added first
         add_filter('query_vars', array($this, 'add_query_vars'));
-        add_action('template_redirect', array($this, 'handle_point_page'));
-        add_action('template_redirect', array($this, 'handle_sitemap'));
+
+        // CRITICAL: Use priority 1 for template_redirect to ensure point pages and sitemap
+        // are handled BEFORE WordPress redirect_canonical (priority 10) and Yoast SEO redirects
+        // can interfere. Without this, redirect_canonical or Yoast may redirect/404 the URLs
+        // before the plugin gets a chance to render them.
+        add_action('template_redirect', array($this, 'handle_point_page'), 1);
+        add_action('template_redirect', array($this, 'handle_sitemap'), 1);
         add_action('wp_head', array($this, 'add_point_meta_tags'));
 
         // Register map sitemap in Yoast sitemap index for better discoverability
@@ -420,8 +425,27 @@ class JG_Interactive_Map {
         // Ensure HTTP 200 status
         status_header(200);
 
-        // Prevent WordPress from doing redirects or 404 handling
+        // Prevent WordPress and Yoast SEO from doing redirects or 404 handling
+        // Now runs at priority 1, so redirect_canonical (priority 10) hasn't fired yet
         remove_action('template_redirect', 'redirect_canonical');
+
+        // Disable Yoast SEO output for this request to prevent any X-Robots-Tag headers
+        // or other interference with the standalone point page
+        if (class_exists('WPSEO_Frontend')) {
+            remove_action('wp_head', array(WPSEO_Frontend::get_instance(), 'head'), 1);
+        }
+        // Yoast 14+ uses a different class
+        if (class_exists('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration')) {
+            $yoast_front = YoastSEO()->classes->get('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration');
+            if ($yoast_front) {
+                remove_action('wp_head', array($yoast_front, 'call_wpseo_head'), 1);
+            }
+        }
+        // Remove Yoast's robots header filter
+        remove_filter('wp_robots', 'wp_robots_noindex');
+        if (function_exists('wp_robots_no_robots')) {
+            remove_filter('wp_robots', 'wp_robots_no_robots');
+        }
 
         global $jg_current_point;
         $jg_current_point = $point;
