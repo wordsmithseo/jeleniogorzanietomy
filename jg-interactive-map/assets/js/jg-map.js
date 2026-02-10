@@ -4202,7 +4202,7 @@
           }
 
           // Build modal HTML with placeholder for level data
-          var modalHtml = '<header style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:20px;border-radius:12px 12px 0 0">' +
+          var modalHtml = '<header style="background:linear-gradient(135deg, #8d2324 0%, #6b1a1b 100%);padding:20px;border-radius:12px 12px 0 0">' +
             '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
             '<h3 style="margin:0;color:#fff;font-size:20px;flex-shrink:0">👤 ' + esc(user.username) + '</h3>' +
             '<span id="jg-user-level-badge" class="jg-level-badge" style="display:none"></span>' +
@@ -4441,7 +4441,7 @@
             visitorsHtml += '</div>';
           }
 
-          var modalHtml = '<header style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);padding:20px;border-radius:12px 12px 0 0">' +
+          var modalHtml = '<header style="background:linear-gradient(135deg, #8d2324 0%, #6b1a1b 100%);padding:20px;border-radius:12px 12px 0 0">' +
             '<h3 style="margin:0;color:#fff;font-size:20px">👥 Unikalni odwiedzający</h3>' +
             '<button class="jg-close" id="visitors-close" style="color:#fff;opacity:0.9">&times;</button>' +
             '</header>' +
