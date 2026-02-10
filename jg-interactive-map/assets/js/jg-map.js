@@ -6832,7 +6832,7 @@
               '<strong>Jesteś właścicielem tego biznesu?</strong>' +
               '<p style="margin:6px 0 0;font-size:0.9rem;color:#4b5563">Promuj swoją firmę! Lepsza widoczność na mapie, możliwość dodania danych kontaktowych i priorytet w wyświetlaniu w naszym portalu.</p>' +
             '</div>' +
-            '<button id="btn-business-promo" class="jg-business-promo__btn">Dowiedz się więcej</button>' +
+            '<button id="btn-business-promo" class="jg-business-promo__btn">Zapytaj o ofertę</button>' +
           '</div>';
         }
 
@@ -6923,8 +6923,9 @@
               promoBtn.style.borderColor = '#10b981';
             }).catch(function(err) {
               promoBtn.disabled = false;
-              promoBtn.textContent = 'Dowiedz się więcej';
-              showAlert(err || 'Wystąpił błąd podczas wysyłania prośby. Spróbuj ponownie.');
+              promoBtn.textContent = 'Zapytaj o ofertę';
+              var errMsg = (err && err.message) ? err.message : (err || 'Wystąpił błąd podczas wysyłania prośby. Spróbuj ponownie.');
+              showAlert(errMsg);
             });
           };
         }
