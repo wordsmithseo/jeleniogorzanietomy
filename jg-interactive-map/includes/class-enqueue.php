@@ -94,7 +94,7 @@ class JG_Map_Enqueue {
             'jg-map-topbar',
             JG_MAP_PLUGIN_URL . 'assets/css/jg-map.css',
             array(),
-            JG_MAP_VERSION
+            JG_MAP_VERSION . '.' . filemtime(JG_MAP_PLUGIN_DIR . 'assets/css/jg-map.css')
         );
 
         // Load Heartbeat and notifications script for admins/moderators only
