@@ -560,6 +560,9 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_update_curiosity_category', array($this, 'update_curiosity_category'), 1);
         add_action('wp_ajax_jg_delete_curiosity_category', array($this, 'delete_curiosity_category'), 1);
 
+        // Business promotion request (logged in users)
+        add_action('wp_ajax_jg_request_promotion', array($this, 'request_promotion'));
+
         // Track last login time
         add_action('wp_login', array($this, 'track_last_login'), 10, 2);
     }
@@ -8071,5 +8074,90 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success(array('message' => 'Kategoria została usunięta'));
+    }
+
+    /**
+     * Handle business promotion request - send inquiry email to oferty@
+     */
+    public function request_promotion() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany, aby wysłać prośbę o ofertę.'));
+            return;
+        }
+
+        $current_user = wp_get_current_user();
+        $point_id = intval($_POST['point_id'] ?? 0);
+        $point_title = sanitize_text_field($_POST['point_title'] ?? '');
+        $point_category = sanitize_text_field($_POST['point_category'] ?? '');
+        $point_address = sanitize_text_field($_POST['point_address'] ?? '');
+        $point_lat = sanitize_text_field($_POST['point_lat'] ?? '');
+        $point_lng = sanitize_text_field($_POST['point_lng'] ?? '');
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane pineski.'));
+            return;
+        }
+
+        // Rate limit: max 3 promotion requests per user per day (across all places)
+        $rate_key = 'jg_promo_request_' . $current_user->ID;
+        $rate_count = intval(get_transient($rate_key));
+        if ($rate_count >= 3) {
+            wp_send_json_error(array('message' => 'Wysłano już maksymalną liczbę zapytań na dziś. Spróbuj ponownie jutro.'));
+            return;
+        }
+
+        // Rate limit: max 1 request per place per user per week
+        $place_rate_key = 'jg_promo_place_' . $current_user->ID . '_' . $point_id;
+        if (get_transient($place_rate_key)) {
+            wp_send_json_error(array('message' => 'Zapytanie o to miejsce zostało już wysłane. Możesz ponowić za tydzień.'));
+            return;
+        }
+
+        // Get category label
+        $place_categories = get_option('jg_map_place_categories', self::get_default_place_categories());
+        $category_label = isset($place_categories[$point_category]) ? $place_categories[$point_category]['label'] : $point_category;
+
+        // Build email
+        $to = 'oferty@jeleniogorzanietomy.pl';
+        $subject = 'Zapytanie o promocję biznesu - ' . $point_title;
+
+        $map_url = '';
+        if ($point_lat && $point_lng) {
+            $map_url = home_url('/?jg_view_point=' . $point_id);
+        }
+
+        $message = "Nowe zapytanie o promocję biznesu na portalu Jeleniogórzanie to my!\n\n";
+        $message .= "=== DANE UŻYTKOWNIKA ===\n";
+        $message .= "Nazwa użytkownika: " . $current_user->display_name . "\n";
+        $message .= "Email: " . $current_user->user_email . "\n";
+        $message .= "ID użytkownika: " . $current_user->ID . "\n";
+        $message .= "Data rejestracji: " . $current_user->user_registered . "\n\n";
+
+        $message .= "=== DANE PINESKI ===\n";
+        $message .= "ID pineski: #" . $point_id . "\n";
+        $message .= "Nazwa: " . $point_title . "\n";
+        $message .= "Kategoria: " . $category_label . " (" . $point_category . ")\n";
+        if ($point_address) {
+            $message .= "Adres: " . $point_address . "\n";
+        }
+        if ($map_url) {
+            $message .= "Link do pineski: " . $map_url . "\n";
+        }
+        $message .= "\n";
+
+        $message .= "=== INFORMACJE ===\n";
+        $message .= "Użytkownik jest zainteresowany promocją tego biznesu.\n";
+        $message .= "Data zapytania: " . current_time('Y-m-d H:i:s') . "\n";
+        $message .= "IP: " . $this->get_user_ip() . "\n";
+
+        $this->send_plugin_email($to, $subject, $message);
+
+        // Update rate limits
+        set_transient($rate_key, $rate_count + 1, DAY_IN_SECONDS);
+        set_transient($place_rate_key, 1, WEEK_IN_SECONDS);
+
+        wp_send_json_success(array('message' => 'Prośba o ofertę została wysłana.'));
     }
 }
