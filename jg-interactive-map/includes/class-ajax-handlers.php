@@ -8100,11 +8100,18 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Rate limit: max 3 promotion requests per user per day
+        // Rate limit: max 3 promotion requests per user per day (across all places)
         $rate_key = 'jg_promo_request_' . $current_user->ID;
         $rate_count = intval(get_transient($rate_key));
         if ($rate_count >= 3) {
             wp_send_json_error(array('message' => 'Wysłano już maksymalną liczbę zapytań na dziś. Spróbuj ponownie jutro.'));
+            return;
+        }
+
+        // Rate limit: max 1 request per place per user per week
+        $place_rate_key = 'jg_promo_place_' . $current_user->ID . '_' . $point_id;
+        if (get_transient($place_rate_key)) {
+            wp_send_json_error(array('message' => 'Zapytanie o to miejsce zostało już wysłane. Możesz ponowić za tydzień.'));
             return;
         }
 
@@ -8147,8 +8154,9 @@ class JG_Map_Ajax_Handlers {
 
         $this->send_plugin_email($to, $subject, $message);
 
-        // Update rate limit
+        // Update rate limits
         set_transient($rate_key, $rate_count + 1, DAY_IN_SECONDS);
+        set_transient($place_rate_key, 1, WEEK_IN_SECONDS);
 
         wp_send_json_success(array('message' => 'Prośba o ofertę została wysłana.'));
     }
