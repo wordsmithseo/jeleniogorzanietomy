@@ -205,6 +205,74 @@ class JG_Map_Shortcode {
             </div>
         </div>
         <?php
+        // Add crawlable HTML directory of all published points for SEO internal linking
+        // Google discovers pages primarily through <a href> links, not just sitemaps
+        echo $this->render_points_directory();
+
+        return ob_get_clean();
+    }
+
+    /**
+     * Render HTML directory of all published points for SEO internal linking.
+     * Without this, Google only knows about pin pages from the sitemap (weak signal)
+     * and won't crawl/index them automatically.
+     */
+    private function render_points_directory() {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        $points = $wpdb->get_results(
+            "SELECT title, slug, type, address, created_at
+             FROM $table
+             WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''
+             ORDER BY type ASC, title ASC",
+            ARRAY_A
+        );
+
+        if (empty($points)) {
+            return '';
+        }
+
+        // Group by type
+        $type_labels = array(
+            'miejsce' => 'Miejsca',
+            'ciekawostka' => 'Ciekawostki',
+            'zgloszenie' => 'Zgłoszenia'
+        );
+        $type_paths = array(
+            'miejsce' => 'miejsce',
+            'ciekawostka' => 'ciekawostka',
+            'zgloszenie' => 'zgloszenie'
+        );
+
+        $grouped = array();
+        foreach ($points as $p) {
+            $grouped[$p['type']][] = $p;
+        }
+
+        ob_start();
+        ?>
+        <div class="jg-directory" style="margin-top:32px; padding:24px 20px; background:#fff; border-radius:12px; border:1px solid #e5e7eb;">
+            <h2 style="font-size:1.25rem; font-weight:700; color:#111; margin:0 0 16px;">Katalog miejsc w Jeleniej Górze</h2>
+            <?php foreach ($type_labels as $type => $label): ?>
+                <?php if (!empty($grouped[$type])): ?>
+                    <div style="margin-bottom:20px;">
+                        <h3 style="font-size:1rem; font-weight:600; color:#6b7280; margin:0 0 8px; text-transform:uppercase; letter-spacing:0.5px; font-size:0.8rem;"><?php echo esc_html($label); ?></h3>
+                        <ul style="list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:6px 16px;">
+                            <?php foreach ($grouped[$type] as $p):
+                                $path = isset($type_paths[$p['type']]) ? $type_paths[$p['type']] : 'miejsce';
+                                $url = home_url('/' . $path . '/' . $p['slug'] . '/');
+                            ?>
+                                <li style="font-size:14px; line-height:1.8;">
+                                    <a href="<?php echo esc_url($url); ?>" style="color:#2563eb; text-decoration:none;"><?php echo esc_html($p['title']); ?></a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
+        <?php
         return ob_get_clean();
     }
 
