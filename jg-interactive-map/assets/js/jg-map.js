@@ -4253,6 +4253,10 @@
             if (badge) {
               badge.textContent = 'Poz. ' + levelData.level;
               badge.style.display = 'inline-block';
+              // Apply prestige tier class
+              var lvl = levelData.level;
+              var tier = lvl >= 50 ? 'legend' : lvl >= 40 ? 'ruby' : lvl >= 30 ? 'diamond' : lvl >= 20 ? 'purple' : lvl >= 15 ? 'emerald' : lvl >= 10 ? 'gold' : lvl >= 5 ? 'silver' : 'bronze';
+              badge.className = 'jg-level-badge jg-badge-' + tier;
             }
 
             // Show XP progress bar
