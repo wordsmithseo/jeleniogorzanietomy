@@ -5125,7 +5125,7 @@ body.jg-fullscreen-active {
   border-radius: 6px;
 }
 
-/* Sparkle particles for top 3 ranking rows */
+/* Sparkle particles for top 3 ranking rows — CSS only */
 .jg-ranking-gold,
 .jg-ranking-silver,
 .jg-ranking-bronze {
@@ -5133,7 +5133,10 @@ body.jg-fullscreen-active {
   overflow: hidden;
 }
 
-.jg-sparkle-container {
+.jg-ranking-gold::after,
+.jg-ranking-silver::after,
+.jg-ranking-bronze::after {
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
@@ -5141,110 +5144,118 @@ body.jg-fullscreen-active {
   height: 100%;
   pointer-events: none;
   z-index: 0;
-  overflow: hidden;
+  border-radius: inherit;
 }
 
-.jg-sparkle {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  animation: jg-sparkle-float linear infinite;
+/* Gold particles — box-shadow dots */
+.jg-ranking-gold::after {
+  box-shadow:
+    12px 6px 0 1.5px rgba(245,158,11,0.8),
+    45px 18px 0 2px rgba(251,191,36,0.9),
+    80px 4px 0 1px rgba(252,211,77,0.85),
+    120px 22px 0 2.5px rgba(217,119,6,0.8),
+    155px 8px 0 1.5px rgba(251,191,36,0.9),
+    190px 20px 0 2px rgba(245,158,11,0.85),
+    225px 5px 0 1px rgba(252,211,77,0.9),
+    260px 16px 0 2.5px rgba(217,119,6,0.8),
+    295px 10px 0 1.5px rgba(245,158,11,0.85),
+    330px 22px 0 2px rgba(251,191,36,0.9),
+    365px 3px 0 1.5px rgba(252,211,77,0.8),
+    400px 18px 0 2px rgba(217,119,6,0.9),
+    30px 28px 0 1px rgba(245,158,11,0.7),
+    70px 30px 0 2px rgba(251,191,36,0.8),
+    110px 35px 0 1.5px rgba(252,211,77,0.85),
+    150px 32px 0 1px rgba(217,119,6,0.7),
+    200px 36px 0 2px rgba(245,158,11,0.8),
+    250px 30px 0 1.5px rgba(251,191,36,0.9),
+    310px 34px 0 2px rgba(252,211,77,0.8),
+    350px 28px 0 1px rgba(217,119,6,0.85),
+    435px 8px 0 1.5px rgba(245,158,11,0.9),
+    460px 28px 0 2px rgba(251,191,36,0.8),
+    490px 14px 0 1px rgba(252,211,77,0.85);
+  animation: jg-sparkle-gold 2.5s ease-in-out infinite alternate;
 }
 
-.jg-sparkle--star {
-  border-radius: 0;
-  background: none !important;
+/* Purple particles */
+.jg-ranking-silver::after {
+  box-shadow:
+    15px 8px 0 1.5px rgba(167,139,250,0.8),
+    50px 20px 0 2px rgba(139,92,246,0.9),
+    85px 5px 0 1px rgba(196,181,253,0.85),
+    115px 24px 0 2.5px rgba(124,58,237,0.8),
+    150px 10px 0 1.5px rgba(167,139,250,0.9),
+    185px 22px 0 2px rgba(139,92,246,0.85),
+    220px 6px 0 1px rgba(196,181,253,0.9),
+    255px 18px 0 2.5px rgba(124,58,237,0.8),
+    290px 12px 0 1.5px rgba(167,139,250,0.85),
+    325px 24px 0 2px rgba(139,92,246,0.9),
+    360px 4px 0 1.5px rgba(196,181,253,0.8),
+    395px 20px 0 2px rgba(124,58,237,0.9),
+    35px 30px 0 1px rgba(167,139,250,0.7),
+    75px 32px 0 2px rgba(139,92,246,0.8),
+    115px 36px 0 1.5px rgba(196,181,253,0.85),
+    155px 34px 0 1px rgba(124,58,237,0.7),
+    205px 38px 0 2px rgba(167,139,250,0.8),
+    245px 32px 0 1.5px rgba(139,92,246,0.9),
+    305px 36px 0 2px rgba(196,181,253,0.8),
+    345px 30px 0 1px rgba(124,58,237,0.85),
+    430px 10px 0 1.5px rgba(167,139,250,0.9),
+    455px 30px 0 2px rgba(139,92,246,0.8),
+    485px 16px 0 1px rgba(196,181,253,0.85);
+  animation: jg-sparkle-purple 2.8s ease-in-out infinite alternate;
 }
 
-.jg-sparkle--star::before,
-.jg-sparkle--star::after {
-  content: '';
-  position: absolute;
-  border-radius: 1px;
+/* Green particles */
+.jg-ranking-bronze::after {
+  box-shadow:
+    18px 7px 0 1.5px rgba(52,211,153,0.8),
+    48px 19px 0 2px rgba(16,185,129,0.9),
+    82px 3px 0 1px rgba(110,231,183,0.85),
+    118px 23px 0 2.5px rgba(5,150,105,0.8),
+    152px 9px 0 1.5px rgba(52,211,153,0.9),
+    188px 21px 0 2px rgba(16,185,129,0.85),
+    222px 7px 0 1px rgba(110,231,183,0.9),
+    258px 17px 0 2.5px rgba(5,150,105,0.8),
+    292px 11px 0 1.5px rgba(52,211,153,0.85),
+    328px 23px 0 2px rgba(16,185,129,0.9),
+    362px 5px 0 1.5px rgba(110,231,183,0.8),
+    398px 19px 0 2px rgba(5,150,105,0.9),
+    32px 29px 0 1px rgba(52,211,153,0.7),
+    72px 31px 0 2px rgba(16,185,129,0.8),
+    112px 37px 0 1.5px rgba(110,231,183,0.85),
+    152px 33px 0 1px rgba(5,150,105,0.7),
+    202px 37px 0 2px rgba(52,211,153,0.8),
+    248px 31px 0 1.5px rgba(16,185,129,0.9),
+    308px 35px 0 2px rgba(110,231,183,0.8),
+    348px 29px 0 1px rgba(5,150,105,0.85),
+    432px 9px 0 1.5px rgba(52,211,153,0.9),
+    458px 29px 0 2px rgba(16,185,129,0.8),
+    488px 15px 0 1px rgba(110,231,183,0.85);
+  animation: jg-sparkle-green 3s ease-in-out infinite alternate;
 }
 
-.jg-sparkle--star::before {
-  top: 50%;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: currentColor;
-  transform: translateY(-50%);
+@keyframes jg-sparkle-gold {
+  0% { opacity: 0.4; filter: brightness(1); }
+  25% { opacity: 1; filter: brightness(1.3); }
+  50% { opacity: 0.5; filter: brightness(0.9); }
+  75% { opacity: 1; filter: brightness(1.2); }
+  100% { opacity: 0.3; filter: brightness(1); }
 }
 
-.jg-sparkle--star::after {
-  left: 50%;
-  top: 0;
-  width: 2px;
-  height: 100%;
-  background: currentColor;
-  transform: translateX(-50%);
+@keyframes jg-sparkle-purple {
+  0% { opacity: 0.3; filter: brightness(1); }
+  20% { opacity: 1; filter: brightness(1.2); }
+  45% { opacity: 0.4; filter: brightness(0.9); }
+  70% { opacity: 1; filter: brightness(1.3); }
+  100% { opacity: 0.35; filter: brightness(1); }
 }
 
-@keyframes jg-sparkle-float {
-  0% {
-    transform: translateY(0) scale(0);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-    transform: translateY(-5px) scale(1);
-  }
-  50% {
-    opacity: 0.6;
-    transform: translateY(-15px) scale(0.7);
-  }
-  70% {
-    opacity: 1;
-    transform: translateY(-22px) scale(1.1);
-  }
-  100% {
-    transform: translateY(-35px) scale(0);
-    opacity: 0;
-  }
-}
-
-/* Shimmer sweep overlay for extra shine */
-.jg-ranking-gold::before,
-.jg-ranking-silver::before,
-.jg-ranking-bronze::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 60%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.jg-ranking-gold::before {
-  background: linear-gradient(90deg, transparent, rgba(252,211,77,0.35), rgba(245,158,11,0.2), transparent);
-  animation: jg-shimmer-sweep 3s ease-in-out infinite;
-}
-
-.jg-ranking-silver::before {
-  background: linear-gradient(90deg, transparent, rgba(196,181,253,0.35), rgba(167,139,250,0.2), transparent);
-  animation: jg-shimmer-sweep 3.5s ease-in-out 0.5s infinite;
-}
-
-.jg-ranking-bronze::before {
-  background: linear-gradient(90deg, transparent, rgba(110,231,183,0.35), rgba(52,211,153,0.2), transparent);
-  animation: jg-shimmer-sweep 4s ease-in-out 1s infinite;
-}
-
-@keyframes jg-shimmer-sweep {
-  0% { left: -60%; }
-  50% { left: 100%; }
-  100% { left: 100%; }
-}
-
-/* Ensure row content sits above sparkles */
-.jg-ranking-gold > *,
-.jg-ranking-silver > *,
-.jg-ranking-bronze > * {
-  position: relative;
-  z-index: 1;
+@keyframes jg-sparkle-green {
+  0% { opacity: 0.35; filter: brightness(1); }
+  30% { opacity: 1; filter: brightness(1.2); }
+  50% { opacity: 0.45; filter: brightness(0.9); }
+  80% { opacity: 1; filter: brightness(1.3); }
+  100% { opacity: 0.3; filter: brightness(1); }
 }
 
 /* Ranking button styling */

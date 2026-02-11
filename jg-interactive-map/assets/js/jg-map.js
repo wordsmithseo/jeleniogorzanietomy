@@ -760,38 +760,6 @@
 
             qs('#ranking-modal-close', modalRanking).onclick = function() { close(modalRanking); };
 
-            // Sparkle particles for top 3 rows
-            var sparkleColors = {
-              'jg-ranking-gold': ['#f59e0b', '#fbbf24', '#fcd34d', '#d97706', '#b45309'],
-              'jg-ranking-silver': ['#a78bfa', '#8b5cf6', '#c4b5fd', '#7c3aed', '#6d28d9'],
-              'jg-ranking-bronze': ['#34d399', '#10b981', '#6ee7b7', '#059669', '#047857']
-            };
-            Object.keys(sparkleColors).forEach(function(cls) {
-              var row = modalRanking.querySelector('.' + cls);
-              if (!row) return;
-              var colors = sparkleColors[cls];
-              var container = document.createElement('div');
-              container.className = 'jg-sparkle-container';
-              row.appendChild(container);
-              var intervalId = setInterval(function() {
-                if (!document.body.contains(row)) { clearInterval(intervalId); return; }
-                for (var s = 0; s < 3; s++) {
-                  var dot = document.createElement('span');
-                  dot.className = 'jg-sparkle' + (Math.random() > 0.5 ? ' jg-sparkle--star' : '');
-                  var size = 4 + Math.random() * 6;
-                  var color = colors[Math.floor(Math.random() * colors.length)];
-                  dot.style.cssText = 'width:' + size + 'px;height:' + size + 'px;left:' + (Math.random() * 100) + '%;top:' + (Math.random() * 100) + '%;background:' + color + ';animation-duration:' + (1.2 + Math.random() * 1.5) + 's;';
-                  if (dot.classList.contains('jg-sparkle--star')) {
-                    dot.style.color = color;
-                  }
-                  container.appendChild(dot);
-                  (function(el) {
-                    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 2800);
-                  })(dot);
-                }
-              }, 400);
-            });
-
             // Click handler for user links
             var userLinks = modalRanking.querySelectorAll('.jg-ranking-user-link');
             for (var j = 0; j < userLinks.length; j++) {
