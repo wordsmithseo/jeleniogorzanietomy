@@ -1463,7 +1463,7 @@ class JG_Interactive_Map {
     }
 
     $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
-    $lastmod = get_date_from_gmt($point['updated_at'], 'Y-m-d');
+    $lastmod = get_date_from_gmt($point['updated_at'], 'c');
 
     // Parse images for image sitemap extension
     $point_images = json_decode($point['images'], true) ?: array();
