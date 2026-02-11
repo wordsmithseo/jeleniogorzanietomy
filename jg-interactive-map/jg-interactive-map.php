@@ -1522,105 +1522,75 @@ class JG_Interactive_Map {
      * @param int $point_id The ID of the published point
      */
     public static function ping_search_engines($point_id) {
-        // Execute ping directly - WP Cron and spawn_cron() are unreliable
-        // (loopback HTTP requests often blocked, DISABLE_WP_CRON, low traffic, etc.)
-        // Pings are fast HTTP GETs (~1s each) and only triggered on publish/approve.
         self::execute_search_engine_ping($point_id);
     }
 
     /**
-     * Execute search engine ping with retry and logging.
-     * Called via WP Cron in the background.
+     * Execute search engine ping via IndexNow (modern replacement for deprecated Google/Bing ping endpoints).
+     * Google /ping?sitemap= returns 404 (removed 2023), Bing returns 410 (Gone).
+     * IndexNow is supported by Bing, Yandex, Seznam, Naver and others.
+     * For Google: use Search Console; sitemap in robots.txt is auto-discovered.
      *
      * @param int $point_id The ID of the published point
      */
     public static function execute_search_engine_ping($point_id) {
-        $sitemap_url = home_url('/jg-map-sitemap.xml');
-        $encoded_sitemap = urlencode($sitemap_url);
-
         // Build the point URL
         $point = JG_Map_Database::get_point($point_id);
-        $point_url = '';
-        if ($point && !empty($point['slug'])) {
-            $type_path = 'miejsce';
-            if ($point['type'] === 'ciekawostka') {
-                $type_path = 'ciekawostka';
-            } elseif ($point['type'] === 'zgloszenie') {
-                $type_path = 'zgloszenie';
-            }
-            $point_url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
+        if (!$point || empty($point['slug'])) {
+            return;
         }
 
-        // Ping Google with retry
-        self::ping_with_retry(
-            'Google',
-            'https://www.google.com/ping?sitemap=' . $encoded_sitemap,
-            $point_id,
-            $point_url
-        );
+        $type_path = 'miejsce';
+        if ($point['type'] === 'ciekawostka') {
+            $type_path = 'ciekawostka';
+        } elseif ($point['type'] === 'zgloszenie') {
+            $type_path = 'zgloszenie';
+        }
+        $point_url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
 
-        // Ping Bing with retry
-        self::ping_with_retry(
-            'Bing',
-            'https://www.bing.com/ping?sitemap=' . $encoded_sitemap,
-            $point_id,
-            $point_url
-        );
-
-        // Ping IndexNow if key is configured
+        // Get or auto-generate IndexNow key
         $indexnow_key = get_option('jg_map_indexnow_key', '');
-        if (!empty($indexnow_key) && !empty($point_url)) {
-            self::ping_with_retry(
-                'IndexNow',
-                'https://api.indexnow.org/indexnow?url=' . urlencode($point_url) . '&key=' . urlencode($indexnow_key),
-                $point_id,
-                $point_url
-            );
-        }
-    }
-
-    /**
-     * Send a ping request with up to 3 retries and exponential backoff.
-     * Logs the result to the database.
-     *
-     * @param string $engine    Name of the search engine
-     * @param string $url       The ping URL to request
-     * @param int    $point_id  The point ID that triggered the ping
-     * @param string $point_url The public URL of the point
-     */
-    private static function ping_with_retry($engine, $url, $point_id, $point_url) {
-        $max_retries = 3;
-        $attempt = 0;
-        $success = false;
-        $http_code = 0;
-        $error_message = '';
-
-        while ($attempt < $max_retries && !$success) {
-            $attempt++;
-
-            // Exponential backoff: 0s, 2s, 4s
-            if ($attempt > 1) {
-                sleep(pow(2, $attempt - 1));
-            }
-
-            $response = wp_remote_get($url, array('timeout' => 10));
-
-            if (is_wp_error($response)) {
-                $error_message = $response->get_error_message();
-                $http_code = 0;
-            } else {
-                $http_code = wp_remote_retrieve_response_code($response);
-                if ($http_code >= 200 && $http_code < 300) {
-                    $success = true;
-                    $error_message = '';
-                } else {
-                    $error_message = 'HTTP ' . $http_code;
-                }
-            }
+        if (empty($indexnow_key)) {
+            $indexnow_key = wp_generate_password(32, false);
+            update_option('jg_map_indexnow_key', $indexnow_key, false);
         }
 
-        // Log the result
-        self::log_ping($engine, $point_id, $point_url, $success, $http_code, $attempt, $error_message);
+        // Ensure the key verification file exists at site root
+        $key_file = ABSPATH . $indexnow_key . '.txt';
+        if (!file_exists($key_file)) {
+            @file_put_contents($key_file, $indexnow_key);
+        }
+
+        // Submit to IndexNow API (single attempt, no retries to keep save fast)
+        $indexnow_url = 'https://api.indexnow.org/indexnow?url=' . urlencode($point_url)
+            . '&key=' . urlencode($indexnow_key);
+
+        $response = wp_remote_get($indexnow_url, array('timeout' => 5));
+
+        if (is_wp_error($response)) {
+            self::log_ping('IndexNow', $point_id, $point_url, false, 0, 1, $response->get_error_message());
+        } else {
+            $http_code = wp_remote_retrieve_response_code($response);
+            $success = ($http_code >= 200 && $http_code < 300);
+            self::log_ping('IndexNow', $point_id, $point_url, $success, $http_code, 1,
+                $success ? '' : 'HTTP ' . $http_code);
+        }
+
+        // Also submit sitemap URL to IndexNow for broader discovery
+        $sitemap_url = home_url('/jg-map-sitemap.xml');
+        $sitemap_indexnow_url = 'https://api.indexnow.org/indexnow?url=' . urlencode($sitemap_url)
+            . '&key=' . urlencode($indexnow_key);
+
+        $response2 = wp_remote_get($sitemap_indexnow_url, array('timeout' => 5));
+
+        if (is_wp_error($response2)) {
+            self::log_ping('IndexNow-Sitemap', $point_id, $sitemap_url, false, 0, 1, $response2->get_error_message());
+        } else {
+            $http_code2 = wp_remote_retrieve_response_code($response2);
+            $success2 = ($http_code2 >= 200 && $http_code2 < 300);
+            self::log_ping('IndexNow-Sitemap', $point_id, $sitemap_url, $success2, $http_code2, 1,
+                $success2 ? '' : 'HTTP ' . $http_code2);
+        }
     }
 
     /**

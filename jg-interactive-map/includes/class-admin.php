@@ -3959,7 +3959,7 @@ class JG_Map_Admin {
         ?>
         <div class="wrap">
             <h1>Ping Log (SEO) — Powiadomienia wyszukiwarek</h1>
-            <p class="description">Historia powiadomień wysyłanych do wyszukiwarek po publikacji lub zatwierdzeniu punktów. Retry: do 3 prób z rosnącym odstępem.</p>
+            <p class="description">Historia powiadomień IndexNow wysyłanych po publikacji, zatwierdzeniu lub edycji punktów. IndexNow obsługuje Bing, Yandex, Seznam i inne. Google nie wspiera pingów — używaj Search Console.</p>
 
             <?php if (!empty($logs)): ?>
 
