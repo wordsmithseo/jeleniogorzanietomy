@@ -745,6 +745,10 @@ class JG_Map_Database {
     public static function invalidate_points_cache() {
         delete_transient('jg_map_points_published');
         delete_transient('jg_map_points_with_pending');
+
+        // Regenerate sitemap cache so Google always gets a fresh static file
+        $plugin = JG_Interactive_Map::get_instance();
+        $plugin->regenerate_sitemap_cache();
     }
 
     /**

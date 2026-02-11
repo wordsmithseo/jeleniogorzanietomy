@@ -1366,30 +1366,32 @@ class JG_Interactive_Map {
     /**
      * Handle sitemap.xml generation
      */
-    public function handle_sitemap() {
-        // ALTERNATIVE APPROACH: Check URL directly instead of relying on query_var
-        // This bypasses rewrite rule issues
-        if (!isset($_SERVER['REQUEST_URI'])) {
-            return;
-        }
+    /**
+     * Escape string for use in XML content (removes invalid XML characters)
+     */
+    private function xml_escape($string) {
+        // Remove XML-invalid control characters (0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F)
+        $string = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $string);
+        // Escape XML entities
+        return htmlspecialchars($string, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    }
 
-        $request_uri = $_SERVER['REQUEST_URI'];
+    /**
+     * Get the cached sitemap file path
+     */
+    private function get_sitemap_cache_path() {
+        $upload_dir = wp_upload_dir();
+        return $upload_dir['basedir'] . '/jg-map-sitemap-cache.xml';
+    }
 
-        // Check if this is a sitemap request (direct URL check)
-        if (strpos($request_uri, 'jg-map-sitemap.xml') === false) {
-            return;
-        }
-
-
-        // Clean all output buffers to prevent any content before headers
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-
+    /**
+     * Regenerate and cache the sitemap XML file
+     * Called when points are created, updated, or deleted
+     */
+    public function regenerate_sitemap_cache() {
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
-        // Get all published points with slug and images - with error handling
         $points = $wpdb->get_results(
             "SELECT id, title, slug, type, images, featured_image_index, updated_at
              FROM $table
@@ -1398,115 +1400,187 @@ class JG_Interactive_Map {
             ARRAY_A
         );
 
-        // Check for database errors
-        if ($wpdb->last_error) {
-            status_header(500);
-            header('Content-Type: text/plain; charset=UTF-8');
-            echo 'Sitemap generation error. Please contact administrator.';
-            exit;
+        if ($wpdb->last_error || !is_array($points)) {
+            return false;
         }
 
-        // Ensure we have results (could be empty array)
-        if (!is_array($points)) {
-            $points = array();
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
+        $xml .= '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . "\n";
+
+        foreach ($points as $point) {
+            $type_path = 'miejsce';
+            if ($point['type'] === 'ciekawostka') {
+                $type_path = 'ciekawostka';
+            } elseif ($point['type'] === 'zgloszenie') {
+                $type_path = 'zgloszenie';
+            }
+
+            $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
+            $lastmod = get_date_from_gmt($point['updated_at'], 'c');
+
+            $point_images = json_decode($point['images'], true) ?: array();
+            $sitemap_images = array();
+            foreach ($point_images as $img) {
+                $img_url = '';
+                if (is_array($img)) {
+                    $img_url = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
+                } else {
+                    $img_url = $img;
+                }
+                if ($img_url && strpos($img_url, 'http') !== 0) {
+                    $img_url = home_url($img_url);
+                }
+                if ($img_url) {
+                    $sitemap_images[] = $img_url;
+                }
+            }
+
+            $xml .= '    <url>' . "\n";
+            $xml .= '        <loc>' . esc_url($url) . '</loc>' . "\n";
+            $xml .= '        <lastmod>' . $lastmod . '</lastmod>' . "\n";
+            $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+            $xml .= '        <priority>' . ($point['type'] === 'miejsce' ? '0.8' : '0.6') . '</priority>' . "\n";
+
+            foreach ($sitemap_images as $sitemap_img) {
+                $xml .= '        <image:image>' . "\n";
+                $xml .= '            <image:loc>' . esc_url($sitemap_img) . '</image:loc>' . "\n";
+                $xml .= '            <image:title>' . $this->xml_escape($point['title']) . '</image:title>' . "\n";
+                $xml .= '        </image:image>' . "\n";
+            }
+
+            $xml .= '    </url>' . "\n";
         }
 
+        $xml .= '</urlset>' . "\n";
 
-        // Set HTTP status code explicitly
-        status_header(200);
+        $cache_path = $this->get_sitemap_cache_path();
+        $written = file_put_contents($cache_path, $xml, LOCK_EX);
 
-        // Set proper caching headers for sitemap
-        // Allow Google and other crawlers to cache the sitemap for 1 hour
-        // This fixes Search Console not updating - nocache_headers() was preventing Google from caching
-        header('Content-Type: application/xml; charset=UTF-8');
-        header('X-Robots-Tag: index, follow');
-        header('Cache-Control: public, max-age=3600, s-maxage=3600');
-        header('Pragma: public');
+        return $written !== false;
+    }
 
-        // Add Last-Modified header based on most recent point update
-        $last_modified_date = !empty($points) ? $points[0]['updated_at'] : current_time('mysql', true);
-        $last_modified_ts = strtotime($last_modified_date);
-        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $last_modified_ts) . ' GMT');
-
-        // Add ETag for conditional requests
-        $etag = '"jg-sitemap-' . md5($last_modified_date . count($points)) . '"';
-        header('ETag: ' . $etag);
-
-        // Support conditional requests (304 Not Modified)
-        if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
-            status_header(304);
-            exit;
+    public function handle_sitemap() {
+        if (!isset($_SERVER['REQUEST_URI'])) {
+            return;
         }
-        if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
-            $if_modified = strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']);
-            if ($if_modified >= $last_modified_ts) {
-                status_header(304);
-                exit;
+
+        $request_uri = $_SERVER['REQUEST_URI'];
+
+        if (strpos($request_uri, 'jg-map-sitemap.xml') === false) {
+            return;
+        }
+
+        // Clean all output buffers to prevent any content before headers
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        $cache_path = $this->get_sitemap_cache_path();
+
+        // Serve cached file if it exists and is less than 1 hour old
+        if (file_exists($cache_path) && (time() - filemtime($cache_path)) < 3600) {
+            $xml_content = file_get_contents($cache_path);
+        } else {
+            // Regenerate cache
+            $this->regenerate_sitemap_cache();
+
+            if (file_exists($cache_path)) {
+                $xml_content = file_get_contents($cache_path);
+            } else {
+                // Fallback: generate directly if cache write failed
+                $xml_content = $this->generate_sitemap_xml_string();
             }
         }
 
-        // Start output buffering to capture the entire XML
-        ob_start();
-
-        echo '<?xml version="1.0" encoding="UTF-8"?>';
-        echo "\n";
-        ?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-<?php foreach ($points as $point):
-    // Determine URL path based on point type
-    $type_path = 'miejsce'; // default
-    if ($point['type'] === 'ciekawostka') {
-        $type_path = 'ciekawostka';
-    } elseif ($point['type'] === 'zgloszenie') {
-        $type_path = 'zgloszenie';
-    }
-
-    $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
-    $lastmod = get_date_from_gmt($point['updated_at'], 'c');
-
-    // Parse images for image sitemap extension
-    $point_images = json_decode($point['images'], true) ?: array();
-    $sitemap_images = array();
-    foreach ($point_images as $img) {
-        $img_url = '';
-        if (is_array($img)) {
-            $img_url = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
-        } else {
-            $img_url = $img;
+        if (empty($xml_content)) {
+            status_header(500);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'Sitemap generation error.';
+            exit;
         }
-        if ($img_url && strpos($img_url, 'http') !== 0) {
-            $img_url = home_url($img_url);
-        }
-        if ($img_url) {
-            $sitemap_images[] = $img_url;
-        }
-    }
-?>
-    <url>
-        <loc><?php echo esc_url($url); ?></loc>
-        <lastmod><?php echo $lastmod; ?></lastmod>
-        <changefreq>weekly</changefreq>
-        <priority><?php echo $point['type'] === 'miejsce' ? '0.8' : '0.6'; ?></priority>
-<?php foreach ($sitemap_images as $sitemap_img): ?>
-        <image:image>
-            <image:loc><?php echo esc_url($sitemap_img); ?></image:loc>
-            <image:title><?php echo esc_html($point['title']); ?></image:title>
-        </image:image>
-<?php endforeach; ?>
-    </url>
-<?php endforeach; ?>
-</urlset>
-        <?php
-        $xml_content = ob_get_clean();
 
-        // Log the sitemap size for debugging
-
-        // Set Content-Length header for better compatibility
+        status_header(200);
+        header('Content-Type: application/xml; charset=UTF-8');
+        header('X-Robots-Tag: noindex');
+        header('Cache-Control: public, max-age=3600, s-maxage=3600');
+        header('Pragma: public');
         header('Content-Length: ' . strlen($xml_content));
 
         echo $xml_content;
         exit;
+    }
+
+    /**
+     * Fallback: generate sitemap XML string directly without caching
+     */
+    private function generate_sitemap_xml_string() {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        $points = $wpdb->get_results(
+            "SELECT id, title, slug, type, images, featured_image_index, updated_at
+             FROM $table
+             WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''
+             ORDER BY updated_at DESC",
+            ARRAY_A
+        );
+
+        if ($wpdb->last_error || !is_array($points)) {
+            return '';
+        }
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
+        $xml .= '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . "\n";
+
+        foreach ($points as $point) {
+            $type_path = 'miejsce';
+            if ($point['type'] === 'ciekawostka') {
+                $type_path = 'ciekawostka';
+            } elseif ($point['type'] === 'zgloszenie') {
+                $type_path = 'zgloszenie';
+            }
+
+            $url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
+            $lastmod = get_date_from_gmt($point['updated_at'], 'c');
+
+            $point_images = json_decode($point['images'], true) ?: array();
+            $sitemap_images = array();
+            foreach ($point_images as $img) {
+                $img_url = '';
+                if (is_array($img)) {
+                    $img_url = isset($img['full']) ? $img['full'] : (isset($img['thumb']) ? $img['thumb'] : '');
+                } else {
+                    $img_url = $img;
+                }
+                if ($img_url && strpos($img_url, 'http') !== 0) {
+                    $img_url = home_url($img_url);
+                }
+                if ($img_url) {
+                    $sitemap_images[] = $img_url;
+                }
+            }
+
+            $xml .= '    <url>' . "\n";
+            $xml .= '        <loc>' . esc_url($url) . '</loc>' . "\n";
+            $xml .= '        <lastmod>' . $lastmod . '</lastmod>' . "\n";
+            $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+            $xml .= '        <priority>' . ($point['type'] === 'miejsce' ? '0.8' : '0.6') . '</priority>' . "\n";
+
+            foreach ($sitemap_images as $sitemap_img) {
+                $xml .= '        <image:image>' . "\n";
+                $xml .= '            <image:loc>' . esc_url($sitemap_img) . '</image:loc>' . "\n";
+                $xml .= '            <image:title>' . $this->xml_escape($point['title']) . '</image:title>' . "\n";
+                $xml .= '        </image:image>' . "\n";
+            }
+
+            $xml .= '    </url>' . "\n";
+        }
+
+        $xml .= '</urlset>' . "\n";
+
+        return $xml;
     }
 
 }
