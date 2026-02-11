@@ -6400,6 +6400,13 @@
             }
           }
 
+          // Ostatni modyfikujący - bezpośrednio pod Autor/Email/IP
+          if (p.last_modifier) {
+            adminData.push('<div><strong>Ostatni modyfikujący:</strong> <a href="#" class="jg-history-link" data-point-id="' + p.id + '" style="color:#2563eb;text-decoration:underline;cursor:pointer">' + esc(p.last_modifier.user_name) + '</a> <span style="color:#6b7280;font-size:12px">(' + esc(p.last_modifier.date) + ')</span></div>');
+          } else {
+            adminData.push('<div><strong>Ostatni modyfikujący:</strong> <a href="#" class="jg-history-link" data-point-id="' + p.id + '" style="color:#2563eb;text-decoration:underline;cursor:pointer;color:#9ca3af">brak edycji</a></div>');
+          }
+
           adminData.push('<div><strong>Status:</strong> ' + esc(p.status) + '</div>');
 
           // ZAKOLEJKOWANE ZMIANY MODERACYJNE - pokazuje wszystkie pending changes
@@ -6525,13 +6532,6 @@
           // Dodaj sekcję zmian moderacyjnych do panelu admina
           if (moderationQueue) {
             adminData.push(moderationQueue);
-          }
-
-          // Ostatni modyfikujący
-          if (p.last_modifier) {
-            adminData.push('<div style="margin:8px 0;padding:8px 12px;background:#f0f9ff;border-left:3px solid #3b82f6;border-radius:4px"><strong>Ostatni modyfikujący:</strong> <a href="#" class="jg-history-link" data-point-id="' + p.id + '" style="color:#2563eb;text-decoration:underline;cursor:pointer">' + esc(p.last_modifier.user_name) + '</a> <span style="color:#6b7280;font-size:12px">(' + esc(p.last_modifier.date) + ')</span></div>');
-          } else {
-            adminData.push('<div style="margin:8px 0;padding:8px 12px;background:#f9fafb;border-left:3px solid #d1d5db;border-radius:4px"><strong>Ostatni modyfikujący:</strong> <a href="#" class="jg-history-link" data-point-id="' + p.id + '" style="color:#2563eb;text-decoration:underline;cursor:pointer">brak edycji</a></div>');
           }
 
           // Kontrolki administracyjne (bez duplikatów pending buttons - są w moderationQueue)
