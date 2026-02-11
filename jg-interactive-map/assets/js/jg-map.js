@@ -6527,6 +6527,13 @@
             adminData.push(moderationQueue);
           }
 
+          // Ostatni modyfikujący
+          if (p.last_modifier) {
+            adminData.push('<div style="margin:8px 0;padding:8px 12px;background:#f0f9ff;border-left:3px solid #3b82f6;border-radius:4px"><strong>Ostatni modyfikujący:</strong> <a href="#" class="jg-history-link" data-point-id="' + p.id + '" style="color:#2563eb;text-decoration:underline;cursor:pointer">' + esc(p.last_modifier.user_name) + '</a> <span style="color:#6b7280;font-size:12px">(' + esc(p.last_modifier.date) + ')</span></div>');
+          } else {
+            adminData.push('<div style="margin:8px 0;padding:8px 12px;background:#f9fafb;border-left:3px solid #d1d5db;border-radius:4px"><strong>Ostatni modyfikujący:</strong> <a href="#" class="jg-history-link" data-point-id="' + p.id + '" style="color:#2563eb;text-decoration:underline;cursor:pointer">brak edycji</a></div>');
+          }
+
           // Kontrolki administracyjne (bez duplikatów pending buttons - są w moderationQueue)
           var controls = '<div class="jg-admin-controls">';
 
@@ -7619,6 +7626,151 @@
               });
           };
         }
+
+        // History modal handler
+        var historyLink = qs('.jg-history-link', modalView);
+        if (historyLink) {
+          historyLink.onclick = function(e) {
+            e.preventDefault();
+            var pointId = this.getAttribute('data-point-id');
+            openPointHistoryModal(pointId, p);
+          };
+        }
+      }
+
+      /**
+       * Open a full history modal for a point with revert functionality.
+       */
+      function openPointHistoryModal(pointId, currentPoint) {
+        // Create overlay
+        var overlay = document.createElement('div');
+        overlay.className = 'jg-history-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px';
+
+        var modal = document.createElement('div');
+        modal.style.cssText = 'background:#fff;border-radius:12px;max-width:950px;width:100%;max-height:85vh;overflow:auto;padding:24px;position:relative';
+        modal.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h2 style="margin:0;font-size:18px">Historia zmian: ' + esc(currentPoint.title) + '</h2><button class="jg-history-close" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:700;font-size:14px">✕ Zamknij</button></div><div class="jg-history-content" style="color:#666;text-align:center;padding:40px">Ładowanie...</div>';
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        overlay.querySelector('.jg-history-close').onclick = function() {
+          document.body.removeChild(overlay);
+        };
+        overlay.addEventListener('click', function(e) {
+          if (e.target === overlay) document.body.removeChild(overlay);
+        });
+
+        // Fetch full history
+        api('jg_get_full_point_history', { post_id: pointId })
+          .then(function(entries) {
+            var content = overlay.querySelector('.jg-history-content');
+            if (!entries || entries.length === 0) {
+              content.innerHTML = '<p style="text-align:center;color:#6b7280;padding:30px">Brak wpisów w historii zmian tego miejsca.</p>';
+              return;
+            }
+
+            var html = '<div style="display:flex;flex-direction:column;gap:12px">';
+            entries.forEach(function(entry) {
+              var statusBadge = '';
+              if (entry.status === 'approved') statusBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">ZATWIERDZONO</span>';
+              else if (entry.status === 'rejected') statusBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">ODRZUCONO</span>';
+              else statusBadge = '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">OCZEKUJE</span>';
+
+              var actionLabel = entry.action_type === 'edit' ? 'Edycja' : entry.action_type === 'delete_request' ? 'Prośba o usunięcie' : entry.action_type;
+
+              html += '<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">';
+              html += '<div style="background:#f9fafb;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
+              html += '<div><strong>' + esc(entry.user_name) + '</strong> <span style="color:#6b7280;font-size:12px">— ' + esc(actionLabel) + '</span></div>';
+              html += '<div style="display:flex;align-items:center;gap:8px">' + statusBadge + '<span style="color:#9ca3af;font-size:12px">' + esc(entry.created_at) + ' (' + esc(entry.created_ago) + ')</span></div>';
+              html += '</div>';
+
+              // Changes details
+              if (entry.changes && entry.changes.length > 0) {
+                html += '<div style="padding:10px 14px">';
+                html += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+                html += '<tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:11px">Pole</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:11px">Było</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:11px">Jest</th></tr>';
+                entry.changes.forEach(function(ch) {
+                  var oldDisplay = ch.old || '<em style="color:#9ca3af">(puste)</em>';
+                  var newDisplay = ch.new || '<em style="color:#9ca3af">(puste)</em>';
+                  // Truncate long content
+                  if (ch.field === 'content') {
+                    if (ch.old && ch.old.length > 100) oldDisplay = esc(ch.old.substring(0, 100)) + '...';
+                    else oldDisplay = ch.old ? esc(ch.old) : '<em style="color:#9ca3af">(puste)</em>';
+                    if (ch.new && ch.new.length > 100) newDisplay = esc(ch.new.substring(0, 100)) + '...';
+                    else newDisplay = ch.new ? esc(ch.new) : '<em style="color:#9ca3af">(puste)</em>';
+                  } else {
+                    oldDisplay = ch.old ? esc(ch.old) : '<em style="color:#9ca3af">(puste)</em>';
+                    newDisplay = ch.new ? esc(ch.new) : '<em style="color:#9ca3af">(puste)</em>';
+                  }
+                  html += '<tr><td style="padding:4px 8px;border-bottom:1px solid #f3f4f6;font-weight:600;white-space:nowrap">' + esc(ch.label) + '</td>';
+                  html += '<td style="padding:4px 8px;border-bottom:1px solid #f3f4f6;color:#991b1b;background:#fef2f2">' + oldDisplay + '</td>';
+                  html += '<td style="padding:4px 8px;border-bottom:1px solid #f3f4f6;color:#166534;background:#f0fdf4">' + newDisplay + '</td></tr>';
+                });
+                html += '</table></div>';
+              } else if (entry.action_type === 'delete_request') {
+                html += '<div style="padding:10px 14px;color:#991b1b">Prośba o usunięcie miejsca</div>';
+              }
+
+              // Rejection reason
+              if (entry.rejection_reason) {
+                html += '<div style="padding:8px 14px;background:#fef2f2;color:#991b1b;font-size:12px"><strong>Powód odrzucenia:</strong> ' + esc(entry.rejection_reason) + '</div>';
+              }
+
+              // Resolved by info
+              if (entry.resolved_by) {
+                html += '<div style="padding:6px 14px;font-size:11px;color:#9ca3af">Rozpatrzone przez: ' + esc(entry.resolved_by) + (entry.resolved_at ? ' (' + esc(entry.resolved_at) + ')' : '') + '</div>';
+              }
+
+              // Revert button (only for approved edits that have old_values)
+              if (entry.status === 'approved' && entry.action_type === 'edit' && entry.old_values && entry.old_values.title) {
+                html += '<div style="padding:8px 14px;border-top:1px solid #e5e7eb;text-align:right">';
+                html += '<button class="jg-revert-btn" data-history-id="' + entry.id + '" style="background:#f59e0b;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600">↩ Przywróć do tego stanu</button>';
+                html += '</div>';
+              }
+
+              html += '</div>';
+            });
+            html += '</div>';
+
+            content.innerHTML = html;
+
+            // Attach revert handlers
+            content.querySelectorAll('.jg-revert-btn').forEach(function(btn) {
+              btn.onclick = function() {
+                var historyId = this.getAttribute('data-history-id');
+                var thisBtn = this;
+                showConfirm('Czy na pewno chcesz przywrócić punkt do tego stanu? Obecny stan zostanie zapisany w historii.').then(function(confirmed) {
+                  if (!confirmed) return;
+                  thisBtn.disabled = true;
+                  thisBtn.textContent = 'Przywracanie...';
+
+                  api('jg_admin_revert_to_history', { history_id: historyId })
+                    .then(function() {
+                      document.body.removeChild(overlay);
+                      return refreshAll();
+                    })
+                    .then(function() {
+                      close(modalView);
+                      showAlert('Punkt przywrócony do wybranego stanu');
+                      var updatedPoint = ALL.find(function(x) { return +x.id === +currentPoint.id; });
+                      if (updatedPoint) {
+                        setTimeout(function() { openDetails(updatedPoint); }, 300);
+                      }
+                    })
+                    .catch(function(err) {
+                      showAlert('Błąd: ' + (err.message || '?'));
+                      thisBtn.disabled = false;
+                      thisBtn.textContent = '↩ Przywróć do tego stanu';
+                    });
+                });
+              };
+            });
+          })
+          .catch(function(err) {
+            var content = overlay.querySelector('.jg-history-content');
+            content.innerHTML = '<p style="text-align:center;color:#991b1b;padding:30px">Błąd ładowania historii: ' + esc(err.message || '?') + '</p>';
+          });
       }
 
       function apply(skipFitBounds) {

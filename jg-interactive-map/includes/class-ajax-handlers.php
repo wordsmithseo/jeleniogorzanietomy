@@ -540,6 +540,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_toggle_edit_lock', array($this, 'admin_toggle_edit_lock'), 1);
         add_action('wp_ajax_jg_admin_change_owner', array($this, 'admin_change_owner'), 1);
         add_action('wp_ajax_jg_admin_search_users', array($this, 'admin_search_users'), 1);
+        add_action('wp_ajax_jg_get_full_point_history', array($this, 'get_full_point_history'), 1);
+        add_action('wp_ajax_jg_admin_revert_to_history', array($this, 'admin_revert_to_history'), 1);
 
         // Report reasons management (admin only)
         add_action('wp_ajax_jg_save_report_category', array($this, 'save_report_category'), 1);
@@ -1023,6 +1025,7 @@ class JG_Map_Ajax_Handlers {
                     'author_email' => $author_email,
                     'ip' => $point['ip_address'] ?: '(brak)'
                 ) : null,
+                'last_modifier' => $is_admin ? self::get_last_modifier_info($point['id']) : null,
                 // SECURITY: For unauthenticated users, always hide moderation data
                 'admin_note' => ($current_user_id > 0) ? $point['admin_note'] : null,
                 'is_pending' => ($current_user_id > 0) ? $is_pending : false,
@@ -3716,6 +3719,247 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success($formatted_history);
+    }
+
+    /**
+     * Get last modifier info for a point (static helper).
+     *
+     * @param int $point_id
+     * @return array|null
+     */
+    private static function get_last_modifier_info($point_id) {
+        global $wpdb;
+        $table = JG_Map_Database::get_history_table();
+
+        $last = $wpdb->get_row($wpdb->prepare(
+            "SELECT h.user_id, h.resolved_by, h.resolved_at, h.created_at
+             FROM $table h
+             WHERE h.point_id = %d AND h.status = 'approved' AND h.action_type = 'edit'
+             ORDER BY h.resolved_at DESC LIMIT 1",
+            $point_id
+        ), ARRAY_A);
+
+        if (!$last) {
+            return null;
+        }
+
+        $editor = get_userdata($last['user_id']);
+        $approver = $last['resolved_by'] ? get_userdata($last['resolved_by']) : null;
+
+        return array(
+            'user_id'       => intval($last['user_id']),
+            'user_name'     => $editor ? $editor->display_name : 'Nieznany',
+            'approved_by'   => $approver ? $approver->display_name : null,
+            'date'          => $last['resolved_at']
+                ? human_time_diff(strtotime(get_date_from_gmt($last['resolved_at'])), current_time('timestamp')) . ' temu'
+                : human_time_diff(strtotime(get_date_from_gmt($last['created_at'])), current_time('timestamp')) . ' temu',
+            'date_raw'      => $last['resolved_at'] ?: $last['created_at'],
+        );
+    }
+
+    /**
+     * Get full point history (all statuses) for history modal.
+     * Admin only.
+     */
+    public function get_full_point_history() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $history = JG_Map_Database::get_point_history($point_id);
+        $result = array();
+
+        foreach ($history as $entry) {
+            $user = get_userdata($entry['user_id']);
+            $resolved_by_user = $entry['resolved_by'] ? get_userdata($entry['resolved_by']) : null;
+            $old_values = json_decode($entry['old_values'], true) ?: array();
+            $new_values = json_decode($entry['new_values'], true) ?: array();
+
+            // Build list of changed fields
+            $changes = array();
+            $fields_to_compare = array(
+                'title' => 'Tytuł',
+                'type' => 'Typ',
+                'category' => 'Kategoria',
+                'content' => 'Opis',
+                'address' => 'Adres',
+                'lat' => 'Szerokość geo.',
+                'lng' => 'Długość geo.',
+                'website' => 'Strona WWW',
+                'phone' => 'Telefon',
+                'facebook_url' => 'Facebook',
+                'instagram_url' => 'Instagram',
+                'linkedin_url' => 'LinkedIn',
+                'tiktok_url' => 'TikTok',
+                'cta_enabled' => 'CTA',
+                'cta_type' => 'Typ CTA',
+            );
+
+            foreach ($fields_to_compare as $field => $label) {
+                $old_val = isset($old_values[$field]) ? (string)$old_values[$field] : '';
+                $new_val = isset($new_values[$field]) ? (string)$new_values[$field] : '';
+                if ($old_val !== $new_val) {
+                    $changes[] = array(
+                        'field' => $field,
+                        'label' => $label,
+                        'old'   => $old_val,
+                        'new'   => $new_val,
+                    );
+                }
+            }
+
+            $result[] = array(
+                'id'            => intval($entry['id']),
+                'user_id'       => intval($entry['user_id']),
+                'user_name'     => $user ? $user->display_name : 'Nieznany',
+                'action_type'   => $entry['action_type'],
+                'status'        => $entry['status'],
+                'changes'       => $changes,
+                'old_values'    => $old_values,
+                'new_values'    => $new_values,
+                'created_at'    => get_date_from_gmt($entry['created_at'], 'Y-m-d H:i'),
+                'created_ago'   => human_time_diff(strtotime(get_date_from_gmt($entry['created_at'])), current_time('timestamp')) . ' temu',
+                'resolved_at'   => $entry['resolved_at'] ? get_date_from_gmt($entry['resolved_at'], 'Y-m-d H:i') : null,
+                'resolved_by'   => $resolved_by_user ? $resolved_by_user->display_name : null,
+                'rejection_reason' => $entry['rejection_reason'] ?? null,
+            );
+        }
+
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Revert a point to a specific history state (admin only).
+     * Applies old_values from the selected history entry to the point.
+     */
+    public function admin_revert_to_history() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $history_id = intval($_POST['history_id'] ?? 0);
+        if (!$history_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        global $wpdb;
+        $table = JG_Map_Database::get_history_table();
+
+        $history = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE id = %d", $history_id
+        ), ARRAY_A);
+
+        if (!$history) {
+            wp_send_json_error(array('message' => 'Wpis historii nie istnieje'));
+            exit;
+        }
+
+        $point_id = intval($history['point_id']);
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        $old_values = json_decode($history['old_values'], true);
+        if (!$old_values || !isset($old_values['title'])) {
+            wp_send_json_error(array('message' => 'Brak danych do przywrócenia'));
+            exit;
+        }
+
+        // Save current state as a new history entry before reverting
+        $current_state = array(
+            'title'   => $point['title'],
+            'type'    => $point['type'],
+            'category' => $point['category'] ?? null,
+            'content' => $point['content'],
+            'address' => $point['address'] ?? '',
+            'lat'     => $point['lat'],
+            'lng'     => $point['lng'],
+            'website' => $point['website'] ?? null,
+            'phone'   => $point['phone'] ?? null,
+            'facebook_url'  => $point['facebook_url'] ?? null,
+            'instagram_url' => $point['instagram_url'] ?? null,
+            'linkedin_url'  => $point['linkedin_url'] ?? null,
+            'tiktok_url'    => $point['tiktok_url'] ?? null,
+            'cta_enabled'   => $point['cta_enabled'] ?? 0,
+            'cta_type'      => $point['cta_type'] ?? null,
+        );
+
+        $admin_id = get_current_user_id();
+
+        // Create a history entry documenting the revert
+        $wpdb->insert($table, array(
+            'point_id'    => $point_id,
+            'user_id'     => $admin_id,
+            'action_type' => 'edit',
+            'old_values'  => wp_json_encode($current_state),
+            'new_values'  => wp_json_encode($old_values),
+            'status'      => 'approved',
+            'created_at'  => current_time('mysql', true),
+            'resolved_at' => current_time('mysql', true),
+            'resolved_by' => $admin_id,
+        ));
+
+        // Apply old_values to the point
+        $update_data = array(
+            'title'   => $old_values['title'],
+            'type'    => $old_values['type'],
+            'content' => $old_values['content'],
+            'excerpt' => wp_trim_words($old_values['content'], 20),
+        );
+
+        if (isset($old_values['category'])) {
+            $update_data['category'] = $old_values['category'];
+        }
+        if (isset($old_values['lat']) && isset($old_values['lng'])) {
+            $update_data['lat'] = floatval($old_values['lat']);
+            $update_data['lng'] = floatval($old_values['lng']);
+        }
+        if (isset($old_values['address'])) {
+            $update_data['address'] = $old_values['address'];
+        }
+        if (isset($old_values['website'])) {
+            $update_data['website'] = $old_values['website'];
+        }
+        if (isset($old_values['phone'])) {
+            $update_data['phone'] = $old_values['phone'];
+        }
+        if (isset($old_values['facebook_url'])) {
+            $update_data['facebook_url'] = $old_values['facebook_url'];
+        }
+        if (isset($old_values['instagram_url'])) {
+            $update_data['instagram_url'] = $old_values['instagram_url'];
+        }
+        if (isset($old_values['linkedin_url'])) {
+            $update_data['linkedin_url'] = $old_values['linkedin_url'];
+        }
+        if (isset($old_values['tiktok_url'])) {
+            $update_data['tiktok_url'] = $old_values['tiktok_url'];
+        }
+        if (isset($old_values['cta_enabled'])) {
+            $update_data['cta_enabled'] = $old_values['cta_enabled'];
+        }
+        if (isset($old_values['cta_type'])) {
+            $update_data['cta_type'] = $old_values['cta_type'];
+        }
+
+        JG_Map_Database::update_point($point_id, $update_data);
+
+        // Log activity
+        JG_Map_Activity_Log::log(
+            'revert_point',
+            'point',
+            $point_id,
+            sprintf('Przywrócono punkt "%s" do stanu z historii #%d', $point['title'], $history_id)
+        );
+
+        wp_send_json_success(array('message' => 'Punkt przywrócony do wybranego stanu'));
     }
 
     /**
