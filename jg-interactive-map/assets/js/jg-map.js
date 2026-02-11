@@ -7732,10 +7732,16 @@
                 html += '<div style="padding:6px 14px;font-size:11px;color:#9ca3af">Rozpatrzone przez: ' + esc(entry.resolved_by) + (entry.resolved_at ? ' (' + esc(entry.resolved_at) + ')' : '') + '</div>';
               }
 
-              // Revert button (only for approved edits that have old_values)
-              if (entry.status === 'approved' && entry.action_type === 'edit' && entry.old_values && entry.old_values.title) {
-                html += '<div style="padding:8px 14px;border-top:1px solid #e5e7eb;text-align:right">';
+              // Revert button (only for approved edits that have new_values = result state)
+              if (entry.status === 'approved' && entry.action_type === 'edit' && entry.new_values && entry.new_values.title) {
+                html += '<div style="padding:8px 14px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">';
+                html += '<button class="jg-delete-history-btn" data-history-id="' + entry.id + '" style="background:none;border:1px solid #dc2626;color:#dc2626;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px" title="Usuń ten wpis z historii">Usuń wpis</button>';
                 html += '<button class="jg-revert-btn" data-history-id="' + entry.id + '" style="background:#f59e0b;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600">↩ Przywróć do tego stanu</button>';
+                html += '</div>';
+              } else {
+                // Delete button only (no revert available)
+                html += '<div style="padding:8px 14px;border-top:1px solid #e5e7eb;text-align:left">';
+                html += '<button class="jg-delete-history-btn" data-history-id="' + entry.id + '" style="background:none;border:1px solid #dc2626;color:#dc2626;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px" title="Usuń ten wpis z historii">Usuń wpis</button>';
                 html += '</div>';
               }
 
@@ -7796,6 +7802,32 @@
                       showAlert('Błąd: ' + (err.message || '?'));
                       thisBtn.disabled = false;
                       thisBtn.textContent = '↩ Przywróć do tego stanu';
+                    });
+                });
+              };
+            });
+
+            // Attach delete history entry handlers
+            content.querySelectorAll('.jg-delete-history-btn').forEach(function(btn) {
+              btn.onclick = function(e) {
+                e.stopPropagation();
+                var historyId = this.getAttribute('data-history-id');
+                var thisBtn = this;
+                showConfirm('Czy na pewno chcesz usunąć ten wpis z historii? Tej operacji nie można cofnąć.').then(function(confirmed) {
+                  if (!confirmed) return;
+                  thisBtn.disabled = true;
+                  thisBtn.textContent = 'Usuwanie...';
+
+                  api('jg_admin_delete_history_entry', { history_id: historyId })
+                    .then(function() {
+                      // Re-open history modal to refresh the list
+                      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                      openPointHistoryModal(pointId, currentPoint);
+                    })
+                    .catch(function(err) {
+                      showAlert('Błąd: ' + (err.message || '?'));
+                      thisBtn.disabled = false;
+                      thisBtn.textContent = 'Usuń wpis';
                     });
                 });
               };
