@@ -542,6 +542,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_search_users', array($this, 'admin_search_users'), 1);
         add_action('wp_ajax_jg_get_full_point_history', array($this, 'get_full_point_history'), 1);
         add_action('wp_ajax_jg_admin_revert_to_history', array($this, 'admin_revert_to_history'), 1);
+        add_action('wp_ajax_jg_admin_delete_history_entry', array($this, 'admin_delete_history_entry'), 1);
 
         // Report reasons management (admin only)
         add_action('wp_ajax_jg_save_report_category', array($this, 'save_report_category'), 1);
@@ -3895,8 +3896,10 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        $old_values = json_decode($history['old_values'], true);
-        if (!$old_values || !isset($old_values['title'])) {
+        // Apply new_values = the result/outcome of this history entry
+        // "Restore to this state" means restoring to what the point looked like AFTER this edit
+        $target_values = json_decode($history['new_values'], true);
+        if (!$target_values || !isset($target_values['title'])) {
             wp_send_json_error(array('message' => 'Brak danych do przywrócenia'));
             exit;
         }
@@ -3922,11 +3925,11 @@ class JG_Map_Ajax_Handlers {
 
         $admin_id = get_current_user_id();
 
-        // Fill in missing fields in old_values with current state values
+        // Fill in missing fields in target_values with current state values
         // This prevents false diffs (e.g. cta_enabled "0" vs "" when CTA wasn't part of original edit)
         $target_state = array();
         foreach ($current_state as $key => $val) {
-            $target_state[$key] = isset($old_values[$key]) ? $old_values[$key] : $val;
+            $target_state[$key] = isset($target_values[$key]) ? $target_values[$key] : $val;
         }
 
         // Create a history entry documenting the revert
@@ -3942,47 +3945,47 @@ class JG_Map_Ajax_Handlers {
             'resolved_by' => $admin_id,
         ));
 
-        // Apply old_values to the point
+        // Apply target_state to the point
         $update_data = array(
-            'title'   => $old_values['title'],
-            'type'    => $old_values['type'],
-            'content' => $old_values['content'],
-            'excerpt' => wp_trim_words($old_values['content'], 20),
+            'title'   => $target_state['title'],
+            'type'    => $target_state['type'],
+            'content' => $target_state['content'],
+            'excerpt' => wp_trim_words($target_state['content'], 20),
         );
 
-        if (isset($old_values['category'])) {
-            $update_data['category'] = $old_values['category'];
+        if (isset($target_state['category'])) {
+            $update_data['category'] = $target_state['category'];
         }
-        if (isset($old_values['lat']) && isset($old_values['lng'])) {
-            $update_data['lat'] = floatval($old_values['lat']);
-            $update_data['lng'] = floatval($old_values['lng']);
+        if (isset($target_state['lat']) && isset($target_state['lng'])) {
+            $update_data['lat'] = floatval($target_state['lat']);
+            $update_data['lng'] = floatval($target_state['lng']);
         }
-        if (isset($old_values['address'])) {
-            $update_data['address'] = $old_values['address'];
+        if (isset($target_state['address'])) {
+            $update_data['address'] = $target_state['address'];
         }
-        if (isset($old_values['website'])) {
-            $update_data['website'] = $old_values['website'];
+        if (isset($target_state['website'])) {
+            $update_data['website'] = $target_state['website'];
         }
-        if (isset($old_values['phone'])) {
-            $update_data['phone'] = $old_values['phone'];
+        if (isset($target_state['phone'])) {
+            $update_data['phone'] = $target_state['phone'];
         }
-        if (isset($old_values['facebook_url'])) {
-            $update_data['facebook_url'] = $old_values['facebook_url'];
+        if (isset($target_state['facebook_url'])) {
+            $update_data['facebook_url'] = $target_state['facebook_url'];
         }
-        if (isset($old_values['instagram_url'])) {
-            $update_data['instagram_url'] = $old_values['instagram_url'];
+        if (isset($target_state['instagram_url'])) {
+            $update_data['instagram_url'] = $target_state['instagram_url'];
         }
-        if (isset($old_values['linkedin_url'])) {
-            $update_data['linkedin_url'] = $old_values['linkedin_url'];
+        if (isset($target_state['linkedin_url'])) {
+            $update_data['linkedin_url'] = $target_state['linkedin_url'];
         }
-        if (isset($old_values['tiktok_url'])) {
-            $update_data['tiktok_url'] = $old_values['tiktok_url'];
+        if (isset($target_state['tiktok_url'])) {
+            $update_data['tiktok_url'] = $target_state['tiktok_url'];
         }
-        if (isset($old_values['cta_enabled'])) {
-            $update_data['cta_enabled'] = $old_values['cta_enabled'];
+        if (isset($target_state['cta_enabled'])) {
+            $update_data['cta_enabled'] = $target_state['cta_enabled'];
         }
-        if (isset($old_values['cta_type'])) {
-            $update_data['cta_type'] = $old_values['cta_type'];
+        if (isset($target_state['cta_type'])) {
+            $update_data['cta_type'] = $target_state['cta_type'];
         }
 
         JG_Map_Database::update_point($point_id, $update_data);
@@ -3996,6 +3999,43 @@ class JG_Map_Ajax_Handlers {
         );
 
         wp_send_json_success(array('message' => 'Punkt przywrócony do wybranego stanu'));
+    }
+
+    /**
+     * Delete a history entry (admin only).
+     */
+    public function admin_delete_history_entry() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $history_id = intval($_POST['history_id'] ?? 0);
+        if (!$history_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        global $wpdb;
+        $table = JG_Map_Database::get_history_table();
+
+        $entry = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, point_id FROM $table WHERE id = %d", $history_id
+        ), ARRAY_A);
+
+        if (!$entry) {
+            wp_send_json_error(array('message' => 'Wpis nie istnieje'));
+            exit;
+        }
+
+        $wpdb->delete($table, array('id' => $history_id), array('%d'));
+
+        JG_Map_Activity_Log::log(
+            'delete_history',
+            'point',
+            $entry['point_id'],
+            sprintf('Usunięto wpis historii #%d dla punktu #%d', $history_id, $entry['point_id'])
+        );
+
+        wp_send_json_success(array('message' => 'Wpis historii usunięty'));
     }
 
     /**
