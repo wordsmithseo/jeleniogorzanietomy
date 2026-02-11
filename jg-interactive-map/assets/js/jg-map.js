@@ -770,6 +770,9 @@
               var row = modalRanking.querySelector('.' + cls);
               if (!row) return;
               var colors = sparkleColors[cls];
+              var container = document.createElement('div');
+              container.className = 'jg-sparkle-container';
+              row.appendChild(container);
               var intervalId = setInterval(function() {
                 if (!document.body.contains(row)) { clearInterval(intervalId); return; }
                 for (var s = 0; s < 3; s++) {
@@ -777,11 +780,11 @@
                   dot.className = 'jg-sparkle' + (Math.random() > 0.5 ? ' jg-sparkle--star' : '');
                   var size = 4 + Math.random() * 6;
                   var color = colors[Math.floor(Math.random() * colors.length)];
-                  dot.style.cssText = 'width:' + size + 'px;height:' + size + 'px;left:' + (Math.random() * 100) + '%;bottom:' + (Math.random() * 60) + '%;background:' + color + ';animation-duration:' + (1.2 + Math.random() * 1.5) + 's;opacity:0;';
+                  dot.style.cssText = 'width:' + size + 'px;height:' + size + 'px;left:' + (Math.random() * 100) + '%;top:' + (Math.random() * 100) + '%;background:' + color + ';animation-duration:' + (1.2 + Math.random() * 1.5) + 's;';
                   if (dot.classList.contains('jg-sparkle--star')) {
                     dot.style.color = color;
                   }
-                  row.appendChild(dot);
+                  container.appendChild(dot);
                   (function(el) {
                     setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 2800);
                   })(dot);
