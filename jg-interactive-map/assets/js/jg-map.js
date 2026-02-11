@@ -3214,6 +3214,7 @@
               my_vote: (r.my_vote || ''),
               date: r.date || null,
               admin: r.admin || null,
+              last_modifier: r.last_modifier || null,
               admin_note: r.admin_note || '',
               is_pending: !!r.is_pending,
               is_edit: !!r.is_edit,
@@ -7670,8 +7671,8 @@
               return;
             }
 
-            var html = '<div style="display:flex;flex-direction:column;gap:12px">';
-            entries.forEach(function(entry) {
+            var html = '<div style="display:flex;flex-direction:column;gap:8px">';
+            entries.forEach(function(entry, idx) {
               var statusBadge = '';
               if (entry.status === 'approved') statusBadge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">ZATWIERDZONO</span>';
               else if (entry.status === 'rejected') statusBadge = '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">ODRZUCONO</span>';
@@ -7679,33 +7680,42 @@
 
               var actionLabel = entry.action_type === 'edit' ? 'Edycja' : entry.action_type === 'delete_request' ? 'Prośba o usunięcie' : entry.action_type;
 
-              html += '<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">';
-              html += '<div style="background:#f9fafb;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
-              html += '<div><strong>' + esc(entry.user_name) + '</strong> <span style="color:#6b7280;font-size:12px">— ' + esc(actionLabel) + '</span></div>';
-              html += '<div style="display:flex;align-items:center;gap:8px">' + statusBadge + '<span style="color:#9ca3af;font-size:12px">' + esc(entry.created_at) + ' (' + esc(entry.created_ago) + ')</span></div>';
+              // Short summary for header
+              var changeSummary = '';
+              if (entry.changes && entry.changes.length > 0) {
+                var fieldNames = entry.changes.map(function(ch) { return ch.label; });
+                changeSummary = ' — zmieniono: ' + fieldNames.join(', ');
+              } else if (entry.action_type === 'delete_request') {
+                changeSummary = ' — prośba o usunięcie';
+              }
+
+              html += '<div class="jg-history-entry" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">';
+
+              // Clickable header (accordion trigger)
+              html += '<div class="jg-history-header" data-entry-idx="' + idx + '" style="background:#f9fafb;padding:10px 14px;cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;transition:background .15s">';
+              html += '<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">';
+              html += '<span class="jg-history-arrow" style="display:inline-block;transition:transform .2s;font-size:12px;color:#6b7280;flex-shrink:0">▶</span>';
+              html += '<strong style="white-space:nowrap">' + esc(entry.user_name) + '</strong>';
+              html += '<span style="color:#6b7280;font-size:12px;white-space:nowrap">' + esc(actionLabel) + '</span>';
+              html += '<span style="color:#9ca3af;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(changeSummary) + '</span>';
+              html += '</div>';
+              html += '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' + statusBadge + '<span style="color:#9ca3af;font-size:12px;white-space:nowrap">' + esc(entry.created_ago) + '</span></div>';
               html += '</div>';
 
-              // Changes details
+              // Collapsible body (hidden by default)
+              html += '<div class="jg-history-body" data-entry-idx="' + idx + '" style="display:none">';
+
+              // Changes details - full content, no truncation
               if (entry.changes && entry.changes.length > 0) {
                 html += '<div style="padding:10px 14px">';
                 html += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
-                html += '<tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:11px">Pole</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:11px">Było</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:11px">Jest</th></tr>';
+                html += '<tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:11px;width:80px">Pole</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:11px">Było</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:11px">Jest</th></tr>';
                 entry.changes.forEach(function(ch) {
-                  var oldDisplay = ch.old || '<em style="color:#9ca3af">(puste)</em>';
-                  var newDisplay = ch.new || '<em style="color:#9ca3af">(puste)</em>';
-                  // Truncate long content
-                  if (ch.field === 'content') {
-                    if (ch.old && ch.old.length > 100) oldDisplay = esc(ch.old.substring(0, 100)) + '...';
-                    else oldDisplay = ch.old ? esc(ch.old) : '<em style="color:#9ca3af">(puste)</em>';
-                    if (ch.new && ch.new.length > 100) newDisplay = esc(ch.new.substring(0, 100)) + '...';
-                    else newDisplay = ch.new ? esc(ch.new) : '<em style="color:#9ca3af">(puste)</em>';
-                  } else {
-                    oldDisplay = ch.old ? esc(ch.old) : '<em style="color:#9ca3af">(puste)</em>';
-                    newDisplay = ch.new ? esc(ch.new) : '<em style="color:#9ca3af">(puste)</em>';
-                  }
-                  html += '<tr><td style="padding:4px 8px;border-bottom:1px solid #f3f4f6;font-weight:600;white-space:nowrap">' + esc(ch.label) + '</td>';
-                  html += '<td style="padding:4px 8px;border-bottom:1px solid #f3f4f6;color:#991b1b;background:#fef2f2">' + oldDisplay + '</td>';
-                  html += '<td style="padding:4px 8px;border-bottom:1px solid #f3f4f6;color:#166534;background:#f0fdf4">' + newDisplay + '</td></tr>';
+                  var oldDisplay = ch.old ? esc(ch.old) : '<em style="color:#9ca3af">(puste)</em>';
+                  var newDisplay = ch.new ? esc(ch.new) : '<em style="color:#9ca3af">(puste)</em>';
+                  html += '<tr><td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;font-weight:600;white-space:nowrap;vertical-align:top">' + esc(ch.label) + '</td>';
+                  html += '<td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;color:#991b1b;background:#fef2f2;word-break:break-word;max-width:350px">' + oldDisplay + '</td>';
+                  html += '<td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;color:#166534;background:#f0fdf4;word-break:break-word;max-width:350px">' + newDisplay + '</td></tr>';
                 });
                 html += '</table></div>';
               } else if (entry.action_type === 'delete_request') {
@@ -7729,15 +7739,39 @@
                 html += '</div>';
               }
 
-              html += '</div>';
+              html += '</div>'; // end body
+              html += '</div>'; // end entry
             });
             html += '</div>';
 
             content.innerHTML = html;
 
+            // Accordion behavior - click header to expand/collapse, only one open at a time
+            content.querySelectorAll('.jg-history-header').forEach(function(header) {
+              header.onmouseenter = function() { this.style.background = '#f3f4f6'; };
+              header.onmouseleave = function() { this.style.background = '#f9fafb'; };
+              header.onclick = function() {
+                var idx = this.getAttribute('data-entry-idx');
+                var body = content.querySelector('.jg-history-body[data-entry-idx="' + idx + '"]');
+                var arrow = this.querySelector('.jg-history-arrow');
+                var isOpen = body.style.display !== 'none';
+
+                // Close all others
+                content.querySelectorAll('.jg-history-body').forEach(function(b) { b.style.display = 'none'; });
+                content.querySelectorAll('.jg-history-arrow').forEach(function(a) { a.style.transform = 'rotate(0deg)'; });
+
+                // Toggle clicked one
+                if (!isOpen) {
+                  body.style.display = 'block';
+                  arrow.style.transform = 'rotate(90deg)';
+                }
+              };
+            });
+
             // Attach revert handlers
             content.querySelectorAll('.jg-revert-btn').forEach(function(btn) {
-              btn.onclick = function() {
+              btn.onclick = function(e) {
+                e.stopPropagation();
                 var historyId = this.getAttribute('data-history-id');
                 var thisBtn = this;
                 showConfirm('Czy na pewno chcesz przywrócić punkt do tego stanu? Obecny stan zostanie zapisany w historii.').then(function(confirmed) {
