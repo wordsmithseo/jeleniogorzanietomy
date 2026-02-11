@@ -1380,14 +1380,39 @@ body.jg-fullscreen-active {
   .jg-modal header {
     flex-wrap: wrap;
     gap: 8px;
-    padding: 12px 48px 12px 10px; /* Extra right padding for absolute X */
+    padding: 12px 48px 12px 10px !important; /* Extra right padding for absolute X */
+    position: relative;
+    overflow: hidden;
   }
 
-  /* Position close button absolutely in top-right corner on mobile */
+  /* Prevent header children from overflowing */
+  .jg-modal header > div {
+    min-width: 0;
+    overflow: hidden;
+    flex-shrink: 1;
+  }
+
+  /* Truncate long header title on mobile */
+  .jg-modal header h3 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  /* Truncate long badge text on mobile */
+  .jg-modal header > div > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* Position close button absolutely, vertically centered in header on mobile */
   .jg-modal header .jg-close {
     position: absolute;
-    top: 8px;
+    top: 50%;
     right: 8px;
+    transform: translateY(-50%);
     z-index: 10;
     background: rgba(0, 0, 0, 0.1);
     border-radius: 50%;
@@ -1400,6 +1425,7 @@ body.jg-fullscreen-active {
     font-size: 28px;
     color: #374151;
     margin: 0 !important;
+    flex-shrink: 0;
   }
 }
 
