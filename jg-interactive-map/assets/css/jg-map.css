@@ -1385,6 +1385,11 @@ body.jg-fullscreen-active {
     overflow: hidden;
   }
 
+  /* Ranking header - match pin modal header proportions on mobile */
+  .jg-modal .jg-ranking-header {
+    padding: 16px 48px 16px 20px !important; /* Same vertical as pin headers, right space for X */
+  }
+
   /* Prevent header children from overflowing */
   .jg-modal header > div {
     min-width: 0;
@@ -5317,7 +5322,7 @@ body.jg-fullscreen-active {
 /* Ranking responsive - mobile */
 @media (max-width: 640px) {
   .jg-ranking-header {
-    padding: 14px 16px;
+    padding: 14px 48px 14px 16px !important;
   }
 
   .jg-ranking-trophy {
