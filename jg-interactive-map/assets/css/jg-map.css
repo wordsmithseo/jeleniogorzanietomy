@@ -4915,7 +4915,7 @@ body.jg-fullscreen-active {
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
-.jg-ranking-title {
+.jg-modal .jg-ranking-header .jg-ranking-title {
   margin: 0;
   color: #fff;
   font-size: 1.35rem;
@@ -5123,6 +5123,132 @@ body.jg-fullscreen-active {
   height: 12px;
   background: #e5e7eb;
   border-radius: 6px;
+}
+
+/* Sparkle particles for top 3 ranking rows */
+.jg-ranking-gold,
+.jg-ranking-silver,
+.jg-ranking-bronze {
+  position: relative;
+  overflow: hidden;
+}
+
+.jg-ranking-gold::before,
+.jg-ranking-gold::after,
+.jg-ranking-silver::before,
+.jg-ranking-silver::after,
+.jg-ranking-bronze::before,
+.jg-ranking-bronze::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Gold sparkles */
+.jg-ranking-gold::before {
+  background-image:
+    radial-gradient(circle 2px, #f59e0b 100%, transparent 100%),
+    radial-gradient(circle 1.5px, #fbbf24 100%, transparent 100%),
+    radial-gradient(circle 1px, #d97706 100%, transparent 100%),
+    radial-gradient(circle 2px, #fbbf24 100%, transparent 100%),
+    radial-gradient(circle 1.5px, #f59e0b 100%, transparent 100%),
+    radial-gradient(circle 1px, #d97706 100%, transparent 100%);
+  background-size: 3px 3px, 2.5px 2.5px, 2px 2px, 3px 3px, 2.5px 2.5px, 2px 2px;
+  background-position: 10% 20%, 30% 70%, 55% 15%, 75% 65%, 90% 30%, 45% 85%;
+  background-repeat: no-repeat;
+  animation: jg-sparkle-fade 2.5s ease-in-out infinite;
+}
+
+.jg-ranking-gold::after {
+  background-image:
+    radial-gradient(circle 1.5px, #fcd34d 100%, transparent 100%),
+    radial-gradient(circle 2px, #f59e0b 100%, transparent 100%),
+    radial-gradient(circle 1px, #fbbf24 100%, transparent 100%),
+    radial-gradient(circle 1.5px, #d97706 100%, transparent 100%),
+    radial-gradient(circle 2px, #fcd34d 100%, transparent 100%);
+  background-size: 2.5px 2.5px, 3px 3px, 2px 2px, 2.5px 2.5px, 3px 3px;
+  background-position: 20% 45%, 50% 25%, 70% 80%, 85% 50%, 15% 75%;
+  background-repeat: no-repeat;
+  animation: jg-sparkle-fade 2.5s ease-in-out 1.25s infinite;
+}
+
+/* Silver/purple sparkles */
+.jg-ranking-silver::before {
+  background-image:
+    radial-gradient(circle 2px, #a78bfa 100%, transparent 100%),
+    radial-gradient(circle 1.5px, #8b5cf6 100%, transparent 100%),
+    radial-gradient(circle 1px, #c4b5fd 100%, transparent 100%),
+    radial-gradient(circle 2px, #8b5cf6 100%, transparent 100%),
+    radial-gradient(circle 1.5px, #a78bfa 100%, transparent 100%),
+    radial-gradient(circle 1px, #7c3aed 100%, transparent 100%);
+  background-size: 3px 3px, 2.5px 2.5px, 2px 2px, 3px 3px, 2.5px 2.5px, 2px 2px;
+  background-position: 12% 25%, 35% 65%, 58% 18%, 78% 70%, 88% 35%, 42% 80%;
+  background-repeat: no-repeat;
+  animation: jg-sparkle-fade 2.8s ease-in-out infinite;
+}
+
+.jg-ranking-silver::after {
+  background-image:
+    radial-gradient(circle 1.5px, #c4b5fd 100%, transparent 100%),
+    radial-gradient(circle 2px, #a78bfa 100%, transparent 100%),
+    radial-gradient(circle 1px, #8b5cf6 100%, transparent 100%),
+    radial-gradient(circle 1.5px, #7c3aed 100%, transparent 100%),
+    radial-gradient(circle 2px, #c4b5fd 100%, transparent 100%);
+  background-size: 2.5px 2.5px, 3px 3px, 2px 2px, 2.5px 2.5px, 3px 3px;
+  background-position: 22% 50%, 48% 20%, 65% 75%, 82% 45%, 10% 70%;
+  background-repeat: no-repeat;
+  animation: jg-sparkle-fade 2.8s ease-in-out 1.4s infinite;
+}
+
+/* Bronze/green sparkles */
+.jg-ranking-bronze::before {
+  background-image:
+    radial-gradient(circle 2px, #34d399 100%, transparent 100%),
+    radial-gradient(circle 1.5px, #10b981 100%, transparent 100%),
+    radial-gradient(circle 1px, #6ee7b7 100%, transparent 100%),
+    radial-gradient(circle 2px, #10b981 100%, transparent 100%),
+    radial-gradient(circle 1.5px, #34d399 100%, transparent 100%),
+    radial-gradient(circle 1px, #059669 100%, transparent 100%);
+  background-size: 3px 3px, 2.5px 2.5px, 2px 2px, 3px 3px, 2.5px 2.5px, 2px 2px;
+  background-position: 8% 30%, 28% 60%, 52% 12%, 72% 72%, 92% 28%, 40% 88%;
+  background-repeat: no-repeat;
+  animation: jg-sparkle-fade 3s ease-in-out infinite;
+}
+
+.jg-ranking-bronze::after {
+  background-image:
+    radial-gradient(circle 1.5px, #6ee7b7 100%, transparent 100%),
+    radial-gradient(circle 2px, #34d399 100%, transparent 100%),
+    radial-gradient(circle 1px, #10b981 100%, transparent 100%),
+    radial-gradient(circle 1.5px, #059669 100%, transparent 100%),
+    radial-gradient(circle 2px, #6ee7b7 100%, transparent 100%);
+  background-size: 2.5px 2.5px, 3px 3px, 2px 2px, 2.5px 2.5px, 3px 3px;
+  background-position: 18% 42%, 45% 22%, 68% 78%, 80% 55%, 12% 68%;
+  background-repeat: no-repeat;
+  animation: jg-sparkle-fade 3s ease-in-out 1.5s infinite;
+}
+
+@keyframes jg-sparkle-fade {
+  0%, 100% { opacity: 0; }
+  15% { opacity: 0.9; }
+  30% { opacity: 0.2; }
+  45% { opacity: 1; }
+  60% { opacity: 0.3; }
+  75% { opacity: 0.8; }
+  90% { opacity: 0.1; }
+}
+
+/* Ensure row content sits above sparkles */
+.jg-ranking-gold > *,
+.jg-ranking-silver > *,
+.jg-ranking-bronze > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Ranking button styling */
