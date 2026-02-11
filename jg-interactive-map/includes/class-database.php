@@ -1484,6 +1484,28 @@ class JG_Map_Database {
     }
 
     /**
+     * Add history entry for direct admin/mod edits (auto-approved).
+     */
+    public static function add_admin_edit_history($point_id, $admin_user_id, $old_values, $new_values) {
+        global $wpdb;
+
+        self::ensure_history_table();
+
+        $table = self::get_history_table();
+
+        return $wpdb->insert($table, array(
+            'point_id'    => $point_id,
+            'user_id'     => $admin_user_id,
+            'action_type' => 'edit',
+            'old_values'  => is_array($old_values) ? json_encode($old_values) : $old_values,
+            'new_values'  => is_array($new_values) ? json_encode($new_values) : $new_values,
+            'status'      => 'approved',
+            'resolved_at' => current_time('mysql', true),
+            'resolved_by' => $admin_user_id,
+        ));
+    }
+
+    /**
      * Get ALL pending history entries for a point (can be multiple: edit + deletion)
      */
     public static function get_pending_history($point_id) {

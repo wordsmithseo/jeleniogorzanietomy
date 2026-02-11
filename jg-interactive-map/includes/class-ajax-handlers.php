@@ -1969,6 +1969,29 @@ class JG_Map_Ajax_Handlers {
 
             JG_Map_Database::update_point($point_id, $update_data);
 
+            // Record admin/mod edit in history so it shows in "Ostatni modyfikujący"
+            $old_values = array(
+                'title' => $point['title'],
+                'type' => $point['type'],
+                'category' => $point['category'] ?? '',
+                'content' => $point['content'],
+                'lat' => $point['lat'],
+                'lng' => $point['lng'],
+                'address' => $point['address'] ?? '',
+                'images' => $point['images'] ?? '[]'
+            );
+            $new_values = array(
+                'title' => $title,
+                'type' => $type,
+                'category' => $category,
+                'content' => $content,
+                'lat' => ($lat !== null) ? $lat : $point['lat'],
+                'lng' => ($lng !== null) ? $lng : $point['lng'],
+                'address' => !empty($address) ? $address : ($point['address'] ?? ''),
+                'images' => isset($update_data['images']) ? $update_data['images'] : ($point['images'] ?? '[]')
+            );
+            JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
+
             wp_send_json_success(array('message' => 'Zaktualizowano'));
         } else {
             // Check if user has sponsored places (users with sponsored places get 2x edit limit)
