@@ -670,16 +670,17 @@ class JG_Map_Admin {
                             <table class="wp-list-table widefat fixed striped">
                                 <thead>
                                     <tr>
-                                        <th style="width:<?php echo $status === 'reported' ? '18%' : '20%'; ?>">Miejsce</th>
-                                        <th style="width:12%">Kto dodał</th>
+                                        <th style="width:<?php echo $status === 'reported' ? '16%' : '18%'; ?>">Miejsce</th>
+                                        <th style="width:10%">Kto dodał</th>
+                                        <th style="width:10%">Ostatni modyfikujący</th>
                                         <?php if ($status === 'reported'): ?>
-                                        <th style="width:12%">Kto zgłosił</th>
+                                        <th style="width:10%">Kto zgłosił</th>
                                         <?php endif; ?>
-                                        <th style="width:12%">Data dodania</th>
-                                        <th style="width:12%">Data zatwierdzenia</th>
-                                        <th style="width:10%">Status</th>
-                                        <th style="width:8%">Sponsorowane</th>
-                                        <th style="width:<?php echo $status === 'reported' ? '16%' : '26%'; ?>">Akcje</th>
+                                        <th style="width:10%">Data dodania</th>
+                                        <th style="width:10%">Data zatwierdzenia</th>
+                                        <th style="width:8%">Status</th>
+                                        <th style="width:7%">Sponsorowane</th>
+                                        <th style="width:<?php echo $status === 'reported' ? '14%' : '22%'; ?>">Akcje</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1029,10 +1030,19 @@ class JG_Map_Admin {
             $actions = array('details');
         }
 
+        $last_modifier = !empty($place['last_modifier_name']) ? $place['last_modifier_name'] : '-';
+        $last_modified_date = !empty($place['last_modified_at']) ? get_date_from_gmt($place['last_modified_at'], 'Y-m-d H:i') : '';
+
         ?>
         <tr>
             <td><strong><?php echo esc_html($place['title']); ?></strong></td>
             <td><?php echo esc_html($author_name); ?></td>
+            <td>
+                <?php echo esc_html($last_modifier); ?>
+                <?php if ($last_modified_date): ?>
+                    <br><span style="font-size:11px;color:#6b7280"><?php echo esc_html($last_modified_date); ?></span>
+                <?php endif; ?>
+            </td>
             <?php if ($status === 'reported'): ?>
             <td><strong style="color:#dc2626"><?php echo esc_html($reporter_name); ?></strong></td>
             <?php endif; ?>

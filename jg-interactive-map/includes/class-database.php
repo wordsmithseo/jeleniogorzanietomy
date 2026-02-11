@@ -1638,7 +1638,14 @@ class JG_Map_Database {
                  ORDER BY r2.created_at DESC LIMIT 1) as reporter_name,
                 (SELECT r2.user_id FROM $reports_table r2
                  WHERE r2.point_id = p.id AND r2.status = 'pending'
-                 ORDER BY r2.created_at DESC LIMIT 1) as reporter_id
+                 ORDER BY r2.created_at DESC LIMIT 1) as reporter_id,
+                (SELECT u3.display_name FROM $history_table h3
+                 LEFT JOIN {$wpdb->users} u3 ON h3.user_id = u3.ID
+                 WHERE h3.point_id = p.id AND h3.status = 'approved' AND h3.action_type = 'edit'
+                 ORDER BY h3.resolved_at DESC LIMIT 1) as last_modifier_name,
+                (SELECT h3.resolved_at FROM $history_table h3
+                 WHERE h3.point_id = p.id AND h3.status = 'approved' AND h3.action_type = 'edit'
+                 ORDER BY h3.resolved_at DESC LIMIT 1) as last_modified_at
             FROM $points_table p
             LEFT JOIN {$wpdb->users} u ON p.author_id = u.ID
             $where_clause
