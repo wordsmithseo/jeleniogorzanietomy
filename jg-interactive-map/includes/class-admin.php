@@ -416,6 +416,15 @@ class JG_Map_Admin {
             'jg-map-achievements-editor',
             array($this, 'render_achievements_editor_page')
         );
+
+        add_submenu_page(
+            'jg-map-places',
+            'Ping Log (SEO)',
+            'Ping Log (SEO)',
+            'manage_options',
+            'jg-map-ping-log',
+            array($this, 'render_ping_log_page')
+        );
     }
 
     /**
@@ -3928,6 +3937,83 @@ class JG_Map_Admin {
                            value="Zapisz ustawienia">
                 </p>
             </form>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render ping log page - shows history of search engine notifications
+     */
+    public function render_ping_log_page() {
+        $logs = JG_Interactive_Map::get_ping_log(200);
+        ?>
+        <div class="wrap">
+            <h1>Ping Log (SEO) — Powiadomienia wyszukiwarek</h1>
+            <p class="description">Historia powiadomień wysyłanych do wyszukiwarek po publikacji lub zatwierdzeniu punktów. Retry: do 3 prób z rosnącym odstępem.</p>
+
+            <?php if (!empty($logs)): ?>
+
+            <?php
+            // Stats
+            $total = count($logs);
+            $success_count = count(array_filter($logs, function($l) { return $l['success']; }));
+            $fail_count = $total - $success_count;
+            ?>
+            <div style="display:flex;gap:15px;margin:15px 0">
+                <div style="background:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                    <strong>Łącznie:</strong> <?php echo $total; ?>
+                </div>
+                <div style="background:#d4edda;padding:12px 20px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                    <strong>Sukces:</strong> <?php echo $success_count; ?>
+                </div>
+                <?php if ($fail_count > 0): ?>
+                <div style="background:#f8d7da;padding:12px 20px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                    <strong>Błędy:</strong> <?php echo $fail_count; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <table class="widefat fixed striped" style="max-width:1200px">
+                <thead>
+                    <tr>
+                        <th style="width:140px">Data</th>
+                        <th style="width:80px">Silnik</th>
+                        <th style="width:60px">Punkt</th>
+                        <th style="width:70px">Status</th>
+                        <th style="width:50px">HTTP</th>
+                        <th style="width:50px">Próby</th>
+                        <th>Błąd</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($logs as $log): ?>
+                    <tr>
+                        <td><?php echo esc_html($log['created_at']); ?></td>
+                        <td><strong><?php echo esc_html($log['engine']); ?></strong></td>
+                        <td>
+                            <?php if (!empty($log['point_url'])): ?>
+                                <a href="<?php echo esc_url($log['point_url']); ?>" target="_blank" title="<?php echo esc_attr($log['point_url']); ?>">#<?php echo intval($log['point_id']); ?></a>
+                            <?php else: ?>
+                                #<?php echo intval($log['point_id']); ?>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($log['success']): ?>
+                                <span style="color:#155724;font-weight:bold">OK</span>
+                            <?php else: ?>
+                                <span style="color:#721c24;font-weight:bold">BŁĄD</span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo intval($log['http_code']); ?></td>
+                        <td><?php echo intval($log['attempts']); ?>/3</td>
+                        <td style="color:#666;font-size:12px"><?php echo esc_html($log['error_message']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php else: ?>
+            <p>Brak wpisów w ping log. Pojawią się po opublikowaniu lub zatwierdzeniu pierwszego punktu.</p>
+            <?php endif; ?>
         </div>
         <?php
     }
