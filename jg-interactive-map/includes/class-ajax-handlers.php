@@ -3826,6 +3826,12 @@ class JG_Map_Ajax_Handlers {
             foreach ($fields_to_compare as $field => $label) {
                 $old_val = isset($old_values[$field]) ? (string)$old_values[$field] : '';
                 $new_val = isset($new_values[$field]) ? (string)$new_values[$field] : '';
+                // Normalize empty-ish values to avoid false diffs (e.g. cta_enabled "0" vs "")
+                $boolean_fields = array('cta_enabled');
+                if (in_array($field, $boolean_fields)) {
+                    $old_val = $old_val === '' ? '0' : $old_val;
+                    $new_val = $new_val === '' ? '0' : $new_val;
+                }
                 if ($old_val !== $new_val) {
                     $changes[] = array(
                         'field' => $field,
@@ -3916,13 +3922,20 @@ class JG_Map_Ajax_Handlers {
 
         $admin_id = get_current_user_id();
 
+        // Fill in missing fields in old_values with current state values
+        // This prevents false diffs (e.g. cta_enabled "0" vs "" when CTA wasn't part of original edit)
+        $target_state = array();
+        foreach ($current_state as $key => $val) {
+            $target_state[$key] = isset($old_values[$key]) ? $old_values[$key] : $val;
+        }
+
         // Create a history entry documenting the revert
         $wpdb->insert($table, array(
             'point_id'    => $point_id,
             'user_id'     => $admin_id,
             'action_type' => 'edit',
             'old_values'  => wp_json_encode($current_state),
-            'new_values'  => wp_json_encode($old_values),
+            'new_values'  => wp_json_encode($target_state),
             'status'      => 'approved',
             'created_at'  => current_time('mysql', true),
             'resolved_at' => current_time('mysql', true),

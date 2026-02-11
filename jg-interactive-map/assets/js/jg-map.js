@@ -7781,7 +7781,7 @@
 
                   api('jg_admin_revert_to_history', { history_id: historyId })
                     .then(function() {
-                      document.body.removeChild(overlay);
+                      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
                       return refreshAll();
                     })
                     .then(function() {
