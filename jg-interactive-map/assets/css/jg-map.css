@@ -1828,7 +1828,7 @@ body.jg-fullscreen-active {
   background: rgba(0, 0, 0, 0.08);
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: 0 0 2px 0;
   color: #374151;
   width: 36px;
   height: 36px;
@@ -1838,6 +1838,7 @@ body.jg-fullscreen-active {
   justify-content: center;
   flex-shrink: 0;
   transition: background 0.15s ease;
+  box-sizing: border-box;
 }
 
 .jg-modal header .jg-close:hover {
@@ -4880,7 +4881,7 @@ body.jg-fullscreen-active {
    Ranking Modal Styles
    ======================================== */
 
-.jg-ranking-header {
+.jg-modal .jg-ranking-header {
   background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
   padding: 20px 24px;
   border-radius: 12px 12px 0 0;
@@ -4888,6 +4889,18 @@ body.jg-fullscreen-active {
   align-items: center;
   justify-content: space-between;
   position: relative;
+  border-bottom: none;
+}
+
+.jg-modal .jg-ranking-header .jg-close {
+  color: #fff;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.jg-modal .jg-ranking-header .jg-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
 }
 
 .jg-ranking-header-inner {
@@ -5024,6 +5037,7 @@ body.jg-fullscreen-active {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .jg-ranking-star {
@@ -5031,14 +5045,15 @@ body.jg-fullscreen-active {
 }
 
 .jg-ranking-user-link {
-  color: inherit;
+  color: inherit !important;
   text-decoration: none;
   cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .jg-ranking-user-link:hover {
   text-decoration: underline;
-  color: #8d2324;
+  color: #8d2324 !important;
 }
 
 .jg-ranking-meta {
