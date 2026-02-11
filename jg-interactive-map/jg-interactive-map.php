@@ -1522,21 +1522,10 @@ class JG_Interactive_Map {
      * @param int $point_id The ID of the published point
      */
     public static function ping_search_engines($point_id) {
-        // Schedule the ping as a one-time cron event so it runs in the background
-        // with retry capability and doesn't slow down the request.
-        if (!wp_next_scheduled('jg_map_ping_search_engines', array($point_id))) {
-            wp_schedule_single_event(time(), 'jg_map_ping_search_engines', array($point_id));
-        }
-
-        // Force WP Cron to run now - without this, cron may never fire
-        // (e.g. when DISABLE_WP_CRON is true or site has low traffic)
-        if (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON) {
-            // Cron is disabled - execute directly
-            self::execute_search_engine_ping($point_id);
-        } else {
-            // Trigger cron runner immediately
-            spawn_cron();
-        }
+        // Execute ping directly - WP Cron and spawn_cron() are unreliable
+        // (loopback HTTP requests often blocked, DISABLE_WP_CRON, low traffic, etc.)
+        // Pings are fast HTTP GETs (~1s each) and only triggered on publish/approve.
+        self::execute_search_engine_ping($point_id);
     }
 
     /**

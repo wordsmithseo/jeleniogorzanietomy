@@ -1993,6 +1993,11 @@ class JG_Map_Ajax_Handlers {
             );
             JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
 
+            // Ping search engines about updated content (only for published points)
+            if ($point['status'] === 'publish') {
+                JG_Interactive_Map::ping_search_engines($point_id);
+            }
+
             wp_send_json_success(array('message' => 'Zaktualizowano'));
         } else {
             // Check if user has sponsored places (users with sponsored places get 2x edit limit)
@@ -4248,6 +4253,9 @@ class JG_Map_Ajax_Handlers {
             $history_id,
             sprintf('Zaakceptowano edycję miejsca: %s', $point['title'])
         );
+
+        // Ping search engines about updated content
+        JG_Interactive_Map::ping_search_engines($history['point_id']);
 
         wp_send_json_success(array('message' => 'Edycja zaakceptowana'));
     }
