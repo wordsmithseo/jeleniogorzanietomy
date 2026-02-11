@@ -1726,11 +1726,6 @@ class JG_Map_Ajax_Handlers {
                 }
             }
 
-            // Ping search engines if point was published immediately (admin)
-            if ($saved_point['status'] === 'publish') {
-                JG_Interactive_Map::ping_search_engines($point_id);
-            }
-
             $response = array(
                 'message' => 'Punkt dodany do moderacji',
                 'point_id' => $point_id,
@@ -1992,11 +1987,6 @@ class JG_Map_Ajax_Handlers {
                 'images' => isset($update_data['images']) ? $update_data['images'] : ($point['images'] ?? '[]')
             );
             JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
-
-            // Ping search engines about updated content (only for published points)
-            if ($point['status'] === 'publish') {
-                JG_Interactive_Map::ping_search_engines($point_id);
-            }
 
             wp_send_json_success(array('message' => 'Zaktualizowano'));
         } else {
@@ -2951,9 +2941,6 @@ class JG_Map_Ajax_Handlers {
         if ($author_id) {
             JG_Map_Levels_Achievements::award_xp($author_id, 'point_approved', $point_id);
         }
-
-        // Ping search engines about updated content
-        JG_Interactive_Map::ping_search_engines($point_id);
 
         wp_send_json_success(array('message' => 'Punkt zaakceptowany'));
     }
@@ -4253,9 +4240,6 @@ class JG_Map_Ajax_Handlers {
             $history_id,
             sprintf('Zaakceptowano edycję miejsca: %s', $point['title'])
         );
-
-        // Ping search engines about updated content
-        JG_Interactive_Map::ping_search_engines($history['point_id']);
 
         wp_send_json_success(array('message' => 'Edycja zaakceptowana'));
     }
@@ -7519,9 +7503,6 @@ class JG_Map_Ajax_Handlers {
             $point_id,
             sprintf('Przywrócono miejsce z kosza: %s', $point['title'])
         );
-
-        // Ping search engines about restored content
-        JG_Interactive_Map::ping_search_engines($point_id);
 
         wp_send_json_success(array('message' => 'Miejsce przywrócone z kosza'));
     }
