@@ -1879,46 +1879,56 @@ body.jg-fullscreen-active {
   border-radius: 8px;
   overflow: visible;
   background: #fff;
+  transition: border-color 0.2s;
+}
+.jg-rte-wrap:focus-within {
+  border-color: #8d2324;
+  box-shadow: 0 0 0 3px rgba(141, 35, 36, 0.1);
 }
 .jg-rte-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: 3px;
   padding: 6px 8px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  border-radius: 8px 8px 0 0;
+  background: #111;
+  border-bottom: 1px solid #333;
+  border-radius: 7px 7px 0 0;
   align-items: center;
 }
 .jg-rte-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  height: 30px;
+  min-width: 30px;
+  height: 28px;
   padding: 0 8px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 6px;
   background: transparent;
   cursor: pointer;
   font-size: 13px;
-  color: #374151;
-  transition: background 0.15s, border-color 0.15s;
+  color: #ccc;
+  transition: all 0.15s;
   white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 .jg-rte-btn:hover {
-  background: #e5e7eb;
-  border-color: #d1d5db;
+  background: #333;
+  color: #fff;
+  border-color: #444;
 }
 .jg-rte-btn:active {
-  background: #d1d5db;
+  background: #8d2324;
+  color: #fff;
+  border-color: #8d2324;
 }
 .jg-rte-sep {
   display: inline-block;
   width: 1px;
-  height: 20px;
-  background: #d1d5db;
+  height: 18px;
+  background: #444;
   margin: 0 4px;
+  flex-shrink: 0;
 }
 .jg-rte-editor {
   padding: 10px 12px;
@@ -1930,9 +1940,6 @@ body.jg-fullscreen-active {
   color: #111;
   outline: none;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-.jg-rte-editor:focus {
-  box-shadow: inset 0 0 0 2px #8d232440;
 }
 .jg-rte-editor:empty::before {
   content: attr(data-placeholder);
@@ -1948,50 +1955,80 @@ body.jg-fullscreen-active {
   margin-bottom: 2px;
 }
 .jg-rte-editor a {
-  color: #2563eb;
+  color: #8d2324;
   text-decoration: underline;
 }
 .jg-rte-editor a.jg-pin-link {
   color: #8d2324;
+  font-weight: 500;
 }
 .jg-rte-counter {
   padding: 4px 12px 6px;
   font-size: 11px;
-  color: #666;
+  color: #999;
   text-align: right;
-  border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+  border-radius: 0 0 7px 7px;
 }
 
 /* Link dialog */
 .jg-rte-link-dialog {
   position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 36px;
+  left: 0;
+  right: 0;
+  bottom: 32px;
   background: #fff;
-  border: 1px solid #d1d5db;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  padding: 12px 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  padding: 14px 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   z-index: 100;
+}
+.jg-rte-link-dialog label {
+  display: block;
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+}
+.jg-rte-link-dialog input[type="text"] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 4px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.jg-rte-link-dialog input[type="text"]:focus {
+  border-color: #8d2324;
+  box-shadow: 0 0 0 3px rgba(141, 35, 36, 0.1);
 }
 .jg-rte-link-dialog-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #8d2324;
+}
+.jg-rte-link-dialog-header strong {
+  font-size: 14px;
+  color: #111;
 }
 .jg-rte-link-close {
   background: none;
   border: none;
   font-size: 20px;
   cursor: pointer;
-  color: #666;
+  color: #999;
   padding: 0 4px;
   line-height: 1;
+  transition: color 0.15s;
 }
 .jg-rte-link-close:hover {
-  color: #111;
+  color: #8d2324;
 }
 
 /* Pin autocomplete results */
@@ -1999,14 +2036,15 @@ body.jg-fullscreen-active {
   max-height: 180px;
   overflow-y: auto;
   margin-top: 6px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
 }
 .jg-rte-pin-results:empty {
   display: none;
 }
 .jg-rte-pin-hint {
-  padding: 10px 12px;
+  padding: 12px;
   font-size: 12px;
   color: #9ca3af;
   text-align: center;
@@ -2025,33 +2063,61 @@ body.jg-fullscreen-active {
   border-bottom: none;
 }
 .jg-rte-pin-item:hover {
-  background: #f9fafb;
+  background: #f9f5f5;
 }
 .jg-rte-pin-item--selected {
-  background: #eff6ff !important;
+  background: #fdf2f2 !important;
   border-left: 3px solid #8d2324;
 }
 .jg-rte-pin-type {
   display: inline-block;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
   font-size: 10px;
   font-weight: 600;
   color: #fff;
   flex-shrink: 0;
   text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 .jg-rte-pin-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #111;
 }
 
-/* Small buttons */
+/* Small buttons for RTE dialogs */
 .jg-btn--sm {
   padding: 6px 14px !important;
   font-size: 13px !important;
   min-height: auto !important;
+  border-radius: 8px !important;
+}
+
+/* Mobile: stack toolbar buttons more compactly */
+@media (max-width: 600px) {
+  .jg-rte-toolbar {
+    gap: 2px;
+    padding: 4px 6px;
+  }
+  .jg-rte-btn {
+    min-width: 26px;
+    height: 26px;
+    padding: 0 5px;
+    font-size: 12px;
+  }
+  .jg-rte-sep {
+    height: 16px;
+    margin: 0 2px;
+  }
+  .jg-rte-editor {
+    min-height: 80px;
+    padding: 8px 10px;
+  }
+  .jg-rte-link-dialog {
+    padding: 10px 12px;
+  }
 }
 
 .jg-modal header .jg-close {
