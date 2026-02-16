@@ -1283,6 +1283,325 @@
         });
       }
 
+      // ===== RICH TEXT EDITOR =====
+      // Build the toolbar + contenteditable HTML for a rich editor
+      function buildRichEditorHtml(id, maxLength, initialContent, rows) {
+        var minH = (rows || 4) * 24;
+        return '<div class="jg-rte-wrap" id="' + id + '-wrap">' +
+          '<div class="jg-rte-toolbar" id="' + id + '-toolbar">' +
+            '<button type="button" data-cmd="bold" title="Pogrubienie" class="jg-rte-btn"><b>B</b></button>' +
+            '<button type="button" data-cmd="italic" title="Kursywa" class="jg-rte-btn"><i>I</i></button>' +
+            '<button type="button" data-cmd="underline" title="Podkreślenie" class="jg-rte-btn"><u>U</u></button>' +
+            '<span class="jg-rte-sep"></span>' +
+            '<button type="button" data-cmd="insertUnorderedList" title="Lista punktowana" class="jg-rte-btn">&#8226; Lista</button>' +
+            '<button type="button" data-cmd="insertOrderedList" title="Lista numerowana" class="jg-rte-btn">1. Lista</button>' +
+            '<span class="jg-rte-sep"></span>' +
+            '<button type="button" data-cmd="link" title="Wstaw link" class="jg-rte-btn">&#128279; Link</button>' +
+            '<button type="button" data-cmd="pinLink" title="Link do pineski" class="jg-rte-btn">&#128205; Pineska</button>' +
+          '</div>' +
+          '<div class="jg-rte-editor" id="' + id + '-editor" contenteditable="true" style="min-height:' + minH + 'px" data-placeholder="Opisz miejsce..."></div>' +
+          '<input type="hidden" name="content" id="' + id + '-hidden">' +
+          '<div class="jg-rte-counter" id="' + id + '-counter">0 / ' + maxLength + ' znaków</div>' +
+          // Link insertion dialog (hidden by default)
+          '<div class="jg-rte-link-dialog" id="' + id + '-link-dialog" style="display:none">' +
+            '<div class="jg-rte-link-dialog-header">' +
+              '<strong id="' + id + '-link-dialog-title">Wstaw link</strong>' +
+              '<button type="button" class="jg-rte-link-close" id="' + id + '-link-close">&times;</button>' +
+            '</div>' +
+            '<label>Tekst linku<input type="text" id="' + id + '-link-text" placeholder="Tekst do wyświetlenia" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px"></label>' +
+            '<label style="margin-top:8px;display:block">Adres URL<input type="text" id="' + id + '-link-url" placeholder="https://..." style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px"></label>' +
+            '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">' +
+              '<button type="button" class="jg-btn jg-btn--ghost jg-btn--sm" id="' + id + '-link-cancel">Anuluj</button>' +
+              '<button type="button" class="jg-btn jg-btn--sm" id="' + id + '-link-insert">Wstaw</button>' +
+            '</div>' +
+          '</div>' +
+          // Pin link dialog (hidden by default)
+          '<div class="jg-rte-link-dialog" id="' + id + '-pin-dialog" style="display:none">' +
+            '<div class="jg-rte-link-dialog-header">' +
+              '<strong>Link do pineski</strong>' +
+              '<button type="button" class="jg-rte-link-close" id="' + id + '-pin-close">&times;</button>' +
+            '</div>' +
+            '<label>Szukaj pineski<input type="text" id="' + id + '-pin-search" placeholder="Zacznij wpisywać nazwę..." autocomplete="off" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px"></label>' +
+            '<div class="jg-rte-pin-results" id="' + id + '-pin-results"></div>' +
+            '<input type="hidden" id="' + id + '-pin-selected-id">' +
+            '<input type="hidden" id="' + id + '-pin-selected-title">' +
+            '<label style="margin-top:8px;display:block">Tekst linku (opcjonalnie)<input type="text" id="' + id + '-pin-link-text" placeholder="Domyślnie: nazwa pineski" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px"></label>' +
+            '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">' +
+              '<button type="button" class="jg-btn jg-btn--ghost jg-btn--sm" id="' + id + '-pin-cancel">Anuluj</button>' +
+              '<button type="button" class="jg-btn jg-btn--sm" id="' + id + '-pin-insert">Wstaw</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      // Initialize the rich editor behaviors after it's inserted into the DOM
+      function initRichEditor(id, maxLength, parentEl) {
+        var editor = qs('#' + id + '-editor', parentEl);
+        var hidden = qs('#' + id + '-hidden', parentEl);
+        var counter = qs('#' + id + '-counter', parentEl);
+        var toolbar = qs('#' + id + '-toolbar', parentEl);
+        if (!editor || !hidden) return null;
+
+        var savedRange = null;
+
+        function saveSelection() {
+          var sel = window.getSelection();
+          if (sel.rangeCount > 0) {
+            var range = sel.getRangeAt(0);
+            if (editor.contains(range.commonAncestorContainer)) {
+              savedRange = range.cloneRange();
+            }
+          }
+        }
+
+        function restoreSelection() {
+          if (savedRange) {
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(savedRange);
+          }
+        }
+
+        // Sync hidden input
+        function syncContent() {
+          var html = editor.innerHTML;
+          // Clean up empty editor
+          if (html === '<br>' || html === '<div><br></div>') html = '';
+          hidden.value = html;
+        }
+
+        // Character counter (text only, no HTML)
+        function updateCounter() {
+          var textLen = (editor.textContent || editor.innerText || '').length;
+          counter.textContent = textLen + ' / ' + maxLength + ' znaków';
+          if (textLen > maxLength * 0.9) {
+            counter.style.color = '#d97706';
+          } else {
+            counter.style.color = '#666';
+          }
+        }
+
+        // Enforce max length on text content
+        editor.addEventListener('input', function() {
+          var textLen = (editor.textContent || editor.innerText || '').length;
+          if (textLen > maxLength) {
+            // Trim excess from the end
+            document.execCommand('undo');
+          }
+          syncContent();
+          updateCounter();
+        });
+
+        editor.addEventListener('paste', function(e) {
+          e.preventDefault();
+          var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+          var currentLen = (editor.textContent || editor.innerText || '').length;
+          var sel = window.getSelection();
+          var selectedLen = sel.toString().length;
+          var available = maxLength - currentLen + selectedLen;
+          if (text.length > available) {
+            text = text.substring(0, available);
+          }
+          document.execCommand('insertText', false, text);
+        });
+
+        // Toolbar button commands
+        toolbar.addEventListener('click', function(e) {
+          var btn = e.target.closest('.jg-rte-btn');
+          if (!btn) return;
+          e.preventDefault();
+          var cmd = btn.getAttribute('data-cmd');
+
+          if (cmd === 'link') {
+            saveSelection();
+            openLinkDialog();
+            return;
+          }
+          if (cmd === 'pinLink') {
+            saveSelection();
+            openPinDialog();
+            return;
+          }
+
+          editor.focus();
+          document.execCommand(cmd, false, null);
+          syncContent();
+        });
+
+        // --- Link dialog ---
+        var linkDialog = qs('#' + id + '-link-dialog', parentEl);
+        var linkText = qs('#' + id + '-link-text', parentEl);
+        var linkUrl = qs('#' + id + '-link-url', parentEl);
+        var linkInsertBtn = qs('#' + id + '-link-insert', parentEl);
+        var linkCancelBtn = qs('#' + id + '-link-cancel', parentEl);
+        var linkCloseBtn = qs('#' + id + '-link-close', parentEl);
+
+        function openLinkDialog() {
+          var sel = window.getSelection();
+          var selectedText = sel.toString();
+          linkText.value = selectedText;
+          linkUrl.value = '';
+          linkDialog.style.display = 'block';
+        }
+
+        function closeLinkDialog() {
+          linkDialog.style.display = 'none';
+        }
+
+        linkCancelBtn.addEventListener('click', closeLinkDialog);
+        linkCloseBtn.addEventListener('click', closeLinkDialog);
+
+        linkInsertBtn.addEventListener('click', function() {
+          var url = linkUrl.value.trim();
+          var text = linkText.value.trim() || url;
+          if (!url) return;
+          // Ensure URL has protocol
+          if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+          closeLinkDialog();
+          editor.focus();
+          restoreSelection();
+
+          var link = '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(text) + '</a>';
+          document.execCommand('insertHTML', false, link);
+          syncContent();
+          updateCounter();
+        });
+
+        // --- Pin link dialog ---
+        var pinDialog = qs('#' + id + '-pin-dialog', parentEl);
+        var pinSearch = qs('#' + id + '-pin-search', parentEl);
+        var pinResults = qs('#' + id + '-pin-results', parentEl);
+        var pinSelectedId = qs('#' + id + '-pin-selected-id', parentEl);
+        var pinSelectedTitle = qs('#' + id + '-pin-selected-title', parentEl);
+        var pinLinkText = qs('#' + id + '-pin-link-text', parentEl);
+        var pinInsertBtn = qs('#' + id + '-pin-insert', parentEl);
+        var pinCancelBtn = qs('#' + id + '-pin-cancel', parentEl);
+        var pinCloseBtn = qs('#' + id + '-pin-close', parentEl);
+
+        function openPinDialog() {
+          pinSearch.value = '';
+          pinResults.innerHTML = '';
+          pinSelectedId.value = '';
+          pinSelectedTitle.value = '';
+          pinLinkText.value = '';
+          pinDialog.style.display = 'block';
+          pinSearch.focus();
+        }
+
+        function closePinDialog() {
+          pinDialog.style.display = 'none';
+        }
+
+        pinCancelBtn.addEventListener('click', closePinDialog);
+        pinCloseBtn.addEventListener('click', closePinDialog);
+
+        // Pin autocomplete search
+        var pinSearchDebounce = null;
+        pinSearch.addEventListener('input', function() {
+          clearTimeout(pinSearchDebounce);
+          var query = pinSearch.value.trim().toLowerCase();
+          if (query.length < 2) {
+            pinResults.innerHTML = '<div class="jg-rte-pin-hint">Wpisz min. 2 znaki aby szukać...</div>';
+            return;
+          }
+          pinSearchDebounce = setTimeout(function() {
+            var matches = [];
+            for (var i = 0; i < ALL.length; i++) {
+              var pt = ALL[i];
+              if (pt.status !== 'publish') continue;
+              if ((pt.title || '').toLowerCase().indexOf(query) !== -1) {
+                matches.push(pt);
+                if (matches.length >= 10) break;
+              }
+            }
+            if (matches.length === 0) {
+              pinResults.innerHTML = '<div class="jg-rte-pin-hint">Nie znaleziono pinesek</div>';
+              return;
+            }
+            var html = '';
+            for (var j = 0; j < matches.length; j++) {
+              var m = matches[j];
+              var typeLabel = m.type === 'zgloszenie' ? 'Zgłoszenie' : (m.type === 'ciekawostka' ? 'Ciekawostka' : 'Miejsce');
+              var typeColor = m.type === 'zgloszenie' ? '#dc2626' : (m.type === 'ciekawostka' ? '#3b82f6' : '#15803d');
+              html += '<div class="jg-rte-pin-item" data-pin-id="' + m.id + '" data-pin-title="' + esc(m.title) + '" data-pin-slug="' + esc(m.slug || '') + '" data-pin-type="' + esc(m.type || '') + '">' +
+                '<span class="jg-rte-pin-type" style="background:' + typeColor + '">' + typeLabel + '</span> ' +
+                '<span class="jg-rte-pin-name">' + esc(m.title) + '</span>' +
+              '</div>';
+            }
+            pinResults.innerHTML = html;
+          }, 200);
+        });
+
+        // Pin result click
+        pinResults.addEventListener('click', function(e) {
+          var item = e.target.closest('.jg-rte-pin-item');
+          if (!item) return;
+          // Highlight selected
+          var prev = pinResults.querySelector('.jg-rte-pin-item--selected');
+          if (prev) prev.classList.remove('jg-rte-pin-item--selected');
+          item.classList.add('jg-rte-pin-item--selected');
+          pinSelectedId.value = item.getAttribute('data-pin-id');
+          pinSelectedTitle.value = item.getAttribute('data-pin-title');
+          pinLinkText.value = item.getAttribute('data-pin-title');
+        });
+
+        // Insert pin link
+        pinInsertBtn.addEventListener('click', function() {
+          var pinId = pinSelectedId.value;
+          var pinTitle = pinSelectedTitle.value;
+          if (!pinId) return;
+          var text = pinLinkText.value.trim() || pinTitle;
+
+          // Find the point to build its URL
+          var pinPoint = null;
+          for (var i = 0; i < ALL.length; i++) {
+            if (String(ALL[i].id) === String(pinId)) {
+              pinPoint = ALL[i];
+              break;
+            }
+          }
+
+          var pinUrl = '#point-' + pinId;
+          if (pinPoint && pinPoint.slug && pinPoint.type) {
+            var typePath = pinPoint.type === 'ciekawostka' ? 'ciekawostka' : (pinPoint.type === 'zgloszenie' ? 'zgloszenie' : 'miejsce');
+            pinUrl = window.location.origin + '/' + typePath + '/' + pinPoint.slug + '/';
+          }
+
+          closePinDialog();
+          editor.focus();
+          restoreSelection();
+
+          var link = '<a href="' + esc(pinUrl) + '" class="jg-pin-link" data-pin-id="' + esc(pinId) + '">&#128205; ' + esc(text) + '</a>';
+          document.execCommand('insertHTML', false, link);
+          syncContent();
+          updateCounter();
+        });
+
+        // Set initial content
+        function setContent(html) {
+          editor.innerHTML = html || '';
+          syncContent();
+          updateCounter();
+        }
+
+        // Get content
+        function getContent() {
+          syncContent();
+          return hidden.value;
+        }
+
+        return {
+          editor: editor,
+          hidden: hidden,
+          setContent: setContent,
+          getContent: getContent,
+          syncContent: syncContent,
+          updateCounter: updateCounter
+        };
+      }
+      // ===== END RICH TEXT EDITOR =====
+
       // Helper to format category slug to readable text
       // e.g. 'niepoprawnie_zaparkowane_auto' -> 'Niepoprawnie zaparkowane auto'
       function formatCategorySlug(slug) {
@@ -2330,7 +2649,7 @@
                 '<label class="cols-2" id="add-curiosity-category-field" style="display:none"><span>Kategoria ciekawostki</span> <select name="curiosity_category" id="add-curiosity-category-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
                 generateCuriosityCategoryOptions('') +
                 '</select></label>' +
-                '<label class="cols-2">Opis* <textarea name="content" rows="4" maxlength="800" id="add-content-input" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></textarea><div id="add-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">0 / 800 znaków</div></label>' +
+                '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('add-rte', 800, '', 4) + '</div>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
                 '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images[]" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
                 '<div class="cols-2" id="add-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
@@ -2354,21 +2673,14 @@
               var form = qs('#add-form', modalAdd);
               var msg = qs('#add-msg', modalAdd);
 
-              // Character counter for description
-              var contentInput = qs('#add-content-input', modalAdd);
-              var contentCounter = qs('#add-content-counter', modalAdd);
-              if (contentInput && contentCounter) {
-                contentInput.addEventListener('input', function() {
-                  var length = this.value.length;
-                  var maxLength = 800;
-                  contentCounter.textContent = length + ' / ' + maxLength + ' znaków';
-                  if (length > maxLength * 0.9) {
-                    contentCounter.style.color = '#d97706';
-                  } else {
-                    contentCounter.style.color = '#666';
-                  }
-                });
-              }
+              // Initialize rich text editor for description
+              var addRte = initRichEditor('add-rte', 800, modalAdd);
+
+              // On form submit, ensure the hidden input has content
+              var origAddSubmit = form.onsubmit;
+              form.addEventListener('submit', function() {
+                if (addRte) addRte.syncContent();
+              }, true);
 
               // Image preview functionality
               var imagesInput = qs('#add-images-input', modalAdd);
@@ -2500,6 +2812,18 @@
 
           form.onsubmit = function(e) {
             e.preventDefault();
+
+            // Sync rich editor content before building FormData
+            if (addRte) addRte.syncContent();
+
+            // Validate content is not empty
+            var contentVal = qs('#add-rte-hidden', modalAdd);
+            if (contentVal && !contentVal.value.replace(/<\/?[^>]+(>|$)/g, '').trim()) {
+              msg.textContent = 'Opis jest wymagany.';
+              msg.style.color = '#b91c1c';
+              return;
+            }
+
             msg.textContent = 'Wysyłanie...';
 
             var fd = new FormData(form);
@@ -5079,7 +5403,8 @@
                 '</div>';
             }
 
-            var contentText = p.content ? p.content.replace(/<\/?[^>]+(>|$)/g, "") : (p.excerpt || '');
+            var contentHtml = p.content || p.excerpt || '';
+            var contentText = contentHtml.replace(/<\/?[^>]+(>|$)/g, "");
 
             // Build existing images section
             var existingImagesHtml = '';
@@ -5195,7 +5520,7 @@
               '<div id="edit-address-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 6px rgba(0,0,0,0.1)"></div>' +
               '<small id="edit-address-hint" style="display:block;margin-top:4px;color:#666">Obecny adres. Wpisz nowy adres aby zmienić pozycję pinezki.</small>' +
               '</div>' +
-              '<label class="cols-2">Opis* <textarea name="content" rows="6" maxlength="' + maxDescLength + '" id="edit-content-input" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' + contentText + '</textarea><div id="edit-content-counter" style="font-size:12px;color:#666;margin-top:4px;text-align:right">' + currentDescLength + ' / ' + maxDescLength + ' znaków</div></label>' +
+              '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('edit-rte', maxDescLength, '', 6) + '</div>' +
               sponsoredContactHtml +
               existingImagesHtml +
               '<label class="cols-2">Dodaj nowe zdjęcia (max ' + maxTotalImages + ' łącznie) <input type="file" name="images[]" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
@@ -5220,21 +5545,16 @@
         var form = qs('#edit-form', modalEdit);
         var msg = qs('#edit-msg', modalEdit);
 
-        // Character counter for description in edit form
-        var editContentInput = qs('#edit-content-input', modalEdit);
-        var editContentCounter = qs('#edit-content-counter', modalEdit);
-        if (editContentInput && editContentCounter) {
-          editContentInput.addEventListener('input', function() {
-            var length = this.value.length;
-            var maxLength = parseInt(this.getAttribute('maxlength'));
-            editContentCounter.textContent = length + ' / ' + maxLength + ' znaków';
-            if (length > maxLength * 0.9) {
-              editContentCounter.style.color = '#d97706';
-            } else {
-              editContentCounter.style.color = '#666';
-            }
-          });
+        // Initialize rich text editor for edit form and set existing content
+        var editRte = initRichEditor('edit-rte', maxDescLength, modalEdit);
+        if (editRte) {
+          editRte.setContent(contentHtml);
         }
+
+        // On form submit, sync the rich editor content
+        form.addEventListener('submit', function() {
+          if (editRte) editRte.syncContent();
+        }, true);
 
         // Image preview functionality for edit
         var imagesInput = qs('#edit-images-input', modalEdit);
@@ -5507,6 +5827,18 @@
 
         form.onsubmit = function(e) {
           e.preventDefault();
+
+          // Sync rich editor content before building FormData
+          if (editRte) editRte.syncContent();
+
+          // Validate content is not empty
+          var editContentVal = qs('#edit-rte-hidden', modalEdit);
+          if (editContentVal && !editContentVal.value.replace(/<\/?[^>]+(>|$)/g, '').trim()) {
+            msg.textContent = 'Opis jest wymagany.';
+            msg.style.color = '#b91c1c';
+            return;
+          }
+
           msg.textContent = 'Zapisywanie...';
 
           if (!form.title.value.trim()) {
@@ -7027,6 +7359,28 @@
         var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + voteHtml + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
+
+        // Handle pin link clicks in content - open the linked pin's detail modal
+        var pinLinks = modalView.querySelectorAll('.jg-place-content a.jg-pin-link[data-pin-id]');
+        for (var pli = 0; pli < pinLinks.length; pli++) {
+          pinLinks[pli].addEventListener('click', function(e) {
+            e.preventDefault();
+            var targetId = this.getAttribute('data-pin-id');
+            if (!targetId) return;
+            // Find the point in ALL
+            for (var pi = 0; pi < ALL.length; pi++) {
+              if (String(ALL[pi].id) === String(targetId)) {
+                close(modalView);
+                setTimeout(function() {
+                  openDetails(ALL[pi]);
+                }, 200);
+                return;
+              }
+            }
+            // Fallback: use hash navigation
+            window.location.hash = '#point-' + targetId;
+          });
+        }
 
         // Track view for sponsored pins with unique visitor detection
         var viewStartTime = Date.now();
@@ -9456,7 +9810,7 @@
               '<label class="cols-2" id="add-curiosity-category-field" style="display:none"><span>Kategoria ciekawostki (opcjonalna)</span> <select name="curiosity_category" id="add-curiosity-category-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
               generateCuriosityCategoryOptions('') +
               '</select></label>' +
-              '<label class="cols-2">Opis* (max 800 znaków)<textarea name="content" id="add-content-input" required maxlength="800" placeholder="Opisz miejsce..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;resize:vertical;min-height:80px"></textarea><div id="add-content-counter" style="font-size:11px;color:#666;margin-top:4px">0 / 800 znaków</div></label>' +
+              '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis* (max 800 znaków)</label>' + buildRichEditorHtml('fab-rte', 800, '', 4) + '</div>' +
               '<label class="cols-2">Zdjęcia (opcjonalne, max 6)<input type="file" name="images" id="add-images-input" accept="image/*" multiple style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
               '<div id="add-images-preview" class="cols-2" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
               '<div class="cols-2" style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">' +
@@ -9529,21 +9883,13 @@
             var form = qs('#add-form', modalAdd);
             var msg = qs('#add-msg', modalAdd);
 
-            // Character counter for description
-            var contentInput = qs('#add-content-input', modalAdd);
-            var contentCounter = qs('#add-content-counter', modalAdd);
-            if (contentInput && contentCounter) {
-              contentInput.addEventListener('input', function() {
-                var length = this.value.length;
-                var maxLength = 800;
-                contentCounter.textContent = length + ' / ' + maxLength + ' znaków';
-                if (length > maxLength * 0.9) {
-                  contentCounter.style.color = '#d97706';
-                } else {
-                  contentCounter.style.color = '#666';
-                }
-              });
-            }
+            // Initialize rich text editor for FAB add form
+            var fabRte = initRichEditor('fab-rte', 800, modalAdd);
+
+            // On form submit, sync the rich editor content
+            form.addEventListener('submit', function() {
+              if (fabRte) fabRte.syncContent();
+            }, true);
 
             // Image preview functionality
             var imagesInput = qs('#add-images-input', modalAdd);
@@ -9626,6 +9972,18 @@
             // Form submission handler
             form.onsubmit = function(e) {
               e.preventDefault();
+
+              // Sync rich editor content before building FormData
+              if (fabRte) fabRte.syncContent();
+
+              // Validate content is not empty
+              var fabContentVal = qs('#fab-rte-hidden', modalAdd);
+              if (fabContentVal && !fabContentVal.value.replace(/<\/?[^>]+(>|$)/g, '').trim()) {
+                msg.textContent = 'Opis jest wymagany.';
+                msg.style.color = '#b91c1c';
+                return;
+              }
+
               msg.textContent = 'Wysyłanie...';
 
               var fd = new FormData(form);
