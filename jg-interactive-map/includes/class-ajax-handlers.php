@@ -566,6 +566,9 @@ class JG_Map_Ajax_Handlers {
         // Business promotion request (logged in users)
         add_action('wp_ajax_jg_request_promotion', array($this, 'request_promotion'));
 
+        // Page search for admin autocomplete
+        add_action('wp_ajax_jg_map_search_pages', array($this, 'search_pages'));
+
         // Track last login time
         add_action('wp_login', array($this, 'track_last_login'), 10, 2);
     }
@@ -8479,5 +8482,42 @@ class JG_Map_Ajax_Handlers {
         set_transient($place_rate_key, 1, WEEK_IN_SECONDS);
 
         wp_send_json_success(array('message' => 'Prośba o ofertę została wysłana.'));
+    }
+
+    /**
+     * Search WordPress pages/posts for admin autocomplete
+     */
+    public function search_pages() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Brak uprawnień'));
+            return;
+        }
+
+        check_ajax_referer('jg_map_search_pages');
+
+        $search = sanitize_text_field($_POST['search'] ?? '');
+        if (strlen($search) < 2) {
+            wp_send_json_success(array());
+            return;
+        }
+
+        $pages = get_posts(array(
+            'post_type' => array('page', 'post'),
+            'post_status' => 'publish',
+            's' => $search,
+            'posts_per_page' => 10,
+            'orderby' => 'relevance',
+        ));
+
+        $results = array();
+        foreach ($pages as $page) {
+            $results[] = array(
+                'id' => $page->ID,
+                'title' => $page->post_title,
+                'url' => get_permalink($page->ID),
+            );
+        }
+
+        wp_send_json_success($results);
     }
 }
