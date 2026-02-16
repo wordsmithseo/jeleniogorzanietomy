@@ -1308,8 +1308,8 @@
               '<strong id="' + id + '-link-dialog-title">Wstaw link</strong>' +
               '<button type="button" class="jg-rte-link-close" id="' + id + '-link-close">&times;</button>' +
             '</div>' +
-            '<label>Tekst linku<input type="text" id="' + id + '-link-text" placeholder="Tekst do wyświetlenia" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px"></label>' +
-            '<label style="margin-top:8px;display:block">Adres URL<input type="text" id="' + id + '-link-url" placeholder="https://..." style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px"></label>' +
+            '<label>Tekst linku<input type="text" id="' + id + '-link-text" placeholder="Tekst do wyświetlenia" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+            '<label style="margin-top:8px;display:block">Adres URL<input type="text" id="' + id + '-link-url" placeholder="https://..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
             '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">' +
               '<button type="button" class="jg-btn jg-btn--ghost jg-btn--sm" id="' + id + '-link-cancel">Anuluj</button>' +
               '<button type="button" class="jg-btn jg-btn--sm" id="' + id + '-link-insert">Wstaw</button>' +
@@ -1321,11 +1321,11 @@
               '<strong>Link do pineski</strong>' +
               '<button type="button" class="jg-rte-link-close" id="' + id + '-pin-close">&times;</button>' +
             '</div>' +
-            '<label>Szukaj pineski<input type="text" id="' + id + '-pin-search" placeholder="Zacznij wpisywać nazwę..." autocomplete="off" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px"></label>' +
+            '<label>Szukaj pineski<input type="text" id="' + id + '-pin-search" placeholder="Zacznij wpisywać nazwę..." autocomplete="off" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
             '<div class="jg-rte-pin-results" id="' + id + '-pin-results"></div>' +
             '<input type="hidden" id="' + id + '-pin-selected-id">' +
             '<input type="hidden" id="' + id + '-pin-selected-title">' +
-            '<label style="margin-top:8px;display:block">Tekst linku (opcjonalnie)<input type="text" id="' + id + '-pin-link-text" placeholder="Domyślnie: nazwa pineski" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;margin-top:4px"></label>' +
+            '<label style="margin-top:8px;display:block">Tekst linku (opcjonalnie)<input type="text" id="' + id + '-pin-link-text" placeholder="Domyślnie: nazwa pineski" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
             '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">' +
               '<button type="button" class="jg-btn jg-btn--ghost jg-btn--sm" id="' + id + '-pin-cancel">Anuluj</button>' +
               '<button type="button" class="jg-btn jg-btn--sm" id="' + id + '-pin-insert">Wstaw</button>' +
