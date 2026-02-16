@@ -716,11 +716,17 @@ class JG_Interactive_Map {
 
             <?php
             $sp_tags = !empty($point['tags']) ? json_decode($point['tags'], true) : array();
-            if (!empty($sp_tags)): ?>
+            if (!empty($sp_tags)):
+                $catalog_url = $this->get_catalog_page_url();
+            ?>
             <div class="jg-place-tags">
-                <?php foreach ($sp_tags as $sp_tag): ?>
-                    <span class="jg-place-tag">#<?php echo esc_html($sp_tag); ?></span>
-                <?php endforeach; ?>
+                <?php foreach ($sp_tags as $sp_tag):
+                    if ($catalog_url): ?>
+                        <a href="<?php echo esc_url(add_query_arg('tag', $sp_tag, $catalog_url)); ?>" class="jg-place-tag" rel="tag">#<?php echo esc_html($sp_tag); ?></a>
+                    <?php else: ?>
+                        <span class="jg-place-tag">#<?php echo esc_html($sp_tag); ?></span>
+                    <?php endif;
+                endforeach; ?>
             </div>
             <?php endif; ?>
 
@@ -1069,11 +1075,17 @@ class JG_Interactive_Map {
     <div><?php echo wp_kses_post($point['content']); ?></div>
     <?php
     $fb_tags = !empty($point['tags']) ? json_decode($point['tags'], true) : array();
-    if (!empty($fb_tags)): ?>
+    if (!empty($fb_tags)):
+        $fb_catalog_url = $this->get_catalog_page_url();
+    ?>
     <div class="jg-place-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">
-        <?php foreach ($fb_tags as $fb_tag): ?>
-            <span style="display:inline-block;padding:3px 10px;border-radius:14px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:0.85em;color:#8d2324;font-weight:500">#<?php echo esc_html($fb_tag); ?></span>
-        <?php endforeach; ?>
+        <?php foreach ($fb_tags as $fb_tag):
+            if ($fb_catalog_url): ?>
+                <a href="<?php echo esc_url(add_query_arg('tag', $fb_tag, $fb_catalog_url)); ?>" rel="tag" style="display:inline-block;padding:3px 10px;border-radius:14px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:0.85em;color:#8d2324;font-weight:500;text-decoration:none">#<?php echo esc_html($fb_tag); ?></a>
+            <?php else: ?>
+                <span style="display:inline-block;padding:3px 10px;border-radius:14px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:0.85em;color:#8d2324;font-weight:500">#<?php echo esc_html($fb_tag); ?></span>
+            <?php endif;
+        endforeach; ?>
     </div>
     <?php endif; ?>
     <div class="jg-fb-cta">
@@ -1108,6 +1120,26 @@ class JG_Interactive_Map {
             'svg'  => 'image/svg+xml',
         );
         return isset($types[$extension]) ? $types[$extension] : 'image/jpeg';
+    }
+
+    /**
+     * Get the URL of the page containing [jg_map_directory] shortcode
+     */
+    private function get_catalog_page_url() {
+        $cached = get_transient('jg_map_catalog_url');
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        global $wpdb;
+        $page_id = $wpdb->get_var(
+            "SELECT ID FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type IN ('page','post') AND post_content LIKE '%[jg_map_directory%' LIMIT 1"
+        );
+
+        $url = $page_id ? get_permalink($page_id) : '';
+        set_transient('jg_map_catalog_url', $url, HOUR_IN_SECONDS);
+
+        return $url;
     }
 
     /**
@@ -1612,6 +1644,20 @@ class JG_Interactive_Map {
             }
 
             $xml .= '    </url>' . "\n";
+        }
+
+        // Add tag filter pages to sitemap for better discoverability
+        $catalog_url = $this->get_catalog_page_url();
+        if ($catalog_url) {
+            $all_tags = JG_Map_Database::get_all_tags();
+            foreach ($all_tags as $tag) {
+                $tag_url = add_query_arg('tag', $tag, $catalog_url);
+                $xml .= '    <url>' . "\n";
+                $xml .= '        <loc>' . esc_url($tag_url) . '</loc>' . "\n";
+                $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+                $xml .= '        <priority>0.5</priority>' . "\n";
+                $xml .= '    </url>' . "\n";
+            }
         }
 
         $xml .= '</urlset>' . "\n";

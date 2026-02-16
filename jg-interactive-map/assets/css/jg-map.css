@@ -5804,6 +5804,15 @@ body.jg-fullscreen-active {
   color: #8d2324;
   font-weight: 500;
   line-height: 1.5;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+a.jg-place-tag:hover {
+  background: #8d2324;
+  color: #fff;
+  border-color: #8d2324;
+  cursor: pointer;
 }
 
 /* ===== CATALOG INLINE TAGS ===== */
@@ -5815,4 +5824,9 @@ body.jg-fullscreen-active {
   font-size: 12px;
   color: #8d2324;
   font-weight: 500;
+  text-decoration: none;
+}
+
+a.jg-dir-tag-inline:hover {
+  text-decoration: underline;
 }

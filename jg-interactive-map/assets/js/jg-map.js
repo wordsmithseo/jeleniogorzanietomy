@@ -7540,12 +7540,18 @@
           '</div>';
         }
 
-        // Build tags display
+        // Build tags display (clickable, linking to catalog)
         var tagsHtml = '';
         if (p.tags && p.tags.length > 0) {
+          var catalogBase = CFG.catalogUrl || '';
           tagsHtml = '<div class="jg-place-tags">';
           p.tags.forEach(function(tag) {
-            tagsHtml += '<span class="jg-place-tag">#' + esc(tag) + '</span>';
+            if (catalogBase) {
+              var sep = catalogBase.indexOf('?') !== -1 ? '&' : '?';
+              tagsHtml += '<a href="' + esc(catalogBase + sep + 'tag=' + encodeURIComponent(tag)) + '" class="jg-place-tag" rel="tag">#' + esc(tag) + '</a>';
+            } else {
+              tagsHtml += '<span class="jg-place-tag">#' + esc(tag) + '</span>';
+            }
           });
           tagsHtml += '</div>';
         }

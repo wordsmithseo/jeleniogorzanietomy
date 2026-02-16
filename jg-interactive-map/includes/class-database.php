@@ -221,7 +221,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.16.0'; // Added tags for points
+        $current_schema_version = '3.16.1'; // Fix unicode escapes in tags
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -498,6 +498,9 @@ class JG_Map_Database {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN tags varchar(500) DEFAULT NULL AFTER ip_address");
         }
 
+        // Fix tags stored with unicode escapes (e.g. "G\u00f3ry" -> "Góry")
+        self::migrate_fix_unicode_tags();
+
         // Run migration to strip slashes from existing data (one-time)
         self::migrate_strip_slashes();
 
@@ -569,6 +572,61 @@ class JG_Map_Database {
 
         // Mark migration as complete
         update_option('jg_map_slashes_migrated', true);
+    }
+
+    /**
+     * Migration: Fix tags stored with JSON unicode escapes (\u00f3 -> ó)
+     * Re-encode tags with JSON_UNESCAPED_UNICODE so LIKE queries work with Polish characters
+     */
+    public static function migrate_fix_unicode_tags() {
+        if (get_option('jg_map_tags_unicode_fixed', false)) {
+            return;
+        }
+
+        global $wpdb;
+        $table = self::get_points_table();
+
+        // Find rows with unicode escapes in tags
+        $rows = $wpdb->get_results(
+            "SELECT id, tags FROM $table WHERE tags IS NOT NULL AND tags LIKE '%\\\\u0%'",
+            ARRAY_A
+        );
+
+        foreach ($rows as $row) {
+            $decoded = json_decode($row['tags'], true);
+            if (is_array($decoded)) {
+                $fixed = json_encode($decoded, JSON_UNESCAPED_UNICODE);
+                $wpdb->update($table, array('tags' => $fixed), array('id' => $row['id']));
+            }
+        }
+
+        // Also fix tags in history table (old_values/new_values JSON)
+        $history_table = self::get_history_table();
+        $history_rows = $wpdb->get_results(
+            "SELECT id, old_values, new_values FROM $history_table WHERE (old_values LIKE '%\\\\u0%' AND old_values LIKE '%tags%') OR (new_values LIKE '%\\\\u0%' AND new_values LIKE '%tags%')",
+            ARRAY_A
+        );
+
+        foreach ($history_rows as $row) {
+            $updates = array();
+            foreach (array('old_values', 'new_values') as $field) {
+                if (!empty($row[$field]) && strpos($row[$field], '\\u0') !== false) {
+                    $data = json_decode($row[$field], true);
+                    if (is_array($data) && isset($data['tags'])) {
+                        $tags_val = is_string($data['tags']) ? json_decode($data['tags'], true) : $data['tags'];
+                        if (is_array($tags_val)) {
+                            $data['tags'] = json_encode($tags_val, JSON_UNESCAPED_UNICODE);
+                        }
+                        $updates[$field] = json_encode($data, JSON_UNESCAPED_UNICODE);
+                    }
+                }
+            }
+            if (!empty($updates)) {
+                $wpdb->update($history_table, $updates, array('id' => $row['id']));
+            }
+        }
+
+        update_option('jg_map_tags_unicode_fixed', true);
     }
 
     /**

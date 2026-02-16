@@ -1716,7 +1716,7 @@ class JG_Map_Ajax_Handlers {
             'author_hidden' => !$public_name,
             'images' => json_encode($images),
             'featured_image_index' => !empty($images) ? 0 : null, // Auto-set first image as featured
-            'tags' => !empty($tags) ? json_encode($tags) : null,
+            'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : null,
             'ip_address' => $ip_address,
             'created_at' => current_time('mysql', true),  // GMT time for consistency
             'updated_at' => current_time('mysql', true)   // GMT time for consistency
@@ -1964,7 +1964,7 @@ class JG_Map_Ajax_Handlers {
             }
 
             // Update tags
-            $update_data['tags'] = !empty($tags) ? json_encode($tags) : null;
+            $update_data['tags'] = !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : null;
 
             // Update lat/lng if provided (from geocoding)
             if ($lat !== null && $lng !== null) {
@@ -2027,7 +2027,7 @@ class JG_Map_Ajax_Handlers {
                 'type' => $type,
                 'category' => $category,
                 'content' => $content,
-                'tags' => !empty($tags) ? json_encode($tags) : '[]',
+                'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : '[]',
                 'lat' => ($lat !== null) ? $lat : $point['lat'],
                 'lng' => ($lng !== null) ? $lng : $point['lng'],
                 'address' => !empty($address) ? $address : ($point['address'] ?? ''),
@@ -2089,7 +2089,7 @@ class JG_Map_Ajax_Handlers {
                 'type' => $type,
                 'category' => $category,
                 'content' => $content,
-                'tags' => !empty($tags) ? json_encode($tags) : '[]',
+                'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : '[]',
                 'new_images' => json_encode($new_images) // Store new images separately for moderation
             );
 
@@ -2672,7 +2672,7 @@ class JG_Map_Ajax_Handlers {
             'type' => $type,
             'content' => $content,
             'excerpt' => wp_trim_words($content, 20),
-            'tags' => !empty($tags) ? json_encode($tags) : null
+            'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : null
         );
 
         // Add lat/lng if provided (from address geocoding)
@@ -4218,7 +4218,7 @@ class JG_Map_Ajax_Handlers {
         // Add tags if present
         if (isset($new_values['tags'])) {
             $tags_data = is_string($new_values['tags']) ? json_decode($new_values['tags'], true) : $new_values['tags'];
-            $update_data['tags'] = is_array($tags_data) && !empty($tags_data) ? json_encode($tags_data) : null;
+            $update_data['tags'] = is_array($tags_data) && !empty($tags_data) ? json_encode($tags_data, JSON_UNESCAPED_UNICODE) : null;
         }
 
         // Add lat/lng if present (from address geocoding)
