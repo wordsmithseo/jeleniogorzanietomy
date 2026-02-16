@@ -1890,8 +1890,8 @@ body.jg-fullscreen-active {
   flex-wrap: wrap;
   gap: 3px;
   padding: 6px 8px;
-  background: #111;
-  border-bottom: 1px solid #333;
+  background: #fff;
+  border-bottom: 2px solid #8d2324;
   border-radius: 7px 7px 0 0;
   align-items: center;
 }
@@ -1900,33 +1900,42 @@ body.jg-fullscreen-active {
   align-items: center;
   justify-content: center;
   min-width: 30px;
-  height: 28px;
+  height: 30px;
   padding: 0 8px;
-  border: 1px solid transparent;
+  border: 1px solid #e5e7eb;
   border-radius: 6px;
-  background: transparent;
+  background: #fff;
   cursor: pointer;
   font-size: 13px;
-  color: #ccc;
+  line-height: 30px;
+  color: #8d2324;
   transition: all 0.15s;
   white-space: nowrap;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  box-sizing: border-box;
+}
+.jg-rte-btn b,
+.jg-rte-btn i,
+.jg-rte-btn u {
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
 }
 .jg-rte-btn:hover {
-  background: #333;
-  color: #fff;
-  border-color: #444;
-}
-.jg-rte-btn:active {
   background: #8d2324;
   color: #fff;
   border-color: #8d2324;
+}
+.jg-rte-btn:active {
+  background: #6b1a1b;
+  color: #fff;
+  border-color: #6b1a1b;
 }
 .jg-rte-sep {
   display: inline-block;
   width: 1px;
   height: 18px;
-  background: #444;
+  background: #e5e7eb;
   margin: 0 4px;
   flex-shrink: 0;
 }
@@ -2106,6 +2115,7 @@ body.jg-fullscreen-active {
     height: 26px;
     padding: 0 5px;
     font-size: 12px;
+    line-height: 26px;
   }
   .jg-rte-sep {
     height: 16px;
