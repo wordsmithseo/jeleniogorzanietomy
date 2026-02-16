@@ -226,15 +226,48 @@ class JG_Map_Shortcode {
 
         $per_page = max(10, min(100, (int) $atts['per_page']));
         $current_page = max(1, (int) (isset($_GET['katalog-strona']) ? $_GET['katalog-strona'] : 1));
-        $offset = ($current_page - 1) * $per_page;
+
+        // Tag filter
+        $active_tag = isset($_GET['tag']) ? sanitize_text_field(wp_unslash($_GET['tag'])) : '';
 
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
+        // Build WHERE clause
+        $where = "status = 'publish' AND slug IS NOT NULL AND slug != ''";
+        $where_args = array();
+
+        if ($active_tag !== '') {
+            // Filter by tag - search inside JSON array
+            // Match tag as exact element: ["..","tag",".."] or ["tag"] or ["tag",..] or [..,"tag"]
+            $like_pattern = '%' . $wpdb->esc_like('"' . $active_tag . '"') . '%';
+            $where .= " AND tags LIKE %s";
+            $where_args[] = $like_pattern;
+        }
+
         // Get total count
-        $total = (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM $table WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''"
-        );
+        if (!empty($where_args)) {
+            $total = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE $where",
+                ...$where_args
+            ));
+        } else {
+            $total = (int) $wpdb->get_var(
+                "SELECT COUNT(*) FROM $table WHERE $where"
+            );
+        }
+
+        if ($total === 0 && $active_tag !== '') {
+            // No results for tag filter - show message + tag cloud
+            $base_url = remove_query_arg(array('katalog-strona', 'tag'));
+            ob_start();
+            echo '<div class="jg-directory">';
+            $this->render_tag_cloud($table, $base_url, $active_tag);
+            echo '<p style="color:#6b7280;margin-top:16px">Brak miejsc z tagiem <strong>#' . esc_html($active_tag) . '</strong>.</p>';
+            echo '<p><a href="' . esc_url($base_url) . '" style="color:#2563eb">Pokaż wszystkie miejsca</a></p>';
+            echo '</div>';
+            return ob_get_clean();
+        }
 
         if ($total === 0) {
             return '<p>Brak miejsc w katalogu.</p>';
@@ -245,15 +278,15 @@ class JG_Map_Shortcode {
         $offset = ($current_page - 1) * $per_page;
 
         // Get paginated points
+        $query_args = array_merge($where_args, array($per_page, $offset));
         $points = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT title, slug, type, address, tags
                  FROM $table
-                 WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''
+                 WHERE $where
                  ORDER BY type ASC, title ASC
                  LIMIT %d OFFSET %d",
-                $per_page,
-                $offset
+                ...$query_args
             ),
             ARRAY_A
         );
@@ -275,31 +308,10 @@ class JG_Map_Shortcode {
             $grouped[$p['type']][] = $p;
         }
 
-        // Get current page URL without katalog-strona param
+        // Base URL without pagination (keep tag filter if present for pagination links)
         $base_url = remove_query_arg('katalog-strona');
-
-        // Build tag cloud from all published points
-        $all_tag_counts = array();
-        $tag_rows = $wpdb->get_col(
-            "SELECT tags FROM $table WHERE status = 'publish' AND tags IS NOT NULL AND tags != ''"
-        );
-        foreach ($tag_rows as $tags_json) {
-            $tag_list = json_decode($tags_json, true);
-            if (is_array($tag_list)) {
-                foreach ($tag_list as $tag) {
-                    $tag = trim($tag);
-                    if ($tag !== '') {
-                        $lower = mb_strtolower($tag);
-                        if (!isset($all_tag_counts[$lower])) {
-                            $all_tag_counts[$lower] = array('label' => $tag, 'count' => 0);
-                        }
-                        $all_tag_counts[$lower]['count']++;
-                    }
-                }
-            }
-        }
-        // Sort by count descending
-        uasort($all_tag_counts, function($a, $b) { return $b['count'] - $a['count']; });
+        // Base URL without tag and pagination (for tag cloud links)
+        $base_url_no_tag = remove_query_arg(array('katalog-strona', 'tag'));
 
         ob_start();
         ?>
@@ -324,7 +336,12 @@ class JG_Map_Shortcode {
                     background: #f3f4f6; border: 1px solid #e5e7eb; transition: all 0.15s;
                 }
                 .jg-dir-tag-item a:hover { background: #8d2324; color: #fff; border-color: #8d2324; }
+                .jg-dir-tag-item a.jg-dir-tag-active { background: #8d2324; color: #fff; border-color: #8d2324; }
                 .jg-dir-tag-count { font-size: 11px; color: #9ca3af; margin-left: 2px; }
+                .jg-dir-tag-active .jg-dir-tag-count { color: rgba(255,255,255,0.7); }
+                .jg-dir-active-filter { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 10px 16px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; font-size: 14px; color: #78350f; }
+                .jg-dir-active-filter a { color: #8d2324; font-weight: 600; text-decoration: none; }
+                .jg-dir-active-filter a:hover { text-decoration: underline; }
                 .jg-dir-pagination { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
                 .jg-dir-pagination a, .jg-dir-pagination span {
                     display: inline-flex; align-items: center; justify-content: center;
@@ -338,17 +355,14 @@ class JG_Map_Shortcode {
                 .jg-dir-info { font-size: 13px; color: #9ca3af; margin-top: 8px; }
             </style>
 
-            <?php if (!empty($all_tag_counts)): ?>
-                <nav class="jg-dir-tag-cloud" aria-label="Chmurka tagów">
-                    <h3>Tagi</h3>
-                    <ul class="jg-dir-tag-list">
-                        <?php foreach ($all_tag_counts as $tag_data): ?>
-                            <li class="jg-dir-tag-item">
-                                <a href="<?php echo esc_url(home_url('/mapa/?tag=' . urlencode($tag_data['label']))); ?>" rel="tag">#<?php echo esc_html($tag_data['label']); ?><span class="jg-dir-tag-count">(<?php echo intval($tag_data['count']); ?>)</span></a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </nav>
+            <?php $this->render_tag_cloud($table, $base_url_no_tag, $active_tag); ?>
+
+            <?php if ($active_tag !== ''): ?>
+                <div class="jg-dir-active-filter">
+                    Filtrowanie po tagu: <strong>#<?php echo esc_html($active_tag); ?></strong>
+                    <a href="<?php echo esc_url($base_url_no_tag); ?>">Usuń filtr &times;</a>
+                    <span style="color:#9ca3af;margin-left:auto;font-size:12px"><?php echo $total; ?> <?php echo $total === 1 ? 'wynik' : ($total < 5 ? 'wyniki' : 'wyników'); ?></span>
+                </div>
             <?php endif; ?>
 
             <?php foreach ($type_labels as $type => $label): ?>
@@ -402,6 +416,54 @@ class JG_Map_Shortcode {
         </div>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * Render tag cloud for directory
+     */
+    private function render_tag_cloud($table, $base_url, $active_tag = '') {
+        global $wpdb;
+
+        $all_tag_counts = array();
+        $tag_rows = $wpdb->get_col(
+            "SELECT tags FROM $table WHERE status = 'publish' AND tags IS NOT NULL AND tags != ''"
+        );
+        foreach ($tag_rows as $tags_json) {
+            $tag_list = json_decode($tags_json, true);
+            if (is_array($tag_list)) {
+                foreach ($tag_list as $tag) {
+                    $tag = trim($tag);
+                    if ($tag !== '') {
+                        $lower = mb_strtolower($tag);
+                        if (!isset($all_tag_counts[$lower])) {
+                            $all_tag_counts[$lower] = array('label' => $tag, 'count' => 0);
+                        }
+                        $all_tag_counts[$lower]['count']++;
+                    }
+                }
+            }
+        }
+
+        if (empty($all_tag_counts)) {
+            return;
+        }
+
+        uasort($all_tag_counts, function($a, $b) { return $b['count'] - $a['count']; });
+        ?>
+        <nav class="jg-dir-tag-cloud" aria-label="Chmurka tagów">
+            <h3>Tagi</h3>
+            <ul class="jg-dir-tag-list">
+                <?php foreach ($all_tag_counts as $tag_data):
+                    $is_active = ($active_tag !== '' && mb_strtolower($active_tag) === mb_strtolower($tag_data['label']));
+                    $tag_url = $is_active ? $base_url : add_query_arg('tag', $tag_data['label'], $base_url);
+                ?>
+                    <li class="jg-dir-tag-item">
+                        <a href="<?php echo esc_url($tag_url); ?>" rel="tag"<?php echo $is_active ? ' class="jg-dir-tag-active"' : ''; ?>>#<?php echo esc_html($tag_data['label']); ?><span class="jg-dir-tag-count">(<?php echo intval($tag_data['count']); ?>)</span></a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </nav>
+        <?php
     }
 
     /**
