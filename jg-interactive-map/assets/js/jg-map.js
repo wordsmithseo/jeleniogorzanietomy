@@ -3914,7 +3914,8 @@
               linkedin_url: r.linkedin_url || null,
               tiktok_url: r.tiktok_url || null,
               is_own_place: !!r.is_own_place,
-              edit_locked: !!r.edit_locked
+              edit_locked: !!r.edit_locked,
+              tags: r.tags || []
             };
           });
 
