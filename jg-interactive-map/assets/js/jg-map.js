@@ -865,43 +865,17 @@
         });
       }
 
-      // Login button handler
-      var loginBtn = document.getElementById('jg-login-btn');
-      if (loginBtn && !loginBtn.jgHandlerAttached) {
-        loginBtn.addEventListener('click', openLoginModal);
-        loginBtn.jgHandlerAttached = true;
-      }
-
-      // Register button handler
-      var registerBtn = document.getElementById('jg-register-btn');
-      if (registerBtn && !registerBtn.jgHandlerAttached) {
-        registerBtn.addEventListener('click', function() {
-          // Check registration status on server (real-time check)
-          jQuery.ajax({
-            url: CFG.ajax,
-            type: 'POST',
-            data: {
-              action: 'jg_check_registration_status'
-            },
-            success: function(response) {
-              if (response.success && response.data) {
-                if (!response.data.enabled) {
-                  // Registration disabled - show alert
-                  showAlert(response.data.message || 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
-                  return;
-                }
-                // Registration enabled - show form
-                showRegistrationForm();
-              } else {
-                showAlert('Wystąpił błąd podczas sprawdzania dostępności rejestracji.');
-              }
-            },
-            error: function() {
-              showAlert('Wystąpił błąd połączenia. Spróbuj ponownie później.');
-            }
-          });
+      // Single auth button handler (replaces separate login/register buttons)
+      var authBtn = document.getElementById('jg-auth-btn');
+      if (authBtn && !authBtn.jgHandlerAttached) {
+        authBtn.addEventListener('click', function() {
+          if (typeof window.openAuthModal === 'function') {
+            window.openAuthModal('register');
+          } else {
+            openLoginModal();
+          }
         });
-        registerBtn.jgHandlerAttached = true;
+        authBtn.jgHandlerAttached = true;
       }
 
       // Registration form function
@@ -7118,7 +7092,11 @@
           promoBtn.onclick = function() {
             // Non-logged user: show login/register modal on register tab
             if (!CFG.isLoggedIn) {
-              showPromoAuthModal();
+              if (typeof window.openAuthModal === 'function') {
+                window.openAuthModal('register', 'Aby wysłać zapytanie o ofertę promocji, musisz posiadać konto w naszym portalu. Zarejestruj się lub zaloguj, aby kontynuować.');
+              } else {
+                showPromoAuthModal();
+              }
               return;
             }
             promoBtn.disabled = true;

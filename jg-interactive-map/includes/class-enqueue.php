@@ -134,7 +134,11 @@ class JG_Map_Enqueue {
             'ajax' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('jg_map_nonce'),
             'registrationEnabled' => (bool) get_option('jg_map_registration_enabled', 1),
-            'registrationDisabledMessage' => get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.')
+            'registrationDisabledMessage' => get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.'),
+            'termsUrl' => get_option('jg_map_terms_url', ''),
+            'termsContent' => get_option('jg_map_terms_content', ''),
+            'privacyUrl' => get_option('jg_map_privacy_url', ''),
+            'privacyContent' => get_option('jg_map_privacy_content', ''),
         ));
 
         // Load session monitor script on ALL pages (for logged in users)
@@ -325,7 +329,11 @@ class JG_Map_Enqueue {
                 'reportReasons' => JG_Map_Ajax_Handlers::get_report_categories(),
                 'placeCategories' => JG_Map_Ajax_Handlers::get_place_categories(),
                 'curiosityCategories' => JG_Map_Ajax_Handlers::get_curiosity_categories(),
-                'noPhotoSidebar' => home_url('/wp-content/uploads/2026/02/no_photo_sidebar.jpg')
+                'noPhotoSidebar' => home_url('/wp-content/uploads/2026/02/no_photo_sidebar.jpg'),
+                'termsUrl' => get_option('jg_map_terms_url', ''),
+                'termsContent' => get_option('jg_map_terms_content', ''),
+                'privacyUrl' => get_option('jg_map_privacy_url', ''),
+                'privacyContent' => get_option('jg_map_privacy_content', ''),
             )
         );
 
@@ -509,8 +517,7 @@ class JG_Map_Enqueue {
                     <?php endif; ?>
                     <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn">Wyloguj</a>
                 <?php else : ?>
-                    <button id="jg-login-btn" class="jg-top-bar-btn">Zaloguj</button>
-                    <button id="jg-register-btn" class="jg-top-bar-btn">Zarejestruj</button>
+                    <button id="jg-auth-btn" class="jg-top-bar-btn">Zarejestruj / Zaloguj</button>
                 <?php endif; ?>
             </div>
         </div>
