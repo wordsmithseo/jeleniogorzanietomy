@@ -482,6 +482,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_banner_click', array($this, 'track_banner_click'));
         add_action('wp_ajax_jg_get_banner', array($this, 'get_banner'));
         add_action('wp_ajax_nopriv_jg_get_banner', array($this, 'get_banner'));
+        add_action('wp_ajax_jg_get_tags', array($this, 'get_tags'));
+        add_action('wp_ajax_nopriv_jg_get_tags', array($this, 'get_tags'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -912,10 +914,12 @@ class JG_Map_Ajax_Handlers {
                                 'prev_type' => $old_values['type'] ?? '',
                                 'prev_category' => $old_values['category'] ?? null,
                                 'prev_content' => $old_values['content'] ?? '',
+                                'prev_tags' => $old_values['tags'] ?? '[]',
                                 'new_title' => $new_values['title'] ?? '',
                                 'new_type' => $new_values['type'] ?? '',
                                 'new_category' => $new_values['category'] ?? null,
                                 'new_content' => $new_values['content'] ?? '',
+                                'new_tags' => $new_values['tags'] ?? '[]',
                                 'prev_website' => $old_values['website'] ?? null,
                                 'new_website' => $new_values['website'] ?? null,
                                 'prev_phone' => $old_values['phone'] ?? null,
@@ -1003,6 +1007,7 @@ class JG_Map_Ajax_Handlers {
                 'tiktok_url' => $point['tiktok_url'] ?? null,
                 'cta_enabled' => (bool)($point['cta_enabled'] ?? 0),
                 'cta_type' => $point['cta_type'] ?? null,
+                'tags' => !empty($point['tags']) ? json_decode($point['tags'], true) : array(),
                 'status' => $point['status'],
                 'status_label' => $status_label,
                 'report_status' => $point['report_status'],
@@ -1064,6 +1069,14 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success($result);
+    }
+
+    /**
+     * Get all existing tags for autocomplete suggestions
+     */
+    public function get_tags() {
+        $tags = JG_Map_Database::get_all_tags();
+        wp_send_json_success($tags);
     }
 
     /**
@@ -1567,6 +1580,18 @@ class JG_Map_Ajax_Handlers {
         $public_name = isset($_POST['public_name']);
         $category = sanitize_text_field($_POST['category'] ?? '');
 
+        // Process tags (max 5)
+        $tags_raw = isset($_POST['tags']) ? wp_unslash($_POST['tags']) : '';
+        $tags = array();
+        if (!empty($tags_raw)) {
+            $tags_array = is_array($tags_raw) ? $tags_raw : explode(',', $tags_raw);
+            foreach ($tags_array as $tag) {
+                $tag = sanitize_text_field(trim($tag));
+                if ($tag !== '' && count($tags) < 5) {
+                    $tags[] = $tag;
+                }
+            }
+        }
 
         if (empty($title) || $lat === 0.0 || $lng === 0.0) {
             wp_send_json_error(array('message' => 'Wypełnij wszystkie wymagane pola'));
@@ -1691,6 +1716,7 @@ class JG_Map_Ajax_Handlers {
             'author_hidden' => !$public_name,
             'images' => json_encode($images),
             'featured_image_index' => !empty($images) ? 0 : null, // Auto-set first image as featured
+            'tags' => !empty($tags) ? json_encode($tags) : null,
             'ip_address' => $ip_address,
             'created_at' => current_time('mysql', true),  // GMT time for consistency
             'updated_at' => current_time('mysql', true)   // GMT time for consistency
@@ -1819,6 +1845,19 @@ class JG_Map_Ajax_Handlers {
         $cta_enabled = isset($_POST['cta_enabled']) ? 1 : 0;
         $cta_type = sanitize_text_field($_POST['cta_type'] ?? '');
 
+        // Process tags (max 5)
+        $tags_raw = isset($_POST['tags']) ? wp_unslash($_POST['tags']) : '';
+        $tags = array();
+        if (!empty($tags_raw)) {
+            $tags_array = is_array($tags_raw) ? $tags_raw : explode(',', $tags_raw);
+            foreach ($tags_array as $tag) {
+                $tag = sanitize_text_field(trim($tag));
+                if ($tag !== '' && count($tags) < 5) {
+                    $tags[] = $tag;
+                }
+            }
+        }
+
         if (empty($title)) {
             wp_send_json_error(array('message' => 'Tytuł jest wymagany'));
             exit;
@@ -1924,6 +1963,9 @@ class JG_Map_Ajax_Handlers {
                 $update_data['category'] = null;
             }
 
+            // Update tags
+            $update_data['tags'] = !empty($tags) ? json_encode($tags) : null;
+
             // Update lat/lng if provided (from geocoding)
             if ($lat !== null && $lng !== null) {
                 $update_data['lat'] = $lat;
@@ -1974,6 +2016,7 @@ class JG_Map_Ajax_Handlers {
                 'type' => $point['type'],
                 'category' => $point['category'] ?? '',
                 'content' => $point['content'],
+                'tags' => $point['tags'] ?? '[]',
                 'lat' => $point['lat'],
                 'lng' => $point['lng'],
                 'address' => $point['address'] ?? '',
@@ -1984,6 +2027,7 @@ class JG_Map_Ajax_Handlers {
                 'type' => $type,
                 'category' => $category,
                 'content' => $content,
+                'tags' => !empty($tags) ? json_encode($tags) : '[]',
                 'lat' => ($lat !== null) ? $lat : $point['lat'],
                 'lng' => ($lng !== null) ? $lng : $point['lng'],
                 'address' => !empty($address) ? $address : ($point['address'] ?? ''),
@@ -2033,6 +2077,7 @@ class JG_Map_Ajax_Handlers {
                 'type' => $point['type'],
                 'category' => $point['category'] ?? '',
                 'content' => $point['content'],
+                'tags' => $point['tags'] ?? '[]',
                 'lat' => $point['lat'],
                 'lng' => $point['lng'],
                 'address' => $point['address'] ?? '',
@@ -2044,6 +2089,7 @@ class JG_Map_Ajax_Handlers {
                 'type' => $type,
                 'category' => $category,
                 'content' => $content,
+                'tags' => !empty($tags) ? json_encode($tags) : '[]',
                 'new_images' => json_encode($new_images) // Store new images separately for moderation
             );
 
@@ -2569,6 +2615,19 @@ class JG_Map_Ajax_Handlers {
         $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : null;
         $address = sanitize_text_field(wp_unslash($_POST['address'] ?? ''));
 
+        // Process tags (max 5)
+        $tags_raw = isset($_POST['tags']) ? wp_unslash($_POST['tags']) : '';
+        $tags = array();
+        if (!empty($tags_raw)) {
+            $tags_array = is_array($tags_raw) ? $tags_raw : explode(',', $tags_raw);
+            foreach ($tags_array as $tag) {
+                $tag = sanitize_text_field(trim($tag));
+                if ($tag !== '' && count($tags) < 5) {
+                    $tags[] = $tag;
+                }
+            }
+        }
+
         $point = JG_Map_Database::get_point($point_id);
         if (!$point) {
             wp_send_json_error(array('message' => 'Punkt nie istnieje'));
@@ -2612,7 +2671,8 @@ class JG_Map_Ajax_Handlers {
             'title' => $title,
             'type' => $type,
             'content' => $content,
-            'excerpt' => wp_trim_words($content, 20)
+            'excerpt' => wp_trim_words($content, 20),
+            'tags' => !empty($tags) ? json_encode($tags) : null
         );
 
         // Add lat/lng if provided (from address geocoding)
@@ -4153,6 +4213,12 @@ class JG_Map_Ajax_Handlers {
                 // Clear category if changing from report to other type
                 $update_data['category'] = null;
             }
+        }
+
+        // Add tags if present
+        if (isset($new_values['tags'])) {
+            $tags_data = is_string($new_values['tags']) ? json_decode($new_values['tags'], true) : $new_values['tags'];
+            $update_data['tags'] = is_array($tags_data) && !empty($tags_data) ? json_encode($tags_data) : null;
         }
 
         // Add lat/lng if present (from address geocoding)

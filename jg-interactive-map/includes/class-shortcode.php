@@ -247,7 +247,7 @@ class JG_Map_Shortcode {
         // Get paginated points
         $points = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT title, slug, type, address
+                "SELECT title, slug, type, address, tags
                  FROM $table
                  WHERE status = 'publish' AND slug IS NOT NULL AND slug != ''
                  ORDER BY type ASC, title ASC
@@ -278,6 +278,29 @@ class JG_Map_Shortcode {
         // Get current page URL without katalog-strona param
         $base_url = remove_query_arg('katalog-strona');
 
+        // Build tag cloud from all published points
+        $all_tag_counts = array();
+        $tag_rows = $wpdb->get_col(
+            "SELECT tags FROM $table WHERE status = 'publish' AND tags IS NOT NULL AND tags != ''"
+        );
+        foreach ($tag_rows as $tags_json) {
+            $tag_list = json_decode($tags_json, true);
+            if (is_array($tag_list)) {
+                foreach ($tag_list as $tag) {
+                    $tag = trim($tag);
+                    if ($tag !== '') {
+                        $lower = mb_strtolower($tag);
+                        if (!isset($all_tag_counts[$lower])) {
+                            $all_tag_counts[$lower] = array('label' => $tag, 'count' => 0);
+                        }
+                        $all_tag_counts[$lower]['count']++;
+                    }
+                }
+            }
+        }
+        // Sort by count descending
+        uasort($all_tag_counts, function($a, $b) { return $b['count'] - $a['count']; });
+
         ob_start();
         ?>
         <div class="jg-directory">
@@ -291,6 +314,17 @@ class JG_Map_Shortcode {
                 .jg-dir-item a { color: #2563eb; text-decoration: none; }
                 .jg-dir-item a:hover { text-decoration: underline; }
                 .jg-dir-addr { color: #9ca3af; font-size: 12px; }
+                .jg-dir-tag-cloud { margin-bottom: 24px; }
+                .jg-dir-tag-cloud h3 { font-size: 0.8rem; font-weight: 600; color: #6b7280; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+                .jg-dir-tag-list { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+                .jg-dir-tag-item { display: inline-block; }
+                .jg-dir-tag-item a {
+                    display: inline-block; padding: 4px 12px; border-radius: 16px;
+                    font-size: 13px; text-decoration: none; color: #374151;
+                    background: #f3f4f6; border: 1px solid #e5e7eb; transition: all 0.15s;
+                }
+                .jg-dir-tag-item a:hover { background: #8d2324; color: #fff; border-color: #8d2324; }
+                .jg-dir-tag-count { font-size: 11px; color: #9ca3af; margin-left: 2px; }
                 .jg-dir-pagination { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
                 .jg-dir-pagination a, .jg-dir-pagination span {
                     display: inline-flex; align-items: center; justify-content: center;
@@ -304,6 +338,19 @@ class JG_Map_Shortcode {
                 .jg-dir-info { font-size: 13px; color: #9ca3af; margin-top: 8px; }
             </style>
 
+            <?php if (!empty($all_tag_counts)): ?>
+                <nav class="jg-dir-tag-cloud" aria-label="Chmurka tagów">
+                    <h3>Tagi</h3>
+                    <ul class="jg-dir-tag-list">
+                        <?php foreach ($all_tag_counts as $tag_data): ?>
+                            <li class="jg-dir-tag-item">
+                                <a href="<?php echo esc_url(home_url('/mapa/?tag=' . urlencode($tag_data['label']))); ?>" rel="tag">#<?php echo esc_html($tag_data['label']); ?><span class="jg-dir-tag-count">(<?php echo intval($tag_data['count']); ?>)</span></a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </nav>
+            <?php endif; ?>
+
             <?php foreach ($type_labels as $type => $label): ?>
                 <?php if (!empty($grouped[$type])): ?>
                     <div class="jg-dir-section">
@@ -315,7 +362,9 @@ class JG_Map_Shortcode {
                             ?>
                                 <li class="jg-dir-item">
                                     <a href="<?php echo esc_url($url); ?>"><?php echo esc_html($p['title']); ?></a><?php
-                                    if (!empty($p['address'])): ?> <span class="jg-dir-addr"><?php echo esc_html($p['address']); ?></span><?php endif; ?>
+                                    if (!empty($p['address'])): ?> <span class="jg-dir-addr"><?php echo esc_html($p['address']); ?></span><?php endif;
+                                    $p_tags = !empty($p['tags']) ? json_decode($p['tags'], true) : array();
+                                    if (!empty($p_tags)): ?> <span class="jg-dir-tags"><?php foreach ($p_tags as $pt): ?><span class="jg-dir-tag-inline">#<?php echo esc_html($pt); ?></span> <?php endforeach; ?></span><?php endif; ?>
                                 </li>
                             <?php endforeach; ?>
                         </ul>

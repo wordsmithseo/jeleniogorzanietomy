@@ -5693,3 +5693,126 @@ body.jg-fullscreen-active {
   transform: none;
   box-shadow: none;
 }
+
+/* ===== TAG INPUT ===== */
+.jg-tags-wrap {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff;
+}
+
+.jg-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.jg-tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.jg-tag-text {
+  color: #8d2324;
+  font-weight: 500;
+}
+
+.jg-tag-remove {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  margin-left: 2px;
+}
+
+.jg-tag-remove:hover {
+  color: #dc2626;
+}
+
+.jg-tags-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: transparent;
+}
+
+.jg-tags-counter {
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.jg-tags-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.jg-tags-suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+}
+
+.jg-tags-suggestion-item:hover {
+  background: #f3f4f6;
+  color: #8d2324;
+}
+
+/* ===== TAGS DISPLAY (in point view) ===== */
+.jg-place-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.jg-place-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 14px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  font-size: 0.85em;
+  color: #8d2324;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* ===== CATALOG INLINE TAGS ===== */
+.jg-dir-tags {
+  display: inline;
+}
+
+.jg-dir-tag-inline {
+  font-size: 12px;
+  color: #8d2324;
+  font-weight: 500;
+}

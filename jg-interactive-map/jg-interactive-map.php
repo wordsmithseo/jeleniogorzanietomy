@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.15.0
+ * Version: 3.16.0
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.15.0');
+define('JG_MAP_VERSION', '3.16.0');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -399,7 +399,7 @@ class JG_Interactive_Map {
             $wpdb->prepare(
                 "SELECT id, title, slug, content, excerpt, lat, lng, address, type, status,
                         author_id, is_promo, website, phone, images, featured_image_index,
-                        facebook_url, instagram_url, linkedin_url, tiktok_url, created_at, updated_at
+                        facebook_url, instagram_url, linkedin_url, tiktok_url, tags, created_at, updated_at
                  FROM $table
                  WHERE slug = %s AND status = 'publish'
                  LIMIT 1",
@@ -608,6 +608,10 @@ class JG_Interactive_Map {
         .jg-sp-content { font-size: 16px; line-height: 1.75; color: #374151; margin-bottom: 24px; word-wrap: break-word; }
         .jg-sp-content p { margin: 0 0 12px 0; }
 
+        /* Tags */
+        .jg-place-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; margin-bottom: 18px; padding-top: 8px; }
+        .jg-place-tag { display: inline-block; padding: 3px 10px; border-radius: 14px; background: #f3f4f6; border: 1px solid #e5e7eb; font-size: 0.85em; color: #8d2324; font-weight: 500; line-height: 1.5; }
+
         /* Contact & Social */
         .jg-sp-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 24px; }
         .jg-sp-contact-link { color: #2563eb; font-size: 15px; display: inline-flex; align-items: center; gap: 6px; }
@@ -709,6 +713,16 @@ class JG_Interactive_Map {
             <div class="jg-sp-content">
                 <?php echo wp_kses_post($point['content']); ?>
             </div>
+
+            <?php
+            $sp_tags = !empty($point['tags']) ? json_decode($point['tags'], true) : array();
+            if (!empty($sp_tags)): ?>
+            <div class="jg-place-tags">
+                <?php foreach ($sp_tags as $sp_tag): ?>
+                    <span class="jg-place-tag">#<?php echo esc_html($sp_tag); ?></span>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
 
             <!-- Contact info & social links -->
             <?php if (!empty($point['website']) || !empty($point['phone']) || !empty($point['facebook_url']) || !empty($point['instagram_url']) || !empty($point['linkedin_url']) || !empty($point['tiktok_url'])): ?>
@@ -1053,6 +1067,15 @@ class JG_Interactive_Map {
     <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" data-pin-description="<?php echo esc_attr($point['title'] . ' - ' . $type_label_singular . ' w Jeleniej Górze'); ?>">
     <?php endif; ?>
     <div><?php echo wp_kses_post($point['content']); ?></div>
+    <?php
+    $fb_tags = !empty($point['tags']) ? json_decode($point['tags'], true) : array();
+    if (!empty($fb_tags)): ?>
+    <div class="jg-place-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">
+        <?php foreach ($fb_tags as $fb_tag): ?>
+            <span style="display:inline-block;padding:3px 10px;border-radius:14px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:0.85em;color:#8d2324;font-weight:500">#<?php echo esc_html($fb_tag); ?></span>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
     <div class="jg-fb-cta">
         <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>">Zobacz na mapie</a>
         <?php if (!empty($point['website'])): ?>
@@ -1225,6 +1248,16 @@ class JG_Interactive_Map {
         <?php endif; ?>
         <meta property="article:section" content="<?php echo esc_attr($type_label); ?>">
         <meta property="article:tag" content="Jelenia Góra">
+        <?php
+        $point_tags = !empty($point['tags']) ? json_decode($point['tags'], true) : array();
+        if (is_array($point_tags) && !empty($point_tags)):
+            foreach ($point_tags as $ptag): ?>
+        <meta property="article:tag" content="<?php echo esc_attr($ptag); ?>">
+            <?php endforeach; ?>
+        <meta name="keywords" content="<?php echo esc_attr(implode(', ', array_merge(array('Jelenia Góra', $point['title']), $point_tags))); ?>">
+        <?php else: ?>
+        <meta name="keywords" content="<?php echo esc_attr('Jelenia Góra, ' . $point['title']); ?>">
+        <?php endif; ?>
 
         <!-- Twitter Card -->
         <meta name="twitter:card" content="summary_large_image">
@@ -1282,6 +1315,9 @@ class JG_Interactive_Map {
                     if (!empty($point['website'])) $same_as[] = $point['website'];
                     if (!empty($same_as)): ?>
                     ,"sameAs": <?php echo json_encode($same_as); ?>
+                    <?php endif; ?>
+                    <?php if (!empty($point_tags)): ?>
+                    ,"keywords": <?php echo json_encode(implode(', ', $point_tags)); ?>
                     <?php endif; ?>
                 },
                 {

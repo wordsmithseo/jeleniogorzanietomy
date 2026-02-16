@@ -1334,6 +1334,176 @@
         '</div>';
       }
 
+      // ===== TAG INPUT =====
+      // Build tag input HTML
+      function buildTagInputHtml(id) {
+        return '<div class="jg-tags-wrap" id="' + id + '-wrap">' +
+          '<div class="jg-tags-list" id="' + id + '-list"></div>' +
+          '<div style="position:relative">' +
+            '<input type="text" id="' + id + '-input" class="jg-tags-input" placeholder="Wpisz tag i naciśnij Enter (max 5)..." autocomplete="off" maxlength="30">' +
+            '<div class="jg-tags-suggestions" id="' + id + '-suggestions" style="display:none"></div>' +
+          '</div>' +
+          '<input type="hidden" name="tags" id="' + id + '-hidden">' +
+          '<div class="jg-tags-counter" id="' + id + '-counter">0 / 5 tagów</div>' +
+        '</div>';
+      }
+
+      // Cached tags for autocomplete
+      var cachedAllTags = null;
+
+      function fetchAllTags(callback) {
+        if (cachedAllTags !== null) {
+          callback(cachedAllTags);
+          return;
+        }
+        var fd = new FormData();
+        fd.append('action', 'jg_get_tags');
+        fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(resp) {
+            cachedAllTags = (resp.success && resp.data) ? resp.data : [];
+            callback(cachedAllTags);
+          })
+          .catch(function() {
+            cachedAllTags = [];
+            callback(cachedAllTags);
+          });
+      }
+
+      // Initialize tag input behaviors
+      function initTagInput(id, parentEl) {
+        var input = qs('#' + id + '-input', parentEl);
+        var list = qs('#' + id + '-list', parentEl);
+        var hidden = qs('#' + id + '-hidden', parentEl);
+        var counter = qs('#' + id + '-counter', parentEl);
+        var suggestions = qs('#' + id + '-suggestions', parentEl);
+        if (!input || !list || !hidden) return null;
+
+        var tags = [];
+
+        function renderTags() {
+          list.innerHTML = '';
+          tags.forEach(function(tag, idx) {
+            var el = document.createElement('span');
+            el.className = 'jg-tag-item';
+            el.innerHTML = '<span class="jg-tag-text">#' + esc(tag) + '</span><button type="button" class="jg-tag-remove" data-idx="' + idx + '">&times;</button>';
+            list.appendChild(el);
+          });
+          hidden.value = tags.join(',');
+          if (counter) counter.textContent = tags.length + ' / 5 tagów';
+          if (tags.length >= 5) {
+            input.style.display = 'none';
+          } else {
+            input.style.display = '';
+          }
+        }
+
+        function addTag(val) {
+          val = val.replace(/^#+/, '').trim();
+          if (!val || tags.length >= 5) return false;
+          // Check for duplicates (case-insensitive)
+          var lower = val.toLowerCase();
+          for (var i = 0; i < tags.length; i++) {
+            if (tags[i].toLowerCase() === lower) return false;
+          }
+          if (val.length > 30) val = val.substring(0, 30);
+          tags.push(val);
+          renderTags();
+          return true;
+        }
+
+        function removeTag(idx) {
+          tags.splice(idx, 1);
+          renderTags();
+        }
+
+        list.addEventListener('click', function(e) {
+          var btn = e.target.closest('.jg-tag-remove');
+          if (btn) {
+            removeTag(parseInt(btn.getAttribute('data-idx'), 10));
+          }
+        });
+
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            var val = input.value.trim();
+            if (val) {
+              addTag(val);
+              input.value = '';
+              hideSuggestions();
+            }
+          } else if (e.key === 'Backspace' && !input.value && tags.length > 0) {
+            removeTag(tags.length - 1);
+          }
+        });
+
+        // Autocomplete suggestions
+        var sugTimeout = null;
+        function showSuggestions(query) {
+          fetchAllTags(function(allTags) {
+            if (!query) { hideSuggestions(); return; }
+            var q = query.toLowerCase().replace(/^#+/, '');
+            if (!q) { hideSuggestions(); return; }
+            var matches = allTags.filter(function(t) {
+              var tLower = t.toLowerCase();
+              // Don't suggest already-added tags
+              for (var i = 0; i < tags.length; i++) {
+                if (tags[i].toLowerCase() === tLower) return false;
+              }
+              return tLower.indexOf(q) !== -1;
+            }).slice(0, 8);
+
+            if (matches.length === 0) { hideSuggestions(); return; }
+
+            suggestions.innerHTML = '';
+            matches.forEach(function(m) {
+              var opt = document.createElement('div');
+              opt.className = 'jg-tags-suggestion-item';
+              opt.textContent = '#' + m;
+              opt.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                addTag(m);
+                input.value = '';
+                hideSuggestions();
+                input.focus();
+              });
+              suggestions.appendChild(opt);
+            });
+            suggestions.style.display = 'block';
+          });
+        }
+
+        function hideSuggestions() {
+          suggestions.style.display = 'none';
+        }
+
+        input.addEventListener('input', function() {
+          clearTimeout(sugTimeout);
+          sugTimeout = setTimeout(function() {
+            showSuggestions(input.value);
+          }, 200);
+        });
+
+        input.addEventListener('blur', function() {
+          setTimeout(hideSuggestions, 200);
+        });
+
+        return {
+          getTags: function() { return tags.slice(); },
+          setTags: function(arr) {
+            tags = [];
+            if (Array.isArray(arr)) {
+              arr.forEach(function(t) { addTag(t); });
+            }
+            renderTags();
+          },
+          syncHidden: function() {
+            hidden.value = tags.join(',');
+          }
+        };
+      }
+
       // Initialize the rich editor behaviors after it's inserted into the DOM
       function initRichEditor(id, maxLength, parentEl) {
         var editor = qs('#' + id + '-editor', parentEl);
@@ -2650,6 +2820,7 @@
                 generateCuriosityCategoryOptions('') +
                 '</select></label>' +
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('add-rte', 800, '', 4) + '</div>' +
+                '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('add-tags') + '</div>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
                 '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images[]" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
                 '<div class="cols-2" id="add-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
@@ -2676,10 +2847,14 @@
               // Initialize rich text editor for description
               var addRte = initRichEditor('add-rte', 800, modalAdd);
 
+              // Initialize tag input
+              var addTagInput = initTagInput('add-tags', modalAdd);
+
               // On form submit, ensure the hidden input has content
               var origAddSubmit = form.onsubmit;
               form.addEventListener('submit', function() {
                 if (addRte) addRte.syncContent();
+                if (addTagInput) addTagInput.syncHidden();
               }, true);
 
               // Image preview functionality
@@ -5521,6 +5696,7 @@
               '<small id="edit-address-hint" style="display:block;margin-top:4px;color:#666">Obecny adres. Wpisz nowy adres aby zmienić pozycję pinezki.</small>' +
               '</div>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('edit-rte', maxDescLength, '', 6) + '</div>' +
+              '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('edit-tags') + '</div>' +
               sponsoredContactHtml +
               existingImagesHtml +
               '<label class="cols-2">Dodaj nowe zdjęcia (max ' + maxTotalImages + ' łącznie) <input type="file" name="images[]" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
@@ -5551,9 +5727,16 @@
           editRte.setContent(contentHtml);
         }
 
+        // Initialize tag input and set existing tags
+        var editTagInput = initTagInput('edit-tags', modalEdit);
+        if (editTagInput && p.tags) {
+          editTagInput.setTags(p.tags);
+        }
+
         // On form submit, sync the rich editor content
         form.addEventListener('submit', function() {
           if (editRte) editRte.syncContent();
+          if (editTagInput) editTagInput.syncHidden();
         }, true);
 
         // Image preview functionality for edit
@@ -7356,7 +7539,17 @@
           '</div>';
         }
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + voteHtml + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        // Build tags display
+        var tagsHtml = '';
+        if (p.tags && p.tags.length > 0) {
+          tagsHtml = '<div class="jg-place-tags">';
+          p.tags.forEach(function(tag) {
+            tagsHtml += '<span class="jg-place-tag">#' + esc(tag) + '</span>';
+          });
+          tagsHtml += '</div>';
+        }
+
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + tagsHtml + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + voteHtml + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
