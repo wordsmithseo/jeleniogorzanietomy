@@ -378,7 +378,7 @@ class JG_Map_Shortcode {
                                     <a href="<?php echo esc_url($url); ?>"><?php echo esc_html($p['title']); ?></a><?php
                                     if (!empty($p['address'])): ?> <span class="jg-dir-addr"><?php echo esc_html($p['address']); ?></span><?php endif;
                                     $p_tags = !empty($p['tags']) ? json_decode($p['tags'], true) : array();
-                                    if (!empty($p_tags)): ?> <span class="jg-dir-tags"><?php foreach ($p_tags as $pt): ?><span class="jg-dir-tag-inline">#<?php echo esc_html($pt); ?></span> <?php endforeach; ?></span><?php endif; ?>
+                                    if (!empty($p_tags)): ?> <span class="jg-dir-tags"><?php foreach ($p_tags as $pt): ?><a href="<?php echo esc_url(add_query_arg('tag', $pt, $base_url_no_tag)); ?>" class="jg-dir-tag-inline" rel="tag">#<?php echo esc_html($pt); ?></a> <?php endforeach; ?></span><?php endif; ?>
                                 </li>
                             <?php endforeach; ?>
                         </ul>

@@ -334,12 +334,33 @@ class JG_Map_Enqueue {
                 'termsContent' => get_option('jg_map_terms_content', ''),
                 'privacyUrl' => get_option('jg_map_privacy_url', ''),
                 'privacyContent' => get_option('jg_map_privacy_content', ''),
+                'catalogUrl' => self::get_catalog_page_url(),
             )
         );
 
         // Real-time updates now handled directly in jg-map.js via WordPress Heartbeat API
         // and JG_Map_Sync_Manager class. No inline script needed.
         // Heartbeat is enqueued as a dependency of jg-map-script (see above)
+    }
+
+    /**
+     * Find the URL of the page containing [jg_map_directory] shortcode
+     */
+    private static function get_catalog_page_url() {
+        $cached = get_transient('jg_map_catalog_url');
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        global $wpdb;
+        $page = $wpdb->get_var(
+            "SELECT ID FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type IN ('page','post') AND post_content LIKE '%[jg_map_directory%' LIMIT 1"
+        );
+
+        $url = $page ? get_permalink($page) : '';
+        set_transient('jg_map_catalog_url', $url, HOUR_IN_SECONDS);
+
+        return $url;
     }
 
     /**

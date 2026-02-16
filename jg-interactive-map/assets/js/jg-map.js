@@ -7540,12 +7540,18 @@
           '</div>';
         }
 
-        // Build tags display
+        // Build tags display (clickable, linking to catalog)
         var tagsHtml = '';
         if (p.tags && p.tags.length > 0) {
+          var catalogBase = CFG.catalogUrl || '';
           tagsHtml = '<div class="jg-place-tags">';
           p.tags.forEach(function(tag) {
-            tagsHtml += '<span class="jg-place-tag">#' + esc(tag) + '</span>';
+            if (catalogBase) {
+              var sep = catalogBase.indexOf('?') !== -1 ? '&' : '?';
+              tagsHtml += '<a href="' + esc(catalogBase + sep + 'tag=' + encodeURIComponent(tag)) + '" class="jg-place-tag" rel="tag">#' + esc(tag) + '</a>';
+            } else {
+              tagsHtml += '<span class="jg-place-tag">#' + esc(tag) + '</span>';
+            }
           });
           tagsHtml += '</div>';
         }
@@ -10005,6 +10011,7 @@
               generateCuriosityCategoryOptions('') +
               '</select></label>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis* (max 800 znaków)</label>' + buildRichEditorHtml('fab-rte', 800, '', 4) + '</div>' +
+              '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('fab-tags') + '</div>' +
               '<label class="cols-2">Zdjęcia (opcjonalne, max 6)<input type="file" name="images" id="add-images-input" accept="image/*" multiple style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
               '<div id="add-images-preview" class="cols-2" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
               '<div class="cols-2" style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">' +
@@ -10080,9 +10087,13 @@
             // Initialize rich text editor for FAB add form
             var fabRte = initRichEditor('fab-rte', 800, modalAdd);
 
-            // On form submit, sync the rich editor content
+            // Initialize tag input for FAB add form
+            var fabTagInput = initTagInput('fab-tags', modalAdd);
+
+            // On form submit, sync the rich editor content and tags
             form.addEventListener('submit', function() {
               if (fabRte) fabRte.syncContent();
+              if (fabTagInput) fabTagInput.syncHidden();
             }, true);
 
             // Image preview functionality
