@@ -79,6 +79,7 @@ class JG_Map_Database {
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             approved_at datetime DEFAULT NULL,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            tags varchar(500) DEFAULT NULL,
             ip_address varchar(100),
             PRIMARY KEY (id),
             UNIQUE KEY slug (slug),
@@ -220,7 +221,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.11.0'; // Added levels & achievements system
+        $current_schema_version = '3.16.0'; // Added tags for points
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -492,6 +493,11 @@ class JG_Map_Database {
             $wpdb->query("ALTER TABLE `$safe_table` MODIFY COLUMN report_status varchar(50) DEFAULT 'added'");
         }
 
+        // Check if tags column exists (for point tagging)
+        if (!$column_exists('tags')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN tags varchar(500) DEFAULT NULL AFTER ip_address");
+        }
+
         // Run migration to strip slashes from existing data (one-time)
         self::migrate_strip_slashes();
 
@@ -728,7 +734,7 @@ class JG_Map_Database {
                        stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
                        stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
                        stats_unique_visitors, stats_avg_time_spent,
-                       address, created_at, updated_at, ip_address
+                       address, created_at, updated_at, ip_address, tags
                 FROM $table WHERE $status_condition ORDER BY created_at DESC";
 
         $results = $wpdb->get_results($sql, ARRAY_A);
@@ -740,11 +746,52 @@ class JG_Map_Database {
     }
 
     /**
+     * Get all unique tags from published points (for autocomplete)
+     */
+    public static function get_all_tags() {
+        global $wpdb;
+        $table = self::get_points_table();
+
+        $cached = get_transient('jg_map_all_tags');
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        $rows = $wpdb->get_col(
+            "SELECT DISTINCT tags FROM $table WHERE status = 'publish' AND tags IS NOT NULL AND tags != ''"
+        );
+
+        $all_tags = array();
+        foreach ($rows as $tags_json) {
+            $tags = json_decode($tags_json, true);
+            if (is_array($tags)) {
+                foreach ($tags as $tag) {
+                    $tag = trim($tag);
+                    if ($tag !== '') {
+                        $lower = mb_strtolower($tag);
+                        if (!isset($all_tags[$lower])) {
+                            $all_tags[$lower] = $tag;
+                        }
+                    }
+                }
+            }
+        }
+
+        $result = array_values($all_tags);
+        sort($result);
+
+        set_transient('jg_map_all_tags', $result, 300);
+
+        return $result;
+    }
+
+    /**
      * Invalidate points cache - call this whenever point data changes
      */
     public static function invalidate_points_cache() {
         delete_transient('jg_map_points_published');
         delete_transient('jg_map_points_with_pending');
+        delete_transient('jg_map_all_tags');
 
         // Regenerate sitemap cache so Google always gets a fresh static file
         $plugin = JG_Interactive_Map::get_instance();
@@ -773,7 +820,7 @@ class JG_Map_Database {
                     stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
                     stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
                     stats_unique_visitors, stats_avg_time_spent,
-                    address, created_at, updated_at, ip_address
+                    address, created_at, updated_at, ip_address, tags
              FROM $table
              WHERE author_id = %d AND status = 'pending'
              ORDER BY created_at DESC",
@@ -809,7 +856,7 @@ class JG_Map_Database {
                         stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
                         stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
                         stats_unique_visitors, stats_avg_time_spent,
-                        address, created_at, updated_at, ip_address
+                        address, created_at, updated_at, ip_address, tags
                  FROM $table WHERE id = %d",
                 $point_id
             ),

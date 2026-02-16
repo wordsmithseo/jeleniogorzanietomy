@@ -1281,6 +1281,9 @@ class JG_Map_Admin {
                         if ($old_values['content'] !== $new_values['content']) {
                             $changes[] = 'Opis';
                         }
+                        if (isset($old_values['tags']) && isset($new_values['tags']) && $old_values['tags'] !== $new_values['tags']) {
+                            $changes[] = 'Tagi';
+                        }
                         if (isset($old_values['website']) && isset($new_values['website']) && $old_values['website'] !== $new_values['website']) {
                             $changes[] = 'Strona internetowa';
                         }
@@ -1387,6 +1390,18 @@ class JG_Map_Admin {
                     }
                     if (old_values.content !== new_values.content) {
                         html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Opis</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee;max-width:300px;word-wrap:break-word">' + old_values.content + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5;max-width:300px;word-wrap:break-word">' + new_values.content + '</td></tr>';
+                    }
+                    if (old_values.tags !== undefined && new_values.tags !== undefined && old_values.tags !== new_values.tags) {
+                        var formatTags = function(tagsVal) {
+                            try {
+                                var arr = typeof tagsVal === 'string' ? JSON.parse(tagsVal) : tagsVal;
+                                if (Array.isArray(arr) && arr.length > 0) {
+                                    return arr.map(function(t) { return '#' + t; }).join(' ');
+                                }
+                            } catch(e) {}
+                            return '(brak)';
+                        };
+                        html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Tagi</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + formatTags(old_values.tags) + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + formatTags(new_values.tags) + '</td></tr>';
                     }
                     if (old_values.website !== undefined && new_values.website !== undefined && old_values.website !== new_values.website) {
                         html += '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Strona internetowa</strong></td><td style="padding:8px;border:1px solid #ddd;background:#fee">' + (old_values.website || '(brak)') + '</td><td style="padding:8px;border:1px solid #ddd;background:#d1fae5">' + (new_values.website || '(brak)') + '</td></tr>';
@@ -1721,6 +1736,15 @@ class JG_Map_Admin {
                         '<div><strong>Typ:</strong> ' + point.type + '</div>' +
                         '<div><strong>Lokalizacja:</strong> ' + point.lat + ', ' + point.lng + '</div>' +
                         '<div><strong>Opis:</strong><div style="margin-top:8px;padding:12px;background:#f9fafb;border-radius:8px;white-space:pre-wrap">' + (point.content || point.excerpt || '<em>Brak opisu</em>') + '</div></div>' +
+                        (function() {
+                            try {
+                                var t = point.tags ? (typeof point.tags === 'string' ? JSON.parse(point.tags) : point.tags) : [];
+                                if (Array.isArray(t) && t.length > 0) {
+                                    return '<div><strong>Tagi:</strong> ' + t.map(function(tag) { return '<span style="display:inline-block;padding:2px 8px;margin:2px;border-radius:12px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px">#' + tag + '</span>'; }).join('') + '</div>';
+                                }
+                            } catch(e) {}
+                            return '';
+                        })() +
                         imagesHtml +
                         '<div><strong>IP:</strong> ' + (point.ip_address || '<em>brak</em>') + '</div>' +
                         '</div>';
