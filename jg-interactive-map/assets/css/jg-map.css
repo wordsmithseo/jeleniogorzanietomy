@@ -1854,6 +1854,206 @@ body.jg-fullscreen-active {
   margin-bottom: 0 !important;
 }
 
+/* Pin links in content */
+.jg-place-content a.jg-pin-link {
+  color: #8d2324 !important;
+  text-decoration: underline;
+  font-weight: 500;
+  cursor: pointer;
+}
+.jg-place-content a.jg-pin-link:hover {
+  color: #b91c1c !important;
+}
+.jg-place-content a:not(.jg-pin-link) {
+  color: #2563eb !important;
+  text-decoration: underline;
+}
+.jg-place-content a:not(.jg-pin-link):hover {
+  color: #1d4ed8 !important;
+}
+
+/* ===== Rich Text Editor ===== */
+.jg-rte-wrap {
+  position: relative;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: visible;
+  background: #fff;
+}
+.jg-rte-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 8px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 8px 8px 0 0;
+  align-items: center;
+}
+.jg-rte-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.jg-rte-btn:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+.jg-rte-btn:active {
+  background: #d1d5db;
+}
+.jg-rte-sep {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background: #d1d5db;
+  margin: 0 4px;
+}
+.jg-rte-editor {
+  padding: 10px 12px;
+  min-height: 96px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #111;
+  outline: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.jg-rte-editor:focus {
+  box-shadow: inset 0 0 0 2px #8d232440;
+}
+.jg-rte-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+.jg-rte-editor ul,
+.jg-rte-editor ol {
+  margin: 4px 0;
+  padding-left: 24px;
+}
+.jg-rte-editor li {
+  margin-bottom: 2px;
+}
+.jg-rte-editor a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+.jg-rte-editor a.jg-pin-link {
+  color: #8d2324;
+}
+.jg-rte-counter {
+  padding: 4px 12px 6px;
+  font-size: 11px;
+  color: #666;
+  text-align: right;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* Link dialog */
+.jg-rte-link-dialog {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 36px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  z-index: 100;
+}
+.jg-rte-link-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.jg-rte-link-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+  padding: 0 4px;
+  line-height: 1;
+}
+.jg-rte-link-close:hover {
+  color: #111;
+}
+
+/* Pin autocomplete results */
+.jg-rte-pin-results {
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+.jg-rte-pin-results:empty {
+  display: none;
+}
+.jg-rte-pin-hint {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: center;
+}
+.jg-rte-pin-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.1s;
+}
+.jg-rte-pin-item:last-child {
+  border-bottom: none;
+}
+.jg-rte-pin-item:hover {
+  background: #f9fafb;
+}
+.jg-rte-pin-item--selected {
+  background: #eff6ff !important;
+  border-left: 3px solid #8d2324;
+}
+.jg-rte-pin-type {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+.jg-rte-pin-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Small buttons */
+.jg-btn--sm {
+  padding: 6px 14px !important;
+  font-size: 13px !important;
+  min-height: auto !important;
+}
+
 .jg-modal header .jg-close {
   font-size: 24px;
   line-height: 1;
