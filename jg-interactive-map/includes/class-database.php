@@ -763,7 +763,7 @@ class JG_Map_Database {
         $table = self::get_points_table();
 
         // Ensure edit_locked column exists (in case migration hasn't run yet)
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'edit_locked'");
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM $table LIKE %s", 'edit_locked'));
         if (empty($column_exists)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
             // Clear cache after adding column to ensure fresh data
@@ -864,7 +864,7 @@ class JG_Map_Database {
         $table = self::get_points_table();
 
         // Ensure edit_locked column exists (in case migration hasn't run yet)
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'edit_locked'");
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM $table LIKE %s", 'edit_locked'));
         if (empty($column_exists)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
         }
@@ -899,7 +899,7 @@ class JG_Map_Database {
         $table = self::get_points_table();
 
         // Ensure edit_locked column exists (in case migration hasn't run yet)
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'edit_locked'");
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM $table LIKE %s", 'edit_locked'));
         if (empty($column_exists)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
         }
@@ -1532,7 +1532,7 @@ class JG_Map_Database {
         $table_history = self::get_history_table();
 
         // Check if table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_history'");
+        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_history));
 
         if ($table_exists != $table_history) {
             // Create table

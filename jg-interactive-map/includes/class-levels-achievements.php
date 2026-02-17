@@ -151,7 +151,7 @@ class JG_Map_Levels_Achievements {
         }
 
         // Seed default achievements if table is empty
-        $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_achievements");
+        $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_achievements"); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name only
         if ($count == 0) {
             $defaults = array(
                 array('slug' => 'first_point', 'name' => 'Pierwszy krok', 'description' => 'Dodaj swój pierwszy punkt na mapie', 'icon' => '📍', 'rarity' => 'common', 'condition_type' => 'points_count', 'condition_value' => 1, 'sort_order' => 1),
@@ -676,7 +676,7 @@ class JG_Map_Levels_Achievements {
 
         global $wpdb;
         $table = $wpdb->prefix . 'jg_map_achievements';
-        $achievements = $wpdb->get_results("SELECT * FROM $table ORDER BY sort_order ASC", ARRAY_A);
+        $achievements = $wpdb->get_results("SELECT * FROM $table ORDER BY sort_order ASC", ARRAY_A); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name only
 
         wp_send_json_success($achievements);
     }

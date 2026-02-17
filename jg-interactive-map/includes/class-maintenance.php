@@ -408,7 +408,7 @@ class JG_Map_Maintenance {
         $points_table = JG_Map_Database::get_points_table();
 
         // Get all image URLs from database
-        $all_points = $wpdb->get_results("SELECT id, images FROM $points_table WHERE images IS NOT NULL AND images != ''");
+        $all_points = $wpdb->get_results($wpdb->prepare("SELECT id, images FROM $points_table WHERE images IS NOT NULL AND images != %s", ''));
 
         $used_files = array();
         foreach ($all_points as $point) {
@@ -550,21 +550,29 @@ class JG_Map_Maintenance {
 
         // Delete expired transients (WordPress doesn't always auto-delete these)
         $deleted = $wpdb->query(
-            "DELETE FROM $wpdb->options
-             WHERE option_name LIKE '_transient_timeout_%'
-             AND option_value < UNIX_TIMESTAMP()"
+            $wpdb->prepare(
+                "DELETE FROM $wpdb->options
+                 WHERE option_name LIKE %s
+                 AND option_value < UNIX_TIMESTAMP()",
+                $wpdb->esc_like('_transient_timeout_') . '%'
+            )
         );
 
         // Delete the corresponding transient values
         if ($deleted > 0) {
             $wpdb->query(
-                "DELETE FROM $wpdb->options
-                 WHERE option_name LIKE '_transient_%'
-                 AND option_name NOT LIKE '_transient_timeout_%'
-                 AND option_name NOT IN (
-                     SELECT REPLACE(option_name, '_transient_timeout_', '_transient_')
-                     FROM (SELECT option_name FROM $wpdb->options WHERE option_name LIKE '_transient_timeout_%') AS temp
-                 )"
+                $wpdb->prepare(
+                    "DELETE FROM $wpdb->options
+                     WHERE option_name LIKE %s
+                     AND option_name NOT LIKE %s
+                     AND option_name NOT IN (
+                         SELECT REPLACE(option_name, '_transient_timeout_', '_transient_')
+                         FROM (SELECT option_name FROM $wpdb->options WHERE option_name LIKE %s) AS temp
+                     )",
+                    $wpdb->esc_like('_transient_') . '%',
+                    $wpdb->esc_like('_transient_timeout_') . '%',
+                    $wpdb->esc_like('_transient_timeout_') . '%'
+                )
             );
         }
 
@@ -599,7 +607,7 @@ class JG_Map_Maintenance {
         $optimized = 0;
         foreach ($tables as $table) {
             // Check if table exists before optimizing
-            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'");
+            $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table));
             if ($table_exists) {
                 $result = $wpdb->query("OPTIMIZE TABLE $table");
                 if ($result !== false) {
