@@ -503,14 +503,6 @@ class JG_Map_Shortcode {
                     <span class="jg-sidebar-stat-icon">⚠️</span>
                     <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-zgloszenie">0</span>
                 </div>
-                <div class="jg-sidebar-stat">
-                    <span class="jg-sidebar-stat-icon">👍</span>
-                    <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-votes">0</span>
-                </div>
-                <div class="jg-sidebar-stat">
-                    <span class="jg-sidebar-stat-icon">✏️</span>
-                    <span class="jg-sidebar-stat-value" id="jg-sidebar-stat-edits">0</span>
-                </div>
             </div>
 
             <!-- Filters and Sorting - Single Collapsible Section -->

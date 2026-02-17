@@ -1302,6 +1302,24 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
+        // Count total votes (up + down) on this user's published points
+        $table_votes = JG_Map_Database::get_votes_table();
+        $type_counts['votes'] = intval($wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_votes v
+             INNER JOIN $table_points p ON v.point_id = p.id
+             WHERE p.author_id = %d AND p.status = 'publish'",
+            $user_id
+        )));
+
+        // Count approved edits on this user's published points
+        $table_history = JG_Map_Database::get_history_table();
+        $type_counts['edits'] = intval($wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_history h
+             INNER JOIN $table_points p ON h.point_id = p.id
+             WHERE p.author_id = %d AND p.status = 'publish' AND h.status = 'approved'",
+            $user_id
+        )));
+
         // Get user's last activity (last point created)
         $last_activity = $wpdb->get_var($wpdb->prepare(
             "SELECT created_at FROM $table_points WHERE author_id = %d ORDER BY created_at DESC LIMIT 1",
@@ -7443,24 +7461,6 @@ class JG_Map_Ajax_Handlers {
                 $stats[$point['type']]++;
             }
         }
-
-        // Count total votes (both up and down) for published points
-        global $wpdb;
-        $votes_table = JG_Map_Database::get_votes_table();
-        $points_table = JG_Map_Database::get_points_table();
-        $stats['votes'] = (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM $votes_table v
-             INNER JOIN $points_table p ON v.point_id = p.id
-             WHERE p.status = 'publish'"
-        );
-
-        // Count total edits (approved entries in history) for published points
-        $history_table = JG_Map_Database::get_history_table();
-        $stats['edits'] = (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM $history_table h
-             INNER JOIN $points_table p ON h.point_id = p.id
-             WHERE p.status = 'publish' AND h.status = 'approved'"
-        );
 
         wp_send_json_success(array(
             'points' => $result,
