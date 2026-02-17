@@ -590,19 +590,20 @@ class JG_Interactive_Map {
             color: #fff; padding: 18px 24px; border-radius: 12px;
             margin-bottom: 28px; transition: transform 0.15s, box-shadow 0.15s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-            animation: jg-cta-pulse 2s ease-in-out infinite;
+            animation: jg-cta-pulse 1.8s ease-in-out infinite;
         }
-        .jg-sp-map-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); animation: none; }
+        .jg-sp-map-cta:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); animation: none; }
         .jg-sp-map-cta-text { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.3; }
         .jg-sp-map-cta-sub { font-size: 13px; opacity: 0.9; margin-top: 4px; color: #fff; }
-        .jg-sp-map-cta-arrow { font-size: 28px; flex-shrink: 0; color: #fff; animation: jg-cta-arrow-nudge 1.5s ease-in-out infinite; }
+        .jg-sp-map-cta-arrow { font-size: 28px; flex-shrink: 0; color: #fff; animation: jg-cta-arrow-nudge 1s ease-in-out infinite; }
         @keyframes jg-cta-pulse {
-            0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 0 0 0 <?php echo $type_color; ?>66; }
-            50% { box-shadow: 0 4px 16px rgba(0,0,0,0.18), 0 0 0 8px <?php echo $type_color; ?>00; }
+            0% { transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 0 0 0 <?php echo $type_color; ?>99; }
+            50% { transform: scale(1.02); box-shadow: 0 6px 20px rgba(0,0,0,0.2), 0 0 0 14px <?php echo $type_color; ?>00; }
+            100% { transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 0 0 0 <?php echo $type_color; ?>99; }
         }
         @keyframes jg-cta-arrow-nudge {
             0%, 100% { transform: translateX(0); }
-            50% { transform: translateX(6px); }
+            50% { transform: translateX(10px); }
         }
 
         /* Header with badges */
