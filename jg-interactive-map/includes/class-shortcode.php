@@ -589,12 +589,12 @@ class JG_Map_Shortcode {
 
         ob_start();
         ?>
-        <div id="jg-banner-container" class="jg-banner-container" style="width:<?php echo esc_attr($atts['width']); ?>;height:<?php echo esc_attr($atts['height']); ?>;margin:20px auto;position:relative;overflow:hidden;">
-            <div id="jg-banner-loading" style="display:flex;align-items:center;justify-content:center;height:100%;background:#f5f5f5;color:#999;font-size:14px;">
+        <div id="jg-banner-container" class="jg-banner-container" style="max-width:<?php echo esc_attr($atts['width']); ?>;width:100%;height:auto;min-height:<?php echo esc_attr($atts['height']); ?>;margin:20px auto;position:relative;overflow:hidden;box-sizing:border-box;">
+            <div id="jg-banner-loading" style="display:flex;align-items:center;justify-content:center;min-height:<?php echo esc_attr($atts['height']); ?>;background:#f5f5f5;color:#999;font-size:14px;">
                 Ładowanie banneru...
             </div>
-            <a id="jg-banner-link" href="#" target="_blank" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;">
-                <img id="jg-banner-image" src="" alt="Banner" style="width:100%;height:100%;object-fit:contain;background:#f5f5f5;">
+            <a id="jg-banner-link" href="#" target="_blank" style="display:none;">
+                <img id="jg-banner-image" src="" alt="Banner" style="width:100%;height:auto;display:block;object-fit:contain;background:#f5f5f5;">
             </a>
         </div>
         <?php
