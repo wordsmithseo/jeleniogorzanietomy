@@ -1901,7 +1901,7 @@ body.jg-fullscreen-active {
   position: sticky;
   top: -14px;
   background: #fff;
-  z-index: 2;
+  z-index: 20;
   border-bottom: 2px solid #eee;
   border-radius: 12px 12px 0 0;
 }
