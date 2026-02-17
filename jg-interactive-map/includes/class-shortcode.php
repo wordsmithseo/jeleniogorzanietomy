@@ -589,8 +589,8 @@ class JG_Map_Shortcode {
 
         ob_start();
         ?>
-        <div id="jg-banner-container" class="jg-banner-container" style="max-width:<?php echo esc_attr($atts['width']); ?>;width:100%;height:auto;min-height:<?php echo esc_attr($atts['height']); ?>;margin:20px auto;position:relative;overflow:hidden;box-sizing:border-box;">
-            <div id="jg-banner-loading" style="display:flex;align-items:center;justify-content:center;min-height:<?php echo esc_attr($atts['height']); ?>;background:#f5f5f5;color:#999;font-size:14px;">
+        <div id="jg-banner-container" class="jg-banner-container" style="max-width:<?php echo esc_attr($atts['width']); ?>;width:100%;height:auto;aspect-ratio:<?php echo intval($atts['width']) . '/' . intval($atts['height']); ?>;margin:20px auto;position:relative;overflow:hidden;box-sizing:border-box;">
+            <div id="jg-banner-loading" style="display:flex;align-items:center;justify-content:center;aspect-ratio:<?php echo intval($atts['width']) . '/' . intval($atts['height']); ?>;background:#f5f5f5;color:#999;font-size:14px;">
                 Ładowanie banneru...
             </div>
             <a id="jg-banner-link" href="#" target="_blank" style="display:none;">
