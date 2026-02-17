@@ -42,30 +42,36 @@
      * Apply obfuscation classes (anti-adblock)
      */
     applyObfuscation: function() {
-      var $container = $('#jg-banner-container');
-      if (!$container.length) return;
+      var self = this;
+      // Apply to both original and fullscreen banner containers
+      var containers = [$('#jg-banner-container'), $('.jg-fs-promo-inner')];
+      containers.forEach(function($container) {
+        if (!$container.length) return;
 
-      // Remove old obfuscation classes
-      var classes = $container.attr('class');
-      if (classes) {
-        var classList = classes.split(/\s+/);
-        classList.forEach(function(cls) {
-          if (cls.startsWith('obf-')) {
-            $container.removeClass(cls);
+        // Remove old obfuscation classes
+        var classes = $container.attr('class');
+        if (classes) {
+          var classList = classes.split(/\s+/);
+          classList.forEach(function(cls) {
+            if (cls.startsWith('obf-')) {
+              $container.removeClass(cls);
+            }
+          });
+        }
+
+        // Add new random class
+        var newClass = self.randomClassName();
+        $container.addClass(newClass);
+
+        // Refresh image timestamp to bypass cache
+        $container.find('img').each(function() {
+          var $img = $(this);
+          if ($img.attr('src')) {
+            var currentSrc = $img.attr('src').split('?')[0];
+            $img.attr('src', currentSrc + '?t=' + Date.now());
           }
         });
-      }
-
-      // Add new random class
-      var newClass = this.randomClassName();
-      $container.addClass(newClass);
-
-      // Refresh image timestamp to bypass cache
-      var $img = $container.find('#jg-banner-image');
-      if ($img.length && $img.attr('src')) {
-        var currentSrc = $img.attr('src').split('?')[0];
-        $img.attr('src', currentSrc + '?t=' + Date.now());
-      }
+      });
     },
 
     /**
@@ -144,6 +150,7 @@
       var $image = $('#jg-banner-image');
 
       // Set banner properties
+      $container.attr('data-bid', banner.id);
       $image.attr('src', banner.image_url);
       $image.attr('alt', banner.title);
       $link.attr('href', banner.link_url);
