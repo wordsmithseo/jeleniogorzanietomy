@@ -1223,31 +1223,28 @@ body.jg-fullscreen-active {
 
   /* ── Mobile fullscreen: floating promotional content ── */
   body.jg-fullscreen-active .jg-fs-promo-wrap {
-    bottom: 80px;
+    bottom: 15px;
     left: 50%;
-    max-width: calc(100% - 30px);
+    max-width: calc(100% - 158px);  /* Between help FAB (15+56+8) and add FAB (8+56+15) */
   }
 
   .jg-fs-promo-inner {
-    max-width: 320px;
+    max-width: 100%;
+    border-radius: 6px;
   }
 
   .jg-fs-promo-label {
     font-size: 8px;
-    letter-spacing: 1.2px;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
   }
 }
 
-/* Very small phones: scale down fullscreen promo further */
+/* Very small phones: tighter gap between FABs */
 @media (max-width: 380px) {
   body.jg-fullscreen-active .jg-fs-promo-wrap {
-    bottom: 76px;
-    max-width: calc(100% - 20px);
-  }
-
-  .jg-fs-promo-inner {
-    max-width: 260px;
-    border-radius: 6px;
+    bottom: 14px;
+    max-width: calc(100% - 150px);  /* Tighter margins on small screens */
   }
 }
 
