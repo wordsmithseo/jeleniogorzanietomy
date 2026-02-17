@@ -1302,21 +1302,17 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
-        // Count total votes (up + down) on this user's published points
+        // Count total votes cast by this user (both up and down)
         $table_votes = JG_Map_Database::get_votes_table();
         $type_counts['votes'] = intval($wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table_votes v
-             INNER JOIN $table_points p ON v.point_id = p.id
-             WHERE p.author_id = %d AND p.status = 'publish'",
+            "SELECT COUNT(*) FROM $table_votes WHERE user_id = %d",
             $user_id
         )));
 
-        // Count approved edits on this user's published points
+        // Count approved edits made by this user
         $table_history = JG_Map_Database::get_history_table();
         $type_counts['edits'] = intval($wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table_history h
-             INNER JOIN $table_points p ON h.point_id = p.id
-             WHERE p.author_id = %d AND p.status = 'publish' AND h.status = 'approved'",
+            "SELECT COUNT(*) FROM $table_history WHERE user_id = %d AND status = 'approved'",
             $user_id
         )));
 
