@@ -1223,9 +1223,9 @@ body.jg-fullscreen-active {
 
   /* ── Mobile fullscreen: floating promotional content ── */
   body.jg-fullscreen-active .jg-fs-promo-wrap {
-    bottom: 15px;
+    bottom: 80px;  /* Just above FABs (15px + 56px + 9px gap) */
     left: 50%;
-    max-width: calc(100% - 158px);  /* Between help FAB (15+56+8) and add FAB (8+56+15) */
+    max-width: calc(100% - 24px);
   }
 
   .jg-fs-promo-inner {
@@ -1240,11 +1240,11 @@ body.jg-fullscreen-active {
   }
 }
 
-/* Very small phones: tighter gap between FABs */
+/* Very small phones */
 @media (max-width: 380px) {
   body.jg-fullscreen-active .jg-fs-promo-wrap {
-    bottom: 14px;
-    max-width: calc(100% - 150px);  /* Tighter margins on small screens */
+    bottom: 76px;
+    max-width: calc(100% - 16px);
   }
 }
 
