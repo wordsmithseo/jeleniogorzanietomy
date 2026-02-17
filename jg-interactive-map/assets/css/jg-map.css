@@ -5830,3 +5830,23 @@ a.jg-place-tag:hover {
 a.jg-dir-tag-inline:hover {
   text-decoration: underline;
 }
+
+/* ===== BANNER / AD BOX - RESPONSIVE ===== */
+.jg-banner-container {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .jg-banner-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  #jg-banner-image {
+    width: 100% !important;
+    height: auto !important;
+  }
+}
