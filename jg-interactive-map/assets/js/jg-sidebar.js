@@ -200,7 +200,7 @@
 
         // Build fingerprint from all visible/editable fields so any change triggers re-render
         const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}`).join(',');
-        const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}:${stats.votes}:${stats.edits}` : '';
+        const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
         return pointsData + statsData;
     }
 
@@ -268,8 +268,6 @@
         $('#jg-sidebar-stat-miejsce').text(stats.miejsce || 0);
         $('#jg-sidebar-stat-ciekawostka').text(stats.ciekawostka || 0);
         $('#jg-sidebar-stat-zgloszenie').text(stats.zgloszenie || 0);
-        $('#jg-sidebar-stat-votes').text(stats.votes || 0);
-        $('#jg-sidebar-stat-edits').text(stats.edits || 0);
     }
 
     /**

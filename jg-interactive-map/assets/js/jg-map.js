@@ -4788,7 +4788,7 @@
 
           // Pin type statistics
           var tc = user.type_counts || {};
-          var typeStatsHtml = '<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-bottom:20px">' +
+          var typeStatsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));gap:12px;margin-bottom:20px">' +
             '<div style="padding:14px;background:#ecfdf5;border-radius:8px;text-align:center;border-left:4px solid #10b981">' +
             '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📍 Miejsca</div>' +
             '<div style="font-weight:700;font-size:22px;color:#059669">' + (tc.miejsce || 0) + '</div>' +
@@ -4800,6 +4800,14 @@
             '<div style="padding:14px;background:#fce7f3;border-radius:8px;text-align:center;border-left:4px solid #ec4899">' +
             '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📢 Zgłoszenia</div>' +
             '<div style="font-weight:700;font-size:22px;color:#db2777">' + (tc.zgloszenie || 0) + '</div>' +
+            '</div>' +
+            '<div style="padding:14px;background:#eff6ff;border-radius:8px;text-align:center;border-left:4px solid #3b82f6">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">👍 Głosowania</div>' +
+            '<div style="font-weight:700;font-size:22px;color:#2563eb">' + (tc.votes || 0) + '</div>' +
+            '</div>' +
+            '<div style="padding:14px;background:#f5f3ff;border-radius:8px;text-align:center;border-left:4px solid #8b5cf6">' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">✏️ Edycje</div>' +
+            '<div style="font-weight:700;font-size:22px;color:#7c3aed">' + (tc.edits || 0) + '</div>' +
             '</div>' +
             '</div>';
 
