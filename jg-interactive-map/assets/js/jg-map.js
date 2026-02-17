@@ -7560,27 +7560,7 @@
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
-        // Handle pin link clicks in content - open the linked pin's detail modal
-        var pinLinks = modalView.querySelectorAll('.jg-place-content a.jg-pin-link[data-pin-id]');
-        for (var pli = 0; pli < pinLinks.length; pli++) {
-          pinLinks[pli].addEventListener('click', function(e) {
-            e.preventDefault();
-            var targetId = this.getAttribute('data-pin-id');
-            if (!targetId) return;
-            // Find the point in ALL
-            for (var pi = 0; pi < ALL.length; pi++) {
-              if (String(ALL[pi].id) === String(targetId)) {
-                close(modalView);
-                setTimeout(function() {
-                  openDetails(ALL[pi]);
-                }, 200);
-                return;
-              }
-            }
-            // Fallback: use hash navigation
-            window.location.hash = '#point-' + targetId;
-          });
-        }
+        // Pin links in content already have SEO page URLs in href - let them navigate naturally
 
         // Track view for sponsored pins with unique visitor detection
         var viewStartTime = Date.now();

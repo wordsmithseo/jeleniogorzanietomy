@@ -617,6 +617,15 @@ class JG_Interactive_Map {
         /* Content */
         .jg-sp-content { font-size: 16px; line-height: 1.75; color: #374151; margin-bottom: 24px; word-wrap: break-word; }
         .jg-sp-content p { margin: 0 0 12px 0; }
+        .jg-sp-content p:last-child { margin-bottom: 0; }
+        .jg-sp-content strong, .jg-sp-content b { font-weight: 700; color: #111; }
+        .jg-sp-content em, .jg-sp-content i { font-style: italic; }
+        .jg-sp-content ul, .jg-sp-content ol { margin: 0 0 12px 24px; padding: 0; }
+        .jg-sp-content li { margin-bottom: 4px; }
+        .jg-sp-content a { color: #2563eb; text-decoration: underline; }
+        .jg-sp-content a:hover { color: #1d4ed8; }
+        .jg-sp-content a.jg-pin-link { color: #8d2324; text-decoration: underline; font-weight: 500; }
+        .jg-sp-content a.jg-pin-link:hover { color: #b91c1c; }
 
         /* Tags */
         .jg-place-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; margin-bottom: 18px; padding-top: 8px; }
