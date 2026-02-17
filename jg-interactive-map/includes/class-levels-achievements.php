@@ -37,6 +37,7 @@ class JG_Map_Levels_Achievements {
         // AJAX handler - check for pending notifications
         add_action('wp_ajax_jg_check_level_notifications', array($this, 'ajax_check_notifications'));
         add_action('wp_ajax_jg_dismiss_level_notification', array($this, 'ajax_dismiss_notification'));
+        add_action('wp_ajax_jg_mark_notifications_seen', array($this, 'ajax_mark_notifications_seen'));
     }
 
     // =========================================================================
@@ -113,6 +114,7 @@ class JG_Map_Levels_Achievements {
             user_id bigint(20) UNSIGNED NOT NULL,
             type varchar(20) NOT NULL,
             data longtext,
+            seen tinyint(1) NOT NULL DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY user_id (user_id)
@@ -124,6 +126,14 @@ class JG_Map_Levels_Achievements {
         dbDelta($sql_achievements);
         dbDelta($sql_user_achievements);
         dbDelta($sql_notifications);
+
+        // Migration: add 'seen' column to notifications table if missing (for existing installations)
+        $col_exists = $wpdb->get_results(
+            $wpdb->prepare("SHOW COLUMNS FROM `$table_notifications` LIKE %s", 'seen')
+        );
+        if (empty($col_exists)) {
+            $wpdb->query("ALTER TABLE `$table_notifications` ADD COLUMN seen tinyint(1) NOT NULL DEFAULT 0 AFTER data");
+        }
 
         // Seed default XP sources if not set
         if (!get_option('jg_map_xp_sources')) {
@@ -536,7 +546,7 @@ class JG_Map_Levels_Achievements {
         $table = $wpdb->prefix . 'jg_map_level_notifications';
 
         $notifications = $wpdb->get_results($wpdb->prepare(
-            "SELECT id, type, data FROM $table WHERE user_id = %d ORDER BY created_at ASC LIMIT 5",
+            "SELECT id, type, data FROM $table WHERE user_id = %d AND seen = 0 ORDER BY created_at ASC LIMIT 5",
             $user_id
         ), ARRAY_A);
 
@@ -550,6 +560,44 @@ class JG_Map_Levels_Achievements {
         }
 
         wp_send_json_success(array('notifications' => $result));
+    }
+
+    /**
+     * Mark notifications as seen (prevents re-fetching, but keeps rows for cleanup)
+     */
+    public function ajax_mark_notifications_seen() {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            wp_send_json_error('Not logged in');
+            return;
+        }
+
+        $raw_ids = isset($_POST['notification_ids']) ? sanitize_text_field($_POST['notification_ids']) : '';
+        if (empty($raw_ids)) {
+            wp_send_json_error('Missing notification_ids');
+            return;
+        }
+
+        $id_array = array_map('intval', explode(',', $raw_ids));
+        $id_array = array_filter($id_array, function($id) { return $id > 0; });
+
+        if (empty($id_array)) {
+            wp_send_json_error('Invalid notification_ids');
+            return;
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'jg_map_level_notifications';
+
+        $placeholders = implode(',', array_fill(0, count($id_array), '%d'));
+        $query_params = array_merge($id_array, array($user_id));
+
+        $wpdb->query($wpdb->prepare(
+            "UPDATE $table SET seen = 1 WHERE id IN ($placeholders) AND user_id = %d",
+            $query_params
+        ));
+
+        wp_send_json_success();
     }
 
     /**
