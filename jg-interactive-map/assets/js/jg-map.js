@@ -10373,16 +10373,32 @@
       // =========================================================
       // LEVEL-UP & ACHIEVEMENT NOTIFICATION SYSTEM
       // =========================================================
+      var _notificationsShowing = false;
+
       function checkLevelNotifications() {
         if (!CFG.nonce) return; // Not logged in
+        if (_notificationsShowing) return; // Already displaying notifications
+
         api('jg_check_level_notifications', {}).then(function(data) {
           if (!data || !data.notifications || data.notifications.length === 0) return;
+
+          _notificationsShowing = true;
+
+          // Mark all fetched notifications as seen immediately so they won't
+          // be fetched again (e.g. by the periodic interval or on next page load)
+          var ids = data.notifications.map(function(n) { return n.id; }).join(',');
+          api('jg_mark_notifications_seen', { notification_ids: ids }).catch(function() {});
+
+          // Now show them one by one
           showNextNotification(data.notifications, 0);
         }).catch(function() {});
       }
 
       function showNextNotification(notifications, index) {
-        if (index >= notifications.length) return;
+        if (index >= notifications.length) {
+          _notificationsShowing = false;
+          return;
+        }
         var n = notifications[index];
 
         if (n.type === 'level_up') {
