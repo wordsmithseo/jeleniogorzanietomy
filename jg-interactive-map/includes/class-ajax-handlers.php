@@ -7444,6 +7444,24 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
+        // Count total votes (both up and down) for published points
+        global $wpdb;
+        $votes_table = JG_Map_Database::get_votes_table();
+        $points_table = JG_Map_Database::get_points_table();
+        $stats['votes'] = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM $votes_table v
+             INNER JOIN $points_table p ON v.point_id = p.id
+             WHERE p.status = 'publish'"
+        );
+
+        // Count total edits (approved entries in history) for published points
+        $history_table = JG_Map_Database::get_history_table();
+        $stats['edits'] = (int) $wpdb->get_var(
+            "SELECT COUNT(*) FROM $history_table h
+             INNER JOIN $points_table p ON h.point_id = p.id
+             WHERE p.status = 'publish' AND h.status = 'approved'"
+        );
+
         wp_send_json_success(array(
             'points' => $result,
             'stats' => $stats
