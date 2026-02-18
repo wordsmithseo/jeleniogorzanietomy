@@ -6009,6 +6009,19 @@
 
           // Search address suggestions function (using $.ajax like FAB for faster response)
           function searchEditAddressSuggestions(query) {
+            // Show loader while fetching suggestions
+            editAddressSuggestions.innerHTML = '';
+            var loader = document.createElement('div');
+            loader.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:16px;gap:8px;color:#6b7280;font-size:13px';
+            var spinner = document.createElement('div');
+            spinner.style.cssText = 'width:18px;height:18px;border:2px solid #e5e7eb;border-top-color:#dc2626;border-radius:50%;animation:jg-fab-spin 0.6s linear infinite';
+            var label = document.createElement('span');
+            label.textContent = 'Szukam...';
+            loader.appendChild(spinner);
+            loader.appendChild(label);
+            editAddressSuggestions.appendChild(loader);
+            editAddressSuggestions.style.display = 'block';
+
             $.ajax({
               url: CFG.ajax,
               type: 'POST',
@@ -9381,6 +9394,13 @@
       var fabToggling = false;
 
       function createFAB() {
+        // Add spinner keyframes animation if not already added
+        if (!document.getElementById('jg-fab-spinner-style')) {
+          $('<style>').attr('id', 'jg-fab-spinner-style').text(
+            '@keyframes jg-fab-spin { to { transform: rotate(360deg); } }'
+          ).appendTo('head');
+        }
+
         // Ensure map container has position relative for absolute positioning
         if ($(elMap).css('position') === 'static') {
           $(elMap).css('position', 'relative');
@@ -9718,6 +9738,31 @@
         // Search suggestions function
         function searchAddressSuggestions(query, container) {
           debugLog('[JG FAB] Searching for:', query);
+
+          // Show loader while fetching suggestions
+          container.empty();
+          container.append(
+            $('<div>').css({
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+              gap: '8px',
+              color: '#6b7280',
+              fontSize: '13px'
+            }).append(
+              $('<div>').css({
+                width: '18px',
+                height: '18px',
+                border: '2px solid #e5e7eb',
+                borderTopColor: '#dc2626',
+                borderRadius: '50%',
+                animation: 'jg-fab-spin 0.6s linear infinite'
+              }),
+              $('<span>').text('Szukam...')
+            )
+          );
+          container.show();
 
           // Use backend proxy endpoint to avoid CSP issues
           $.ajax({
