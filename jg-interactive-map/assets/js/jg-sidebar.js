@@ -44,29 +44,33 @@
         const placeCategories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
         const curiosityCategories = (window.JG_MAP_CFG && JG_MAP_CFG.curiosityCategories) || {};
 
-        // Generate place category filters
+        // Generate place category filters (sorted alphabetically)
         const $placeContainer = $('[data-category-type="miejsce"]');
         if ($placeContainer.length && Object.keys(placeCategories).length > 0) {
+            const sortedPlace = Object.keys(placeCategories)
+                .filter(function(key) { return placeCategories.hasOwnProperty(key); })
+                .map(function(key) { return { key: key, label: placeCategories[key].label, icon: placeCategories[key].icon }; })
+                .sort(function(a, b) { return a.label.localeCompare(b.label, 'pl'); });
             let html = '';
-            for (const key in placeCategories) {
-                if (placeCategories.hasOwnProperty(key)) {
-                    const cat = placeCategories[key];
-                    html += '<label class="jg-sidebar-filter-label"><input type="checkbox" data-sidebar-place-category="' + key + '" checked><span class="jg-sidebar-filter-icon">' + (cat.icon || '📍') + '</span><span class="jg-sidebar-filter-text">' + cat.label + '</span></label>';
-                }
+            for (let i = 0; i < sortedPlace.length; i++) {
+                const cat = sortedPlace[i];
+                html += '<label class="jg-sidebar-filter-label"><input type="checkbox" data-sidebar-place-category="' + cat.key + '" checked><span class="jg-sidebar-filter-icon">' + (cat.icon || '📍') + '</span><span class="jg-sidebar-filter-text">' + cat.label + '</span></label>';
             }
             $placeContainer.html(html);
             $('#jg-sidebar-place-categories').show();
         }
 
-        // Generate curiosity category filters
+        // Generate curiosity category filters (sorted alphabetically)
         const $curiosityContainer = $('[data-category-type="ciekawostka"]');
         if ($curiosityContainer.length && Object.keys(curiosityCategories).length > 0) {
+            const sortedCuriosity = Object.keys(curiosityCategories)
+                .filter(function(key) { return curiosityCategories.hasOwnProperty(key); })
+                .map(function(key) { return { key: key, label: curiosityCategories[key].label, icon: curiosityCategories[key].icon }; })
+                .sort(function(a, b) { return a.label.localeCompare(b.label, 'pl'); });
             let html = '';
-            for (const key in curiosityCategories) {
-                if (curiosityCategories.hasOwnProperty(key)) {
-                    const cat = curiosityCategories[key];
-                    html += '<label class="jg-sidebar-filter-label"><input type="checkbox" data-sidebar-curiosity-category="' + key + '" checked><span class="jg-sidebar-filter-icon">' + (cat.icon || '💡') + '</span><span class="jg-sidebar-filter-text">' + cat.label + '</span></label>';
-                }
+            for (let i = 0; i < sortedCuriosity.length; i++) {
+                const cat = sortedCuriosity[i];
+                html += '<label class="jg-sidebar-filter-label"><input type="checkbox" data-sidebar-curiosity-category="' + cat.key + '" checked><span class="jg-sidebar-filter-icon">' + (cat.icon || '💡') + '</span><span class="jg-sidebar-filter-text">' + cat.label + '</span></label>';
             }
             $curiosityContainer.html(html);
             $('#jg-sidebar-curiosity-categories').show();
