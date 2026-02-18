@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.16.0
+ * Version: 3.17.0
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.16.0');
+define('JG_MAP_VERSION', '3.17.0');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -101,7 +101,7 @@ class JG_Interactive_Map {
         // Add security headers
         add_action('send_headers', array($this, 'add_security_headers'));
 
-        // SEO-friendly URLs for points
+        // SEO-friendly URLs for points and tag pages
         add_action('init', array($this, 'add_rewrite_rules'));
         add_action('init', array($this, 'check_rewrite_flush'), 999); // Run late to ensure rewrite rules are added first
         add_filter('query_vars', array($this, 'add_query_vars'));
@@ -112,7 +112,13 @@ class JG_Interactive_Map {
         // before the plugin gets a chance to render them.
         add_action('template_redirect', array($this, 'handle_point_page'), 1);
         add_action('template_redirect', array($this, 'handle_sitemap'), 1);
+        add_action('template_redirect', array($this, 'redirect_legacy_tag_urls'), 1);
         add_action('wp_head', array($this, 'add_point_meta_tags'));
+        add_action('wp_head', array($this, 'add_tag_page_meta_tags'));
+
+        // Override document title for tag pages
+        add_filter('document_title_parts', array($this, 'filter_tag_page_title'));
+        add_filter('wpseo_title', array($this, 'filter_tag_page_yoast_title'));
 
         // Register map sitemap in Yoast sitemap index for better discoverability
         add_filter('wpseo_sitemap_index', array($this, 'add_map_sitemap_to_yoast_index'));
@@ -268,6 +274,13 @@ class JG_Interactive_Map {
             'top'
         );
 
+        // Clean URL for catalog tag pages: /katalog/tag/{slug}/
+        add_rewrite_rule(
+            '^katalog/tag/([^/]+)/?$',
+            'index.php?pagename=katalog&jg_catalog_tag=$matches[1]',
+            'top'
+        );
+
         // Sitemap for places
         add_rewrite_rule(
             '^jg-map-sitemap\.xml$',
@@ -283,6 +296,7 @@ class JG_Interactive_Map {
         $vars[] = 'jg_map_point';
         $vars[] = 'jg_map_type';
         $vars[] = 'jg_map_sitemap';
+        $vars[] = 'jg_catalog_tag';
         return $vars;
     }
 
@@ -291,12 +305,12 @@ class JG_Interactive_Map {
      * Runs on 'init' hook when $wp_rewrite is available
      */
     public function check_rewrite_flush() {
-        // TEMPORARY: Aggressive flush until sitemap works
-        $flush_count = get_option('jg_map_flush_count', 0);
+        // Flush rewrite rules a few times after deployment to pick up new rules
+        $flush_count = get_option('jg_map_flush_count_v2', 0);
 
         if ($flush_count < 3) {
             flush_rewrite_rules(false);
-            update_option('jg_map_flush_count', $flush_count + 1);
+            update_option('jg_map_flush_count_v2', $flush_count + 1);
         }
 
         // Legacy flush check
@@ -736,16 +750,11 @@ class JG_Interactive_Map {
             <?php
             $sp_tags = !empty($point['tags']) ? json_decode($point['tags'], true) : array();
             if (!empty($sp_tags)):
-                $catalog_url = $this->get_catalog_page_url();
             ?>
             <div class="jg-place-tags">
-                <?php foreach ($sp_tags as $sp_tag):
-                    if ($catalog_url): ?>
-                        <a href="<?php echo esc_url(add_query_arg('tag', $sp_tag, $catalog_url)); ?>" class="jg-place-tag" rel="tag">#<?php echo esc_html($sp_tag); ?></a>
-                    <?php else: ?>
-                        <span class="jg-place-tag">#<?php echo esc_html($sp_tag); ?></span>
-                    <?php endif;
-                endforeach; ?>
+                <?php foreach ($sp_tags as $sp_tag): ?>
+                    <a href="<?php echo esc_url(self::get_tag_url($sp_tag)); ?>" class="jg-place-tag" rel="tag">#<?php echo esc_html($sp_tag); ?></a>
+                <?php endforeach; ?>
             </div>
             <?php endif; ?>
 
@@ -1095,16 +1104,11 @@ class JG_Interactive_Map {
     <?php
     $fb_tags = !empty($point['tags']) ? json_decode($point['tags'], true) : array();
     if (!empty($fb_tags)):
-        $fb_catalog_url = $this->get_catalog_page_url();
     ?>
     <div class="jg-place-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">
-        <?php foreach ($fb_tags as $fb_tag):
-            if ($fb_catalog_url): ?>
-                <a href="<?php echo esc_url(add_query_arg('tag', $fb_tag, $fb_catalog_url)); ?>" rel="tag" style="display:inline-block;padding:3px 10px;border-radius:14px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:0.85em;color:#8d2324;font-weight:500;text-decoration:none">#<?php echo esc_html($fb_tag); ?></a>
-            <?php else: ?>
-                <span style="display:inline-block;padding:3px 10px;border-radius:14px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:0.85em;color:#8d2324;font-weight:500">#<?php echo esc_html($fb_tag); ?></span>
-            <?php endif;
-        endforeach; ?>
+        <?php foreach ($fb_tags as $fb_tag): ?>
+            <a href="<?php echo esc_url(self::get_tag_url($fb_tag)); ?>" rel="tag" style="display:inline-block;padding:3px 10px;border-radius:14px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:0.85em;color:#8d2324;font-weight:500;text-decoration:none">#<?php echo esc_html($fb_tag); ?></a>
+        <?php endforeach; ?>
     </div>
     <?php endif; ?>
     <div class="jg-fb-cta">
@@ -1543,6 +1547,17 @@ class JG_Interactive_Map {
             $xml .= '    </url>' . "\n";
         }
 
+        // Add tag filter pages to sitemap with clean URLs
+        $all_tags = JG_Map_Database::get_all_tags();
+        foreach ($all_tags as $tag) {
+            $tag_url = self::get_tag_url($tag);
+            $xml .= '    <url>' . "\n";
+            $xml .= '        <loc>' . esc_url($tag_url) . '</loc>' . "\n";
+            $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+            $xml .= '        <priority>0.5</priority>' . "\n";
+            $xml .= '    </url>' . "\n";
+        }
+
         $xml .= '</urlset>' . "\n";
 
         $cache_path = $this->get_sitemap_cache_path();
@@ -1669,23 +1684,196 @@ class JG_Interactive_Map {
             $xml .= '    </url>' . "\n";
         }
 
-        // Add tag filter pages to sitemap for better discoverability
-        $catalog_url = $this->get_catalog_page_url();
-        if ($catalog_url) {
-            $all_tags = JG_Map_Database::get_all_tags();
-            foreach ($all_tags as $tag) {
-                $tag_url = add_query_arg('tag', $tag, $catalog_url);
-                $xml .= '    <url>' . "\n";
-                $xml .= '        <loc>' . esc_url($tag_url) . '</loc>' . "\n";
-                $xml .= '        <changefreq>weekly</changefreq>' . "\n";
-                $xml .= '        <priority>0.5</priority>' . "\n";
-                $xml .= '    </url>' . "\n";
-            }
+        // Add tag filter pages to sitemap with clean URLs
+        $all_tags = JG_Map_Database::get_all_tags();
+        foreach ($all_tags as $tag) {
+            $tag_url = self::get_tag_url($tag);
+            $xml .= '    <url>' . "\n";
+            $xml .= '        <loc>' . esc_url($tag_url) . '</loc>' . "\n";
+            $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+            $xml .= '        <priority>0.5</priority>' . "\n";
+            $xml .= '    </url>' . "\n";
         }
 
         $xml .= '</urlset>' . "\n";
 
         return $xml;
+    }
+
+    /**
+     * Filter document title parts for tag pages (WordPress native title)
+     */
+    public function filter_tag_page_title($title_parts) {
+        $tag = self::resolve_catalog_tag();
+        if ($tag !== '') {
+            $title_parts['title'] = '#' . $tag . ' - Miejsca w Jeleniej Górze';
+        }
+        return $title_parts;
+    }
+
+    /**
+     * Filter Yoast SEO title for tag pages
+     */
+    public function filter_tag_page_yoast_title($title) {
+        $tag = self::resolve_catalog_tag();
+        if ($tag !== '') {
+            return '#' . $tag . ' - Miejsca w Jeleniej Górze | ' . get_bloginfo('name');
+        }
+        return $title;
+    }
+
+    /**
+     * Generate a clean tag URL: /katalog/tag/{slug}/
+     */
+    public static function get_tag_url($tag) {
+        $slug = sanitize_title($tag);
+        return home_url('/katalog/tag/' . $slug . '/');
+    }
+
+    /**
+     * Resolve the active tag from the clean URL query var.
+     * The URL slug is matched against known tags (case-insensitive) to restore
+     * the original tag label (preserving casing / diacritics).
+     */
+    public static function resolve_catalog_tag() {
+        $slug = get_query_var('jg_catalog_tag', '');
+        if ($slug === '') {
+            return '';
+        }
+
+        $slug = sanitize_title($slug);
+        $all_tags = JG_Map_Database::get_all_tags();
+
+        foreach ($all_tags as $tag) {
+            if (sanitize_title($tag) === $slug) {
+                return $tag;
+            }
+        }
+
+        // No matching tag found
+        return '';
+    }
+
+    /**
+     * 301 redirect legacy ?tag= query parameter URLs to clean /katalog/tag/{slug}/ URLs
+     */
+    public function redirect_legacy_tag_urls() {
+        if (!isset($_GET['tag']) || empty($_GET['tag'])) {
+            return;
+        }
+
+        // Only redirect on the catalog page
+        if (!is_page()) {
+            return;
+        }
+
+        global $post;
+        if (!$post || strpos($post->post_content, '[jg_map_directory') === false) {
+            return;
+        }
+
+        $tag = sanitize_text_field(wp_unslash($_GET['tag']));
+        $clean_url = self::get_tag_url($tag);
+
+        wp_redirect($clean_url, 301);
+        exit;
+    }
+
+    /**
+     * Add SEO meta tags for catalog tag pages
+     */
+    public function add_tag_page_meta_tags() {
+        $tag = self::resolve_catalog_tag();
+        if ($tag === '') {
+            return;
+        }
+
+        $tag_url = self::get_tag_url($tag);
+
+        // Count points for this tag
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+        $like_pattern = '%' . $wpdb->esc_like('"' . $tag . '"') . '%';
+        $count = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table WHERE status = 'publish' AND slug IS NOT NULL AND slug != '' AND tags LIKE %s",
+            $like_pattern
+        ));
+
+        $title = '#' . $tag . ' - Miejsca w Jeleniej Górze | Jeleniogórzanie to my';
+        $description = 'Przeglądaj ' . $count . ' miejsc oznaczonych tagiem #' . $tag . ' na interaktywnej mapie Jeleniej Góry. Odkryj lokalne miejsca, ciekawostki i atrakcje.';
+        $site_name = get_bloginfo('name');
+
+        // Robots
+        $robots = 'index, follow';
+        if (get_option('blog_public') == '0') {
+            $robots = 'noindex, nofollow';
+        }
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
+        if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
+            $robots = 'noindex, nofollow';
+        }
+
+        ?>
+        <meta name="robots" content="<?php echo esc_attr($robots); ?>">
+        <link rel="canonical" href="<?php echo esc_url($tag_url); ?>">
+        <meta name="description" content="<?php echo esc_attr($description); ?>">
+
+        <!-- Open Graph -->
+        <meta property="og:title" content="<?php echo esc_attr('#' . $tag . ' - Miejsca w Jeleniej Górze'); ?>">
+        <meta property="og:description" content="<?php echo esc_attr($description); ?>">
+        <meta property="og:url" content="<?php echo esc_url($tag_url); ?>">
+        <meta property="og:type" content="website">
+        <meta property="og:locale" content="pl_PL">
+        <meta property="og:site_name" content="<?php echo esc_attr($site_name); ?>">
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" content="<?php echo esc_attr('#' . $tag . ' - Miejsca w Jeleniej Górze'); ?>">
+        <meta name="twitter:description" content="<?php echo esc_attr($description); ?>">
+
+        <!-- JSON-LD: CollectionPage -->
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "CollectionPage",
+                    "@id": <?php echo json_encode($tag_url . '#webpage'); ?>,
+                    "url": <?php echo json_encode($tag_url); ?>,
+                    "name": <?php echo json_encode('#' . $tag . ' - Miejsca w Jeleniej Górze'); ?>,
+                    "description": <?php echo json_encode($description); ?>,
+                    "isPartOf": {"@id": <?php echo json_encode(home_url('/#website')); ?>},
+                    "inLanguage": "pl-PL",
+                    "breadcrumb": {"@id": <?php echo json_encode($tag_url . '#breadcrumb'); ?>},
+                    "numberOfItems": <?php echo $count; ?>
+                },
+                {
+                    "@type": "BreadcrumbList",
+                    "@id": <?php echo json_encode($tag_url . '#breadcrumb'); ?>,
+                    "itemListElement": [
+                        {
+                            "@type": "ListItem",
+                            "position": 1,
+                            "name": "Strona główna",
+                            "item": <?php echo json_encode(home_url('/')); ?>
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "name": "Katalog",
+                            "item": <?php echo json_encode(home_url('/katalog/')); ?>
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 3,
+                            "name": <?php echo json_encode('#' . $tag); ?>
+                        }
+                    ]
+                }
+            ]
+        }
+        </script>
+        <?php
     }
 
 }

@@ -335,6 +335,7 @@ class JG_Map_Enqueue {
                 'privacyUrl' => get_option('jg_map_privacy_url', ''),
                 'privacyContent' => get_option('jg_map_privacy_content', ''),
                 'catalogUrl' => self::get_catalog_page_url(),
+                'tagBaseUrl' => home_url('/katalog/tag/'),
             )
         );
 

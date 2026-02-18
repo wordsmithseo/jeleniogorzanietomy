@@ -7670,15 +7670,19 @@
           '</div>';
         }
 
-        // Build tags display (clickable, linking to catalog)
+        // Build tags display (clickable, linking to catalog via clean URLs)
         var tagsHtml = '';
         if (p.tags && p.tags.length > 0) {
-          var catalogBase = CFG.catalogUrl || '';
+          var tagBase = CFG.tagBaseUrl || '';
           tagsHtml = '<div class="jg-place-tags">';
           p.tags.forEach(function(tag) {
-            if (catalogBase) {
-              var sep = catalogBase.indexOf('?') !== -1 ? '&' : '?';
-              tagsHtml += '<a href="' + esc(catalogBase + sep + 'tag=' + encodeURIComponent(tag)) + '" class="jg-place-tag" rel="tag">#' + esc(tag) + '</a>';
+            if (tagBase) {
+              // Slugify tag: lowercase, replace Polish chars, replace non-alnum with hyphens
+              var slug = tag.toLowerCase()
+                .replace(/ą/g,'a').replace(/ć/g,'c').replace(/ę/g,'e').replace(/ł/g,'l')
+                .replace(/ń/g,'n').replace(/ó/g,'o').replace(/ś/g,'s').replace(/ź/g,'z').replace(/ż/g,'z')
+                .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+              tagsHtml += '<a href="' + esc(tagBase + encodeURIComponent(slug) + '/') + '" class="jg-place-tag" rel="tag">#' + esc(tag) + '</a>';
             } else {
               tagsHtml += '<span class="jg-place-tag">#' + esc(tag) + '</span>';
             }

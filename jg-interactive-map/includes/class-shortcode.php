@@ -227,8 +227,11 @@ class JG_Map_Shortcode {
         $per_page = max(10, min(100, (int) $atts['per_page']));
         $current_page = max(1, (int) (isset($_GET['katalog-strona']) ? $_GET['katalog-strona'] : 1));
 
-        // Tag filter
-        $active_tag = isset($_GET['tag']) ? sanitize_text_field(wp_unslash($_GET['tag'])) : '';
+        // Tag filter - prefer clean URL query var, fall back to ?tag= for compat
+        $active_tag = JG_Interactive_Map::resolve_catalog_tag();
+        if ($active_tag === '' && isset($_GET['tag'])) {
+            $active_tag = sanitize_text_field(wp_unslash($_GET['tag']));
+        }
 
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
@@ -259,12 +262,12 @@ class JG_Map_Shortcode {
 
         if ($total === 0 && $active_tag !== '') {
             // No results for tag filter - show message + tag cloud
-            $base_url = remove_query_arg(array('katalog-strona', 'tag'));
+            $catalog_base = home_url('/katalog/');
             ob_start();
             echo '<div class="jg-directory">';
-            $this->render_tag_cloud($table, $base_url, $active_tag);
+            $this->render_tag_cloud($table, $catalog_base, $active_tag);
             echo '<p style="color:#6b7280;margin-top:16px">Brak miejsc z tagiem <strong>#' . esc_html($active_tag) . '</strong>.</p>';
-            echo '<p><a href="' . esc_url($base_url) . '" style="color:#2563eb">Pokaż wszystkie miejsca</a></p>';
+            echo '<p><a href="' . esc_url($catalog_base) . '" style="color:#2563eb">Pokaż wszystkie miejsca</a></p>';
             echo '</div>';
             return ob_get_clean();
         }
@@ -308,10 +311,10 @@ class JG_Map_Shortcode {
             $grouped[$p['type']][] = $p;
         }
 
-        // Base URL without pagination (keep tag filter if present for pagination links)
-        $base_url = remove_query_arg('katalog-strona');
-        // Base URL without tag and pagination (for tag cloud links)
-        $base_url_no_tag = remove_query_arg(array('katalog-strona', 'tag'));
+        // Base URL for pagination: clean tag URL (if filtered) or plain catalog page
+        $base_url = ($active_tag !== '') ? JG_Interactive_Map::get_tag_url($active_tag) : home_url('/katalog/');
+        // Base URL without tag (for tag cloud links and "remove filter")
+        $base_url_no_tag = home_url('/katalog/');
 
         ob_start();
         ?>
@@ -378,7 +381,7 @@ class JG_Map_Shortcode {
                                     <a href="<?php echo esc_url($url); ?>"><?php echo esc_html($p['title']); ?></a><?php
                                     if (!empty($p['address'])): ?> <span class="jg-dir-addr"><?php echo esc_html($p['address']); ?></span><?php endif;
                                     $p_tags = !empty($p['tags']) ? json_decode($p['tags'], true) : array();
-                                    if (!empty($p_tags)): ?> <span class="jg-dir-tags"><?php foreach ($p_tags as $pt): ?><a href="<?php echo esc_url(add_query_arg('tag', $pt, $base_url_no_tag)); ?>" class="jg-dir-tag-inline" rel="tag">#<?php echo esc_html($pt); ?></a> <?php endforeach; ?></span><?php endif; ?>
+                                    if (!empty($p_tags)): ?> <span class="jg-dir-tags"><?php foreach ($p_tags as $pt): ?><a href="<?php echo esc_url(JG_Interactive_Map::get_tag_url($pt)); ?>" class="jg-dir-tag-inline" rel="tag">#<?php echo esc_html($pt); ?></a> <?php endforeach; ?></span><?php endif; ?>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
@@ -455,7 +458,7 @@ class JG_Map_Shortcode {
             <ul class="jg-dir-tag-list">
                 <?php foreach ($all_tag_counts as $tag_data):
                     $is_active = ($active_tag !== '' && mb_strtolower($active_tag) === mb_strtolower($tag_data['label']));
-                    $tag_url = $is_active ? $base_url : add_query_arg('tag', $tag_data['label'], $base_url);
+                    $tag_url = $is_active ? $base_url : JG_Interactive_Map::get_tag_url($tag_data['label']);
                 ?>
                     <li class="jg-dir-tag-item">
                         <a href="<?php echo esc_url($tag_url); ?>" rel="tag"<?php echo $is_active ? ' class="jg-dir-tag-active"' : ''; ?>>#<?php echo esc_html($tag_data['label']); ?><span class="jg-dir-tag-count">(<?php echo intval($tag_data['count']); ?>)</span></a>
