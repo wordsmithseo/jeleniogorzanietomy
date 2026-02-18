@@ -34,12 +34,29 @@
       }
     }
 
-    // Generate optgroups
+    // Sort reasons within each group alphabetically by label
+    for (var g in grouped) {
+      if (grouped.hasOwnProperty(g)) {
+        grouped[g].sort(function(a, b) { return a.label.localeCompare(b.label, 'pl'); });
+      }
+    }
+
+    // Sort category groups alphabetically by their label
+    var sortedGroups = [];
     for (var catKey in categories) {
-      if (categories.hasOwnProperty(catKey) && grouped[catKey]) {
-        html += '<optgroup label="' + categories[catKey] + '">';
-        for (var i = 0; i < grouped[catKey].length; i++) {
-          var r = grouped[catKey][i];
+      if (categories.hasOwnProperty(catKey)) {
+        sortedGroups.push({ key: catKey, label: categories[catKey] });
+      }
+    }
+    sortedGroups.sort(function(a, b) { return a.label.localeCompare(b.label, 'pl'); });
+
+    // Generate optgroups in sorted order
+    for (var gi = 0; gi < sortedGroups.length; gi++) {
+      var grp = sortedGroups[gi];
+      if (grouped[grp.key]) {
+        html += '<optgroup label="' + grp.label + '">';
+        for (var i = 0; i < grouped[grp.key].length; i++) {
+          var r = grouped[grp.key][i];
           var selected = (selectedValue === r.key) ? ' selected' : '';
           html += '<option value="' + r.key + '"' + selected + '>' + r.icon + ' ' + r.label + '</option>';
         }
@@ -100,12 +117,19 @@
     var categories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
     var html = '<option value="">-- Wybierz kategorię (opcjonalnie) --</option>';
 
+    // Convert to array and sort alphabetically by label
+    var sorted = [];
     for (var key in categories) {
       if (categories.hasOwnProperty(key)) {
-        var cat = categories[key];
-        var selected = (selectedValue === key) ? ' selected' : '';
-        html += '<option value="' + key + '"' + selected + '>' + (cat.icon || '📍') + ' ' + cat.label + '</option>';
+        sorted.push({ key: key, label: categories[key].label, icon: categories[key].icon });
       }
+    }
+    sorted.sort(function(a, b) { return a.label.localeCompare(b.label, 'pl'); });
+
+    for (var i = 0; i < sorted.length; i++) {
+      var cat = sorted[i];
+      var selected = (selectedValue === cat.key) ? ' selected' : '';
+      html += '<option value="' + cat.key + '"' + selected + '>' + (cat.icon || '📍') + ' ' + cat.label + '</option>';
     }
 
     return html;
@@ -116,12 +140,19 @@
     var categories = (window.JG_MAP_CFG && JG_MAP_CFG.curiosityCategories) || {};
     var html = '<option value="">-- Wybierz kategorię (opcjonalnie) --</option>';
 
+    // Convert to array and sort alphabetically by label
+    var sorted = [];
     for (var key in categories) {
       if (categories.hasOwnProperty(key)) {
-        var cat = categories[key];
-        var selected = (selectedValue === key) ? ' selected' : '';
-        html += '<option value="' + key + '"' + selected + '>' + (cat.icon || '💡') + ' ' + cat.label + '</option>';
+        sorted.push({ key: key, label: categories[key].label, icon: categories[key].icon });
       }
+    }
+    sorted.sort(function(a, b) { return a.label.localeCompare(b.label, 'pl'); });
+
+    for (var i = 0; i < sorted.length; i++) {
+      var cat = sorted[i];
+      var selected = (selectedValue === cat.key) ? ' selected' : '';
+      html += '<option value="' + cat.key + '"' + selected + '>' + (cat.icon || '💡') + ' ' + cat.label + '</option>';
     }
 
     return html;
@@ -8999,27 +9030,37 @@
         var placeCategoriesContainer = document.getElementById('jg-place-categories');
         var curiosityCategoriesContainer = document.getElementById('jg-curiosity-categories');
 
-        // Generate place category checkboxes
+        // Generate place category checkboxes (sorted alphabetically)
         if (placeCategoriesContainer && Object.keys(placeCategories).length > 0) {
-          var html = '<div class="jg-category-dropdown-header">Kategorie miejsc:</div><div class="jg-category-checkboxes">';
+          var sortedPlace = [];
           for (var key in placeCategories) {
             if (placeCategories.hasOwnProperty(key)) {
-              var cat = placeCategories[key];
-              html += '<label class="jg-category-filter-label"><input type="checkbox" data-map-place-category="' + key + '" checked><span class="jg-filter-icon">' + (cat.icon || '📍') + '</span><span>' + cat.label + '</span></label>';
+              sortedPlace.push({ key: key, label: placeCategories[key].label, icon: placeCategories[key].icon });
             }
+          }
+          sortedPlace.sort(function(a, b) { return a.label.localeCompare(b.label, 'pl'); });
+          var html = '<div class="jg-category-dropdown-header">Kategorie miejsc:</div><div class="jg-category-checkboxes">';
+          for (var i = 0; i < sortedPlace.length; i++) {
+            var cat = sortedPlace[i];
+            html += '<label class="jg-category-filter-label"><input type="checkbox" data-map-place-category="' + cat.key + '" checked><span class="jg-filter-icon">' + (cat.icon || '📍') + '</span><span>' + cat.label + '</span></label>';
           }
           html += '</div>';
           placeCategoriesContainer.innerHTML = html;
         }
 
-        // Generate curiosity category checkboxes
+        // Generate curiosity category checkboxes (sorted alphabetically)
         if (curiosityCategoriesContainer && Object.keys(curiosityCategories).length > 0) {
-          var html = '<div class="jg-category-dropdown-header">Kategorie ciekawostek:</div><div class="jg-category-checkboxes">';
+          var sortedCuriosity = [];
           for (var key in curiosityCategories) {
             if (curiosityCategories.hasOwnProperty(key)) {
-              var cat = curiosityCategories[key];
-              html += '<label class="jg-category-filter-label"><input type="checkbox" data-map-curiosity-category="' + key + '" checked><span class="jg-filter-icon">' + (cat.icon || '💡') + '</span><span>' + cat.label + '</span></label>';
+              sortedCuriosity.push({ key: key, label: curiosityCategories[key].label, icon: curiosityCategories[key].icon });
             }
+          }
+          sortedCuriosity.sort(function(a, b) { return a.label.localeCompare(b.label, 'pl'); });
+          var html = '<div class="jg-category-dropdown-header">Kategorie ciekawostek:</div><div class="jg-category-checkboxes">';
+          for (var i = 0; i < sortedCuriosity.length; i++) {
+            var cat = sortedCuriosity[i];
+            html += '<label class="jg-category-filter-label"><input type="checkbox" data-map-curiosity-category="' + cat.key + '" checked><span class="jg-filter-icon">' + (cat.icon || '💡') + '</span><span>' + cat.label + '</span></label>';
           }
           html += '</div>';
           curiosityCategoriesContainer.innerHTML = html;
