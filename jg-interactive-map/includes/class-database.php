@@ -1863,4 +1863,203 @@ class JG_Map_Database {
 
         return $counts;
     }
+
+    /**
+     * Get tags with usage counts, search, and pagination for admin management
+     *
+     * @param string $search Search query (optional)
+     * @param int    $page   Page number (1-based)
+     * @param int    $per_page Items per page
+     * @return array ['tags' => [...], 'total' => int, 'pages' => int]
+     */
+    public static function get_tags_paginated($search = '', $page = 1, $per_page = 20) {
+        global $wpdb;
+        $table = self::get_points_table();
+
+        // Get all tags JSON from published points
+        $rows = $wpdb->get_col(
+            "SELECT tags FROM $table WHERE status = 'publish' AND tags IS NOT NULL AND tags != ''"
+        );
+
+        // Parse and count tags
+        $tag_counts = array();
+        foreach ($rows as $tags_json) {
+            $tags = json_decode($tags_json, true);
+            if (is_array($tags)) {
+                foreach ($tags as $tag) {
+                    $tag = trim($tag);
+                    if ($tag !== '') {
+                        $lower = mb_strtolower($tag);
+                        if (!isset($tag_counts[$lower])) {
+                            $tag_counts[$lower] = array('name' => $tag, 'count' => 0);
+                        }
+                        $tag_counts[$lower]['count']++;
+                    }
+                }
+            }
+        }
+
+        // Sort alphabetically
+        ksort($tag_counts);
+
+        // Filter by search
+        if (!empty($search)) {
+            $search_lower = mb_strtolower($search);
+            $tag_counts = array_filter($tag_counts, function($item) use ($search_lower) {
+                return mb_strpos(mb_strtolower($item['name']), $search_lower) !== false;
+            });
+        }
+
+        $total = count($tag_counts);
+        $pages = max(1, (int) ceil($total / $per_page));
+        $page = max(1, min($page, $pages));
+        $offset = ($page - 1) * $per_page;
+
+        $tags = array_values(array_slice($tag_counts, $offset, $per_page));
+
+        return array(
+            'tags' => $tags,
+            'total' => $total,
+            'pages' => $pages,
+            'page' => $page,
+        );
+    }
+
+    /**
+     * Rename a tag across all points
+     *
+     * @param string $old_name Current tag name
+     * @param string $new_name New tag name
+     * @return int Number of updated points
+     */
+    public static function rename_tag($old_name, $new_name) {
+        global $wpdb;
+        $table = self::get_points_table();
+
+        $like_pattern = '%' . $wpdb->esc_like('"' . $old_name . '"') . '%';
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT id, tags FROM $table WHERE tags LIKE %s",
+            $like_pattern
+        ), ARRAY_A);
+
+        $updated = 0;
+        foreach ($rows as $row) {
+            $tags = json_decode($row['tags'], true);
+            if (!is_array($tags)) continue;
+
+            $changed = false;
+            foreach ($tags as &$tag) {
+                if (mb_strtolower(trim($tag)) === mb_strtolower($old_name)) {
+                    $tag = $new_name;
+                    $changed = true;
+                }
+            }
+            unset($tag);
+
+            if ($changed) {
+                // Deduplicate after rename (case-insensitive)
+                $seen = array();
+                $unique_tags = array();
+                foreach ($tags as $t) {
+                    $lower = mb_strtolower($t);
+                    if (!isset($seen[$lower])) {
+                        $seen[$lower] = true;
+                        $unique_tags[] = $t;
+                    }
+                }
+
+                $wpdb->update(
+                    $table,
+                    array('tags' => json_encode(array_values($unique_tags), JSON_UNESCAPED_UNICODE)),
+                    array('id' => $row['id']),
+                    array('%s'),
+                    array('%d')
+                );
+                $updated++;
+            }
+        }
+
+        if ($updated > 0) {
+            self::invalidate_points_cache();
+        }
+
+        return $updated;
+    }
+
+    /**
+     * Delete a tag from all points
+     *
+     * @param string $tag_name Tag to delete
+     * @return int Number of updated points
+     */
+    public static function delete_tag($tag_name) {
+        global $wpdb;
+        $table = self::get_points_table();
+
+        $like_pattern = '%' . $wpdb->esc_like('"' . $tag_name . '"') . '%';
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT id, tags FROM $table WHERE tags LIKE %s",
+            $like_pattern
+        ), ARRAY_A);
+
+        $updated = 0;
+        foreach ($rows as $row) {
+            $tags = json_decode($row['tags'], true);
+            if (!is_array($tags)) continue;
+
+            $new_tags = array_values(array_filter($tags, function($tag) use ($tag_name) {
+                return mb_strtolower(trim($tag)) !== mb_strtolower($tag_name);
+            }));
+
+            $tags_json = !empty($new_tags) ? json_encode($new_tags, JSON_UNESCAPED_UNICODE) : null;
+            $wpdb->update(
+                $table,
+                array('tags' => $tags_json),
+                array('id' => $row['id']),
+                array('%s'),
+                array('%d')
+            );
+            $updated++;
+        }
+
+        if ($updated > 0) {
+            self::invalidate_points_cache();
+        }
+
+        return $updated;
+    }
+
+    /**
+     * Get all unique tag names for search suggestions
+     *
+     * @return array List of tag names
+     */
+    public static function get_all_tag_names() {
+        global $wpdb;
+        $table = self::get_points_table();
+
+        $rows = $wpdb->get_col(
+            "SELECT DISTINCT tags FROM $table WHERE tags IS NOT NULL AND tags != ''"
+        );
+
+        $all_tags = array();
+        foreach ($rows as $tags_json) {
+            $tags = json_decode($tags_json, true);
+            if (is_array($tags)) {
+                foreach ($tags as $tag) {
+                    $tag = trim($tag);
+                    if ($tag !== '') {
+                        $lower = mb_strtolower($tag);
+                        if (!isset($all_tags[$lower])) {
+                            $all_tags[$lower] = $tag;
+                        }
+                    }
+                }
+            }
+        }
+
+        $result = array_values($all_tags);
+        sort($result);
+        return $result;
+    }
 }

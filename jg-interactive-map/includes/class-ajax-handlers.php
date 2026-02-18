@@ -567,6 +567,12 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_search_users', array($this, 'admin_search_users'), 1);
         add_action('wp_ajax_jg_get_full_point_history', array($this, 'get_full_point_history'), 1);
         add_action('wp_ajax_jg_admin_revert_to_history', array($this, 'admin_revert_to_history'), 1);
+
+        // Tag management (admin)
+        add_action('wp_ajax_jg_admin_get_tags_paginated', array($this, 'admin_get_tags_paginated'), 1);
+        add_action('wp_ajax_jg_admin_rename_tag', array($this, 'admin_rename_tag'), 1);
+        add_action('wp_ajax_jg_admin_delete_tag', array($this, 'admin_delete_tag'), 1);
+        add_action('wp_ajax_jg_admin_get_tag_suggestions', array($this, 'admin_get_tag_suggestions'), 1);
         add_action('wp_ajax_jg_admin_delete_history_entry', array($this, 'admin_delete_history_entry'), 1);
 
         // Report reasons management (admin only)
@@ -8626,5 +8632,95 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success($results);
+    }
+
+    /**
+     * Get tags with pagination and search for admin management
+     */
+    public function admin_get_tags_paginated() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $search = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
+        $page = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
+        $per_page = isset($_POST['per_page']) ? max(1, min(100, intval($_POST['per_page']))) : 20;
+
+        $result = JG_Map_Database::get_tags_paginated($search, $page, $per_page);
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Rename a tag (admin only)
+     */
+    public function admin_rename_tag() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $old_name = isset($_POST['old_name']) ? sanitize_text_field(wp_unslash($_POST['old_name'])) : '';
+        $new_name = isset($_POST['new_name']) ? sanitize_text_field(wp_unslash($_POST['new_name'])) : '';
+
+        if (empty($old_name) || empty($new_name)) {
+            wp_send_json_error(array('message' => 'Nazwa tagu nie może być pusta'));
+            return;
+        }
+
+        if (mb_strlen($new_name) > 50) {
+            wp_send_json_error(array('message' => 'Nazwa tagu jest zbyt długa (max 50 znaków)'));
+            return;
+        }
+
+        $updated = JG_Map_Database::rename_tag($old_name, $new_name);
+
+        JG_Map_Activity_Log::log(
+            'rename_tag',
+            'tag',
+            0,
+            sprintf('Zmieniono tag "%s" na "%s" (%d miejsc zaktualizowanych)', $old_name, $new_name, $updated)
+        );
+
+        wp_send_json_success(array(
+            'message' => sprintf('Tag zmieniony. Zaktualizowano %d miejsc.', $updated),
+            'updated' => $updated,
+        ));
+    }
+
+    /**
+     * Delete a tag from all points (admin only)
+     */
+    public function admin_delete_tag() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $tag_name = isset($_POST['tag_name']) ? sanitize_text_field(wp_unslash($_POST['tag_name'])) : '';
+
+        if (empty($tag_name)) {
+            wp_send_json_error(array('message' => 'Nazwa tagu nie może być pusta'));
+            return;
+        }
+
+        $updated = JG_Map_Database::delete_tag($tag_name);
+
+        JG_Map_Activity_Log::log(
+            'delete_tag',
+            'tag',
+            0,
+            sprintf('Usunięto tag "%s" z %d miejsc', $tag_name, $updated)
+        );
+
+        wp_send_json_success(array(
+            'message' => sprintf('Tag usunięty z %d miejsc.', $updated),
+            'updated' => $updated,
+        ));
+    }
+
+    /**
+     * Get all tag names for search suggestions (admin only)
+     */
+    public function admin_get_tag_suggestions() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $tags = JG_Map_Database::get_all_tag_names();
+        wp_send_json_success($tags);
     }
 }

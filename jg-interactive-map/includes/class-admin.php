@@ -444,6 +444,15 @@ class JG_Map_Admin {
             array($this, 'render_achievements_editor_page')
         );
 
+        add_submenu_page(
+            'jg-map-places',
+            'Zarządzanie tagami',
+            'Tagi',
+            'manage_options',
+            'jg-map-tags',
+            array($this, 'render_tags_page')
+        );
+
     }
 
     /**
@@ -6349,6 +6358,523 @@ JAVASCRIPT;
                         status.style.display = 'inline';
                     });
                 };
+            })();
+            </script>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render tag management page
+     */
+    public function render_tags_page() {
+        ?>
+        <div class="wrap">
+            <h1>Zarządzanie tagami</h1>
+
+            <style>
+                .jg-tags-manager { max-width: 900px; margin-top: 20px; }
+                .jg-tags-manager .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+                .jg-tags-manager h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+                .jg-tags-search-wrap { position: relative; margin-bottom: 20px; }
+                .jg-tags-search-input {
+                    width: 100%; padding: 10px 14px; font-size: 14px;
+                    border: 1px solid #ddd; border-radius: 6px;
+                    box-sizing: border-box; transition: border-color 0.2s;
+                }
+                .jg-tags-search-input:focus { outline: none; border-color: #8d2324; box-shadow: 0 0 0 2px rgba(141,35,36,0.1); }
+                .jg-tags-suggestions {
+                    position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+                    background: #fff; border: 1px solid #ddd; border-top: none;
+                    border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto;
+                    display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                }
+                .jg-tags-suggestions.visible { display: block; }
+                .jg-tags-suggestion-item {
+                    padding: 8px 14px; cursor: pointer; font-size: 13px;
+                    border-bottom: 1px solid #f3f4f6; transition: background 0.15s;
+                }
+                .jg-tags-suggestion-item:last-child { border-bottom: none; }
+                .jg-tags-suggestion-item:hover, .jg-tags-suggestion-item.active { background: #f3f4f6; }
+                .jg-tags-suggestion-item mark { background: #fef3c7; padding: 0; border-radius: 2px; }
+                .jg-tags-stats { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+                .jg-tags-stat {
+                    background: #f9fafb; padding: 10px 16px; border-radius: 6px;
+                    border: 1px solid #e5e7eb; font-size: 13px; color: #666;
+                }
+                .jg-tags-stat strong { color: #333; font-size: 16px; display: block; margin-bottom: 2px; }
+                .jg-tags-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+                .jg-tags-table th {
+                    text-align: left; padding: 10px 12px; background: #f9fafb;
+                    border-bottom: 2px solid #e5e7eb; font-size: 13px; color: #666;
+                    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+                }
+                .jg-tags-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+                .jg-tags-table tr:hover td { background: #f9fafb; }
+                .jg-tag-name { font-weight: 500; color: #333; }
+                .jg-tag-count {
+                    display: inline-flex; align-items: center; justify-content: center;
+                    background: #e5e7eb; color: #374151; padding: 2px 10px;
+                    border-radius: 12px; font-size: 12px; font-weight: 600; min-width: 24px;
+                }
+                .jg-tag-actions { display: flex; gap: 6px; }
+                .jg-tag-btn {
+                    background: none; border: 1px solid #ddd; cursor: pointer;
+                    padding: 5px 10px; border-radius: 4px; font-size: 12px;
+                    transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+                }
+                .jg-tag-btn:hover { background: #f3f4f6; border-color: #999; }
+                .jg-tag-btn.edit:hover { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
+                .jg-tag-btn.delete:hover { background: #fef2f2; border-color: #ef4444; color: #dc2626; }
+                .jg-tags-pagination {
+                    display: flex; align-items: center; justify-content: center;
+                    gap: 4px; margin-top: 16px;
+                }
+                .jg-tags-pagination button {
+                    padding: 6px 12px; border: 1px solid #ddd; background: #fff;
+                    border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;
+                    min-width: 36px;
+                }
+                .jg-tags-pagination button:hover:not(:disabled) { background: #f3f4f6; border-color: #999; }
+                .jg-tags-pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+                .jg-tags-pagination button.current { background: #8d2324; color: #fff; border-color: #8d2324; }
+                .jg-tags-pagination .page-info { font-size: 13px; color: #666; margin: 0 8px; }
+                .jg-tags-empty { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
+                .jg-tags-loading { text-align: center; padding: 30px; color: #666; }
+                .jg-tag-edit-row td { background: #fffbeb !important; }
+                .jg-tag-edit-input {
+                    padding: 6px 10px; border: 1px solid #f59e0b; border-radius: 4px;
+                    font-size: 14px; width: 250px; outline: none;
+                }
+                .jg-tag-edit-input:focus { border-color: #d97706; box-shadow: 0 0 0 2px rgba(245,158,11,0.2); }
+                .jg-tag-btn.save { background: #059669; color: #fff; border-color: #059669; }
+                .jg-tag-btn.save:hover { background: #047857; }
+                .jg-tag-btn.cancel { background: #6b7280; color: #fff; border-color: #6b7280; }
+                .jg-tag-btn.cancel:hover { background: #4b5563; }
+                .jg-tags-toast {
+                    position: fixed; bottom: 30px; right: 30px; z-index: 9999;
+                    padding: 12px 20px; border-radius: 8px; color: #fff; font-size: 14px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0;
+                    transform: translateY(10px); transition: all 0.3s;
+                }
+                .jg-tags-toast.visible { opacity: 1; transform: translateY(0); }
+                .jg-tags-toast.success { background: #059669; }
+                .jg-tags-toast.error { background: #dc2626; }
+                .jg-confirm-overlay {
+                    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0,0,0,0.5); z-index: 9998;
+                    display: flex; align-items: center; justify-content: center;
+                }
+                .jg-confirm-box {
+                    background: #fff; border-radius: 12px; padding: 24px; max-width: 420px;
+                    width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                }
+                .jg-confirm-box h3 { margin: 0 0 8px; font-size: 16px; color: #333; }
+                .jg-confirm-box p { margin: 0 0 20px; font-size: 14px; color: #666; line-height: 1.5; }
+                .jg-confirm-box .jg-btn-row { display: flex; gap: 10px; justify-content: flex-end; }
+                .jg-confirm-box button {
+                    padding: 8px 18px; border-radius: 6px; font-size: 13px;
+                    cursor: pointer; border: 1px solid #ddd; transition: all 0.2s;
+                }
+                .jg-confirm-box .btn-cancel { background: #f3f4f6; color: #333; }
+                .jg-confirm-box .btn-cancel:hover { background: #e5e7eb; }
+                .jg-confirm-box .btn-danger { background: #dc2626; color: #fff; border-color: #dc2626; }
+                .jg-confirm-box .btn-danger:hover { background: #b91c1c; }
+            </style>
+
+            <div class="jg-tags-manager">
+                <div class="card">
+                    <h2>Tagi</h2>
+                    <p class="description">Zarządzaj tagami przypisanymi do miejsc na mapie. Możesz wyszukiwać, edytować nazwy i usuwać tagi.</p>
+
+                    <div class="jg-tags-stats" id="jg-tags-stats"></div>
+
+                    <div class="jg-tags-search-wrap">
+                        <input type="text" class="jg-tags-search-input" id="jg-tags-search"
+                               placeholder="Szukaj tagów..." autocomplete="off">
+                        <div class="jg-tags-suggestions" id="jg-tags-suggestions"></div>
+                    </div>
+
+                    <div id="jg-tags-content">
+                        <div class="jg-tags-loading">Ładowanie tagów...</div>
+                    </div>
+
+                    <div class="jg-tags-pagination" id="jg-tags-pagination"></div>
+                </div>
+            </div>
+
+            <div id="jg-tags-toast" class="jg-tags-toast"></div>
+
+            <script>
+            (function() {
+                const ajaxUrl = '<?php echo esc_url(admin_url('admin-ajax.php')); ?>';
+                const nonce = '<?php echo wp_create_nonce('jg_map_nonce'); ?>';
+
+                let currentPage = 1;
+                let currentSearch = '';
+                let allTagNames = [];
+                let editingTag = null;
+                let suggestionsActive = -1;
+                let debounceTimer = null;
+
+                // Initialize
+                loadTags();
+                loadSuggestions();
+
+                // Search input
+                const searchInput = document.getElementById('jg-tags-search');
+                const suggestionsEl = document.getElementById('jg-tags-suggestions');
+
+                searchInput.addEventListener('input', function() {
+                    const val = this.value.trim();
+                    showSuggestions(val);
+
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(function() {
+                        currentSearch = val;
+                        currentPage = 1;
+                        loadTags();
+                    }, 300);
+                });
+
+                searchInput.addEventListener('keydown', function(e) {
+                    const items = suggestionsEl.querySelectorAll('.jg-tags-suggestion-item');
+                    if (!items.length) return;
+
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        suggestionsActive = Math.min(suggestionsActive + 1, items.length - 1);
+                        updateActiveSuggestion(items);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        suggestionsActive = Math.max(suggestionsActive - 1, 0);
+                        updateActiveSuggestion(items);
+                    } else if (e.key === 'Enter' && suggestionsActive >= 0) {
+                        e.preventDefault();
+                        items[suggestionsActive].click();
+                    } else if (e.key === 'Escape') {
+                        hideSuggestions();
+                    }
+                });
+
+                searchInput.addEventListener('focus', function() {
+                    if (this.value.trim()) showSuggestions(this.value.trim());
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!e.target.closest('.jg-tags-search-wrap')) {
+                        hideSuggestions();
+                    }
+                });
+
+                function updateActiveSuggestion(items) {
+                    items.forEach(function(item, i) {
+                        item.classList.toggle('active', i === suggestionsActive);
+                    });
+                    if (suggestionsActive >= 0 && items[suggestionsActive]) {
+                        items[suggestionsActive].scrollIntoView({ block: 'nearest' });
+                    }
+                }
+
+                function showSuggestions(query) {
+                    if (!query || query.length < 1) {
+                        hideSuggestions();
+                        return;
+                    }
+                    const lower = query.toLowerCase();
+                    const matches = allTagNames.filter(function(t) {
+                        return t.toLowerCase().indexOf(lower) !== -1;
+                    }).slice(0, 10);
+
+                    if (!matches.length) {
+                        hideSuggestions();
+                        return;
+                    }
+
+                    suggestionsEl.innerHTML = matches.map(function(tag) {
+                        const idx = tag.toLowerCase().indexOf(lower);
+                        let html = '';
+                        if (idx >= 0) {
+                            html = escHtml(tag.substring(0, idx)) +
+                                   '<mark>' + escHtml(tag.substring(idx, idx + query.length)) + '</mark>' +
+                                   escHtml(tag.substring(idx + query.length));
+                        } else {
+                            html = escHtml(tag);
+                        }
+                        return '<div class="jg-tags-suggestion-item" data-tag="' + escAttr(tag) + '">' + html + '</div>';
+                    }).join('');
+
+                    suggestionsEl.classList.add('visible');
+                    suggestionsActive = -1;
+
+                    suggestionsEl.querySelectorAll('.jg-tags-suggestion-item').forEach(function(item) {
+                        item.addEventListener('click', function() {
+                            searchInput.value = this.dataset.tag;
+                            currentSearch = this.dataset.tag;
+                            currentPage = 1;
+                            hideSuggestions();
+                            loadTags();
+                        });
+                    });
+                }
+
+                function hideSuggestions() {
+                    suggestionsEl.classList.remove('visible');
+                    suggestionsActive = -1;
+                }
+
+                function loadSuggestions() {
+                    jQuery.post(ajaxUrl, {
+                        action: 'jg_admin_get_tag_suggestions',
+                        _ajax_nonce: nonce
+                    }, function(res) {
+                        if (res.success) {
+                            allTagNames = res.data;
+                        }
+                    });
+                }
+
+                function loadTags() {
+                    const content = document.getElementById('jg-tags-content');
+                    content.innerHTML = '<div class="jg-tags-loading">Ładowanie tagów...</div>';
+
+                    jQuery.post(ajaxUrl, {
+                        action: 'jg_admin_get_tags_paginated',
+                        _ajax_nonce: nonce,
+                        search: currentSearch,
+                        page: currentPage,
+                        per_page: 20
+                    }, function(res) {
+                        if (!res.success) {
+                            content.innerHTML = '<div class="jg-tags-empty">Błąd ładowania tagów</div>';
+                            return;
+                        }
+
+                        const data = res.data;
+                        renderStats(data.total);
+                        renderTable(data.tags);
+                        renderPagination(data.page, data.pages, data.total);
+                    });
+                }
+
+                function renderStats(total) {
+                    document.getElementById('jg-tags-stats').innerHTML =
+                        '<div class="jg-tags-stat"><strong>' + total + '</strong>' +
+                        (currentSearch ? 'znalezionych tagów' : 'tagów łącznie') + '</div>';
+                }
+
+                function renderTable(tags) {
+                    const content = document.getElementById('jg-tags-content');
+
+                    if (!tags.length) {
+                        content.innerHTML = '<div class="jg-tags-empty">' +
+                            (currentSearch ? 'Nie znaleziono tagów pasujących do "' + escHtml(currentSearch) + '"' : 'Brak tagów') +
+                            '</div>';
+                        return;
+                    }
+
+                    let html = '<table class="jg-tags-table"><thead><tr>' +
+                        '<th>Tag</th><th>Liczba miejsc</th><th>Akcje</th>' +
+                        '</tr></thead><tbody>';
+
+                    tags.forEach(function(tag) {
+                        html += '<tr data-tag="' + escAttr(tag.name) + '">' +
+                            '<td><span class="jg-tag-name">#' + escHtml(tag.name) + '</span></td>' +
+                            '<td><span class="jg-tag-count">' + tag.count + '</span></td>' +
+                            '<td class="jg-tag-actions">' +
+                                '<button class="jg-tag-btn edit" onclick="jgEditTag(\'' + escJs(tag.name) + '\')" title="Edytuj">' +
+                                    '✏️ Edytuj</button>' +
+                                '<button class="jg-tag-btn delete" onclick="jgDeleteTag(\'' + escJs(tag.name) + '\', ' + tag.count + ')" title="Usuń">' +
+                                    '🗑️ Usuń</button>' +
+                            '</td></tr>';
+                    });
+
+                    html += '</tbody></table>';
+                    content.innerHTML = html;
+                }
+
+                function renderPagination(page, pages, total) {
+                    const pag = document.getElementById('jg-tags-pagination');
+                    if (pages <= 1) {
+                        pag.innerHTML = '';
+                        return;
+                    }
+
+                    let html = '<button ' + (page <= 1 ? 'disabled' : 'onclick="jgTagsPage(1)"') + ' title="Pierwsza strona">&laquo;</button>';
+                    html += '<button ' + (page <= 1 ? 'disabled' : 'onclick="jgTagsPage(' + (page - 1) + ')"') + '>&lsaquo;</button>';
+
+                    // Page numbers
+                    let startPage = Math.max(1, page - 2);
+                    let endPage = Math.min(pages, page + 2);
+
+                    if (startPage > 1) {
+                        html += '<button onclick="jgTagsPage(1)">1</button>';
+                        if (startPage > 2) html += '<span class="page-info">...</span>';
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                        html += '<button class="' + (i === page ? 'current' : '') + '" onclick="jgTagsPage(' + i + ')">' + i + '</button>';
+                    }
+
+                    if (endPage < pages) {
+                        if (endPage < pages - 1) html += '<span class="page-info">...</span>';
+                        html += '<button onclick="jgTagsPage(' + pages + ')">' + pages + '</button>';
+                    }
+
+                    html += '<button ' + (page >= pages ? 'disabled' : 'onclick="jgTagsPage(' + (page + 1) + ')"') + '>&rsaquo;</button>';
+                    html += '<button ' + (page >= pages ? 'disabled' : 'onclick="jgTagsPage(' + pages + ')"') + ' title="Ostatnia strona">&raquo;</button>';
+
+                    pag.innerHTML = html;
+                }
+
+                // Global functions
+                window.jgTagsPage = function(page) {
+                    currentPage = page;
+                    loadTags();
+                    document.querySelector('.jg-tags-manager .card').scrollIntoView({ behavior: 'smooth' });
+                };
+
+                window.jgEditTag = function(tagName) {
+                    // Switch the row to edit mode
+                    const row = document.querySelector('tr[data-tag="' + CSS.escape(tagName) + '"]');
+                    if (!row) return;
+
+                    editingTag = tagName;
+                    row.classList.add('jg-tag-edit-row');
+                    const nameCell = row.querySelector('td:first-child');
+                    const actionsCell = row.querySelector('.jg-tag-actions');
+
+                    nameCell.innerHTML = '<input type="text" class="jg-tag-edit-input" id="jg-tag-edit-input" value="' + escAttr(tagName) + '" maxlength="50">';
+                    actionsCell.innerHTML =
+                        '<button class="jg-tag-btn save" onclick="jgSaveTag()">Zapisz</button>' +
+                        '<button class="jg-tag-btn cancel" onclick="jgCancelEdit()">Anuluj</button>';
+
+                    const input = document.getElementById('jg-tag-edit-input');
+                    input.focus();
+                    input.select();
+
+                    input.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') jgSaveTag();
+                        if (e.key === 'Escape') jgCancelEdit();
+                    });
+                };
+
+                window.jgSaveTag = function() {
+                    const input = document.getElementById('jg-tag-edit-input');
+                    if (!input || !editingTag) return;
+
+                    const newName = input.value.trim();
+                    if (!newName) {
+                        showToast('Nazwa tagu nie może być pusta', 'error');
+                        return;
+                    }
+                    if (newName === editingTag) {
+                        jgCancelEdit();
+                        return;
+                    }
+
+                    input.disabled = true;
+
+                    jQuery.post(ajaxUrl, {
+                        action: 'jg_admin_rename_tag',
+                        _ajax_nonce: nonce,
+                        old_name: editingTag,
+                        new_name: newName
+                    }, function(res) {
+                        if (res.success) {
+                            showToast(res.data.message, 'success');
+                            editingTag = null;
+                            loadTags();
+                            loadSuggestions();
+                        } else {
+                            showToast(res.data.message || 'Błąd', 'error');
+                            input.disabled = false;
+                        }
+                    }).fail(function() {
+                        showToast('Błąd połączenia', 'error');
+                        input.disabled = false;
+                    });
+                };
+
+                window.jgCancelEdit = function() {
+                    editingTag = null;
+                    loadTags();
+                };
+
+                window.jgDeleteTag = function(tagName, count) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'jg-confirm-overlay';
+                    overlay.innerHTML =
+                        '<div class="jg-confirm-box">' +
+                            '<h3>Usuń tag</h3>' +
+                            '<p>Czy na pewno chcesz usunąć tag <strong>#' + escHtml(tagName) + '</strong>?<br>' +
+                            'Tag zostanie usunięty z <strong>' + count + '</strong> ' + pluralize(count) + '.</p>' +
+                            '<div class="jg-btn-row">' +
+                                '<button class="btn-cancel" id="jg-confirm-cancel">Anuluj</button>' +
+                                '<button class="btn-danger" id="jg-confirm-delete">Usuń tag</button>' +
+                            '</div>' +
+                        '</div>';
+
+                    document.body.appendChild(overlay);
+
+                    document.getElementById('jg-confirm-cancel').addEventListener('click', function() {
+                        overlay.remove();
+                    });
+                    overlay.addEventListener('click', function(e) {
+                        if (e.target === overlay) overlay.remove();
+                    });
+
+                    document.getElementById('jg-confirm-delete').addEventListener('click', function() {
+                        this.disabled = true;
+                        this.textContent = 'Usuwanie...';
+
+                        jQuery.post(ajaxUrl, {
+                            action: 'jg_admin_delete_tag',
+                            _ajax_nonce: nonce,
+                            tag_name: tagName
+                        }, function(res) {
+                            overlay.remove();
+                            if (res.success) {
+                                showToast(res.data.message, 'success');
+                                loadTags();
+                                loadSuggestions();
+                            } else {
+                                showToast(res.data.message || 'Błąd', 'error');
+                            }
+                        }).fail(function() {
+                            overlay.remove();
+                            showToast('Błąd połączenia', 'error');
+                        });
+                    });
+                };
+
+                function pluralize(count) {
+                    if (count === 1) return 'miejsca';
+                    return 'miejsc';
+                }
+
+                function showToast(message, type) {
+                    const toast = document.getElementById('jg-tags-toast');
+                    toast.textContent = message;
+                    toast.className = 'jg-tags-toast ' + type + ' visible';
+                    setTimeout(function() {
+                        toast.classList.remove('visible');
+                    }, 3000);
+                }
+
+                function escHtml(str) {
+                    var div = document.createElement('div');
+                    div.appendChild(document.createTextNode(str));
+                    return div.innerHTML;
+                }
+
+                function escAttr(str) {
+                    return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                }
+
+                function escJs(str) {
+                    return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                }
             })();
             </script>
         </div>
