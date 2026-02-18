@@ -6576,14 +6576,18 @@ JAVASCRIPT;
                     }
                 }
 
+                function removeDiacritics(str) {
+                    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0142/g, 'l').replace(/\u0141/g, 'L');
+                }
+
                 function showSuggestions(query) {
                     if (!query || query.length < 1) {
                         hideSuggestions();
                         return;
                     }
-                    const lower = query.toLowerCase();
+                    const normalizedQuery = removeDiacritics(query.toLowerCase());
                     const matches = allTagNames.filter(function(t) {
-                        return t.toLowerCase().indexOf(lower) !== -1;
+                        return removeDiacritics(t.toLowerCase()).indexOf(normalizedQuery) !== -1;
                     }).slice(0, 10);
 
                     if (!matches.length) {
@@ -6592,7 +6596,8 @@ JAVASCRIPT;
                     }
 
                     suggestionsEl.innerHTML = matches.map(function(tag) {
-                        const idx = tag.toLowerCase().indexOf(lower);
+                        var normalizedTag = removeDiacritics(tag.toLowerCase());
+                        var idx = normalizedTag.indexOf(normalizedQuery);
                         let html = '';
                         if (idx >= 0) {
                             html = escHtml(tag.substring(0, idx)) +

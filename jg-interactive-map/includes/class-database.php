@@ -1902,11 +1902,12 @@ class JG_Map_Database {
         // Sort alphabetically
         ksort($tag_counts);
 
-        // Filter by search
+        // Filter by search (diacritics-insensitive for Polish characters)
         if (!empty($search)) {
-            $search_lower = mb_strtolower($search);
-            $tag_counts = array_filter($tag_counts, function($item) use ($search_lower) {
-                return mb_strpos(mb_strtolower($item['name']), $search_lower) !== false;
+            $search_normalized = self::remove_diacritics(mb_strtolower($search));
+            $tag_counts = array_filter($tag_counts, function($item) use ($search_normalized) {
+                $tag_normalized = self::remove_diacritics(mb_strtolower($item['name']));
+                return mb_strpos($tag_normalized, $search_normalized) !== false;
             });
         }
 
@@ -2061,5 +2062,20 @@ class JG_Map_Database {
         $result = array_values($all_tags);
         sort($result);
         return $result;
+    }
+
+    /**
+     * Remove Polish diacritics from a string for search comparison
+     *
+     * @param string $str Input string
+     * @return string String without diacritics
+     */
+    public static function remove_diacritics($str) {
+        return strtr($str, array(
+            'ą' => 'a', 'ć' => 'c', 'ę' => 'e', 'ł' => 'l', 'ń' => 'n',
+            'ó' => 'o', 'ś' => 's', 'ź' => 'z', 'ż' => 'z',
+            'Ą' => 'A', 'Ć' => 'C', 'Ę' => 'E', 'Ł' => 'L', 'Ń' => 'N',
+            'Ó' => 'O', 'Ś' => 'S', 'Ź' => 'Z', 'Ż' => 'Z',
+        ));
     }
 }
