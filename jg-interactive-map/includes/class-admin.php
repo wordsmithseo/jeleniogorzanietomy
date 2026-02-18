@@ -4293,6 +4293,7 @@ class JG_Map_Admin {
                 .jg-manual-emoji { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
                 .jg-manual-emoji input { width: 60px; font-size: 24px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
                 .jg-manual-emoji .hint { font-size: 11px; color: #666; }
+                .jg-manual-emoji input.invalid { border-color: #c62828; }
                 .jg-icon-mode { display: flex; gap: 10px; margin-bottom: 10px; }
                 .jg-icon-mode label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
                 .jg-btn-row { display: flex; gap: 10px; margin-top: 15px; }
@@ -4475,6 +4476,19 @@ class JG_Map_Admin {
                 // Store current data
                 let categories = <?php echo json_encode($categories); ?>;
                 let reasons = <?php echo json_encode($reasons); ?>;
+
+                // Emoji validation function
+                function jgIsValidEmoji(str) {
+                    str = str.trim();
+                    if (!str) return false;
+                    if (/[a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/.test(str)) return false;
+                    return /\p{Extended_Pictographic}/u.test(str);
+                }
+
+                function jgGetFirstReportEmoji() {
+                    const btn = document.querySelector('#emoji-picker .jg-emoji-btn');
+                    return btn ? btn.textContent.trim() : '📌';
+                }
 
                 // Category functions
                 window.jgToggleAddCategory = function() {
@@ -4680,12 +4694,18 @@ class JG_Map_Admin {
                 window.jgManualEmojiInput = function(input) {
                     const emoji = input.value.trim();
                     if (emoji) {
-                        document.getElementById('icon-preview').textContent = emoji;
-                        document.getElementById('new-reason-icon').value = emoji;
-                        // Deselect all picker buttons
+                        if (jgIsValidEmoji(emoji)) {
+                            input.classList.remove('invalid');
+                            document.getElementById('icon-preview').textContent = emoji;
+                            document.getElementById('new-reason-icon').value = emoji;
+                        } else {
+                            input.classList.add('invalid');
+                        }
                         document.querySelectorAll('#emoji-picker .jg-emoji-btn').forEach(btn => {
                             btn.classList.remove('selected');
                         });
+                    } else {
+                        input.classList.remove('invalid');
                     }
                 };
 
@@ -4693,6 +4713,7 @@ class JG_Map_Admin {
                     document.getElementById('icon-preview').textContent = emoji;
                     document.getElementById('new-reason-icon').value = emoji;
                     document.getElementById('new-reason-icon-manual').value = emoji;
+                    document.getElementById('new-reason-icon-manual').classList.remove('invalid');
 
                     document.querySelectorAll('#emoji-picker .jg-emoji-btn').forEach(btn => {
                         btn.classList.toggle('selected', btn.textContent === emoji);
@@ -5362,6 +5383,10 @@ JAVASCRIPT;
                 .jg-emoji-btn.selected { background: #2196f3; border-color: #1976d2; }
                 .jg-icon-preview { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
                 .jg-icon-preview .preview { font-size: 32px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #ddd; border-radius: 8px; }
+                .jg-manual-emoji { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+                .jg-manual-emoji input { width: 60px; font-size: 24px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
+                .jg-manual-emoji .hint { font-size: 11px; color: #666; }
+                .jg-manual-emoji input.invalid { border-color: #c62828; }
                 .jg-btn-row { display: flex; gap: 10px; margin-top: 15px; }
                 .jg-edit-inline { display: none; padding: 15px; background: #fff3e0; border-radius: 6px; margin-top: 15px; }
                 .jg-edit-inline.visible { display: block; }
@@ -5396,7 +5421,12 @@ JAVASCRIPT;
                         <label>Ikona</label>
                         <div class="jg-icon-preview">
                             <div class="preview" id="place-icon-preview">📍</div>
-                            <span>Wybierz ikonę z listy poniżej</span>
+                            <span>Wybierz ikonę z listy lub wklej własne emoji</span>
+                        </div>
+
+                        <div class="jg-manual-emoji">
+                            <input type="text" id="new-place-cat-icon-manual" maxlength="4" placeholder="📍" oninput="jgManualPlaceEmojiInput(this)">
+                            <span class="hint">Wklej własne emoji</span>
                         </div>
 
                         <div class="jg-emoji-picker" id="place-emoji-picker">
@@ -5423,6 +5453,12 @@ JAVASCRIPT;
                         <label>Ikona</label>
                         <div class="jg-icon-preview">
                             <div class="preview" id="edit-place-icon-preview">📍</div>
+                            <span>Wybierz ikonę z listy lub wklej własne emoji</span>
+                        </div>
+
+                        <div class="jg-manual-emoji">
+                            <input type="text" id="edit-place-cat-icon-manual" maxlength="4" placeholder="📍" oninput="jgManualPlaceEmojiInputEdit(this)">
+                            <span class="hint">Wklej własne emoji</span>
                         </div>
 
                         <div class="jg-emoji-picker" id="edit-place-emoji-picker">
@@ -5448,6 +5484,19 @@ JAVASCRIPT;
                 // Store current data
                 let categories = <?php echo json_encode($categories); ?>;
 
+                // Emoji validation function
+                function jgIsValidEmoji(str) {
+                    str = str.trim();
+                    if (!str) return false;
+                    if (/[a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/.test(str)) return false;
+                    return /\p{Extended_Pictographic}/u.test(str);
+                }
+
+                function jgGetFirstPlaceEmoji() {
+                    const btn = document.querySelector('#place-emoji-picker .jg-emoji-btn');
+                    return btn ? btn.textContent.trim() : '📍';
+                }
+
                 // Toggle add form
                 window.jgToggleAddPlaceCategory = function() {
                     const form = document.getElementById('jg-add-place-category-form');
@@ -5455,10 +5504,31 @@ JAVASCRIPT;
                     document.getElementById('jg-edit-place-category-form').classList.remove('visible');
                 };
 
+                // Manual emoji input for new category
+                window.jgManualPlaceEmojiInput = function(input) {
+                    const emoji = input.value.trim();
+                    if (emoji) {
+                        if (jgIsValidEmoji(emoji)) {
+                            input.classList.remove('invalid');
+                            document.getElementById('place-icon-preview').textContent = emoji;
+                            document.getElementById('new-place-cat-icon').value = emoji;
+                        } else {
+                            input.classList.add('invalid');
+                        }
+                        document.querySelectorAll('#place-emoji-picker .jg-emoji-btn').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
+                    } else {
+                        input.classList.remove('invalid');
+                    }
+                };
+
                 // Select emoji for new category
                 window.jgSelectPlaceEmoji = function(emoji) {
                     document.getElementById('place-icon-preview').textContent = emoji;
                     document.getElementById('new-place-cat-icon').value = emoji;
+                    document.getElementById('new-place-cat-icon-manual').value = emoji;
+                    document.getElementById('new-place-cat-icon-manual').classList.remove('invalid');
                     document.querySelectorAll('#place-emoji-picker .jg-emoji-btn').forEach(btn => {
                         btn.classList.toggle('selected', btn.textContent === emoji);
                     });
@@ -5468,7 +5538,10 @@ JAVASCRIPT;
                 window.jgSavePlaceCategory = function() {
                     const key = document.getElementById('new-place-cat-key').value.trim().toLowerCase().replace(/\s+/g, '_');
                     const label = document.getElementById('new-place-cat-label').value.trim();
-                    const icon = document.getElementById('new-place-cat-icon').value || '📍';
+                    let icon = document.getElementById('new-place-cat-icon').value || '📍';
+                    if (!jgIsValidEmoji(icon)) {
+                        icon = jgGetFirstPlaceEmoji();
+                    }
 
                     if (!key || !label) {
                         alert('Wypełnij wszystkie pola');
@@ -5510,6 +5583,8 @@ JAVASCRIPT;
                     document.getElementById('edit-place-cat-label').value = label;
                     document.getElementById('edit-place-cat-icon').value = icon;
                     document.getElementById('edit-place-icon-preview').textContent = icon;
+                    document.getElementById('edit-place-cat-icon-manual').value = icon;
+                    document.getElementById('edit-place-cat-icon-manual').classList.remove('invalid');
 
                     // Highlight current emoji
                     document.querySelectorAll('#edit-place-emoji-picker .jg-emoji-btn').forEach(btn => {
@@ -5524,10 +5599,31 @@ JAVASCRIPT;
                     document.getElementById('jg-edit-place-category-form').classList.remove('visible');
                 };
 
+                // Manual emoji input for edit
+                window.jgManualPlaceEmojiInputEdit = function(input) {
+                    const emoji = input.value.trim();
+                    if (emoji) {
+                        if (jgIsValidEmoji(emoji)) {
+                            input.classList.remove('invalid');
+                            document.getElementById('edit-place-icon-preview').textContent = emoji;
+                            document.getElementById('edit-place-cat-icon').value = emoji;
+                        } else {
+                            input.classList.add('invalid');
+                        }
+                        document.querySelectorAll('#edit-place-emoji-picker .jg-emoji-btn').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
+                    } else {
+                        input.classList.remove('invalid');
+                    }
+                };
+
                 // Select emoji for edit
                 window.jgSelectPlaceEmojiEdit = function(emoji) {
                     document.getElementById('edit-place-icon-preview').textContent = emoji;
                     document.getElementById('edit-place-cat-icon').value = emoji;
+                    document.getElementById('edit-place-cat-icon-manual').value = emoji;
+                    document.getElementById('edit-place-cat-icon-manual').classList.remove('invalid');
                     document.querySelectorAll('#edit-place-emoji-picker .jg-emoji-btn').forEach(btn => {
                         btn.classList.toggle('selected', btn.textContent === emoji);
                     });
@@ -5537,7 +5633,10 @@ JAVASCRIPT;
                 window.jgUpdatePlaceCategory = function() {
                     const key = document.getElementById('edit-place-cat-key').value;
                     const label = document.getElementById('edit-place-cat-label').value.trim();
-                    const icon = document.getElementById('edit-place-cat-icon').value || '📍';
+                    let icon = document.getElementById('edit-place-cat-icon').value || '📍';
+                    if (!jgIsValidEmoji(icon)) {
+                        icon = jgGetFirstPlaceEmoji();
+                    }
 
                     if (!label) {
                         alert('Nazwa nie może być pusta');
@@ -5652,6 +5751,10 @@ JAVASCRIPT;
                 .jg-emoji-btn.selected { background: #2196f3; border-color: #1976d2; }
                 .jg-icon-preview { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
                 .jg-icon-preview .preview { font-size: 32px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #ddd; border-radius: 8px; }
+                .jg-manual-emoji { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+                .jg-manual-emoji input { width: 60px; font-size: 24px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
+                .jg-manual-emoji .hint { font-size: 11px; color: #666; }
+                .jg-manual-emoji input.invalid { border-color: #c62828; }
                 .jg-btn-row { display: flex; gap: 10px; margin-top: 15px; }
                 .jg-edit-inline { display: none; padding: 15px; background: #fff3e0; border-radius: 6px; margin-top: 15px; }
                 .jg-edit-inline.visible { display: block; }
@@ -5686,7 +5789,12 @@ JAVASCRIPT;
                         <label>Ikona</label>
                         <div class="jg-icon-preview">
                             <div class="preview" id="curiosity-icon-preview">📖</div>
-                            <span>Wybierz ikonę z listy poniżej</span>
+                            <span>Wybierz ikonę z listy lub wklej własne emoji</span>
+                        </div>
+
+                        <div class="jg-manual-emoji">
+                            <input type="text" id="new-curiosity-cat-icon-manual" maxlength="4" placeholder="📖" oninput="jgManualCuriosityEmojiInput(this)">
+                            <span class="hint">Wklej własne emoji</span>
                         </div>
 
                         <div class="jg-emoji-picker" id="curiosity-emoji-picker">
@@ -5713,6 +5821,12 @@ JAVASCRIPT;
                         <label>Ikona</label>
                         <div class="jg-icon-preview">
                             <div class="preview" id="edit-curiosity-icon-preview">📖</div>
+                            <span>Wybierz ikonę z listy lub wklej własne emoji</span>
+                        </div>
+
+                        <div class="jg-manual-emoji">
+                            <input type="text" id="edit-curiosity-cat-icon-manual" maxlength="4" placeholder="📖" oninput="jgManualCuriosityEmojiInputEdit(this)">
+                            <span class="hint">Wklej własne emoji</span>
                         </div>
 
                         <div class="jg-emoji-picker" id="edit-curiosity-emoji-picker">
@@ -5738,6 +5852,19 @@ JAVASCRIPT;
                 // Store current data
                 let categories = <?php echo json_encode($categories); ?>;
 
+                // Emoji validation function
+                function jgIsValidEmoji(str) {
+                    str = str.trim();
+                    if (!str) return false;
+                    if (/[a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/.test(str)) return false;
+                    return /\p{Extended_Pictographic}/u.test(str);
+                }
+
+                function jgGetFirstCuriosityEmoji() {
+                    const btn = document.querySelector('#curiosity-emoji-picker .jg-emoji-btn');
+                    return btn ? btn.textContent.trim() : '📖';
+                }
+
                 // Toggle add form
                 window.jgToggleAddCuriosityCategory = function() {
                     const form = document.getElementById('jg-add-curiosity-category-form');
@@ -5745,10 +5872,31 @@ JAVASCRIPT;
                     document.getElementById('jg-edit-curiosity-category-form').classList.remove('visible');
                 };
 
+                // Manual emoji input for new category
+                window.jgManualCuriosityEmojiInput = function(input) {
+                    const emoji = input.value.trim();
+                    if (emoji) {
+                        if (jgIsValidEmoji(emoji)) {
+                            input.classList.remove('invalid');
+                            document.getElementById('curiosity-icon-preview').textContent = emoji;
+                            document.getElementById('new-curiosity-cat-icon').value = emoji;
+                        } else {
+                            input.classList.add('invalid');
+                        }
+                        document.querySelectorAll('#curiosity-emoji-picker .jg-emoji-btn').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
+                    } else {
+                        input.classList.remove('invalid');
+                    }
+                };
+
                 // Select emoji for new category
                 window.jgSelectCuriosityEmoji = function(emoji) {
                     document.getElementById('curiosity-icon-preview').textContent = emoji;
                     document.getElementById('new-curiosity-cat-icon').value = emoji;
+                    document.getElementById('new-curiosity-cat-icon-manual').value = emoji;
+                    document.getElementById('new-curiosity-cat-icon-manual').classList.remove('invalid');
                     document.querySelectorAll('#curiosity-emoji-picker .jg-emoji-btn').forEach(btn => {
                         btn.classList.toggle('selected', btn.textContent === emoji);
                     });
@@ -5758,7 +5906,10 @@ JAVASCRIPT;
                 window.jgSaveCuriosityCategory = function() {
                     const key = document.getElementById('new-curiosity-cat-key').value.trim().toLowerCase().replace(/\s+/g, '_');
                     const label = document.getElementById('new-curiosity-cat-label').value.trim();
-                    const icon = document.getElementById('new-curiosity-cat-icon').value || '📖';
+                    let icon = document.getElementById('new-curiosity-cat-icon').value || '📖';
+                    if (!jgIsValidEmoji(icon)) {
+                        icon = jgGetFirstCuriosityEmoji();
+                    }
 
                     if (!key || !label) {
                         alert('Wypełnij wszystkie pola');
@@ -5800,6 +5951,8 @@ JAVASCRIPT;
                     document.getElementById('edit-curiosity-cat-label').value = label;
                     document.getElementById('edit-curiosity-cat-icon').value = icon;
                     document.getElementById('edit-curiosity-icon-preview').textContent = icon;
+                    document.getElementById('edit-curiosity-cat-icon-manual').value = icon;
+                    document.getElementById('edit-curiosity-cat-icon-manual').classList.remove('invalid');
 
                     // Highlight current emoji
                     document.querySelectorAll('#edit-curiosity-emoji-picker .jg-emoji-btn').forEach(btn => {
@@ -5814,10 +5967,31 @@ JAVASCRIPT;
                     document.getElementById('jg-edit-curiosity-category-form').classList.remove('visible');
                 };
 
+                // Manual emoji input for edit
+                window.jgManualCuriosityEmojiInputEdit = function(input) {
+                    const emoji = input.value.trim();
+                    if (emoji) {
+                        if (jgIsValidEmoji(emoji)) {
+                            input.classList.remove('invalid');
+                            document.getElementById('edit-curiosity-icon-preview').textContent = emoji;
+                            document.getElementById('edit-curiosity-cat-icon').value = emoji;
+                        } else {
+                            input.classList.add('invalid');
+                        }
+                        document.querySelectorAll('#edit-curiosity-emoji-picker .jg-emoji-btn').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
+                    } else {
+                        input.classList.remove('invalid');
+                    }
+                };
+
                 // Select emoji for edit
                 window.jgSelectCuriosityEmojiEdit = function(emoji) {
                     document.getElementById('edit-curiosity-icon-preview').textContent = emoji;
                     document.getElementById('edit-curiosity-cat-icon').value = emoji;
+                    document.getElementById('edit-curiosity-cat-icon-manual').value = emoji;
+                    document.getElementById('edit-curiosity-cat-icon-manual').classList.remove('invalid');
                     document.querySelectorAll('#edit-curiosity-emoji-picker .jg-emoji-btn').forEach(btn => {
                         btn.classList.toggle('selected', btn.textContent === emoji);
                     });
@@ -5827,7 +6001,10 @@ JAVASCRIPT;
                 window.jgUpdateCuriosityCategory = function() {
                     const key = document.getElementById('edit-curiosity-cat-key').value;
                     const label = document.getElementById('edit-curiosity-cat-label').value.trim();
-                    const icon = document.getElementById('edit-curiosity-cat-icon').value || '📖';
+                    let icon = document.getElementById('edit-curiosity-cat-icon').value || '📖';
+                    if (!jgIsValidEmoji(icon)) {
+                        icon = jgGetFirstCuriosityEmoji();
+                    }
 
                     if (!label) {
                         alert('Nazwa nie może być pusta');
