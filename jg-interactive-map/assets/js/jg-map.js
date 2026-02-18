@@ -1456,6 +1456,34 @@
         });
 
         input.addEventListener('keydown', function(e) {
+          var sugVisible = suggestions.style.display !== 'none';
+          var items = suggestions.querySelectorAll('.jg-tags-suggestion-item');
+
+          if (sugVisible && items.length > 0) {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              sugSelectedIdx = (sugSelectedIdx + 1) % items.length;
+              updateSugHighlight();
+              return;
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              sugSelectedIdx = sugSelectedIdx <= 0 ? items.length - 1 : sugSelectedIdx - 1;
+              updateSugHighlight();
+              return;
+            } else if (e.key === 'Enter' && sugSelectedIdx >= 0 && sugSelectedIdx < items.length) {
+              e.preventDefault();
+              var text = items[sugSelectedIdx].textContent.replace(/^#/, '');
+              addTag(text);
+              input.value = '';
+              hideSuggestions();
+              return;
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              hideSuggestions();
+              return;
+            }
+          }
+
           if (e.key === 'Enter' || e.key === ',') {
             e.preventDefault();
             var val = input.value.trim();
@@ -1471,6 +1499,20 @@
 
         // Autocomplete suggestions
         var sugTimeout = null;
+        var sugSelectedIdx = -1;
+
+        function updateSugHighlight() {
+          var items = suggestions.querySelectorAll('.jg-tags-suggestion-item');
+          for (var i = 0; i < items.length; i++) {
+            if (i === sugSelectedIdx) {
+              items[i].classList.add('active');
+              items[i].scrollIntoView({ block: 'nearest' });
+            } else {
+              items[i].classList.remove('active');
+            }
+          }
+        }
+
         function showSuggestions(query) {
           fetchAllTags(function(allTags) {
             if (!query) { hideSuggestions(); return; }
@@ -1501,11 +1543,13 @@
               });
               suggestions.appendChild(opt);
             });
+            sugSelectedIdx = -1;
             suggestions.style.display = 'block';
           });
         }
 
         function hideSuggestions() {
+          sugSelectedIdx = -1;
           suggestions.style.display = 'none';
         }
 

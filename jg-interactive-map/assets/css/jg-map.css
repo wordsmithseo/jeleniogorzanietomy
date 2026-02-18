@@ -5880,7 +5880,8 @@ body.jg-fullscreen-active {
   color: #374151;
 }
 
-.jg-tags-suggestion-item:hover {
+.jg-tags-suggestion-item:hover,
+.jg-tags-suggestion-item.active {
   background: #f3f4f6;
   color: #8d2324;
 }
