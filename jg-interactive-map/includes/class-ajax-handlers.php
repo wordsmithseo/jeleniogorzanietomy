@@ -70,25 +70,35 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Get place categories
+     * Get place categories (sorted alphabetically by label)
      */
     public static function get_place_categories() {
         $custom_categories = get_option('jg_map_place_categories', null);
         if ($custom_categories !== null && is_array($custom_categories)) {
-            return $custom_categories;
+            $categories = $custom_categories;
+        } else {
+            $categories = self::get_default_place_categories();
         }
-        return self::get_default_place_categories();
+        uasort($categories, function($a, $b) {
+            return strcmp($a['label'], $b['label']);
+        });
+        return $categories;
     }
 
     /**
-     * Get curiosity categories
+     * Get curiosity categories (sorted alphabetically by label)
      */
     public static function get_curiosity_categories() {
         $custom_categories = get_option('jg_map_curiosity_categories', null);
         if ($custom_categories !== null && is_array($custom_categories)) {
-            return $custom_categories;
+            $categories = $custom_categories;
+        } else {
+            $categories = self::get_default_curiosity_categories();
         }
-        return self::get_default_curiosity_categories();
+        uasort($categories, function($a, $b) {
+            return strcmp($a['label'], $b['label']);
+        });
+        return $categories;
     }
 
     /**
@@ -106,28 +116,41 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
-     * Report categories configuration
+     * Report categories configuration (sorted by group label, then by reason label)
      * Maps category keys to their display labels and group
      * Reads from WordPress options, falls back to defaults
      */
     public static function get_report_categories() {
         $custom_categories = get_option('jg_map_report_reasons', null);
         if ($custom_categories !== null && is_array($custom_categories)) {
-            return $custom_categories;
+            $reasons = $custom_categories;
+        } else {
+            $reasons = self::get_default_report_categories();
         }
-        return self::get_default_report_categories();
+        $groups = self::get_category_groups();
+        uasort($reasons, function($a, $b) use ($groups) {
+            $groupA = $groups[$a['group'] ?? ''] ?? ($a['group'] ?? '');
+            $groupB = $groups[$b['group'] ?? ''] ?? ($b['group'] ?? '');
+            $groupCmp = strcmp($groupA, $groupB);
+            if ($groupCmp !== 0) return $groupCmp;
+            return strcmp($a['label'], $b['label']);
+        });
+        return $reasons;
     }
 
     /**
-     * Get category groups for display
+     * Get category groups for display (sorted alphabetically)
      * Reads from WordPress options, falls back to defaults
      */
     public static function get_category_groups() {
         $custom_groups = get_option('jg_map_report_categories', null);
         if ($custom_groups !== null && is_array($custom_groups)) {
-            return $custom_groups;
+            $groups = $custom_groups;
+        } else {
+            $groups = self::get_default_category_groups();
         }
-        return self::get_default_category_groups();
+        asort($groups);
+        return $groups;
     }
 
     /**
