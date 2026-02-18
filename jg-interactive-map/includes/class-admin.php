@@ -53,11 +53,15 @@ class JG_Map_Admin {
 
         // Search for page or post with [jg_map] shortcode
         $page = $wpdb->get_var(
-            "SELECT ID FROM {$wpdb->posts}
-             WHERE post_content LIKE '%[jg_map%'
-             AND post_status = 'publish'
-             AND post_type IN ('page', 'post')
-             LIMIT 1"
+            $wpdb->prepare(
+                "SELECT ID FROM {$wpdb->posts}
+                 WHERE post_content LIKE %s
+                 AND post_status = %s
+                 AND post_type IN ('page', 'post')
+                 LIMIT 1",
+                '%' . $wpdb->esc_like('[jg_map') . '%',
+                'publish'
+            )
         );
 
         if ($page) {
@@ -201,7 +205,10 @@ class JG_Map_Admin {
         if (strpos($screen->id, 'jg-map-places') !== false) {
             // Get pending points
             $pending_points = $wpdb->get_results(
-                "SELECT title FROM $points_table WHERE status = 'pending' ORDER BY created_at DESC LIMIT 5",
+                $wpdb->prepare(
+                    "SELECT title FROM $points_table WHERE status = %s ORDER BY created_at DESC LIMIT 5",
+                    'pending'
+                ),
                 ARRAY_A
             );
             foreach ($pending_points as $point) {
@@ -210,27 +217,35 @@ class JG_Map_Admin {
 
             // Get pending edits (ONLY edits, not deletion requests)
             $pending_edits = $wpdb->get_results(
-                "SELECT p.title FROM $history_table h
-                 LEFT JOIN $points_table p ON h.point_id = p.id
-                 WHERE h.status = 'pending' AND h.action_type = 'edit'
-                 ORDER BY h.created_at DESC LIMIT 5",
+                $wpdb->prepare(
+                    "SELECT p.title FROM $history_table h
+                     LEFT JOIN $points_table p ON h.point_id = p.id
+                     WHERE h.status = %s AND h.action_type = %s
+                     ORDER BY h.created_at DESC LIMIT 5",
+                    'pending',
+                    'edit'
+                ),
                 ARRAY_A
             );
             foreach ($pending_edits as $edit) {
                 $events[] = 'Edycja: ' . ($edit['title'] ?: 'Bez nazwy');
             }
 
-            $total_count = $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'")
-                         + $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending' AND action_type = 'edit'");
+            $total_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $points_table WHERE status = %s", 'pending'))
+                         + $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $history_table WHERE status = %s AND action_type = %s", 'pending', 'edit'));
         }
         // Reports page - show report reasons
         elseif (strpos($screen->id, 'jg-map-reports') !== false) {
             $pending_reports = $wpdb->get_results(
-                "SELECT r.reason, p.title
-                 FROM $reports_table r
-                 INNER JOIN $points_table p ON r.point_id = p.id
-                 WHERE r.status = 'pending' AND p.status = 'publish'
-                 ORDER BY r.created_at DESC LIMIT 5",
+                $wpdb->prepare(
+                    "SELECT r.reason, p.title
+                     FROM $reports_table r
+                     INNER JOIN $points_table p ON r.point_id = p.id
+                     WHERE r.status = %s AND p.status = %s
+                     ORDER BY r.created_at DESC LIMIT 5",
+                    'pending',
+                    'publish'
+                ),
                 ARRAY_A
             );
             foreach ($pending_reports as $report) {
@@ -238,18 +253,26 @@ class JG_Map_Admin {
             }
 
             $total_count = $wpdb->get_var(
-                "SELECT COUNT(DISTINCT r.point_id)
-                 FROM $reports_table r
-                 INNER JOIN $points_table p ON r.point_id = p.id
-                 WHERE r.status = 'pending' AND p.status = 'publish'"
+                $wpdb->prepare(
+                    "SELECT COUNT(DISTINCT r.point_id)
+                     FROM $reports_table r
+                     INNER JOIN $points_table p ON r.point_id = p.id
+                     WHERE r.status = %s AND p.status = %s",
+                    'pending',
+                    'publish'
+                )
             );
         }
         // Deletions page - show deletion requests
         elseif (strpos($screen->id, 'jg-map-deletions') !== false) {
             $pending_deletions = $wpdb->get_results(
-                "SELECT title FROM $points_table
-                 WHERE is_deletion_requested = 1 AND status = 'publish'
-                 ORDER BY updated_at DESC LIMIT 5",
+                $wpdb->prepare(
+                    "SELECT title FROM $points_table
+                     WHERE is_deletion_requested = %d AND status = %s
+                     ORDER BY updated_at DESC LIMIT 5",
+                    1,
+                    'publish'
+                ),
                 ARRAY_A
             );
             foreach ($pending_deletions as $deletion) {
@@ -257,7 +280,11 @@ class JG_Map_Admin {
             }
 
             $total_count = $wpdb->get_var(
-                "SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = 1 AND status = 'publish'"
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = %d AND status = %s",
+                    1,
+                    'publish'
+                )
             );
         }
 
@@ -426,19 +453,19 @@ class JG_Map_Admin {
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
-        $total = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = 'publish'");
-        $pending = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = 'pending'");
-        $promos = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE is_promo = 1 AND status = 'publish'");
-        $deletions = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE is_deletion_requested = 1");
+        $total = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE status = %s", 'publish'));
+        $pending = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE status = %s", 'pending'));
+        $promos = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE is_promo = %d AND status = %s", 1, 'publish'));
+        $deletions = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE is_deletion_requested = %d", 1));
 
         $reports_table = JG_Map_Database::get_reports_table();
-        $reports = $wpdb->get_var("SELECT COUNT(DISTINCT r.point_id) FROM $reports_table r INNER JOIN $table p ON r.point_id = p.id WHERE r.status = 'pending' AND p.status = 'publish'");
+        $reports = $wpdb->get_var($wpdb->prepare("SELECT COUNT(DISTINCT r.point_id) FROM $reports_table r INNER JOIN $table p ON r.point_id = p.id WHERE r.status = %s AND p.status = %s", 'pending', 'publish'));
 
         // Ensure history table exists
         JG_Map_Database::ensure_history_table();
 
         $history_table = JG_Map_Database::get_history_table();
-        $edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending'");
+        $edits = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $history_table WHERE status = %s", 'pending'));
 
         ?>
         <div class="wrap">
@@ -2006,7 +2033,11 @@ class JG_Map_Admin {
         }
 
         $promos = $wpdb->get_results(
-            "SELECT * FROM $table WHERE is_promo = 1 AND status = 'publish' ORDER BY created_at DESC",
+            $wpdb->prepare(
+                "SELECT * FROM $table WHERE is_promo = %d AND status = %s ORDER BY created_at DESC",
+                1,
+                'publish'
+            ),
             ARRAY_A
         );
 

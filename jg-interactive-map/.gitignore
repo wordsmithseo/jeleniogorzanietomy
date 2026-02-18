@@ -31,5 +31,9 @@ error_log
 *.temp
 *~
 
+# Backup files
+*.backup
+*.bak
+
 # Debug/test files
 check-category-in-db.php

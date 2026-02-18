@@ -41,7 +41,7 @@ class JG_Map_Activity_Log {
         $table = $wpdb->prefix . 'jg_map_activity_log';
 
         // Check if table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table'");
+        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table));
 
         if ($table_exists != $table) {
             $this->create_table();

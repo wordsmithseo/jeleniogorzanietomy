@@ -1152,7 +1152,11 @@ class JG_Interactive_Map {
 
         global $wpdb;
         $page_id = $wpdb->get_var(
-            "SELECT ID FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type IN ('page','post') AND post_content LIKE '%[jg_map_directory%' LIMIT 1"
+            $wpdb->prepare(
+                "SELECT ID FROM {$wpdb->posts} WHERE post_status = %s AND post_type IN ('page','post') AND post_content LIKE %s LIMIT 1",
+                'publish',
+                '%' . $wpdb->esc_like('[jg_map_directory') . '%'
+            )
         );
 
         $url = $page_id ? get_permalink($page_id) : '';

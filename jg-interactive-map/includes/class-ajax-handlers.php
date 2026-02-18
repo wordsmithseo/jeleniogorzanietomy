@@ -663,16 +663,20 @@ class JG_Map_Ajax_Handlers {
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
 
         if ($is_admin) {
-            $pending_points = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = 'pending'");
+            $pending_points = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE status = %s", 'pending'));
             // ONLY count edits, not deletion requests
-            $pending_edits = $wpdb->get_var("SELECT COUNT(*) FROM $history_table WHERE status = 'pending' AND action_type = 'edit'");
+            $pending_edits = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $history_table WHERE status = %s AND action_type = %s", 'pending', 'edit'));
             $pending_reports = $wpdb->get_var(
-                "SELECT COUNT(DISTINCT r.point_id)
-                 FROM $reports_table r
-                 INNER JOIN $table p ON r.point_id = p.id
-                 WHERE r.status = 'pending' AND p.status = 'publish'"
+                $wpdb->prepare(
+                    "SELECT COUNT(DISTINCT r.point_id)
+                     FROM $reports_table r
+                     INNER JOIN $table p ON r.point_id = p.id
+                     WHERE r.status = %s AND p.status = %s",
+                    'pending',
+                    'publish'
+                )
             );
-            $pending_deletions = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE is_deletion_requested = 1 AND status = 'publish'");
+            $pending_deletions = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE is_deletion_requested = %d AND status = %s", 1, 'publish'));
             $pending_count = intval($pending_points) + intval($pending_edits) + intval($pending_reports) + intval($pending_deletions);
         }
 
@@ -8017,7 +8021,7 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Ensure edit_locked column exists
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table LIKE 'edit_locked'");
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM $table LIKE %s", 'edit_locked'));
         if (empty($column_exists)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
         }

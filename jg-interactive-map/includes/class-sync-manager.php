@@ -346,11 +346,13 @@ class JG_Map_Sync_Manager {
         // Get pending counts for admin
         $pending_counts = array();
         if (current_user_can('manage_options')) {
+            $reports_table = JG_Map_Database::get_reports_table();
+            $history_table = JG_Map_Database::get_history_table();
             $pending_counts = array(
-                'points' => $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE status = 'pending'"),
-                'reports' => $wpdb->get_var("SELECT COUNT(*) FROM " . JG_Map_Database::get_reports_table() . " WHERE status = 'pending'"),
-                'edits' => $wpdb->get_var("SELECT COUNT(*) FROM " . JG_Map_Database::get_history_table() . " WHERE status = 'pending' AND action_type = 'edit'"),
-                'deletions' => $wpdb->get_var("SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = 1 AND status = 'publish'")
+                'points' => $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $points_table WHERE status = %s", 'pending')),
+                'reports' => $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $reports_table WHERE status = %s", 'pending')),
+                'edits' => $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $history_table WHERE status = %s AND action_type = %s", 'pending', 'edit')),
+                'deletions' => $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $points_table WHERE is_deletion_requested = %d AND status = %s", 1, 'publish'))
             );
         }
 
@@ -406,10 +408,10 @@ class JG_Map_Sync_Manager {
         $table = self::get_sync_queue_table();
 
         $stats = array(
-            'pending' => $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = '" . self::STATUS_PENDING . "'"),
-            'processing' => $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = '" . self::STATUS_PROCESSING . "'"),
-            'completed' => $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = '" . self::STATUS_COMPLETED . "'"),
-            'failed' => $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE status = '" . self::STATUS_FAILED . "'"),
+            'pending' => $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE status = %s", self::STATUS_PENDING)),
+            'processing' => $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE status = %s", self::STATUS_PROCESSING)),
+            'completed' => $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE status = %s", self::STATUS_COMPLETED)),
+            'failed' => $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE status = %s", self::STATUS_FAILED)),
             'total' => $wpdb->get_var("SELECT COUNT(*) FROM $table")
         );
 
