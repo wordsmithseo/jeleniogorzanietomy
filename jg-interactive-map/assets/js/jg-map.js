@@ -6084,12 +6084,22 @@
 
                   editAddressSuggestions.style.display = 'block';
                 } else {
-                  editAddressSuggestions.style.display = 'none';
+                  editAddressSuggestions.innerHTML = '';
+                  var noResults = document.createElement('div');
+                  noResults.style.cssText = 'padding:14px 12px;font-size:13px;color:#9ca3af;text-align:center';
+                  noResults.textContent = 'Nie znaleziono wyników. Spróbuj wpisać inny adres.';
+                  editAddressSuggestions.appendChild(noResults);
+                  editAddressSuggestions.style.display = 'block';
                 }
               },
               error: function(xhr, status, error) {
                 console.error('[JG Edit] Address search error:', status, error);
-                editAddressSuggestions.style.display = 'none';
+                editAddressSuggestions.innerHTML = '';
+                var errMsg = document.createElement('div');
+                errMsg.style.cssText = 'padding:14px 12px;font-size:13px;color:#ef4444;text-align:center';
+                errMsg.textContent = 'Błąd wyszukiwania. Spróbuj ponownie.';
+                editAddressSuggestions.appendChild(errMsg);
+                editAddressSuggestions.style.display = 'block';
               }
             });
           }
@@ -9835,7 +9845,16 @@
                 container.show();
               } else {
                 debugLog('[JG FAB] No results found or empty response');
-                container.hide();
+                container.empty();
+                container.append(
+                  $('<div>').css({
+                    padding: '14px 12px',
+                    fontSize: '13px',
+                    color: '#9ca3af',
+                    textAlign: 'center'
+                  }).text('Nie znaleziono wyników. Spróbuj wpisać inny adres.')
+                );
+                container.show();
               }
             },
             error: function(xhr, status, error) {
@@ -9843,7 +9862,16 @@
               if (xhr.responseJSON) {
                 debugError('[JG FAB] Error response:', xhr.responseJSON);
               }
-              container.hide();
+              container.empty();
+              container.append(
+                $('<div>').css({
+                  padding: '14px 12px',
+                  fontSize: '13px',
+                  color: '#ef4444',
+                  textAlign: 'center'
+                }).text('Błąd wyszukiwania. Spróbuj ponownie.')
+              );
+              container.show();
             }
           });
         }
