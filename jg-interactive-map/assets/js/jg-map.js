@@ -8883,8 +8883,168 @@
         var searchCount = document.getElementById('jg-search-panel-count');
         var searchCloseBtn = document.getElementById('jg-search-close-btn');
 
+        // ── Autocomplete suggestions dropdown ──
+        var suggestionsEl = document.createElement('div');
+        suggestionsEl.className = 'jg-search-suggestions';
+        searchInput.parentNode.appendChild(suggestionsEl);
+        var suggestDebounce = null;
+        var activeSuggestion = -1;
+
+        function buildSuggestions(query) {
+          if (!query || query.length < 2) {
+            suggestionsEl.innerHTML = '';
+            suggestionsEl.style.display = 'none';
+            return;
+          }
+
+          var MAX_PER_GROUP = 5;
+          var trescItems = [];  // title/excerpt matches
+          var tagItems = [];    // tag matches
+          var adresItems = [];  // address matches
+          var seen = {};        // avoid duplicates
+
+          (ALL || []).forEach(function(p) {
+            var title = (p.title || '').toLowerCase();
+            var excerpt = (p.excerpt || '').toLowerCase();
+            var content = (p.content || '').toLowerCase();
+            var address = (p.address || '').toLowerCase();
+            var tags = (p.tags || []);
+            var key = p.id;
+
+            // TREŚĆ: match in title, excerpt, or content
+            if (trescItems.length < MAX_PER_GROUP && !seen['t' + key]) {
+              if (title.indexOf(query) !== -1 || excerpt.indexOf(query) !== -1 || content.indexOf(query) !== -1) {
+                trescItems.push({ id: p.id, text: p.title, sub: p.excerpt ? p.excerpt.substring(0, 60) : '' });
+                seen['t' + key] = true;
+              }
+            }
+
+            // ADRES: match in address
+            if (adresItems.length < MAX_PER_GROUP && !seen['a' + key] && address.indexOf(query) !== -1) {
+              adresItems.push({ id: p.id, text: p.title, sub: p.address });
+              seen['a' + key] = true;
+            }
+
+            // TAGI: match in any tag
+            if (tagItems.length < MAX_PER_GROUP) {
+              for (var i = 0; i < tags.length; i++) {
+                if ((tags[i] || '').toLowerCase().indexOf(query) !== -1) {
+                  if (!seen['g' + key + '_' + i]) {
+                    tagItems.push({ id: p.id, text: tags[i], sub: p.title });
+                    seen['g' + key + '_' + i] = true;
+                  }
+                  break;
+                }
+              }
+            }
+          });
+
+          if (trescItems.length === 0 && tagItems.length === 0 && adresItems.length === 0) {
+            suggestionsEl.innerHTML = '';
+            suggestionsEl.style.display = 'none';
+            return;
+          }
+
+          var html = '';
+
+          if (trescItems.length > 0) {
+            html += '<div class="jg-suggest-group"><div class="jg-suggest-header">TREŚĆ</div>';
+            trescItems.forEach(function(item) {
+              html += '<div class="jg-suggest-item" data-point-id="' + item.id + '">' +
+                '<span class="jg-suggest-main">' + esc(item.text) + '</span>' +
+                (item.sub ? '<span class="jg-suggest-sub">' + esc(item.sub) + '</span>' : '') +
+                '</div>';
+            });
+            html += '</div>';
+          }
+
+          if (tagItems.length > 0) {
+            html += '<div class="jg-suggest-group"><div class="jg-suggest-header">TAGI</div>';
+            tagItems.forEach(function(item) {
+              html += '<div class="jg-suggest-item" data-point-id="' + item.id + '" data-fill="' + esc(item.text) + '">' +
+                '<span class="jg-suggest-main">' + esc(item.text) + '</span>' +
+                '<span class="jg-suggest-sub">' + esc(item.sub) + '</span>' +
+                '</div>';
+            });
+            html += '</div>';
+          }
+
+          if (adresItems.length > 0) {
+            html += '<div class="jg-suggest-group"><div class="jg-suggest-header">ADRES</div>';
+            adresItems.forEach(function(item) {
+              html += '<div class="jg-suggest-item" data-point-id="' + item.id + '" data-fill="' + esc(item.sub) + '">' +
+                '<span class="jg-suggest-main">' + esc(item.sub) + '</span>' +
+                '<span class="jg-suggest-sub">' + esc(item.text) + '</span>' +
+                '</div>';
+            });
+            html += '</div>';
+          }
+
+          suggestionsEl.innerHTML = html;
+          suggestionsEl.style.display = 'block';
+          activeSuggestion = -1;
+
+          // Click handlers on suggestion items
+          var allItems = suggestionsEl.querySelectorAll('.jg-suggest-item');
+          allItems.forEach(function(el) {
+            el.addEventListener('mousedown', function(e) {
+              e.preventDefault(); // prevent blur before click fires
+              var fill = this.getAttribute('data-fill');
+              if (fill) {
+                searchInput.value = fill;
+              }
+              hideSuggestions();
+              performSearch();
+            });
+          });
+        }
+
+        function hideSuggestions() {
+          suggestionsEl.innerHTML = '';
+          suggestionsEl.style.display = 'none';
+          activeSuggestion = -1;
+        }
+
+        function navigateSuggestions(dir) {
+          var items = suggestionsEl.querySelectorAll('.jg-suggest-item');
+          if (!items.length) return;
+          if (activeSuggestion >= 0) items[activeSuggestion].classList.remove('jg-suggest-active');
+          activeSuggestion += dir;
+          if (activeSuggestion < 0) activeSuggestion = items.length - 1;
+          if (activeSuggestion >= items.length) activeSuggestion = 0;
+          items[activeSuggestion].classList.add('jg-suggest-active');
+          items[activeSuggestion].scrollIntoView({ block: 'nearest' });
+        }
+
+        function selectActiveSuggestion() {
+          var items = suggestionsEl.querySelectorAll('.jg-suggest-item');
+          if (activeSuggestion >= 0 && items[activeSuggestion]) {
+            var fill = items[activeSuggestion].getAttribute('data-fill');
+            if (fill) {
+              searchInput.value = fill;
+            }
+            hideSuggestions();
+            performSearch();
+            return true;
+          }
+          return false;
+        }
+
+        searchInput.addEventListener('input', function() {
+          clearTimeout(suggestDebounce);
+          var q = this.value.toLowerCase().trim();
+          suggestDebounce = setTimeout(function() {
+            buildSuggestions(q);
+          }, 200);
+        });
+
+        searchInput.addEventListener('blur', function() {
+          setTimeout(hideSuggestions, 150);
+        });
+
         // Perform search and show results in side panel
         function performSearch() {
+          hideSuggestions();
           var query = searchInput.value.toLowerCase().trim();
 
           if (!query) {
@@ -9048,9 +9208,20 @@
 
         if (searchInput) {
           searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'ArrowDown') {
               e.preventDefault();
-              performSearch();
+              navigateSuggestions(1);
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              navigateSuggestions(-1);
+            } else if (e.key === 'Escape') {
+              hideSuggestions();
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              if (!selectActiveSuggestion()) {
+                hideSuggestions();
+                performSearch();
+              }
             }
           });
         }
