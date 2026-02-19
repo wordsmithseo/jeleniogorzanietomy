@@ -7338,6 +7338,9 @@ class JG_Map_Ajax_Handlers {
         $place_categories = isset($_POST['place_categories']) ? array_map('sanitize_text_field', (array)$_POST['place_categories']) : array();
         $curiosity_categories = isset($_POST['curiosity_categories']) ? array_map('sanitize_text_field', (array)$_POST['curiosity_categories']) : array();
 
+        // Search query
+        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+
         // SIDEBAR SHOWS ONLY PUBLISHED POINTS (not pending)
         // Pending points are visible only on the map for moderation
         $points = JG_Map_Database::get_published_points(false);
@@ -7390,6 +7393,49 @@ class JG_Map_Ajax_Handlers {
             if ($point['type'] === 'ciekawostka' && !empty($curiosity_categories) && !$is_sponsored) {
                 $point_category = isset($point['category']) ? $point['category'] : '';
                 if (!empty($point_category) && !in_array($point_category, $curiosity_categories)) {
+                    continue;
+                }
+            }
+
+            // Text search filter - match against title, address, tags, content, excerpt
+            if (!empty($search) && !$is_sponsored) {
+                $search_lower = mb_strtolower($search);
+                $matches = false;
+
+                // Search in title
+                if (mb_stripos($point['title'], $search) !== false) {
+                    $matches = true;
+                }
+
+                // Search in address
+                if (!$matches && !empty($point['address']) && mb_stripos($point['address'], $search) !== false) {
+                    $matches = true;
+                }
+
+                // Search in content (description)
+                if (!$matches && !empty($point['content']) && mb_stripos($point['content'], $search) !== false) {
+                    $matches = true;
+                }
+
+                // Search in excerpt
+                if (!$matches && !empty($point['excerpt']) && mb_stripos($point['excerpt'], $search) !== false) {
+                    $matches = true;
+                }
+
+                // Search in tags (JSON array)
+                if (!$matches && !empty($point['tags'])) {
+                    $tags = json_decode($point['tags'], true);
+                    if (is_array($tags)) {
+                        foreach ($tags as $tag) {
+                            if (mb_stripos($tag, $search) !== false) {
+                                $matches = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!$matches) {
                     continue;
                 }
             }

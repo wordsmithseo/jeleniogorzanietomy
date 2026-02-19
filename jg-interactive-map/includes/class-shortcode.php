@@ -508,6 +508,11 @@ class JG_Map_Shortcode {
                 </div>
             </div>
 
+            <!-- Search -->
+            <div class="jg-sidebar-search">
+                <input type="text" id="jg-sidebar-search-input" placeholder="Szukaj po nazwie, adresie, tagach, opisie..." autocomplete="off" />
+            </div>
+
             <!-- Filters and Sorting - Single Collapsible Section -->
             <div class="jg-sidebar-filters-sort">
                 <div class="jg-sidebar-collapsible-header">
