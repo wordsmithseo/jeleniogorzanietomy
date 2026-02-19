@@ -63,7 +63,7 @@ class JG_Map_Shortcode {
                     <label class="jg-filter-label" data-filter-type="my-places"><input type="checkbox" data-my-places><span class="jg-filter-icon">👤</span><span class="jg-filter-text"><?php _e('Moje miejsca', 'jg-map'); ?></span></label>
                     <label class="jg-filter-label" data-filter-type="promo" style="margin-left:auto"><input type="checkbox" data-promo><span class="jg-filter-icon">⭐</span><span class="jg-filter-text"><?php _e('Tylko miejsca sponsorowane', 'jg-map'); ?></span></label>
                     <div class="jg-search">
-                        <input type="text" id="jg-search-input" placeholder="🔍 <?php _e('Szukaj miejsca...', 'jg-map'); ?>" />
+                        <input type="text" id="jg-search-input" placeholder="🔍 <?php _e('Szukaj po nazwie, adresie, tagach...', 'jg-map'); ?>" />
                         <button id="jg-search-btn" class="jg-search-btn" title="Szukaj">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"></circle>

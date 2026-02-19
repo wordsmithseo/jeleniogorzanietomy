@@ -8893,14 +8893,25 @@
           }
 
 
-          // Search through ALL points
+          // Search through ALL points (by title, address, tags, content, excerpt)
           var results = (ALL || []).filter(function(p) {
             var title = (p.title || '').toLowerCase();
             var content = (p.content || '').toLowerCase();
             var excerpt = (p.excerpt || '').toLowerCase();
-            return title.indexOf(query) !== -1 ||
-                   content.indexOf(query) !== -1 ||
-                   excerpt.indexOf(query) !== -1;
+            var address = (p.address || '').toLowerCase();
+            var tags = (p.tags || []);
+            if (title.indexOf(query) !== -1 ||
+                content.indexOf(query) !== -1 ||
+                excerpt.indexOf(query) !== -1 ||
+                address.indexOf(query) !== -1) {
+              return true;
+            }
+            for (var i = 0; i < tags.length; i++) {
+              if ((tags[i] || '').toLowerCase().indexOf(query) !== -1) {
+                return true;
+              }
+            }
+            return false;
           });
 
 
