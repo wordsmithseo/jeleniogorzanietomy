@@ -3216,34 +3216,6 @@ body.jg-fullscreen-active {
   line-height: 1;
 }
 
-/* Search Section */
-.jg-sidebar-search {
-  padding: 10px 15px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #fff;
-  flex-shrink: 0;
-}
-
-.jg-sidebar-search input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  outline: none;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-}
-
-.jg-sidebar-search input:focus {
-  border-color: #8d2324;
-  box-shadow: 0 0 0 2px rgba(141, 35, 36, 0.15);
-}
-
-.jg-sidebar-search input::placeholder {
-  color: #9ca3af;
-}
-
 /* Filters and Sorting Section - Single Collapsible */
 .jg-sidebar-filters-sort {
   padding: 12px 15px;
@@ -3725,15 +3697,6 @@ body.jg-fullscreen-active {
     display: none;
   }
 
-  .jg-sidebar-search {
-    padding: 8px 10px;
-  }
-
-  .jg-sidebar-search input {
-    padding: 7px 10px;
-    font-size: 0.8rem;
-  }
-
   .jg-sidebar-filters-sort {
     padding: 10px;
   }
@@ -3823,15 +3786,6 @@ body.jg-fullscreen-active {
 
   .jg-sidebar-stat-value {
     font-size: 16px;
-  }
-
-  .jg-sidebar-search {
-    padding: 6px 8px;
-  }
-
-  .jg-sidebar-search input {
-    padding: 6px 8px;
-    font-size: 0.75rem;
   }
 
   .jg-sidebar-filters-sort {

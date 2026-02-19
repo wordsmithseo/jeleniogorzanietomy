@@ -15,8 +15,7 @@
         myPlaces: false,
         sortBy: 'date_desc',
         placeCategories: [],
-        curiosityCategories: [],
-        search: ''
+        curiosityCategories: []
     };
 
     // Fingerprint of current data for change detection
@@ -82,17 +81,6 @@
      * Setup event listeners for filters and sorting
      */
     function setupEventListeners() {
-        // Search input with debounce
-        let searchTimeout = null;
-        $('#jg-sidebar-search-input').on('input', function() {
-            const val = $(this).val().trim();
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(function() {
-                currentFilters.search = val;
-                loadPoints();
-            }, 300);
-        });
-
         // Type filters
         $('[data-sidebar-type]').on('change', function() {
             updateTypeFilters();
@@ -241,8 +229,7 @@
                 my_places: currentFilters.myPlaces,
                 sort_by: currentFilters.sortBy,
                 place_categories: currentFilters.placeCategories,
-                curiosity_categories: currentFilters.curiosityCategories,
-                search: currentFilters.search
+                curiosity_categories: currentFilters.curiosityCategories
             },
             success: function(response) {
                 if (response.success && response.data) {
