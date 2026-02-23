@@ -1349,9 +1349,9 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 /* Apple-style search control – same look as jg-map-toggle-control */
 .jg-fs-search-ctrl {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   display: flex;
   align-items: center;
   padding: 6px 4px 6px 10px;
@@ -1452,10 +1452,10 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 }
 
 .jg-fs-filter-dropdown-btn {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  border: none;
+  background: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  border: none !important;
   padding: 6px 10px;
   font-size: 13px;
   font-weight: 500;
@@ -1472,11 +1472,11 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 }
 
 .jg-fs-filter-dropdown-btn:hover {
-  background: #f9fafb;
+  background: #f9fafb !important;
 }
 
 .jg-fs-filter-dropdown-btn.jg-active {
-  background: #8d2324;
+  background: #8d2324 !important;
   color: #fff;
 }
 
@@ -1547,8 +1547,13 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   display: none !important;
 }
 
-/* Mobile: narrower search input */
+/* Mobile: stack filter + search vertically and use narrower input */
 @media (max-width: 768px) {
+  body.jg-fullscreen-active .jg-fs-top-controls {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
   .jg-fs-search-ctrl-input {
     width: 110px;
   }
