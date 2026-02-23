@@ -2488,8 +2488,8 @@
             elMap.addEventListener('click', fsMapClickHandler);
             fsTopControls._mapClickHandler = fsMapClickHandler;
 
-            // Append topbar directly into the map element (positioned absolutely via CSS)
-            elMap.appendChild(fsTopControls);
+            // Append topbar into the map wrapper (not elMap which has overflow:hidden from Leaflet)
+            mapWrap.appendChild(fsTopControls);
 
             syncNotifications();
 
