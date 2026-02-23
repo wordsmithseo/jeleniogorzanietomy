@@ -2450,11 +2450,31 @@
               fsSearchInput.focus();
             });
 
+            // Add magnifier submit button to the right of the input
+            var fsSearchSubmitBtn = document.createElement('button');
+            fsSearchSubmitBtn.type = 'button';
+            fsSearchSubmitBtn.className = 'jg-fs-search-submit-btn';
+            fsSearchSubmitBtn.title = 'Szukaj';
+            fsSearchSubmitBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
+            fsSearchSubmitBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              hideSuggestions(fsSuggestionsEl);
+              var origIn = document.getElementById('jg-search-input');
+              if (origIn) {
+                origIn.value = fsSearchInput.value;
+                origIn.dispatchEvent(new Event('input', { bubbles: true }));
+                var origBtn = document.getElementById('jg-search-btn');
+                if (origBtn) origBtn.click();
+              }
+              fsSearchInput.focus();
+            });
+
             L.DomEvent.disableClickPropagation(fsSearchCtrl);
             L.DomEvent.disableScrollPropagation(fsSearchCtrl);
             fsSearchCtrl.appendChild(fsSearchIconEl);
             fsSearchCtrl.appendChild(fsSearchInput);
             fsSearchCtrl.appendChild(fsSearchClearBtn);
+            fsSearchCtrl.appendChild(fsSearchSubmitBtn);
             fsSearchCtrl.appendChild(fsSuggestionsEl);
             fsTopControls.appendChild(fsSearchCtrl);
 
@@ -2468,11 +2488,8 @@
             elMap.addEventListener('click', fsMapClickHandler);
             fsTopControls._mapClickHandler = fsMapClickHandler;
 
-            // Insert the top controls bar before the existing Leaflet topright controls
-            var leafletTopRight = elMap.querySelector('.leaflet-top.leaflet-right');
-            if (leafletTopRight) {
-              leafletTopRight.insertBefore(fsTopControls, leafletTopRight.firstChild);
-            }
+            // Append topbar directly into the map element (positioned absolutely via CSS)
+            elMap.appendChild(fsTopControls);
 
             syncNotifications();
 
