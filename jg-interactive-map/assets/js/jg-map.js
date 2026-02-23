@@ -2283,6 +2283,14 @@
               L.DomEvent.disableScrollPropagation(sidebar);
             }
 
+            // Move map/satellite toggle to topleft (under fullscreen button)
+            var toggleCtrl = elMap.querySelector('.jg-map-toggle-control');
+            if (toggleCtrl) {
+              toggleCtrl._origParent = toggleCtrl.parentNode;
+              var leftContainer = elMap.querySelector('.leaflet-top.leaflet-left');
+              if (leftContainer) leftContainer.appendChild(toggleCtrl);
+            }
+
             // Build topbar: [filter-dropdown-btn + search-input] inserted into Leaflet topright
             var filtersEl = document.getElementById('jg-map-filters');
 
@@ -2606,6 +2614,12 @@
               } else {
                 sidebarOriginalParent.appendChild(sidebar);
               }
+            }
+            // Move map/satellite toggle back to topright
+            var toggleCtrl = elMap.querySelector('.jg-map-toggle-control');
+            if (toggleCtrl && toggleCtrl._origParent) {
+              toggleCtrl._origParent.appendChild(toggleCtrl);
+              toggleCtrl._origParent = null;
             }
             // Remove the topbar controls from the Leaflet topright container
             if (fsTopControls) {
