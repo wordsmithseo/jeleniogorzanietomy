@@ -1392,22 +1392,25 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 }
 
 .jg-fs-search-clear-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #9ca3af;
-  padding: 0 2px;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  color: #9ca3af !important;
+  padding: 0 2px !important;
   display: none;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 16px;
-  line-height: 1;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  border-radius: 0 !important;
   transition: color 0.15s;
 }
 
 .jg-fs-search-clear-btn:hover {
-  color: #374151;
+  color: #374151 !important;
+  background: none !important;
 }
 
 .jg-fs-search-clear-btn.visible {
@@ -1416,24 +1419,25 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 /* Magnifier submit button inside the search control */
 .jg-fs-search-submit-btn {
-  background: #8d2324;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #fff;
-  padding: 0;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: #8d2324 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  color: #fff !important;
+  padding: 0 !important;
+  width: 26px !important;
+  height: 26px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   flex-shrink: 0;
   transition: background 0.15s;
   margin-left: 2px;
+  box-shadow: none !important;
 }
 
 .jg-fs-search-submit-btn:hover {
-  background: #a02829;
+  background: #a02829 !important;
 }
 
 /* Suggestions dropdown inside the fullscreen search control */
@@ -1456,28 +1460,29 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   border-radius: 8px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   border: none !important;
-  padding: 6px 10px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #374151;
-  white-space: nowrap;
-  transition: background 0.15s;
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: #374151 !important;
+  white-space: nowrap !important;
+  line-height: 1.4 !important;
   user-select: none;
   -webkit-user-select: none;
 }
 
 .jg-fs-filter-dropdown-btn:hover {
   background: #f9fafb !important;
+  color: #374151 !important;
 }
 
 .jg-fs-filter-dropdown-btn.jg-active {
   background: #8d2324 !important;
-  color: #fff;
+  color: #fff !important;
 }
 
 .jg-fs-filter-arrow {
@@ -1547,11 +1552,10 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   display: none !important;
 }
 
-/* Mobile: stack filter + search vertically and use narrower input */
+/* Mobile: filter icon-only (no text label), narrower input, keep row layout */
 @media (max-width: 768px) {
-  body.jg-fullscreen-active .jg-fs-top-controls {
-    flex-direction: column;
-    align-items: flex-end;
+  .jg-fs-filter-label-text {
+    display: none !important;
   }
 
   .jg-fs-search-ctrl-input {
