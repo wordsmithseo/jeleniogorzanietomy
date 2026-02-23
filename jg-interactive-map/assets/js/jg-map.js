@@ -6294,9 +6294,25 @@
               if (fromReports) {
                 close(modalReportsList);
               }
+              if (limits.is_admin) {
+                close(modalView);
+              }
               refreshAll().then(function() {
                 if (fromReports) {
                   showAlert('Miejsce edytowane i zgłoszenia zamknięte!');
+                  // Reopen view modal with fresh data so admin sees changes immediately
+                  var updatedPoint = null;
+                  for (var i = 0; i < ALL.length; i++) {
+                    if (+ALL[i].id === +p.id) { updatedPoint = ALL[i]; break; }
+                  }
+                  if (updatedPoint) { openDetailsModalContent(updatedPoint); }
+                } else if (limits.is_admin) {
+                  // Admin/moderator edits are applied immediately - refresh view modal with fresh data
+                  var updatedPoint = null;
+                  for (var i = 0; i < ALL.length; i++) {
+                    if (+ALL[i].id === +p.id) { updatedPoint = ALL[i]; break; }
+                  }
+                  if (updatedPoint) { openDetailsModalContent(updatedPoint); }
                 } else {
                   showAlert('Wysłano do moderacji. Zmiany będą widoczne po zaakceptowaniu.');
                 }
