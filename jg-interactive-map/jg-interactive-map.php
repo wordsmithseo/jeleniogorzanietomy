@@ -423,6 +423,28 @@ class JG_Interactive_Map {
         );
 
         if (!$point) {
+            // Check if this is an old slug that was renamed — if so, do a 301 redirect
+            $redirects_table = JG_Map_Database::get_slug_redirects_table();
+            $redirect_row = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT sr.point_id, p.slug, p.type
+                     FROM $redirects_table sr
+                     INNER JOIN $table p ON sr.point_id = p.id
+                     WHERE sr.old_slug = %s AND p.status = 'publish'
+                     LIMIT 1",
+                    $point_slug
+                ),
+                ARRAY_A
+            );
+
+            if ($redirect_row) {
+                $type_path = ($redirect_row['type'] === 'ciekawostka') ? 'ciekawostka'
+                           : (($redirect_row['type'] === 'zgloszenie') ? 'zgloszenie' : 'miejsce');
+                $new_url = home_url('/' . $type_path . '/' . $redirect_row['slug'] . '/');
+                wp_redirect($new_url, 301);
+                exit;
+            }
+
             global $wp_query;
             $wp_query->set_404();
             status_header(404);

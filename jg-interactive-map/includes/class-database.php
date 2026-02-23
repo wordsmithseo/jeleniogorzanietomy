@@ -43,6 +43,9 @@ class JG_Map_Database {
         // Table for point visits (tracking who visited which point)
         $table_point_visits = $wpdb->prefix . 'jg_map_point_visits';
 
+        // Table for slug redirects (when a point's title/slug changes)
+        $table_slug_redirects = $wpdb->prefix . 'jg_map_slug_redirects';
+
         // Points table SQL
         $sql_points = "CREATE TABLE IF NOT EXISTS $table_points (
             id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -170,6 +173,17 @@ class JG_Map_Database {
             KEY user_id (user_id)
         ) $charset_collate;";
 
+        // Slug redirects table SQL (stores old slugs for 301 redirects after title changes)
+        $sql_slug_redirects = "CREATE TABLE IF NOT EXISTS $table_slug_redirects (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            old_slug varchar(255) NOT NULL,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY old_slug (old_slug),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_points);
         dbDelta($sql_votes);
@@ -177,6 +191,7 @@ class JG_Map_Database {
         dbDelta($sql_history);
         dbDelta($sql_relevance_votes);
         dbDelta($sql_point_visits);
+        dbDelta($sql_slug_redirects);
 
         // Set plugin version
         update_option('jg_map_db_version', JG_MAP_VERSION);
@@ -221,7 +236,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.16.2'; // Add seen column to level_notifications
+        $current_schema_version = '3.17.0'; // Add slug_redirects table for URL redirects after title changes
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -504,6 +519,19 @@ class JG_Map_Database {
         // Run migration to strip slashes from existing data (one-time)
         self::migrate_strip_slashes();
 
+        // Ensure slug_redirects table exists (for 301 redirects after title/slug changes)
+        $table_slug_redirects = $wpdb->prefix . 'jg_map_slug_redirects';
+        $sql_slug_redirects = "CREATE TABLE IF NOT EXISTS $table_slug_redirects (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            old_slug varchar(255) NOT NULL,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY old_slug (old_slug),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+        dbDelta($sql_slug_redirects);
+
         // Cache the schema version to avoid running these checks on every page load
         update_option('jg_map_schema_version', $current_schema_version);
     }
@@ -756,6 +784,14 @@ class JG_Map_Database {
     }
 
     /**
+     * Get slug redirects table name
+     */
+    public static function get_slug_redirects_table() {
+        global $wpdb;
+        return $wpdb->prefix . 'jg_map_slug_redirects';
+    }
+
+    /**
      * Get all published points
      */
     public static function get_published_points($include_pending = false) {
@@ -968,7 +1004,17 @@ class JG_Map_Database {
 
         // If title is being updated, regenerate slug if not explicitly provided
         if (isset($data['title']) && empty($data['slug'])) {
+            // Fetch current slug before overwriting so we can store a redirect
+            $current_slug = $wpdb->get_var(
+                $wpdb->prepare("SELECT slug FROM $table WHERE id = %d", $point_id)
+            );
+
             $data['slug'] = self::generate_unique_slug($data['title'], $point_id);
+
+            // Save old slug as a redirect if it actually changed
+            if (!empty($current_slug) && $current_slug !== $data['slug']) {
+                self::save_slug_redirect($current_slug, $point_id);
+            }
         }
 
         $result = $wpdb->update(
@@ -983,6 +1029,39 @@ class JG_Map_Database {
         }
 
         return $result;
+    }
+
+    /**
+     * Save old slug to the redirects table so old URLs continue to work via 301 redirect.
+     */
+    public static function save_slug_redirect($old_slug, $point_id) {
+        global $wpdb;
+        $table = self::get_slug_redirects_table();
+
+        // Check if the old_slug row already exists to avoid duplicate-key errors
+        $existing = $wpdb->get_var(
+            $wpdb->prepare("SELECT id FROM $table WHERE old_slug = %s", $old_slug)
+        );
+
+        if ($existing) {
+            // Update the target point in case the same old slug now points elsewhere
+            $wpdb->update(
+                $table,
+                array('point_id' => $point_id),
+                array('old_slug' => $old_slug),
+                array('%d'),
+                array('%s')
+            );
+        } else {
+            $wpdb->insert(
+                $table,
+                array(
+                    'old_slug' => $old_slug,
+                    'point_id' => $point_id,
+                ),
+                array('%s', '%d')
+            );
+        }
     }
 
     /**
