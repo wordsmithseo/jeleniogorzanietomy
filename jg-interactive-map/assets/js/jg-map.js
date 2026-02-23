@@ -2049,6 +2049,11 @@
       var savedLayer = getMapCookie('jg_map_layer');
       var currentLayerIsSatellite = (savedLayer === 'satellite');
 
+      // Shared refs so enterFullscreen (inside onAdd closure) can call
+      // buildSuggestions/hideSuggestions (defined inside setTimeout callback)
+      var _jgFsBuildSuggestions = null;
+      var _jgFsHideSuggestions = null;
+
       if (currentLayerIsSatellite) {
         satelliteLayer.addTo(map);
       } else {
@@ -2283,7 +2288,7 @@
 
             // Create the top controls container (acts as a Leaflet control)
             fsTopControls = document.createElement('div');
-            fsTopControls.className = 'jg-fs-top-controls leaflet-control';
+            fsTopControls.className = 'jg-fs-top-controls';
 
             // ── Filter section ──
             var fsFilterCtrl = document.createElement('div');
@@ -2380,6 +2385,13 @@
             var fsSuggestionsEl = document.createElement('div');
             fsSuggestionsEl.className = 'jg-search-suggestions';
             var fsSuggestDebounce = null;
+            // Wrappers that route through the outer-scope refs (bridging setTimeout closure)
+            var fsBuildSugg = function(q) {
+              if (_jgFsBuildSuggestions) _jgFsBuildSuggestions(q, fsSuggestionsEl, fsSearchInput);
+            };
+            var fsHideSugg = function() {
+              if (_jgFsHideSuggestions) _jgFsHideSuggestions(fsSuggestionsEl);
+            };
 
             fsSearchInput.addEventListener('input', function() {
               var val = this.value;
@@ -2389,13 +2401,13 @@
               clearTimeout(fsSuggestDebounce);
               var q = val.toLowerCase().trim();
               fsSuggestDebounce = setTimeout(function() {
-                buildSuggestions(q, fsSuggestionsEl, fsSearchInput);
+                fsBuildSugg(q);
               }, 200);
             });
 
             fsSearchInput.addEventListener('blur', function() {
               setTimeout(function() {
-                hideSuggestions(fsSuggestionsEl);
+                fsHideSugg();
               }, 150);
             });
 
@@ -2411,7 +2423,7 @@
                     if (origIn2) origIn2.value = fill;
                   }
                 }
-                hideSuggestions(fsSuggestionsEl);
+                fsHideSugg();
                 var origIn3 = document.getElementById('jg-search-input');
                 if (origIn3) {
                   origIn3.value = fsSearchInput.value;
@@ -2420,7 +2432,7 @@
                   if (origBtn) origBtn.click();
                 }
               } else if (e.key === 'Escape') {
-                hideSuggestions(fsSuggestionsEl);
+                fsHideSugg();
               } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                 e.preventDefault();
                 var items = fsSuggestionsEl.querySelectorAll('.jg-suggest-item');
@@ -2439,7 +2451,7 @@
             fsSearchClearBtn.addEventListener('click', function() {
               fsSearchInput.value = '';
               fsSearchClearBtn.classList.remove('visible');
-              hideSuggestions(fsSuggestionsEl);
+              fsHideSugg();
               var origIn = document.getElementById('jg-search-input');
               if (origIn) {
                 origIn.value = '';
@@ -2458,7 +2470,7 @@
             fsSearchSubmitBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
             fsSearchSubmitBtn.addEventListener('click', function(e) {
               e.stopPropagation();
-              hideSuggestions(fsSuggestionsEl);
+              fsHideSugg();
               var origIn = document.getElementById('jg-search-input');
               if (origIn) {
                 origIn.value = fsSearchInput.value;
@@ -9382,6 +9394,10 @@
         if (searchCloseBtn) {
           searchCloseBtn.addEventListener('click', closeSearchPanel);
         }
+
+        // Export to outer scope so enterFullscreen (different closure) can call them
+        _jgFsBuildSuggestions = buildSuggestions;
+        _jgFsHideSuggestions = hideSuggestions;
       }, 500);
 
       // Setup filter listeners - wait for DOM
