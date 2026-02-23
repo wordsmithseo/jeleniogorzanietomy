@@ -913,7 +913,8 @@ body.jg-fullscreen-active {
   body.jg-fullscreen-active .jg-fs-notif-container:not(:empty) {
     display: flex;
     position: absolute;
-    top: 12px;
+    top: 88px;
+    left: 12px;
     z-index: 1003;
     flex-direction: column;
     gap: 8px;
@@ -1321,6 +1322,225 @@ body.jg-fullscreen-active {
     max-width: calc(100% - 16px);
     transform: translateX(-50%) scale(1.7);
     transform-origin: center bottom;
+  }
+}
+
+/* === Fullscreen: Horizontal topright layout (filter + search + map toggle in one row) === */
+#jg-map-wrap.jg-fullscreen .leaflet-top.leaflet-right {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  padding: 10px 10px 0 0 !important;
+  gap: 8px !important;
+}
+
+#jg-map-wrap.jg-fullscreen .leaflet-top.leaflet-right .leaflet-control {
+  float: none !important;
+  clear: none !important;
+  margin: 0 !important;
+}
+
+/* Combined top controls container */
+.jg-fs-top-controls {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Apple-style search control – matches jg-map-toggle-control look */
+.jg-fs-search-ctrl {
+  background: #fff;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  gap: 6px;
+  position: relative;
+  overflow: visible;
+  cursor: text;
+}
+
+.jg-fs-search-ctrl-input {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+  color: #111827 !important;
+  width: 160px;
+  min-width: 60px;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: auto !important;
+  line-height: 1.4 !important;
+}
+
+.jg-fs-search-ctrl-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.jg-fs-search-icon {
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.jg-fs-search-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.jg-fs-search-clear-btn:hover {
+  color: #374151;
+}
+
+.jg-fs-search-clear-btn.visible {
+  display: flex;
+}
+
+/* Suggestions dropdown inside the fullscreen search control */
+.jg-fs-search-ctrl .jg-search-suggestions {
+  top: calc(100% + 2px);
+  left: 0;
+  right: auto;
+  min-width: 240px;
+  border-radius: 0 0 8px 8px;
+  border-top: none;
+  z-index: 10010;
+}
+
+/* Apple-style filter dropdown button – matches map toggle look */
+.jg-fs-filter-ctrl {
+  position: relative;
+}
+
+.jg-fs-filter-dropdown-btn {
+  background: #fff;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  border: none !important;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #374151;
+  white-space: nowrap;
+  transition: background 0.15s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.jg-fs-filter-dropdown-btn:hover {
+  background: #f9fafb;
+}
+
+.jg-fs-filter-dropdown-btn.jg-active {
+  background: #8d2324;
+  color: #fff;
+}
+
+.jg-fs-filter-arrow {
+  font-size: 9px;
+  color: #9ca3af;
+  transition: transform 0.2s;
+}
+
+.jg-fs-filter-dropdown-btn.jg-active .jg-fs-filter-arrow {
+  transform: rotate(180deg);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Filter dropdown panel – Apple style */
+.jg-fs-filter-dropdown-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 10010;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  min-width: 220px;
+  padding: 6px;
+  overflow: hidden;
+}
+
+.jg-fs-filter-dropdown-panel.open {
+  display: block;
+}
+
+/* Filters inside the dropdown panel */
+.jg-fs-filter-dropdown-panel .jg-filters {
+  flex-direction: column !important;
+  gap: 2px !important;
+  background: transparent !important;
+  padding: 4px 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.jg-fs-filter-dropdown-panel .jg-filter-label {
+  justify-content: flex-start !important;
+  width: 100% !important;
+  font-size: 13px !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  margin-left: 0 !important;
+}
+
+.jg-fs-filter-dropdown-panel .jg-filter-label:hover {
+  background: #f3f4f6 !important;
+}
+
+.jg-fs-filter-dropdown-panel .jg-filter-icon {
+  display: inline !important;
+  font-size: 16px !important;
+}
+
+.jg-fs-filter-dropdown-panel .jg-filter-text {
+  display: inline !important;
+}
+
+.jg-fs-filter-dropdown-panel .jg-filter-expand-btn {
+  display: none !important;
+}
+
+/* Mobile: narrower search input */
+@media (max-width: 768px) {
+  .jg-fs-search-ctrl-input {
+    width: 100px;
+  }
+}
+
+/* Very small phones: hide "Filtry" label text, keep icon only */
+@media (max-width: 400px) {
+  .jg-fs-search-ctrl-input {
+    width: 70px;
+  }
+
+  .jg-fs-filter-label-text {
+    display: none !important;
   }
 }
 

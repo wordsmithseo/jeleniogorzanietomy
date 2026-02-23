@@ -2133,25 +2133,23 @@
           var sidebarOriginalParent = sidebar ? sidebar.parentNode : null;
           var sidebarOriginalNext = sidebar ? sidebar.nextSibling : null;
 
-          // Create floating filter icon button for mobile fullscreen (below map/satellite toggle)
+          // Legacy elements kept for backward-compat (not used in new UI)
           var fsFilterBtn = document.createElement('button');
           fsFilterBtn.className = 'jg-fs-filter-btn';
           fsFilterBtn.type = 'button';
-          fsFilterBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg><span>Filtry</span>';
           elMap.appendChild(fsFilterBtn);
 
-          // Create filter icon button for mobile (small square, like a Leaflet control)
           var fsFilterIconBtn = document.createElement('button');
           fsFilterIconBtn.className = 'jg-fs-filter-icon-btn';
           fsFilterIconBtn.type = 'button';
-          fsFilterIconBtn.title = 'Filtry i wyszukiwanie';
-          fsFilterIconBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
           elMap.appendChild(fsFilterIconBtn);
 
-          // Create floating filter panel (used on both mobile and desktop fullscreen)
           var fsFilterPanel = document.createElement('div');
           fsFilterPanel.className = 'jg-fs-filter-panel';
           elMap.appendChild(fsFilterPanel);
+
+          // Top controls bar (inserted into Leaflet topright in fullscreen)
+          var fsTopControls = null;
 
           // Create notification circles container (desktop fullscreen)
           var fsNotifContainer = document.createElement('div');
@@ -2262,13 +2260,8 @@
             });
             fsNotifContainer.innerHTML = html;
 
-            // Position notifications to the left of the filter panel
-            if (fsFilterPanel.offsetWidth > 0) {
-              var panelRect = fsFilterPanel.getBoundingClientRect();
-              var mapRect = elMap.getBoundingClientRect();
-              var leftPos = panelRect.left - mapRect.left - 56; // 44px circle + 12px gap
-              fsNotifContainer.style.left = Math.max(12, leftPos) + 'px';
-            }
+            // Position notifications below the zoom controls (top-left area)
+            fsNotifContainer.style.left = '12px';
           }
 
           function enterFullscreen() {
@@ -2285,29 +2278,39 @@
               L.DomEvent.disableScrollPropagation(sidebar);
             }
 
-            // Build filter panel content
+            // Build topbar: [filter-dropdown-btn + search-input] inserted into Leaflet topright
             var filtersEl = document.getElementById('jg-map-filters');
+
+            // Create the top controls container (acts as a Leaflet control)
+            fsTopControls = document.createElement('div');
+            fsTopControls.className = 'jg-fs-top-controls leaflet-control';
+
+            // ── Filter section ──
+            var fsFilterCtrl = document.createElement('div');
+            fsFilterCtrl.className = 'jg-fs-filter-ctrl';
+
+            var fsFilterDropdownBtn = document.createElement('button');
+            fsFilterDropdownBtn.type = 'button';
+            fsFilterDropdownBtn.className = 'jg-fs-filter-dropdown-btn';
+            fsFilterDropdownBtn.innerHTML =
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>' +
+              '<span class="jg-fs-filter-label-text">Filtry</span>' +
+              '<span class="jg-fs-filter-arrow">&#x25BC;</span>';
+
+            var fsFilterDropdownPanel = document.createElement('div');
+            fsFilterDropdownPanel.className = 'jg-fs-filter-dropdown-panel';
+
             if (filtersEl) {
               var filtersClone = filtersEl.cloneNode(true);
               filtersClone.id = 'jg-fs-filters-clone';
               filtersClone.style.display = '';
-              fsFilterPanel.innerHTML = '';
+              // Remove search div and sync-status from the clone (search has its own control now)
+              var cloneSearchDiv = filtersClone.querySelector('.jg-search');
+              if (cloneSearchDiv) cloneSearchDiv.parentNode.removeChild(cloneSearchDiv);
+              var cloneSyncStatus = filtersClone.querySelector('#jg-sync-status');
+              if (cloneSyncStatus) cloneSyncStatus.parentNode.removeChild(cloneSyncStatus);
 
-              // Add collapsible header on both desktop and mobile, collapsed by default
-              var header = document.createElement('div');
-              header.className = 'jg-fs-panel-header';
-              header.innerHTML = '<span>Filtry i wyszukiwanie</span><span class="jg-fs-panel-arrow">&#x25BC;</span>';
-              fsFilterPanel.appendChild(header);
-
-              var content = document.createElement('div');
-              content.className = 'jg-fs-panel-content jg-fs-panel-collapsed';
-              content.appendChild(filtersClone);
-              fsFilterPanel.appendChild(content);
-
-              header.addEventListener('click', function() {
-                content.classList.toggle('jg-fs-panel-collapsed');
-                header.classList.toggle('expanded');
-              });
+              fsFilterDropdownPanel.appendChild(filtersClone);
 
               // Sync checkbox clicks from clone to original
               var cloneCheckboxes = filtersClone.querySelectorAll('input[type="checkbox"]');
@@ -2327,47 +2330,151 @@
                   }
                 });
               });
+            }
 
-              // Sync search input
-              var cloneSearch = filtersClone.querySelector('#jg-search-input');
-              if (cloneSearch) {
-                cloneSearch.id = 'jg-fs-search-input';
-                var origSearch = document.getElementById('jg-search-input');
-                cloneSearch.addEventListener('input', function() {
-                  if (origSearch) origSearch.value = cloneSearch.value;
-                });
-                cloneSearch.addEventListener('keydown', function(ev) {
-                  if (ev.key === 'Enter' && origSearch) {
-                    origSearch.value = cloneSearch.value;
-                    origSearch.dispatchEvent(new Event('input', { bubbles: true }));
-                    var origBtn = document.getElementById('jg-search-btn');
-                    if (origBtn) origBtn.click();
-                    if (window.innerWidth <= 768) fsFilterPanel.classList.remove('active');
-                  }
-                });
-                var cloneSearchBtn = filtersClone.querySelector('.jg-search-btn');
-                if (cloneSearchBtn) {
-                  cloneSearchBtn.addEventListener('click', function(ev) {
-                    ev.preventDefault();
-                    if (origSearch) {
-                      origSearch.value = cloneSearch.value;
-                      origSearch.dispatchEvent(new Event('input', { bubbles: true }));
-                      var origBtn = document.getElementById('jg-search-btn');
-                      if (origBtn) origBtn.click();
-                    }
-                    if (window.innerWidth <= 768) fsFilterPanel.classList.remove('active');
-                  });
-                }
+            // Toggle the filter dropdown on button click
+            fsFilterDropdownBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var isOpen = fsFilterDropdownPanel.classList.contains('open');
+              if (isOpen) {
+                fsFilterDropdownPanel.classList.remove('open');
+                fsFilterDropdownBtn.classList.remove('jg-active');
+              } else {
+                fsFilterDropdownPanel.classList.add('open');
+                fsFilterDropdownBtn.classList.add('jg-active');
               }
+            });
+
+            L.DomEvent.disableClickPropagation(fsFilterCtrl);
+            L.DomEvent.disableScrollPropagation(fsFilterCtrl);
+            fsFilterCtrl.appendChild(fsFilterDropdownBtn);
+            fsFilterCtrl.appendChild(fsFilterDropdownPanel);
+            fsTopControls.appendChild(fsFilterCtrl);
+
+            // ── Search section ──
+            var fsSearchCtrl = document.createElement('div');
+            fsSearchCtrl.className = 'jg-fs-search-ctrl';
+
+            var fsSearchIconEl = document.createElement('span');
+            fsSearchIconEl.className = 'jg-fs-search-icon';
+            fsSearchIconEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
+
+            var fsSearchInput = document.createElement('input');
+            fsSearchInput.type = 'text';
+            fsSearchInput.className = 'jg-fs-search-ctrl-input';
+            fsSearchInput.placeholder = 'Szukaj...';
+            fsSearchInput.setAttribute('autocomplete', 'off');
+            // Pre-fill with current search value if any
+            var origSearchInput = document.getElementById('jg-search-input');
+            if (origSearchInput && origSearchInput.value) {
+              fsSearchInput.value = origSearchInput.value;
             }
 
-            // Desktop: show filter panel directly; Mobile: show icon button (panel toggled by button)
-            if (window.innerWidth > 768) {
-              fsFilterPanel.classList.add('desktop-visible');
-              syncNotifications();
-            } else {
-              fsFilterIconBtn.classList.add('visible');
+            var fsSearchClearBtn = document.createElement('button');
+            fsSearchClearBtn.type = 'button';
+            fsSearchClearBtn.className = 'jg-fs-search-clear-btn' + (fsSearchInput.value ? ' visible' : '');
+            fsSearchClearBtn.innerHTML = '&times;';
+            fsSearchClearBtn.title = 'Wyczyść';
+
+            // Suggestions element inside the search control
+            var fsSuggestionsEl = document.createElement('div');
+            fsSuggestionsEl.className = 'jg-search-suggestions';
+            var fsSuggestDebounce = null;
+
+            fsSearchInput.addEventListener('input', function() {
+              var val = this.value;
+              var origIn = document.getElementById('jg-search-input');
+              if (origIn) origIn.value = val;
+              fsSearchClearBtn.classList.toggle('visible', val.trim().length > 0);
+              clearTimeout(fsSuggestDebounce);
+              var q = val.toLowerCase().trim();
+              fsSuggestDebounce = setTimeout(function() {
+                buildSuggestions(q, fsSuggestionsEl, fsSearchInput);
+              }, 200);
+            });
+
+            fsSearchInput.addEventListener('blur', function() {
+              setTimeout(function() {
+                hideSuggestions(fsSuggestionsEl);
+              }, 150);
+            });
+
+            fsSearchInput.addEventListener('keydown', function(e) {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                var activeItem = fsSuggestionsEl.querySelector('.jg-suggest-active');
+                if (activeItem) {
+                  var fill = activeItem.getAttribute('data-fill');
+                  if (fill) {
+                    fsSearchInput.value = fill;
+                    var origIn2 = document.getElementById('jg-search-input');
+                    if (origIn2) origIn2.value = fill;
+                  }
+                }
+                hideSuggestions(fsSuggestionsEl);
+                var origIn3 = document.getElementById('jg-search-input');
+                if (origIn3) {
+                  origIn3.value = fsSearchInput.value;
+                  origIn3.dispatchEvent(new Event('input', { bubbles: true }));
+                  var origBtn = document.getElementById('jg-search-btn');
+                  if (origBtn) origBtn.click();
+                }
+              } else if (e.key === 'Escape') {
+                hideSuggestions(fsSuggestionsEl);
+              } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                var items = fsSuggestionsEl.querySelectorAll('.jg-suggest-item');
+                if (!items.length) return;
+                var current = fsSuggestionsEl.querySelector('.jg-suggest-active');
+                var currentIdx = current ? Array.prototype.indexOf.call(items, current) : -1;
+                if (current) current.classList.remove('jg-suggest-active');
+                var nextIdx = e.key === 'ArrowDown' ? currentIdx + 1 : currentIdx - 1;
+                if (nextIdx >= items.length) nextIdx = 0;
+                if (nextIdx < 0) nextIdx = items.length - 1;
+                items[nextIdx].classList.add('jg-suggest-active');
+                items[nextIdx].scrollIntoView({ block: 'nearest' });
+              }
+            });
+
+            fsSearchClearBtn.addEventListener('click', function() {
+              fsSearchInput.value = '';
+              fsSearchClearBtn.classList.remove('visible');
+              hideSuggestions(fsSuggestionsEl);
+              var origIn = document.getElementById('jg-search-input');
+              if (origIn) {
+                origIn.value = '';
+                origIn.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+              var origCloseBtn = document.getElementById('jg-search-close-btn');
+              if (origCloseBtn) origCloseBtn.click();
+              fsSearchInput.focus();
+            });
+
+            L.DomEvent.disableClickPropagation(fsSearchCtrl);
+            L.DomEvent.disableScrollPropagation(fsSearchCtrl);
+            fsSearchCtrl.appendChild(fsSearchIconEl);
+            fsSearchCtrl.appendChild(fsSearchInput);
+            fsSearchCtrl.appendChild(fsSearchClearBtn);
+            fsSearchCtrl.appendChild(fsSuggestionsEl);
+            fsTopControls.appendChild(fsSearchCtrl);
+
+            // Close the filter dropdown when clicking elsewhere on the map
+            var fsMapClickHandler = function() {
+              if (fsFilterDropdownPanel) {
+                fsFilterDropdownPanel.classList.remove('open');
+                fsFilterDropdownBtn.classList.remove('jg-active');
+              }
+            };
+            elMap.addEventListener('click', fsMapClickHandler);
+            fsTopControls._mapClickHandler = fsMapClickHandler;
+
+            // Insert the top controls bar before the existing Leaflet topright controls
+            var leafletTopRight = elMap.querySelector('.leaflet-top.leaflet-right');
+            if (leafletTopRight) {
+              leafletTopRight.insertBefore(fsTopControls, leafletTopRight.firstChild);
             }
+
+            syncNotifications();
 
             // Show floating promotional content in fullscreen
             (function setupFsPromo() {
@@ -2471,11 +2578,16 @@
                 sidebarOriginalParent.appendChild(sidebar);
               }
             }
-            fsFilterBtn.classList.remove('visible');
-            fsFilterIconBtn.classList.remove('visible');
-            fsFilterPanel.classList.remove('active');
-            fsFilterPanel.classList.remove('desktop-visible');
-            fsFilterPanel.classList.remove('mobile-visible');
+            // Remove the topbar controls from the Leaflet topright container
+            if (fsTopControls) {
+              if (fsTopControls._mapClickHandler) {
+                elMap.removeEventListener('click', fsTopControls._mapClickHandler);
+              }
+              if (fsTopControls.parentNode) {
+                fsTopControls.parentNode.removeChild(fsTopControls);
+              }
+            }
+            fsTopControls = null;
             fsFilterPanel.innerHTML = '';
             fsNotifContainer.innerHTML = '';
             fsSearchPanel.classList.remove('active');
@@ -8906,10 +9018,13 @@
         var suggestDebounce = null;
         var activeSuggestion = -1;
 
-        function buildSuggestions(query) {
+        function buildSuggestions(query, altSuggestEl, altSearchInput) {
+          var useEl = altSuggestEl || suggestionsEl;
+          var useInput = altSearchInput || searchInput;
+
           if (!query || query.length < 2) {
-            suggestionsEl.innerHTML = '';
-            suggestionsEl.style.display = 'none';
+            useEl.innerHTML = '';
+            useEl.style.display = 'none';
             return;
           }
 
@@ -8956,8 +9071,8 @@
           });
 
           if (trescItems.length === 0 && tagItems.length === 0 && adresItems.length === 0) {
-            suggestionsEl.innerHTML = '';
-            suggestionsEl.style.display = 'none';
+            useEl.innerHTML = '';
+            useEl.style.display = 'none';
             return;
           }
 
@@ -8996,29 +9111,34 @@
             html += '</div>';
           }
 
-          suggestionsEl.innerHTML = html;
-          suggestionsEl.style.display = 'block';
-          activeSuggestion = -1;
+          useEl.innerHTML = html;
+          useEl.style.display = 'block';
+          if (!altSuggestEl) activeSuggestion = -1;
 
           // Click handlers on suggestion items
-          var allItems = suggestionsEl.querySelectorAll('.jg-suggest-item');
+          var allItems = useEl.querySelectorAll('.jg-suggest-item');
           allItems.forEach(function(el) {
             el.addEventListener('mousedown', function(e) {
               e.preventDefault(); // prevent blur before click fires
               var fill = this.getAttribute('data-fill');
               if (fill) {
-                searchInput.value = fill;
+                useInput.value = fill;
+                // Also sync to original search input if using an alternative
+                if (useInput !== searchInput) searchInput.value = fill;
               }
-              hideSuggestions();
+              useEl.innerHTML = '';
+              useEl.style.display = 'none';
+              if (!altSuggestEl) activeSuggestion = -1;
               performSearch();
             });
           });
         }
 
-        function hideSuggestions() {
-          suggestionsEl.innerHTML = '';
-          suggestionsEl.style.display = 'none';
-          activeSuggestion = -1;
+        function hideSuggestions(altSuggestEl) {
+          var useEl = altSuggestEl || suggestionsEl;
+          useEl.innerHTML = '';
+          useEl.style.display = 'none';
+          if (!altSuggestEl) activeSuggestion = -1;
         }
 
         function navigateSuggestions(dir) {
