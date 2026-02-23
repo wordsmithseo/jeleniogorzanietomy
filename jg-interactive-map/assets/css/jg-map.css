@@ -756,6 +756,11 @@ body.jg-fullscreen-active {
   display: none !important;
 }
 
+/* In fullscreen the original search panel is mirrored to fsSearchPanel - hide the original */
+body.jg-fullscreen-active #jg-search-panel {
+  display: none !important;
+}
+
 #jg-map-wrap.jg-fullscreen .jg-map {
   flex: 1 !important;
   height: 0 !important;
