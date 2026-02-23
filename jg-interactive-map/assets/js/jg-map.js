@@ -4429,9 +4429,18 @@
       function openLightbox(src) {
         open(lightbox, '<button class="jg-lb-close" id="lb-close">Zamknij</button><img src="' + esc(src) + '" alt="">');
         var b = qs('#lb-close', lightbox);
-        if (b) b.onclick = function() {
-          close(lightbox);
-        };
+        if (b) {
+          b.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            close(lightbox);
+          };
+          b.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            close(lightbox);
+          }, { passive: false });
+        }
       }
 
       function openAuthorModal(authorId, name) {
