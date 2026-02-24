@@ -1182,6 +1182,11 @@ body.jg-fullscreen-active #jg-search-panel {
     min-height: 100dvh !important;
   }
 
+  /* Hide sidebar inside map container on mobile fullscreen to prevent flash during layer switch */
+  .jg-map .jg-sidebar-fullscreen-overlay {
+    display: none !important;
+  }
+
   /* ── Mobile fullscreen: filter icon button (topright, below toggle) ── */
   .jg-fs-filter-icon-btn {
     display: none !important;
@@ -2913,6 +2918,11 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   position: relative;
   padding: 0;
   overflow: hidden;
+}
+
+/* Lightbox backdrop sits above all other modals (9999) */
+#jg-map-lightbox.jg-modal-bg {
+  z-index: 10001;
 }
 
 .jg-lightbox img {
@@ -6263,66 +6273,90 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 /* ===== TAG INPUT ===== */
 .jg-tags-wrap {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 8px;
-  background: #fff;
+  border: 1px solid #ddd !important;
+  border-radius: 8px !important;
+  padding: 8px !important;
+  background: #fff !important;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
 }
 
 .jg-tags-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 4px;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-bottom: 4px !important;
+  padding: 0 !important;
+  list-style: none !important;
 }
 
 .jg-tag-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 16px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  font-size: 13px;
-  color: #374151;
-  line-height: 1.4;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 10px !important;
+  border-radius: 16px !important;
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  font-size: 13px !important;
+  color: #374151 !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
 }
 
 .jg-tag-text {
-  color: #8d2324;
-  font-weight: 500;
+  color: #8d2324 !important;
+  font-weight: 500 !important;
 }
 
 .jg-tag-remove {
-  background: none;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  padding: 0 2px;
-  margin-left: 2px;
+  background: none !important;
+  border: none !important;
+  color: #9ca3af !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  padding: 0 2px !important;
+  margin-left: 2px !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .jg-tag-remove:hover {
-  color: #dc2626;
+  color: #dc2626 !important;
 }
 
 .jg-tags-input {
-  width: 100%;
-  padding: 6px 8px;
-  border: none;
-  outline: none;
-  font-size: 14px;
-  background: transparent;
+  width: 100% !important;
+  padding: 6px 8px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  font-size: 14px !important;
+  font-family: inherit !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  color: #111 !important;
+  margin: 0 !important;
+}
+
+.jg-tags-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
 .jg-tags-counter {
-  font-size: 11px;
-  color: #9ca3af;
-  text-align: right;
-  margin-top: 4px;
+  font-size: 11px !important;
+  color: #9ca3af !important;
+  text-align: right !important;
+  margin-top: 4px !important;
+  font-family: inherit !important;
 }
 
 .jg-tags-suggestions {

@@ -1928,6 +1928,12 @@
               window.history.pushState({}, '', '/');
             }
           }
+          // Also close lightbox if it was opened from within this modal
+          if (lightbox && lightbox.style.display !== 'none') {
+            var lc = qs('.jg-modal, .jg-lightbox', lightbox);
+            if (lc) lc.className = lc.className.replace(/\bjg-modal--\w+/g, '');
+            lightbox.style.display = 'none';
+          }
         }
       }
 
@@ -1937,6 +1943,16 @@
           if (e.target === bg) close(bg);
         });
       });
+
+      // On mobile, add touchend to lightbox backdrop so tapping the dark area closes it
+      if (lightbox) {
+        lightbox.addEventListener('touchend', function(e) {
+          if (e.target === lightbox) {
+            e.preventDefault();
+            close(lightbox);
+          }
+        }, { passive: false });
+      }
 
       document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
@@ -2068,13 +2084,15 @@
           var activeMap = currentLayerIsSatellite ? '' : ' jg-map-toggle-label--active';
           var activeSat = currentLayerIsSatellite ? ' jg-map-toggle-label--active' : '';
           var activeData = currentLayerIsSatellite ? 'satellite' : 'map';
+          var mapIcon = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>';
+          var satIcon = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="M13 7 7 13"/><path d="m16 3 5 5-5 5-5-5 5-5z"/><path d="m3 16 5 5 5-5-5-5-5 5z"/><path d="M7 13a6 6 0 0 1 6-6"/></svg>';
           container.innerHTML =
             '<div class="jg-map-toggle">' +
-              '<span class="jg-map-toggle-label' + activeMap + '" data-layer="map">Mapa</span>' +
+              '<span class="jg-map-toggle-label' + activeMap + '" data-layer="map">' + mapIcon + 'Mapa</span>' +
               '<div class="jg-map-toggle-switch" data-active="' + activeData + '">' +
                 '<div class="jg-map-toggle-thumb"></div>' +
               '</div>' +
-              '<span class="jg-map-toggle-label' + activeSat + '" data-layer="satellite">Satelita</span>' +
+              '<span class="jg-map-toggle-label' + activeSat + '" data-layer="satellite">' + satIcon + 'Satelita</span>' +
             '</div>';
 
           L.DomEvent.disableClickPropagation(container);
@@ -2449,6 +2467,8 @@
                   var origBtn = document.getElementById('jg-search-btn');
                   if (origBtn) origBtn.click();
                 }
+                // Dismiss on-screen keyboard on mobile after Enter search
+                fsSearchInput.blur();
               } else if (e.key === 'Escape') {
                 fsHideSugg();
               } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -2496,7 +2516,8 @@
                 var origBtn = document.getElementById('jg-search-btn');
                 if (origBtn) origBtn.click();
               }
-              fsSearchInput.focus();
+              // Dismiss on-screen keyboard on mobile after submitting search
+              fsSearchInput.blur();
             });
 
             L.DomEvent.disableClickPropagation(fsSearchCtrl);
@@ -3406,6 +3427,8 @@
               msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
               msg.style.color = '#15803d';
               form.reset();
+              // Invalidate tag cache so newly added tags appear in suggestions immediately
+              cachedAllTags = null;
 
               // Immediate refresh for better UX
               refreshAll().then(function() {
@@ -4451,19 +4474,25 @@
       }
 
       function openLightbox(src) {
-        open(lightbox, '<button class="jg-lb-close" id="lb-close">Zamknij</button><img src="' + esc(src) + '" alt="">');
+        open(lightbox, '<button class="jg-lb-close" id="lb-close">Zamknij</button><img src="' + esc(src) + '" alt="" style="pointer-events:none">');
         var b = qs('#lb-close', lightbox);
         if (b) {
+          var _lbClosing = false;
+          b.addEventListener('touchstart', function(e) {
+            e.stopPropagation();
+          }, { passive: true });
+          b.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            _lbClosing = true;
+            close(lightbox);
+          }, { passive: false });
           b.onclick = function(e) {
+            if (_lbClosing) { _lbClosing = false; return; }
             e.preventDefault();
             e.stopPropagation();
             close(lightbox);
           };
-          b.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            close(lightbox);
-          }, { passive: false });
         }
       }
 
@@ -6463,6 +6492,8 @@
 
             msg.textContent = 'Zaktualizowano.';
             msg.style.color = '#15803d';
+            // Invalidate tag cache so updated tags appear in suggestions immediately
+            cachedAllTags = null;
             setTimeout(function() {
               close(modalEdit);
               if (fromReports) {
@@ -9192,6 +9223,8 @@
               useEl.style.display = 'none';
               if (!altSuggestEl) activeSuggestion = -1;
               performSearch();
+              // Dismiss on-screen keyboard on mobile after selecting suggestion
+              useInput.blur();
             });
           });
         }
@@ -10872,6 +10905,8 @@
                 msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
                 msg.style.color = '#15803d';
                 form.reset();
+                // Invalidate tag cache so newly added tags appear in suggestions immediately
+                cachedAllTags = null;
 
                 // Immediate refresh for better UX
                 refreshAll().then(function() {
