@@ -5723,6 +5723,12 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   100% { opacity: 0; transform: translateX(-50%) translateY(18px); }
 }
 
+/* Red variant for XP deduction (vote retraction, etc.) */
+.jg-xp-gain-indicator--negative {
+  background: rgba(220, 38, 38, 0.93);
+  color: #fff;
+}
+
 /* Keyframe-based confetti burst — uses CSS custom properties set inline per-particle.
    --jg-dx, --jg-dy: final displacement in px (already includes gravity)
    --jg-rot: final rotation in deg */
