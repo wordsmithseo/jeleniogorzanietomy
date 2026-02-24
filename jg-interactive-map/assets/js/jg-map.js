@@ -3451,6 +3451,9 @@
               // Invalidate tag cache so newly added tags appear in suggestions immediately
               cachedAllTags = null;
 
+              // Update level/XP bar immediately if server returned XP data
+              if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
+
               // Immediate refresh for better UX
               refreshAll().then(function() {
                 msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
@@ -5773,11 +5776,14 @@
             post_id: p.id,
             reason: f.reason.value.trim()
           })
-          .then(function() {
+          .then(function(d) {
             // Save report time to localStorage
             var reportTime = Date.now();
             lastReportTime = reportTime;
             setLastReportTime(reportTime);
+
+            // Update level/XP bar if server returned XP data
+            if (d && d.xp_result) { updateLevelDisplay(d.xp_result); }
 
             msg.textContent = 'Dziękujemy!';
             msg.style.color = '#15803d';
@@ -6498,6 +6504,8 @@
             msg.style.color = '#15803d';
             // Invalidate tag cache so updated tags appear in suggestions immediately
             cachedAllTags = null;
+            // Update level/XP bar if server returned XP data
+            if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
             setTimeout(function() {
               close(modalEdit);
               if (fromReports) {
@@ -8313,6 +8321,7 @@
                   p.votes = +d.votes || 0;
                   p.my_vote = d.my_vote || '';
                   refresh(p.votes, p.my_vote);
+                  if (d.xp_result) { updateLevelDisplay(d.xp_result); }
                 })
                 .catch(function(e) {
                   showAlert((e && e.message) || 'Błąd');
@@ -10912,6 +10921,9 @@
                 // Invalidate tag cache so newly added tags appear in suggestions immediately
                 cachedAllTags = null;
 
+                // Update level/XP bar immediately if server returned XP data
+                if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
+
                 // Immediate refresh for better UX
                 refreshAll().then(function() {
                   msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
@@ -10954,6 +10966,67 @@
 
       // Create FAB on init
       createFAB();
+
+      // =========================================================
+      // REAL-TIME LEVEL / XP BAR UPDATE
+      // =========================================================
+
+      /**
+       * Update the top-bar level badge and XP progress bar without page reload.
+       * Called after any AJAX action that returns xp_result.
+       *
+       * @param {Object} xpResult - Response from award_xp():
+       *   { xp_gained, new_xp, new_level, old_level, level_up,
+       *     progress, xp_in_level, xp_needed, level_tier }
+       */
+      function updateLevelDisplay(xpResult) {
+        if (!xpResult || !xpResult.xp_gained) return;
+
+        var levelEl  = document.querySelector('.jg-top-bar-level');
+        var numEl    = document.querySelector('.jg-top-bar-level-num');
+        var fillEl   = document.querySelector('.jg-top-bar-xp-fill');
+
+        if (!levelEl || !numEl || !fillEl) return;
+
+        // Update level number text
+        numEl.textContent = 'Poz. ' + xpResult.new_level;
+
+        // Update progress bar
+        fillEl.style.width = xpResult.progress + '%';
+
+        // Update prestige tier class (remove old jg-level-* class, add new one)
+        var classes = levelEl.className.split(' ');
+        var filtered = classes.filter(function(c) { return c.indexOf('jg-level-') !== 0; });
+        filtered.push('jg-level-' + xpResult.level_tier);
+        levelEl.className = filtered.join(' ');
+
+        // Update title tooltip
+        levelEl.title = 'Poziom ' + xpResult.new_level + ' — ' + xpResult.xp_in_level + '/' + xpResult.xp_needed + ' XP do następnego poziomu';
+
+        // Show floating "+XP" indicator near the level badge
+        var indicator = document.createElement('span');
+        indicator.className = 'jg-xp-gain-indicator';
+        indicator.textContent = '+' + xpResult.xp_gained + ' XP';
+        levelEl.appendChild(indicator);
+
+        // Animate level badge on level-up
+        if (xpResult.level_up) {
+          levelEl.classList.add('jg-level-levelup-pulse');
+          setTimeout(function() {
+            levelEl.classList.remove('jg-level-levelup-pulse');
+          }, 800);
+        }
+
+        // Remove floating indicator after animation completes
+        setTimeout(function() {
+          if (indicator.parentNode) {
+            indicator.parentNode.removeChild(indicator);
+          }
+        }, 1400);
+      }
+
+      // Expose for external use
+      window.jgUpdateLevelDisplay = updateLevelDisplay;
 
       // =========================================================
       // LEVEL-UP & ACHIEVEMENT NOTIFICATION SYSTEM

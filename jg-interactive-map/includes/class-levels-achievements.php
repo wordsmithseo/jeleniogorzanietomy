@@ -278,13 +278,33 @@ class JG_Map_Levels_Achievements {
             ));
         }
 
+        // Compute display data for the new level
+        $new_current_level_xp = self::xp_for_level($new_level);
+        $new_next_level_xp    = self::xp_for_level($new_level + 1);
+        $new_xp_in_level      = $new_xp - $new_current_level_xp;
+        $new_xp_needed        = $new_next_level_xp - $new_current_level_xp;
+        $new_progress         = $new_xp_needed > 0 ? min(100, round(($new_xp_in_level / $new_xp_needed) * 100)) : 100;
+
+        if ($new_level >= 50)     $level_tier = 'prestige-legend';
+        elseif ($new_level >= 40) $level_tier = 'prestige-ruby';
+        elseif ($new_level >= 30) $level_tier = 'prestige-diamond';
+        elseif ($new_level >= 20) $level_tier = 'prestige-purple';
+        elseif ($new_level >= 15) $level_tier = 'prestige-emerald';
+        elseif ($new_level >= 10) $level_tier = 'prestige-gold';
+        elseif ($new_level >= 5)  $level_tier = 'prestige-silver';
+        else                       $level_tier = 'prestige-bronze';
+
         $result = array(
-            'xp_gained' => $amount,
-            'old_xp' => $old_xp,
-            'new_xp' => $new_xp,
-            'old_level' => $old_level,
-            'new_level' => $new_level,
-            'level_up' => false
+            'xp_gained'    => $amount,
+            'old_xp'       => $old_xp,
+            'new_xp'       => $new_xp,
+            'old_level'    => $old_level,
+            'new_level'    => $new_level,
+            'level_up'     => false,
+            'progress'     => $new_progress,
+            'xp_in_level'  => $new_xp_in_level,
+            'xp_needed'    => $new_xp_needed,
+            'level_tier'   => $level_tier,
         );
 
         // Check for level up
