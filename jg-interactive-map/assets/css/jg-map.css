@@ -5700,11 +5700,10 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Real-time XP gain floating indicator */
+/* Real-time XP gain floating indicator — injected as position:fixed by JS, below the badge */
 .jg-xp-gain-indicator {
-  position: absolute;
-  top: -22px;
-  left: 50%;
+  position: fixed;
+  /* left / top set dynamically by JS (getBoundingClientRect of the badge) */
   transform: translateX(-50%);
   background: rgba(251, 191, 36, 0.95);
   color: #1a1a1a;
@@ -5714,14 +5713,23 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   border-radius: 10px;
   white-space: nowrap;
   pointer-events: none;
-  animation: jg-xp-float-up 1.4s ease-out forwards;
+  animation: jg-xp-float-down 1.4s ease-out forwards;
   z-index: 10100;
 }
 
-@keyframes jg-xp-float-up {
+@keyframes jg-xp-float-down {
   0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
-  60%  { opacity: 1; transform: translateX(-50%) translateY(-12px); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  60%  { opacity: 1; transform: translateX(-50%) translateY(10px); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(18px); }
+}
+
+/* Keyframe-based confetti burst — uses CSS custom properties set inline per-particle.
+   --jg-dx, --jg-dy: final displacement in px (already includes gravity)
+   --jg-rot: final rotation in deg */
+@keyframes jgConfettiBurst {
+  0%   { transform: translate(-50%, -50%) rotate(0deg); opacity: 1; }
+  75%  { opacity: 0.7; }
+  100% { transform: translate(var(--jg-dx), var(--jg-dy)) rotate(var(--jg-rot)); opacity: 0; }
 }
 
 /* Level-up pulse animation on the top-bar level badge */
