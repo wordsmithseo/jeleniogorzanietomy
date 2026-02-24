@@ -2921,8 +2921,10 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 }
 
 /* Lightbox backdrop sits above all other modals (9999) */
+/* pointer-events: auto overrides the mobile .jg-modal-bg rule that sets none !important */
 #jg-map-lightbox.jg-modal-bg {
   z-index: 10001;
+  pointer-events: auto !important;
 }
 
 .jg-lightbox img {
