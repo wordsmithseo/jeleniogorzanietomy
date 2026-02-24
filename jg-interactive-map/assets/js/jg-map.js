@@ -521,8 +521,40 @@
   };
 
   /**
+   * Low-level: spawn one confetti particle using CSS @keyframes jgConfettiBurst.
+   * Uses CSS custom properties --jg-dx / --jg-dy / --jg-rot so the keyframe
+   * always fires reliably — no requestAnimationFrame timing tricks required.
+   *
+   * @param {number} cx       screen X of origin (fixed coords)
+   * @param {number} cy       screen Y of origin (fixed coords)
+   * @param {number} dx       final horizontal displacement in px
+   * @param {number} dy       final vertical displacement in px (positive = down)
+   * @param {number} rot      final rotation angle in degrees
+   * @param {number} size     particle width/height in px
+   * @param {string} color    CSS color string
+   * @param {number} duration animation duration in ms
+   * @param {number} delay    animation delay in ms
+   */
+  function _spawnConfettiParticle(cx, cy, dx, dy, rot, size, color, duration, delay) {
+    var p = document.createElement('div');
+    p.style.cssText =
+      '--jg-dx:' + dx.toFixed(1) + 'px;' +
+      '--jg-dy:' + dy.toFixed(1) + 'px;' +
+      '--jg-rot:' + rot.toFixed(0) + 'deg;' +
+      'position:fixed;pointer-events:none;z-index:99999;' +
+      'left:' + cx.toFixed(1) + 'px;top:' + cy.toFixed(1) + 'px;' +
+      'width:' + size.toFixed(1) + 'px;height:' + size.toFixed(1) + 'px;' +
+      'background:' + color + ';' +
+      'border-radius:' + (Math.random() > 0.4 ? '50%' : '2px') + ';' +
+      'animation:jgConfettiBurst ' + duration + 'ms ease-out ' + (delay || 0) + 'ms both;';
+    document.body.appendChild(p);
+    setTimeout(function() { if (p.parentNode) p.parentNode.removeChild(p); }, duration + (delay || 0) + 150);
+  }
+
+  /**
    * Shoot burst confetti from an anchor DOM element.
-   * Particles fly outward in all directions from the element center.
+   * Uses a downward arc so particles stay in the visible viewport even
+   * when the badge is at the very top of the screen.
    *
    * @param {Element} anchorEl  - DOM element to burst from
    * @param {string}  tier      - prestige tier key (e.g. 'prestige-gold')
@@ -531,56 +563,31 @@
   function shootPrestigeConfetti(anchorEl, tier, count) {
     if (!anchorEl) return;
     count = count || 36;
-    var colors = _prestigeConfettiColors[tier] || _prestigeConfettiColors['prestige-bronze'];
-    // neutral filler
-    colors = colors.concat(['#ffffff', '#f0f0f0']);
+    var colors = (_prestigeConfettiColors[tier] || _prestigeConfettiColors['prestige-bronze'])
+      .concat(['#ffffff', '#f0f0f0']);
 
     var rect = anchorEl.getBoundingClientRect();
-    var cx   = rect.left + rect.width  / 2;
-    var cy   = rect.top  + rect.height / 2;
+    var cx = rect.left + rect.width  / 2;
+    var cy = rect.top  + rect.height / 2;
 
     for (var i = 0; i < count; i++) {
-      var p    = document.createElement('div');
-      var size = Math.random() * 7 + 4;
-      var angle   = Math.random() * Math.PI * 2;
-      var speed   = Math.random() * 80 + 50;  // px
-      var dx      = Math.cos(angle) * speed;
-      var dy      = Math.sin(angle) * speed - 30; // slight upward bias
-      var rot     = Math.random() * 360;
-      var duration = Math.random() * 600 + 700; // ms
-      var color   = colors[Math.floor(Math.random() * colors.length)];
-
-      p.style.cssText =
-        'position:fixed;pointer-events:none;z-index:99999;' +
-        'left:' + cx + 'px;top:' + cy + 'px;' +
-        'width:' + size + 'px;height:' + size + 'px;' +
-        'background:' + color + ';' +
-        'border-radius:' + (Math.random() > 0.4 ? '50%' : '2px') + ';' +
-        'transform:translate(-50%,-50%) rotate(' + rot + 'deg);' +
-        'transition:transform ' + duration + 'ms ease-out,' +
-          'left ' + duration + 'ms ease-out,' +
-          'top ' + duration + 'ms ease-out,' +
-          'opacity ' + duration + 'ms ease-out;';
-      document.body.appendChild(p);
-
-      // Trigger animation in next frame
-      requestAnimationFrame(function(el, fdx, fdy, frot, fdur) {
-        return function() {
-          var startLeft = parseFloat(el.style.left);
-          var startTop  = parseFloat(el.style.top);
-          el.style.left    = (startLeft + fdx) + 'px';
-          el.style.top     = (startTop  + fdy + 40) + 'px'; // gravity pull
-          el.style.opacity = '0';
-          el.style.transform = 'translate(-50%,-50%) rotate(' + (frot + 180) + 'deg)';
-          setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, fdur + 100);
-        };
-      }(p, dx, dy, rot, duration));
+      // Lower semicircle only (9° → 171°): all particles go downward/sideways,
+      // never upward — safe for an element near the top of the viewport.
+      var angle    = Math.PI * (0.05 + Math.random() * 0.9);
+      var speed    = Math.random() * 75 + 40;
+      var dx       = Math.cos(angle) * speed;
+      var dy       = Math.sin(angle) * speed; // always ≥ 0
+      var rot      = Math.random() * 720;
+      var duration = Math.random() * 500 + 650;
+      var delay    = Math.random() * 100;
+      var color    = colors[Math.floor(Math.random() * colors.length)];
+      _spawnConfettiParticle(cx, cy, dx, dy, rot, Math.random() * 7 + 4, color, duration, delay);
     }
   }
 
   /**
    * Shoot confetti from a map lat/lng position (converted to screen coords).
-   * Colors: array of CSS color strings.
+   * Full 360° burst with gravity offset so even upward particles arc downward.
    *
    * @param {number} lat
    * @param {number} lng
@@ -590,57 +597,32 @@
   function shootMapMarkerConfetti(lat, lng, colors, count) {
     var m = window.jgMap;
     if (!m) return;
-    count = count || 40;
+    count  = count  || 40;
     colors = colors || ['#10b981', '#fbbf24', '#3b82f6', '#ec4899', '#8b5cf6', '#ffffff'];
 
     try {
-      var containerPt = m.latLngToContainerPoint([lat, lng]);
+      var containerPt  = m.latLngToContainerPoint([lat, lng]);
       var mapContainer = m.getContainer();
       var mapRect      = mapContainer.getBoundingClientRect();
       var cx = mapRect.left + containerPt.x;
       var cy = mapRect.top  + containerPt.y;
 
       for (var i = 0; i < count; i++) {
-        var p    = document.createElement('div');
-        var size = Math.random() * 8 + 4;
-        var angle   = Math.random() * Math.PI * 2;
-        var speed   = Math.random() * 70 + 40;
-        var dx      = Math.cos(angle) * speed;
-        var dy      = Math.sin(angle) * speed - 25;
-        var rot     = Math.random() * 360;
-        var duration = Math.random() * 700 + 700;
-        var color   = colors[Math.floor(Math.random() * colors.length)];
-
-        p.style.cssText =
-          'position:fixed;pointer-events:none;z-index:99999;' +
-          'left:' + cx + 'px;top:' + cy + 'px;' +
-          'width:' + size + 'px;height:' + size + 'px;' +
-          'background:' + color + ';' +
-          'border-radius:' + (Math.random() > 0.4 ? '50%' : '2px') + ';' +
-          'transform:translate(-50%,-50%) rotate(' + rot + 'deg);' +
-          'transition:transform ' + duration + 'ms ease-out,' +
-            'left ' + duration + 'ms ease-out,' +
-            'top ' + duration + 'ms ease-out,' +
-            'opacity ' + duration + 'ms ease-out;';
-        document.body.appendChild(p);
-
-        requestAnimationFrame(function(el, fdx, fdy, frot, fdur) {
-          return function() {
-            var sl = parseFloat(el.style.left);
-            var st = parseFloat(el.style.top);
-            el.style.left    = (sl + fdx) + 'px';
-            el.style.top     = (st + fdy + 35) + 'px';
-            el.style.opacity = '0';
-            el.style.transform = 'translate(-50%,-50%) rotate(' + (frot + 200) + 'deg)';
-            setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, fdur + 100);
-          };
-        }(p, dx, dy, rot, duration));
+        var angle    = Math.random() * Math.PI * 2;
+        var speed    = Math.random() * 70 + 40;
+        var dx       = Math.cos(angle) * speed;
+        var dy       = Math.sin(angle) * speed + 55; // gravity pulls all downward
+        var rot      = Math.random() * 720;
+        var duration = Math.random() * 600 + 700;
+        var delay    = Math.random() * 100;
+        var color    = colors[Math.floor(Math.random() * colors.length)];
+        _spawnConfettiParticle(cx, cy, dx, dy, rot, Math.random() * 8 + 4, color, duration, delay);
       }
     } catch (e) { /* map not ready */ }
   }
 
   /**
-   * Shoot confetti burst from a button element.
+   * Shoot confetti burst from a button element, mostly upward with gravity.
    *
    * @param {Element} btn    - DOM button element
    * @param {Array}   colors - color palette (dominant color first)
@@ -648,7 +630,7 @@
    */
   function shootButtonConfetti(btn, colors, count) {
     if (!btn) return;
-    count = count || 28;
+    count  = count  || 28;
     colors = colors || ['#10b981', '#ffffff'];
 
     var rect = btn.getBoundingClientRect();
@@ -656,40 +638,16 @@
     var cy   = rect.top  + rect.height / 2;
 
     for (var i = 0; i < count; i++) {
-      var p    = document.createElement('div');
-      var size = Math.random() * 6 + 3;
-      var angle   = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.4; // mostly upward
-      var speed   = Math.random() * 60 + 30;
-      var dx      = Math.cos(angle) * speed;
-      var dy      = Math.sin(angle) * speed;
-      var rot     = Math.random() * 360;
-      var duration = Math.random() * 500 + 600;
-      var color   = colors[Math.floor(Math.random() * colors.length)];
-
-      p.style.cssText =
-        'position:fixed;pointer-events:none;z-index:99999;' +
-        'left:' + cx + 'px;top:' + cy + 'px;' +
-        'width:' + size + 'px;height:' + size + 'px;' +
-        'background:' + color + ';' +
-        'border-radius:' + (Math.random() > 0.5 ? '50%' : '2px') + ';' +
-        'transform:translate(-50%,-50%) rotate(' + rot + 'deg);' +
-        'transition:transform ' + duration + 'ms ease-out,' +
-          'left ' + duration + 'ms ease-out,' +
-          'top ' + duration + 'ms ease-out,' +
-          'opacity ' + duration + 'ms ease-out;';
-      document.body.appendChild(p);
-
-      requestAnimationFrame(function(el, fdx, fdy, frot, fdur) {
-        return function() {
-          var sl = parseFloat(el.style.left);
-          var st = parseFloat(el.style.top);
-          el.style.left    = (sl + fdx) + 'px';
-          el.style.top     = (st + fdy + 20) + 'px'; // gravity
-          el.style.opacity = '0';
-          el.style.transform = 'translate(-50%,-50%) rotate(' + (frot + 160) + 'deg)';
-          setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, fdur + 100);
-        };
-      }(p, dx, dy, rot, duration));
+      // Mostly upward fan (-144° to -36°), gravity brings them back down
+      var angle    = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.2;
+      var speed    = Math.random() * 55 + 30;
+      var dx       = Math.cos(angle) * speed;
+      var dy       = Math.sin(angle) * speed + 35; // gravity offset
+      var rot      = Math.random() * 720;
+      var duration = Math.random() * 400 + 600;
+      var delay    = Math.random() * 60;
+      var color    = colors[Math.floor(Math.random() * colors.length)];
+      _spawnConfettiParticle(cx, cy, dx, dy, rot, Math.random() * 6 + 3, color, duration, delay);
     }
   }
 
@@ -11246,11 +11204,16 @@
         // Update title tooltip
         levelEl.title = 'Poziom ' + xpResult.new_level + ' — ' + xpResult.xp_in_level + '/' + xpResult.xp_needed + ' XP do następnego poziomu';
 
-        // Show floating "+XP" indicator near the level badge
+        // Show floating "+XP" indicator below the level badge.
+        // Injected into body as position:fixed so it's always visible
+        // regardless of any parent overflow:hidden or top-of-page clipping.
+        var badgeRect = levelEl.getBoundingClientRect();
         var indicator = document.createElement('span');
         indicator.className = 'jg-xp-gain-indicator';
         indicator.textContent = '+' + xpResult.xp_gained + ' XP';
-        levelEl.appendChild(indicator);
+        indicator.style.left = (badgeRect.left + badgeRect.width / 2) + 'px';
+        indicator.style.top  = (badgeRect.bottom + 4) + 'px';
+        document.body.appendChild(indicator);
 
         // Animate level badge on level-up
         if (xpResult.level_up) {
@@ -11267,7 +11230,7 @@
           if (indicator.parentNode) {
             indicator.parentNode.removeChild(indicator);
           }
-        }, 1400);
+        }, 1550);
       }
 
       // Expose for external use
