@@ -2200,7 +2200,16 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 19,
         crossOrigin: true,
-        subdomains: 'abcd'
+        subdomains: 'abcd',
+        className: 'jg-map-tiles'
+      });
+
+      // Labels overlay – shows only place/city names (visible up to zoom 15,
+      // before POI/business labels appear at higher zoom levels)
+      var labelsOverlay = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+        maxZoom: 15,
+        subdomains: 'abcd',
+        pane: 'overlayPane'
       });
 
       var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -2244,6 +2253,7 @@
       } else {
         tileLayer.addTo(map);
       }
+      labelsOverlay.addTo(map);
 
       // Map/Satellite toggle control
       var MapToggleControl = L.Control.extend({

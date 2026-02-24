@@ -1,5 +1,10 @@
 /* JG Interactive Map Styles */
 
+/* Boost contrast on map tiles (voyager_nolabels) */
+.jg-map-tiles {
+  filter: contrast(1.2) saturate(1.15);
+}
+
 /* Custom Top Bar - Fixed at top of page */
 .jg-custom-top-bar {
   position: sticky;
