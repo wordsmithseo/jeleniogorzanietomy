@@ -1818,6 +1818,9 @@ class JG_Map_Ajax_Handlers {
                 'message'   => 'Punkt dodany do moderacji',
                 'point_id'  => $point_id,
                 'type'      => $type,
+                'status'    => $status,
+                'lat'       => floatval($lat),
+                'lng'       => floatval($lng),
                 'xp_result' => $xp_result,
             );
 
@@ -2203,8 +2206,62 @@ class JG_Map_Ajax_Handlers {
                 $this->notify_admin_edit($point_id);
             }
 
-            // Award XP for editing
-            $xp_result = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_point', $point_id);
+            // Award XP for editing — split by what actually changed
+            $xp_results = array();
+
+            // --- Title change ---
+            $old_title_clean = trim($old_values['title']);
+            $new_title_clean = trim($title);
+            if ($old_title_clean !== $new_title_clean && $new_title_clean !== '') {
+                $valid_title_words = JG_Map_Levels_Achievements::count_valid_words($new_title_clean);
+                if ($valid_title_words > 0) {
+                    // Read per-word XP from config; default 3
+                    $title_per_word = 3;
+                    foreach (JG_Map_Levels_Achievements::get_xp_sources() as $s) {
+                        if ($s['key'] === 'edit_title') { $title_per_word = max(1, intval($s['xp'])); break; }
+                    }
+                    $title_xp = min($valid_title_words, 5) * $title_per_word; // cap: 5 words
+                    $r = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_title', $point_id, $title_xp);
+                    if ($r) $xp_results[] = $r;
+                }
+            }
+
+            // --- Description change ---
+            $old_content_plain = trim(wp_strip_all_tags($old_values['content']));
+            $new_content_plain = trim(wp_strip_all_tags($content));
+            if ($old_content_plain !== $new_content_plain && $new_content_plain !== '') {
+                $old_word_count = JG_Map_Levels_Achievements::count_valid_words($old_content_plain);
+                $new_word_count = JG_Map_Levels_Achievements::count_valid_words($new_content_plain);
+                $added_words    = max(0, $new_word_count - $old_word_count);
+                if ($added_words > 0) {
+                    $desc_per_word = 2;
+                    foreach (JG_Map_Levels_Achievements::get_xp_sources() as $s) {
+                        if ($s['key'] === 'edit_description') { $desc_per_word = max(1, intval($s['xp'])); break; }
+                    }
+                    $desc_xp = min($added_words, 10) * $desc_per_word; // cap: 10 new words
+                    $r = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_description', $point_id, $desc_xp);
+                    if ($r) $xp_results[] = $r;
+                }
+            }
+
+            // --- New photos ---
+            if (!empty($new_images)) {
+                foreach ($new_images as $_img) {
+                    $r = JG_Map_Levels_Achievements::award_xp($user_id, 'add_photo', $point_id);
+                    if ($r) $xp_results[] = $r;
+                }
+            }
+
+            // Merge into a single xp_result for the frontend (summed xp_gained, last state)
+            $xp_result = null;
+            if (!empty($xp_results)) {
+                $xp_result = end($xp_results);
+                $total_gained = array_sum(array_map(function($r) { return $r['xp_gained']; }, $xp_results));
+                $xp_result['xp_gained'] = $total_gained;
+                $xp_result['level_up']  = array_reduce($xp_results, function($carry, $r) {
+                    return $carry || $r['level_up'];
+                }, false);
+            }
 
             $success_msg = !$is_owner
                 ? 'Edycja wysłana do zatwierdzenia przez właściciela miejsca'
@@ -3047,7 +3104,9 @@ class JG_Map_Ajax_Handlers {
         JG_Map_Sync_Manager::get_instance()->queue_point_approved($point_id, array(
             'point_title' => $point['title'],
             'point_type' => $point['type'],
-            'author_id' => intval($point['author_id'])
+            'author_id' => intval($point['author_id']),
+            'lat' => floatval($point['lat']),
+            'lng' => floatval($point['lng'])
         ));
 
         // Log action
@@ -4361,7 +4420,9 @@ class JG_Map_Ajax_Handlers {
             'history_id' => $history_id,
             'point_title' => $point['title'],
             'point_type' => $point['type'],
-            'editor_id' => intval($history['user_id'])
+            'editor_id' => intval($history['user_id']),
+            'lat' => floatval($point['lat']),
+            'lng' => floatval($point['lng'])
         ));
 
         // Log action
@@ -4580,7 +4641,9 @@ class JG_Map_Ajax_Handlers {
                 'history_id' => $history_id,
                 'point_title' => $point['title'],
                 'point_type' => $point['type'],
-                'editor_id' => intval($history['user_id'])
+                'editor_id' => intval($history['user_id']),
+                'lat' => floatval($point['lat']),
+                'lng' => floatval($point['lng'])
             ));
 
             // Log action

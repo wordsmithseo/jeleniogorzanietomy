@@ -6518,6 +6518,28 @@ a.jg-dir-tag-inline:hover {
   text-decoration: underline;
 }
 
+/* ===== CONFETTI PARTICLE SHARED RULES ===== */
+/*
+ * All confetti particles are injected as fixed-position divs via JS.
+ * The animations (jg-xp-float-up, jg-level-pulse) are already defined
+ * above near the XP gain indicator.  Additional @keyframes for the
+ * map-marker and vote-button bursts live here.
+ */
+
+/* Particles shot from map markers on approval - burst outward then fade */
+@keyframes jg-marker-confetti-burst {
+  0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg);   opacity: 1; }
+  60%  { opacity: 0.8; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.6) rotate(var(--rot)); opacity: 0; }
+}
+
+/* Particles shot from vote buttons - float upward with wobble */
+@keyframes jg-vote-confetti-up {
+  0%   { opacity: 1;   transform: translate(-50%, -50%) rotate(0deg);   }
+  40%  { opacity: 0.9; }
+  100% { opacity: 0;   transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
+}
+
 /* ===== BANNER / AD BOX - RESPONSIVE ===== */
 .jg-banner-container {
   max-width: 100%;
