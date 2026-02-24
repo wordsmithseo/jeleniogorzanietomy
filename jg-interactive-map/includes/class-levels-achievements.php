@@ -402,6 +402,98 @@ class JG_Map_Levels_Achievements {
     }
 
     /**
+     * Revoke (subtract) XP from a user — mirror of award_xp().
+     * Used when an action that previously earned XP is undone (e.g. vote retraction).
+     * XP is floored at 0; may trigger a level-down.
+     *
+     * @param int         $user_id
+     * @param string      $source        XP source key (same keys as award_xp)
+     * @param int|null    $reference_id
+     * @param int|null    $xp_override   Override the configured amount
+     * @return array|null  Result array with negative xp_gained, or null if nothing to revoke
+     */
+    public static function revoke_xp($user_id, $source, $reference_id = null, $xp_override = null) {
+        if (!$user_id) return null;
+
+        global $wpdb;
+        $table_xp  = $wpdb->prefix . 'jg_map_user_xp';
+        $table_log = $wpdb->prefix . 'jg_map_xp_log';
+
+        // Determine amount
+        if ($xp_override !== null) {
+            $amount = intval($xp_override);
+        } else {
+            $sources = self::get_xp_sources();
+            $amount  = 0;
+            foreach ($sources as $s) {
+                if ($s['key'] === $source) {
+                    $amount = intval($s['xp']);
+                    break;
+                }
+            }
+        }
+
+        if ($amount <= 0) return null;
+
+        // Get current XP (nothing to revoke if no record)
+        $current = $wpdb->get_row($wpdb->prepare(
+            "SELECT xp, level FROM $table_xp WHERE user_id = %d",
+            $user_id
+        ), ARRAY_A);
+
+        if (!$current) return null;
+
+        $old_xp    = intval($current['xp']);
+        $old_level = intval($current['level']);
+        $new_xp    = max(0, $old_xp - $amount); // never go below 0
+        $new_level = self::calculate_level($new_xp);
+
+        // Log the deduction (negative amount for audit trail)
+        $wpdb->insert($table_log, array(
+            'user_id'      => $user_id,
+            'amount'       => -$amount,
+            'source'       => $source . '_revoke',
+            'reference_id' => $reference_id
+        ));
+
+        // Update totals
+        $wpdb->update($table_xp,
+            array('xp' => $new_xp, 'level' => $new_level),
+            array('user_id' => $user_id)
+        );
+
+        // Compute display data
+        $new_current_level_xp = self::xp_for_level($new_level);
+        $new_next_level_xp    = self::xp_for_level($new_level + 1);
+        $new_xp_in_level      = $new_xp - $new_current_level_xp;
+        $new_xp_needed        = $new_next_level_xp - $new_current_level_xp;
+        $new_progress         = $new_xp_needed > 0 ? min(100, round(($new_xp_in_level / $new_xp_needed) * 100)) : 100;
+
+        if ($new_level >= 50)     $level_tier = 'prestige-legend';
+        elseif ($new_level >= 40) $level_tier = 'prestige-ruby';
+        elseif ($new_level >= 30) $level_tier = 'prestige-diamond';
+        elseif ($new_level >= 20) $level_tier = 'prestige-purple';
+        elseif ($new_level >= 15) $level_tier = 'prestige-emerald';
+        elseif ($new_level >= 10) $level_tier = 'prestige-gold';
+        elseif ($new_level >= 5)  $level_tier = 'prestige-silver';
+        else                       $level_tier = 'prestige-bronze';
+
+        return array(
+            'xp_gained'   => -$amount,        // negative — signals a deduction
+            'old_xp'      => $old_xp,
+            'new_xp'      => $new_xp,
+            'old_level'   => $old_level,
+            'new_level'   => $new_level,
+            'level_up'    => false,
+            'level_down'  => $new_level < $old_level,
+            'progress'    => $new_progress,
+            'xp_in_level' => $new_xp_in_level,
+            'xp_needed'   => $new_xp_needed,
+            'level_tier'  => $level_tier,
+        );
+    }
+
+    /**
      * Get XP sources configuration
      */
     public static function get_xp_sources() {

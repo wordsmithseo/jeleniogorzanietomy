@@ -11181,13 +11181,16 @@
        *     progress, xp_in_level, xp_needed, level_tier }
        */
       function updateLevelDisplay(xpResult) {
-        if (!xpResult || !xpResult.xp_gained) return;
+        // xp_gained may be negative (XP deduction); bail only on null/0/undefined
+        if (!xpResult || xpResult.xp_gained === null || xpResult.xp_gained === undefined || xpResult.xp_gained === 0) return;
 
         var levelEl  = document.querySelector('.jg-top-bar-level');
         var numEl    = document.querySelector('.jg-top-bar-level-num');
         var fillEl   = document.querySelector('.jg-top-bar-xp-fill');
 
         if (!levelEl || !numEl || !fillEl) return;
+
+        var isDeduction = xpResult.xp_gained < 0;
 
         // Update level number text
         numEl.textContent = 'Poz. ' + xpResult.new_level;
@@ -11204,19 +11207,18 @@
         // Update title tooltip
         levelEl.title = 'Poziom ' + xpResult.new_level + ' — ' + xpResult.xp_in_level + '/' + xpResult.xp_needed + ' XP do następnego poziomu';
 
-        // Show floating "+XP" indicator below the level badge.
-        // Injected into body as position:fixed so it's always visible
-        // regardless of any parent overflow:hidden or top-of-page clipping.
+        // Show floating indicator below the level badge.
+        // Positive: yellow "+N XP"; Negative: red "-N XP".
         var badgeRect = levelEl.getBoundingClientRect();
         var indicator = document.createElement('span');
-        indicator.className = 'jg-xp-gain-indicator';
-        indicator.textContent = '+' + xpResult.xp_gained + ' XP';
+        indicator.className = 'jg-xp-gain-indicator' + (isDeduction ? ' jg-xp-gain-indicator--negative' : '');
+        indicator.textContent = (isDeduction ? '' : '+') + xpResult.xp_gained + ' XP';
         indicator.style.left = (badgeRect.left + badgeRect.width / 2) + 'px';
         indicator.style.top  = (badgeRect.bottom + 4) + 'px';
         document.body.appendChild(indicator);
 
-        // Animate level badge on level-up
-        if (xpResult.level_up) {
+        // Animate level badge on level-up (not on deduction)
+        if (xpResult.level_up && !isDeduction) {
           levelEl.classList.add('jg-level-levelup-pulse');
           // Confetti burst around the level badge, colors matching new prestige tier
           shootPrestigeConfetti(levelEl, xpResult.level_tier, 48);

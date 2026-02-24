@@ -2429,17 +2429,33 @@ class JG_Map_Ajax_Handlers {
 
         JG_Map_Database::set_vote($point_id, $user_id, $new_vote);
 
-        // Award XP for voting (only when casting a new vote, not removing)
-        $xp_result = null;
+        // XP logic — covers all six vote-state transitions:
+        //   '' → 'up'/'down'  : new vote       → award voter; if up, award author
+        //   'up'/'down' → ''  : vote removed   → revoke voter; if was up, revoke author
+        //   'up' → 'down'     : vote flipped   → revoke author's upvote XP
+        //   'down' → 'up'     : vote flipped   → award author's upvote XP
+        $xp_result  = null;
+        $author_id  = intval($point['author_id']);
+        $valid_author = $author_id && $author_id !== $user_id;
+
         if (!empty($new_vote) && empty($current_vote)) {
+            // New vote cast
             $xp_result = JG_Map_Levels_Achievements::award_xp($user_id, 'vote_on_point', $point_id);
-            // Award XP to the point author for receiving an upvote
-            if ($new_vote === 'up') {
-                $author_id = intval($point['author_id']);
-                if ($author_id && $author_id !== $user_id) {
-                    JG_Map_Levels_Achievements::award_xp($author_id, 'receive_upvote', $point_id);
-                }
+            if ($new_vote === 'up' && $valid_author) {
+                JG_Map_Levels_Achievements::award_xp($author_id, 'receive_upvote', $point_id);
             }
+        } elseif (empty($new_vote) && !empty($current_vote)) {
+            // Vote retracted — revoke XP
+            $xp_result = JG_Map_Levels_Achievements::revoke_xp($user_id, 'vote_on_point', $point_id);
+            if ($current_vote === 'up' && $valid_author) {
+                JG_Map_Levels_Achievements::revoke_xp($author_id, 'receive_upvote', $point_id);
+            }
+        } elseif ($new_vote === 'down' && $current_vote === 'up' && $valid_author) {
+            // Switched up → down: author loses their upvote XP
+            JG_Map_Levels_Achievements::revoke_xp($author_id, 'receive_upvote', $point_id);
+        } elseif ($new_vote === 'up' && $current_vote === 'down' && $valid_author) {
+            // Switched down → up: author gains upvote XP
+            JG_Map_Levels_Achievements::award_xp($author_id, 'receive_upvote', $point_id);
         }
 
         $votes_count = JG_Map_Database::get_votes_count($point_id);
