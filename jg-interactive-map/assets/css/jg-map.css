@@ -220,7 +220,8 @@
 
 .jg-wrap {
   position: relative;
-  overflow: visible; /* Allow pins to extend beyond edges */
+  overflow-x: clip;
+  overflow-y: visible; /* Allow pins to extend beyond edges */
   box-sizing: border-box;
 }
 
@@ -5836,6 +5837,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   justify-content: space-between;
   position: relative;
   border-bottom: none;
+  flex-shrink: 0;
 }
 
 .jg-modal .jg-ranking-header .jg-close {
@@ -5877,7 +5879,8 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 .jg-ranking-body {
   padding: 16px 20px 20px;
-  max-height: 70vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -6032,6 +6035,9 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 #jg-map-modal-ranking .jg-modal {
   max-width: 520px;
   width: 90%;
+  overflow: hidden; /* Prevent double scrollbar — only .jg-ranking-body scrolls */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Ranking empty placeholder rows */
