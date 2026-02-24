@@ -2204,10 +2204,9 @@
         className: 'jg-map-tiles'
       });
 
-      // Labels overlay – shows only place/city names (visible up to zoom 15,
-      // before POI/business labels appear at higher zoom levels)
+      // Labels overlay – place names + street names at all zoom levels
       var labelsOverlay = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
-        maxZoom: 15,
+        maxZoom: 19,
         subdomains: 'abcd',
         pane: 'overlayPane'
       });
