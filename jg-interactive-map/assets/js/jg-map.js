@@ -1937,21 +1937,42 @@
         }
       }
 
-      [modalAdd, modalView, modalReport, modalReportsList, modalEdit, modalAuthor, modalStatus, modalRanking, lightbox].forEach(function(bg) {
+      // Close regular modals by clicking their backdrop (lightbox handled separately below)
+      [modalAdd, modalView, modalReport, modalReportsList, modalEdit, modalAuthor, modalStatus, modalRanking].forEach(function(bg) {
         if (!bg) return;
         bg.addEventListener('click', function(e) {
           if (e.target === bg) close(bg);
         });
       });
 
-      // On mobile, add touchend to lightbox backdrop so tapping the dark area closes it
+      // Persistent event delegation on lightbox backdrop for reliable mobile close.
+      // Bound once here, not per-open, so it always works regardless of DOM recreation.
       if (lightbox) {
         lightbox.addEventListener('touchend', function(e) {
+          // Close button tapped
+          var btn = e.target.closest && e.target.closest('.jg-lb-close');
+          if (btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            close(lightbox);
+            return;
+          }
+          // Dark backdrop tapped
           if (e.target === lightbox) {
             e.preventDefault();
             close(lightbox);
           }
         }, { passive: false });
+
+        // Same for click (desktop / devices that don't fire touchend)
+        lightbox.addEventListener('click', function(e) {
+          var btn = e.target.closest && e.target.closest('.jg-lb-close');
+          if (btn) {
+            close(lightbox);
+            return;
+          }
+          if (e.target === lightbox) close(lightbox);
+        });
       }
 
       document.addEventListener('keydown', function(e) {
@@ -2084,15 +2105,15 @@
           var activeMap = currentLayerIsSatellite ? '' : ' jg-map-toggle-label--active';
           var activeSat = currentLayerIsSatellite ? ' jg-map-toggle-label--active' : '';
           var activeData = currentLayerIsSatellite ? 'satellite' : 'map';
-          var mapIcon = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>';
-          var satIcon = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="M13 7 7 13"/><path d="m16 3 5 5-5 5-5-5 5-5z"/><path d="m3 16 5 5 5-5-5-5-5 5z"/><path d="M7 13a6 6 0 0 1 6-6"/></svg>';
+          var mapIcon = '<svg class="jg-map-toggle-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>';
+          var satIcon = '<svg class="jg-map-toggle-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7 7 13"/><path d="m16 3 5 5-5 5-5-5 5-5z"/><path d="m3 16 5 5 5-5-5-5-5 5z"/><path d="M7 13a6 6 0 0 1 6-6"/></svg>';
           container.innerHTML =
             '<div class="jg-map-toggle">' +
-              '<span class="jg-map-toggle-label' + activeMap + '" data-layer="map">' + mapIcon + 'Mapa</span>' +
+              '<span class="jg-map-toggle-label' + activeMap + '" data-layer="map">' + mapIcon + '<span class="jg-map-toggle-text">Mapa</span></span>' +
               '<div class="jg-map-toggle-switch" data-active="' + activeData + '">' +
                 '<div class="jg-map-toggle-thumb"></div>' +
               '</div>' +
-              '<span class="jg-map-toggle-label' + activeSat + '" data-layer="satellite">' + satIcon + 'Satelita</span>' +
+              '<span class="jg-map-toggle-label' + activeSat + '" data-layer="satellite">' + satIcon + '<span class="jg-map-toggle-text">Satelita</span></span>' +
             '</div>';
 
           L.DomEvent.disableClickPropagation(container);
@@ -4474,26 +4495,9 @@
       }
 
       function openLightbox(src) {
+        // The close button and backdrop are handled via event delegation bound on the
+        // lightbox element itself (see setup above) — no per-open binding needed.
         open(lightbox, '<button class="jg-lb-close" id="lb-close">Zamknij</button><img src="' + esc(src) + '" alt="" style="pointer-events:none">');
-        var b = qs('#lb-close', lightbox);
-        if (b) {
-          var _lbClosing = false;
-          b.addEventListener('touchstart', function(e) {
-            e.stopPropagation();
-          }, { passive: true });
-          b.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            _lbClosing = true;
-            close(lightbox);
-          }, { passive: false });
-          b.onclick = function(e) {
-            if (_lbClosing) { _lbClosing = false; return; }
-            e.preventDefault();
-            e.stopPropagation();
-            close(lightbox);
-          };
-        }
       }
 
       function openAuthorModal(authorId, name) {

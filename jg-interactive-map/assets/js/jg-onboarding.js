@@ -346,6 +346,21 @@
     }
   ];
 
+  // Mobile-only fullscreen encouragement tip (prepended in init if on mobile)
+  var mobileFsTip = {
+    id: 'mobile_fullscreen',
+    text: 'Wskaz\u00f3wka dla telefonu: naci\u015bnij ikon\u0119 pe\u0142nego ekranu w lewym g\u00f3rnym rogu mapy \u2197\ufe0f, aby prze\u0142\u0105czy\u0107 na tryb pe\u0142noekranowy \u2014 du\u017co wygodniej na telefonie!',
+    delay: 600,
+    onShow: function() {
+      var fsCtrl = document.querySelector('.jg-fullscreen-control');
+      if (fsCtrl) fsCtrl.classList.add('jg-onboarding-fs-pulse');
+    },
+    onDismiss: function() {
+      var fsCtrl = document.querySelector('.jg-fullscreen-control');
+      if (fsCtrl) fsCtrl.classList.remove('jg-onboarding-fs-pulse');
+    }
+  };
+
   var tipTimeout = null;
   var currentTipIndex = 0;
 
@@ -362,11 +377,11 @@
     var tip = tipQueue[currentTipIndex];
 
     tipTimeout = setTimeout(function() {
-      showTip(tip.id, tip.text);
+      showTip(tip.id, tip.text, tip);
     }, tip.delay);
   }
 
-  function showTip(id, text) {
+  function showTip(id, text, tip) {
     var container = document.getElementById('jg-tip-container');
     var textEl = document.getElementById('jg-tip-text');
     var dismissBtn = document.getElementById('jg-tip-dismiss');
@@ -376,18 +391,21 @@
     textEl.textContent = text;
     container.style.display = 'block';
 
+    // Fire optional onShow callback (e.g. highlight a UI element)
+    if (tip && tip.onShow) tip.onShow();
+
     // Force re-trigger animation
     container.style.animation = 'none';
     container.offsetHeight; // trigger reflow
     container.style.animation = '';
 
     var autoDismiss = setTimeout(function() {
-      dismissTip(id);
+      dismissTip(id, tip);
     }, 10000);
 
     function onDismiss() {
       clearTimeout(autoDismiss);
-      dismissTip(id);
+      dismissTip(id, tip);
       dismissBtn.removeEventListener('click', onDismiss);
     }
 
@@ -396,9 +414,13 @@
     }
   }
 
-  function dismissTip(id) {
+  function dismissTip(id, tip) {
     var container = document.getElementById('jg-tip-container');
     if (container) container.style.display = 'none';
+
+    // Fire optional onDismiss callback (e.g. remove highlight from UI element)
+    if (tip && tip.onDismiss) tip.onDismiss();
+
     markTipSeen(id);
     currentTipIndex++;
 
@@ -451,6 +473,11 @@
 
     initHelpPanel(mapEl);
     initMobileFilters();
+
+    // Prepend mobile fullscreen encouragement tip (shown only on mobile, only once)
+    if (window.innerWidth <= 768) {
+      tipQueue.unshift(mobileFsTip);
+    }
 
     // Show welcome modal on first visit
     if (!getFlag(WELCOME_KEY)) {
