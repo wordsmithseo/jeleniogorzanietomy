@@ -524,7 +524,7 @@
   height: calc(100% - 70px);
   background: #fff;
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
-  z-index: 10000;
+  z-index: 9900;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -553,6 +553,15 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+}
+
+/* Close button at the top of the search results panel (matches footer button) */
+.jg-search-panel-header-close {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+  white-space: nowrap;
 }
 
 .jg-search-count {
@@ -796,6 +805,74 @@ body.jg-fullscreen-active #jg-search-panel {
   margin-bottom: 0;
 }
 
+/* ── Fullscreen search results panel: base styles (all screen sizes) ── */
+.jg-fs-search-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 12px 16px;
+  background: #8d2324;
+  color: #fff;
+  flex-shrink: 0;
+  border-radius: 16px 16px 0 0;
+  box-sizing: border-box;
+}
+
+.jg-fs-search-title {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jg-fs-search-count {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  flex-shrink: 0;
+}
+
+/* Close button styled to match plugin's jg-close button pattern */
+.jg-fs-search-close {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: none !important;
+  color: #fff !important;
+  font-size: 20px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  transition: background 0.15s ease !important;
+  box-shadow: none !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
+}
+
+.jg-fs-search-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  color: #fff !important;
+}
+
+.jg-fs-search-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0;
+}
+
 /* Desktop fullscreen: sidebar + filter panel as floating overlays */
 @media (min-width: 769px) {
   .jg-sidebar-fullscreen-overlay {
@@ -995,45 +1072,9 @@ body.jg-fullscreen-active #jg-search-panel {
     display: flex;
   }
 
+  /* Desktop: border-radius matches larger panel corners */
   .jg-fs-search-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    background: #8d2324;
-    color: #fff;
-    flex-shrink: 0;
     border-radius: 16px 16px 0 0;
-  }
-
-  .jg-fs-search-title {
-    font-size: 14px;
-    font-weight: 600;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  }
-
-  .jg-fs-search-count {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 600;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  }
-
-  .jg-fs-search-close {
-    margin-left: auto;
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 20px;
-    cursor: pointer;
-    padding: 0 4px;
-    line-height: 1;
-  }
-
-  .jg-fs-search-close:hover {
-    color: #fff;
   }
 
   .jg-fs-search-list {
@@ -1262,14 +1303,14 @@ body.jg-fullscreen-active #jg-search-panel {
   body.jg-fullscreen-active .jg-fs-search-results-panel {
     display: none;
     position: absolute;
-    z-index: 1002;
+    z-index: 10001;  /* Above FAB (#jg-fab-container z-index: 9998) */
     top: auto;
     right: 10px;
     bottom: 12px;
     left: 10px;
     width: auto;
     max-width: none;
-    max-height: 45dvh;
+    max-height: 50dvh;
     background: rgba(255, 255, 255, 0.97);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -1281,6 +1322,20 @@ body.jg-fullscreen-active #jg-search-panel {
 
   body.jg-fullscreen-active .jg-fs-search-results-panel.active {
     display: flex;
+  }
+
+  /* Ensure list inside is scrollable on touch */
+  body.jg-fullscreen-active .jg-fs-search-results-panel .jg-fs-search-list {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Hide FAB when search results panel is active on mobile fullscreen */
+  body.jg-fullscreen-active .jg-fs-search-results-panel.active ~ #jg-fab-container,
+  body.jg-fullscreen-active:has(.jg-fs-search-results-panel.active) #jg-fab-container {
+    display: none !important;
   }
 
   body.jg-fullscreen-active .jg-fs-search-header {
@@ -3262,27 +3317,70 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   transform: translateX(16px);
 }
 
-/* Fullscreen: map/satellite toggle – vertical layout under fullscreen button */
+/* Fullscreen: map/satellite toggle – compact vertical slider, same width as zoom +/- buttons */
 #jg-map-wrap.jg-fullscreen .jg-map-toggle-control {
   margin-left: 14px !important;
   margin-top: 6px !important;
+  width: 36px !important;
+  overflow: hidden !important;
 }
 
 #jg-map-wrap.jg-fullscreen .jg-map-toggle {
   flex-direction: column;
   align-items: center;
-  padding: 8px 6px;
-  gap: 4px;
+  justify-content: center;
+  padding: 8px 8px;
+  gap: 0;
+  width: 36px;
 }
 
+/* Hide text labels in fullscreen – visual state shown by slider position */
 #jg-map-wrap.jg-fullscreen .jg-map-toggle-label {
-  font-size: 11px;
+  display: none !important;
+}
+
+/* Vertical slider: narrow width, tall height, thumb moves top→bottom */
+#jg-map-wrap.jg-fullscreen .jg-map-toggle-switch {
+  width: 20px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+}
+
+/* Thumb at top = Mapa */
+#jg-map-wrap.jg-fullscreen .jg-map-toggle-thumb {
+  top: 2px !important;
+  left: 2px !important;
+  width: 16px !important;
+  height: 16px !important;
+  transform: translateY(0) !important;
+  transition: transform 0.2s !important;
+}
+
+/* Thumb at bottom = Satelita */
+#jg-map-wrap.jg-fullscreen .jg-map-toggle-switch[data-active="satellite"] .jg-map-toggle-thumb {
+  transform: translateY(20px) !important;
 }
 
 @media (max-width: 768px) {
   #jg-map-wrap.jg-fullscreen .jg-map-toggle-control {
     margin-left: 10px !important;
     margin-top: 4px !important;
+    width: 32px !important;
+  }
+  #jg-map-wrap.jg-fullscreen .jg-map-toggle {
+    width: 32px;
+    padding: 6px 6px;
+  }
+  #jg-map-wrap.jg-fullscreen .jg-map-toggle-switch {
+    width: 18px !important;
+    height: 36px !important;
+  }
+  #jg-map-wrap.jg-fullscreen .jg-map-toggle-thumb {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  #jg-map-wrap.jg-fullscreen .jg-map-toggle-switch[data-active="satellite"] .jg-map-toggle-thumb {
+    transform: translateY(18px) !important;
   }
 }
 
