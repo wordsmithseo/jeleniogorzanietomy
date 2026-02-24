@@ -2167,6 +2167,10 @@
           fsSearchPanel.innerHTML = '<div class="jg-fs-search-header"><span class="jg-fs-search-title">Wyniki wyszukiwania</span><span class="jg-fs-search-count"></span><button class="jg-fs-search-close" type="button">&times;</button></div><div class="jg-fs-search-list"></div>';
           elMap.appendChild(fsSearchPanel);
 
+          // Prevent map interactions when clicking/scrolling the search results panel
+          L.DomEvent.disableClickPropagation(fsSearchPanel);
+          L.DomEvent.disableScrollPropagation(fsSearchPanel);
+
           // Create floating promotional content container for fullscreen
           var fsPromoWrap = document.createElement('div');
           fsPromoWrap.className = 'jg-fs-promo-wrap';
@@ -2178,7 +2182,8 @@
           L.DomEvent.disableClickPropagation(fsPromoWrap);
           L.DomEvent.disableScrollPropagation(fsPromoWrap);
 
-          fsSearchPanel.querySelector('.jg-fs-search-close').addEventListener('click', function() {
+          fsSearchPanel.querySelector('.jg-fs-search-close').addEventListener('click', function(e) {
+            e.stopPropagation();
             fsSearchPanel.classList.remove('active');
             var origClose = document.getElementById('jg-search-close-btn');
             if (origClose) origClose.click();
@@ -2235,6 +2240,11 @@
                     var idx = Array.prototype.indexOf.call(resultItems, item);
                     if (origItems[idx]) origItems[idx].click();
                     fsSearchPanel.classList.remove('active');
+                    // Dismiss mobile keyboard after selecting a result
+                    if (document.activeElement && document.activeElement.blur) {
+                      document.activeElement.blur();
+                    }
+                    if (fsSearchInput) fsSearchInput.blur();
                   });
                 });
               } else {
@@ -3024,7 +3034,7 @@
         if (mapMoveDetected) return;
 
         if (map.getZoom() < MIN_ZOOM_FOR_ADD) {
-          showAlert('Przybliż mapę maksymalnie (zoom ' + MIN_ZOOM_FOR_ADD + '+)!');
+          showAlert('By dodać punkt przybliż mapę maksymalnie i kliknij na miejsce gdzie ma się znaleźć Twoja pinezka.');
           return;
         }
 

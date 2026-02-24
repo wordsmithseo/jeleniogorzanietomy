@@ -88,6 +88,7 @@ class JG_Map_Shortcode {
                 <div class="jg-search-panel-header">
                     <h3 id="jg-search-panel-title">Wyniki wyszukiwania</h3>
                     <span id="jg-search-panel-count" class="jg-search-count"></span>
+                    <button class="jg-search-panel-header-close jg-btn jg-btn--secondary" type="button" onclick="document.getElementById('jg-search-close-btn').click()"><?php _e('Zakończ wyszukiwanie', 'jg-map'); ?></button>
                 </div>
                 <div id="jg-search-results" class="jg-search-results"></div>
                 <div class="jg-search-panel-footer">
