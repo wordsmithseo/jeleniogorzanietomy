@@ -1,8 +1,8 @@
 /* JG Interactive Map Styles */
 
-/* Boost contrast on map tiles (voyager_nolabels) */
+/* Richer colors on map tiles – Google Maps-like readability */
 .jg-map-tiles {
-  filter: contrast(1.2) saturate(1.15);
+  filter: saturate(1.6) brightness(0.92) contrast(1.15);
 }
 
 /* Custom Top Bar - Fixed at top of page */
