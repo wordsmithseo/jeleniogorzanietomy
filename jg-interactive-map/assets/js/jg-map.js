@@ -504,6 +504,195 @@
     }
   }
 
+  // =========================================================
+  // CONFETTI UTILITIES
+  // =========================================================
+
+  // Prestige tier → dominant colors for confetti
+  var _prestigeConfettiColors = {
+    'prestige-bronze':  ['#cd7f32', '#a0522d', '#e8a86c', '#f5deb3', '#8b4513'],
+    'prestige-silver':  ['#c0c0c0', '#d4d4d4', '#a8a8a8', '#e8e8e8', '#888888'],
+    'prestige-gold':    ['#fbbf24', '#f59e0b', '#fde68a', '#fef3c7', '#d97706'],
+    'prestige-emerald': ['#34d399', '#10b981', '#6ee7b7', '#d1fae5', '#059669'],
+    'prestige-purple':  ['#a78bfa', '#8b5cf6', '#c4b5fd', '#ede9fe', '#7c3aed'],
+    'prestige-diamond': ['#67e8f9', '#22d3ee', '#a5f3fc', '#cffafe', '#0891b2'],
+    'prestige-ruby':    ['#fb7185', '#e11d48', '#fda4af', '#ffe4e6', '#be123c'],
+    'prestige-legend':  ['#fbbf24', '#fb7185', '#a78bfa', '#67e8f9', '#34d399', '#f0abfc']
+  };
+
+  /**
+   * Shoot burst confetti from an anchor DOM element.
+   * Particles fly outward in all directions from the element center.
+   *
+   * @param {Element} anchorEl  - DOM element to burst from
+   * @param {string}  tier      - prestige tier key (e.g. 'prestige-gold')
+   * @param {number}  count     - number of particles (default 36)
+   */
+  function shootPrestigeConfetti(anchorEl, tier, count) {
+    if (!anchorEl) return;
+    count = count || 36;
+    var colors = _prestigeConfettiColors[tier] || _prestigeConfettiColors['prestige-bronze'];
+    // neutral filler
+    colors = colors.concat(['#ffffff', '#f0f0f0']);
+
+    var rect = anchorEl.getBoundingClientRect();
+    var cx   = rect.left + rect.width  / 2;
+    var cy   = rect.top  + rect.height / 2;
+
+    for (var i = 0; i < count; i++) {
+      var p    = document.createElement('div');
+      var size = Math.random() * 7 + 4;
+      var angle   = Math.random() * Math.PI * 2;
+      var speed   = Math.random() * 80 + 50;  // px
+      var dx      = Math.cos(angle) * speed;
+      var dy      = Math.sin(angle) * speed - 30; // slight upward bias
+      var rot     = Math.random() * 360;
+      var duration = Math.random() * 600 + 700; // ms
+      var color   = colors[Math.floor(Math.random() * colors.length)];
+
+      p.style.cssText =
+        'position:fixed;pointer-events:none;z-index:99999;' +
+        'left:' + cx + 'px;top:' + cy + 'px;' +
+        'width:' + size + 'px;height:' + size + 'px;' +
+        'background:' + color + ';' +
+        'border-radius:' + (Math.random() > 0.4 ? '50%' : '2px') + ';' +
+        'transform:translate(-50%,-50%) rotate(' + rot + 'deg);' +
+        'transition:transform ' + duration + 'ms ease-out,' +
+          'left ' + duration + 'ms ease-out,' +
+          'top ' + duration + 'ms ease-out,' +
+          'opacity ' + duration + 'ms ease-out;';
+      document.body.appendChild(p);
+
+      // Trigger animation in next frame
+      requestAnimationFrame(function(el, fdx, fdy, frot, fdur) {
+        return function() {
+          var startLeft = parseFloat(el.style.left);
+          var startTop  = parseFloat(el.style.top);
+          el.style.left    = (startLeft + fdx) + 'px';
+          el.style.top     = (startTop  + fdy + 40) + 'px'; // gravity pull
+          el.style.opacity = '0';
+          el.style.transform = 'translate(-50%,-50%) rotate(' + (frot + 180) + 'deg)';
+          setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, fdur + 100);
+        };
+      }(p, dx, dy, rot, duration));
+    }
+  }
+
+  /**
+   * Shoot confetti from a map lat/lng position (converted to screen coords).
+   * Colors: array of CSS color strings.
+   *
+   * @param {number} lat
+   * @param {number} lng
+   * @param {Array}  colors
+   * @param {number} count
+   */
+  function shootMapMarkerConfetti(lat, lng, colors, count) {
+    var m = window.jgMap;
+    if (!m) return;
+    count = count || 40;
+    colors = colors || ['#10b981', '#fbbf24', '#3b82f6', '#ec4899', '#8b5cf6', '#ffffff'];
+
+    try {
+      var containerPt = m.latLngToContainerPoint([lat, lng]);
+      var mapContainer = m.getContainer();
+      var mapRect      = mapContainer.getBoundingClientRect();
+      var cx = mapRect.left + containerPt.x;
+      var cy = mapRect.top  + containerPt.y;
+
+      for (var i = 0; i < count; i++) {
+        var p    = document.createElement('div');
+        var size = Math.random() * 8 + 4;
+        var angle   = Math.random() * Math.PI * 2;
+        var speed   = Math.random() * 70 + 40;
+        var dx      = Math.cos(angle) * speed;
+        var dy      = Math.sin(angle) * speed - 25;
+        var rot     = Math.random() * 360;
+        var duration = Math.random() * 700 + 700;
+        var color   = colors[Math.floor(Math.random() * colors.length)];
+
+        p.style.cssText =
+          'position:fixed;pointer-events:none;z-index:99999;' +
+          'left:' + cx + 'px;top:' + cy + 'px;' +
+          'width:' + size + 'px;height:' + size + 'px;' +
+          'background:' + color + ';' +
+          'border-radius:' + (Math.random() > 0.4 ? '50%' : '2px') + ';' +
+          'transform:translate(-50%,-50%) rotate(' + rot + 'deg);' +
+          'transition:transform ' + duration + 'ms ease-out,' +
+            'left ' + duration + 'ms ease-out,' +
+            'top ' + duration + 'ms ease-out,' +
+            'opacity ' + duration + 'ms ease-out;';
+        document.body.appendChild(p);
+
+        requestAnimationFrame(function(el, fdx, fdy, frot, fdur) {
+          return function() {
+            var sl = parseFloat(el.style.left);
+            var st = parseFloat(el.style.top);
+            el.style.left    = (sl + fdx) + 'px';
+            el.style.top     = (st + fdy + 35) + 'px';
+            el.style.opacity = '0';
+            el.style.transform = 'translate(-50%,-50%) rotate(' + (frot + 200) + 'deg)';
+            setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, fdur + 100);
+          };
+        }(p, dx, dy, rot, duration));
+      }
+    } catch (e) { /* map not ready */ }
+  }
+
+  /**
+   * Shoot confetti burst from a button element.
+   *
+   * @param {Element} btn    - DOM button element
+   * @param {Array}   colors - color palette (dominant color first)
+   * @param {number}  count
+   */
+  function shootButtonConfetti(btn, colors, count) {
+    if (!btn) return;
+    count = count || 28;
+    colors = colors || ['#10b981', '#ffffff'];
+
+    var rect = btn.getBoundingClientRect();
+    var cx   = rect.left + rect.width  / 2;
+    var cy   = rect.top  + rect.height / 2;
+
+    for (var i = 0; i < count; i++) {
+      var p    = document.createElement('div');
+      var size = Math.random() * 6 + 3;
+      var angle   = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.4; // mostly upward
+      var speed   = Math.random() * 60 + 30;
+      var dx      = Math.cos(angle) * speed;
+      var dy      = Math.sin(angle) * speed;
+      var rot     = Math.random() * 360;
+      var duration = Math.random() * 500 + 600;
+      var color   = colors[Math.floor(Math.random() * colors.length)];
+
+      p.style.cssText =
+        'position:fixed;pointer-events:none;z-index:99999;' +
+        'left:' + cx + 'px;top:' + cy + 'px;' +
+        'width:' + size + 'px;height:' + size + 'px;' +
+        'background:' + color + ';' +
+        'border-radius:' + (Math.random() > 0.5 ? '50%' : '2px') + ';' +
+        'transform:translate(-50%,-50%) rotate(' + rot + 'deg);' +
+        'transition:transform ' + duration + 'ms ease-out,' +
+          'left ' + duration + 'ms ease-out,' +
+          'top ' + duration + 'ms ease-out,' +
+          'opacity ' + duration + 'ms ease-out;';
+      document.body.appendChild(p);
+
+      requestAnimationFrame(function(el, fdx, fdy, frot, fdur) {
+        return function() {
+          var sl = parseFloat(el.style.left);
+          var st = parseFloat(el.style.top);
+          el.style.left    = (sl + fdx) + 'px';
+          el.style.top     = (st + fdy + 20) + 'px'; // gravity
+          el.style.opacity = '0';
+          el.style.transform = 'translate(-50%,-50%) rotate(' + (frot + 160) + 'deg)';
+          setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, fdur + 100);
+        };
+      }(p, dx, dy, rot, duration));
+    }
+  }
+
   function showError(msg) {
     debugError('[JG MAP]', msg);
     if (loadingEl) loadingEl.style.display = 'none';
@@ -3451,6 +3640,21 @@
               // Invalidate tag cache so newly added tags appear in suggestions immediately
               cachedAllTags = null;
 
+              // Update level/XP bar immediately if server returned XP data
+              if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
+
+              // For admin/mod: point is published immediately — shoot confetti at pin
+              var _addedLat = j.data && j.data.lat;
+              var _addedLng = j.data && j.data.lng;
+              if (CFG.isAdmin && j.data && j.data.status === 'publish' && _addedLat && _addedLng) {
+                setTimeout(function(lat, lng) {
+                  return function() {
+                    shootMapMarkerConfetti(lat, lng,
+                      ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#ffffff', '#f0fdf4'], 44);
+                  };
+                }(_addedLat, _addedLng), 600);
+              }
+
               // Immediate refresh for better UX
               refreshAll().then(function() {
                 msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
@@ -5773,11 +5977,14 @@
             post_id: p.id,
             reason: f.reason.value.trim()
           })
-          .then(function() {
+          .then(function(d) {
             // Save report time to localStorage
             var reportTime = Date.now();
             lastReportTime = reportTime;
             setLastReportTime(reportTime);
+
+            // Update level/XP bar if server returned XP data
+            if (d && d.xp_result) { updateLevelDisplay(d.xp_result); }
 
             msg.textContent = 'Dziękujemy!';
             msg.style.color = '#15803d';
@@ -6498,6 +6705,8 @@
             msg.style.color = '#15803d';
             // Invalidate tag cache so updated tags appear in suggestions immediately
             cachedAllTags = null;
+            // Update level/XP bar if server returned XP data
+            if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
             setTimeout(function() {
               close(modalEdit);
               if (fromReports) {
@@ -8313,6 +8522,13 @@
                   p.votes = +d.votes || 0;
                   p.my_vote = d.my_vote || '';
                   refresh(p.votes, p.my_vote);
+                  if (d.xp_result) { updateLevelDisplay(d.xp_result); }
+                  // Confetti burst from the pressed vote button
+                  var voteBtn = dir === 'up' ? up : down;
+                  var voteColors = dir === 'up'
+                    ? ['#10b981', '#34d399', '#6ee7b7', '#bbf7d0', '#ffffff', '#d1fae5']
+                    : ['#ef4444', '#f87171', '#fca5a5', '#fee2e2', '#ffffff', '#fff1f2'];
+                  shootButtonConfetti(voteBtn, voteColors, 30);
                 })
                 .catch(function(e) {
                   showAlert((e && e.message) || 'Błąd');
@@ -8415,6 +8631,9 @@
                   })
                   .then(function() {
                     showAlert('Zaakceptowano i opublikowano!');
+                    // Confetti near the approved map marker (admin/mod)
+                    shootMapMarkerConfetti(p.lat, p.lng,
+                      ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#ffffff', '#f0fdf4'], 44);
                   })
                   .catch(function(err) {
                     showAlert('Błąd: ' + (err.message || '?'));
@@ -8574,6 +8793,9 @@
 
                 api('jg_admin_approve_edit', { history_id: p.edit_info.history_id })
                   .then(function(result) {
+                    // Confetti near the marker immediately (coords available before refresh)
+                    shootMapMarkerConfetti(p.lat, p.lng,
+                      ['#3b82f6', '#60a5fa', '#93c5fd', '#fbbf24', '#ffffff', '#eff6ff'], 40);
                     return refreshAll();
                   })
                   .then(function() {
@@ -9792,6 +10014,15 @@
                         event.point_id,
                         'point'
                       );
+                      // Confetti near the approved marker
+                      if (event.metadata.lat && event.metadata.lng) {
+                        setTimeout(function(lat, lng) {
+                          return function() {
+                            shootMapMarkerConfetti(lat, lng,
+                              ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#ffffff', '#f0fdf4'], 44);
+                          };
+                        }(event.metadata.lat, event.metadata.lng), 400);
+                      }
                     }
                   }
                   // Edit approval notification
@@ -9810,6 +10041,15 @@
                         event.point_id,
                         'edit'
                       );
+                      // Confetti near the edited marker
+                      if (event.metadata.lat && event.metadata.lng) {
+                        setTimeout(function(lat, lng) {
+                          return function() {
+                            shootMapMarkerConfetti(lat, lng,
+                              ['#3b82f6', '#60a5fa', '#93c5fd', '#fbbf24', '#ffffff', '#eff6ff'], 44);
+                          };
+                        }(event.metadata.lat, event.metadata.lng), 400);
+                      }
                     }
                   }
                 });
@@ -10912,6 +11152,21 @@
                 // Invalidate tag cache so newly added tags appear in suggestions immediately
                 cachedAllTags = null;
 
+                // Update level/XP bar immediately if server returned XP data
+                if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
+
+                // For admin/mod: point is published immediately — shoot confetti at pin
+                var _fabLat = j.data && j.data.lat;
+                var _fabLng = j.data && j.data.lng;
+                if (CFG.isAdmin && j.data && j.data.status === 'publish' && _fabLat && _fabLng) {
+                  setTimeout(function(lat, lng) {
+                    return function() {
+                      shootMapMarkerConfetti(lat, lng,
+                        ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#ffffff', '#f0fdf4'], 44);
+                    };
+                  }(_fabLat, _fabLng), 600);
+                }
+
                 // Immediate refresh for better UX
                 refreshAll().then(function() {
                   msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
@@ -10954,6 +11209,69 @@
 
       // Create FAB on init
       createFAB();
+
+      // =========================================================
+      // REAL-TIME LEVEL / XP BAR UPDATE
+      // =========================================================
+
+      /**
+       * Update the top-bar level badge and XP progress bar without page reload.
+       * Called after any AJAX action that returns xp_result.
+       *
+       * @param {Object} xpResult - Response from award_xp():
+       *   { xp_gained, new_xp, new_level, old_level, level_up,
+       *     progress, xp_in_level, xp_needed, level_tier }
+       */
+      function updateLevelDisplay(xpResult) {
+        if (!xpResult || !xpResult.xp_gained) return;
+
+        var levelEl  = document.querySelector('.jg-top-bar-level');
+        var numEl    = document.querySelector('.jg-top-bar-level-num');
+        var fillEl   = document.querySelector('.jg-top-bar-xp-fill');
+
+        if (!levelEl || !numEl || !fillEl) return;
+
+        // Update level number text
+        numEl.textContent = 'Poz. ' + xpResult.new_level;
+
+        // Update progress bar
+        fillEl.style.width = xpResult.progress + '%';
+
+        // Update prestige tier class (remove old jg-level-* class, add new one)
+        var classes = levelEl.className.split(' ');
+        var filtered = classes.filter(function(c) { return c.indexOf('jg-level-') !== 0; });
+        filtered.push('jg-level-' + xpResult.level_tier);
+        levelEl.className = filtered.join(' ');
+
+        // Update title tooltip
+        levelEl.title = 'Poziom ' + xpResult.new_level + ' — ' + xpResult.xp_in_level + '/' + xpResult.xp_needed + ' XP do następnego poziomu';
+
+        // Show floating "+XP" indicator near the level badge
+        var indicator = document.createElement('span');
+        indicator.className = 'jg-xp-gain-indicator';
+        indicator.textContent = '+' + xpResult.xp_gained + ' XP';
+        levelEl.appendChild(indicator);
+
+        // Animate level badge on level-up
+        if (xpResult.level_up) {
+          levelEl.classList.add('jg-level-levelup-pulse');
+          // Confetti burst around the level badge, colors matching new prestige tier
+          shootPrestigeConfetti(levelEl, xpResult.level_tier, 48);
+          setTimeout(function() {
+            levelEl.classList.remove('jg-level-levelup-pulse');
+          }, 800);
+        }
+
+        // Remove floating indicator after animation completes
+        setTimeout(function() {
+          if (indicator.parentNode) {
+            indicator.parentNode.removeChild(indicator);
+          }
+        }, 1400);
+      }
+
+      // Expose for external use
+      window.jgUpdateLevelDisplay = updateLevelDisplay;
 
       // =========================================================
       // LEVEL-UP & ACHIEVEMENT NOTIFICATION SYSTEM

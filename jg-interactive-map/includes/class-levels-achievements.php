@@ -143,7 +143,8 @@ class JG_Map_Levels_Achievements {
                 array('key' => 'receive_upvote', 'label' => 'Otrzymanie głosu w górę', 'xp' => 5),
                 array('key' => 'vote_on_point', 'label' => 'Zagłosowanie na punkt', 'xp' => 2),
                 array('key' => 'add_photo', 'label' => 'Dodanie zdjęcia', 'xp' => 10),
-                array('key' => 'edit_point', 'label' => 'Edycja punktu', 'xp' => 15),
+                array('key' => 'edit_title', 'label' => 'Edycja tytułu (za słowo)', 'xp' => 3),
+                array('key' => 'edit_description', 'label' => 'Edycja opisu (za nowe słowo)', 'xp' => 2),
                 array('key' => 'daily_login', 'label' => 'Codzienny login', 'xp' => 5),
                 array('key' => 'report_point', 'label' => 'Zgłoszenie problemu', 'xp' => 10),
             );
@@ -225,7 +226,74 @@ class JG_Map_Levels_Achievements {
      * Award XP to a user
      * Returns array with level_up info if level changed
      */
-    public static function award_xp($user_id, $source, $reference_id = null) {
+    /**
+     * Count valid (non-gibberish) words in a text string.
+     * Strips HTML, splits on whitespace, and validates each word by checking
+     * that it contains at least one vowel and isn't a random character run.
+     *
+     * @param string $text Raw text (may contain HTML)
+     * @return int Number of valid words found
+     */
+    public static function count_valid_words($text) {
+        if (empty($text)) return 0;
+
+        // Strip HTML and decode entities
+        $plain = wp_strip_all_tags($text);
+        $plain = html_entity_decode($plain, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Split on whitespace
+        $words = preg_split('/\s+/u', trim($plain), -1, PREG_SPLIT_NO_EMPTY);
+        if (empty($words)) return 0;
+
+        // Polish + Latin vowels (covers ą ę ó ó i y and base Latin)
+        $vowel_pattern = '/[aeiouyąęóó]/ui';
+
+        $valid = 0;
+        foreach ($words as $word) {
+            // Strip non-alpha characters for analysis
+            $alpha = preg_replace('/[^a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/u', '', $word);
+            if (mb_strlen($alpha) < 2) continue; // Skip single chars / punctuation
+
+            // Must contain at least one vowel
+            if (!preg_match($vowel_pattern, $alpha)) continue;
+
+            // Reject if more than 70% of chars are the same letter (e.g. "aaaaaaa")
+            $len = mb_strlen($alpha);
+            $most_frequent = 0;
+            $char_counts = array();
+            $chars = preg_split('//u', mb_strtolower($alpha), -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($chars as $ch) {
+                $char_counts[$ch] = ($char_counts[$ch] ?? 0) + 1;
+                if ($char_counts[$ch] > $most_frequent) {
+                    $most_frequent = $char_counts[$ch];
+                }
+            }
+            if ($len > 0 && ($most_frequent / $len) > 0.7) continue;
+
+            // Reject if more than 60% consecutive consonants (detects random key mashing)
+            $consonants_in_a_row = 0;
+            $max_consonants_run  = 0;
+            foreach ($chars as $ch) {
+                if (!preg_match($vowel_pattern, $ch)) {
+                    $consonants_in_a_row++;
+                    if ($consonants_in_a_row > $max_consonants_run) {
+                        $max_consonants_run = $consonants_in_a_row;
+                    }
+                } else {
+                    $consonants_in_a_row = 0;
+                }
+            }
+            // Allowed max consonant run: 3 for short words, 4 for long words
+            $allowed_run = $len <= 4 ? 3 : 4;
+            if ($max_consonants_run > $allowed_run) continue;
+
+            $valid++;
+        }
+
+        return $valid;
+    }
+
+    public static function award_xp($user_id, $source, $reference_id = null, $xp_override = null) {
         if (!$user_id) return null;
 
         global $wpdb;
@@ -233,13 +301,17 @@ class JG_Map_Levels_Achievements {
         $table_log = $wpdb->prefix . 'jg_map_xp_log';
         $table_notifications = $wpdb->prefix . 'jg_map_level_notifications';
 
-        // Get XP amount for this source
-        $sources = self::get_xp_sources();
-        $amount = 0;
-        foreach ($sources as $s) {
-            if ($s['key'] === $source) {
-                $amount = intval($s['xp']);
-                break;
+        // Determine XP amount: use override if provided, otherwise look up from config
+        if ($xp_override !== null) {
+            $amount = intval($xp_override);
+        } else {
+            $sources = self::get_xp_sources();
+            $amount = 0;
+            foreach ($sources as $s) {
+                if ($s['key'] === $source) {
+                    $amount = intval($s['xp']);
+                    break;
+                }
             }
         }
 
@@ -278,13 +350,33 @@ class JG_Map_Levels_Achievements {
             ));
         }
 
+        // Compute display data for the new level
+        $new_current_level_xp = self::xp_for_level($new_level);
+        $new_next_level_xp    = self::xp_for_level($new_level + 1);
+        $new_xp_in_level      = $new_xp - $new_current_level_xp;
+        $new_xp_needed        = $new_next_level_xp - $new_current_level_xp;
+        $new_progress         = $new_xp_needed > 0 ? min(100, round(($new_xp_in_level / $new_xp_needed) * 100)) : 100;
+
+        if ($new_level >= 50)     $level_tier = 'prestige-legend';
+        elseif ($new_level >= 40) $level_tier = 'prestige-ruby';
+        elseif ($new_level >= 30) $level_tier = 'prestige-diamond';
+        elseif ($new_level >= 20) $level_tier = 'prestige-purple';
+        elseif ($new_level >= 15) $level_tier = 'prestige-emerald';
+        elseif ($new_level >= 10) $level_tier = 'prestige-gold';
+        elseif ($new_level >= 5)  $level_tier = 'prestige-silver';
+        else                       $level_tier = 'prestige-bronze';
+
         $result = array(
-            'xp_gained' => $amount,
-            'old_xp' => $old_xp,
-            'new_xp' => $new_xp,
-            'old_level' => $old_level,
-            'new_level' => $new_level,
-            'level_up' => false
+            'xp_gained'    => $amount,
+            'old_xp'       => $old_xp,
+            'new_xp'       => $new_xp,
+            'old_level'    => $old_level,
+            'new_level'    => $new_level,
+            'level_up'     => false,
+            'progress'     => $new_progress,
+            'xp_in_level'  => $new_xp_in_level,
+            'xp_needed'    => $new_xp_needed,
+            'level_tier'   => $level_tier,
         );
 
         // Check for level up
