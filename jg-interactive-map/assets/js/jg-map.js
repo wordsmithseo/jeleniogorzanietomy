@@ -1945,32 +1945,32 @@
         });
       });
 
-      // Persistent event delegation on lightbox backdrop for reliable mobile close.
-      // Bound once here, not per-open, so it always works regardless of DOM recreation.
+      // Persistent event delegation on lightbox backdrop.
+      // Uses touchstart (not touchend!) so that e.preventDefault() suppresses ALL
+      // subsequent events in the touch sequence (touchend, mousedown, mouseup, click).
+      // This eliminates the iOS "ghost click" problem: without this, close(lightbox)
+      // would fire on touchend, but the browser would still generate a synthetic click
+      // at the same coordinates ~300ms later — hitting a gallery thumbnail in the
+      // view modal behind the lightbox and immediately reopening it.
       if (lightbox) {
-        lightbox.addEventListener('touchend', function(e) {
-          // Close button tapped
+        lightbox.addEventListener('touchstart', function(e) {
           var btn = e.target.closest && e.target.closest('.jg-lb-close');
           if (btn) {
-            e.preventDefault();
+            e.preventDefault(); // suppresses touchend + ghost click entirely
             e.stopPropagation();
             close(lightbox);
             return;
           }
-          // Dark backdrop tapped
           if (e.target === lightbox) {
             e.preventDefault();
             close(lightbox);
           }
         }, { passive: false });
 
-        // Same for click (desktop / devices that don't fire touchend)
+        // Fallback for non-touch devices (desktop)
         lightbox.addEventListener('click', function(e) {
           var btn = e.target.closest && e.target.closest('.jg-lb-close');
-          if (btn) {
-            close(lightbox);
-            return;
-          }
+          if (btn) { close(lightbox); return; }
           if (e.target === lightbox) close(lightbox);
         });
       }
