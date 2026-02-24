@@ -1526,11 +1526,13 @@
         '</div>';
       }
 
-      // Cached tags for autocomplete
+      // Cached tags for autocomplete (with TTL)
       var cachedAllTags = null;
+      var cachedAllTagsTime = 0;
+      var TAGS_CACHE_TTL = 60000; // 60 seconds
 
       function fetchAllTags(callback) {
-        if (cachedAllTags !== null) {
+        if (cachedAllTags !== null && (Date.now() - cachedAllTagsTime) < TAGS_CACHE_TTL) {
           callback(cachedAllTags);
           return;
         }
@@ -1540,10 +1542,12 @@
           .then(function(r) { return r.json(); })
           .then(function(resp) {
             cachedAllTags = (resp.success && resp.data) ? resp.data : [];
+            cachedAllTagsTime = Date.now();
             callback(cachedAllTags);
           })
           .catch(function() {
             cachedAllTags = [];
+            cachedAllTagsTime = Date.now();
             callback(cachedAllTags);
           });
       }
@@ -3607,6 +3611,7 @@
               form.reset();
               // Invalidate tag cache so newly added tags appear in suggestions immediately
               cachedAllTags = null;
+              cachedAllTagsTime = 0;
 
               // Update level/XP bar immediately if server returned XP data
               if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
@@ -6673,6 +6678,7 @@
             msg.style.color = '#15803d';
             // Invalidate tag cache so updated tags appear in suggestions immediately
             cachedAllTags = null;
+            cachedAllTagsTime = 0;
             // Update level/XP bar if server returned XP data
             if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
             setTimeout(function() {
@@ -7289,6 +7295,9 @@
 
           adminChangeStatus(requestData)
             .then(function(result) {
+              // Invalidate tag cache so status change reflects in tag suggestions
+              cachedAllTags = null;
+              cachedAllTagsTime = 0;
               msg.textContent = 'Zapisano! Odświeżanie...';
               msg.style.color = '#15803d';
               return refreshAll();
@@ -8594,6 +8603,9 @@
 
                 adminApprovePoint({ post_id: p.id })
                   .then(function() {
+                    // Invalidate tag cache so approved point's tags appear in suggestions
+                    cachedAllTags = null;
+                    cachedAllTagsTime = 0;
                     close(modalView);
                     return refreshAll();
                   })
@@ -8761,6 +8773,9 @@
 
                 api('jg_admin_approve_edit', { history_id: p.edit_info.history_id })
                   .then(function(result) {
+                    // Invalidate tag cache so edited tags appear in suggestions
+                    cachedAllTags = null;
+                    cachedAllTagsTime = 0;
                     // Confetti near the marker immediately (coords available before refresh)
                     shootMapMarkerConfetti(p.lat, p.lng,
                       ['#3b82f6', '#60a5fa', '#93c5fd', '#fbbf24', '#ffffff', '#eff6ff'], 40);
@@ -8918,6 +8933,9 @@
 
               api('jg_owner_approve_edit', { history_id: historyId })
                 .then(function(result) {
+                  // Invalidate tag cache so edited tags appear in suggestions
+                  cachedAllTags = null;
+                  cachedAllTagsTime = 0;
                   if (result && result.message) {
                     successMessage = result.message;
                   }
@@ -11119,6 +11137,7 @@
                 form.reset();
                 // Invalidate tag cache so newly added tags appear in suggestions immediately
                 cachedAllTags = null;
+                cachedAllTagsTime = 0;
 
                 // Update level/XP bar immediately if server returned XP data
                 if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }

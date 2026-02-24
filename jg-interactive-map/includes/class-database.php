@@ -840,7 +840,7 @@ class JG_Map_Database {
     }
 
     /**
-     * Get all unique tags from published points (for autocomplete)
+     * Get all unique tags from published and pending points (for autocomplete)
      */
     public static function get_all_tags() {
         global $wpdb;
@@ -852,7 +852,7 @@ class JG_Map_Database {
         }
 
         $rows = $wpdb->get_col(
-            "SELECT DISTINCT tags FROM $table WHERE status = 'publish' AND tags IS NOT NULL AND tags != ''"
+            "SELECT DISTINCT tags FROM $table WHERE status IN ('publish', 'pending') AND tags IS NOT NULL AND tags != ''"
         );
 
         $all_tags = array();
