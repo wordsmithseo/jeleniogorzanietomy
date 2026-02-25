@@ -550,9 +550,15 @@
   background: #8d2324;
   color: #fff;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
   flex-shrink: 0;
+}
+
+.jg-search-panel-header-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .jg-search-panel-header h3 {
@@ -561,13 +567,37 @@
   font-weight: 600;
 }
 
-/* Close button at the top of the search results panel (matches footer button) */
+/* Close button at the top of the search results panel - white with black font for contrast */
 .jg-search-panel-header-close {
-  margin-left: auto;
-  flex-shrink: 0;
-  font-size: 12px !important;
-  padding: 6px 10px !important;
-  white-space: nowrap;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  text-align: center !important;
+  background: #fff !important;
+  background-color: #fff !important;
+  color: #111 !important;
+  border: 1px solid #ddd !important;
+  border-width: 1px !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  line-height: 1.4 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  height: auto !important;
+  min-height: auto !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+
+.jg-search-panel-header-close:hover {
+  background: #f5f5f5 !important;
+  background-color: #f5f5f5 !important;
+  color: #111 !important;
 }
 
 .jg-search-count {
@@ -2390,20 +2420,37 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   align-items: center;
 }
 .jg-rte-btn {
-  background: #111;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 1;
-  transition: background 0.15s;
-  white-space: nowrap;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #111 !important;
+  background-color: #111 !important;
+  color: #fff !important;
+  border: none !important;
+  border-width: 0 !important;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  transition: background 0.15s !important;
+  white-space: nowrap !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: auto !important;
+  min-width: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
 }
 .jg-rte-btn:hover {
-  background: #333;
+  background: #333 !important;
+  background-color: #333 !important;
+  color: #fff !important;
 }
 .jg-rte-sep {
   display: inline-block;
@@ -2630,7 +2677,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   border-bottom-color: #f7d899;
 }
 
-/* Buttons */
+/* Buttons - base styles */
 .jg-btn {
   background: #111;
   color: #fff;
@@ -2655,6 +2702,17 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   background: #f5f5f5;
 }
 
+.jg-btn.jg-btn--secondary {
+  background: #fff;
+  color: #111;
+  border: 1px solid #ddd;
+}
+
+.jg-btn.jg-btn--secondary:hover {
+  background: #f5f5f5;
+  color: #111;
+}
+
 .jg-btn.jg-btn--danger {
   background: #dc2626;
   color: #fff;
@@ -2662,6 +2720,105 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 .jg-btn.jg-btn--danger:hover {
   background: #b91c1c;
+}
+
+/* ── Elementor Style Isolation for Plugin Buttons ── */
+/* Override any Elementor global/theme button styles with !important */
+#jg-map-wrap .jg-btn,
+.jg-modal-bg .jg-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #111 !important;
+  background-color: #111 !important;
+  color: #fff !important;
+  border: none !important;
+  border-width: 0 !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  line-height: 1.4 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: auto !important;
+  min-width: auto !important;
+  outline: none !important;
+  transition: background 0.2s !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+#jg-map-wrap .jg-btn:hover,
+.jg-modal-bg .jg-btn:hover {
+  background: #333 !important;
+  background-color: #333 !important;
+  color: #fff !important;
+}
+
+#jg-map-wrap .jg-btn.jg-btn--ghost,
+.jg-modal-bg .jg-btn.jg-btn--ghost {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #111 !important;
+  border: 1px solid #ddd !important;
+  border-width: 1px !important;
+}
+
+#jg-map-wrap .jg-btn.jg-btn--ghost:hover,
+.jg-modal-bg .jg-btn.jg-btn--ghost:hover {
+  background: #f5f5f5 !important;
+  background-color: #f5f5f5 !important;
+  color: #111 !important;
+}
+
+#jg-map-wrap .jg-btn.jg-btn--secondary,
+.jg-modal-bg .jg-btn.jg-btn--secondary,
+.jg-search-panel .jg-btn.jg-btn--secondary {
+  background: #fff !important;
+  background-color: #fff !important;
+  color: #111 !important;
+  border: 1px solid #ddd !important;
+  border-width: 1px !important;
+}
+
+#jg-map-wrap .jg-btn.jg-btn--secondary:hover,
+.jg-modal-bg .jg-btn.jg-btn--secondary:hover,
+.jg-search-panel .jg-btn.jg-btn--secondary:hover {
+  background: #f5f5f5 !important;
+  background-color: #f5f5f5 !important;
+  color: #111 !important;
+}
+
+#jg-map-wrap .jg-btn.jg-btn--danger,
+.jg-modal-bg .jg-btn.jg-btn--danger {
+  background: #dc2626 !important;
+  background-color: #dc2626 !important;
+  color: #fff !important;
+  border: none !important;
+  border-width: 0 !important;
+}
+
+#jg-map-wrap .jg-btn.jg-btn--danger:hover,
+.jg-modal-bg .jg-btn.jg-btn--danger:hover {
+  background: #b91c1c !important;
+  background-color: #b91c1c !important;
+}
+
+#jg-map-wrap .jg-btn.jg-btn--sm,
+.jg-modal-bg .jg-btn.jg-btn--sm {
+  padding: 6px 14px !important;
+  font-size: 13px !important;
+}
+
+.jg-search-panel-footer .jg-btn {
+  width: 100% !important;
 }
 
 /* Sponsored CTA Button - Single beautiful gold button with readable text */
