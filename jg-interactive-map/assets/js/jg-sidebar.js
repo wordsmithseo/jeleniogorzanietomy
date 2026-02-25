@@ -218,7 +218,7 @@
         }
 
         // Build fingerprint from all visible/editable fields so any change triggers re-render
-        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}`).join(',');
+        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}`).join(',');
         const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
         return pointsData + statsData;
     }
@@ -436,6 +436,7 @@
         }
 
         // Build item HTML
+        var infoBadgesHtml = buildInfoBadges(point);
         $item.html(`
             ${imageHtml}
             <div class="jg-sidebar-item__content">
@@ -447,6 +448,7 @@
                     ${votesHtml}
                     <div class="jg-sidebar-item__date">${point.date.human}</div>
                 </div>
+                ${infoBadgesHtml}
             </div>
         `);
 
@@ -458,6 +460,54 @@
         });
 
         return $item;
+    }
+
+    /**
+     * Build small info-badge strip for a point.
+     * Shows icon-only badges; tooltip text is set via data-jg-tip attribute
+     * and revealed via CSS :hover – fully independent of Elementor styles.
+     */
+    function buildInfoBadges(point) {
+        var badges = [];
+
+        if (point.has_description) {
+            badges.push({ icon: '📝', tip: 'Ma opis' });
+        }
+        if (point.has_tags) {
+            badges.push({ icon: '🏷️', tip: 'Ma tagi' });
+        }
+        if (point.category) {
+            var catLabel = resolveCategoryLabel(point.type, point.category);
+            badges.push({ icon: '🗂️', tip: 'Kategoria: ' + catLabel });
+        }
+        if (point.images_count > 0) {
+            var n = point.images_count;
+            var photoLabel = n === 1 ? '1 zdjęcie' : (n < 5 ? n + ' zdjęcia' : n + ' zdjęć');
+            badges.push({ icon: '📷', tip: photoLabel });
+        }
+
+        if (badges.length === 0) {
+            return '';
+        }
+
+        var html = '<div class="jg-sidebar-item__info-badges">';
+        for (var i = 0; i < badges.length; i++) {
+            html += '<span class="jg-info-badge" data-jg-tip="' + escapeHtml(badges[i].tip) + '">' + badges[i].icon + '</span>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    /**
+     * Resolve human-readable category label from JG_MAP_CFG config.
+     */
+    function resolveCategoryLabel(type, categoryKey) {
+        var cfg = window.JG_MAP_CFG || {};
+        var map = type === 'ciekawostka' ? (cfg.curiosityCategories || {}) : (cfg.placeCategories || {});
+        if (map[categoryKey] && map[categoryKey].label) {
+            return map[categoryKey].label;
+        }
+        return categoryKey;
     }
 
     /**

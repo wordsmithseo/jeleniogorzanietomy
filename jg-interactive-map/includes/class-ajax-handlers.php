@@ -7567,7 +7567,11 @@ class JG_Map_Ajax_Handlers {
                     'raw' => $point['created_at'],
                     'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu'
                 ),
-                'featured_image' => $this->get_featured_image_url($point)
+                'featured_image'   => $this->get_featured_image_url($point),
+                'has_description'  => !empty($point['content']) || !empty($point['excerpt']),
+                'has_tags'         => $this->point_has_tags($point),
+                'category'         => !empty($point['category']) ? sanitize_text_field($point['category']) : '',
+                'images_count'     => $this->get_images_count($point)
             );
         }
 
@@ -7621,6 +7625,28 @@ class JG_Map_Ajax_Handlers {
 
         // Old format: return string URL
         return $featured_image;
+    }
+
+    /**
+     * Check whether a point has at least one non-empty tag
+     */
+    private function point_has_tags($point) {
+        if (empty($point['tags'])) {
+            return false;
+        }
+        $tags = json_decode($point['tags'], true);
+        return is_array($tags) && count($tags) > 0;
+    }
+
+    /**
+     * Get count of images for a point
+     */
+    private function get_images_count($point) {
+        if (empty($point['images'])) {
+            return 0;
+        }
+        $images = json_decode($point['images'], true);
+        return is_array($images) ? count($images) : 0;
     }
 
     /**
