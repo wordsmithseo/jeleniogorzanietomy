@@ -2986,6 +2986,13 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   line-height: 1;
 }
 
+.jg-vote-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1;
+}
+
 /* Own point vote display (no buttons, just count) - compact design */
 .jg-vote--own {
   display: inline-flex;
@@ -3462,6 +3469,10 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 .jg-meta-row .jg-vote-own-icon {
   font-size: 0.85rem !important;
+}
+
+.jg-meta-row .jg-vote-label {
+  font-size: 0.75rem !important;
 }
 
 /* Status Badge */
