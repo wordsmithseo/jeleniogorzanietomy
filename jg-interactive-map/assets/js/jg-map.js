@@ -11412,6 +11412,50 @@
       window.openDetails = openDetails;
       window.openUserModal = openUserModal;
 
+      // Export zoom-to-point function for sidebar use
+      // Zooms the map to given coordinates and shows a pulsing marker animation
+      window.jgZoomToPoint = function(lat, lng) {
+        map.setView([lat, lng], 19, { animate: true });
+
+        // On mobile: scroll viewport to the map element
+        if (window.innerWidth <= 768) {
+          setTimeout(function() {
+            var mapEl = document.getElementById('jg-map');
+            if (mapEl) {
+              mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 300);
+        }
+
+        // After zoom completes, add fast pulsing circle marker
+        setTimeout(function() {
+          var pulsingCircle = L.circle([lat, lng], {
+            color: '#ef4444',
+            fillColor: '#ef4444',
+            fillOpacity: 0.3,
+            radius: 12,
+            weight: 3
+          }).addTo(map);
+
+          var pulseCount = 0;
+          var maxPulses = 6;
+          var pulseInterval = setInterval(function() {
+            pulseCount++;
+            if (pulseCount % 2 === 0) {
+              pulsingCircle.setStyle({ fillOpacity: 0.3, opacity: 1 });
+            } else {
+              pulsingCircle.setStyle({ fillOpacity: 0.1, opacity: 0.4 });
+            }
+            if (pulseCount >= maxPulses) {
+              clearInterval(pulseInterval);
+              setTimeout(function() {
+                map.removeLayer(pulsingCircle);
+              }, 250);
+            }
+          }, 250);
+        }, 600);
+      };
+
     } catch (e) {
       showError('Błąd: ' + e.message);
     }

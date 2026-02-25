@@ -1,5 +1,5 @@
 /**
- * JG Map Sidebar - List of pins with filtering and sorting
+ * JG Map Sidebar - List of pins with filtering, sorting and lazy loading
  */
 (function($) {
     'use strict';
@@ -8,6 +8,8 @@
     if (!document.getElementById('jg-map-sidebar')) {
         return;
     }
+
+    var PAGE_SIZE = 10;
 
     let sidebarPoints = [];
     let currentFilters = {
@@ -22,6 +24,11 @@
     let currentDataFingerprint = null;
     // Current sponsored pin ID to maintain consistency
     let currentSponsoredId = null;
+
+    // Lazy loading state
+    let allRegularPoints = [];
+    let renderedRegularCount = 0;
+    let isAppendingMore = false;
 
     /**
      * Initialize sidebar
@@ -132,6 +139,14 @@
             e.preventDefault();
             e.stopPropagation();
             toggleCollapsible($(this));
+        });
+
+        // Lazy loading: detect scroll-to-bottom on the list container
+        $('#jg-sidebar-list').on('scroll.lazyload', function() {
+            var el = this;
+            if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
+                appendNextBatch();
+            }
         });
     }
 
@@ -275,11 +290,17 @@
     }
 
     /**
-     * Render points list
+     * Render points list - always shows sponsored pin immediately,
+     * then renders first PAGE_SIZE regular pins with lazy loading for the rest.
      */
     function renderPoints(points) {
         const $list = $('#jg-sidebar-list');
         $list.empty();
+
+        // Reset lazy loading state
+        allRegularPoints = [];
+        renderedRegularCount = 0;
+        isAppendingMore = false;
 
         if (!points || points.length === 0) {
             $list.html('<div class="jg-sidebar-empty">Brak pinezek spełniających kryteria</div>');
@@ -289,9 +310,9 @@
 
         // Separate sponsored and regular pins
         const sponsoredPoints = points.filter(p => p.is_promo);
-        const regularPoints = points.filter(p => !p.is_promo);
+        allRegularPoints = points.filter(p => !p.is_promo);
 
-        // Add ONE sponsored pin in "Polecamy" section
+        // Add ONE sponsored pin in "Polecamy" section - always rendered immediately
         if (sponsoredPoints.length > 0) {
             // Try to keep the same sponsored pin if it's still available
             let selectedSponsored = null;
@@ -313,14 +334,34 @@
             currentSponsoredId = null;
         }
 
-        // Add regular pins section if there are regular pins
-        if (regularPoints.length > 0) {
+        // Add regular pins section with lazy loading
+        if (allRegularPoints.length > 0) {
             $list.append('<div class="jg-sidebar-section-title">Pinezki na mapie</div>');
-            regularPoints.forEach(function(point) {
-                const $item = createPointItem(point);
-                $list.append($item);
-            });
+            // Render first batch
+            appendNextBatch();
         }
+    }
+
+    /**
+     * Append next PAGE_SIZE regular points to the list.
+     * Called on initial render and on scroll-to-bottom.
+     */
+    function appendNextBatch() {
+        if (isAppendingMore || renderedRegularCount >= allRegularPoints.length) {
+            return;
+        }
+
+        isAppendingMore = true;
+
+        const $list = $('#jg-sidebar-list');
+        const batch = allRegularPoints.slice(renderedRegularCount, renderedRegularCount + PAGE_SIZE);
+
+        batch.forEach(function(point) {
+            $list.append(createPointItem(point));
+        });
+
+        renderedRegularCount += batch.length;
+        isAppendingMore = false;
     }
 
     /**
@@ -409,7 +450,7 @@
             </div>
         `);
 
-        // Click handler - trigger map zoom and modal
+        // Click handler - zoom map to pin using existing mechanism
         $item.on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -420,10 +461,9 @@
     }
 
     /**
-     * Handle click on point item - navigate to point URL
-     * This uses the existing SEO routing which will automatically:
-     * - Zoom the map to the point
-     * - Open the details modal
+     * Handle click on point item - zoom the map to the pin location.
+     * Uses window.jgZoomToPoint (exported from jg-map.js) which replicates
+     * the existing search result zoom mechanic (setView + pulsing circle).
      */
     function handlePointClick(point) {
         // First check if point still exists (protection against clicking deleted points before sync)
@@ -439,23 +479,32 @@
                 if (!response.success || !response.data || !response.data.exists) {
                     // Point has been deleted - show alert and refresh sidebar
                     showDeletedPointAlert();
-                    // Refresh sidebar to remove deleted point
                     setTimeout(function() {
                         loadPoints();
                     }, 1500);
                     return;
                 }
 
-                // Point exists - navigate to it
-                const url = `/${point.type}/${point.slug}`;
-                window.location.href = url;
+                // Point exists - zoom map to its location
+                zoomToPin(point.lat, point.lng);
             },
             error: function(xhr, status, error) {
-                // On error, still try to navigate (fallback)
-                const url = `/${point.type}/${point.slug}`;
-                window.location.href = url;
+                // On network error, still try to zoom (fallback)
+                zoomToPin(point.lat, point.lng);
             }
         });
+    }
+
+    /**
+     * Zoom the map to a pin location using the exported map mechanism.
+     */
+    function zoomToPin(lat, lng) {
+        if (typeof window.jgZoomToPoint === 'function') {
+            window.jgZoomToPoint(lat, lng);
+        } else if (window.jgMap) {
+            // Fallback: use Leaflet map directly if export not yet ready
+            window.jgMap.setView([lat, lng], 19, { animate: true });
+        }
     }
 
     /**
