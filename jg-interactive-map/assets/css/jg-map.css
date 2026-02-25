@@ -545,6 +545,18 @@
   pointer-events: auto;
 }
 
+/* Shift FAB left when search results panel is open (desktop only) */
+.jg-map #jg-fab-container {
+  transition: right 0.3s ease-in-out;
+}
+
+@media (min-width: 769px) {
+  .jg-search-panel.active ~ .jg-map #jg-fab-container {
+    right: 380px !important;
+    transition: right 0.3s ease-in-out !important;
+  }
+}
+
 .jg-search-panel-header {
   padding: 20px;
   background: #8d2324;
@@ -3405,10 +3417,51 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   font-size: 13px !important;
   color: #6b7280 !important;
   font-family: inherit !important;
-  font-weight: normal !important;
+  font-weight: 600 !important;
   line-height: 1.5 !important;
   text-decoration: underline !important;
   cursor: pointer !important;
+}
+
+/* Meta row: date info + voting on the same line */
+.jg-meta-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.jg-meta-row .jg-date-info {
+  margin-bottom: 0 !important;
+}
+
+.jg-meta-row .jg-vote,
+.jg-meta-row .jg-vote--own {
+  margin-top: 0 !important;
+  padding: 0.3rem 0.7rem !important;
+  flex-shrink: 0 !important;
+}
+
+.jg-meta-row .jg-vote .cnt {
+  font-size: 1.4rem !important;
+}
+
+.jg-meta-row .jg-vote button {
+  padding: 0.3rem 0.55rem !important;
+  font-size: 0.85rem !important;
+}
+
+.jg-meta-row .jg-vote--own .cnt {
+  font-size: 1.4rem !important;
+}
+
+.jg-meta-row .jg-vote-own-label {
+  font-size: 0.85rem !important;
+}
+
+.jg-meta-row .jg-vote-own-icon {
+  font-size: 0.85rem !important;
 }
 
 /* Status Badge */

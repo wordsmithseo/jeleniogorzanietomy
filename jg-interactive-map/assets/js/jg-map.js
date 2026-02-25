@@ -7394,7 +7394,7 @@
                  '</div>';
         }).join('');
 
-        var datePart = (p.date && p.date.human) ? '<span class="jg-meta-date">Dodano: ' + esc(p.date.human) + '</span>' : '';
+        var datePart = (p.date && p.date.human) ? '<span class="jg-meta-date">Dodano <strong>' + esc(p.date.human) + '</strong></span>' : '';
 
         var authorPart = '';
         if (p.author_name && p.author_name.trim() !== '') {
@@ -7403,7 +7403,7 @@
           authorPart = '<span class="jg-meta-author">ukryty</span>';
         }
 
-        var dateInfo = (datePart || authorPart) ? '<div class="jg-date-info">' + datePart + (datePart && authorPart ? '<span class="jg-meta-sep"> &bull; </span>' : '') + authorPart + '</div>' : '';
+        var dateInfo = (datePart || authorPart) ? '<div class="jg-date-info">' + datePart + (datePart && authorPart ? '<span class="jg-meta-sep">, przez </span>' : '') + authorPart + '</div>' : '';
 
         var who = '';
 
@@ -7887,6 +7887,12 @@
           voteHtml = '<div class="jg-vote jg-vote--own"><span class="jg-vote-own-icon">🗳️</span><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><span class="jg-vote-own-label">głosów</span></div>';
         }
 
+        // Combine dateInfo and voteHtml into a single row
+        var metaRow = '';
+        if (dateInfo || voteHtml) {
+          metaRow = '<div class="jg-meta-row">' + dateInfo + voteHtml + '</div>';
+        }
+
         // Community verification badge (based on votes)
         var verificationBadge = '';
         if (p.votes && !p.sponsored) {
@@ -8180,7 +8186,7 @@
           tagsHtml += '</div>';
         }
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + dateInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + tagsHtml + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + voteHtml + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + metaRow + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + tagsHtml + contactInfo + ctaButton + addressInfo + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
