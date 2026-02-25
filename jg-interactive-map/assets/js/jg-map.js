@@ -7394,14 +7394,18 @@
                  '</div>';
         }).join('');
 
-        var dateInfo = (p.date && p.date.human) ? '<div class="jg-date-info">Dodano: ' + esc(p.date.human) + '</div>' : '';
+        var datePart = (p.date && p.date.human) ? '<span class="jg-meta-date">Dodano: ' + esc(p.date.human) + '</span>' : '';
+
+        var authorPart = '';
+        if (p.author_name && p.author_name.trim() !== '') {
+          authorPart = '<span class="jg-meta-author"><a href="#" id="btn-author" data-id="' + esc(p.author_id) + '" class="jg-meta-author-link">' + esc(p.author_name) + '</a></span>';
+        } else if (p.author_hidden || p.author_id > 0) {
+          authorPart = '<span class="jg-meta-author">ukryty</span>';
+        }
+
+        var dateInfo = (datePart || authorPart) ? '<div class="jg-date-info">' + datePart + (datePart && authorPart ? '<span class="jg-meta-sep"> &bull; </span>' : '') + authorPart + '</div>' : '';
 
         var who = '';
-        if (p.author_name && p.author_name.trim() !== '') {
-          who = '<div><strong>Autor:</strong> <a href="#" id="btn-author" data-id="' + esc(p.author_id) + '" style="color:#2563eb;text-decoration:underline;cursor:pointer">' + esc(p.author_name) + '</a></div>';
-        } else if (p.author_hidden || p.author_id > 0) {
-          who = '<div><strong>Autor:</strong> ukryty</div>';
-        }
 
         var adminNote = '';
         if (p.admin_note && p.admin_note.trim()) {

@@ -3380,9 +3380,35 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 /* Date Info */
 .jg-date-info {
-  font-size: 13px;
-  color: #6b7280;
-  margin-bottom: 12px;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  font-size: 13px !important;
+  color: #6b7280 !important;
+  font-family: inherit !important;
+  font-weight: normal !important;
+  line-height: 1.5 !important;
+  margin-bottom: 12px !important;
+}
+
+.jg-date-info .jg-meta-date,
+.jg-date-info .jg-meta-sep,
+.jg-date-info .jg-meta-author {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+  font-family: inherit !important;
+  font-weight: normal !important;
+  line-height: 1.5 !important;
+}
+
+.jg-date-info .jg-meta-author-link {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+  font-family: inherit !important;
+  font-weight: normal !important;
+  line-height: 1.5 !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
 }
 
 /* Status Badge */
