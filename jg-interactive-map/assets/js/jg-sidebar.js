@@ -40,8 +40,78 @@
         // Setup event listeners
         setupEventListeners();
 
+        // Setup fixed tooltip for info-badges (avoids overflow:hidden clipping)
+        setupBadgeTooltip();
+
         // Load initial data
         loadPoints();
+    }
+
+    /**
+     * Creates a single fixed <div> tooltip in <body> and hooks mouseenter/leave
+     * on every .jg-info-badge via event delegation.
+     * Uses getBoundingClientRect() + viewport clamping so the tooltip is never
+     * clipped by an overflow:hidden ancestor.
+     */
+    function setupBadgeTooltip() {
+        // Singleton tooltip element
+        var $tip = $('#jg-badge-tooltip');
+        if ($tip.length === 0) {
+            $tip = $('<div id="jg-badge-tooltip"></div>').appendTo('body');
+        }
+
+        var hideTimer = null;
+
+        $('#jg-map-sidebar').on('mouseenter', '.jg-info-badge', function() {
+            clearTimeout(hideTimer);
+
+            var label = $(this).attr('data-jg-tip') || '';
+            if (!label) return;
+
+            $tip
+                .text(label)
+                .removeClass('jg-badge-tooltip--above jg-badge-tooltip--below')
+                .css({ display: 'block', opacity: 0 });
+
+            var rect    = this.getBoundingClientRect();
+            var tipW    = $tip.outerWidth(true);
+            var tipH    = $tip.outerHeight(true);
+            var margin  = 8; // px gap from viewport edges
+            var gap     = 7; // px gap between badge and tooltip
+
+            // Prefer above; fall back to below if not enough room
+            var placeAbove = (rect.top - tipH - gap) >= margin;
+            var top, arrowFromTop;
+            if (placeAbove) {
+                top = rect.top - tipH - gap;
+                $tip.addClass('jg-badge-tooltip--above');
+            } else {
+                top = rect.bottom + gap;
+                $tip.addClass('jg-badge-tooltip--below');
+            }
+
+            // Horizontal: centre over badge, then clamp
+            var idealLeft  = rect.left + rect.width / 2 - tipW / 2;
+            var clampedLeft = Math.max(margin, Math.min(idealLeft, window.innerWidth - tipW - margin));
+
+            // Arrow should point at badge centre regardless of clamping
+            var arrowLeft = (rect.left + rect.width / 2) - clampedLeft;
+            arrowLeft = Math.max(8, Math.min(arrowLeft, tipW - 8)); // keep arrow inside box
+
+            $tip.css({
+                top:  top + 'px',
+                left: clampedLeft + 'px',
+                '--arrow-left': arrowLeft + 'px'
+            }).addClass('jg-badge-tooltip--visible');
+        });
+
+        $('#jg-map-sidebar').on('mouseleave', '.jg-info-badge', function() {
+            hideTimer = setTimeout(function() {
+                $tip
+                    .removeClass('jg-badge-tooltip--visible jg-badge-tooltip--above jg-badge-tooltip--below')
+                    .css('display', 'none');
+            }, 80);
+        });
     }
 
     /**
