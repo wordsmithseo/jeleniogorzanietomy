@@ -4671,6 +4671,15 @@
         return 'color:#111';
       }
 
+      function pluralVotes(n) {
+        var abs = Math.abs(n);
+        if (abs === 1) return 'głos';
+        var mod10 = abs % 10;
+        var mod100 = abs % 100;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'głosy';
+        return 'głosów';
+      }
+
       function openLightbox(src) {
         // The close button and backdrop are handled via event delegation bound on the
         // lightbox element itself (see setup above) — no per-open binding needed.
@@ -7399,8 +7408,6 @@
         var authorPart = '';
         if (p.author_name && p.author_name.trim() !== '') {
           authorPart = '<span class="jg-meta-author"><a href="#" id="btn-author" data-id="' + esc(p.author_id) + '" class="jg-meta-author-link">' + esc(p.author_name) + '</a></span>';
-        } else if (p.author_hidden || p.author_id > 0) {
-          authorPart = '<span class="jg-meta-author">ukryty</span>';
         }
 
         var dateInfo = (datePart || authorPart) ? '<div class="jg-date-info">' + datePart + (datePart && authorPart ? '<span class="jg-meta-sep">, przez&nbsp;</span>' : '') + authorPart + '</div>' : '';
@@ -7881,10 +7888,12 @@
         // Don't show voting for promo points or own points
         var voteHtml = '';
         if (!p.sponsored && !isOwnPoint) {
-          voteHtml = '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>';
+          var vc = +p.votes || 0;
+          voteHtml = '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(vc) + '">' + vc + '</span><span class="jg-vote-label">' + pluralVotes(vc) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>';
         } else if (!p.sponsored && isOwnPoint) {
           // Show compact vote count for own points (no voting buttons)
-          voteHtml = '<div class="jg-vote jg-vote--own"><span class="jg-vote-own-icon">🗳️</span><span class="cnt" id="v-cnt" style="' + colorForVotes(+p.votes || 0) + '">' + (p.votes || 0) + '</span><span class="jg-vote-own-label">głosów</span></div>';
+          var vc = +p.votes || 0;
+          voteHtml = '<div class="jg-vote jg-vote--own"><span class="jg-vote-own-icon">🗳️</span><span class="cnt" id="v-cnt" style="' + colorForVotes(vc) + '">' + vc + '</span><span class="jg-vote-own-label">' + pluralVotes(vc) + '</span></div>';
         }
 
         // Combine dateInfo and voteHtml into a single row
@@ -8483,6 +8492,8 @@
               cnt.setAttribute('style', colorForVotes(+n || 0));
               up.classList.toggle('active', my === 'up');
               down.classList.toggle('active', my === 'down');
+              var lbl = qs('.jg-vote-label', modalView);
+              if (lbl) lbl.textContent = pluralVotes(+n || 0);
             }
 
             function doVote(dir) {
