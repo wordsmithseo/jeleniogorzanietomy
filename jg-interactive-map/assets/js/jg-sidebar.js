@@ -68,10 +68,11 @@
             var label = $(this).attr('data-jg-tip') || '';
             if (!label) return;
 
+            // Make element visible for measurement but keep opacity:0 (from CSS)
             $tip
                 .text(label)
-                .removeClass('jg-badge-tooltip--above jg-badge-tooltip--below')
-                .css({ display: 'block', opacity: 0 });
+                .removeClass('jg-badge-tooltip--above jg-badge-tooltip--below jg-badge-tooltip--visible')
+                .css('display', 'block');
 
             var rect    = this.getBoundingClientRect();
             var tipW    = $tip.outerWidth(true);
@@ -81,7 +82,7 @@
 
             // Prefer above; fall back to below if not enough room
             var placeAbove = (rect.top - tipH - gap) >= margin;
-            var top, arrowFromTop;
+            var top;
             if (placeAbove) {
                 top = rect.top - tipH - gap;
                 $tip.addClass('jg-badge-tooltip--above');
@@ -90,19 +91,23 @@
                 $tip.addClass('jg-badge-tooltip--below');
             }
 
-            // Horizontal: centre over badge, then clamp
-            var idealLeft  = rect.left + rect.width / 2 - tipW / 2;
+            // Horizontal: centre over badge, then clamp to viewport
+            var idealLeft   = rect.left + rect.width / 2 - tipW / 2;
             var clampedLeft = Math.max(margin, Math.min(idealLeft, window.innerWidth - tipW - margin));
 
-            // Arrow should point at badge centre regardless of clamping
+            // Arrow points at badge centre regardless of clamping
             var arrowLeft = (rect.left + rect.width / 2) - clampedLeft;
-            arrowLeft = Math.max(8, Math.min(arrowLeft, tipW - 8)); // keep arrow inside box
+            arrowLeft = Math.max(8, Math.min(arrowLeft, tipW - 8));
 
             $tip.css({
                 top:  top + 'px',
                 left: clampedLeft + 'px',
                 '--arrow-left': arrowLeft + 'px'
-            }).addClass('jg-badge-tooltip--visible');
+            });
+
+            // Force reflow so CSS transition fires opacity:0 → 1
+            void $tip[0].offsetHeight;
+            $tip.addClass('jg-badge-tooltip--visible');
         });
 
         $('#jg-map-sidebar').on('mouseleave', '.jg-info-badge', function() {
