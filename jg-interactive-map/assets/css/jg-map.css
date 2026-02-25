@@ -4344,15 +4344,13 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   font-size: 13px;
   line-height: 1;
   cursor: default;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  transition: background 0.15s, border-color 0.15s;
   flex-shrink: 0;
 }
 
 .jg-map-sidebar .jg-info-badge:hover {
   background: #e9eaec;
   border-color: #c8cad0;
-  transform: translateY(-1px);
-  z-index: 10;
 }
 
 /* Tooltip is rendered as a fixed <div> by JS (jg-sidebar.js) to avoid
