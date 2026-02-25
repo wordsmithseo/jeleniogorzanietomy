@@ -218,7 +218,7 @@
         }
 
         // Build fingerprint from all visible/editable fields so any change triggers re-render
-        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}`).join(',');
+        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.address || ''}:${p.phone || ''}:${p.website || ''}:${p.images_count || 0}`).join(',');
         const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
         return pointsData + statsData;
     }
@@ -436,6 +436,7 @@
         }
 
         // Build item HTML
+        var infoBadgesHtml = buildInfoBadges(point);
         $item.html(`
             ${imageHtml}
             <div class="jg-sidebar-item__content">
@@ -447,6 +448,7 @@
                     ${votesHtml}
                     <div class="jg-sidebar-item__date">${point.date.human}</div>
                 </div>
+                ${infoBadgesHtml}
             </div>
         `);
 
@@ -458,6 +460,43 @@
         });
 
         return $item;
+    }
+
+    /**
+     * Build small info-badge strip for a point.
+     * Shows icon-only badges; tooltip text is set via data-jg-tip attribute
+     * and revealed via CSS :hover – fully independent of Elementor styles.
+     */
+    function buildInfoBadges(point) {
+        var badges = [];
+
+        if (point.address) {
+            badges.push({ icon: '📍', tip: point.address });
+        }
+        if (point.phone) {
+            badges.push({ icon: '📞', tip: point.phone });
+        }
+        if (point.website) {
+            badges.push({ icon: '🌐', tip: 'Strona www' });
+        }
+        if (point.images_count > 0) {
+            var photoLabel = point.images_count === 1 ? '1 zdjęcie' : point.images_count + ' zdjęcia';
+            if (point.images_count >= 5) {
+                photoLabel = point.images_count + ' zdjęć';
+            }
+            badges.push({ icon: '📷', tip: photoLabel });
+        }
+
+        if (badges.length === 0) {
+            return '';
+        }
+
+        var html = '<div class="jg-sidebar-item__info-badges">';
+        for (var i = 0; i < badges.length; i++) {
+            html += '<span class="jg-info-badge" data-jg-tip="' + escapeHtml(badges[i].tip) + '">' + badges[i].icon + '</span>';
+        }
+        html += '</div>';
+        return html;
     }
 
     /**

@@ -7567,7 +7567,11 @@ class JG_Map_Ajax_Handlers {
                     'raw' => $point['created_at'],
                     'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu'
                 ),
-                'featured_image' => $this->get_featured_image_url($point)
+                'featured_image' => $this->get_featured_image_url($point),
+                'address'        => !empty($point['address']) ? sanitize_text_field($point['address']) : '',
+                'phone'          => !empty($point['phone'])   ? sanitize_text_field($point['phone'])   : '',
+                'website'        => !empty($point['website']) ? esc_url_raw($point['website'])         : '',
+                'images_count'   => $this->get_images_count($point)
             );
         }
 
@@ -7621,6 +7625,17 @@ class JG_Map_Ajax_Handlers {
 
         // Old format: return string URL
         return $featured_image;
+    }
+
+    /**
+     * Get count of images for a point
+     */
+    private function get_images_count($point) {
+        if (empty($point['images'])) {
+            return 0;
+        }
+        $images = json_decode($point['images'], true);
+        return is_array($images) ? count($images) : 0;
     }
 
     /**
