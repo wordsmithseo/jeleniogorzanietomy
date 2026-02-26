@@ -3256,11 +3256,6 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   z-index: 1000 !important;
 }
 
-/* Reduce CartoDB tile labels – our custom layer handles place names */
-.jg-carto-labels {
-  opacity: 0.45;
-}
-
 /* Persistent Location Names – always visible on map */
 .jg-location-name {
   background: none !important;
@@ -3268,6 +3263,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   box-shadow: none !important;
   white-space: nowrap;
   pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 .jg-location-name span {
@@ -3297,11 +3293,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   letter-spacing: 0.06em;
 }
 
-/* Satellite view – hide CartoDB labels, use gold custom labels */
-.jg-map--satellite .jg-carto-labels {
-  opacity: 0 !important;
-}
-
+/* Satellite view – gold labels with dark outline */
 .jg-map--satellite .jg-location-name span {
   color: #fbbf24;
   opacity: 0.8;

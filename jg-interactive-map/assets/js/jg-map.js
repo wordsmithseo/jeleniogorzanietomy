@@ -2208,13 +2208,6 @@
         className: 'jg-map-tiles'
       });
 
-      // Labels overlay – street names at all zoom levels (place names handled by custom layer)
-      var labelsOverlay = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
-        pane: 'overlayPane',
-        className: 'jg-carto-labels'
-      });
 
       var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: '© Esri',
@@ -2258,7 +2251,6 @@
       } else {
         tileLayer.addTo(map);
       }
-      labelsOverlay.addTo(map);
 
       // Persistent location names – always visible regardless of zoom level
       map.createPane('locationNamesPane');
