@@ -3267,9 +3267,9 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 .jg-location-name span {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  font-size: 11px;
-  font-weight: 600;
-  color: #4a5568;
+  font-size: 10px;
+  font-weight: 500;
+  color: #9ca3af;
   text-shadow:
     -1px -1px 0 #fff,
      1px -1px 0 #fff,
@@ -3284,10 +3284,10 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 }
 
 .jg-location-name--major span {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: #2d3748;
-  letter-spacing: 0.05em;
+  color: #000;
+  letter-spacing: 0.06em;
 }
 
 /* Marker Labels */
