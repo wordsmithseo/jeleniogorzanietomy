@@ -2264,15 +2264,19 @@
       map.getPane('locationNamesPane').style.pointerEvents = 'none';
 
       var locationNames = [
-        // Major towns
+        // Major towns – large black labels
         { name: 'Jelenia Góra', lat: 50.8990, lng: 15.7340, major: true },
         { name: 'Karpacz', lat: 50.7760, lng: 15.7620, major: true },
         { name: 'Kowary', lat: 50.7910, lng: 15.8370, major: true },
         { name: 'Piechowice', lat: 50.8560, lng: 15.6160, major: true },
-        // Districts and smaller towns
+        { name: 'Szklarska Poręba', lat: 50.8270, lng: 15.5280, major: true },
+        // Districts, villages, smaller towns – faded labels
         { name: 'Cieplice Śląskie-Zdrój', lat: 50.8700, lng: 15.6720 },
         { name: 'Sobieszów', lat: 50.8420, lng: 15.6490 },
         { name: 'Jagniątków', lat: 50.8100, lng: 15.6280 },
+        { name: 'Goduszyn', lat: 50.8230, lng: 15.6490 },
+        { name: 'Maciejowa', lat: 50.8130, lng: 15.6700 },
+        { name: 'Wojcieszyce', lat: 50.8690, lng: 15.6100 },
         { name: 'Podgórzyn', lat: 50.8290, lng: 15.6940 },
         { name: 'Mysłakowice', lat: 50.8440, lng: 15.7830 },
         { name: 'Łomnica', lat: 50.8390, lng: 15.7540 },
@@ -2284,7 +2288,23 @@
         { name: 'Stara Kamienica', lat: 50.9230, lng: 15.6190 },
         { name: 'Borowice', lat: 50.8340, lng: 15.7250 },
         { name: 'Staniszów', lat: 50.8520, lng: 15.7260 },
-        { name: 'Radomierz', lat: 50.8790, lng: 15.7820 }
+        { name: 'Radomierz', lat: 50.8790, lng: 15.7820 },
+        { name: 'Przesieka', lat: 50.8030, lng: 15.7080 },
+        { name: 'Sosnówka', lat: 50.7960, lng: 15.7550 },
+        { name: 'Bukowiec', lat: 50.8110, lng: 15.7800 },
+        { name: 'Dziwiszów', lat: 50.8600, lng: 15.7030 },
+        { name: 'Zachełmie', lat: 50.8460, lng: 15.6730 },
+        { name: 'Czarne', lat: 50.8670, lng: 15.7480 },
+        { name: 'Barcinek', lat: 50.9120, lng: 15.6570 },
+        { name: 'Marczyce', lat: 50.8580, lng: 15.6460 },
+        { name: 'Mniszków', lat: 50.8700, lng: 15.8080 },
+        { name: 'Grudno', lat: 50.8470, lng: 15.8150 },
+        { name: 'Strużnica', lat: 50.8930, lng: 15.7700 },
+        { name: 'Różanka', lat: 50.8320, lng: 15.6310 },
+        { name: 'Chromiec', lat: 50.9040, lng: 15.6210 },
+        { name: 'Kromnów', lat: 50.9300, lng: 15.6530 },
+        { name: 'Wojków', lat: 50.9150, lng: 15.7500 },
+        { name: 'Mała Kamienica', lat: 50.9100, lng: 15.6090 }
       ];
 
       var locationNamesGroup = L.layerGroup({ pane: 'locationNamesPane' });
