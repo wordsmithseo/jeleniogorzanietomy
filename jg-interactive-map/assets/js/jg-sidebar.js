@@ -293,7 +293,7 @@
         }
 
         // Build fingerprint from all visible/editable fields so any change triggers re-render
-        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}`).join(',');
+        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}:${p.has_internal_links ? 1 : 0}:${p.has_external_links ? 1 : 0}:${p.is_indexed ? 1 : 0}`).join(',');
         const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
         return pointsData + statsData;
     }
@@ -561,13 +561,35 @@
             badges.push({ icon: '📷', tip: photoLabel });
         }
 
-        if (badges.length === 0) {
+        // Admin/moderator-only badges
+        var adminBadges = [];
+        if (window.JG_MAP_CFG && JG_MAP_CFG.isAdmin) {
+            if (point.has_internal_links) {
+                adminBadges.push({ icon: '🔗', tip: 'Linki do pinesek' });
+            }
+            if (point.has_external_links) {
+                adminBadges.push({ icon: '🌐', tip: 'Linki zewnętrzne' });
+            }
+            if (typeof point.is_indexed !== 'undefined') {
+                if (point.is_indexed) {
+                    adminBadges.push({ icon: '✅', tip: 'W indeksie Google', cls: 'jg-info-badge--admin jg-info-badge--indexed' });
+                } else {
+                    adminBadges.push({ icon: '❌', tip: 'Brak w indeksie Google', cls: 'jg-info-badge--admin jg-info-badge--not-indexed' });
+                }
+            }
+        }
+
+        if (badges.length === 0 && adminBadges.length === 0) {
             return '';
         }
 
         var html = '<div class="jg-sidebar-item__info-badges">';
         for (var i = 0; i < badges.length; i++) {
             html += '<span class="jg-info-badge" data-jg-tip="' + escapeHtml(badges[i].tip) + '">' + badges[i].icon + '</span>';
+        }
+        for (var j = 0; j < adminBadges.length; j++) {
+            var cls = adminBadges[j].cls || 'jg-info-badge--admin';
+            html += '<span class="jg-info-badge ' + cls + '" data-jg-tip="' + escapeHtml(adminBadges[j].tip) + '">' + adminBadges[j].icon + '</span>';
         }
         html += '</div>';
         return html;
