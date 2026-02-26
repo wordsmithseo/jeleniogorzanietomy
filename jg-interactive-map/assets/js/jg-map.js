@@ -2258,6 +2258,51 @@
       }
       labelsOverlay.addTo(map);
 
+      // Persistent location names – always visible regardless of zoom level
+      map.createPane('locationNamesPane');
+      map.getPane('locationNamesPane').style.zIndex = 450;
+      map.getPane('locationNamesPane').style.pointerEvents = 'none';
+
+      var locationNames = [
+        // Major towns
+        { name: 'Jelenia Góra', lat: 50.8990, lng: 15.7340, major: true },
+        { name: 'Karpacz', lat: 50.7760, lng: 15.7620, major: true },
+        { name: 'Kowary', lat: 50.7910, lng: 15.8370, major: true },
+        { name: 'Piechowice', lat: 50.8560, lng: 15.6160, major: true },
+        // Districts and smaller towns
+        { name: 'Cieplice Śląskie-Zdrój', lat: 50.8700, lng: 15.6720 },
+        { name: 'Sobieszów', lat: 50.8420, lng: 15.6490 },
+        { name: 'Jagniątków', lat: 50.8100, lng: 15.6280 },
+        { name: 'Podgórzyn', lat: 50.8290, lng: 15.6940 },
+        { name: 'Mysłakowice', lat: 50.8440, lng: 15.7830 },
+        { name: 'Łomnica', lat: 50.8390, lng: 15.7540 },
+        { name: 'Miłków', lat: 50.8170, lng: 15.7330 },
+        { name: 'Wojanów', lat: 50.8550, lng: 15.7660 },
+        { name: 'Jeżów Sudecki', lat: 50.9000, lng: 15.6580 },
+        { name: 'Siedlęcin', lat: 50.9190, lng: 15.6900 },
+        { name: 'Janowice Wielkie', lat: 50.8770, lng: 15.8200 },
+        { name: 'Stara Kamienica', lat: 50.9230, lng: 15.6190 },
+        { name: 'Borowice', lat: 50.8340, lng: 15.7250 },
+        { name: 'Staniszów', lat: 50.8520, lng: 15.7260 },
+        { name: 'Radomierz', lat: 50.8790, lng: 15.7820 }
+      ];
+
+      var locationNamesGroup = L.layerGroup({ pane: 'locationNamesPane' });
+
+      locationNames.forEach(function(loc) {
+        var cls = loc.major ? 'jg-location-name jg-location-name--major' : 'jg-location-name';
+        var icon = L.divIcon({
+          className: cls,
+          html: '<span>' + loc.name + '</span>',
+          iconSize: null,
+          iconAnchor: [0, 0]
+        });
+        L.marker([loc.lat, loc.lng], { icon: icon, interactive: false, pane: 'locationNamesPane' })
+          .addTo(locationNamesGroup);
+      });
+
+      locationNamesGroup.addTo(map);
+
       // Map/Satellite toggle control
       var MapToggleControl = L.Control.extend({
         options: { position: 'topright' },
