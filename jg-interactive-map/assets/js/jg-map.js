@@ -2208,11 +2208,12 @@
         className: 'jg-map-tiles'
       });
 
-      // Labels overlay – place names + street names at all zoom levels
+      // Labels overlay – street names at all zoom levels (place names handled by custom layer)
       var labelsOverlay = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
         maxZoom: 19,
         subdomains: 'abcd',
-        pane: 'overlayPane'
+        pane: 'overlayPane',
+        className: 'jg-carto-labels'
       });
 
       var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -2253,6 +2254,7 @@
 
       if (currentLayerIsSatellite) {
         satelliteLayer.addTo(map);
+        elMap.classList.add('jg-map--satellite');
       } else {
         tileLayer.addTo(map);
       }
@@ -2354,6 +2356,7 @@
               map.removeLayer(satelliteLayer);
               tileLayer.addTo(map);
               currentLayerIsSatellite = false;
+              elMap.classList.remove('jg-map--satellite');
               toggle.setAttribute('data-active', 'map');
               labelMap.classList.add('jg-map-toggle-label--active');
               labelSat.classList.remove('jg-map-toggle-label--active');
@@ -2362,6 +2365,7 @@
               map.removeLayer(tileLayer);
               satelliteLayer.addTo(map);
               currentLayerIsSatellite = true;
+              elMap.classList.add('jg-map--satellite');
               toggle.setAttribute('data-active', 'satellite');
               labelSat.classList.add('jg-map-toggle-label--active');
               labelMap.classList.remove('jg-map-toggle-label--active');
