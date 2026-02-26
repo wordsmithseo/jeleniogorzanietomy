@@ -3256,6 +3256,11 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   z-index: 1000 !important;
 }
 
+/* Reduce CartoDB tile labels – our custom layer handles place names */
+.jg-carto-labels {
+  opacity: 0.45;
+}
+
 /* Persistent Location Names – always visible on map */
 .jg-location-name {
   background: none !important;
@@ -3268,8 +3273,9 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 .jg-location-name span {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   font-size: 10px;
-  font-weight: 500;
-  color: #9ca3af;
+  font-weight: 600;
+  color: #000;
+  opacity: 0.8;
   text-shadow:
     -1px -1px 0 #fff,
      1px -1px 0 #fff,
@@ -3287,7 +3293,28 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   font-size: 14px;
   font-weight: 700;
   color: #000;
+  opacity: 1;
   letter-spacing: 0.06em;
+}
+
+/* Satellite view – gold labels, dark outline instead of white */
+.jg-map--satellite .jg-location-name span {
+  color: #fbbf24;
+  opacity: 0.8;
+  text-shadow:
+    -1px -1px 2px rgba(0, 0, 0, 0.8),
+     1px -1px 2px rgba(0, 0, 0, 0.8),
+    -1px  1px 2px rgba(0, 0, 0, 0.8),
+     1px  1px 2px rgba(0, 0, 0, 0.8),
+     0   -1px 2px rgba(0, 0, 0, 0.8),
+     0    1px 2px rgba(0, 0, 0, 0.8),
+    -1px  0   2px rgba(0, 0, 0, 0.8),
+     1px  0   2px rgba(0, 0, 0, 0.8);
+}
+
+.jg-map--satellite .jg-location-name--major span {
+  color: #fcd34d;
+  opacity: 1;
 }
 
 /* Marker Labels */
