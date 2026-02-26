@@ -3275,7 +3275,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   font-size: 10px;
   font-weight: 600;
   color: #000;
-  opacity: 0.8;
+  opacity: 0.6;
   text-shadow:
     -1px -1px 0 #fff,
      1px -1px 0 #fff,
@@ -3297,7 +3297,11 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   letter-spacing: 0.06em;
 }
 
-/* Satellite view – gold labels, dark outline instead of white */
+/* Satellite view – hide CartoDB labels, use gold custom labels */
+.jg-map--satellite .jg-carto-labels {
+  opacity: 0 !important;
+}
+
 .jg-map--satellite .jg-location-name span {
   color: #fbbf24;
   opacity: 0.8;
