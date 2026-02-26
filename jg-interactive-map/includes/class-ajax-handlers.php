@@ -7551,9 +7551,10 @@ class JG_Map_Ajax_Handlers {
         $sorted_points = array_merge($sponsored_points, $regular_points);
 
         // Build simplified result for sidebar
+        $is_admin_or_mod = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $result = array();
         foreach ($sorted_points as $point) {
-            $result[] = array(
+            $item = array(
                 'id' => $point['id'],
                 'title' => $point['title'],
                 'slug' => $point['slug'],
@@ -7573,6 +7574,16 @@ class JG_Map_Ajax_Handlers {
                 'category'         => !empty($point['category']) ? sanitize_text_field($point['category']) : '',
                 'images_count'     => $this->get_images_count($point)
             );
+
+            // Admin/moderator-only fields
+            if ($is_admin_or_mod) {
+                $content = $point['content'] ?? '';
+                $item['has_internal_links'] = $this->point_has_internal_links($content);
+                $item['has_external_links'] = $this->point_has_external_links($content);
+                $item['is_indexed'] = $this->point_is_indexed($point);
+            }
+
+            $result[] = $item;
         }
 
         // Calculate statistics
@@ -7647,6 +7658,92 @@ class JG_Map_Ajax_Handlers {
         }
         $images = json_decode($point['images'], true);
         return is_array($images) ? count($images) : 0;
+    }
+
+    /**
+     * Check whether point content contains links to other pins (internal links).
+     * Matches URLs like /miejsce/slug, /ciekawostka/slug, /zgloszenie/slug
+     * or full URLs pointing to the same site with those patterns.
+     */
+    private function point_has_internal_links($content) {
+        if (empty($content)) {
+            return false;
+        }
+        $site_host = wp_parse_url(home_url(), PHP_URL_HOST);
+        $escaped_host = preg_quote($site_host, '/');
+        // Match href attributes containing internal pin URLs
+        $pattern = '/href=["\'](?:https?:\/\/' . $escaped_host . ')?\/(miejsce|ciekawostka|zgloszenie)\/[^"\']+["\']/i';
+        return (bool) preg_match($pattern, $content);
+    }
+
+    /**
+     * Check whether point content contains external links (links to other domains).
+     */
+    private function point_has_external_links($content) {
+        if (empty($content)) {
+            return false;
+        }
+        $site_host = wp_parse_url(home_url(), PHP_URL_HOST);
+        // Find all href URLs in content
+        if (!preg_match_all('/href=["\'](?:https?:\/\/)([^"\'\/]+)/i', $content, $matches)) {
+            return false;
+        }
+        foreach ($matches[1] as $host) {
+            $host = strtolower($host);
+            if ($host !== strtolower($site_host) && $host !== 'www.' . strtolower($site_host)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check whether point page is indexed by Google.
+     * Uses cached result from transient (24h TTL).
+     * Checks Google via site: search query.
+     */
+    private function point_is_indexed($point) {
+        if (empty($point['slug']) || empty($point['type'])) {
+            return false;
+        }
+
+        $point_url = home_url('/' . $point['type'] . '/' . $point['slug'] . '/');
+        $transient_key = 'jg_indexed_' . md5($point_url);
+
+        $cached = get_transient($transient_key);
+        if ($cached !== false) {
+            return $cached === 'yes';
+        }
+
+        // Check Google index via site: query
+        $check_url = 'https://www.google.com/search?q=' . urlencode('site:' . $point_url) . '&num=1';
+        $response = wp_remote_get($check_url, array(
+            'timeout' => 5,
+            'user-agent' => 'Mozilla/5.0 (compatible; JGMapBot/1.0)',
+            'sslverify' => false,
+        ));
+
+        if (is_wp_error($response)) {
+            // On error, cache as unknown for 1 hour
+            set_transient($transient_key, 'no', HOUR_IN_SECONDS);
+            return false;
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        $status_code = wp_remote_retrieve_response_code($response);
+
+        // If Google returns 429 (rate limited), cache briefly and return unknown
+        if ($status_code === 429) {
+            set_transient($transient_key, 'no', 15 * MINUTE_IN_SECONDS);
+            return false;
+        }
+
+        // Check if the page appears in results
+        // Google shows "did not match any documents" when not indexed
+        $is_indexed = (strpos($body, $point['slug']) !== false) && (strpos($body, 'did not match any') === false);
+
+        set_transient($transient_key, $is_indexed ? 'yes' : 'no', DAY_IN_SECONDS);
+        return $is_indexed;
     }
 
     /**
