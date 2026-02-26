@@ -3256,63 +3256,6 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   z-index: 1000 !important;
 }
 
-/* Persistent Location Names – always visible on map */
-.jg-location-name {
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  white-space: nowrap;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-}
-
-.jg-location-name span {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  font-size: 10px;
-  font-weight: 600;
-  color: #000;
-  opacity: 0.6;
-  text-shadow:
-    -1px -1px 0 #fff,
-     1px -1px 0 #fff,
-    -1px  1px 0 #fff,
-     1px  1px 0 #fff,
-     0   -1px 0 #fff,
-     0    1px 0 #fff,
-    -1px  0   0 #fff,
-     1px  0   0 #fff;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.jg-location-name--major span {
-  font-size: 14px;
-  font-weight: 700;
-  color: #000;
-  opacity: 1;
-  letter-spacing: 0.06em;
-}
-
-/* Satellite view – gold labels with dark outline */
-.jg-map--satellite .jg-location-name span {
-  color: #fbbf24;
-  opacity: 0.8;
-  text-shadow:
-    -1px -1px 2px rgba(0, 0, 0, 0.8),
-     1px -1px 2px rgba(0, 0, 0, 0.8),
-    -1px  1px 2px rgba(0, 0, 0, 0.8),
-     1px  1px 2px rgba(0, 0, 0, 0.8),
-     0   -1px 2px rgba(0, 0, 0, 0.8),
-     0    1px 2px rgba(0, 0, 0, 0.8),
-    -1px  0   2px rgba(0, 0, 0, 0.8),
-     1px  0   2px rgba(0, 0, 0, 0.8);
-}
-
-.jg-map--satellite .jg-location-name--major span {
-  color: #fcd34d;
-  opacity: 1;
-}
-
 /* Marker Labels */
 .jg-marker-label {
   position: absolute;
