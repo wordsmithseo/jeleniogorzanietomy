@@ -2310,6 +2310,135 @@
 
       map.addControl(new MapToggleControl());
 
+      // Mobile: Filter button on the map (topright, next to map/satellite toggle)
+      if (isMobile) {
+        var MobileFilterControl = L.Control.extend({
+          options: { position: 'topright' },
+          onAdd: function() {
+            var container = L.DomUtil.create('div', 'jg-mobile-map-filter-control leaflet-bar');
+            var filterIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
+            container.innerHTML =
+              '<button class="jg-mobile-map-filter-btn" type="button" title="Filtry">' +
+                filterIcon +
+              '</button>';
+
+            L.DomEvent.disableClickPropagation(container);
+            L.DomEvent.disableScrollPropagation(container);
+
+            var btn = container.querySelector('.jg-mobile-map-filter-btn');
+
+            // Create floating filter panel on the map
+            var filterPanel = document.createElement('div');
+            filterPanel.className = 'jg-mobile-map-filter-panel';
+            filterPanel.style.display = 'none';
+
+            // Clone filters into the panel
+            var filtersEl = document.getElementById('jg-map-filters');
+            if (filtersEl) {
+              var filtersClone = filtersEl.cloneNode(true);
+              filtersClone.removeAttribute('id');
+
+              // Remove duplicate IDs from cloned elements to avoid DOM conflicts
+              filtersClone.querySelectorAll('[id]').forEach(function(el) {
+                el.removeAttribute('id');
+              });
+
+              // Wire up cloned search to trigger the original search
+              var clonedSearchInput = filtersClone.querySelector('input[type="text"]');
+              var clonedSearchBtn = filtersClone.querySelector('.jg-search-btn');
+              var origSearchInput = document.getElementById('jg-search-input');
+              var origSearchBtn = document.getElementById('jg-search-btn');
+
+              if (clonedSearchInput && origSearchInput) {
+                clonedSearchInput.addEventListener('keydown', function(e) {
+                  if (e.key === 'Enter') {
+                    origSearchInput.value = clonedSearchInput.value;
+                    if (origSearchBtn) origSearchBtn.click();
+                    clonedSearchInput.blur();
+                  }
+                });
+                clonedSearchInput.addEventListener('input', function() {
+                  origSearchInput.value = clonedSearchInput.value;
+                  origSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+              }
+              if (clonedSearchBtn && origSearchBtn && clonedSearchInput && origSearchInput) {
+                clonedSearchBtn.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  origSearchInput.value = clonedSearchInput.value;
+                  origSearchBtn.click();
+                });
+              }
+
+              filterPanel.appendChild(filtersClone);
+
+              // Sync checkbox clicks from clone to original
+              var cloneCheckboxes = filtersClone.querySelectorAll('input[type="checkbox"]');
+              cloneCheckboxes.forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                  var origCb;
+                  if (cb.dataset.type) {
+                    origCb = filtersEl.querySelector('input[data-type="' + cb.dataset.type + '"]');
+                  } else if (cb.hasAttribute('data-my-places')) {
+                    origCb = filtersEl.querySelector('input[data-my-places]');
+                  } else if (cb.hasAttribute('data-promo')) {
+                    origCb = filtersEl.querySelector('input[data-promo]');
+                  }
+                  if (origCb) {
+                    origCb.checked = cb.checked;
+                    origCb.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                });
+              });
+
+              // Also sync original → clone when original changes
+              var origCheckboxes = filtersEl.querySelectorAll('input[type="checkbox"]');
+              origCheckboxes.forEach(function(origCb) {
+                origCb.addEventListener('change', function() {
+                  var cloneCb;
+                  if (origCb.dataset.type) {
+                    cloneCb = filtersClone.querySelector('input[data-type="' + origCb.dataset.type + '"]');
+                  } else if (origCb.hasAttribute('data-my-places')) {
+                    cloneCb = filtersClone.querySelector('input[data-my-places]');
+                  } else if (origCb.hasAttribute('data-promo')) {
+                    cloneCb = filtersClone.querySelector('input[data-promo]');
+                  }
+                  if (cloneCb && cloneCb.checked !== origCb.checked) {
+                    cloneCb.checked = origCb.checked;
+                  }
+                });
+              });
+            }
+
+            // Prevent map interactions in the filter panel
+            L.DomEvent.disableClickPropagation(filterPanel);
+            L.DomEvent.disableScrollPropagation(filterPanel);
+
+            elMap.appendChild(filterPanel);
+
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var isOpen = filterPanel.style.display !== 'none';
+              filterPanel.style.display = isOpen ? 'none' : 'block';
+              btn.classList.toggle('jg-active', !isOpen);
+            });
+
+            // Close panel when clicking on the map
+            elMap.addEventListener('click', function() {
+              if (filterPanel.style.display !== 'none') {
+                filterPanel.style.display = 'none';
+                btn.classList.remove('jg-active');
+              }
+            });
+
+            return container;
+          }
+        });
+
+        map.addControl(new MobileFilterControl());
+      }
+
       // Fullscreen control - positioned next to zoom controls (topleft)
       var isFullscreen = false;
       var FullscreenControl = L.Control.extend({

@@ -1738,21 +1738,28 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 /* Mobile responsive */
 @media (max-width: 768px) {
-  /* Fix map height on mobile - Grid doesn't work well, use fixed height */
+  /* Hide filter bar above map on mobile - filters are now on the map */
+  #jg-map-filters-wrapper {
+    display: none !important;
+  }
+
+  /* Map fills entire available container space */
   .jg-wrap,
   #jg-map-wrap {
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
-    height: auto !important;
-    min-height: auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
     max-height: none !important;
+    flex: 1 1 0% !important;
   }
 
   .jg-map {
-    height: 80dvh !important;
-    min-height: 400px !important;
-    max-height: 80dvh !important;
+    flex: 1 1 0% !important;
+    height: 100% !important;
+    min-height: 300px !important;
+    max-height: none !important;
     overflow: hidden !important;
     flex-shrink: 0 !important;
   }
@@ -5416,26 +5423,63 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 }
 
-/* Mobile: Override Elementor container heights for map */
+/* Mobile: Override Elementor container heights for map – fill entire container */
 @media (max-width: 768px) {
+  /* Force Elementor containers to pass height down to the map */
+  .elementor-element:has(> .elementor-widget-container > #jg-map-wrap),
+  .elementor-element:has(> .elementor-widget-container > .jg-wrap),
+  .elementor-widget:has(#jg-map-wrap),
+  .elementor-widget:has(.jg-wrap) {
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  .elementor-element > .elementor-widget-container:has(#jg-map-wrap),
+  .elementor-element > .elementor-widget-container:has(.jg-wrap) {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
   .elementor-element .jg-wrap,
   .elementor-widget .jg-wrap,
   .elementor-element #jg-map-wrap,
   .elementor-widget #jg-map-wrap {
-    height: auto !important;
-    min-height: auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
     max-height: none !important;
+    flex: 1 1 0% !important;
   }
 
-  /* Ensure the map container inside Elementor behaves correctly */
+  /* Ensure the map container inside Elementor fills available space */
   .elementor-element .jg-map,
   .elementor-widget .jg-map,
   .elementor-element #jg-map,
   .elementor-widget #jg-map {
-    height: 80dvh !important;
-    min-height: 400px !important;
-    max-height: 80dvh !important;
+    flex: 1 1 0% !important;
+    height: 100% !important;
+    min-height: 300px !important;
+    max-height: none !important;
     flex-shrink: 0 !important;
+  }
+
+  /* Prevent Elementor from overriding padding/margin on the map section */
+  .elementor-element .jg-map *,
+  .elementor-widget .jg-map * {
+    box-sizing: border-box;
+  }
+
+  /* Prevent Elementor's default section heights from squishing the map */
+  .elementor-section:has(#jg-map-wrap),
+  .elementor-container:has(#jg-map-wrap),
+  .elementor-column:has(#jg-map-wrap),
+  .elementor-column-wrap:has(#jg-map-wrap),
+  .elementor-widget-wrap:has(#jg-map-wrap),
+  .e-con:has(#jg-map-wrap),
+  .e-con-inner:has(#jg-map-wrap) {
+    height: 100% !important;
+    min-height: 0 !important;
   }
 }
 
@@ -6944,4 +6988,164 @@ a.jg-dir-tag-inline:hover {
     width: 100% !important;
     height: auto !important;
   }
+}
+
+/* ========================================
+   MOBILE: ON-MAP FILTER BUTTON & PANEL
+   Styled to match the map/satellite toggle
+   ======================================== */
+
+/* Hide on desktop – only visible on mobile (created by JS only on mobile) */
+.jg-mobile-map-filter-control {
+  background: #fff;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  border: none !important;
+  overflow: hidden;
+}
+
+.jg-mobile-map-filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  color: #374151;
+  transition: background 0.2s, color 0.2s;
+  padding: 0;
+  font-size: 0;
+  line-height: 1;
+}
+
+.jg-mobile-map-filter-btn:hover,
+.jg-mobile-map-filter-btn:active {
+  background: #f3f4f6;
+}
+
+.jg-mobile-map-filter-btn.jg-active {
+  background: #8d2324;
+  color: #fff;
+}
+
+.jg-mobile-map-filter-btn svg {
+  display: block;
+}
+
+/* Floating filter panel on the map (mobile) */
+.jg-mobile-map-filter-panel {
+  position: absolute;
+  top: 54px;
+  right: 10px;
+  z-index: 1002;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  width: calc(100vw - 80px);
+  max-width: 280px;
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Filters inside the on-map panel: vertical layout */
+.jg-mobile-map-filter-panel .jg-filters {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 0;
+  background: transparent;
+  margin-bottom: 0;
+  border-radius: 0;
+}
+
+.jg-mobile-map-filter-panel .jg-filter-label {
+  justify-content: flex-start;
+  width: 100%;
+  padding: 10px 8px;
+  min-width: unset;
+  border: none;
+  border-radius: 8px;
+  gap: 10px;
+}
+
+.jg-mobile-map-filter-panel .jg-filter-label:hover {
+  background: #f3f4f6;
+}
+
+/* Show both icon and text in the panel */
+.jg-mobile-map-filter-panel .jg-filter-icon {
+  display: block;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.jg-mobile-map-filter-panel .jg-filter-text {
+  display: inline !important;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Show checkboxes in the panel */
+.jg-mobile-map-filter-panel .jg-filter-label input[type="checkbox"] {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Checked state visual feedback */
+.jg-mobile-map-filter-panel .jg-filter-label:has(input[type="checkbox"]:checked) {
+  background: rgba(141, 35, 36, 0.08);
+}
+
+/* Search input inside the panel */
+.jg-mobile-map-filter-panel .jg-search {
+  width: 100%;
+  margin-top: 4px;
+  max-width: none;
+  min-width: unset;
+}
+
+.jg-mobile-map-filter-panel .jg-search input {
+  font-size: 13px;
+  padding: 8px 36px 8px 12px;
+}
+
+/* Hide expand arrows in the compact mobile panel */
+.jg-mobile-map-filter-panel .jg-filter-expand-btn {
+  display: none;
+}
+
+/* Mobile: arrange topright Leaflet controls in a row (filter btn left of toggle) */
+@media (max-width: 768px) {
+  #jg-map .leaflet-top.leaflet-right {
+    display: flex !important;
+    flex-direction: row-reverse !important;
+    align-items: flex-start !important;
+    gap: 6px;
+    top: 10px !important;
+    right: 10px !important;
+  }
+
+  #jg-map .leaflet-top.leaflet-right .leaflet-control {
+    margin: 0 !important;
+    float: none !important;
+    clear: none !important;
+  }
+}
+
+/* Hide mobile on-map filter button in fullscreen mode (fullscreen has its own filter UI) */
+#jg-map-wrap.jg-fullscreen .jg-mobile-map-filter-control {
+  display: none !important;
+}
+
+#jg-map-wrap.jg-fullscreen .jg-mobile-map-filter-panel {
+  display: none !important;
 }
