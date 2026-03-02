@@ -3100,15 +3100,16 @@
         setTimeout(function() {
           try {
             // Single cluster with grid layout showing types
-            // maxClusterRadius as function: breaks apart naturally when zooming in
-            // At high zoom (17-18), small radius. At max zoom (19), larger to prevent breaking apart
+            // maxClusterRadius as function: breaks apart naturally when zooming in.
+            // Radius must be monotonically non-increasing so that zooming in
+            // never re-clusters markers that were already visible (unclustered).
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: function(zoom) {
                 // zoom < 17: Normal clusters (80px radius)
                 // zoom 17-18: Special clusters (35px radius) - only very close places
-                // zoom 19: Special clusters (50px radius) - larger to prevent breaking apart but not too large
-                if (zoom >= 19) return 50;
+                // zoom 19 (max): Tiny radius (5px) - only truly overlapping markers
+                if (zoom >= 19) return 5;
                 if (zoom >= 17) return 35;
                 return 80;
               },

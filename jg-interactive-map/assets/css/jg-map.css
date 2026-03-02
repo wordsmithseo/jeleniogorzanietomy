@@ -854,6 +854,10 @@ body.jg-fullscreen-active #jg-search-panel {
 }
 
 /* ── Fullscreen search results panel: base styles (all screen sizes) ── */
+.jg-fs-search-results-panel {
+  display: none;
+}
+
 .jg-fs-search-header {
   display: flex !important;
   align-items: center !important;
