@@ -7580,7 +7580,15 @@ class JG_Map_Ajax_Handlers {
                 $content = $point['content'] ?? '';
                 $item['has_internal_links'] = $this->point_has_internal_links($content);
                 $item['has_external_links'] = $this->point_has_external_links($content);
-                $item['is_indexed'] = $this->point_is_indexed($point);
+                $index_status = $this->point_is_indexed($point);
+                // Pass true, false, or null (for 'unknown')
+                if ($index_status === 'yes') {
+                    $item['is_indexed'] = true;
+                } elseif ($index_status === 'no') {
+                    $item['is_indexed'] = false;
+                } else {
+                    $item['is_indexed'] = null; // unknown
+                }
             }
 
             $result[] = $item;
@@ -7700,11 +7708,16 @@ class JG_Map_Ajax_Handlers {
     /**
      * Check whether point page is indexed by Google.
      * Uses cached result from transient (24h TTL).
-     * Checks Google via site: search query.
+     * Returns 'yes', 'no', or 'unknown'.
+     *
+     * NOTE: Server-side Google scraping is inherently unreliable (consent
+     * pages, CAPTCHAs, rate limits). The method is conservative — it only
+     * reports 'yes' or 'no' when the response clearly confirms either state;
+     * otherwise it reports 'unknown'.
      */
     private function point_is_indexed($point) {
         if (empty($point['slug']) || empty($point['type'])) {
-            return false;
+            return 'unknown';
         }
 
         $point_url = home_url('/' . $point['type'] . '/' . $point['slug'] . '/');
@@ -7712,38 +7725,100 @@ class JG_Map_Ajax_Handlers {
 
         $cached = get_transient($transient_key);
         if ($cached !== false) {
-            return $cached === 'yes';
+            return $cached; // 'yes', 'no', or 'unknown'
         }
 
-        // Check Google index via site: query
-        $check_url = 'https://www.google.com/search?q=' . urlencode('site:' . $point_url) . '&num=1';
+        $site_host = strtolower(wp_parse_url(home_url(), PHP_URL_HOST));
+
+        // Force English locale for consistent "did not match" text
+        $check_url = 'https://www.google.com/search?q=' . urlencode('site:' . $point_url) . '&num=1&hl=en';
         $response = wp_remote_get($check_url, array(
-            'timeout' => 5,
-            'user-agent' => 'Mozilla/5.0 (compatible; JGMapBot/1.0)',
-            'sslverify' => false,
+            'timeout' => 8,
+            'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'sslverify' => true,
+            'headers' => array(
+                'Accept'          => 'text/html,application/xhtml+xml',
+                'Accept-Language' => 'en-US,en;q=0.9',
+            ),
         ));
 
         if (is_wp_error($response)) {
-            // On error, cache as unknown for 1 hour
-            set_transient($transient_key, 'no', HOUR_IN_SECONDS);
-            return false;
+            set_transient($transient_key, 'unknown', HOUR_IN_SECONDS);
+            return 'unknown';
         }
 
         $body = wp_remote_retrieve_body($response);
         $status_code = wp_remote_retrieve_response_code($response);
 
-        // If Google returns 429 (rate limited), cache briefly and return unknown
+        // Rate limited
         if ($status_code === 429) {
-            set_transient($transient_key, 'no', 15 * MINUTE_IN_SECONDS);
-            return false;
+            set_transient($transient_key, 'unknown', 15 * MINUTE_IN_SECONDS);
+            return 'unknown';
         }
 
-        // Check if the page appears in results
-        // Google shows "did not match any documents" when not indexed
-        $is_indexed = (strpos($body, $point['slug']) !== false) && (strpos($body, 'did not match any') === false);
+        // Non-200 response
+        if ($status_code !== 200 || empty($body)) {
+            set_transient($transient_key, 'unknown', HOUR_IN_SECONDS);
+            return 'unknown';
+        }
 
-        set_transient($transient_key, $is_indexed ? 'yes' : 'no', DAY_IN_SECONDS);
-        return $is_indexed;
+        // Detect consent / CAPTCHA pages — these do NOT contain real results
+        if (
+            stripos($body, 'consent.google') !== false ||
+            stripos($body, 'captcha') !== false ||
+            stripos($body, 'before you continue') !== false ||
+            stripos($body, 'unusual traffic') !== false ||
+            // No <title> with "Google" + query → probably not a real SERP
+            stripos($body, '<title>') === false
+        ) {
+            set_transient($transient_key, 'unknown', HOUR_IN_SECONDS);
+            return 'unknown';
+        }
+
+        // Definite "no results" — page is NOT indexed
+        if (
+            stripos($body, 'did not match any') !== false ||
+            stripos($body, 'no results found') !== false
+        ) {
+            set_transient($transient_key, 'no', DAY_IN_SECONDS);
+            return 'no';
+        }
+
+        // Look for actual search result containing our domain + slug.
+        // Google shows the URL in <cite> tags and in result <a> links.
+        // We must NOT match the query bar / search form which also echoes the slug.
+        $escaped_host = preg_quote($site_host, '/');
+        $escaped_slug = preg_quote($point['slug'], '/');
+
+        // Check <cite> elements (Google shows URL here)
+        $has_cite = (bool) preg_match(
+            '/<cite[^>]*>[^<]*' . $escaped_host . '[^<]*' . $escaped_slug . '[^<]*<\/cite>/i',
+            $body
+        );
+
+        // Check result links containing our full URL pattern
+        $has_result_link = (bool) preg_match(
+            '/<a[^>]+href="https?:\/\/[^"]*' . $escaped_host . '[^"]*\/' . $escaped_slug . '[^"]*"/i',
+            $body
+        );
+
+        // Also check result-stats div exists (confirms we got a real SERP page)
+        $has_result_stats = (bool) preg_match('/<div[^>]+id="result-stats"/i', $body);
+
+        if (($has_cite || $has_result_link) && $has_result_stats) {
+            set_transient($transient_key, 'yes', DAY_IN_SECONDS);
+            return 'yes';
+        }
+
+        // Got a SERP page with result stats but our URL is not in results → not indexed
+        if ($has_result_stats && !$has_cite && !$has_result_link) {
+            set_transient($transient_key, 'no', DAY_IN_SECONDS);
+            return 'no';
+        }
+
+        // Anything else — we can't determine, report unknown
+        set_transient($transient_key, 'unknown', 6 * HOUR_IN_SECONDS);
+        return 'unknown';
     }
 
     /**

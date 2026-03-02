@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.21.0
+ * Version: 3.21.1
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.21.0');
+define('JG_MAP_VERSION', '3.21.1');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -158,6 +158,13 @@ class JG_Interactive_Map {
             delete_option('jg_map_flush_count'); // Reset counter
             update_option('jg_map_needs_rewrite_flush', true);
             update_option('jg_map_rewrite_flushed_v7', true);
+        }
+
+        // One-time flush of Google index cache (false positives from old detection logic)
+        if (!get_option('jg_map_indexed_cache_flushed_v1', false)) {
+            global $wpdb;
+            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_jg_indexed_%' OR option_name LIKE '_transient_timeout_jg_indexed_%'");
+            update_option('jg_map_indexed_cache_flushed_v1', true);
         }
 
         JG_Map_Activity_Log::get_instance();
