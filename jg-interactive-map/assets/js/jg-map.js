@@ -2403,6 +2403,9 @@
                       if (origSearchBtn) origSearchBtn.click();
                     }
                     clonedSearchInput.blur();
+                    // Close filter panel after search
+                    filterPanel.style.display = 'none';
+                    btn.classList.remove('jg-active');
                   } else if (e.key === 'Escape') {
                     mobHideSugg();
                   } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -2420,9 +2423,20 @@
                   }
                 });
 
-                // Also stop suggestion clicks from closing the panel
+                // Stop suggestion clicks from propagating to the map close handler,
+                // but close the filter panel after a suggestion item is selected
                 mobSuggestionsEl.addEventListener('click', function(e) { e.stopPropagation(); });
                 mobSuggestionsEl.addEventListener('touchstart', function(e) { e.stopPropagation(); });
+                mobSuggestionsEl.addEventListener('mousedown', function(e) {
+                  var item = e.target.closest('.jg-suggest-item');
+                  if (item) {
+                    // Let buildSuggestions handler fire first, then close panel
+                    setTimeout(function() {
+                      filterPanel.style.display = 'none';
+                      btn.classList.remove('jg-active');
+                    }, 50);
+                  }
+                });
               }
 
               if (clonedSearchBtn && origSearchBtn && clonedSearchInput && origSearchInput) {
@@ -2431,6 +2445,9 @@
                   e.stopPropagation();
                   origSearchInput.value = clonedSearchInput.value;
                   origSearchBtn.click();
+                  // Close filter panel after search
+                  filterPanel.style.display = 'none';
+                  btn.classList.remove('jg-active');
                 });
               }
 
