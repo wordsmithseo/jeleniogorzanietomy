@@ -293,7 +293,7 @@
         }
 
         // Build fingerprint from all visible/editable fields so any change triggers re-render
-        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}:${p.has_internal_links ? 1 : 0}:${p.has_external_links ? 1 : 0}:${p.is_indexed ? 1 : 0}`).join(',');
+        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}:${p.has_internal_links ? 1 : 0}:${p.has_external_links ? 1 : 0}:${p.is_indexed === true ? 1 : (p.is_indexed === false ? 0 : '?')}`).join(',');
         const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
         return pointsData + statsData;
     }
@@ -570,11 +570,13 @@
             if (point.has_external_links) {
                 adminBadges.push({ icon: '🌐', tip: 'Linki zewnętrzne' });
             }
-            if (typeof point.is_indexed !== 'undefined') {
-                if (point.is_indexed) {
+            if ('is_indexed' in point) {
+                if (point.is_indexed === true) {
                     adminBadges.push({ icon: '✅', tip: 'W indeksie Google', cls: 'jg-info-badge--admin jg-info-badge--indexed' });
-                } else {
+                } else if (point.is_indexed === false) {
                     adminBadges.push({ icon: '❌', tip: 'Brak w indeksie Google', cls: 'jg-info-badge--admin jg-info-badge--not-indexed' });
+                } else {
+                    adminBadges.push({ icon: '❓', tip: 'Nie udało się sprawdzić indeksu', cls: 'jg-info-badge--admin jg-info-badge--unknown' });
                 }
             }
         }

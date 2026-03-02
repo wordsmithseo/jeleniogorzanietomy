@@ -4479,6 +4479,14 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   background: #fee2e2;
   border-color: #fca5a5;
 }
+.jg-map-sidebar .jg-info-badge--unknown {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+}
+.jg-map-sidebar .jg-info-badge--unknown:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
 
 /* Tooltip is rendered as a fixed <div> by JS (jg-sidebar.js) to avoid
    clipping by overflow:hidden parents. See #jg-badge-tooltip below. */
