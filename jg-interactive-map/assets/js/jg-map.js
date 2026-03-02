@@ -2343,25 +2343,88 @@
                 el.removeAttribute('id');
               });
 
-              // Wire up cloned search to trigger the original search
+              // Wire up cloned search with autocomplete suggestions
               var clonedSearchInput = filtersClone.querySelector('input[type="text"]');
               var clonedSearchBtn = filtersClone.querySelector('.jg-search-btn');
               var origSearchInput = document.getElementById('jg-search-input');
               var origSearchBtn = document.getElementById('jg-search-btn');
 
-              if (clonedSearchInput && origSearchInput) {
+              if (clonedSearchInput) {
+                // Create suggestions dropdown inside the search wrapper
+                var mobSuggestionsEl = document.createElement('div');
+                mobSuggestionsEl.className = 'jg-search-suggestions';
+                // The search container (.jg-search) needs position:relative for the dropdown
+                var searchWrap = clonedSearchInput.closest('.jg-search') || clonedSearchInput.parentNode;
+                searchWrap.style.position = 'relative';
+                searchWrap.appendChild(mobSuggestionsEl);
+
+                var mobSuggestDebounce = null;
+
+                // Bridge to buildSuggestions/hideSuggestions (defined later in setTimeout)
+                var mobBuildSugg = function(q) {
+                  if (_jgFsBuildSuggestions) _jgFsBuildSuggestions(q, mobSuggestionsEl, clonedSearchInput);
+                };
+                var mobHideSugg = function() {
+                  if (_jgFsHideSuggestions) _jgFsHideSuggestions(mobSuggestionsEl);
+                };
+
+                clonedSearchInput.addEventListener('input', function() {
+                  var val = this.value;
+                  if (origSearchInput) origSearchInput.value = val;
+                  clearTimeout(mobSuggestDebounce);
+                  var q = val.toLowerCase().trim();
+                  mobSuggestDebounce = setTimeout(function() {
+                    mobBuildSugg(q);
+                  }, 200);
+                });
+
+                clonedSearchInput.addEventListener('blur', function() {
+                  setTimeout(function() {
+                    mobHideSugg();
+                  }, 150);
+                });
+
                 clonedSearchInput.addEventListener('keydown', function(e) {
                   if (e.key === 'Enter') {
-                    origSearchInput.value = clonedSearchInput.value;
-                    if (origSearchBtn) origSearchBtn.click();
+                    e.preventDefault();
+                    // If a suggestion is highlighted, use it
+                    var activeItem = mobSuggestionsEl.querySelector('.jg-suggest-active');
+                    if (activeItem) {
+                      var fill = activeItem.getAttribute('data-fill');
+                      if (fill) {
+                        clonedSearchInput.value = fill;
+                        if (origSearchInput) origSearchInput.value = fill;
+                      }
+                    }
+                    mobHideSugg();
+                    if (origSearchInput) {
+                      origSearchInput.value = clonedSearchInput.value;
+                      origSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                      if (origSearchBtn) origSearchBtn.click();
+                    }
                     clonedSearchInput.blur();
+                  } else if (e.key === 'Escape') {
+                    mobHideSugg();
+                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    var items = mobSuggestionsEl.querySelectorAll('.jg-suggest-item');
+                    if (!items.length) return;
+                    var current = mobSuggestionsEl.querySelector('.jg-suggest-active');
+                    var currentIdx = current ? Array.prototype.indexOf.call(items, current) : -1;
+                    if (current) current.classList.remove('jg-suggest-active');
+                    var nextIdx = e.key === 'ArrowDown' ? currentIdx + 1 : currentIdx - 1;
+                    if (nextIdx >= items.length) nextIdx = 0;
+                    if (nextIdx < 0) nextIdx = items.length - 1;
+                    items[nextIdx].classList.add('jg-suggest-active');
+                    items[nextIdx].scrollIntoView({ block: 'nearest' });
                   }
                 });
-                clonedSearchInput.addEventListener('input', function() {
-                  origSearchInput.value = clonedSearchInput.value;
-                  origSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                });
+
+                // Also stop suggestion clicks from closing the panel
+                mobSuggestionsEl.addEventListener('click', function(e) { e.stopPropagation(); });
+                mobSuggestionsEl.addEventListener('touchstart', function(e) { e.stopPropagation(); });
               }
+
               if (clonedSearchBtn && origSearchBtn && clonedSearchInput && origSearchInput) {
                 clonedSearchBtn.addEventListener('click', function(e) {
                   e.preventDefault();
