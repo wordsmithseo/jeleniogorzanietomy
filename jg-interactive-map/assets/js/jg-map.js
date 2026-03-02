@@ -2415,6 +2415,11 @@
             L.DomEvent.disableClickPropagation(filterPanel);
             L.DomEvent.disableScrollPropagation(filterPanel);
 
+            // Also stop native click/touch propagation so the elMap close handler doesn't fire
+            filterPanel.addEventListener('click', function(e) { e.stopPropagation(); });
+            filterPanel.addEventListener('touchstart', function(e) { e.stopPropagation(); });
+            filterPanel.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+
             elMap.appendChild(filterPanel);
 
             btn.addEventListener('click', function(e) {

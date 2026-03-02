@@ -6995,127 +6995,192 @@ a.jg-dir-tag-inline:hover {
    Styled to match the map/satellite toggle
    ======================================== */
 
-/* Hide on desktop – only visible on mobile (created by JS only on mobile) */
+/* Only visible on mobile (created by JS only on mobile) – Elementor isolation */
+#jg-map .jg-mobile-map-filter-control,
 .jg-mobile-map-filter-control {
-  background: #fff;
+  background: #fff !important;
+  background-color: #fff !important;
   border-radius: 8px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   border: none !important;
-  overflow: hidden;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: auto !important;
+  min-height: auto !important;
+  box-sizing: border-box !important;
 }
 
-.jg-mobile-map-filter-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: #fff;
-  border: none;
-  cursor: pointer;
-  color: #374151;
-  transition: background 0.2s, color 0.2s;
-  padding: 0;
-  font-size: 0;
-  line-height: 1;
+/* Hard isolation from Elementor global button styles */
+#jg-map .jg-mobile-map-filter-btn,
+.jg-mobile-map-filter-control .jg-mobile-map-filter-btn,
+button.jg-mobile-map-filter-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
+  background: #fff !important;
+  background-color: #fff !important;
+  border: none !important;
+  border-width: 0 !important;
+  border-radius: 0 !important;
+  cursor: pointer !important;
+  color: #374151 !important;
+  transition: background 0.2s, color 0.2s !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  text-decoration: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  box-sizing: border-box !important;
 }
 
-.jg-mobile-map-filter-btn:hover,
-.jg-mobile-map-filter-btn:active {
-  background: #f3f4f6;
+#jg-map .jg-mobile-map-filter-btn:hover,
+#jg-map .jg-mobile-map-filter-btn:active,
+.jg-mobile-map-filter-control .jg-mobile-map-filter-btn:hover,
+.jg-mobile-map-filter-control .jg-mobile-map-filter-btn:active {
+  background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
 }
 
-.jg-mobile-map-filter-btn.jg-active {
-  background: #8d2324;
-  color: #fff;
+#jg-map .jg-mobile-map-filter-btn.jg-active,
+.jg-mobile-map-filter-control .jg-mobile-map-filter-btn.jg-active {
+  background: #8d2324 !important;
+  background-color: #8d2324 !important;
+  color: #fff !important;
 }
 
-.jg-mobile-map-filter-btn svg {
-  display: block;
+#jg-map .jg-mobile-map-filter-btn svg,
+.jg-mobile-map-filter-control .jg-mobile-map-filter-btn svg {
+  display: block !important;
+  width: 14px !important;
+  height: 14px !important;
+  fill: none !important;
+  pointer-events: none !important;
 }
 
-/* Floating filter panel on the map (mobile) */
+/* Floating filter panel on the map (mobile) – hard Elementor isolation */
+#jg-map .jg-mobile-map-filter-panel,
 .jg-mobile-map-filter-panel {
-  position: absolute;
-  top: 54px;
-  right: 10px;
-  z-index: 1002;
-  background: rgba(255, 255, 255, 0.97);
+  position: absolute !important;
+  top: 54px !important;
+  right: 10px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 1002 !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  background-color: rgba(255, 255, 255, 0.97) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  padding: 8px;
-  width: calc(100vw - 80px);
-  max-width: 280px;
-  max-height: calc(100dvh - 120px);
-  overflow-y: auto;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  padding: 8px !important;
+  margin: 0 !important;
+  width: calc(100vw - 80px) !important;
+  max-width: 280px !important;
+  max-height: calc(100dvh - 120px) !important;
+  overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
+  border: none !important;
+  text-transform: none !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  box-sizing: border-box !important;
 }
 
 /* Filters inside the on-map panel: vertical layout */
 .jg-mobile-map-filter-panel .jg-filters {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-  padding: 0;
-  background: transparent;
-  margin-bottom: 0;
-  border-radius: 0;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  margin-bottom: 0 !important;
+  border-radius: 0 !important;
 }
 
 .jg-mobile-map-filter-panel .jg-filter-label {
-  justify-content: flex-start;
-  width: 100%;
-  padding: 10px 8px;
-  min-width: unset;
-  border: none;
-  border-radius: 8px;
-  gap: 10px;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  padding: 10px 8px !important;
+  min-width: unset !important;
+  border: none !important;
+  border-radius: 8px !important;
+  gap: 10px !important;
 }
 
 .jg-mobile-map-filter-panel .jg-filter-label:hover {
-  background: #f3f4f6;
+  background: #f3f4f6 !important;
 }
 
 /* Show both icon and text in the panel */
 .jg-mobile-map-filter-panel .jg-filter-icon {
-  display: block;
-  font-size: 18px;
-  flex-shrink: 0;
+  display: block !important;
+  font-size: 18px !important;
+  flex-shrink: 0 !important;
 }
 
 .jg-mobile-map-filter-panel .jg-filter-text {
   display: inline !important;
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+  text-transform: none !important;
 }
 
 /* Show checkboxes in the panel */
 .jg-mobile-map-filter-panel .jg-filter-label input[type="checkbox"] {
-  display: block;
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
+  display: block !important;
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0 !important;
+  -webkit-appearance: checkbox !important;
+  appearance: checkbox !important;
 }
 
 /* Checked state visual feedback */
 .jg-mobile-map-filter-panel .jg-filter-label:has(input[type="checkbox"]:checked) {
-  background: rgba(141, 35, 36, 0.08);
+  background: rgba(141, 35, 36, 0.08) !important;
 }
 
-/* Search input inside the panel */
+/* Search input inside the panel – full Elementor isolation */
 .jg-mobile-map-filter-panel .jg-search {
-  width: 100%;
-  margin-top: 4px;
-  max-width: none;
-  min-width: unset;
+  width: 100% !important;
+  margin-top: 4px !important;
+  max-width: none !important;
+  min-width: unset !important;
 }
 
+.jg-mobile-map-filter-panel .jg-search input[type="text"],
 .jg-mobile-map-filter-panel .jg-search input {
-  font-size: 13px;
-  padding: 8px 36px 8px 12px;
+  font-size: 13px !important;
+  padding: 8px 36px 8px 12px !important;
+  background: #fff !important;
+  background-color: #fff !important;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  color: #374151 !important;
+  height: auto !important;
+  min-height: auto !important;
+  box-shadow: none !important;
+  outline: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
 }
 
 /* Hide expand arrows in the compact mobile panel */
