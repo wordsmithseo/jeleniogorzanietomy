@@ -7092,9 +7092,8 @@ button.jg-mobile-map-filter-btn {
   margin: 0 !important;
   width: calc(100vw - 80px) !important;
   max-width: 280px !important;
-  max-height: calc(100dvh - 120px) !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
+  /* overflow: visible so suggestions dropdown is not clipped */
+  overflow: visible !important;
   border: none !important;
   text-transform: none !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
@@ -7110,6 +7109,7 @@ button.jg-mobile-map-filter-btn {
   background: transparent !important;
   margin-bottom: 0 !important;
   border-radius: 0 !important;
+  overflow: visible !important;
 }
 
 .jg-mobile-map-filter-panel .jg-filter-label {
@@ -7162,6 +7162,8 @@ button.jg-mobile-map-filter-btn {
   margin-top: 4px !important;
   max-width: none !important;
   min-width: unset !important;
+  overflow: visible !important;
+  position: relative !important;
 }
 
 .jg-mobile-map-filter-panel .jg-search input[type="text"],
