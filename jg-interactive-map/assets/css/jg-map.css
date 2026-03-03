@@ -1939,7 +1939,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
   /* Modal adjustments for mobile */
   .jg-modal-bg {
-    top: 52px; /* start below the sticky nav bar, not at viewport top */
+    top: 52px !important; /* base inset:0 rule is later in file, needs !important to win */
   }
 
   .jg-modal {
