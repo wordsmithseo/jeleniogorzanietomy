@@ -1747,25 +1747,44 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     display: none !important;
   }
 
-  /* Map fills entire available container space */
+  /* Map fills entire available container space.
+     NOTE: height here has NO !important – JS sets inline height via
+     style.setProperty('height', …, 'important') which then wins. */
   .jg-wrap,
   #jg-map-wrap {
     display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
-    height: 100% !important;
+    height: 100%;           /* overridden by JS inline !important */
     min-height: 0 !important;
-    max-height: none !important;
+    max-height: none;       /* overridden by JS inline !important */
     flex: 1 1 0% !important;
   }
 
   .jg-map {
     flex: 1 1 0% !important;
-    height: 100% !important;
-    min-height: 300px !important;
+    min-height: 0 !important;   /* was 300px – prevented shrink below 300 */
     max-height: none !important;
     overflow: hidden !important;
-    flex-shrink: 0 !important;
+  }
+
+  /* Remove Elementor section/widget padding that creates dead space below the map.
+     :has() is supported on iOS 16+, Chrome 105+, Firefox 121+. */
+  :is(
+    .elementor-section,
+    .e-con,
+    .e-con-inner,
+    .elementor-container,
+    .elementor-column,
+    .elementor-col-wrap,
+    .elementor-widget,
+    .elementor-widget-wrap,
+    .elementor-widget-container
+  ):has(#jg-map-wrap) {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 
   /* Top bar mobile responsive */
