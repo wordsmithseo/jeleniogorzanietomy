@@ -3788,6 +3788,7 @@ class JG_Map_Admin {
         // Filters
         $action_filter = isset($_GET['action_filter']) ? sanitize_text_field($_GET['action_filter']) : '';
         $user_filter = isset($_GET['user_filter']) ? intval($_GET['user_filter']) : 0;
+        $role_filter = isset($_GET['role_filter']) ? sanitize_text_field($_GET['role_filter']) : '';
 
         // Build query
         $where = array('1=1');
@@ -3797,6 +3798,28 @@ class JG_Map_Admin {
         if ($user_filter) {
             $where[] = $wpdb->prepare('user_id = %d', $user_filter);
         }
+
+        // Role filter - get user IDs by role
+        if ($role_filter === 'admin') {
+            $admin_users = get_users(array('role__in' => array('administrator'), 'fields' => 'ID'));
+            $mod_users = get_users(array('capability' => 'jg_map_moderate', 'fields' => 'ID'));
+            $admin_mod_ids = array_unique(array_merge($admin_users, $mod_users));
+            if (!empty($admin_mod_ids)) {
+                $placeholders = implode(',', array_fill(0, count($admin_mod_ids), '%d'));
+                $where[] = $wpdb->prepare("user_id IN ($placeholders)", $admin_mod_ids);
+            } else {
+                $where[] = '1=0';
+            }
+        } elseif ($role_filter === 'user') {
+            $admin_users = get_users(array('role__in' => array('administrator'), 'fields' => 'ID'));
+            $mod_users = get_users(array('capability' => 'jg_map_moderate', 'fields' => 'ID'));
+            $admin_mod_ids = array_unique(array_merge($admin_users, $mod_users));
+            if (!empty($admin_mod_ids)) {
+                $placeholders = implode(',', array_fill(0, count($admin_mod_ids), '%d'));
+                $where[] = $wpdb->prepare("user_id NOT IN ($placeholders)", $admin_mod_ids);
+            }
+        }
+
         $where_clause = implode(' AND ', $where);
 
         // Get logs
@@ -3857,6 +3880,15 @@ class JG_Map_Admin {
                     </div>
 
                     <div>
+                        <label style="display:block;margin-bottom:5px;font-weight:600">Filtruj po roli:</label>
+                        <select name="role_filter" style="padding:5px">
+                            <option value="">Wszystkie role</option>
+                            <option value="admin" <?php selected($role_filter, 'admin'); ?>>Admin / Moderator</option>
+                            <option value="user" <?php selected($role_filter, 'user'); ?>>Zwykli użytkownicy</option>
+                        </select>
+                    </div>
+
+                    <div>
                         <label style="display:block;margin-bottom:5px;font-weight:600">Filtruj po użytkowniku:</label>
                         <select name="user_filter" style="padding:5px">
                             <option value="0">Wszyscy użytkownicy</option>
@@ -3872,7 +3904,7 @@ class JG_Map_Admin {
                     </div>
 
                     <button type="submit" class="button">Filtruj</button>
-                    <?php if ($action_filter || $user_filter): ?>
+                    <?php if ($action_filter || $user_filter || $role_filter): ?>
                         <a href="<?php echo admin_url('admin.php?page=jg-map-activity-log'); ?>" class="button">Wyczyść filtry</a>
                     <?php endif; ?>
                 </form>
@@ -3895,10 +3927,14 @@ class JG_Map_Admin {
                     <?php foreach ($logs as $log):
                         $user = get_userdata($log['user_id']);
                         $user_name = $user ? $user->display_name : 'Użytkownik #' . $log['user_id'];
+                        $is_admin_user = $user && (user_can($user->ID, 'manage_options') || user_can($user->ID, 'jg_map_moderate'));
+                        $role_badge = $is_admin_user
+                            ? '<span style="background:#d63638;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">Admin</span>'
+                            : '<span style="background:#2271b1;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">User</span>';
                     ?>
                         <tr>
                             <td><?php echo esc_html(get_date_from_gmt($log['created_at'], 'Y-m-d H:i:s')); ?></td>
-                            <td><?php echo esc_html($user_name); ?></td>
+                            <td><?php echo esc_html($user_name); ?> <?php echo $role_badge; ?></td>
                             <td><strong><?php echo esc_html($log['action']); ?></strong></td>
                             <td><?php echo esc_html($log['object_type']); ?></td>
                             <td><?php echo esc_html($log['object_id'] ?: '-'); ?></td>
@@ -3919,7 +3955,8 @@ class JG_Map_Admin {
                                     'page' => 'jg-map-activity-log',
                                     'paged' => $i,
                                     'action_filter' => $action_filter,
-                                    'user_filter' => $user_filter
+                                    'user_filter' => $user_filter,
+                                    'role_filter' => $role_filter
                                 ), admin_url('admin.php'));
                             ?>
                                 <?php if ($i === $current_page): ?>
