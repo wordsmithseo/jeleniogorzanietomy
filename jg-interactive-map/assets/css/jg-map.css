@@ -3160,12 +3160,14 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 .jg-pin-marker {
   background: transparent !important;
   border: none !important;
+  will-change: transform;
 }
 
 .jg-pin-svg-wrapper {
   position: relative;
   cursor: pointer;
   transition: transform 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
 }
 
 .jg-pin-svg-wrapper:hover {
