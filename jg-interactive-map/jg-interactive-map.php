@@ -160,13 +160,6 @@ class JG_Interactive_Map {
             update_option('jg_map_rewrite_flushed_v7', true);
         }
 
-        // One-time flush of Google index cache (false positives from old detection logic)
-        if (!get_option('jg_map_indexed_cache_flushed_v1', false)) {
-            global $wpdb;
-            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_jg_indexed_%' OR option_name LIKE '_transient_timeout_jg_indexed_%'");
-            update_option('jg_map_indexed_cache_flushed_v1', true);
-        }
-
         JG_Map_Activity_Log::get_instance();
         JG_Map_Sync_Manager::get_instance();
         JG_Map_Enqueue::get_instance();

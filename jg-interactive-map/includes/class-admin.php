@@ -4225,6 +4225,7 @@ class JG_Map_Admin {
                     $('.jg-autocomplete-suggestions').hide().empty();
                 }
             });
+
         });
         </script>
         <?php
