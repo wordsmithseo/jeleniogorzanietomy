@@ -35,8 +35,11 @@ class JG_Map_Enqueue {
         // Hide admin bar for non-admins
         add_action('after_setup_theme', array($this, 'hide_admin_bar_for_users'));
 
+        // Add mobile nav bar (logo + hamburger) – renders before the top bar
+        add_action('wp_body_open', array($this, 'render_nav_bar'), 5);
+
         // Add custom top bar to the page
-        add_action('wp_body_open', array($this, 'render_top_bar'));
+        add_action('wp_body_open', array($this, 'render_top_bar'), 10);
 
         // Hide register button on Elementor maintenance screen
         add_action('wp_head', array($this, 'hide_register_on_maintenance'));
@@ -394,6 +397,135 @@ class JG_Map_Enqueue {
     }
 
     /**
+     * Render mobile nav bar (logo + hamburger menu) above the top bar.
+     * Visible only on mobile (<= 768 px). Independent of Elementor styling.
+     */
+    public function render_nav_bar() {
+        $logo_url   = 'https://jeleniogorzanietomy.pl/wp-content/uploads/2025/10/jg-logo-1.svg';
+        $home_url   = home_url('/');
+        $menu_items = get_option('jg_map_nav_menu', array());
+        ?>
+        <!-- JG Mobile Nav Bar -->
+        <div id="jg-nav-bar" class="jg-nav-bar">
+            <a href="<?php echo esc_url($home_url); ?>" class="jg-nav-logo-link" aria-label="Strona główna">
+                <img src="<?php echo esc_url($logo_url); ?>" alt="Jelenia Góra to my" class="jg-nav-logo-img" loading="eager">
+            </a>
+            <button id="jg-hamburger-btn" class="jg-hamburger-btn" aria-label="Otwórz menu" aria-expanded="false" aria-controls="jg-nav-menu" type="button">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <!-- Dropdown menu (appended outside nav-bar to allow full-width overlay) -->
+        <nav id="jg-nav-menu" class="jg-nav-menu" aria-hidden="true" role="navigation" aria-label="Menu główne">
+            <?php if (!empty($menu_items)) : ?>
+                <?php foreach ($menu_items as $item) : ?>
+                    <?php
+                    $label  = isset($item['label']) ? $item['label'] : '';
+                    $url    = isset($item['url'])   ? $item['url']   : '#';
+                    $target = !empty($item['new_tab']) ? '_blank' : '_self';
+                    $rel    = $target === '_blank' ? 'noopener noreferrer' : '';
+                    ?>
+                    <a href="<?php echo esc_url($url); ?>"
+                       class="jg-nav-menu-link"
+                       target="<?php echo esc_attr($target); ?>"
+                       <?php echo $rel ? 'rel="' . esc_attr($rel) . '"' : ''; ?>>
+                        <?php echo esc_html($label); ?>
+                    </a>
+                <?php endforeach; ?>
+            <?php else : ?>
+                <span class="jg-nav-menu-link" style="color:#9ca3af;cursor:default">Brak pozycji menu — skonfiguruj w panelu JG Map → Menu nawigacyjne</span>
+            <?php endif; ?>
+        </nav>
+        <div id="jg-nav-overlay" class="jg-nav-overlay" aria-hidden="true"></div>
+
+        <script>
+        (function () {
+            var btn     = document.getElementById('jg-hamburger-btn');
+            var menu    = document.getElementById('jg-nav-menu');
+            var overlay = document.getElementById('jg-nav-overlay');
+
+            if (!btn || !menu) return;
+
+            function openMenu() {
+                btn.classList.add('jg-nav-open');
+                menu.classList.add('jg-nav-open');
+                overlay.classList.add('jg-nav-open');
+                btn.setAttribute('aria-expanded', 'true');
+                menu.setAttribute('aria-hidden', 'false');
+            }
+
+            function closeMenu() {
+                btn.classList.remove('jg-nav-open');
+                menu.classList.remove('jg-nav-open');
+                overlay.classList.remove('jg-nav-open');
+                btn.setAttribute('aria-expanded', 'false');
+                menu.setAttribute('aria-hidden', 'true');
+            }
+
+            btn.addEventListener('click', function () {
+                btn.classList.contains('jg-nav-open') ? closeMenu() : openMenu();
+            });
+
+            overlay.addEventListener('click', closeMenu);
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeMenu();
+            });
+
+            /* ── Mobile viewport fitting ──────────────────────────────────────
+               Makes the banner + map together fit within the visible viewport
+               so nothing overflows below the fold on first load.
+            ──────────────────────────────────────────────────────────────────── */
+            function jgFitMobileViewport() {
+                if (window.innerWidth > 768) return;
+
+                var navBarEl  = document.getElementById('jg-nav-bar');
+                var topBarEl  = document.getElementById('jg-custom-top-bar');
+                var mapWrapEl = document.getElementById('jg-map-wrap');
+                var bannerEl  = document.querySelector('.jg-banner-container');
+
+                if (!mapWrapEl) return;
+
+                var navH  = navBarEl  ? navBarEl.offsetHeight  : 0;
+                var topH  = topBarEl  ? topBarEl.offsetHeight  : 0;
+                var vpH   = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                var avail = vpH - navH - topH;
+
+                /* Banner: at most 22 % of available vertical space */
+                if (bannerEl) {
+                    var maxBannerH = Math.round(avail * 0.22);
+                    bannerEl.style.maxHeight  = maxBannerH + 'px';
+                    bannerEl.style.overflow   = 'hidden';
+                }
+
+                /* Map: fills the remaining space (min 200 px) */
+                var bannerH = bannerEl ? bannerEl.offsetHeight : 0;
+                var mapH    = Math.max(avail - bannerH, 200);
+                mapWrapEl.style.height    = mapH + 'px';
+                mapWrapEl.style.maxHeight = mapH + 'px';
+
+                /* Tell Leaflet to redraw after container resize */
+                window.dispatchEvent(new Event('resize'));
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', jgFitMobileViewport);
+            } else {
+                jgFitMobileViewport();
+            }
+
+            window.addEventListener('resize', jgFitMobileViewport);
+
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', jgFitMobileViewport);
+            }
+        })();
+        </script>
+        <?php
+    }
+
+    /**
      * Render custom top bar at the top of the page
      */
     public function render_top_bar() {
@@ -587,12 +719,13 @@ class JG_Map_Enqueue {
                     touch-action: manipulation;
                 }
 
-                /* Allow touch gestures on the map container */
-                #jg-map-container,
-                #jg-map-container *,
-                .leaflet-container,
+                /* Let Leaflet control all touch interactions on the map:
+                   one finger = pan, two fingers = pinch-zoom */
+                .leaflet-container {
+                    touch-action: none;
+                }
                 .leaflet-container * {
-                    touch-action: auto !important;
+                    touch-action: none;
                 }
             }
         </style>

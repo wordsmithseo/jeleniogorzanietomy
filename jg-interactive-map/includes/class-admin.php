@@ -453,6 +453,15 @@ class JG_Map_Admin {
             array($this, 'render_tags_page')
         );
 
+        add_submenu_page(
+            'jg-map-places',
+            'Menu nawigacyjne',
+            'Menu nawigacyjne',
+            'manage_options',
+            'jg-map-nav-menu',
+            array($this, 'render_nav_menu_page')
+        );
+
     }
 
     /**
@@ -6881,6 +6890,151 @@ JAVASCRIPT;
                 function escJs(str) {
                     return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
                 }
+            })();
+            </script>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render admin page for configuring the mobile hamburger-menu navigation items.
+     * Items are stored as JSON in wp_options under 'jg_map_nav_menu'.
+     */
+    public function render_nav_menu_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Brak uprawnień.');
+        }
+
+        /* ── Handle form save ── */
+        if (isset($_POST['jg_nav_menu_save']) && check_admin_referer('jg_nav_menu_nonce')) {
+            $raw_labels   = isset($_POST['jg_nav_label'])   ? (array) $_POST['jg_nav_label']   : array();
+            $raw_urls     = isset($_POST['jg_nav_url'])     ? (array) $_POST['jg_nav_url']     : array();
+            $raw_new_tabs = isset($_POST['jg_nav_new_tab']) ? (array) $_POST['jg_nav_new_tab'] : array();
+
+            $items = array();
+            foreach ($raw_labels as $i => $label) {
+                $label = sanitize_text_field($label);
+                $url   = esc_url_raw(isset($raw_urls[$i]) ? $raw_urls[$i] : '');
+                if ($label === '' || $url === '') continue;
+                $items[] = array(
+                    'label'   => $label,
+                    'url'     => $url,
+                    'new_tab' => !empty($raw_new_tabs[$i]),
+                );
+            }
+
+            update_option('jg_map_nav_menu', $items);
+            echo '<div class="notice notice-success is-dismissible"><p>Menu zostało zapisane.</p></div>';
+        }
+
+        $items = get_option('jg_map_nav_menu', array());
+        ?>
+        <div class="wrap">
+            <h1>Menu nawigacyjne (mobilny pasek)</h1>
+            <p class="description" style="margin-bottom:16px">
+                Pozycje wyświetlane w rozwijanym menu hamburgerowym na pasku z logo portalu (widocznym na urządzeniach mobilnych).
+            </p>
+
+            <form method="post" action="" id="jg-nav-menu-form">
+                <?php wp_nonce_field('jg_nav_menu_nonce'); ?>
+
+                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);max-width:760px;margin-bottom:16px">
+                    <h2 style="margin-top:0">Pozycje menu</h2>
+
+                    <table class="widefat striped" id="jg-nav-menu-table">
+                        <thead>
+                            <tr>
+                                <th style="width:36px">#</th>
+                                <th>Etykieta</th>
+                                <th>URL</th>
+                                <th style="width:110px;text-align:center">Nowa karta</th>
+                                <th style="width:80px"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="jg-nav-menu-body">
+                            <?php foreach ($items as $idx => $item) : ?>
+                            <tr class="jg-nav-row">
+                                <td style="color:#9ca3af;font-size:13px"><?php echo $idx + 1; ?></td>
+                                <td>
+                                    <input type="text"
+                                           name="jg_nav_label[]"
+                                           value="<?php echo esc_attr($item['label']); ?>"
+                                           placeholder="np. Aktualności"
+                                           class="regular-text"
+                                           required>
+                                </td>
+                                <td>
+                                    <input type="url"
+                                           name="jg_nav_url[]"
+                                           value="<?php echo esc_attr($item['url']); ?>"
+                                           placeholder="https://..."
+                                           class="regular-text"
+                                           required>
+                                </td>
+                                <td style="text-align:center">
+                                    <input type="checkbox"
+                                           name="jg_nav_new_tab[<?php echo $idx; ?>]"
+                                           value="1"
+                                           <?php checked(!empty($item['new_tab'])); ?>>
+                                </td>
+                                <td>
+                                    <button type="button" class="button jg-nav-remove-row" style="color:#dc2626;border-color:#dc2626">Usuń</button>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+
+                    <p style="margin-top:12px">
+                        <button type="button" id="jg-nav-add-row" class="button">+ Dodaj pozycję</button>
+                    </p>
+                </div>
+
+                <p>
+                    <input type="submit" name="jg_nav_menu_save" class="button button-primary button-large" value="Zapisz menu">
+                </p>
+            </form>
+
+            <script>
+            (function () {
+                var tbody  = document.getElementById('jg-nav-menu-body');
+                var addBtn = document.getElementById('jg-nav-add-row');
+
+                if (!tbody || !addBtn) return;
+
+                function refreshNumbers() {
+                    var rows = tbody.querySelectorAll('.jg-nav-row');
+                    rows.forEach(function (row, i) {
+                        row.cells[0].textContent = i + 1;
+                        /* Re-index the new_tab checkbox name so the PHP array key matches position */
+                        var cb = row.querySelector('input[type=checkbox]');
+                        if (cb) cb.name = 'jg_nav_new_tab[' + i + ']';
+                    });
+                }
+
+                addBtn.addEventListener('click', function () {
+                    var count = tbody.querySelectorAll('.jg-nav-row').length;
+                    var tr    = document.createElement('tr');
+                    tr.className = 'jg-nav-row';
+                    tr.innerHTML =
+                        '<td style="color:#9ca3af;font-size:13px">' + (count + 1) + '</td>' +
+                        '<td><input type="text" name="jg_nav_label[]" placeholder="np. Aktualności" class="regular-text" required></td>' +
+                        '<td><input type="url"  name="jg_nav_url[]"   placeholder="https://..."    class="regular-text" required></td>' +
+                        '<td style="text-align:center"><input type="checkbox" name="jg_nav_new_tab[' + count + ']" value="1"></td>' +
+                        '<td><button type="button" class="button jg-nav-remove-row" style="color:#dc2626;border-color:#dc2626">Usuń</button></td>';
+                    tbody.appendChild(tr);
+                    tr.querySelector('input[type=text]').focus();
+                    bindRemove(tr.querySelector('.jg-nav-remove-row'));
+                });
+
+                function bindRemove(btn) {
+                    btn.addEventListener('click', function () {
+                        btn.closest('tr').remove();
+                        refreshNumbers();
+                    });
+                }
+
+                tbody.querySelectorAll('.jg-nav-remove-row').forEach(bindRemove);
             })();
             </script>
         </div>
