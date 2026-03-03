@@ -7580,16 +7580,6 @@ class JG_Map_Ajax_Handlers {
                 $content = $point['content'] ?? '';
                 $item['has_internal_links'] = $this->point_has_internal_links($content);
                 $item['has_external_links'] = $this->point_has_external_links($content);
-                // Index status from GSC API (read from cache only, never blocks)
-                $gsc = JG_Map_GSC_Index_Checker::get_instance();
-                $index_status = $gsc->get_cached_status($point);
-                if ($index_status === 'yes') {
-                    $item['is_indexed'] = true;
-                } elseif ($index_status === 'no') {
-                    $item['is_indexed'] = false;
-                } else {
-                    $item['is_indexed'] = null; // unknown
-                }
             }
 
             $result[] = $item;

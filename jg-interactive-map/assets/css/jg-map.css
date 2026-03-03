@@ -4452,31 +4452,6 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   background: #e0e7ff;
   border-color: #a5b4fc;
 }
-.jg-map-sidebar .jg-info-badge--indexed {
-  border-color: #a7f3d0;
-  background: #ecfdf5;
-}
-.jg-map-sidebar .jg-info-badge--indexed:hover {
-  background: #d1fae5;
-  border-color: #6ee7b7;
-}
-.jg-map-sidebar .jg-info-badge--not-indexed {
-  border-color: #fecaca;
-  background: #fef2f2;
-}
-.jg-map-sidebar .jg-info-badge--not-indexed:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-}
-.jg-map-sidebar .jg-info-badge--unknown {
-  border-color: #e5e7eb;
-  background: #f9fafb;
-}
-.jg-map-sidebar .jg-info-badge--unknown:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
-}
-
 /* Tooltip is rendered as a fixed <div> by JS (jg-sidebar.js) to avoid
    clipping by overflow:hidden parents. See #jg-badge-tooltip below. */
 

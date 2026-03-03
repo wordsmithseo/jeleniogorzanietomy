@@ -73,7 +73,6 @@ class JG_Interactive_Map {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-ajax-handlers.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-admin.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-maintenance.php';
-        require_once JG_MAP_PLUGIN_DIR . 'includes/class-gsc-index-checker.php';
     }
 
     /**
@@ -91,10 +90,6 @@ class JG_Interactive_Map {
 
         // Initialize maintenance cron
         add_action('init', array('JG_Map_Maintenance', 'init'));
-
-        // Initialize GSC index checker cron
-        add_action('init', array('JG_Map_GSC_Index_Checker', 'get_instance'));
-        register_deactivation_hook(__FILE__, array('JG_Map_GSC_Index_Checker', 'deactivate'));
 
         // Load text domain
         add_action('init', array($this, 'load_textdomain'));
@@ -163,13 +158,6 @@ class JG_Interactive_Map {
             delete_option('jg_map_flush_count'); // Reset counter
             update_option('jg_map_needs_rewrite_flush', true);
             update_option('jg_map_rewrite_flushed_v7', true);
-        }
-
-        // One-time flush of Google index cache (false positives from old detection logic)
-        if (!get_option('jg_map_indexed_cache_flushed_v1', false)) {
-            global $wpdb;
-            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_jg_indexed_%' OR option_name LIKE '_transient_timeout_jg_indexed_%'");
-            update_option('jg_map_indexed_cache_flushed_v1', true);
         }
 
         JG_Map_Activity_Log::get_instance();

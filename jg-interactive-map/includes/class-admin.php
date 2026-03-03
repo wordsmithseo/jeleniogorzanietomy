@@ -3936,22 +3936,6 @@ class JG_Map_Admin {
     public function render_settings_page() {
         // Handle form submission
         if (isset($_POST['jg_map_save_settings']) && check_admin_referer('jg_map_settings_nonce')) {
-            // Google Search Console service account
-            $gsc_json_raw = $_POST['jg_map_gsc_service_account'] ?? '';
-            if (!empty(trim($gsc_json_raw))) {
-                $gsc_data = json_decode(trim($gsc_json_raw), true);
-                if ($gsc_data && !empty($gsc_data['client_email']) && !empty($gsc_data['private_key'])) {
-                    update_option(JG_Map_GSC_Index_Checker::OPTION_KEY, trim($gsc_json_raw));
-                    // Clear token cache so new credentials take effect
-                    delete_transient(JG_Map_GSC_Index_Checker::TOKEN_TRANSIENT);
-                } else {
-                    echo '<div class="notice notice-error is-dismissible"><p>Nieprawidłowy JSON konta serwisowego Google. Sprawdź czy plik zawiera pola client_email i private_key.</p></div>';
-                }
-            } elseif (isset($_POST['jg_map_gsc_clear']) && $_POST['jg_map_gsc_clear'] === '1') {
-                delete_option(JG_Map_GSC_Index_Checker::OPTION_KEY);
-                delete_transient(JG_Map_GSC_Index_Checker::TOKEN_TRANSIENT);
-            }
-
             $registration_enabled = isset($_POST['jg_map_registration_enabled']) ? 1 : 0;
             $registration_disabled_message = sanitize_textarea_field($_POST['jg_map_registration_disabled_message'] ?? '');
 
@@ -4145,85 +4129,6 @@ class JG_Map_Admin {
                     </table>
                 </div>
 
-                <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);max-width:800px">
-                    <h2 style="margin-top:0">Google Search Console — sprawdzanie indeksu</h2>
-                    <p class="description" style="margin-bottom:16px">
-                        Integracja z Google Search Console API pozwala sprawdzać, które piny są zaindeksowane w Google.
-                        Wymaga konta serwisowego Google Cloud z dostępem do Search Console.
-                    </p>
-
-                    <?php
-                    $gsc_configured = JG_Map_GSC_Index_Checker::is_configured();
-                    $gsc_sa = get_option(JG_Map_GSC_Index_Checker::OPTION_KEY, '');
-                    $gsc_email = '';
-                    if ($gsc_sa) {
-                        $gsc_data = json_decode($gsc_sa, true);
-                        $gsc_email = $gsc_data['client_email'] ?? '';
-                    }
-                    ?>
-
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row">Status</th>
-                            <td>
-                                <?php if ($gsc_configured): ?>
-                                    <span style="color:#16a34a;font-weight:600">&#10003; Skonfigurowano</span>
-                                    <br><code style="font-size:12px"><?php echo esc_html($gsc_email); ?></code>
-                                <?php else: ?>
-                                    <span style="color:#9ca3af">Nie skonfigurowano</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                <label for="jg_map_gsc_service_account">Klucz konta serwisowego (JSON)</label>
-                            </th>
-                            <td>
-                                <textarea name="jg_map_gsc_service_account"
-                                          id="jg_map_gsc_service_account"
-                                          rows="4"
-                                          class="large-text"
-                                          placeholder='Wklej zawartość pliku JSON konta serwisowego...'
-                                          style="font-family:monospace;font-size:12px"></textarea>
-                                <p class="description">
-                                    Wklej zawartość pliku JSON konta serwisowego z Google Cloud Console.
-                                    Plik powinien zawierać pola <code>client_email</code> i <code>private_key</code>.
-                                    <?php if ($gsc_configured): ?>
-                                        <br>Pozostaw puste aby zachować obecny klucz.
-                                    <?php endif; ?>
-                                </p>
-                                <?php if ($gsc_configured): ?>
-                                    <label style="margin-top:8px;display:block">
-                                        <input type="checkbox" name="jg_map_gsc_clear" value="1">
-                                        Usuń klucz i wyłącz integrację
-                                    </label>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php if ($gsc_configured): ?>
-                        <tr>
-                            <th scope="row">Testuj / zarządzaj</th>
-                            <td>
-                                <button type="button" class="button" id="jg-gsc-test-btn">Testuj połączenie</button>
-                                <button type="button" class="button" id="jg-gsc-flush-btn" style="margin-left:8px">Wyczyść cache indeksu</button>
-                                <span id="jg-gsc-test-result" style="margin-left:12px"></span>
-                            </td>
-                        </tr>
-                        <?php endif; ?>
-                    </table>
-
-                    <details style="margin-top:12px">
-                        <summary style="cursor:pointer;color:#6b7280;font-size:13px">Instrukcja konfiguracji</summary>
-                        <ol style="font-size:13px;line-height:1.8;color:#374151;margin-top:8px">
-                            <li>Utwórz projekt w <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
-                            <li>Włącz <strong>Google Search Console API</strong> w bibliotece API</li>
-                            <li>Utwórz <strong>Service Account</strong> (IAM &rarr; Konta serwisowe) i pobierz klucz JSON</li>
-                            <li>W <a href="https://search.google.com/search-console" target="_blank">Google Search Console</a> &rarr; Ustawienia &rarr; Użytkownicy &mdash; dodaj email konta serwisowego jako użytkownika z uprawnieniem &bdquo;Pełny&rdquo;</li>
-                            <li>Wklej zawartość pliku JSON powyżej i zapisz</li>
-                        </ol>
-                    </details>
-                </div>
-
                 <p class="submit">
                     <input type="submit"
                            name="jg_map_save_settings"
@@ -4321,48 +4226,6 @@ class JG_Map_Admin {
                 }
             });
 
-            // GSC test connection button
-            $('#jg-gsc-test-btn').on('click', function() {
-                var $btn = $(this);
-                var $result = $('#jg-gsc-test-result');
-                $btn.prop('disabled', true).text('Testowanie...');
-                $result.text('');
-                $.post(ajaxurl, {
-                    action: 'jg_gsc_test_connection',
-                    _ajax_nonce: '<?php echo wp_create_nonce('jg_gsc_test'); ?>'
-                }, function(resp) {
-                    $btn.prop('disabled', false).text('Testuj połączenie');
-                    if (resp.success) {
-                        $result.css('color', '#16a34a').text(resp.data.message);
-                    } else {
-                        $result.css('color', '#dc2626').text(resp.data || 'Błąd');
-                    }
-                }).fail(function() {
-                    $btn.prop('disabled', false).text('Testuj połączenie');
-                    $result.css('color', '#dc2626').text('Błąd połączenia');
-                });
-            });
-
-            // GSC flush cache button
-            $('#jg-gsc-flush-btn').on('click', function() {
-                var $btn = $(this);
-                var $result = $('#jg-gsc-test-result');
-                $btn.prop('disabled', true).text('Czyszczenie...');
-                $.post(ajaxurl, {
-                    action: 'jg_gsc_flush_cache',
-                    _ajax_nonce: '<?php echo wp_create_nonce('jg_gsc_flush'); ?>'
-                }, function(resp) {
-                    $btn.prop('disabled', false).text('Wyczyść cache indeksu');
-                    if (resp.success) {
-                        $result.css('color', '#16a34a').text(resp.data.message);
-                    } else {
-                        $result.css('color', '#dc2626').text(resp.data || 'Błąd');
-                    }
-                }).fail(function() {
-                    $btn.prop('disabled', false).text('Wyczyść cache indeksu');
-                    $result.css('color', '#dc2626').text('Błąd połączenia');
-                });
-            });
         });
         </script>
         <?php
