@@ -2208,6 +2208,7 @@
         className: 'jg-map-tiles'
       });
 
+
       var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: '© Esri',
         maxZoom: 19,
@@ -2250,96 +2251,6 @@
       } else {
         tileLayer.addTo(map);
       }
-
-      // Place name labels - permanent markers that never disappear once visible
-      // Data from OpenStreetMap (Overpass API), coordinates for Jelenia Góra region
-      var jgPlaceNames = [
-        // city
-        {n:'Jelenia Góra',lat:50.9031,lng:15.7344,z:12,t:'city'},
-        // towns
-        {n:'Karpacz',lat:50.7747,lng:15.7542,z:12,t:'town'},
-        {n:'Kowary',lat:50.7938,lng:15.8338,z:12,t:'town'},
-        {n:'Piechowice',lat:50.8495,lng:15.5976,z:12,t:'town'},
-        // suburbs (city districts)
-        {n:'Cieplice Śląskie-Zdrój',lat:50.8653,lng:15.6775,z:13,t:'suburb'},
-        {n:'Sobieszów',lat:50.8470,lng:15.6414,z:13,t:'suburb'},
-        {n:'Zabobrze',lat:50.9161,lng:15.7469,z:13,t:'suburb'},
-        {n:'Jagniątków',lat:50.8220,lng:15.6171,z:13,t:'suburb'},
-        {n:'Goduszyn',lat:50.8946,lng:15.6821,z:14,t:'suburb'},
-        {n:'Maciejowa',lat:50.9092,lng:15.8153,z:14,t:'suburb'},
-        {n:'Czarne',lat:50.8775,lng:15.7475,z:14,t:'suburb'},
-        {n:'Grabary',lat:50.9061,lng:15.7969,z:15,t:'suburb'},
-        {n:'Strupice',lat:50.9111,lng:15.7692,z:15,t:'suburb'},
-        {n:'Karpacz Górny',lat:50.7744,lng:15.7294,z:15,t:'suburb'},
-        {n:'Płóczki',lat:50.7810,lng:15.7588,z:16,t:'suburb'},
-        {n:'Wilcza Poręba',lat:50.7651,lng:15.7646,z:16,t:'suburb'},
-        {n:'Osiedle Skalne',lat:50.7736,lng:15.7774,z:16,t:'suburb'},
-        // larger villages (pop > 1000)
-        {n:'Jeżów Sudecki',lat:50.9337,lng:15.7434,z:13,t:'village'},
-        {n:'Siedlęcin',lat:50.9387,lng:15.6905,z:13,t:'village'},
-        {n:'Miłków',lat:50.8110,lng:15.7629,z:13,t:'village'},
-        {n:'Łomnica',lat:50.8649,lng:15.7953,z:13,t:'village'},
-        {n:'Mysłakowice',lat:50.8366,lng:15.7871,z:13,t:'village'},
-        {n:'Wojcieszyce',lat:50.8826,lng:15.6377,z:13,t:'village'},
-        {n:'Dziwiszów',lat:50.9400,lng:15.7938,z:13,t:'village'},
-        {n:'Podgórzyn',lat:50.8318,lng:15.6836,z:13,t:'village'},
-        {n:'Sosnówka',lat:50.8169,lng:15.7255,z:14,t:'village'},
-        {n:'Ścięgny',lat:50.7929,lng:15.7780,z:14,t:'village'},
-        // medium villages
-        {n:'Staniszów',lat:50.8511,lng:15.7335,z:14,t:'village'},
-        {n:'Kostrzyca',lat:50.8182,lng:15.8021,z:14,t:'village'},
-        {n:'Rybnica',lat:50.9180,lng:15.6210,z:14,t:'village'},
-        {n:'Przesieka',lat:50.8087,lng:15.6653,z:14,t:'village'},
-        // smaller villages
-        {n:'Wojanów',lat:50.8733,lng:15.8331,z:15,t:'small'},
-        {n:'Bobrów',lat:50.8683,lng:15.8328,z:15,t:'small'},
-        {n:'Wrzeszczyn',lat:50.9438,lng:15.6545,z:15,t:'small'},
-        {n:'Krogulec',lat:50.8403,lng:15.8407,z:15,t:'small'},
-        {n:'Dąbrowica',lat:50.8918,lng:15.8098,z:15,t:'small'},
-        {n:'Zachełmie',lat:50.8258,lng:15.6613,z:15,t:'small'},
-        {n:'Marczyce',lat:50.8383,lng:15.7138,z:15,t:'small'},
-        {n:'Głębock',lat:50.8217,lng:15.7474,z:15,t:'small'},
-        {n:'Barcinek',lat:50.9418,lng:15.5975,z:15,t:'small'},
-        {n:'Czernica',lat:50.9776,lng:15.7154,z:15,t:'small'},
-        {n:'Płoszczyna',lat:50.9617,lng:15.7508,z:15,t:'small'},
-        {n:'Strzyżowiec',lat:50.9728,lng:15.6803,z:15,t:'small'},
-        {n:'Borowice',lat:50.7926,lng:15.6951,z:15,t:'small'},
-        {n:'Bukowiec',lat:50.8262,lng:15.8211,z:15,t:'small'},
-        {n:'Kromnów',lat:50.8950,lng:15.5813,z:15,t:'small'},
-        {n:'Pokrzywnik',lat:50.9657,lng:15.6225,z:16,t:'small'},
-        {n:'Maciejowiec',lat:50.9738,lng:15.6149,z:16,t:'small'},
-        {n:'Pilchowice',lat:50.9794,lng:15.6368,z:16,t:'small'},
-        {n:'Podgórki',lat:50.9560,lng:15.8489,z:16,t:'small'},
-        {n:'Chrośnica',lat:50.9798,lng:15.7872,z:16,t:'small'}
-      ];
-
-      var placeLabelsGroup = L.layerGroup().addTo(map);
-      var activePlaceLabels = {};
-
-      function updatePlaceLabels() {
-        var z = map.getZoom();
-        for (var i = 0; i < jgPlaceNames.length; i++) {
-          var p = jgPlaceNames[i];
-          if (z >= p.z && !activePlaceLabels[p.n]) {
-            var cssClass = 'jg-place-label jg-place-label--' + p.t;
-            var marker = L.marker([p.lat, p.lng], {
-              icon: L.divIcon({
-                className: cssClass,
-                html: '<span>' + p.n + '</span>',
-                iconSize: null,
-                iconAnchor: [0, 0]
-              }),
-              interactive: false,
-              keyboard: false
-            });
-            placeLabelsGroup.addLayer(marker);
-            activePlaceLabels[p.n] = marker;
-          }
-        }
-      }
-
-      updatePlaceLabels();
-      map.on('zoomend', updatePlaceLabels);
 
       // Map/Satellite toggle control
       var MapToggleControl = L.Control.extend({
@@ -3189,15 +3100,16 @@
         setTimeout(function() {
           try {
             // Single cluster with grid layout showing types
-            // maxClusterRadius as function: breaks apart naturally when zooming in
-            // At high zoom (17-18), small radius. At max zoom (19), larger to prevent breaking apart
+            // maxClusterRadius as function: breaks apart naturally when zooming in.
+            // Radius must be monotonically non-increasing so that zooming in
+            // never re-clusters markers that were already visible (unclustered).
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: function(zoom) {
                 // zoom < 17: Normal clusters (80px radius)
                 // zoom 17-18: Special clusters (35px radius) - only very close places
-                // zoom 19: Special clusters (50px radius) - larger to prevent breaking apart but not too large
-                if (zoom >= 19) return 50;
+                // zoom 19 (max): Tiny radius (5px) - only truly overlapping markers
+                if (zoom >= 19) return 5;
                 if (zoom >= 17) return 35;
                 return 80;
               },
