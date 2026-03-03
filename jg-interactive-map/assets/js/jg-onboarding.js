@@ -184,6 +184,7 @@
       '</div>';
 
     modal.style.display = 'flex';
+    document.body.classList.add('jg-modal-open');
 
     // Bind navigation buttons
     var nextBtn = document.getElementById('jg-onb-next');
@@ -208,6 +209,13 @@
   function closeWelcome() {
     var modal = document.getElementById('jg-onboarding-modal');
     if (modal) modal.style.display = 'none';
+    // Unlock body scroll if no other modal is open
+    var bgs = document.querySelectorAll('.jg-modal-bg');
+    var anyOpen = false;
+    for (var i = 0; i < bgs.length; i++) {
+      if (bgs[i].style.display === 'flex' || bgs[i].classList.contains('active')) { anyOpen = true; break; }
+    }
+    if (!anyOpen) document.body.classList.remove('jg-modal-open');
     setFlag(WELCOME_KEY);
     currentStep = 0;
 
