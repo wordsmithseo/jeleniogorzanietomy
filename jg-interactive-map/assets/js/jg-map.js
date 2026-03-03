@@ -3127,8 +3127,8 @@
               spiderfyOnMaxZoom: false,
               zoomToBoundsOnClick: false,
               spiderfyDistanceMultiplier: 2,
-              animate: false,
-              animateAddingMarkers: false,
+              animate: true,
+              animateAddingMarkers: true,
               disableClusteringAtZoom: 20, // Never disable clustering (max zoom is 19)
               iconCreateFunction: function(clusterGroup) {
                 var childMarkers = clusterGroup.getAllChildMarkers();
