@@ -7277,133 +7277,208 @@ button.jg-mobile-map-filter-btn {
 
 /* ─────────────────────────────────────────────────────────────────────────────
    JG Nav Bar – logo + hamburger menu
-   Independent of Elementor styling; uses plugin brand colors (#8d2324)
+   Fully isolated from Elementor via all:unset + !important + ID selectors.
+   Do NOT use class selectors here – Elementor overwrites them too easily.
    ───────────────────────────────────────────────────────────────────────────── */
 
-.jg-nav-bar {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  border-bottom: 2px solid #8d2324;
-  padding: 0 16px;
-  height: 52px;
-  box-sizing: border-box;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+/* ── Main bar ── */
+#jg-nav-bar {
+  all: unset !important;
+  display: flex !important;
+  position: sticky !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 10000 !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  padding: 0 16px !important;
+  margin: 0 !important;
+  background: #fff !important;
+  background-image: none !important;
+  border: none !important;
+  border-bottom: 2px solid #8d2324 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+  box-sizing: border-box !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+  font-size: 15px !important;
+  color: #1f2937 !important;
+  line-height: 1 !important;
+  overflow: visible !important;
+  /* Containment: style so Elementor's global counters/properties don't bleed in */
+  contain: style !important;
 }
 
-.jg-nav-logo-link {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  flex-shrink: 0;
-  height: 36px;
+/* ── Logo link ── */
+#jg-nav-bar .jg-nav-logo-link {
+  all: unset !important;
+  display: flex !important;
+  align-items: center !important;
+  height: 36px !important;
+  flex-shrink: 0 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
 }
 
-.jg-nav-logo-img {
-  height: 36px;
-  width: auto;
-  max-width: 180px;
-  display: block;
-  object-fit: contain;
+/* ── Logo image ── */
+#jg-nav-bar .jg-nav-logo-img {
+  all: unset !important;
+  display: block !important;
+  height: 36px !important;
+  width: auto !important;
+  max-width: 180px !important;
+  max-height: 36px !important;
+  object-fit: contain !important;
 }
 
-/* Hamburger button */
-.jg-hamburger-btn {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  width: 40px;
-  height: 40px;
-  padding: 8px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  border-radius: 8px;
-  flex-shrink: 0;
-  box-sizing: border-box;
-  transition: background 0.2s;
+/* ── Hamburger button: reset every property Elementor or a theme could set ── */
+#jg-nav-bar .jg-hamburger-btn {
+  all: unset !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 5px !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  transition: background-color 0.2s !important;
+  text-shadow: none !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  vertical-align: middle !important;
+  font-family: inherit !important;
+  color: #8d2324 !important;
 }
 
-.jg-hamburger-btn:hover,
-.jg-hamburger-btn:focus {
-  background: rgba(141, 35, 36, 0.08);
-  outline: none;
+#jg-nav-bar .jg-hamburger-btn:hover,
+#jg-nav-bar .jg-hamburger-btn:focus {
+  background-color: rgba(141, 35, 36, 0.08) !important;
+  outline: none !important;
 }
 
-.jg-hamburger-btn span {
-  display: block;
-  width: 22px;
-  height: 2px;
-  background: #8d2324;
-  border-radius: 2px;
-  transition: transform 0.25s ease, opacity 0.25s ease;
-  transform-origin: center;
+/* ── The three lines inside the button ── */
+#jg-nav-bar .jg-hamburger-btn > span {
+  all: unset !important;
+  display: block !important;
+  width: 22px !important;
+  height: 2px !important;
+  min-height: 2px !important;
+  max-height: 2px !important;
+  background: #8d2324 !important;
+  background-color: #8d2324 !important;
+  border-radius: 2px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  opacity: 1 !important;
+  transform-origin: center !important;
+  transition: transform 0.25s ease, opacity 0.25s ease !important;
 }
 
-/* Animate to X when open */
-.jg-hamburger-btn.jg-nav-open span:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
+/* Animate to × when open */
+#jg-nav-bar .jg-hamburger-btn.jg-nav-open > span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg) !important;
 }
-.jg-hamburger-btn.jg-nav-open span:nth-child(2) {
-  opacity: 0;
-  transform: scaleX(0);
+#jg-nav-bar .jg-hamburger-btn.jg-nav-open > span:nth-child(2) {
+  opacity: 0 !important;
+  transform: scaleX(0) !important;
 }
-.jg-hamburger-btn.jg-nav-open span:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
-}
-
-/* Dropdown nav menu */
-.jg-nav-menu {
-  display: none;
-  position: absolute;
-  top: 52px;
-  left: 0;
-  right: 0;
-  background: #fff;
-  border-bottom: 2px solid #8d2324;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  z-index: 9999;
-  padding: 8px 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+#jg-nav-bar .jg-hamburger-btn.jg-nav-open > span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg) !important;
 }
 
-.jg-nav-menu.jg-nav-open {
-  display: block;
+/* ── Dropdown nav menu (fixed, so it always overlays the page content) ── */
+#jg-nav-menu {
+  all: unset !important;
+  display: none !important;
+  position: fixed !important;
+  top: 52px !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-height: calc(100dvh - 52px) !important;
+  overflow-y: auto !important;
+  background: #fff !important;
+  background-color: #fff !important;
+  background-image: none !important;
+  border: none !important;
+  border-bottom: 2px solid #8d2324 !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
+  z-index: 9999 !important;
+  padding: 8px 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+  font-size: 15px !important;
+  color: #1f2937 !important;
+  line-height: 1.5 !important;
+  contain: style !important;
 }
 
-.jg-nav-menu-link {
-  display: block;
-  padding: 13px 20px;
-  color: #1f2937;
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-  border-bottom: 1px solid #f3f4f6;
-  transition: background 0.15s, color 0.15s;
-  box-sizing: border-box;
+#jg-nav-menu.jg-nav-open {
+  display: block !important;
 }
 
-.jg-nav-menu-link:last-child {
-  border-bottom: none;
+/* ── Menu links – isolated from Elementor link/anchor styles ── */
+#jg-nav-menu .jg-nav-menu-link {
+  all: unset !important;
+  display: block !important;
+  width: 100% !important;
+  padding: 13px 20px !important;
+  margin: 0 !important;
+  color: #1f2937 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  text-decoration: none !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  border: none !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  outline: none !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  transition: background-color 0.15s, color 0.15s !important;
 }
 
-.jg-nav-menu-link:hover,
-.jg-nav-menu-link:focus {
-  background: rgba(141, 35, 36, 0.06);
-  color: #8d2324;
-  outline: none;
+#jg-nav-menu .jg-nav-menu-link:last-child {
+  border-bottom: none !important;
 }
 
-/* Click outside overlay */
-.jg-nav-overlay {
+#jg-nav-menu .jg-nav-menu-link:hover,
+#jg-nav-menu .jg-nav-menu-link:focus {
+  background-color: rgba(141, 35, 36, 0.06) !important;
+  color: #8d2324 !important;
+  outline: none !important;
+}
+
+/* ── Click-outside overlay ── */
+#jg-nav-overlay {
   display: none;
   position: fixed;
   inset: 0;
@@ -7411,13 +7486,16 @@ button.jg-mobile-map-filter-btn {
   background: transparent;
 }
 
-.jg-nav-overlay.jg-nav-open {
+#jg-nav-overlay.jg-nav-open {
   display: block;
 }
 
-/* On desktop: hide the nav bar (it's mobile-only by default) */
+/* ── Desktop: hide nav bar (mobile-only) ── */
 @media (min-width: 769px) {
-  .jg-nav-bar {
-    display: none;
+  #jg-nav-bar {
+    display: none !important;
+  }
+  #jg-nav-menu {
+    display: none !important;
   }
 }

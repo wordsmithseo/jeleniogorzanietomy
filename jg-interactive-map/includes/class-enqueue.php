@@ -474,39 +474,53 @@ class JG_Map_Enqueue {
             });
 
             /* ── Mobile viewport fitting ──────────────────────────────────────
-               Makes the banner + map together fit within the visible viewport
-               so nothing overflows below the fold on first load.
+               Banner: capped so it doesn't eat too much screen real estate.
+               Map:    expands from its actual top edge to the EXACT bottom of
+                       the visual viewport (dvh – accounts for browser chrome,
+                       bottom navigation bars, on-screen keyboards, etc.)
             ──────────────────────────────────────────────────────────────────── */
+            var jgFitting = false; // guard against recursive resize loop
+
             function jgFitMobileViewport() {
                 if (window.innerWidth > 768) return;
+                if (jgFitting) return;
+                jgFitting = true;
 
                 var navBarEl  = document.getElementById('jg-nav-bar');
                 var topBarEl  = document.getElementById('jg-custom-top-bar');
                 var mapWrapEl = document.getElementById('jg-map-wrap');
                 var bannerEl  = document.querySelector('.jg-banner-container');
 
-                if (!mapWrapEl) return;
+                if (!mapWrapEl) { jgFitting = false; return; }
 
-                var navH  = navBarEl  ? navBarEl.offsetHeight  : 0;
-                var topH  = topBarEl  ? topBarEl.offsetHeight  : 0;
+                var navH  = navBarEl ? navBarEl.offsetHeight : 0;
+                var topH  = topBarEl ? topBarEl.offsetHeight : 0;
+                /* visualViewport.height = the part of the screen actually visible
+                   to the user, shrinking when the browser address/nav bar is shown */
                 var vpH   = window.visualViewport ? window.visualViewport.height : window.innerHeight;
                 var avail = vpH - navH - topH;
 
-                /* Banner: at most 22 % of available vertical space */
+                /* 1. Constrain the banner to 22 % of available vertical space */
                 if (bannerEl) {
-                    var maxBannerH = Math.round(avail * 0.22);
-                    bannerEl.style.maxHeight  = maxBannerH + 'px';
-                    bannerEl.style.overflow   = 'hidden';
+                    bannerEl.style.maxHeight = Math.round(avail * 0.22) + 'px';
+                    bannerEl.style.overflow  = 'hidden';
+                    /* Force synchronous reflow so getBoundingClientRect below
+                       reflects the banner's new height */
+                    void bannerEl.offsetHeight;
                 }
 
-                /* Map: fills the remaining space (min 200 px) */
-                var bannerH = bannerEl ? bannerEl.offsetHeight : 0;
-                var mapH    = Math.max(avail - bannerH, 200);
+                /* 2. Map fills from its current top edge to the bottom of the
+                   visible viewport – precise, no math about bar heights needed */
+                var mapTop = mapWrapEl.getBoundingClientRect().top;
+                var mapH   = Math.max(vpH - mapTop, 200);
                 mapWrapEl.style.height    = mapH + 'px';
                 mapWrapEl.style.maxHeight = mapH + 'px';
 
-                /* Tell Leaflet to redraw after container resize */
-                window.dispatchEvent(new Event('resize'));
+                /* 3. Tell Leaflet to redraw */
+                setTimeout(function () {
+                    window.dispatchEvent(new Event('resize'));
+                    jgFitting = false;
+                }, 0);
             }
 
             if (document.readyState === 'loading') {
