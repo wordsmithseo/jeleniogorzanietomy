@@ -218,6 +218,20 @@
 
 
   // ====================================
+  // BODY SCROLL LOCK (when any modal is open)
+  // ====================================
+  function lockBodyScroll() {
+    document.body.classList.add('jg-modal-open');
+  }
+  function unlockBodyScroll() {
+    var bgs = document.querySelectorAll('.jg-modal-bg');
+    for (var i = 0; i < bgs.length; i++) {
+      if (bgs[i].style.display === 'flex' || bgs[i].classList.contains('active')) return;
+    }
+    document.body.classList.remove('jg-modal-open');
+  }
+
+  // ====================================
   // MESSAGE MODALS (Alert/Confirm replacements)
   // ====================================
   function showAlert(message) {
@@ -237,10 +251,12 @@
       buttonsEl.innerHTML = '<button class="jg-btn" id="jg-alert-ok">OK</button>';
 
       modal.style.display = 'flex';
+      lockBodyScroll();
 
       var okBtn = document.getElementById('jg-alert-ok');
       okBtn.onclick = function() {
         modal.style.display = 'none';
+        unlockBodyScroll();
         resolve();
       };
 
@@ -248,6 +264,7 @@
       modal.onclick = function(e) {
         if (e.target === modal) {
           modal.style.display = 'none';
+          unlockBodyScroll();
           resolve();
         }
       };
@@ -270,17 +287,20 @@
       buttonsEl.innerHTML = '<button class="jg-btn jg-btn--ghost" id="jg-confirm-no">Anuluj</button><button class="jg-btn" id="jg-confirm-yes">OK</button>';
 
       modal.style.display = 'flex';
+      lockBodyScroll();
 
       var yesBtn = document.getElementById('jg-confirm-yes');
       var noBtn = document.getElementById('jg-confirm-no');
 
       yesBtn.onclick = function() {
         modal.style.display = 'none';
+        unlockBodyScroll();
         resolve(true);
       };
 
       noBtn.onclick = function() {
         modal.style.display = 'none';
+        unlockBodyScroll();
         resolve(false);
       };
 
@@ -288,6 +308,7 @@
       modal.onclick = function(e) {
         if (e.target === modal) {
           modal.style.display = 'none';
+          unlockBodyScroll();
           resolve(false);
         }
       };
@@ -311,6 +332,7 @@
       buttonsEl.innerHTML = '<button class="jg-btn jg-btn--ghost" id="jg-confirm-no">Anuluj</button><button class="jg-btn jg-btn--danger" id="jg-confirm-yes">Odrzuć</button>';
 
       modal.style.display = 'flex';
+      lockBodyScroll();
 
       var textarea = document.getElementById('jg-reject-reason-textarea');
       var yesBtn = document.getElementById('jg-confirm-yes');
@@ -324,11 +346,13 @@
       yesBtn.onclick = function() {
         var reason = textarea.value.trim();
         modal.style.display = 'none';
+        unlockBodyScroll();
         resolve(reason || '');
       };
 
       noBtn.onclick = function() {
         modal.style.display = 'none';
+        unlockBodyScroll();
         resolve(null);
       };
 
@@ -336,6 +360,7 @@
       modal.onclick = function(e) {
         if (e.target === modal) {
           modal.style.display = 'none';
+          unlockBodyScroll();
           resolve(null);
         }
       };
@@ -2027,6 +2052,7 @@
         }
         c.innerHTML = html;
         bg.style.display = 'flex';
+        lockBodyScroll();
 
         // Update URL in browser address bar if opening point detail modal
         if (bg.id === 'jg-map-modal-view' && opts && opts.pointData) {
@@ -2094,6 +2120,7 @@
             lightbox.style.display = 'none';
           }
         }
+        unlockBodyScroll();
       }
 
       // Close regular modals by clicking their backdrop (lightbox handled separately below).
@@ -11531,15 +11558,18 @@
         buttons.innerHTML = '<button class="jg-btn jg-btn--primary" id="jg-levelup-ok" style="padding:10px 32px;background:#667eea;border:none;color:#fff;border-radius:8px;font-weight:600;cursor:pointer;font-size:15px">Świetnie!</button>';
 
         modalAlert.classList.add('active');
+        lockBodyScroll();
 
         document.getElementById('jg-levelup-ok').onclick = function() {
           modalAlert.classList.remove('active');
+          unlockBodyScroll();
           if (onClose) onClose();
         };
 
         modalAlert.onclick = function(e) {
           if (e.target === modalAlert) {
             modalAlert.classList.remove('active');
+            unlockBodyScroll();
             if (onClose) onClose();
           }
         };
@@ -11582,15 +11612,18 @@
         buttons.innerHTML = '<button class="jg-btn jg-btn--primary" id="jg-ach-ok" style="padding:10px 32px;background:' + color + ';border:none;color:#fff;border-radius:8px;font-weight:600;cursor:pointer;font-size:15px">Wspaniale!</button>';
 
         modalAlert.classList.add('active');
+        lockBodyScroll();
 
         document.getElementById('jg-ach-ok').onclick = function() {
           modalAlert.classList.remove('active');
+          unlockBodyScroll();
           if (onClose) onClose();
         };
 
         modalAlert.onclick = function(e) {
           if (e.target === modalAlert) {
             modalAlert.classList.remove('active');
+            unlockBodyScroll();
             if (onClose) onClose();
           }
         };

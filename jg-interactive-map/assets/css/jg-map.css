@@ -2330,6 +2330,11 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 }
 
+/* Prevent page scroll when modal is open */
+body.jg-modal-open {
+  overflow: hidden;
+}
+
 /* Modals */
 .jg-modal-bg {
   display: none;
