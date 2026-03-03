@@ -2196,8 +2196,13 @@
       }
 
       // Enforce bounds strictly - reset view if user tries to go outside
+      var _panRaf = null;
       map.on('drag', function() {
-        map.panInsideBounds(bounds, { animate: false });
+        if (_panRaf) return;
+        _panRaf = requestAnimationFrame(function() {
+          map.panInsideBounds(bounds, { animate: false });
+          _panRaf = null;
+        });
       });
 
       map.on('zoomend', function() {
@@ -3122,8 +3127,8 @@
               spiderfyOnMaxZoom: false,
               zoomToBoundsOnClick: false,
               spiderfyDistanceMultiplier: 2,
-              animate: true,
-              animateAddingMarkers: true,
+              animate: false,
+              animateAddingMarkers: false,
               disableClusteringAtZoom: 20, // Never disable clustering (max zoom is 19)
               iconCreateFunction: function(clusterGroup) {
                 var childMarkers = clusterGroup.getAllChildMarkers();
@@ -3987,23 +3992,11 @@
             '</pattern>';
         }
 
-        svgPin += '<filter id="soft-shadow-' + gradientId + '" x="-50%" y="-50%" width="200%" height="200%">' +
-          '<feGaussianBlur in="SourceAlpha" stdDeviation="3"/>' +
-          '<feOffset dx="0" dy="3" result="offsetblur"/>' +
-          '<feComponentTransfer>' +
-          '<feFuncA type="linear" slope="0.4"/>' +
-          '</feComponentTransfer>' +
-          '<feMerge>' +
-          '<feMergeNode/>' +
-          '<feMergeNode in="SourceGraphic"/>' +
-          '</feMerge>' +
-          '</filter>' +
-          '</defs>';
+        svgPin += '</defs>';
 
         // Pin shape: rounded Google Maps style with smooth curves
         svgPin += '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" ' +
-          'fill="url(#' + gradientId + ')" ' +
-          'filter="url(#soft-shadow-' + gradientId + ')"/>';
+          'fill="url(#' + gradientId + ')"/>';
 
         // Add diagonal stripe overlay for sponsored pins
         if (sponsored) {
