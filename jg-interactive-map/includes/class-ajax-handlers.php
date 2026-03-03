@@ -1309,8 +1309,10 @@ class JG_Map_Ajax_Handlers {
         // Pagination params
         $points_page = isset($_POST['points_page']) ? max(1, intval($_POST['points_page'])) : 1;
         $photos_page = isset($_POST['photos_page']) ? max(1, intval($_POST['photos_page'])) : 1;
+        $edited_points_page = isset($_POST['edited_points_page']) ? max(1, intval($_POST['edited_points_page'])) : 1;
         $points_per_page = 10;
         $photos_per_page = 12;
+        $edited_points_per_page = 10;
 
         // Get user's points count
         $points_count = $wpdb->get_var($wpdb->prepare(
@@ -1375,6 +1377,36 @@ class JG_Map_Ajax_Handlers {
             );
         }
 
+        // Get distinct points edited by this user (approved edits only, excluding own points)
+        $edited_points_count = intval($wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT h.point_id) FROM $table_history h
+             INNER JOIN $table_points p ON p.id = h.point_id
+             WHERE h.user_id = %d AND h.status = 'approved' AND p.status = 'publish' AND p.author_id != %d",
+            $user_id, $user_id
+        )));
+
+        $edited_points_offset = ($edited_points_page - 1) * $edited_points_per_page;
+        $edited_points_raw = $wpdb->get_results($wpdb->prepare(
+            "SELECT p.id, p.title, p.type, MAX(h.created_at) as last_edited_at
+             FROM $table_history h
+             INNER JOIN $table_points p ON p.id = h.point_id
+             WHERE h.user_id = %d AND h.status = 'approved' AND p.status = 'publish' AND p.author_id != %d
+             GROUP BY p.id, p.title, p.type
+             ORDER BY last_edited_at DESC
+             LIMIT %d OFFSET %d",
+            $user_id, $user_id, $edited_points_per_page, $edited_points_offset
+        ), ARRAY_A);
+
+        $edited_points_list = array();
+        foreach ($edited_points_raw as $ep) {
+            $edited_points_list[] = array(
+                'id' => intval($ep['id']),
+                'title' => $ep['title'],
+                'type' => $ep['type'],
+                'last_edited_at' => $ep['last_edited_at'] ? $ep['last_edited_at'] . ' UTC' : null
+            );
+        }
+
         // Get all user's photos from all their points
         $user_photos_data = $wpdb->get_results($wpdb->prepare(
             "SELECT images FROM $table_points
@@ -1421,6 +1453,10 @@ class JG_Map_Ajax_Handlers {
             'points_total' => intval($points_count),
             'points_page' => $points_page,
             'points_pages' => max(1, ceil(intval($points_count) / $points_per_page)),
+            'edited_points' => $edited_points_list,
+            'edited_points_total' => $edited_points_count,
+            'edited_points_page' => $edited_points_page,
+            'edited_points_pages' => max(1, ceil($edited_points_count / $edited_points_per_page)),
             'photos' => $photos_paged,
             'photos_total' => $photos_total,
             'photos_page' => $photos_page,
