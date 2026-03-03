@@ -474,12 +474,17 @@ class JG_Map_Enqueue {
             });
 
             /* ── Mobile viewport fitting ──────────────────────────────────────
-               Banner: capped so it doesn't eat too much screen real estate.
-               Map:    expands from its actual top edge to the EXACT bottom of
-                       the visual viewport (dvh – accounts for browser chrome,
-                       bottom navigation bars, on-screen keyboards, etc.)
+               Root cause: CSS had `height: 100% !important` on #jg-map-wrap
+               which beats regular inline styles.  Fix: use
+               style.setProperty(prop, val, 'important') — inline !important
+               always wins over any stylesheet !important.
+
+               Map height = visualViewport.height − map's actual top position
+               (getBoundingClientRect().top), so it reaches the exact bottom
+               of the visible screen regardless of Elementor padding or bar
+               heights.
             ──────────────────────────────────────────────────────────────────── */
-            var jgFitting = false; // guard against recursive resize loop
+            var jgFitting = false;
 
             function jgFitMobileViewport() {
                 if (window.innerWidth > 768) return;
@@ -495,45 +500,56 @@ class JG_Map_Enqueue {
 
                 var navH  = navBarEl ? navBarEl.offsetHeight : 0;
                 var topH  = topBarEl ? topBarEl.offsetHeight : 0;
-                /* visualViewport.height = the part of the screen actually visible
-                   to the user, shrinking when the browser address/nav bar is shown */
-                var vpH   = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                /* visualViewport.height shrinks when browser chrome appears
+                   (address bar, bottom nav bar, on-screen keyboard) */
+                var vpH = window.visualViewport
+                    ? window.visualViewport.height
+                    : window.innerHeight;
                 var avail = vpH - navH - topH;
 
-                /* 1. Constrain the banner to 22 % of available vertical space */
+                /* 1. Cap banner to 22 % of available vertical space */
                 if (bannerEl) {
-                    bannerEl.style.maxHeight = Math.round(avail * 0.22) + 'px';
-                    bannerEl.style.overflow  = 'hidden';
-                    /* Force synchronous reflow so getBoundingClientRect below
-                       reflects the banner's new height */
-                    void bannerEl.offsetHeight;
+                    bannerEl.style.setProperty('max-height', Math.round(avail * 0.22) + 'px', 'important');
+                    bannerEl.style.setProperty('overflow',   'hidden', 'important');
+                    void bannerEl.offsetHeight; /* force reflow before measuring map */
                 }
 
-                /* 2. Map fills from its current top edge to the bottom of the
-                   visible viewport – precise, no math about bar heights needed */
+                /* 2. Fill map from its real top edge to viewport bottom.
+                   setProperty with 'important' beats CSS height:100%!important */
                 var mapTop = mapWrapEl.getBoundingClientRect().top;
                 var mapH   = Math.max(vpH - mapTop, 200);
-                mapWrapEl.style.height    = mapH + 'px';
-                mapWrapEl.style.maxHeight = mapH + 'px';
+                mapWrapEl.style.setProperty('height',     mapH + 'px', 'important');
+                mapWrapEl.style.setProperty('max-height', mapH + 'px', 'important');
 
-                /* 3. Tell Leaflet to redraw */
+                /* 3. Notify Leaflet to redraw; clear guard first so Leaflet's
+                   own resize handling doesn't get blocked */
                 setTimeout(function () {
-                    window.dispatchEvent(new Event('resize'));
                     jgFitting = false;
+                    window.dispatchEvent(new Event('resize'));
                 }, 0);
             }
 
+            /* DOM ready */
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', jgFitMobileViewport);
+                document.addEventListener('DOMContentLoaded', function () {
+                    requestAnimationFrame(jgFitMobileViewport);
+                });
             } else {
-                jgFitMobileViewport();
+                requestAnimationFrame(jgFitMobileViewport);
             }
 
-            window.addEventListener('resize', jgFitMobileViewport);
+            /* After ALL resources (images, banner) are loaded */
+            window.addEventListener('load', jgFitMobileViewport);
 
+            /* Browser chrome resize (address bar hide/show) */
+            window.addEventListener('resize', jgFitMobileViewport);
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', jgFitMobileViewport);
             }
+
+            /* Safety net for late Elementor rendering */
+            setTimeout(jgFitMobileViewport, 300);
+            setTimeout(jgFitMobileViewport, 800);
         })();
         </script>
         <?php
