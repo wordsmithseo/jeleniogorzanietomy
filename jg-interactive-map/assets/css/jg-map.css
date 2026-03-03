@@ -3702,15 +3702,6 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 }
 
-/* Prevent marker labels from fading out during cluster zoom animations.
-   The default MarkerCluster CSS applies opacity 0→1 transition which makes
-   labels briefly invisible when clusters split. Override to keep them visible. */
-.leaflet-cluster-anim .leaflet-marker-icon,
-.leaflet-cluster-anim .leaflet-marker-shadow {
-  transition: transform 0.3s ease-out !important;
-  opacity: 1 !important;
-}
-
 /* Cluster z-index layers */
 .marker-cluster {
   z-index: 500 !important;
