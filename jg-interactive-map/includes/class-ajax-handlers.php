@@ -1781,6 +1781,16 @@ class JG_Map_Ajax_Handlers {
             // Verify what was actually saved
             $saved_point = JG_Map_Database::get_point($point_id);
 
+            // Log user action
+            $type_labels = array('miejsce' => 'miejsce', 'ciekawostka' => 'ciekawostkę', 'zgloszenie' => 'zgłoszenie');
+            $type_label = $type_labels[$type] ?? $type;
+            JG_Map_Activity_Log::log_user_action(
+                'submit_point',
+                'point',
+                $point_id,
+                sprintf('Dodano %s: %s', $type_label, $title)
+            );
+
             // Send email notification to admin
             $this->notify_admin_new_point($point_id);
 
@@ -2098,6 +2108,14 @@ class JG_Map_Ajax_Handlers {
             );
             JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
 
+            // Log user action (admin direct edit)
+            JG_Map_Activity_Log::log_user_action(
+                'edit_point',
+                'point',
+                $point_id,
+                sprintf('Bezpośrednio edytowano miejsce: %s', $title)
+            );
+
             wp_send_json_success(array('message' => 'Zaktualizowano'));
         } else {
             // Check if user has sponsored places (users with sponsored places get 2x edit limit)
@@ -2263,6 +2281,14 @@ class JG_Map_Ajax_Handlers {
                 }, false);
             }
 
+            // Log user action
+            JG_Map_Activity_Log::log_user_action(
+                'suggest_edit',
+                'point',
+                $point_id,
+                sprintf('Zaproponowano edycję miejsca: %s%s', $point['title'], !$is_owner ? ' (cudze miejsce)' : '')
+            );
+
             $success_msg = !$is_owner
                 ? 'Edycja wysłana do zatwierdzenia przez właściciela miejsca'
                 : 'Edycja wysłana do moderacji';
@@ -2368,6 +2394,14 @@ class JG_Map_Ajax_Handlers {
             $message .= "Sprawdź w panelu administratora.";
             wp_mail($admin_email, $subject, $message);
         }
+
+        // Log user action
+        JG_Map_Activity_Log::log_user_action(
+            'request_deletion',
+            'point',
+            $point_id,
+            sprintf('Zgłoszono chęć usunięcia: %s. Powód: %s', $point['title'], $reason ?: 'brak')
+        );
 
         wp_send_json_success(array('message' => 'Zgłoszenie usunięcia wysłane do moderacji'));
     }
@@ -2486,6 +2520,24 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
+        // Log user action
+        if (!empty($new_vote)) {
+            $vote_label = $new_vote === 'up' ? 'za' : 'przeciw';
+            JG_Map_Activity_Log::log_user_action(
+                'vote',
+                'point',
+                $point_id,
+                sprintf('Zagłosowano %s: %s', $vote_label, $point['title'])
+            );
+        } else {
+            JG_Map_Activity_Log::log_user_action(
+                'vote_removed',
+                'point',
+                $point_id,
+                sprintf('Wycofano głos: %s', $point['title'])
+            );
+        }
+
         wp_send_json_success(array(
             'votes'      => $votes_count,
             'my_vote'    => $new_vote,
@@ -2580,6 +2632,15 @@ class JG_Map_Ajax_Handlers {
             'user_id' => $user_id,
             'reason' => $reason
         ));
+
+        // Log user action
+        $reported_point = JG_Map_Database::get_point($point_id);
+        JG_Map_Activity_Log::log_user_action(
+            'report_point',
+            'point',
+            $point_id,
+            sprintf('Zgłoszono miejsce: %s. Powód: %s', $reported_point ? $reported_point['title'] : '#' . $point_id, wp_trim_words($reason, 10))
+        );
 
         // Notify admin
         $this->notify_admin_new_report($point_id, $user_id);
@@ -5964,6 +6025,14 @@ class JG_Map_Ajax_Handlers {
 
         JG_Map_Database::update_point($point_id, $update_data);
 
+        // Log user action
+        JG_Map_Activity_Log::log_user_action(
+            'delete_image',
+            'point',
+            $point_id,
+            sprintf('Usunięto zdjęcie #%d z miejsca: %s', $image_index + 1, $point['title'])
+        );
+
         wp_send_json_success(array(
             'message' => 'Zdjęcie usunięte',
             'remaining_count' => count($images),
@@ -6049,6 +6118,14 @@ class JG_Map_Ajax_Handlers {
         JG_Map_Database::update_point($point_id, array(
             'featured_image_index' => $image_index
         ));
+
+        // Log user action
+        JG_Map_Activity_Log::log_user_action(
+            'set_featured_image',
+            'point',
+            $point_id,
+            sprintf('Ustawiono zdjęcie #%d jako wyróżnione dla: %s', $image_index + 1, $point['title'])
+        );
 
         wp_send_json_success(array(
             'message' => 'Wyróżniony obraz ustawiony',
@@ -6321,6 +6398,14 @@ class JG_Map_Ajax_Handlers {
         foreach ($meta_keys as $meta_key) {
             delete_user_meta($user_id, $meta_key);
         }
+
+        // Log user action before deletion
+        JG_Map_Activity_Log::log_user_action(
+            'delete_profile',
+            'user',
+            $user_id,
+            sprintf('Użytkownik %s usunął swoje konto (wraz z %d miejscami)', $user->display_name, count($user_places))
+        );
 
         // Log user out before deletion
         wp_logout();
@@ -8760,6 +8845,14 @@ class JG_Map_Ajax_Handlers {
         // Update rate limits
         set_transient($rate_key, $rate_count + 1, DAY_IN_SECONDS);
         set_transient($place_rate_key, 1, WEEK_IN_SECONDS);
+
+        // Log user action
+        JG_Map_Activity_Log::log_user_action(
+            'request_promotion',
+            'point',
+            $point_id,
+            sprintf('Wysłano zapytanie o promocję: %s', $point_title)
+        );
 
         wp_send_json_success(array('message' => 'Prośba o ofertę została wysłana.'));
     }

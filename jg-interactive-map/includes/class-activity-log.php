@@ -1,6 +1,6 @@
 <?php
 /**
- * Activity Log for administrative actions
+ * Activity Log for administrative and user actions
  */
 
 // Exit if accessed directly
@@ -219,6 +219,37 @@ class JG_Map_Activity_Log {
         }
 
         return $ip;
+    }
+
+    /**
+     * Log a user action (no admin/moderator permission required)
+     */
+    public static function log_user_action($action, $object_type, $object_id = null, $description = '') {
+        global $wpdb;
+
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return false;
+        }
+
+        $table = $wpdb->prefix . 'jg_map_activity_log';
+
+        $ip_address = self::get_user_ip();
+        $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field($_SERVER['HTTP_USER_AGENT']) : '';
+
+        return $wpdb->insert(
+            $table,
+            array(
+                'user_id' => $user_id,
+                'action' => sanitize_text_field($action),
+                'object_type' => sanitize_text_field($object_type),
+                'object_id' => $object_id,
+                'description' => sanitize_text_field($description),
+                'ip_address' => $ip_address,
+                'user_agent' => $user_agent
+            ),
+            array('%d', '%s', '%s', '%d', '%s', '%s', '%s')
+        );
     }
 
     /**
