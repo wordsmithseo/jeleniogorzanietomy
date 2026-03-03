@@ -2343,7 +2343,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   background: rgba(0, 0, 0, 0.45);
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 10001;
   padding: 18px;
 }
 
