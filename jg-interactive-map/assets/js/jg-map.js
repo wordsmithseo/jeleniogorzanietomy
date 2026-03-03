@@ -5542,11 +5542,12 @@
       /**
        * Open user profile modal
        */
-      function openUserModal(userId, pointsPage, photosPage) {
+      function openUserModal(userId, pointsPage, photosPage, editedPointsPage) {
         pointsPage = pointsPage || 1;
         photosPage = photosPage || 1;
+        editedPointsPage = editedPointsPage || 1;
 
-        api('jg_get_user_info', { user_id: userId, points_page: pointsPage, photos_page: photosPage }).then(function(user) {
+        api('jg_get_user_info', { user_id: userId, points_page: pointsPage, photos_page: photosPage, edited_points_page: editedPointsPage }).then(function(user) {
           if (!user) {
             showAlert('Błąd pobierania informacji o użytkowniku');
             return;
@@ -5613,6 +5614,49 @@
             }
           } else {
             pointsHtml = '<div style="padding:20px;text-align:center;color:#9ca3af">Brak dodanych miejsc</div>';
+          }
+
+          // Edited points list
+          var editedPointsHtml = '';
+          if (user.edited_points && user.edited_points.length > 0) {
+            editedPointsHtml = '<div style="margin-top:20px">' +
+              '<h4 style="margin:0 0 8px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">✏️ Edytowane pinezki (' + user.edited_points_total + ')</h4>' +
+              '<div style="margin-top:12px">';
+            for (var ei = 0; ei < user.edited_points.length; ei++) {
+              var ep = user.edited_points[ei];
+              var epTypeLabels = {
+                'miejsce': '📍 Miejsce',
+                'ciekawostka': '💡 Ciekawostka',
+                'zgloszenie': '📢 Zgłoszenie'
+              };
+              var epTypeLabel = epTypeLabels[ep.type] || ep.type;
+              var epEditedAt = ep.last_edited_at ? new Date(ep.last_edited_at).toLocaleDateString('pl-PL') : '-';
+
+              editedPointsHtml += '<div style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px">' +
+                '<div style="font-weight:600;margin-bottom:4px">' + esc(ep.title) + '</div>' +
+                '<div style="font-size:12px;color:#6b7280">' +
+                '<span style="margin-right:12px">' + epTypeLabel + '</span>' +
+                '<span>Ostatnia edycja: ' + epEditedAt + '</span>' +
+                '</div>' +
+                '</div>';
+            }
+            editedPointsHtml += '</div>';
+
+            // Edited points pagination
+            if (user.edited_points_pages > 1) {
+              editedPointsHtml += '<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px">';
+              editedPointsHtml += '<button class="jg-user-modal-edited-points-prev" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (editedPointsPage <= 1 ? ';opacity:0.4;pointer-events:none' : '') + '">&laquo; Poprzednie</button>';
+              editedPointsHtml += '<span style="font-size:13px;color:#6b7280">Strona ' + user.edited_points_page + ' z ' + user.edited_points_pages + '</span>';
+              editedPointsHtml += '<button class="jg-user-modal-edited-points-next" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (editedPointsPage >= user.edited_points_pages ? ';opacity:0.4;pointer-events:none' : '') + '">Następne &raquo;</button>';
+              editedPointsHtml += '</div>';
+            }
+
+            editedPointsHtml += '</div>';
+          } else if (user.edited_points_total === 0) {
+            editedPointsHtml = '<div style="margin-top:20px">' +
+              '<h4 style="margin:0 0 8px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">✏️ Edytowane pinezki</h4>' +
+              '<div style="padding:20px;text-align:center;color:#9ca3af">Brak edytowanych pinezek</div>' +
+              '</div>';
           }
 
           // Photo gallery
@@ -5692,6 +5736,7 @@
             '<h4 style="margin:0 0 8px 0;color:#374151">Dodane miejsca</h4>' +
             pointsHtml +
             '</div>' +
+            editedPointsHtml +
             photosHtml +
             '</div>';
 
@@ -5768,20 +5813,30 @@
           var pointsPrev = modalReport.querySelector('.jg-user-modal-points-prev');
           var pointsNext = modalReport.querySelector('.jg-user-modal-points-next');
           if (pointsPrev && pointsPage > 1) {
-            pointsPrev.onclick = function() { openUserModal(userId, pointsPage - 1, photosPage); };
+            pointsPrev.onclick = function() { openUserModal(userId, pointsPage - 1, photosPage, editedPointsPage); };
           }
           if (pointsNext && pointsPage < user.points_pages) {
-            pointsNext.onclick = function() { openUserModal(userId, pointsPage + 1, photosPage); };
+            pointsNext.onclick = function() { openUserModal(userId, pointsPage + 1, photosPage, editedPointsPage); };
+          }
+
+          // Edited points pagination handlers
+          var editedPrev = modalReport.querySelector('.jg-user-modal-edited-points-prev');
+          var editedNext = modalReport.querySelector('.jg-user-modal-edited-points-next');
+          if (editedPrev && editedPointsPage > 1) {
+            editedPrev.onclick = function() { openUserModal(userId, pointsPage, photosPage, editedPointsPage - 1); };
+          }
+          if (editedNext && editedPointsPage < user.edited_points_pages) {
+            editedNext.onclick = function() { openUserModal(userId, pointsPage, photosPage, editedPointsPage + 1); };
           }
 
           // Photos pagination handlers
           var photosPrev = modalReport.querySelector('.jg-user-modal-photos-prev');
           var photosNext = modalReport.querySelector('.jg-user-modal-photos-next');
           if (photosPrev && photosPage > 1) {
-            photosPrev.onclick = function() { openUserModal(userId, pointsPage, photosPage - 1); };
+            photosPrev.onclick = function() { openUserModal(userId, pointsPage, photosPage - 1, editedPointsPage); };
           }
           if (photosNext && photosPage < user.photos_pages) {
-            photosNext.onclick = function() { openUserModal(userId, pointsPage, photosPage + 1); };
+            photosNext.onclick = function() { openUserModal(userId, pointsPage, photosPage + 1, editedPointsPage); };
           }
 
           // Add click handlers for photo gallery
