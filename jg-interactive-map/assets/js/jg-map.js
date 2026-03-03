@@ -704,6 +704,14 @@
 
   function init() {
     try {
+      // Move modals to <body> so they are in the root stacking context.
+      // Without this, parent containers (e.g. Elementor sections) may create
+      // their own stacking context, capping the effective z-index of modals
+      // below the sticky nav bar regardless of the declared z-index value.
+      document.querySelectorAll('.jg-modal-bg').forEach(function(el) {
+        document.body.appendChild(el);
+      });
+
       var CFG = window.JG_MAP_CFG || {};
       if (!CFG.ajax || !CFG.nonce) {
         showError('Brak konfiguracji JG_MAP_CFG');
