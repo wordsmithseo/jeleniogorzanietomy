@@ -1938,8 +1938,14 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 
   /* Modal adjustments for mobile */
+  .jg-modal-bg {
+    top: 52px; /* start below the sticky nav bar, not at viewport top */
+  }
+
   .jg-modal {
     position: relative;
+    max-height: calc(100vh - 88px);   /* nav(52px) + 2×padding(18px) = 88px */
+    max-height: calc(100dvh - 88px);  /* preferred: dynamic viewport height */
   }
 
   /* Modal header - allow wrapping for badges but hide X from flex */
