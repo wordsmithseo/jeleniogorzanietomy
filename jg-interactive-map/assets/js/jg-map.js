@@ -2205,7 +2205,9 @@
         maxZoom: 19,
         crossOrigin: true,
         subdomains: 'abcd',
-        className: 'jg-map-tiles'
+        className: 'jg-map-tiles',
+        keepBuffer: 5,              // Keep more tiles buffered around viewport to prevent label flicker
+        updateWhenZooming: false     // Don't swap tiles mid-zoom; old tiles stay visible until zoom ends
       });
 
 
@@ -3117,7 +3119,8 @@
               zoomToBoundsOnClick: false,
               spiderfyDistanceMultiplier: 2,
               animate: true,
-              animateAddingMarkers: true,
+              animateAddingMarkers: false,  // Don't animate markers appearing from clusters - prevents label flicker
+              removeOutsideVisibleBounds: false, // Keep markers in DOM during zoom so labels never vanish
               disableClusteringAtZoom: 20, // Never disable clustering (max zoom is 19)
               iconCreateFunction: function(clusterGroup) {
                 var childMarkers = clusterGroup.getAllChildMarkers();
