@@ -2088,11 +2088,17 @@
         }
       }
 
-      // Close regular modals by clicking their backdrop (lightbox handled separately below)
+      // Close regular modals by clicking their backdrop (lightbox handled separately below).
+      // We track mousedown target to avoid closing when user merely drags text selection
+      // starting inside the modal and releasing over the backdrop.
       [modalAdd, modalView, modalReport, modalReportsList, modalEdit, modalAuthor, modalStatus, modalRanking].forEach(function(bg) {
         if (!bg) return;
+        var mouseDownOnBg = false;
+        bg.addEventListener('mousedown', function(e) {
+          mouseDownOnBg = (e.target === bg);
+        });
         bg.addEventListener('click', function(e) {
-          if (e.target === bg) close(bg);
+          if (e.target === bg && mouseDownOnBg) close(bg);
         });
       });
 
