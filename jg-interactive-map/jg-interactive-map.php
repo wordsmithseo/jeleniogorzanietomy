@@ -220,6 +220,7 @@ class JG_Interactive_Map {
             "img-src 'self' data: https: blob:",
             "font-src 'self' data: https://fonts.gstatic.com",
             "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com",
+            "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'"
