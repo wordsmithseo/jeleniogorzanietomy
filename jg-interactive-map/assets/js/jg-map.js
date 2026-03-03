@@ -2205,7 +2205,9 @@
         maxZoom: 19,
         crossOrigin: true,
         subdomains: 'abcd',
-        className: 'jg-map-tiles'
+        className: 'jg-map-tiles',
+        keepBuffer: 5,              // Keep more tiles buffered around viewport to prevent label flicker
+        updateWhenZooming: false     // Don't swap tiles mid-zoom; old tiles stay visible until zoom ends
       });
 
 
@@ -3100,16 +3102,15 @@
         setTimeout(function() {
           try {
             // Single cluster with grid layout showing types
-            // maxClusterRadius as function: breaks apart naturally when zooming in.
-            // Radius must be monotonically non-increasing so that zooming in
-            // never re-clusters markers that were already visible (unclustered).
+            // maxClusterRadius as function: breaks apart naturally when zooming in
+            // At high zoom (17-18), small radius. At max zoom (19), larger to prevent breaking apart
             cluster = L.markerClusterGroup({
               showCoverageOnHover: false,
               maxClusterRadius: function(zoom) {
                 // zoom < 17: Normal clusters (80px radius)
                 // zoom 17-18: Special clusters (35px radius) - only very close places
-                // zoom 19 (max): Tiny radius (5px) - only truly overlapping markers
-                if (zoom >= 19) return 5;
+                // zoom 19: Special clusters (50px radius) - larger to prevent breaking apart but not too large
+                if (zoom >= 19) return 50;
                 if (zoom >= 17) return 35;
                 return 80;
               },
