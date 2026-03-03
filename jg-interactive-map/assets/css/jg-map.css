@@ -7308,7 +7308,7 @@ button.jg-mobile-map-filter-btn {
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  z-index: 10000 !important;
+  z-index: 99999 !important;
   align-items: center !important;
   justify-content: space-between !important;
   width: 100% !important;
@@ -7426,15 +7426,16 @@ button.jg-mobile-map-filter-btn {
   transform: translateY(-7px) rotate(-45deg) !important;
 }
 
-/* ── Dropdown nav menu (fixed, so it always overlays the page content) ── */
+/* ── Dropdown nav menu – prawa boczna szuflada, niezależna od Elementora ── */
 #jg-nav-menu {
   all: unset !important;
-  display: none !important;
+  display: flex !important;
+  flex-direction: column !important;
   position: fixed !important;
   top: 52px !important;
-  left: 0 !important;
   right: 0 !important;
-  width: 100% !important;
+  left: auto !important;
+  width: min(300px, 92vw) !important;
   max-height: calc(100dvh - 52px) !important;
   overflow-y: auto !important;
   background: #fff !important;
@@ -7442,8 +7443,10 @@ button.jg-mobile-map-filter-btn {
   background-image: none !important;
   border: none !important;
   border-bottom: 2px solid #8d2324 !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
-  z-index: 9999 !important;
+  border-left: 2px solid #8d2324 !important;
+  border-radius: 0 0 0 10px !important;
+  box-shadow: -4px 6px 24px rgba(0, 0, 0, 0.22) !important;
+  z-index: 99998 !important;
   padding: 8px 0 !important;
   margin: 0 !important;
   box-sizing: border-box !important;
@@ -7452,10 +7455,24 @@ button.jg-mobile-map-filter-btn {
   color: #1f2937 !important;
   line-height: 1.5 !important;
   contain: style !important;
+  /* Animacja: schowane poza prawą krawędzią */
+  transform: translateX(110%) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease,
+              visibility 0s linear 0.3s !important;
 }
 
 #jg-nav-menu.jg-nav-open {
-  display: block !important;
+  transform: translateX(0) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease,
+              visibility 0s linear 0s !important;
 }
 
 /* ── Menu links – isolated from Elementor link/anchor styles ── */
@@ -7496,25 +7513,42 @@ button.jg-mobile-map-filter-btn {
   outline: none !important;
 }
 
-/* ── Click-outside overlay ── */
+/* ── Overlay przyciemniający ekran – płynna animacja ── */
 #jg-nav-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  background: transparent;
+  all: unset !important;
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99997 !important;
+  background: rgba(0, 0, 0, 0) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: background 0.35s ease,
+              opacity 0.35s ease,
+              visibility 0s linear 0.35s !important;
+  contain: style !important;
 }
 
 #jg-nav-overlay.jg-nav-open {
-  display: block;
+  background: rgba(0, 0, 0, 0.45) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transition: background 0.35s ease,
+              opacity 0.35s ease,
+              visibility 0s linear 0s !important;
 }
 
-/* ── Desktop: hide nav bar (mobile-only) ── */
+/* ── Desktop: hide nav bar + menu + overlay (mobile-only) ── */
 @media (min-width: 769px) {
   #jg-nav-bar {
     display: none !important;
   }
   #jg-nav-menu {
+    display: none !important;
+  }
+  #jg-nav-overlay {
     display: none !important;
   }
 }
