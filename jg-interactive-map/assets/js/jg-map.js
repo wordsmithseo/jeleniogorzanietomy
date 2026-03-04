@@ -10195,7 +10195,7 @@
         // It will only be shown when user clicks expand button and there's content
         // Container stays hidden until a dropdown inside it is shown
 
-        // Add event listeners to expand buttons
+        // Add event listeners to expand buttons (accordion: only one open at a time)
         var expandBtns = document.querySelectorAll('.jg-filter-expand-btn');
         expandBtns.forEach(function(btn) {
           btn.addEventListener('click', function(e) {
@@ -10205,6 +10205,19 @@
             var dropdown = document.getElementById('jg-' + target);
             if (dropdown && dropdown.innerHTML.trim()) {
               var isVisible = dropdown.style.display !== 'none';
+
+              // Close all other dropdowns (accordion behaviour)
+              expandBtns.forEach(function(otherBtn) {
+                var otherTarget = otherBtn.getAttribute('data-expand-target');
+                if (otherTarget !== target) {
+                  var otherDropdown = document.getElementById('jg-' + otherTarget);
+                  if (otherDropdown) {
+                    otherDropdown.style.display = 'none';
+                  }
+                  otherBtn.textContent = '▼';
+                }
+              });
+
               dropdown.style.display = isVisible ? 'none' : 'flex';
               this.textContent = isVisible ? '▼' : '▲';
 

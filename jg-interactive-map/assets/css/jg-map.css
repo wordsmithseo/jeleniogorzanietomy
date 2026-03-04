@@ -548,10 +548,17 @@
 }
 
 .jg-category-filter-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  margin: 0;
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+  accent-color: #8d2324 !important;
+  -webkit-appearance: checkbox !important;
+  appearance: checkbox !important;
+  box-sizing: content-box !important;
 }
 
 .jg-filter-expand-btn {
