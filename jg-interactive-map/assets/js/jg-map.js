@@ -2222,7 +2222,8 @@
         crossOrigin: true,
         subdomains: 'abcd',
         className: 'jg-map-tiles',
-        keepBuffer: 4
+        keepBuffer: 4,
+        updateWhenIdle: false
       });
 
 
@@ -2230,7 +2231,8 @@
         attribution: '© Esri',
         maxZoom: 19,
         crossOrigin: true,
-        keepBuffer: 4
+        keepBuffer: 4,
+        updateWhenIdle: false
       });
 
       // Cookie helpers for map layer preference
@@ -2541,7 +2543,7 @@
         var mobSbInput = document.createElement('input');
         mobSbInput.type = 'text';
         mobSbInput.className = 'jg-mobile-search-bar-input';
-        mobSbInput.placeholder = 'Szukaj po nazwie, adresie, tagach...';
+        mobSbInput.placeholder = 'Szukaj...';
         mobSbInput.setAttribute('autocomplete', 'off');
 
         var mobSbClearBtn = document.createElement('button');
@@ -2551,13 +2553,15 @@
         mobSbClearBtn.title = 'Wyczyść';
         mobSbClearBtn.style.display = 'none';
 
+        // Suggestions appended to body so position:fixed is not clipped by map overflow:hidden
         var mobSbSuggestions = document.createElement('div');
         mobSbSuggestions.className = 'jg-search-suggestions jg-mobile-search-bar-suggestions';
+        mobSbSuggestions.style.display = 'none';
+        document.body.appendChild(mobSbSuggestions);
 
         mobileSearchBar.appendChild(mobSbIcon);
         mobileSearchBar.appendChild(mobSbInput);
         mobileSearchBar.appendChild(mobSbClearBtn);
-        mobileSearchBar.appendChild(mobSbSuggestions);
 
         L.DomEvent.disableClickPropagation(mobileSearchBar);
         L.DomEvent.disableScrollPropagation(mobileSearchBar);
@@ -2567,11 +2571,61 @@
 
         elMap.appendChild(mobileSearchBar);
 
+        // Align search bar width with the topright controls (filter btn + map/satellite toggle)
+        requestAnimationFrame(function() {
+          var toprightEl = elMap.querySelector('.leaflet-top.leaflet-right');
+          if (toprightEl) {
+            var trRect = toprightEl.getBoundingClientRect();
+            var mapRect = elMap.getBoundingClientRect();
+            mobileSearchBar.style.left = (trRect.left - mapRect.left) + 'px';
+            mobileSearchBar.style.right = (mapRect.right - trRect.right) + 'px';
+          }
+        });
+
+        // Position suggestions using fixed coords, aware of virtual keyboard via visualViewport
+        function positionMobSuggestions() {
+          var rect = mobileSearchBar.getBoundingClientRect();
+          var vv = window.visualViewport;
+          var visibleBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
+          var spaceBelow = visibleBottom - rect.bottom - 4;
+
+          mobSbSuggestions.style.position = 'fixed';
+          mobSbSuggestions.style.left = rect.left + 'px';
+          mobSbSuggestions.style.right = (window.innerWidth - rect.right) + 'px';
+          mobSbSuggestions.style.width = 'auto';
+          mobSbSuggestions.style.zIndex = '99999';
+
+          if (spaceBelow >= 80) {
+            // Enough space below – show under the search bar
+            mobSbSuggestions.style.top = (rect.bottom + 4) + 'px';
+            mobSbSuggestions.style.bottom = 'auto';
+            mobSbSuggestions.style.maxHeight = Math.min(spaceBelow - 4, 300) + 'px';
+          } else {
+            // Keyboard is taking space below – anchor just above the keyboard
+            mobSbSuggestions.style.top = 'auto';
+            mobSbSuggestions.style.bottom = (window.innerHeight - visibleBottom + 4) + 'px';
+            mobSbSuggestions.style.maxHeight = Math.min(rect.top - 10, 250) + 'px';
+          }
+        }
+
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', function() {
+            if (document.activeElement === mobSbInput && mobSbSuggestions.style.display !== 'none') {
+              positionMobSuggestions();
+            }
+          });
+        }
+
         var origMobSbInput = document.getElementById('jg-search-input');
         var origMobSbBtn = document.getElementById('jg-search-btn');
 
         var mobSbBuildSugg = function(q) {
-          if (_jgFsBuildSuggestions) _jgFsBuildSuggestions(q, mobSbSuggestions, mobSbInput);
+          if (_jgFsBuildSuggestions) {
+            _jgFsBuildSuggestions(q, mobSbSuggestions, mobSbInput);
+            if (mobSbSuggestions.style.display !== 'none') {
+              positionMobSuggestions();
+            }
+          }
         };
         var mobSbHideSugg = function() {
           if (_jgFsHideSuggestions) _jgFsHideSuggestions(mobSbSuggestions);
@@ -2643,6 +2697,7 @@
 
         mobSbSuggestions.addEventListener('click', function(e) { e.stopPropagation(); });
         mobSbSuggestions.addEventListener('touchstart', function(e) { e.stopPropagation(); });
+        mobSbSuggestions.addEventListener('mousedown', function(e) { e.stopPropagation(); });
       }
 
       // Fullscreen control - positioned next to zoom controls (topleft)
