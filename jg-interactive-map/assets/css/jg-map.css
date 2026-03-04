@@ -6989,6 +6989,7 @@ a.jg-dir-tag-inline:hover {
     max-width: 100% !important;
     width: 100% !important;
     padding: 0 10px;
+    margin: 8px auto !important;
     box-sizing: border-box;
   }
 
