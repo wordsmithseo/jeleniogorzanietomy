@@ -9,6 +9,18 @@
   transform: translateZ(0);
 }
 
+/* Neutralize any Elementor/theme global img styles leaking into Leaflet tiles.
+   Without this, themes that add border/box-shadow/border-radius to all <img>
+   elements show a styled square on grey (loading) tiles. */
+#jg-map .leaflet-tile {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
 /* Custom Top Bar - Fixed at top of page */
 .jg-custom-top-bar {
   position: sticky;
