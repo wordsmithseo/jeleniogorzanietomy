@@ -2203,14 +2203,11 @@
         touchZoom: true // Enable pinch zoom (two fingers) on mobile
       }).setView([lat, lng], zoom);
 
-      // Enforce bounds strictly - reset view if user tries to go outside
-      var _panRaf = null;
-      map.on('drag', function() {
-        if (_panRaf) return;
-        _panRaf = requestAnimationFrame(function() {
-          map.panInsideBounds(bounds, { animate: false });
-          _panRaf = null;
-        });
+      // Enforce bounds after drag ends (not during drag, to avoid gray tile artifacts)
+      map.on('dragend', function() {
+        if (!bounds.contains(map.getCenter())) {
+          map.panInsideBounds(bounds, { animate: true });
+        }
       });
 
       map.on('zoomend', function() {
@@ -2224,14 +2221,16 @@
         maxZoom: 19,
         crossOrigin: true,
         subdomains: 'abcd',
-        className: 'jg-map-tiles'
+        className: 'jg-map-tiles',
+        keepBuffer: 4
       });
 
 
       var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: '© Esri',
         maxZoom: 19,
-        crossOrigin: true
+        crossOrigin: true,
+        keepBuffer: 4
       });
 
       // Cookie helpers for map layer preference
@@ -2361,6 +2360,10 @@
               filtersClone.querySelectorAll('[id]').forEach(function(el) {
                 el.removeAttribute('id');
               });
+
+              // Remove search from filter panel – search has its own bar on mobile
+              var cloneSearchDivMob = filtersClone.querySelector('.jg-search');
+              if (cloneSearchDivMob) cloneSearchDivMob.parentNode.removeChild(cloneSearchDivMob);
 
               // Wire up cloned search with autocomplete suggestions
               var clonedSearchInput = filtersClone.querySelector('input[type="text"]');
@@ -2524,6 +2527,122 @@
         });
 
         map.addControl(new MobileFilterControl());
+      }
+
+      // Mobile: Standalone search bar positioned below filter/toggle buttons
+      if (isMobile) {
+        var mobileSearchBar = document.createElement('div');
+        mobileSearchBar.className = 'jg-mobile-search-bar';
+
+        var mobSbIcon = document.createElement('span');
+        mobSbIcon.className = 'jg-mobile-search-bar-icon';
+        mobSbIcon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
+
+        var mobSbInput = document.createElement('input');
+        mobSbInput.type = 'text';
+        mobSbInput.className = 'jg-mobile-search-bar-input';
+        mobSbInput.placeholder = 'Szukaj po nazwie, adresie, tagach...';
+        mobSbInput.setAttribute('autocomplete', 'off');
+
+        var mobSbClearBtn = document.createElement('button');
+        mobSbClearBtn.type = 'button';
+        mobSbClearBtn.className = 'jg-mobile-search-bar-clear';
+        mobSbClearBtn.innerHTML = '&times;';
+        mobSbClearBtn.title = 'Wyczyść';
+        mobSbClearBtn.style.display = 'none';
+
+        var mobSbSuggestions = document.createElement('div');
+        mobSbSuggestions.className = 'jg-search-suggestions jg-mobile-search-bar-suggestions';
+
+        mobileSearchBar.appendChild(mobSbIcon);
+        mobileSearchBar.appendChild(mobSbInput);
+        mobileSearchBar.appendChild(mobSbClearBtn);
+        mobileSearchBar.appendChild(mobSbSuggestions);
+
+        L.DomEvent.disableClickPropagation(mobileSearchBar);
+        L.DomEvent.disableScrollPropagation(mobileSearchBar);
+        mobileSearchBar.addEventListener('click', function(e) { e.stopPropagation(); });
+        mobileSearchBar.addEventListener('touchstart', function(e) { e.stopPropagation(); });
+        mobileSearchBar.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+
+        elMap.appendChild(mobileSearchBar);
+
+        var origMobSbInput = document.getElementById('jg-search-input');
+        var origMobSbBtn = document.getElementById('jg-search-btn');
+
+        var mobSbBuildSugg = function(q) {
+          if (_jgFsBuildSuggestions) _jgFsBuildSuggestions(q, mobSbSuggestions, mobSbInput);
+        };
+        var mobSbHideSugg = function() {
+          if (_jgFsHideSuggestions) _jgFsHideSuggestions(mobSbSuggestions);
+        };
+
+        var mobSbDebounce = null;
+
+        mobSbInput.addEventListener('input', function() {
+          var val = this.value;
+          if (origMobSbInput) origMobSbInput.value = val;
+          mobSbClearBtn.style.display = val ? 'flex' : 'none';
+          clearTimeout(mobSbDebounce);
+          var q = val.toLowerCase().trim();
+          mobSbDebounce = setTimeout(function() {
+            mobSbBuildSugg(q);
+          }, 200);
+        });
+
+        mobSbInput.addEventListener('blur', function() {
+          setTimeout(function() { mobSbHideSugg(); }, 150);
+        });
+
+        mobSbInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            var activeItem = mobSbSuggestions.querySelector('.jg-suggest-active');
+            if (activeItem) {
+              var fill = activeItem.getAttribute('data-fill');
+              if (fill) {
+                mobSbInput.value = fill;
+                if (origMobSbInput) origMobSbInput.value = fill;
+              }
+            }
+            mobSbHideSugg();
+            if (origMobSbInput) {
+              origMobSbInput.value = mobSbInput.value;
+              origMobSbInput.dispatchEvent(new Event('input', { bubbles: true }));
+              if (origMobSbBtn) origMobSbBtn.click();
+            }
+            mobSbInput.blur();
+          } else if (e.key === 'Escape') {
+            mobSbHideSugg();
+          } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            var items = mobSbSuggestions.querySelectorAll('.jg-suggest-item');
+            if (!items.length) return;
+            var current = mobSbSuggestions.querySelector('.jg-suggest-active');
+            var currentIdx = current ? Array.prototype.indexOf.call(items, current) : -1;
+            if (current) current.classList.remove('jg-suggest-active');
+            var nextIdx = e.key === 'ArrowDown' ? currentIdx + 1 : currentIdx - 1;
+            if (nextIdx >= items.length) nextIdx = 0;
+            if (nextIdx < 0) nextIdx = items.length - 1;
+            items[nextIdx].classList.add('jg-suggest-active');
+            items[nextIdx].scrollIntoView({ block: 'nearest' });
+          }
+        });
+
+        mobSbClearBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          mobSbInput.value = '';
+          mobSbClearBtn.style.display = 'none';
+          if (origMobSbInput) {
+            origMobSbInput.value = '';
+            origMobSbInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          mobSbHideSugg();
+          mobSbInput.focus();
+        });
+
+        mobSbSuggestions.addEventListener('click', function(e) { e.stopPropagation(); });
+        mobSbSuggestions.addEventListener('touchstart', function(e) { e.stopPropagation(); });
       }
 
       // Fullscreen control - positioned next to zoom controls (topleft)
