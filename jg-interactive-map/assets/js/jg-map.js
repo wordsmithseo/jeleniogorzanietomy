@@ -2216,11 +2216,10 @@
         }
       });
 
-      var tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 19,
+      var tileLayer = L.tileLayer('https://api.maptiler.com/maps/alidade-bright/{z}/{x}/{y}.png?key=RwtQgEVzTY9fMZ62P0DX', {
+        attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 20,
         crossOrigin: true,
-        subdomains: 'abcd',
         className: 'jg-map-tiles',
         keepBuffer: 4
       });
