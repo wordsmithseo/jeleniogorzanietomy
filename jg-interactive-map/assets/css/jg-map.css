@@ -7561,8 +7561,9 @@ button.jg-mobile-map-filter-btn {
 .jg-mobile-search-bar {
   position: absolute !important;
   top: 54px !important;
-  left: 10px !important;
+  /* left/right set by JS to match topright controls width; fallback below */
   right: 10px !important;
+  left: 10px !important;
   z-index: 1001 !important;
   display: flex !important;
   align-items: center !important;
@@ -7625,32 +7626,29 @@ button.jg-mobile-map-filter-btn {
   appearance: none !important;
 }
 
-/* Suggestions dropdown – positioned on the map, not below it */
-.jg-mobile-search-bar .jg-search-suggestions,
+/* Suggestions dropdown – appended to body, positioned via JS with position:fixed
+   so virtual keyboard cannot obscure them */
 .jg-mobile-search-bar-suggestions {
-  position: absolute !important;
-  top: calc(100% + 4px) !important;
-  left: 0 !important;
-  right: 0 !important;
+  position: fixed !important;
   background: #fff !important;
   border: 1px solid #d1d5db !important;
   border-radius: 8px !important;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18) !important;
-  z-index: 10002 !important;
-  max-height: 50vh !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+  z-index: 99999 !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
+  /* top/bottom/left/right/maxHeight set by JS */
 }
 
-.jg-mobile-search-bar .jg-suggest-group {
+.jg-mobile-search-bar-suggestions .jg-suggest-group {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.jg-mobile-search-bar .jg-suggest-group:last-child {
+.jg-mobile-search-bar-suggestions .jg-suggest-group:last-child {
   border-bottom: none;
 }
 
-.jg-mobile-search-bar .jg-suggest-header {
+.jg-mobile-search-bar-suggestions .jg-suggest-header {
   padding: 5px 10px !important;
   font-size: 9px !important;
   font-weight: 700 !important;
@@ -7662,7 +7660,7 @@ button.jg-mobile-map-filter-btn {
   top: 0 !important;
 }
 
-.jg-mobile-search-bar .jg-suggest-item {
+.jg-mobile-search-bar-suggestions .jg-suggest-item {
   padding: 10px 10px !important;
   cursor: pointer !important;
   display: flex !important;
@@ -7672,12 +7670,12 @@ button.jg-mobile-map-filter-btn {
   font-size: 14px !important;
 }
 
-.jg-mobile-search-bar .jg-suggest-item:hover,
-.jg-mobile-search-bar .jg-suggest-item.jg-suggest-active {
+.jg-mobile-search-bar-suggestions .jg-suggest-item:hover,
+.jg-mobile-search-bar-suggestions .jg-suggest-item.jg-suggest-active {
   background: #f3f4f6 !important;
 }
 
-.jg-mobile-search-bar .jg-suggest-main {
+.jg-mobile-search-bar-suggestions .jg-suggest-main {
   font-size: 13px !important;
   font-weight: 500 !important;
   color: #111827 !important;
@@ -7686,7 +7684,7 @@ button.jg-mobile-map-filter-btn {
   text-overflow: ellipsis !important;
 }
 
-.jg-mobile-search-bar .jg-suggest-sub {
+.jg-mobile-search-bar-suggestions .jg-suggest-sub {
   font-size: 11px !important;
   color: #9ca3af !important;
   white-space: nowrap !important;
