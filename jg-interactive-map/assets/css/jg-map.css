@@ -5273,6 +5273,7 @@ body.jg-modal-open {
 /* Responsive adjustments for onboarding */
 @media (max-width: 768px) {
   .jg-help-panel {
+    position: fixed;
     left: 8px;
     right: 8px;
     bottom: 80px;
