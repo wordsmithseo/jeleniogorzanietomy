@@ -1,7 +1,9 @@
 /* JG Interactive Map Styles */
 
-/* Richer colors on map tiles – Google Maps-like readability */
-.jg-map-tiles {
+/* Richer colors on map tiles – Google Maps-like readability.
+   Filter applied per-tile (not container) so GPU only reprocesses one tile
+   at a time when new tiles load, not the entire layer. */
+.jg-map-tiles .leaflet-tile {
   filter: saturate(1.6) brightness(0.92) contrast(1.25);
   will-change: transform;
   transform: translateZ(0);

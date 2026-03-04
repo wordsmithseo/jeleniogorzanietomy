@@ -47,6 +47,9 @@ class JG_Map_Enqueue {
         // Disable pinch-to-zoom on mobile (except for map)
         add_action('wp_head', array($this, 'disable_mobile_zoom'), 1);
 
+        // Preconnect to map tile providers for faster first tile load
+        add_action('wp_head', array($this, 'add_tile_preconnect'), 2);
+
         // Handle email activation
         add_action('template_redirect', array($this, 'handle_email_activation'));
         add_action('template_redirect', array($this, 'handle_password_reset'));
@@ -739,6 +742,17 @@ class JG_Map_Enqueue {
      * Disable pinch-to-zoom on mobile devices (except for the map)
      * The Leaflet map has its own zoom controls that work independently
      */
+    /**
+     * Preconnect to map tile CDNs so the TCP/TLS handshake is done
+     * before Leaflet requests the first tile (saves ~100ms per provider).
+     */
+    public function add_tile_preconnect() {
+        echo '<link rel="preconnect" href="https://api.maptiler.com" crossorigin>' . "\n";
+        echo '<link rel="dns-prefetch" href="https://api.maptiler.com">' . "\n";
+        echo '<link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>' . "\n";
+        echo '<link rel="dns-prefetch" href="https://server.arcgisonline.com">' . "\n";
+    }
+
     public function disable_mobile_zoom() {
         ?>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
