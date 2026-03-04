@@ -22,8 +22,9 @@ class JG_Map_Database {
         $table_points = $wpdb->prefix . 'jg_map_points';
 
         // Check if category column exists, add it if it doesn't
+        // NOTE: Table names cannot be parameterized via $wpdb->prepare() — use esc_sql() + interpolation instead
         $safe_table = esc_sql($table_points);
-        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `%s` LIKE %s", $safe_table, 'category'));
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `$safe_table` LIKE %s", 'category'));
         if (empty($column_exists)) {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN category varchar(100) DEFAULT NULL AFTER type");
         }

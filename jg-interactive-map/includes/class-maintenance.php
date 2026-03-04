@@ -198,6 +198,13 @@ class JG_Map_Maintenance {
 
         if ($count > 0) {
             foreach ($invalid_points as $point) {
+                error_log(sprintf(
+                    '[JG Map] validate_coordinates: point ID %d ("%s") has invalid coordinates (lat=%s, lng=%s)',
+                    $point->id,
+                    $point->title,
+                    $point->lat,
+                    $point->lng
+                ));
             }
         }
 
@@ -223,6 +230,11 @@ class JG_Map_Maintenance {
 
         if ($count > 0) {
             foreach ($empty_points as $point) {
+                error_log(sprintf(
+                    '[JG Map] validate_content: point ID %d has empty title or content (title="%s")',
+                    $point->id,
+                    $point->title
+                ));
             }
         }
 
