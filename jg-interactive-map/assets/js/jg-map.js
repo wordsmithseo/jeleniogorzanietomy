@@ -2204,7 +2204,7 @@
       });
 
       // Tile layers – caching handled transparently by the Service Worker (tile-sw.js)
-      var tileLayer = L.tileLayer('https://api.maptiler.com/maps/base-v2/{z}/{x}/{y}.webp?key=RwtQgEVzTY9fMZ62P0DX', {
+      var tileLayer = L.tileLayer('https://api.maptiler.com/maps/base-v4/{z}/{x}/{y}.webp?key=RwtQgEVzTY9fMZ62P0DX', {
         attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 20,
         crossOrigin: true,
