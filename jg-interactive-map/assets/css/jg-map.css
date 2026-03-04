@@ -6979,17 +6979,43 @@ a.jg-dir-tag-inline:hover {
 }
 
 /* ===== BANNER / AD BOX - RESPONSIVE ===== */
+.jg-banner-wrap {
+  text-align: center;
+  margin: 16px auto;
+}
+
+.jg-banner-label {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  font-size: 10px;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+  user-select: none;
+}
+
 .jg-banner-container {
   max-width: 100%;
   box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
+  .jg-banner-wrap {
+    margin: 4px auto;
+  }
+
+  .jg-banner-label {
+    font-size: 8px;
+    margin-bottom: 2px;
+    letter-spacing: 0.8px;
+  }
+
   .jg-banner-container {
     max-width: 100% !important;
     width: 100% !important;
     padding: 0 10px;
-    margin: 4px auto !important;
+    margin: 0 auto !important;
     box-sizing: border-box;
   }
 
