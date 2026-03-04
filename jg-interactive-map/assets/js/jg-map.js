@@ -2571,13 +2571,14 @@
         elMap.appendChild(mobileSearchBar);
 
         // Align search bar width with the topright controls (filter btn + map/satellite toggle)
+        // Must use setProperty(..., 'important') to override CSS !important declarations
         requestAnimationFrame(function() {
           var toprightEl = elMap.querySelector('.leaflet-top.leaflet-right');
           if (toprightEl) {
             var trRect = toprightEl.getBoundingClientRect();
             var mapRect = elMap.getBoundingClientRect();
-            mobileSearchBar.style.left = (trRect.left - mapRect.left) + 'px';
-            mobileSearchBar.style.right = (mapRect.right - trRect.right) + 'px';
+            mobileSearchBar.style.setProperty('left', (trRect.left - mapRect.left) + 'px', 'important');
+            mobileSearchBar.style.setProperty('right', (mapRect.right - trRect.right) + 'px', 'important');
           }
         });
 
