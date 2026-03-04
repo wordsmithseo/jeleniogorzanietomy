@@ -2216,7 +2216,7 @@
         }
       });
 
-      var tileLayer = L.tileLayer('https://api.maptiler.com/maps/bright-v2/{z}/{x}/{y}.png?key=RwtQgEVzTY9fMZ62P0DX', {
+      var tileLayer = L.tileLayer('https://api.maptiler.com/maps/streets-v4/{z}/{x}/{y}.png?key=RwtQgEVzTY9fMZ62P0DX', {
         attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 20,
         crossOrigin: true,
