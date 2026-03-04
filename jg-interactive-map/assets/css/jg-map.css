@@ -7580,6 +7580,13 @@ button.jg-mobile-map-filter-btn {
   }
 }
 
+/* ── Fullscreen (mobile): hide nav bar + menu + overlay ── */
+body.jg-fullscreen-active #jg-nav-bar,
+body.jg-fullscreen-active #jg-nav-menu,
+body.jg-fullscreen-active #jg-nav-overlay {
+  display: none !important;
+}
+
 /* ========================================
    MOBILE: Standalone search bar
    Positioned below filter/toggle buttons

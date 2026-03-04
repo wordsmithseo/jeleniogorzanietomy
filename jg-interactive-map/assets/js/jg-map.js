@@ -2869,6 +2869,15 @@
             isFullscreen = true;
             mapWrap.classList.add('jg-fullscreen');
             document.body.classList.add('jg-fullscreen-active');
+
+            // Close mobile nav menu if open
+            var navBtn     = document.getElementById('jg-hamburger-btn');
+            var navMenu    = document.getElementById('jg-nav-menu');
+            var navOverlay = document.getElementById('jg-nav-overlay');
+            if (navBtn)     { navBtn.classList.remove('jg-nav-open'); navBtn.setAttribute('aria-expanded', 'false'); }
+            if (navMenu)    { navMenu.classList.remove('jg-nav-open'); navMenu.setAttribute('aria-hidden', 'true'); }
+            if (navOverlay) { navOverlay.classList.remove('jg-nav-open'); }
+
             if (sidebar) {
               // Save original inline height and override for fullscreen
               sidebar._origHeight = sidebar.style.height;
