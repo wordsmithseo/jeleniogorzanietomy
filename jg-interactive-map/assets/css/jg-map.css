@@ -7587,6 +7587,12 @@ body.jg-fullscreen-active #jg-nav-overlay {
   display: none !important;
 }
 
+/* ── Fullscreen: modal musi byc ponad wrapperem (z-index: 99990) ── */
+body.jg-fullscreen-active .jg-modal-bg {
+  z-index: 99995 !important;
+  top: 0 !important; /* nadpisuje offset 52px spod nav bara ktory jest ukryty w fullscreen */
+}
+
 /* ========================================
    MOBILE: Standalone search bar
    Positioned below filter/toggle buttons
