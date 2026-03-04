@@ -113,6 +113,7 @@ class JG_Interactive_Map {
         add_action('template_redirect', array($this, 'handle_point_page'), 1);
         add_action('template_redirect', array($this, 'handle_sitemap'), 1);
         add_action('template_redirect', array($this, 'redirect_legacy_tag_urls'), 1);
+        add_action('template_redirect', array($this, 'handle_tile_sw'), 1);
         add_action('wp_head', array($this, 'add_point_meta_tags'));
         add_action('wp_head', array($this, 'add_tag_page_meta_tags'));
 
@@ -288,6 +289,14 @@ class JG_Interactive_Map {
             'index.php?jg_map_sitemap=1',
             'top'
         );
+
+        // Tile-caching Service Worker served from root-level URL
+        // (admin-ajax.php cannot reliably send Service-Worker-Allowed: / header)
+        add_rewrite_rule(
+            '^jg-tile-sw\.js$',
+            'index.php?jg_tile_sw=1',
+            'top'
+        );
     }
 
     /**
@@ -298,6 +307,7 @@ class JG_Interactive_Map {
         $vars[] = 'jg_map_type';
         $vars[] = 'jg_map_sitemap';
         $vars[] = 'jg_catalog_tag';
+        $vars[] = 'jg_tile_sw';
         return $vars;
     }
 
@@ -314,11 +324,43 @@ class JG_Interactive_Map {
             update_option('jg_map_flush_count_v2', $flush_count + 1);
         }
 
+        // v3: flush to register /jg-tile-sw.js rewrite rule
+        $flush_count_v3 = get_option('jg_map_flush_count_v3', 0);
+        if ($flush_count_v3 < 3) {
+            flush_rewrite_rules(false);
+            update_option('jg_map_flush_count_v3', $flush_count_v3 + 1);
+        }
+
         // Legacy flush check
         if (get_option('jg_map_needs_rewrite_flush', false)) {
             flush_rewrite_rules(false);
             delete_option('jg_map_needs_rewrite_flush');
         }
+    }
+
+    /**
+     * Serve tile-caching Service Worker from a clean root-level URL (/jg-tile-sw.js).
+     * Using a rewrite rule (not admin-ajax.php) guarantees the Service-Worker-Allowed: /
+     * header is sent before any WordPress output, so the browser accepts scope '/'.
+     */
+    public function handle_tile_sw() {
+        if (!get_query_var('jg_tile_sw')) {
+            return;
+        }
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        $sw_file = JG_MAP_PLUGIN_DIR . 'assets/js/tile-sw.js';
+        if (!file_exists($sw_file)) {
+            http_response_code(404);
+            exit;
+        }
+        header('Content-Type: application/javascript; charset=utf-8');
+        header('Service-Worker-Allowed: /');
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('X-Content-Type-Options: nosniff');
+        readfile($sw_file);
+        exit;
     }
 
     /**

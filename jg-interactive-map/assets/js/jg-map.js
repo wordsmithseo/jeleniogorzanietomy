@@ -179,7 +179,11 @@
   // Register tile-caching Service Worker (intercepts maptiler/arcgis requests)
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.register(CFG.ajax + '?action=jg_tile_sw', { scope: '/' }).catch(function() {});
+      // /jg-tile-sw.js is a WordPress rewrite rule → plugin's tile-sw.js
+      // with Service-Worker-Allowed: / so it can intercept all tile requests
+      navigator.serviceWorker.register('/jg-tile-sw.js', { scope: '/' }).catch(function(e) {
+        console.warn('[JG Map] Service Worker registration failed:', e);
+      });
 
       // Clear localStorage cache (old versions without user_id check)
       try {

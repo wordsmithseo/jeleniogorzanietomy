@@ -466,8 +466,6 @@ class JG_Map_Ajax_Handlers {
      */
     private function __construct() {
         // Public AJAX actions (logged in and not logged in)
-        add_action('wp_ajax_jg_tile_sw', array($this, 'serve_tile_service_worker'));
-        add_action('wp_ajax_nopriv_jg_tile_sw', array($this, 'serve_tile_service_worker'));
         add_action('wp_ajax_jg_points', array($this, 'get_points'));
         add_action('wp_ajax_nopriv_jg_points', array($this, 'get_points'));
         add_action('wp_ajax_jg_check_point_exists', array($this, 'check_point_exists'));
@@ -9053,28 +9051,6 @@ class JG_Map_Ajax_Handlers {
         ));
     }
 
-    /**
-     * Serve the tile-caching Service Worker script with proper scope header.
-     * The Service-Worker-Allowed: / header lets the SW registered via admin-ajax.php
-     * intercept requests on the entire domain (not just /wp-admin/).
-     */
-    public function serve_tile_service_worker() {
-        // Clear WordPress output buffering so headers reach the browser cleanly
-        while (ob_get_level() > 0) {
-            ob_end_clean();
-        }
-        $sw_file = JG_MAP_PLUGIN_DIR . 'assets/js/tile-sw.js';
-        if (!file_exists($sw_file)) {
-            http_response_code(404);
-            exit;
-        }
-        header('Content-Type: application/javascript; charset=utf-8');
-        header('Service-Worker-Allowed: /');  // Expands scope to '/' despite script URL being under /wp-admin/
-        header('Cache-Control: no-store, no-cache, must-revalidate');
-        header('X-Content-Type-Options: nosniff');
-        readfile($sw_file);
-        exit;
-    }
 
     /**
      * Get all tag names for search suggestions (admin only)
