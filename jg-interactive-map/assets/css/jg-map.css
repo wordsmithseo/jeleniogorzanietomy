@@ -3,6 +3,8 @@
 /* Richer colors on map tiles – Google Maps-like readability */
 .jg-map-tiles {
   filter: saturate(1.6) brightness(0.92) contrast(1.25);
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* Custom Top Bar - Fixed at top of page */
