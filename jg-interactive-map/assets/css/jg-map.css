@@ -265,33 +265,68 @@
   100% { transform: rotate(360deg); }
 }
 
+/* ── Desktop filter bar – Elementor isolation ── */
+#jg-map-filters-wrapper {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  color: #374151 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  box-sizing: border-box !important;
+}
+
 .jg-filters {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  padding: 16px 0;
-  font: 15px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  flex-wrap: wrap;
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
+  display: flex !important;
+  gap: 4px !important;
+  align-items: center !important;
+  font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
+  flex-wrap: nowrap !important;
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  margin-bottom: 8px !important;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  box-sizing: border-box !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
 }
 
 .jg-filter-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s;
-  user-select: none;
-  position: relative;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  border: 1.5px solid transparent !important;
+  transition: background 0.15s, border-color 0.15s, color 0.15s !important;
+  user-select: none !important;
+  position: relative !important;
+  color: #374151 !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  outline: none !important;
 }
 
 .jg-filter-label:hover {
-  background: #f3f4f6;
+  background: #f3f4f6 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Desktop: active/checked state matches map UI brand color */
+.jg-filter-label:has(input[type="checkbox"]:checked) {
+  background: rgba(141, 35, 36, 0.07) !important;
+  border-color: #8d2324 !important;
+  color: #8d2324 !important;
 }
 
 .jg-filter-icon {
@@ -305,10 +340,14 @@
 }
 
 .jg-filters input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  margin: 0;
+  width: 16px !important;
+  height: 16px !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+  accent-color: #8d2324 !important;
+  -webkit-appearance: checkbox !important;
+  appearance: checkbox !important;
 }
 
 .jg-search {
@@ -328,12 +367,13 @@
 
 /* Category Filters */
 .jg-category-filters {
-  background: #f0f4f8;
+  background: #ffffff;
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 8px;
   flex-wrap: wrap;
   gap: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
 .jg-category-filters:empty,
@@ -407,45 +447,64 @@
 }
 
 .jg-search input {
-  flex: 1;
-  padding: 10px 45px 10px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.2s;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  flex: 1 !important;
+  padding: 8px 40px 8px 14px !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  font-size: 13.5px !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
+  transition: border-color 0.15s, box-shadow 0.15s !important;
+  background: #ffffff !important;
+  color: #374151 !important;
+  height: auto !important;
+  min-height: auto !important;
+  box-sizing: border-box !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  outline: none !important;
+  width: 100% !important;
 }
 
 .jg-search input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none !important;
+  border-color: #8d2324 !important;
+  box-shadow: 0 0 0 3px rgba(141, 35, 36, 0.12) !important;
 }
 
 .jg-search-btn {
-  position: absolute;
-  right: 4px;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: #8d2324;
-  color: #fff;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  padding: 0;
+  position: absolute !important;
+  right: 4px !important;
+  width: 30px !important;
+  height: 30px !important;
+  border: none !important;
+  background: #8d2324 !important;
+  background-color: #8d2324 !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 0.15s, transform 0.1s !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  text-transform: none !important;
+  font-family: system-ui !important;
+  box-shadow: none !important;
+  line-height: 1 !important;
+  outline: none !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
 }
 
 .jg-search-btn:hover {
-  background: #a02829;
-  transform: scale(1.05);
+  background: #a02829 !important;
+  background-color: #a02829 !important;
+  transform: translateY(-50%) scale(1.06) !important;
 }
 
 .jg-search-btn:active {
-  transform: scale(0.95);
+  transform: translateY(-50%) scale(0.94) !important;
 }
 
 /* Search Autocomplete Suggestions */
