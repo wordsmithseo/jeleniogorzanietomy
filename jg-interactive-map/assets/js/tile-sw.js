@@ -3,7 +3,7 @@
  * Intercepts map tile requests and caches them for instant replay on pan/zoom.
  */
 
-var CACHE_NAME = 'jg-tiles-v1';
+var CACHE_NAME = 'jg-tiles-v2';
 var TILE_HOSTS = ['api.maptiler.com', 'server.arcgisonline.com'];
 
 self.addEventListener('install', function(event) {
