@@ -176,26 +176,10 @@
     return key;
   }
 
-  // Unregister Service Worker to fix caching issues
+  // Register tile-caching Service Worker (intercepts maptiler/arcgis requests)
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (var registration of registrations) {
-          registration.unregister().then(function() {
-          });
-        }
-      });
-
-      // Clear old caches only – preserve tile cache for performance
-      if ('caches' in window) {
-        caches.keys().then(function(names) {
-          for (var name of names) {
-            if (name !== 'jg-tiles-v1') {
-              caches.delete(name);
-            }
-          }
-        });
-      }
+      navigator.serviceWorker.register(CFG.ajax + '?action=jg_tile_sw', { scope: '/' }).catch(function() {});
 
       // Clear localStorage cache (old versions without user_id check)
       try {
@@ -2218,74 +2202,22 @@
         }
       });
 
-      // Tile layer with Cache Storage API for fast repeated loads
-      var TILE_CACHE_NAME = 'jg-tiles-v1';
-      var CachedTileLayer = L.TileLayer.extend({
-        createTile: function(coords, done) {
-          var tile = document.createElement('img');
-          tile.alt = '';
-          tile.setAttribute('role', 'presentation');
-          var url = this.getTileUrl(coords);
-          var self = this;
-
-          function fallback() {
-            L.DomEvent.on(tile, 'load', L.Util.bind(self._tileOnLoad, self, done, tile));
-            L.DomEvent.on(tile, 'error', L.Util.bind(self._tileOnError, self, done, tile));
-            if (self.options.crossOrigin) {
-              tile.crossOrigin = '';
-            }
-            tile.src = url;
-          }
-
-          if (!('caches' in window)) {
-            fallback();
-            return tile;
-          }
-
-          caches.open(TILE_CACHE_NAME).then(function(cache) {
-            cache.match(url).then(function(cached) {
-              if (cached) {
-                cached.blob().then(function(blob) {
-                  var objURL = URL.createObjectURL(blob);
-                  tile.onload = function() { URL.revokeObjectURL(objURL); done(null, tile); };
-                  tile.onerror = function() { URL.revokeObjectURL(objURL); fallback(); };
-                  tile.src = objURL;
-                }).catch(fallback);
-              } else {
-                fetch(url, { mode: 'cors', credentials: 'omit' }).then(function(resp) {
-                  if (!resp.ok) { fallback(); return; }
-                  var clone = resp.clone();
-                  cache.put(url, clone);
-                  resp.blob().then(function(blob) {
-                    var objURL = URL.createObjectURL(blob);
-                    tile.onload = function() { URL.revokeObjectURL(objURL); done(null, tile); };
-                    tile.onerror = function() { URL.revokeObjectURL(objURL); fallback(); };
-                    tile.src = objURL;
-                  });
-                }).catch(fallback);
-              }
-            }).catch(fallback);
-          }).catch(fallback);
-
-          return tile;
-        }
-      });
-
-      var tileLayer = new CachedTileLayer('https://api.maptiler.com/maps/streets-v4/{z}/{x}/{y}.webp?key=RwtQgEVzTY9fMZ62P0DX', {
+      // Tile layers – caching handled transparently by the Service Worker (tile-sw.js)
+      var tileLayer = L.tileLayer('https://api.maptiler.com/maps/streets-v4/{z}/{x}/{y}.webp?key=RwtQgEVzTY9fMZ62P0DX', {
         attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 20,
         crossOrigin: true,
         className: 'jg-map-tiles',
-        keepBuffer: 4,
+        keepBuffer: 6,
         updateWhenIdle: isMobile
       });
 
 
-      var satelliteLayer = new CachedTileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: '© Esri',
         maxZoom: 19,
         crossOrigin: true,
-        keepBuffer: 4,
+        keepBuffer: 6,
         updateWhenIdle: isMobile
       });
 
