@@ -7130,6 +7130,16 @@ class JG_Map_Ajax_Handlers {
      * Makes server-side request to Nominatim API
      */
     public function reverse_geocode() {
+        // Rate limiting: max 30 requests per IP per minute
+        $ip = sanitize_text_field($_SERVER['REMOTE_ADDR'] ?? '');
+        $rate_key = 'jg_geocode_rate_' . md5($ip);
+        $rate_count = (int) get_transient($rate_key);
+        if ($rate_count >= 30) {
+            wp_send_json_error(array('message' => 'Zbyt wiele zapytań. Spróbuj ponownie za chwilę.'));
+            return;
+        }
+        set_transient($rate_key, $rate_count + 1, 60);
+
         // Get lat/lng from request
         $lat = isset($_POST['lat']) ? floatval($_POST['lat']) : null;
         $lng = isset($_POST['lng']) ? floatval($_POST['lng']) : null;
@@ -7142,6 +7152,14 @@ class JG_Map_Ajax_Handlers {
         // Validate coordinates
         if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
             wp_send_json_error(array('message' => 'Nieprawidłowe współrzędne'));
+            return;
+        }
+
+        // Cache: round to 4 decimal places (~11m precision) to increase cache hit rate
+        $cache_key = 'jg_rgeocode_' . md5(round($lat, 4) . '|' . round($lng, 4));
+        $cached = get_transient($cache_key);
+        if ($cached !== false) {
+            wp_send_json_success($cached);
             return;
         }
 
@@ -7186,6 +7204,9 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
+        // Cache result for 24 hours — addresses don't change often
+        set_transient($cache_key, $data, DAY_IN_SECONDS);
+
         // Return the data
         wp_send_json_success($data);
     }
@@ -7195,6 +7216,16 @@ class JG_Map_Ajax_Handlers {
      * Returns multiple results for autocomplete suggestions
      */
     public function search_address() {
+        // Rate limiting: max 30 requests per IP per minute
+        $ip = sanitize_text_field($_SERVER['REMOTE_ADDR'] ?? '');
+        $rate_key = 'jg_geocode_rate_' . md5($ip);
+        $rate_count = (int) get_transient($rate_key);
+        if ($rate_count >= 30) {
+            wp_send_json_error(array('message' => 'Zbyt wiele zapytań. Spróbuj ponownie za chwilę.'));
+            return;
+        }
+        set_transient($rate_key, $rate_count + 1, 60);
+
         $query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
 
         if (empty($query) || strlen($query) < 3) {
@@ -7206,6 +7237,14 @@ class JG_Map_Ajax_Handlers {
         $searchQuery = $query;
         if (stripos($query, 'jelenia') === false && stripos($query, 'góra') === false) {
             $searchQuery = $query . ', Jelenia Góra, Poland';
+        }
+
+        // Cache: use normalized query as key
+        $cache_key = 'jg_search_' . md5(strtolower(trim($searchQuery)));
+        $cached = get_transient($cache_key);
+        if ($cached !== false) {
+            wp_send_json_success($cached);
+            return;
         }
 
         // Build Nominatim API URL
@@ -7246,6 +7285,9 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_error(array('message' => 'Błąd parsowania odpowiedzi'));
             return;
         }
+
+        // Cache results for 1 hour — search results are relatively stable
+        set_transient($cache_key, $data, HOUR_IN_SECONDS);
 
         // Return results directly - JavaScript will handle display
         wp_send_json_success($data);
