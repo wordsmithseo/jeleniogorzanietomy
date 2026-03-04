@@ -2186,7 +2186,8 @@
         maxBoundsViscosity: 1.0,
         bounceAtZoomLimits: false, // Prevent elastic bounce at min/max zoom on mobile
         tap: isMobile, // Enable tap on mobile
-        touchZoom: true // Enable pinch zoom (two fingers) on mobile
+        touchZoom: true, // Enable pinch zoom (two fingers) on mobile
+        fadeAnimation: false // Tiles snap in instantly instead of fading from gray
       }).setView([lat, lng], zoom);
 
       // Enforce bounds after drag ends (not during drag, to avoid gray tile artifacts)

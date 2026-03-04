@@ -9017,15 +9017,19 @@ class JG_Map_Ajax_Handlers {
      * intercept requests on the entire domain (not just /wp-admin/).
      */
     public function serve_tile_service_worker() {
+        // Clear WordPress output buffering so headers reach the browser cleanly
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
         $sw_file = JG_MAP_PLUGIN_DIR . 'assets/js/tile-sw.js';
         if (!file_exists($sw_file)) {
-            status_header(404);
+            http_response_code(404);
             exit;
         }
         header('Content-Type: application/javascript; charset=utf-8');
-        header('Service-Worker-Allowed: /');
+        header('Service-Worker-Allowed: /');  // Expands scope to '/' despite script URL being under /wp-admin/
         header('Cache-Control: no-store, no-cache, must-revalidate');
-        header('Pragma: no-cache');
+        header('X-Content-Type-Options: nosniff');
         readfile($sw_file);
         exit;
     }
