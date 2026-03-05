@@ -7200,8 +7200,15 @@ a.jg-dir-tag-inline:hover {
   font-weight: 600 !important;
   text-decoration: none !important;
   white-space: nowrap !important;
+  flex-shrink: 0 !important;
   transition: background 0.15s, color 0.15s !important;
-  margin-left: auto !important;
+  margin-left: 8px !important;
+}
+
+@media (max-width: 768px) {
+  .jg-advertise-link {
+    display: none !important;
+  }
 }
 
 .jg-advertise-link:hover {
