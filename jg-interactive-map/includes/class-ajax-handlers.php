@@ -1060,7 +1060,8 @@ class JG_Map_Ajax_Handlers {
                 'my_relevance_vote' => $my_relevance_vote,
                 'date' => array(
                     'raw' => $point['created_at'],
-                    'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu'
+                    'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu',
+                    'full' => get_date_from_gmt($point['created_at'], 'd.m.Y, H:i')
                 ),
                 'admin' => $is_admin ? array(
                     'author_name_real' => $author ? $author->display_name : '',
@@ -7729,7 +7730,8 @@ class JG_Map_Ajax_Handlers {
                 'created_at' => $point['created_at'],
                 'date' => array(
                     'raw' => $point['created_at'],
-                    'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu'
+                    'human' => human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')) . ' temu',
+                    'full' => get_date_from_gmt($point['created_at'], 'd.m.Y, H:i')
                 ),
                 'featured_image'   => $this->get_featured_image_url($point),
                 'has_description'  => !empty($point['content']) || !empty($point['excerpt']),
