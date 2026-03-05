@@ -19,21 +19,20 @@
   }
 
   // Watch for dynamically added content (popups, modals, filters, notifications)
-  // and automatically replace emoji with Twemoji images
-  var _emojiObserverTimer = null;
+  // and automatically replace emoji with Twemoji images.
+  // Parsing each added node immediately (no debounce) prevents the flash caused
+  // by the browser painting text emoji before Twemoji replaces them.
   function setupEmojiObserver() {
     if (!window.MutationObserver || !window.twemoji) return;
     var observer = new MutationObserver(function(mutations) {
-      var hasNodes = false;
       for (var i = 0; i < mutations.length; i++) {
-        if (mutations[i].addedNodes.length > 0) { hasNodes = true; break; }
+        var added = mutations[i].addedNodes;
+        for (var j = 0; j < added.length; j++) {
+          if (added[j].nodeType === 1) { // Element nodes only
+            parseEmoji(added[j]);
+          }
+        }
       }
-      if (!hasNodes) return;
-      // Debounce to avoid thrashing during bulk DOM updates
-      clearTimeout(_emojiObserverTimer);
-      _emojiObserverTimer = setTimeout(function() {
-        parseEmoji(document.body);
-      }, 80);
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
