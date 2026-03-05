@@ -3581,50 +3581,55 @@
 
             clusterReady = true;
 
-            // Ghost pin: placeholder sponsored marker for non-sponsor users
+            // Ghost pin: identical appearance to a real sponsored pin, semi-transparent
             if (CFG.ghostPin && CFG.ghostPin.lat && CFG.ghostPin.lng) {
               var gp = CFG.ghostPin;
+
+              // Build via iconFor() so it stays pixel-perfect with real sponsored pins
+              var gpFakePoint = {
+                sponsored: true, id: 'ghost-pin', title: 'Twoja firma tutaj',
+                type: 'miejsce', images: [], featured_image_index: 0,
+                is_pending: false, is_edit: false, is_deletion_requested: false,
+                reports_count: 0, user_has_reported: false, author_id: -1
+              };
+              var gpRealIcon = iconFor(gpFakePoint);
+              var gpW = gpRealIcon.options.iconSize[0];
+              var gpH = gpRealIcon.options.iconSize[1];
+
+              // Wrap in opacity layer; overlay "AD" text at center of the gold circle
               var gpHtml =
-                '<div class="jg-ghost-pin" style="position:relative;width:32px;height:42px;opacity:0.55;cursor:pointer;">' +
-                  '<svg width="32" height="42" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">' +
-                    '<defs>' +
-                      '<linearGradient id="gp-grad" x1="0%" y1="0%" x2="100%" y2="100%">' +
-                        '<stop offset="0%" style="stop-color:#c0392b;stop-opacity:1"/>' +
-                        '<stop offset="50%" style="stop-color:#8d2324;stop-opacity:1"/>' +
-                        '<stop offset="100%" style="stop-color:#6b1a1a;stop-opacity:1"/>' +
-                      '</linearGradient>' +
-                    '</defs>' +
-                    '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" fill="url(#gp-grad)"/>' +
-                    '<circle cx="16" cy="16" r="7" fill="rgba(255,255,255,0.25)"/>' +
-                    '<text x="16" y="20" text-anchor="middle" font-size="9" fill="#fff" font-family="system-ui" font-weight="bold">AD</text>' +
-                  '</svg>' +
-                  '<div style="position:absolute;top:-2px;right:-2px;width:10px;height:10px;background:#f59e0b;border-radius:50%;border:1.5px solid #fff;animation:jg-pulse 1.5s ease-in-out infinite;"></div>' +
+                '<div style="opacity:0.62;position:relative;cursor:pointer;width:' + gpW + 'px;height:' + gpH + 'px;">' +
+                  gpRealIcon.options.html +
+                  '<div style="position:absolute;left:50%;top:' + Math.round(gpH * 0.40) + 'px;' +
+                    'transform:translate(-50%,-50%);font-size:10px;font-weight:900;color:#92400e;' +
+                    'pointer-events:none;z-index:5;letter-spacing:0.5px;' +
+                    'text-shadow:0 0 3px rgba(255,255,255,0.9)">AD</div>' +
+                  '<div style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;' +
+                    'background:#f59e0b;border-radius:50%;border:1.5px solid #fff;' +
+                    'animation:jg-pulse 1.5s ease-in-out infinite;"></div>' +
                 '</div>';
+
               var gpIcon = L.divIcon({
-                className: 'jg-ghost-pin-marker',
+                className: 'jg-ghost-pin-marker jg-pin-marker jg-pin-marker--promo',
                 html: gpHtml,
-                iconSize: [32, 42],
-                iconAnchor: [16, 42],
-                popupAnchor: [0, -44]
+                iconSize: [gpW, gpH],
+                iconAnchor: [gpW / 2, gpH],
+                popupAnchor: [0, -gpH + 5]
               });
               var gpMarker = L.marker([gp.lat, gp.lng], { icon: gpIcon, zIndexOffset: 500 });
               gpMarker.bindTooltip(
                 '<strong style="font-size:13px">📣 Twoja firma mogłaby być tutaj</strong>' +
                 '<br><span style="font-size:11px;color:#6b7280">Kliknij, aby dowiedzieć się więcej o reklamie</span>',
-                { direction: 'top', offset: [0, -44], className: 'jg-ghost-pin-tooltip' }
+                { direction: 'top', offset: [0, -gpH], className: 'jg-ghost-pin-tooltip' }
               );
-              gpMarker.on('click', function() {
-                window.open('/reklama', '_blank');
-              });
+              gpMarker.on('click', function() { window.open('/reklama', '_blank'); });
               gpMarker.addTo(map);
 
-              // Inject pulse keyframes if not already present
               if (!document.getElementById('jg-ghost-pin-style')) {
                 var s = document.createElement('style');
                 s.id = 'jg-ghost-pin-style';
                 s.textContent = '@keyframes jg-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:0.6}}' +
-                  '.jg-ghost-pin-tooltip{background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px 10px;box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap;}' +
-                  '.jg-ghost-pin-tooltip::before{border-top-color:#e5e7eb !important;}';
+                  '.jg-ghost-pin-tooltip{background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px 10px;box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap;}';
                 document.head.appendChild(s);
               }
             }
