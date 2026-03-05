@@ -2725,6 +2725,7 @@
           var fsFilterIconBtn = document.createElement('button');
           fsFilterIconBtn.className = 'jg-fs-filter-icon-btn';
           fsFilterIconBtn.type = 'button';
+          fsFilterIconBtn.style.display = 'none';
           elMap.appendChild(fsFilterIconBtn);
 
           var fsFilterPanel = document.createElement('div');
@@ -7834,7 +7835,7 @@
                  '</div>';
         }).join('');
 
-        var datePart = (p.date && p.date.human) ? '<span class="jg-meta-date">Dodano <strong>' + esc(p.date.human) + '</strong></span>' : '';
+        var datePart = (p.date && p.date.human) ? '<span class="jg-meta-date" title="' + (p.date.full ? esc(p.date.full) : '') + '" style="cursor:default">Dodano <strong>' + esc(p.date.human) + '</strong></span>' : '';
 
         var authorPart = '';
         if (p.author_name && p.author_name.trim() !== '') {
