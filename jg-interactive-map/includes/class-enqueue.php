@@ -197,6 +197,17 @@ class JG_Map_Enqueue {
         })();
         ";
         wp_add_inline_script('jquery', $inline_script);
+
+        // Twemoji – cross-platform emoji consistency, loaded on ALL pages
+        // (top bar contains emoji icons that must look the same everywhere)
+        wp_enqueue_script(
+            'twemoji',
+            'https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js',
+            array(),
+            '14.0.2',
+            true
+        );
+        wp_add_inline_script('twemoji', '(function(){function t(){if(window.twemoji)twemoji.parse(document.body,{folder:"svg",ext:".svg"});}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",t);}else{t();}})();');
     }
 
     /**
@@ -271,16 +282,8 @@ class JG_Map_Enqueue {
         // WordPress Heartbeat for real-time sync (ALL users need this for map updates)
         wp_enqueue_script('heartbeat');
 
-        // Twemoji – cross-platform emoji consistency (SVG, open-source)
-        wp_enqueue_script(
-            'twemoji',
-            'https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js',
-            array(),
-            '14.0.2',
-            true
-        );
-
         // Plugin JS - CRITICAL: Add 'heartbeat' as dependency for real-time sync
+        // 'twemoji' is already enqueued globally via enqueue_topbar_css()
         $dependencies = array('jquery', 'leaflet', 'leaflet-markercluster', 'heartbeat', 'twemoji');
 
         // Add notifications script as dependency if user is admin/moderator
