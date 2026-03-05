@@ -274,21 +274,6 @@
   text-transform: none !important;
   letter-spacing: normal !important;
   box-sizing: border-box !important;
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  gap: 8px !important;
-}
-
-#jg-map-filters {
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-  margin-bottom: 0 !important;
-}
-
-#jg-category-filters {
-  flex-basis: 100% !important;
-  width: 100% !important;
 }
 
 .jg-filters {
