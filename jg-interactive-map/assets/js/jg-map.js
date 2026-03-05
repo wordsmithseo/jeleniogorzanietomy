@@ -18,22 +18,30 @@
     }
   }
 
+  // Quick check: does this element (or its subtree) contain any emoji text?
+  // Avoids calling the full twemoji.parse on nodes that have no emoji at all
+  // (e.g. Leaflet tile layers, plain text nodes, already-replaced img.emoji).
+  var _emojiRe = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2190}-\u{2BFF}]/u;
+  function _hasEmojiText(el) {
+    return el.textContent && _emojiRe.test(el.textContent);
+  }
+
   // Watch for dynamically added content (popups, modals, filters, notifications)
-  // and automatically replace emoji with Twemoji images
-  var _emojiObserverTimer = null;
+  // and automatically replace emoji with Twemoji images.
+  // Parsing each added node immediately (no debounce) prevents the flash caused
+  // by the browser painting text emoji before Twemoji replaces them.
   function setupEmojiObserver() {
     if (!window.MutationObserver || !window.twemoji) return;
     var observer = new MutationObserver(function(mutations) {
-      var hasNodes = false;
       for (var i = 0; i < mutations.length; i++) {
-        if (mutations[i].addedNodes.length > 0) { hasNodes = true; break; }
+        var added = mutations[i].addedNodes;
+        for (var j = 0; j < added.length; j++) {
+          var node = added[j];
+          if (node.nodeType === 1 && _hasEmojiText(node)) {
+            parseEmoji(node);
+          }
+        }
       }
-      if (!hasNodes) return;
-      // Debounce to avoid thrashing during bulk DOM updates
-      clearTimeout(_emojiObserverTimer);
-      _emojiObserverTimer = setTimeout(function() {
-        parseEmoji(document.body);
-      }, 80);
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
@@ -751,9 +759,9 @@
 
   function init() {
     try {
-      // Apply Twemoji to static UI elements (top bar, filter buttons, notifications)
-      parseEmoji(document.body);
-      // Watch for dynamic content (popups, modals, filters, real-time updates)
+      // Static content (top bar, notifications) was already parsed by the inline
+      // Twemoji script that runs immediately after twemoji.min.js loads.
+      // Start observer here to catch all dynamic content from this point on.
       setupEmojiObserver();
 
       // Move modals to <body> so they are in the root stacking context.
