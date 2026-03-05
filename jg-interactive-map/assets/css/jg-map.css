@@ -7201,9 +7201,8 @@ a.jg-dir-tag-inline:hover {
   text-decoration: none !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
+  order: 8 !important;
   transition: background 0.15s, color 0.15s !important;
-  margin-left: auto !important;
-  margin-right: 4px !important;
 }
 
 @media (max-width: 768px) {

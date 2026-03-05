@@ -215,13 +215,8 @@
      */
     hideBanner: function() {
       $('#jg-banner-loading').hide();
-      $('#jg-banner-container').html(
-        '<a href="/reklama" class="jg-banner-advertise-cta">' +
-          '<span class="jg-banner-advertise-cta__label">Reklama</span>' +
-          '<span class="jg-banner-advertise-cta__text">Tu może być Twoja reklama — napisz do nas</span>' +
-          '<span class="jg-banner-advertise-cta__arrow">→</span>' +
-        '</a>'
-      ).show();
+      $('#jg-banner-label').hide();
+      $('#jg-banner-fallback-cta').show();
     }
   };
 
