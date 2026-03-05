@@ -8647,7 +8647,7 @@
           businessPromoHtml = '<div class="jg-business-promo">' +
             '<div class="jg-business-promo__icon">💼</div>' +
             '<div class="jg-business-promo__text">' +
-              '<strong>Jesteś właścicielem tego biznesu?</strong>' +
+              '<strong>Jesteś właścicielem tego biznesu? Zwiększ jego widoczność na mapie już od 49 zł / miesiąc.</strong>' +
               '<p style="margin:6px 0 0;font-size:0.9rem;color:#4b5563">Promuj swoją firmę! Lepsza widoczność na mapie, możliwość dodania danych kontaktowych i priorytet w wyświetlaniu w naszym portalu.</p>' +
             '</div>' +
             '<button id="btn-business-promo" class="jg-business-promo__btn">Zapytaj o ofertę</button>' +
