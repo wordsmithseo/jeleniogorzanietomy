@@ -88,6 +88,10 @@ class JG_Interactive_Map {
         // Initialize components
         add_action('plugins_loaded', array($this, 'init_components'));
 
+        // Disable WordPress built-in emoji script — we use Twemoji directly
+        // to avoid double-parsing and the extra ~10KB wp-emoji-release.min.js request.
+        add_action('init', array($this, 'disable_wp_emoji'));
+
         // Initialize maintenance cron
         add_action('init', array('JG_Map_Maintenance', 'init'));
 
@@ -169,6 +173,18 @@ class JG_Interactive_Map {
         JG_Map_Admin::get_instance();
         JG_Map_Banner_Admin::init();
         JG_Map_Levels_Achievements::get_instance();
+    }
+
+    /**
+     * Disable WordPress built-in emoji handling.
+     * We load Twemoji ourselves, so WP's emoji script is redundant overhead.
+     */
+    public function disable_wp_emoji() {
+        remove_action('wp_head', 'print_emoji_detection_script', 7);
+        remove_action('wp_print_styles', 'print_emoji_styles');
+        remove_filter('the_content_feed', 'wp_staticize_emoji');
+        remove_filter('comment_text_rss', 'wp_staticize_emoji');
+        remove_filter('wp_mail', 'wp_staticize_emoji_for_email');
     }
 
     /**
