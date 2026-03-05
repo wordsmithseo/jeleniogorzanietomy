@@ -11,6 +11,13 @@
   function debugWarn() {}
   function debugError() {}
 
+  // Parse emoji in a DOM element using Twemoji (cross-platform consistency)
+  function parseEmoji(el) {
+    if (window.twemoji && el) {
+      twemoji.parse(el, { folder: 'svg', ext: '.svg' });
+    }
+  }
+
   // Helper function to generate category select options from config
   function generateCategoryOptions(selectedValue) {
     var categories = (window.JG_MAP_CFG && JG_MAP_CFG.reportCategories) || {};
@@ -719,6 +726,9 @@
 
   function init() {
     try {
+      // Apply Twemoji to static UI elements (top bar, filter buttons, notifications)
+      parseEmoji(document.body);
+
       // Move modals to <body> so they are in the root stacking context.
       // Without this, parent containers (e.g. Elementor sections) may create
       // their own stacking context, capping the effective z-index of modals
@@ -3405,6 +3415,11 @@
 
             map.addLayer(cluster);
 
+            // Re-parse emoji after spiderfy expands markers onto the map
+            cluster.on('spiderfied', function() {
+              setTimeout(function() { parseEmoji(document.getElementById('jg-map')); }, 50);
+            });
+
             // Add cluster click handler - spiderfy for normal clusters, list for special clusters
             cluster.on('clusterclick', function(e) {
               var currentZoom = map.getZoom();
@@ -4976,6 +4991,8 @@
         // Add all markers at once to cluster (reduces animation flicker)
         if (clusterReady && cluster && newMarkers.length > 0) {
           cluster.addLayers(newMarkers);
+          // Parse emoji in newly added marker icons (deferred so DOM is ready)
+          setTimeout(function() { parseEmoji(document.getElementById('jg-map')); }, 100);
         } else if (newMarkers.length > 0) {
           // DON'T add markers directly to map - wait for cluster to be ready
           // This prevents duplicate markers (one on map, one in cluster)
