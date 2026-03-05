@@ -3587,7 +3587,7 @@
 
               // Build via iconFor() so it stays pixel-perfect with real sponsored pins
               var gpFakePoint = {
-                sponsored: true, id: 'ghost-pin', title: 'Twoja firma tutaj',
+                sponsored: true, id: 'ghost-pin', title: 'Zareklamuj swoją firmę na mapie',
                 type: 'miejsce', images: [], featured_image_index: 0,
                 is_pending: false, is_edit: false, is_deletion_requested: false,
                 reports_count: 0, user_has_reported: false, author_id: -1
@@ -3596,14 +3596,20 @@
               var gpW = gpRealIcon.options.iconSize[0];
               var gpH = gpRealIcon.options.iconSize[1];
 
-              // Wrap in opacity layer; overlay "AD" text at center of the gold circle
+              // Inject "AD" text inside the gold circle (which is inside jg-pin-svg-wrapper)
+              // so it lifts together with the pin on hover.
+              // The empty gold circle ends with: background:#f0e68c;"></div>
+              var gpInnerHtml = gpRealIcon.options.html.replace(
+                'background:#f0e68c;"></div>',
+                'background:#f0e68c;display:flex;align-items:center;justify-content:center;">' +
+                  '<span style="font-size:11px;font-weight:900;color:#92400e;letter-spacing:0.5px;' +
+                    'text-shadow:0 0 3px rgba(255,255,255,0.85);pointer-events:none;">AD</span>' +
+                '</div>'
+              );
+
               var gpHtml =
                 '<div style="opacity:0.62;position:relative;cursor:pointer;width:' + gpW + 'px;height:' + gpH + 'px;">' +
-                  gpRealIcon.options.html +
-                  '<div style="position:absolute;left:50%;top:' + Math.round(gpH * 0.40) + 'px;' +
-                    'transform:translate(-50%,-50%);font-size:10px;font-weight:900;color:#92400e;' +
-                    'pointer-events:none;z-index:5;letter-spacing:0.5px;' +
-                    'text-shadow:0 0 3px rgba(255,255,255,0.9)">AD</div>' +
+                  gpInnerHtml +
                   '<div style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;' +
                     'background:#f59e0b;border-radius:50%;border:1.5px solid #fff;' +
                     'animation:jg-pulse 1.5s ease-in-out infinite;"></div>' +
