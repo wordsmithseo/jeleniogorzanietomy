@@ -52,6 +52,16 @@ class JG_Map_Shortcode {
             'jg_map'
         );
 
+        $show_advertise_link = true;
+        if (is_user_logged_in()) {
+            global $wpdb;
+            $pts = JG_Map_Database::get_points_table();
+            $show_advertise_link = !(bool) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $pts WHERE author_id = %d AND is_promo = 1 AND status = 'publish'",
+                get_current_user_id()
+            ));
+        }
+
         ob_start();
         ?>
         <div id="jg-map-wrap" class="jg-wrap" style="position:relative; height: <?php echo esc_attr($atts['height']); ?> !important; display: grid; grid-template-rows: auto 1fr;">
@@ -62,7 +72,7 @@ class JG_Map_Shortcode {
                     <label class="jg-filter-label jg-filter-label--expandable" data-filter-type="miejsce"><input type="checkbox" data-type="miejsce" checked><span class="jg-filter-icon">📍</span><span class="jg-filter-text"><?php _e('Miejsca', 'jg-map'); ?></span><span class="jg-filter-expand-btn" data-expand-target="place-categories">▼</span></label>
                     <label class="jg-filter-label" data-filter-type="my-places"><input type="checkbox" data-my-places><span class="jg-filter-icon">👤</span><span class="jg-filter-text"><?php _e('Moje miejsca', 'jg-map'); ?></span></label>
                     <label class="jg-filter-label" data-filter-type="promo"><input type="checkbox" data-promo><span class="jg-filter-icon">⭐</span><span class="jg-filter-text"><?php _e('Tylko miejsca sponsorowane', 'jg-map'); ?></span></label>
-                    <a href="/reklama" class="jg-advertise-link" title="Dowiedz się jak promować firmę na mapie">📣 <?php _e('Reklamuj swoją firmę na mapie →', 'jg-map'); ?></a>
+                    <?php if ($show_advertise_link) : ?><a href="/reklama" class="jg-advertise-link" title="Dowiedz się jak promować firmę na mapie">📣 <?php _e('Reklamuj swoją firmę na mapie →', 'jg-map'); ?></a><?php endif; ?>
                     <div class="jg-search">
                         <input type="text" id="jg-search-input" placeholder="🔍 <?php _e('Szukaj po nazwie, adresie, tagach...', 'jg-map'); ?>" />
                         <button id="jg-search-btn" class="jg-search-btn" title="Szukaj">

@@ -3581,6 +3581,54 @@
 
             clusterReady = true;
 
+            // Ghost pin: placeholder sponsored marker for non-sponsor users
+            if (CFG.ghostPin && CFG.ghostPin.lat && CFG.ghostPin.lng) {
+              var gp = CFG.ghostPin;
+              var gpHtml =
+                '<div class="jg-ghost-pin" style="position:relative;width:32px;height:42px;opacity:0.55;cursor:pointer;">' +
+                  '<svg width="32" height="42" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">' +
+                    '<defs>' +
+                      '<linearGradient id="gp-grad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+                        '<stop offset="0%" style="stop-color:#c0392b;stop-opacity:1"/>' +
+                        '<stop offset="50%" style="stop-color:#8d2324;stop-opacity:1"/>' +
+                        '<stop offset="100%" style="stop-color:#6b1a1a;stop-opacity:1"/>' +
+                      '</linearGradient>' +
+                    '</defs>' +
+                    '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" fill="url(#gp-grad)"/>' +
+                    '<circle cx="16" cy="16" r="7" fill="rgba(255,255,255,0.25)"/>' +
+                    '<text x="16" y="20" text-anchor="middle" font-size="9" fill="#fff" font-family="system-ui" font-weight="bold">AD</text>' +
+                  '</svg>' +
+                  '<div style="position:absolute;top:-2px;right:-2px;width:10px;height:10px;background:#f59e0b;border-radius:50%;border:1.5px solid #fff;animation:jg-pulse 1.5s ease-in-out infinite;"></div>' +
+                '</div>';
+              var gpIcon = L.divIcon({
+                className: 'jg-ghost-pin-marker',
+                html: gpHtml,
+                iconSize: [32, 42],
+                iconAnchor: [16, 42],
+                popupAnchor: [0, -44]
+              });
+              var gpMarker = L.marker([gp.lat, gp.lng], { icon: gpIcon, zIndexOffset: 500 });
+              gpMarker.bindTooltip(
+                '<strong style="font-size:13px">📣 Twoja firma mogłaby być tutaj</strong>' +
+                '<br><span style="font-size:11px;color:#6b7280">Kliknij, aby dowiedzieć się więcej o reklamie</span>',
+                { direction: 'top', offset: [0, -44], className: 'jg-ghost-pin-tooltip' }
+              );
+              gpMarker.on('click', function() {
+                window.open('/reklama', '_blank');
+              });
+              gpMarker.addTo(map);
+
+              // Inject pulse keyframes if not already present
+              if (!document.getElementById('jg-ghost-pin-style')) {
+                var s = document.createElement('style');
+                s.id = 'jg-ghost-pin-style';
+                s.textContent = '@keyframes jg-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:0.6}}' +
+                  '.jg-ghost-pin-tooltip{background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px 10px;box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap;}' +
+                  '.jg-ghost-pin-tooltip::before{border-top-color:#e5e7eb !important;}';
+                document.head.appendChild(s);
+              }
+            }
+
             // Clean up any old markers
             if (markers.length > 0) {
               markers.forEach(function(m) {
@@ -8643,7 +8691,7 @@
         var businessPromoHtml = '';
         var businessCategories = ['gastronomia', 'uslugi', 'sport', 'kultura'];
         var isOwnPlace = +CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id;
-        if (p.type === 'miejsce' && !p.sponsored && (isOwnPlace || !CFG.isLoggedIn) && p.category && businessCategories.indexOf(p.category) !== -1) {
+        if (p.type === 'miejsce' && !p.sponsored && !CFG.hasSponsoredPoint && (isOwnPlace || !CFG.isLoggedIn) && p.category && businessCategories.indexOf(p.category) !== -1) {
           businessPromoHtml = '<div class="jg-business-promo">' +
             '<div class="jg-business-promo__icon">💼</div>' +
             '<div class="jg-business-promo__text">' +
