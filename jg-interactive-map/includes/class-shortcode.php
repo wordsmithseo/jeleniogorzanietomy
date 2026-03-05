@@ -597,13 +597,18 @@ class JG_Map_Shortcode {
         ob_start();
         ?>
         <div class="jg-banner-wrap">
-            <div class="jg-banner-label">Sponsorowane</div>
+            <div class="jg-banner-label" id="jg-banner-label">Sponsorowane</div>
             <div id="jg-banner-container" class="jg-banner-container" style="max-width:<?php echo esc_attr($atts['width']); ?>;width:100%;margin:0 auto;box-sizing:border-box;">
                 <div id="jg-banner-loading" style="display:flex;align-items:center;justify-content:center;aspect-ratio:<?php echo intval($atts['width']) . '/' . intval($atts['height']); ?>;background:#f5f5f5;color:#999;font-size:14px;">
                     Ładowanie banneru...
                 </div>
                 <a id="jg-banner-link" href="#" target="_blank" style="display:none;">
                     <img id="jg-banner-image" src="" alt="Banner" style="width:100%;height:auto;display:block;object-fit:contain;background:#f5f5f5;">
+                </a>
+                <a id="jg-banner-fallback-cta" href="/reklama" class="jg-banner-advertise-cta" style="display:none;">
+                    <span class="jg-banner-advertise-cta__label">Reklama</span>
+                    <span class="jg-banner-advertise-cta__text">Tu może być Twoja reklama — napisz do nas</span>
+                    <span class="jg-banner-advertise-cta__arrow">→</span>
                 </a>
             </div>
         </div>
