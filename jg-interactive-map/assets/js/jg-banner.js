@@ -216,10 +216,6 @@
     hideBanner: function() {
       $('#jg-banner-loading').hide();
       $('#jg-banner-label').hide();
-      if (window.JG_MAP_CFG && window.JG_MAP_CFG.hasSponsoredPoint) {
-        $('#jg-banner-container').hide();
-        return;
-      }
       var ctaHtml = '<a href="/reklama" style="display:flex !important;align-items:center;justify-content:center;gap:16px;width:100%;min-height:90px;padding:16px 28px;box-sizing:border-box;border-radius:4px;text-decoration:none;background:#8d2324;font-family:system-ui,-apple-system,sans-serif">' +
         '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.7);flex-shrink:0">Reklama</span>' +
         '<span style="font-size:16px;font-weight:700;color:#fff">Tu może być Twoja reklama — napisz do nas</span>' +

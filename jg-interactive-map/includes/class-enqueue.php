@@ -319,13 +319,105 @@ class JG_Map_Enqueue {
 
         // Localize script with config
         $has_sponsored_point = false;
-        if (is_user_logged_in()) {
+        $ghost_pin = null;
+        {
             global $wpdb;
             $pts = JG_Map_Database::get_points_table();
-            $has_sponsored_point = (bool) $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $pts WHERE author_id = %d AND is_promo = 1 AND status = 'publish'",
-                get_current_user_id()
-            ));
+
+            if (is_user_logged_in()) {
+                $has_sponsored_point = (bool) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $pts WHERE author_id = %d AND is_promo = 1 AND status = 'publish'",
+                    get_current_user_id()
+                ));
+            }
+
+            // Ghost pin: shown only to users without a sponsored point
+            if (!$has_sponsored_point) {
+                // ~50 commercial/service locations in Jelenia Góra (non-residential)
+                $ghost_candidates = array(
+                    array(50.9068, 15.7441), // Galeria Nowy Rynek
+                    array(50.9063, 15.7381), // Centrum handlowe
+                    array(50.9095, 15.7399), // Plac Ratuszowy
+                    array(50.9101, 15.7427), // Ulica Długa (usługi)
+                    array(50.9072, 15.7460), // Ulica Bankowa
+                    array(50.9055, 15.7410), // Ulica 1 Maja
+                    array(50.9087, 15.7356), // Ulica Grodzka
+                    array(50.9049, 15.7389), // Parking Śródmiejski
+                    array(50.9114, 15.7451), // Ulica Wolności (usługi)
+                    array(50.9040, 15.7420), // Rynek Podrynkowy
+                    array(50.9031, 15.7374), // Ulica Różana
+                    array(50.9120, 15.7395), // Ulica Fryderyka Chopina
+                    array(50.9079, 15.7330), // Ulica Widok
+                    array(50.9060, 15.7490), // Ulica Piłsudskiego
+                    array(50.9035, 15.7445), // Park Norweski
+                    array(50.9108, 15.7480), // Ulica Konstytucji 3 Maja
+                    array(50.9025, 15.7355), // Ulica Cervi (restauracje)
+                    array(50.9145, 15.7418), // Cieplice - centrum
+                    array(50.9155, 15.7435), // Cieplice - plac zdrojowy
+                    array(50.9132, 15.7402), // Cieplice - ul. Cieplicka
+                    array(50.9162, 15.7460), // Cieplice - Park Zdrojowy
+                    array(50.9143, 15.7380), // Cieplice - usługi
+                    array(50.9078, 15.7520), // Zabobrze - centrum handlowe
+                    array(50.9065, 15.7555), // Zabobrze - usługi
+                    array(50.9090, 15.7540), // Zabobrze - ul. Gagarina
+                    array(50.9021, 15.7480), // Śródmieście południe
+                    array(50.9015, 15.7440), // ul. Sudecka (restauracje/usługi)
+                    array(50.9098, 15.7302), // Zachodnia strefa usługowa
+                    array(50.9082, 15.7280), // ul. Podchorążych
+                    array(50.9118, 15.7340), // ul. Kochanowskiego (kawiarnie)
+                    array(50.9044, 15.7510), // Centrum Handlowe wschód
+                    array(50.9070, 15.7580), // ul. Zgorzelecka (usługi)
+                    array(50.9035, 15.7320), // ul. Podwale (restauracje)
+                    array(50.9133, 15.7460), // Biura usługowe Cieplice
+                    array(50.9058, 15.7350), // ul. Różyckiego
+                    array(50.9112, 15.7510), // ul. Jana Pawła II
+                    array(50.9089, 15.7410), // Pasaż Świdnicki
+                    array(50.9077, 15.7448), // ul. Ogińskiego
+                    array(50.9047, 15.7465), // ul. Podgórna
+                    array(50.9102, 15.7368), // ul. Nowowiejska
+                );
+
+                // Rotate index every hour using a transient
+                $hour_key = 'jg_ghost_pin_hour';
+                $current_hour = (int) floor(time() / HOUR_IN_SECONDS);
+                $stored = get_transient($hour_key);
+                if (!$stored || (int) $stored['hour'] !== $current_hour) {
+                    $idx = array_rand($ghost_candidates);
+                    set_transient($hour_key, array('hour' => $current_hour, 'idx' => $idx), HOUR_IN_SECONDS);
+                } else {
+                    $idx = (int) $stored['idx'];
+                }
+
+                $chosen = $ghost_candidates[$idx];
+
+                // Verify no existing published pin is within ~50m of this coordinate
+                $existing = $wpdb->get_results(
+                    $wpdb->prepare(
+                        "SELECT lat, lng FROM $pts WHERE status = 'publish'
+                         AND ABS(lat - %f) < 0.0005 AND ABS(lng - %f) < 0.0007",
+                        $chosen[0], $chosen[1]
+                    )
+                );
+
+                if (empty($existing)) {
+                    $ghost_pin = array('lat' => $chosen[0], 'lng' => $chosen[1]);
+                } else {
+                    // Pick a fallback at a random offset far from all existing pins
+                    foreach ($ghost_candidates as $candidate) {
+                        $nearby = $wpdb->get_var(
+                            $wpdb->prepare(
+                                "SELECT COUNT(*) FROM $pts WHERE status = 'publish'
+                                 AND ABS(lat - %f) < 0.0005 AND ABS(lng - %f) < 0.0007",
+                                $candidate[0], $candidate[1]
+                            )
+                        );
+                        if (!$nearby) {
+                            $ghost_pin = array('lat' => $candidate[0], 'lng' => $candidate[1]);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         wp_localize_script(
@@ -336,6 +428,7 @@ class JG_Map_Enqueue {
                 'nonce' => wp_create_nonce('jg_map_nonce'),
                 'isLoggedIn' => is_user_logged_in(),
                 'hasSponsoredPoint' => $has_sponsored_point,
+                'ghostPin' => $ghost_pin,
                 'isAdmin' => current_user_can('manage_options') || current_user_can('jg_map_moderate'),
                 'currentUserId' => get_current_user_id(),
                 'loginUrl' => wp_login_url(get_permalink()),
