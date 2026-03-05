@@ -216,7 +216,18 @@
     hideBanner: function() {
       $('#jg-banner-loading').hide();
       $('#jg-banner-label').hide();
-      $('#jg-banner-fallback-cta').show();
+      var $fallback = $('#jg-banner-fallback-cta');
+      if ($fallback.length) {
+        $fallback.css('display', 'flex');
+      } else {
+        $('#jg-banner-container').html(
+          '<a href="/reklama" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:90px;padding:12px 24px;box-sizing:border-box;border:1.5px dashed #d1d5db;border-radius:4px;text-decoration:none;color:#6b7280;font-size:14px;background:repeating-linear-gradient(-45deg,#fafafa,#fafafa 10px,#f3f4f6 10px,#f3f4f6 20px)">' +
+            '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;flex-shrink:0">Reklama</span>' +
+            '<span style="font-weight:500">Tu może być Twoja reklama — napisz do nas</span>' +
+            '<span style="font-size:16px;flex-shrink:0">→</span>' +
+          '</a>'
+        );
+      }
     }
   };
 

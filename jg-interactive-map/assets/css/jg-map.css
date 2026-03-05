@@ -274,6 +274,21 @@
   text-transform: none !important;
   letter-spacing: normal !important;
   box-sizing: border-box !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+#jg-map-filters {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+#jg-category-filters {
+  flex-basis: 100% !important;
+  width: 100% !important;
 }
 
 .jg-filters {
@@ -7201,7 +7216,6 @@ a.jg-dir-tag-inline:hover {
   text-decoration: none !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
-  order: 8 !important;
   transition: background 0.15s, color 0.15s !important;
 }
 
