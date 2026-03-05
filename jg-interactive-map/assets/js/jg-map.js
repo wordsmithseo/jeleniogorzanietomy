@@ -3622,7 +3622,8 @@
                 iconAnchor: [gpW / 2, gpH],
                 popupAnchor: [0, -gpH + 5]
               });
-              var gpMarker = L.marker([gp.lat, gp.lng], { icon: gpIcon, zIndexOffset: 500 });
+              // zIndexOffset bardzo wysoki → ghost pin zawsze na froncie przed innymi pinezkami
+              var gpMarker = L.marker([gp.lat, gp.lng], { icon: gpIcon, zIndexOffset: 9000 });
               gpMarker.bindTooltip(
                 '<strong style="font-size:13px">📣 Twoja firma mogłaby być tutaj</strong>' +
                 '<br><span style="font-size:11px;color:#6b7280">Kliknij, aby dowiedzieć się więcej o reklamie</span>',
@@ -3635,9 +3636,53 @@
                 var s = document.createElement('style');
                 s.id = 'jg-ghost-pin-style';
                 s.textContent = '@keyframes jg-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:0.6}}' +
-                  '.jg-ghost-pin-tooltip{background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px 10px;box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap;}';
+                  '.jg-ghost-pin-tooltip{background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:6px 10px;box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap;}' +
+                  // Ghost pin zawsze na froncie (bije z-index:1000 prawdziwych sponsorowanych)
+                  '.jg-ghost-pin-marker{z-index:10001!important;}';
                 document.head.appendChild(s);
               }
+
+              // Rotacja pozycji przy zmianie godziny — ta sama formuła co PHP: hour % count
+              var gpCandidates = [
+                [50.9068,15.7441],[50.9063,15.7381],[50.9095,15.7399],[50.9101,15.7427],
+                [50.9072,15.7460],[50.9055,15.7410],[50.9087,15.7356],[50.9049,15.7389],
+                [50.9114,15.7451],[50.9040,15.7420],[50.9031,15.7374],[50.9120,15.7395],
+                [50.9079,15.7330],[50.9060,15.7490],[50.9035,15.7445],[50.9108,15.7480],
+                [50.9025,15.7355],[50.9145,15.7418],[50.9155,15.7435],[50.9132,15.7402],
+                [50.9162,15.7460],[50.9143,15.7380],[50.9078,15.7520],[50.9065,15.7555],
+                [50.9090,15.7540],[50.9021,15.7480],[50.9015,15.7440],[50.9098,15.7302],
+                [50.9082,15.7280],[50.9118,15.7340],[50.9044,15.7510],[50.9070,15.7580],
+                [50.9035,15.7320],[50.9133,15.7460],[50.9058,15.7350],[50.9112,15.7510],
+                [50.9089,15.7410],[50.9077,15.7448],[50.9047,15.7465],[50.9102,15.7368]
+              ];
+
+              var gpCurrentHour = Math.floor(Date.now() / 3600000);
+
+              function gpMoveTo(newPos) {
+                var el = gpMarker.getElement();
+                if (!el) return;
+                // Fade out
+                el.style.transition = 'opacity 0.45s ease';
+                el.style.opacity = '0';
+                setTimeout(function() {
+                  gpMarker.setLatLng([newPos[0], newPos[1]]);
+                  // Krótka pauza by Leaflet przeliczył pozycję, potem fade in
+                  setTimeout(function() {
+                    el.style.opacity = '1';
+                  }, 60);
+                }, 460);
+              }
+
+              // Sprawdzaj co minutę czy godzina się zmieniła
+              var gpRotateTimer = setInterval(function() {
+                if (!map || !gpMarker) { clearInterval(gpRotateTimer); return; }
+                var nowHour = Math.floor(Date.now() / 3600000);
+                if (nowHour !== gpCurrentHour) {
+                  gpCurrentHour = nowHour;
+                  var newIdx = nowHour % gpCandidates.length;
+                  gpMoveTo(gpCandidates[newIdx]);
+                }
+              }, 60000);
             }
 
             // Clean up any old markers
