@@ -18,6 +18,26 @@
     }
   }
 
+  // Watch for dynamically added content (popups, modals, filters, notifications)
+  // and automatically replace emoji with Twemoji images
+  var _emojiObserverTimer = null;
+  function setupEmojiObserver() {
+    if (!window.MutationObserver || !window.twemoji) return;
+    var observer = new MutationObserver(function(mutations) {
+      var hasNodes = false;
+      for (var i = 0; i < mutations.length; i++) {
+        if (mutations[i].addedNodes.length > 0) { hasNodes = true; break; }
+      }
+      if (!hasNodes) return;
+      // Debounce to avoid thrashing during bulk DOM updates
+      clearTimeout(_emojiObserverTimer);
+      _emojiObserverTimer = setTimeout(function() {
+        parseEmoji(document.body);
+      }, 80);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
   // Helper function to generate category select options from config
   function generateCategoryOptions(selectedValue) {
     var categories = (window.JG_MAP_CFG && JG_MAP_CFG.reportCategories) || {};
@@ -728,6 +748,8 @@
     try {
       // Apply Twemoji to static UI elements (top bar, filter buttons, notifications)
       parseEmoji(document.body);
+      // Watch for dynamic content (popups, modals, filters, real-time updates)
+      setupEmojiObserver();
 
       // Move modals to <body> so they are in the root stacking context.
       // Without this, parent containers (e.g. Elementor sections) may create
@@ -3415,10 +3437,7 @@
 
             map.addLayer(cluster);
 
-            // Re-parse emoji after spiderfy expands markers onto the map
-            cluster.on('spiderfied', function() {
-              setTimeout(function() { parseEmoji(document.getElementById('jg-map')); }, 50);
-            });
+
 
             // Add cluster click handler - spiderfy for normal clusters, list for special clusters
             cluster.on('clusterclick', function(e) {
@@ -4991,8 +5010,6 @@
         // Add all markers at once to cluster (reduces animation flicker)
         if (clusterReady && cluster && newMarkers.length > 0) {
           cluster.addLayers(newMarkers);
-          // Parse emoji in newly added marker icons (deferred so DOM is ready)
-          setTimeout(function() { parseEmoji(document.getElementById('jg-map')); }, 100);
         } else if (newMarkers.length > 0) {
           // DON'T add markers directly to map - wait for cluster to be ready
           // This prevents duplicate markers (one on map, one in cluster)
