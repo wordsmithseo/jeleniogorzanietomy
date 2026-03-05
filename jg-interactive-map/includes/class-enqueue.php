@@ -318,6 +318,16 @@ class JG_Map_Enqueue {
         );
 
         // Localize script with config
+        $has_sponsored_point = false;
+        if (is_user_logged_in()) {
+            global $wpdb;
+            $pts = JG_Map_Database::get_points_table();
+            $has_sponsored_point = (bool) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $pts WHERE author_id = %d AND is_promo = 1 AND status = 'publish'",
+                get_current_user_id()
+            ));
+        }
+
         wp_localize_script(
             'jg-map-script',
             'JG_MAP_CFG',
@@ -325,6 +335,7 @@ class JG_Map_Enqueue {
                 'ajax' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('jg_map_nonce'),
                 'isLoggedIn' => is_user_logged_in(),
+                'hasSponsoredPoint' => $has_sponsored_point,
                 'isAdmin' => current_user_can('manage_options') || current_user_can('jg_map_moderate'),
                 'currentUserId' => get_current_user_id(),
                 'loginUrl' => wp_login_url(get_permalink()),

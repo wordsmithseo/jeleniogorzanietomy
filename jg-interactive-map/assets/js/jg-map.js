@@ -8643,7 +8643,7 @@
         var businessPromoHtml = '';
         var businessCategories = ['gastronomia', 'uslugi', 'sport', 'kultura'];
         var isOwnPlace = +CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id;
-        if (p.type === 'miejsce' && !p.sponsored && (isOwnPlace || !CFG.isLoggedIn) && p.category && businessCategories.indexOf(p.category) !== -1) {
+        if (p.type === 'miejsce' && !p.sponsored && !CFG.hasSponsoredPoint && (isOwnPlace || !CFG.isLoggedIn) && p.category && businessCategories.indexOf(p.category) !== -1) {
           businessPromoHtml = '<div class="jg-business-promo">' +
             '<div class="jg-business-promo__icon">💼</div>' +
             '<div class="jg-business-promo__text">' +
