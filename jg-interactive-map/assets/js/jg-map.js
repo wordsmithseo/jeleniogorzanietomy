@@ -11959,38 +11959,4 @@
       showError('Błąd: ' + e.message);
     }
   }
-
-  // ── Advertise link in filter bar ──────────────────────────────────────────
-  $(document).ready(function() {
-    var $wrapper = $('#jg-map-filters-wrapper');
-    if ($wrapper.length && !$wrapper.find('.jg-advertise-link').length) {
-      $wrapper.css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' });
-      $wrapper.find('#jg-map-filters').css({ flex: '1 1 auto', minWidth: '0', marginBottom: '0' });
-      $wrapper.find('#jg-category-filters').css({ flexBasis: '100%', width: '100%' });
-      $('<a>', {
-        href: '/reklama',
-        title: 'Dowiedz się jak promować firmę na mapie',
-        html: '📣 Reklamuj się'
-      }).css({
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '6px 12px',
-        borderRadius: '20px',
-        border: '1.5px dashed #8d2324',
-        color: '#8d2324',
-        fontSize: '13px',
-        fontWeight: '600',
-        textDecoration: 'none',
-        whiteSpace: 'nowrap',
-        flexShrink: '0',
-        background: 'transparent'
-      }).on('mouseenter', function() {
-        $(this).css({ background: '#8d2324', color: '#fff', borderStyle: 'solid' });
-      }).on('mouseleave', function() {
-        $(this).css({ background: 'transparent', color: '#8d2324', borderStyle: 'dashed' });
-      }).insertBefore($wrapper.find('#jg-category-filters'));
-    }
-  });
-
 })(jQuery);

@@ -62,6 +62,7 @@ class JG_Map_Shortcode {
                     <label class="jg-filter-label jg-filter-label--expandable" data-filter-type="miejsce"><input type="checkbox" data-type="miejsce" checked><span class="jg-filter-icon">📍</span><span class="jg-filter-text"><?php _e('Miejsca', 'jg-map'); ?></span><span class="jg-filter-expand-btn" data-expand-target="place-categories">▼</span></label>
                     <label class="jg-filter-label" data-filter-type="my-places"><input type="checkbox" data-my-places><span class="jg-filter-icon">👤</span><span class="jg-filter-text"><?php _e('Moje miejsca', 'jg-map'); ?></span></label>
                     <label class="jg-filter-label" data-filter-type="promo"><input type="checkbox" data-promo><span class="jg-filter-icon">⭐</span><span class="jg-filter-text"><?php _e('Tylko miejsca sponsorowane', 'jg-map'); ?></span></label>
+                    <a href="/reklama" class="jg-advertise-link" title="Dowiedz się jak promować firmę na mapie">📣 <?php _e('Reklamuj się', 'jg-map'); ?></a>
                     <div class="jg-search">
                         <input type="text" id="jg-search-input" placeholder="🔍 <?php _e('Szukaj po nazwie, adresie, tagach...', 'jg-map'); ?>" />
                         <button id="jg-search-btn" class="jg-search-btn" title="Szukaj">
@@ -72,7 +73,6 @@ class JG_Map_Shortcode {
                         </button>
                     </div>
                 </div>
-                <a href="/reklama" class="jg-advertise-link" title="Dowiedz się jak promować firmę na mapie">📣 <?php _e('Reklamuj się', 'jg-map'); ?></a>
                 <!-- Category filter dropdowns -->
                 <div id="jg-category-filters" class="jg-category-filters" style="display:none;">
                     <div id="jg-place-categories" class="jg-category-dropdown" data-category-type="miejsce" style="display:none;">
