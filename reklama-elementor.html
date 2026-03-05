@@ -13,6 +13,18 @@
   }
   .jg-ad * { box-sizing: border-box; }
 
+  /* ── IZOLACJA OD ELEMENTORA / THEME ─────────────────────── */
+  /* Cofa style motywu i Elementora do UA defaults wewnątrz .jg-ad,
+     nie wpływa na nic poza tym kontenerem (nagłówek, stopka itp.) */
+  .jg-ad h1, .jg-ad h2, .jg-ad h3,
+  .jg-ad p, .jg-ad ul, .jg-ad li,
+  .jg-ad a, .jg-ad button, .jg-ad img, .jg-ad span {
+    all: revert;
+    box-sizing: border-box;
+  }
+  /* Linki i przyciski – po revert muszą mieć cursor */
+  .jg-ad a, .jg-ad button { cursor: pointer; }
+
   /* ── HERO ─────────────────────────────────────────────────── */
   .jg-ad__hero {
     background: linear-gradient(135deg, #8d2324 0%, #6b1a1a 100%);
