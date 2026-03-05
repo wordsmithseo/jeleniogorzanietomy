@@ -238,6 +238,10 @@
   // BODY SCROLL LOCK (when any modal is open)
   // ====================================
   function lockBodyScroll() {
+    var scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = scrollbarWidth + 'px';
+    }
     document.body.classList.add('jg-modal-open');
   }
   function unlockBodyScroll() {
@@ -246,6 +250,7 @@
       if (bgs[i].style.display === 'flex' || bgs[i].classList.contains('active')) return;
     }
     document.body.classList.remove('jg-modal-open');
+    document.body.style.paddingRight = '';
   }
 
   // ====================================
@@ -10605,6 +10610,8 @@
           if (!document.hidden) {
             // FORCE refresh when returning to tab to ensure we have latest data
             refreshData(true);
+            // Re-sync Leaflet map size in case the container shifted while tab was hidden
+            inv();
           }
         });
       }); // End of $(document).ready()
