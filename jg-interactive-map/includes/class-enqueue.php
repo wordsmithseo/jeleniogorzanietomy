@@ -271,8 +271,17 @@ class JG_Map_Enqueue {
         // WordPress Heartbeat for real-time sync (ALL users need this for map updates)
         wp_enqueue_script('heartbeat');
 
+        // Twemoji – cross-platform emoji consistency (SVG, open-source)
+        wp_enqueue_script(
+            'twemoji',
+            'https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js',
+            array(),
+            '14.0.2',
+            true
+        );
+
         // Plugin JS - CRITICAL: Add 'heartbeat' as dependency for real-time sync
-        $dependencies = array('jquery', 'leaflet', 'leaflet-markercluster', 'heartbeat');
+        $dependencies = array('jquery', 'leaflet', 'leaflet-markercluster', 'heartbeat', 'twemoji');
 
         // Add notifications script as dependency if user is admin/moderator
         if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('jg_map_moderate'))) {

@@ -3390,6 +3390,22 @@ body.jg-modal-open {
   user-select: none;
 }
 
+/* Twemoji SVG images inside pin markers */
+.jg-pin-emoji img.emoji {
+  height: 1em;
+  width: 1em;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Twemoji images in general UI elements (filter buttons, top bar, notifications, etc.) */
+img.emoji {
+  height: 1em;
+  width: 1em;
+  vertical-align: -0.1em;
+  display: inline-block;
+}
+
 /* Sponsored pin - No animation, just subtle shadow */
 .jg-pin-marker--promo .jg-pin-svg-wrapper {
   position: relative;
