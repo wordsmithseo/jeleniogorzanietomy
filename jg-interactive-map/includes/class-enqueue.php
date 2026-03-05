@@ -377,16 +377,9 @@ class JG_Map_Enqueue {
                     array(50.9102, 15.7368), // ul. Nowowiejska
                 );
 
-                // Rotate index every hour using a transient
-                $hour_key = 'jg_ghost_pin_hour';
+                // Deterministyczny wybór pozycji na podstawie godziny — JS używa tej samej formuły
                 $current_hour = (int) floor(time() / HOUR_IN_SECONDS);
-                $stored = get_transient($hour_key);
-                if (!$stored || (int) $stored['hour'] !== $current_hour) {
-                    $idx = array_rand($ghost_candidates);
-                    set_transient($hour_key, array('hour' => $current_hour, 'idx' => $idx), HOUR_IN_SECONDS);
-                } else {
-                    $idx = (int) $stored['idx'];
-                }
+                $idx = $current_hour % count($ghost_candidates);
 
                 $chosen = $ghost_candidates[$idx];
 
