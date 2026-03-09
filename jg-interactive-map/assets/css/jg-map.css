@@ -359,6 +359,7 @@
   align-items: center;
   order: 9;
   flex-shrink: 1;
+  margin-left: auto;
 }
 
 /* ── Sync status indicator – Elementor-isolated ── */
