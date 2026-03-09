@@ -292,6 +292,50 @@ class JG_Map_Sync_Manager {
      * @param array $data Heartbeat data
      * @return array Modified response
      */
+    /**
+     * Track current user as online and get online users data.
+     * Uses a single transient containing array of [user_id => last_seen_timestamp].
+     *
+     * @param int $current_user_id
+     * @return array ['total' => int, 'others' => int]
+     */
+    private function track_and_get_online_users($current_user_id) {
+        $now       = time();
+        $ttl       = 180; // 3 minutes window = "online"
+        $threshold = $now - $ttl;
+
+        $online = get_transient('jg_online_users');
+        if (!is_array($online)) {
+            $online = array();
+        }
+
+        // Update / add current user's last-seen timestamp
+        if ($current_user_id > 0) {
+            $online[$current_user_id] = $now;
+        }
+
+        // Evict stale entries
+        foreach ($online as $uid => $last_seen) {
+            if ($last_seen < $threshold) {
+                unset($online[$uid]);
+            }
+        }
+
+        // Persist with a bit more than the TTL so the transient itself doesn't expire
+        // before all users have a chance to be evicted by the logic above.
+        set_transient('jg_online_users', $online, $ttl + 30);
+
+        $total  = count($online);
+        $others = ($current_user_id > 0 && isset($online[$current_user_id]))
+            ? $total - 1
+            : $total;
+
+        return array(
+            'total'  => $total,
+            'others' => max(0, $others),
+        );
+    }
+
     public function heartbeat_handler($response, $data) {
         global $wpdb;
 
@@ -356,6 +400,11 @@ class JG_Map_Sync_Manager {
             );
         }
 
+        // Track online users and get counts (for admin/mod indicator)
+        $current_user_id  = get_current_user_id();
+        $is_admin_or_mod  = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+        $online_users     = $this->track_and_get_online_users($current_user_id);
+
         // Build response
         $response['jg_map_sync'] = array(
             'new_points' => intval($new_points),
@@ -364,8 +413,10 @@ class JG_Map_Sync_Manager {
             'last_modified' => get_option('jg_map_last_modified', time()),
             'server_time' => time(),
             // Include current user info for session change detection
-            'current_user_id' => get_current_user_id(),
-            'is_admin' => current_user_can('manage_options') || current_user_can('jg_map_moderate')
+            'current_user_id' => $current_user_id,
+            'is_admin' => $is_admin_or_mod,
+            // Online users data (only meaningful for admin/mod indicator)
+            'online_users' => $is_admin_or_mod ? $online_users : null,
         );
 
         return $response;
