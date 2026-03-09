@@ -3137,9 +3137,10 @@ class JG_Map_Admin {
                 <thead>
                     <tr>
                         <th style="width:4%">ID</th>
-                        <th style="width:18%">Użytkownik</th>
-                        <th style="width:10%">Miejsca</th>
-                        <th style="width:12%">Ostatnie logowanie</th>
+                        <th style="width:16%">Użytkownik</th>
+                        <th style="width:9%">Miejsca</th>
+                        <th style="width:10%">Data rejestracji</th>
+                        <th style="width:10%">Ostatnie logowanie</th>
                         <th style="width:12%">Ostatnia akcja</th>
                         <th style="width:12%">Status</th>
                         <th style="width:18%">Blokady</th>
@@ -3162,6 +3163,10 @@ class JG_Map_Admin {
                                 <?php if ($stats['pending'] > 0): ?>
                                     <span style="background:#fbbf24;padding:4px 8px;border-radius:4px;margin-left:4px"><?php echo $stats['pending']; ?> oczek.</span>
                                 <?php endif; ?>
+                            </td>
+                            <td>
+                                <span style="font-size:calc(12 * var(--jg))"><?php echo get_date_from_gmt($user->user_registered, 'd.m.Y'); ?></span>
+                                <br><small style="color:#666"><?php echo get_date_from_gmt($user->user_registered, 'H:i'); ?></small>
                             </td>
                             <td>
                                 <?php if (!empty($stats['last_login'])): ?>
