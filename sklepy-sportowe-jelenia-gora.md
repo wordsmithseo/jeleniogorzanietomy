@@ -6,9 +6,9 @@ Jelenia Góra leży u stóp Karkonoszy – jednego z najbardziej popularnych pas
 
 ## Sklepy sportowe w Jeleniej Górze – przegląd
 
-### Intersport
+### Martes Sport
 
-Intersport to jedna z największych sieci sportowych w Europie, obecna również w Jeleniej Górze. Sklep oferuje szeroki asortyment sprzętu i odzieży dla narciarzy, rowerzystów, biegaczy i miłośników fitnessu. Znajdziesz tu produkty znanych marek takich jak Salomon, Head, Rossignol czy Columbia. Duży wybór sprzętu narciarskiego i trekkingowego sprawia, że Intersport w Jeleniej Górze to jeden z pierwszych adresów przed zimowym lub letnim sezonem w Karkonoszach.
+Martes Sport to jedna z największych polskich sieci sklepów sportowych, obecna w Jeleniej Górze. Sklep oferuje szeroki asortyment sprzętu i odzieży dla narciarzy, rowerzystów, biegaczy i miłośników fitnessu. Znajdziesz tu produkty znanych marek takich jak Salomon, Head, Rossignol czy Columbia. Duży wybór sprzętu narciarskiego i trekkingowego sprawia, że Martes Sport w Jeleniej Górze to jeden z pierwszych adresów przed zimowym lub letnim sezonem w Karkonoszach.
 
 **Asortyment:** narty i snowboard, rowery, bieganie, fitness, odzież sportowa, buty trekkingowe.
 
@@ -61,7 +61,7 @@ W galeriach handlowych Jeleniej Góry znajdziesz salony znanych marek odzieżowy
 
 Odpowiedź zależy od Twoich potrzeb:
 
-- **Szukasz szerokiego wyboru w dobrej cenie** → Decathlon lub Intersport
+- **Szukasz szerokiego wyboru w dobrej cenie** → Decathlon lub Martes Sport
 - **Potrzebujesz sprzętu górskiego i fachowego doradztwa** → lokalny sklep górski
 - **Kupujesz lub serwujesz rower** → specjalistyczny sklep rowerowy
 - **Planujesz narty lub snowboard** → sklep narciarski lub wypożyczalnia
