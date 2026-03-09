@@ -3316,6 +3316,7 @@
       map.addControl(new FullscreenControl());
 
       var cluster = null;
+      var sponsoredCluster = null;
       var markers = [];
       var clusterReady = false;
       var pendingData = null;
@@ -3450,10 +3451,38 @@
 
             map.addLayer(cluster);
 
+            // Sponsored-only cluster: sponsored pins only cluster among themselves.
+            // A lone sponsored pin (no nearby sponsored pins) stays as a standalone marker.
+            sponsoredCluster = L.markerClusterGroup({
+              showCoverageOnHover: false,
+              maxClusterRadius: function(zoom) {
+                if (zoom >= 19) return 5;
+                if (zoom >= 17) return 35;
+                return 80;
+              },
+              spiderfyOnMaxZoom: false,
+              zoomToBoundsOnClick: false,
+              spiderfyDistanceMultiplier: 2,
+              animate: true,
+              animateAddingMarkers: true,
+              disableClusteringAtZoom: 20,
+              iconCreateFunction: function(clusterGroup) {
+                var childMarkers = clusterGroup.getAllChildMarkers();
+                var count = childMarkers.length;
+                var html = '<div class="jg-cluster-grid">' +
+                  '<div class="jg-cluster-grid-top">' +
+                  '<div class="jg-cluster-cell jg-cluster-cell--sponsored">' +
+                  '<span class="jg-cluster-icon">⭐</span>' +
+                  '<span class="jg-cluster-num">' + count + '</span>' +
+                  '</div></div></div>';
+                return L.divIcon({ html: html, className: 'jg-cluster-wrapper', iconSize: [80, 50] });
+              }
+            });
 
+            map.addLayer(sponsoredCluster);
 
-            // Add cluster click handler - spiderfy for normal clusters, list for special clusters
-            cluster.on('clusterclick', function(e) {
+            // Shared cluster click handler - spiderfy for normal clusters, list for special clusters
+            function handleClusterClick(e) {
               var currentZoom = map.getZoom();
               var childMarkers = e.layer.getAllChildMarkers();
 
@@ -3577,7 +3606,10 @@
                   });
                 });
               }, 100);
-            });
+            }
+
+            cluster.on('clusterclick', handleClusterClick);
+            sponsoredCluster.on('clusterclick', handleClusterClick);
 
             clusterReady = true;
 
@@ -4908,6 +4940,7 @@
 
         var markersToRemove = [];
         var allMarkers = cluster.getLayers();
+        if (sponsoredCluster) allMarkers = allMarkers.concat(sponsoredCluster.getLayers());
 
         for (var i = 0; i < allMarkers.length; i++) {
           var marker = allMarkers[i];
@@ -4917,7 +4950,10 @@
         }
 
         if (markersToRemove.length > 0) {
-          cluster.removeLayers(markersToRemove);
+          var regularToRemove = markersToRemove.filter(function(m) { return !m.options.isPromo; });
+          var promoToRemove = markersToRemove.filter(function(m) { return !!m.options.isPromo; });
+          if (regularToRemove.length > 0) cluster.removeLayers(regularToRemove);
+          if (promoToRemove.length > 0 && sponsoredCluster) sponsoredCluster.removeLayers(promoToRemove);
         }
       }
 
@@ -5042,6 +5078,7 @@
         // ALWAYS clear cluster first, even if list is empty
         try {
           cluster.clearLayers();
+          if (sponsoredCluster) sponsoredCluster.clearLayers();
         } catch (e) {
         }
 
@@ -5124,9 +5161,21 @@
           }
         });
 
-        // Add all markers at once to cluster (reduces animation flicker)
+        // Add markers to their respective clusters (reduces animation flicker)
+        // Sponsored pins go to sponsoredCluster so they only cluster among themselves,
+        // preventing a lone sponsored pin from being absorbed into a regular-pin cluster.
         if (clusterReady && cluster && newMarkers.length > 0) {
-          cluster.addLayers(newMarkers);
+          var regularMarkers = [];
+          var promoMarkers = [];
+          newMarkers.forEach(function(m) {
+            if (m.options.isPromo) {
+              promoMarkers.push(m);
+            } else {
+              regularMarkers.push(m);
+            }
+          });
+          if (regularMarkers.length > 0) cluster.addLayers(regularMarkers);
+          if (promoMarkers.length > 0 && sponsoredCluster) sponsoredCluster.addLayers(promoMarkers);
         } else if (newMarkers.length > 0) {
           // DON'T add markers directly to map - wait for cluster to be ready
           // This prevents duplicate markers (one on map, one in cluster)
@@ -6559,6 +6608,7 @@
             if (CFG.isAdmin && cluster && cluster.getLayers) {
               try {
                 var allMarkers = cluster.getLayers();
+                if (sponsoredCluster) allMarkers = allMarkers.concat(sponsoredCluster.getLayers());
                 for (var i = 0; i < allMarkers.length; i++) {
                   var marker = allMarkers[i];
                   if (marker.options && marker.options.pointId === p.id) {
