@@ -5056,6 +5056,16 @@ img.emoji {
   flex-direction: column !important;
 }
 
+/* #jg-onboarding-content jest blokiem pomiędzy flex-wrapperem a header/steps/footer.
+   Musi sam być flex-column, żeby footer (Pomiń) zawsze był widoczny. */
+#jg-onboarding-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .jg-onboarding-header {
   background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
   color: #fff;
