@@ -129,7 +129,7 @@ class JG_Map_Admin {
         // Add parent node
         $wp_admin_bar->add_node(array(
             'id' => 'jg-map-notifications',
-            'title' => '<span style="background:#dc2626;color:#fff;padding:2px 6px;border-radius:10px;font-size:11px;font-weight:700;margin-right:4px">' . $total_pending . '</span> JG Map',
+            'title' => '<span style="background:#dc2626;color:#fff;padding:2px 6px;border-radius:10px;font-size: 1.1rem;font-weight:700;margin-right:4px">' . $total_pending . '</span> JG Map',
             'href' => admin_url('admin.php?page=jg-map-places'),
             'meta' => array(
                 'title' => 'JG Map - Oczekujące moderacje'
@@ -492,12 +492,12 @@ class JG_Map_Admin {
             <div class="jg-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin:30px 0">
                 <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
                     <h3 style="margin:0 0 10px">📍 Wszystkie miejsca</h3>
-                    <p style="font-size:32px;font-weight:700;margin:0;color:#2271b1"><?php echo $total; ?></p>
+                    <p style="font-size: 3.2rem;font-weight:700;margin:0;color:#2271b1"><?php echo $total; ?></p>
                 </div>
 
                 <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
                     <h3 style="margin:0 0 10px">⏳ Oczekujące</h3>
-                    <p style="font-size:32px;font-weight:700;margin:0;color:#d63638"><?php echo $pending; ?></p>
+                    <p style="font-size: 3.2rem;font-weight:700;margin:0;color:#d63638"><?php echo $pending; ?></p>
                     <?php if ($pending > 0): ?>
                     <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="button">Moderuj</a>
                     <?php endif; ?>
@@ -505,7 +505,7 @@ class JG_Map_Admin {
 
                 <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
                     <h3 style="margin:0 0 10px">✏️ Edycje do zatwierdzenia</h3>
-                    <p style="font-size:32px;font-weight:700;margin:0;color:#9333ea"><?php echo $edits; ?></p>
+                    <p style="font-size: 3.2rem;font-weight:700;margin:0;color:#9333ea"><?php echo $edits; ?></p>
                     <?php if ($edits > 0): ?>
                     <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="button">Zobacz</a>
                     <?php endif; ?>
@@ -513,7 +513,7 @@ class JG_Map_Admin {
 
                 <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
                     <h3 style="margin:0 0 10px">🚨 Zgłoszenia</h3>
-                    <p style="font-size:32px;font-weight:700;margin:0;color:#d63638"><?php echo $reports; ?></p>
+                    <p style="font-size: 3.2rem;font-weight:700;margin:0;color:#d63638"><?php echo $reports; ?></p>
                     <?php if ($reports > 0): ?>
                     <a href="<?php echo admin_url('admin.php?page=jg-map-reports'); ?>" class="button">Zobacz</a>
                     <?php endif; ?>
@@ -521,7 +521,7 @@ class JG_Map_Admin {
 
                 <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
                     <h3 style="margin:0 0 10px">🗑️ Żądania usunięcia</h3>
-                    <p style="font-size:32px;font-weight:700;margin:0;color:#dc2626"><?php echo $deletions; ?></p>
+                    <p style="font-size: 3.2rem;font-weight:700;margin:0;color:#dc2626"><?php echo $deletions; ?></p>
                     <?php if ($deletions > 0): ?>
                     <a href="<?php echo admin_url('admin.php?page=jg-map-deletions'); ?>" class="button">Zarządzaj</a>
                     <?php endif; ?>
@@ -529,7 +529,7 @@ class JG_Map_Admin {
 
                 <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
                     <h3 style="margin:0 0 10px">⭐ Promocje</h3>
-                    <p style="font-size:32px;font-weight:700;margin:0;color:#f59e0b"><?php echo $promos; ?></p>
+                    <p style="font-size: 3.2rem;font-weight:700;margin:0;color:#f59e0b"><?php echo $promos; ?></p>
                     <a href="<?php echo admin_url('admin.php?page=jg-map-promos'); ?>" class="button">Zarządzaj</a>
                 </div>
             </div>
@@ -613,7 +613,7 @@ class JG_Map_Admin {
                         <?php endif; ?>
                     </div>
                     <?php if (!$is_admin): ?>
-                    <p style="margin:10px 0 0 0;color:#666;font-size:13px">
+                    <p style="margin:10px 0 0 0;color:#666;font-size: 1.3rem">
                         ℹ️ Widzisz tylko swoje miejsca
                     </p>
                     <?php endif; ?>
@@ -623,27 +623,27 @@ class JG_Map_Admin {
             <!-- Statistics -->
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin:20px 0">
                 <div style="background:#dc2626;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['reported']; ?></div>
+                    <div style="font-size: 3.2rem;font-weight:bold"><?php echo $counts['reported']; ?></div>
                     <div>🚨 Zgłoszone</div>
                 </div>
                 <div style="background:#f59e0b;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['new_pending']; ?></div>
+                    <div style="font-size: 3.2rem;font-weight:bold"><?php echo $counts['new_pending']; ?></div>
                     <div>⏳ Nowe czekające</div>
                 </div>
                 <div style="background:#3b82f6;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['edit_pending']; ?></div>
+                    <div style="font-size: 3.2rem;font-weight:bold"><?php echo $counts['edit_pending']; ?></div>
                     <div>✏️ Edycje czekające</div>
                 </div>
                 <div style="background:#8b5cf6;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['deletion_pending']; ?></div>
+                    <div style="font-size: 3.2rem;font-weight:bold"><?php echo $counts['deletion_pending']; ?></div>
                     <div>🗑️ Do usunięcia</div>
                 </div>
                 <div style="background:#10b981;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['published']; ?></div>
+                    <div style="font-size: 3.2rem;font-weight:bold"><?php echo $counts['published']; ?></div>
                     <div>✅ Opublikowane</div>
                 </div>
                 <div style="background:#6b7280;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:32px;font-weight:bold"><?php echo $counts['trash']; ?></div>
+                    <div style="font-size: 3.2rem;font-weight:bold"><?php echo $counts['trash']; ?></div>
                     <div>🗑️ Kosz</div>
                 </div>
             </div>
@@ -693,7 +693,7 @@ class JG_Map_Admin {
                     <div id="section-<?php echo esc_attr($status); ?>" style="margin:30px 0">
                         <h2 style="color:<?php echo $config['color']; ?>">
                             <?php echo $config['title']; ?>
-                            <span style="background:<?php echo $config['color']; ?>;color:#fff;padding:4px 12px;border-radius:12px;font-size:14px">
+                            <span style="background:<?php echo $config['color']; ?>;color:#fff;padding:4px 12px;border-radius:12px;font-size: 1.4rem">
                                 <?php echo $section_count; ?>
                             </span>
                             <?php if ($status === 'trash' && $section_count > 0): ?>
@@ -750,7 +750,7 @@ class JG_Map_Admin {
             flex-wrap: wrap;
         }
         .jg-action-buttons .button {
-            font-size: 12px;
+            font-size: 1.2rem;
             padding: 4px 8px;
             height: auto;
             line-height: 1.4;
@@ -1077,7 +1077,7 @@ class JG_Map_Admin {
             <td>
                 <?php echo esc_html($last_modifier); ?>
                 <?php if ($last_modified_date): ?>
-                    <br><span style="font-size:11px;color:#6b7280"><?php echo esc_html($last_modified_date); ?></span>
+                    <br><span style="font-size: 1.1rem;color:#6b7280"><?php echo esc_html($last_modified_date); ?></span>
                 <?php endif; ?>
             </td>
             <?php if ($status === 'reported'): ?>
@@ -1085,7 +1085,7 @@ class JG_Map_Admin {
             <?php endif; ?>
             <td><?php echo esc_html($created_date); ?></td>
             <td><?php echo esc_html($approved_date); ?></td>
-            <td><span style="font-size:11px;padding:3px 6px;background:#f3f4f6;border-radius:3px">
+            <td><span style="font-size: 1.1rem;padding:3px 6px;background:#f3f4f6;border-radius:3px">
                 <?php echo esc_html($place['display_status_label']); ?>
             </span></td>
             <td><?php echo $is_sponsored; ?></td>
@@ -1785,7 +1785,7 @@ class JG_Map_Admin {
                             try {
                                 var t = point.tags ? (typeof point.tags === 'string' ? JSON.parse(point.tags) : point.tags) : [];
                                 if (Array.isArray(t) && t.length > 0) {
-                                    return '<div><strong>Tagi:</strong> ' + t.map(function(tag) { return '<span style="display:inline-block;padding:2px 8px;margin:2px;border-radius:12px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:12px">#' + tag + '</span>'; }).join('') + '</div>';
+                                    return '<div><strong>Tagi:</strong> ' + t.map(function(tag) { return '<span style="display:inline-block;padding:2px 8px;margin:2px;border-radius:12px;background:#f3f4f6;border:1px solid #e5e7eb;font-size: 1.2rem">#' + tag + '</span>'; }).join('') + '</div>';
                                 }
                             } catch(e) {}
                             return '';
@@ -2354,24 +2354,24 @@ class JG_Map_Admin {
                             <td><?php echo esc_html(ucfirst($roles)); ?></td>
                             <td>
                                 <?php if ($is_admin): ?>
-                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">✓ Admin</span>
+                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size: 1.2rem">✓ Admin</span>
                                 <?php elseif ($is_moderator): ?>
-                                    <span style="background:#3b82f6;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">✓ Tak</span>
+                                    <span style="background:#3b82f6;color:#fff;padding:4px 8px;border-radius:4px;font-size: 1.2rem">✓ Tak</span>
                                 <?php else: ?>
-                                    <span style="background:#e5e7eb;color:#6b7280;padding:4px 8px;border-radius:4px;font-size:12px">Nie</span>
+                                    <span style="background:#e5e7eb;color:#6b7280;padding:4px 8px;border-radius:4px;font-size: 1.2rem">Nie</span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <?php if ($is_admin): ?>
-                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">✓ Admin</span>
+                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size: 1.2rem">✓ Admin</span>
                                 <?php elseif ($is_test_user): ?>
-                                    <span style="background:#f59e0b;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">✓ Tak</span>
+                                    <span style="background:#f59e0b;color:#fff;padding:4px 8px;border-radius:4px;font-size: 1.2rem">✓ Tak</span>
                                 <?php else: ?>
-                                    <span style="background:#e5e7eb;color:#6b7280;padding:4px 8px;border-radius:4px;font-size:12px">Nie</span>
+                                    <span style="background:#e5e7eb;color:#6b7280;padding:4px 8px;border-radius:4px;font-size: 1.2rem">Nie</span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <span style="background:#fbbf24;color:#78350f;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:700">Poz. <?php echo $user_level; ?></span>
+                                <span style="background:#fbbf24;color:#78350f;padding:4px 10px;border-radius:4px;font-size: 1.2rem;font-weight:700">Poz. <?php echo $user_level; ?></span>
                             </td>
                             <td>
                                 <?php if (!$is_admin): ?>
@@ -2584,16 +2584,16 @@ class JG_Map_Admin {
                                      style="width:100%;height:100%;object-fit:cover"
                                      alt="<?php echo esc_attr($point['title']); ?>">
                                 <?php if (count($images) > 1): ?>
-                                    <span style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">
+                                    <span style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;padding:4px 8px;border-radius:4px;font-size: 1.2rem;font-weight:700">
                                         +<?php echo count($images) - 1; ?> zdjęć
                                     </span>
                                 <?php endif; ?>
                             </div>
                             <div style="padding:12px">
-                                <h3 style="margin:0 0 8px;font-size:16px">
+                                <h3 style="margin:0 0 8px;font-size: 1.6rem">
                                     <?php echo esc_html($point['title']); ?>
                                 </h3>
-                                <p style="margin:0 0 8px;font-size:12px;color:#666">
+                                <p style="margin:0 0 8px;font-size: 1.2rem;color:#666">
                                     <strong><?php echo esc_html($point['type']); ?></strong> •
                                     <?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?> •
                                     <?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu
@@ -3045,18 +3045,18 @@ class JG_Map_Admin {
                                 $blocked_time = get_date_from_gmt(date('Y-m-d H:i:s', $ip['blocked_at']), 'Y-m-d H:i:s');
                             ?>
                                 <tr data-ip-hash="<?php echo esc_attr($ip['hash']); ?>" data-ip-type="login">
-                                    <td><code style="background:#fff;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:700"><?php echo esc_html($ip['ip']); ?></code></td>
+                                    <td><code style="background:#fff;padding:4px 8px;border-radius:4px;font-size: 1.1rem;font-weight:700"><?php echo esc_html($ip['ip']); ?></code></td>
                                     <td><strong><?php echo esc_html($ip['username']); ?></strong></td>
                                     <td><?php echo esc_html($ip['email']); ?></td>
                                     <td><strong style="color:#dc2626"><?php echo $ip['attempts']; ?></strong></td>
                                     <td><?php echo esc_html($blocked_time); ?></td>
                                     <td>
                                         <?php if ($ip['time_remaining'] > 0): ?>
-                                            <span style="background:#fbbf24;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">
+                                            <span style="background:#fbbf24;color:#000;padding:4px 8px;border-radius:4px;font-size: 1.2rem;font-weight:700">
                                                 <?php echo $minutes_remaining; ?> min
                                             </span>
                                         <?php else: ?>
-                                            <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">
+                                            <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size: 1.2rem">
                                                 Wygasło
                                             </span>
                                         <?php endif; ?>
@@ -3101,18 +3101,18 @@ class JG_Map_Admin {
                                 $blocked_time = get_date_from_gmt(date('Y-m-d H:i:s', $ip['blocked_at']), 'Y-m-d H:i:s');
                             ?>
                                 <tr data-ip-hash="<?php echo esc_attr($ip['hash']); ?>" data-ip-type="register">
-                                    <td><code style="background:#fff;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:700"><?php echo esc_html($ip['ip']); ?></code></td>
+                                    <td><code style="background:#fff;padding:4px 8px;border-radius:4px;font-size: 1.1rem;font-weight:700"><?php echo esc_html($ip['ip']); ?></code></td>
                                     <td><strong><?php echo esc_html($ip['username']); ?></strong></td>
                                     <td><?php echo esc_html($ip['email']); ?></td>
                                     <td><strong style="color:#f59e0b"><?php echo $ip['attempts']; ?></strong></td>
                                     <td><?php echo esc_html($blocked_time); ?></td>
                                     <td>
                                         <?php if ($ip['time_remaining'] > 0): ?>
-                                            <span style="background:#fbbf24;color:#000;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:700">
+                                            <span style="background:#fbbf24;color:#000;padding:4px 8px;border-radius:4px;font-size: 1.2rem;font-weight:700">
                                                 <?php echo $minutes_remaining; ?> min
                                             </span>
                                         <?php else: ?>
-                                            <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px">
+                                            <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size: 1.2rem">
                                                 Wygasło
                                             </span>
                                         <?php endif; ?>
@@ -3165,18 +3165,18 @@ class JG_Map_Admin {
                             </td>
                             <td>
                                 <?php if (!empty($stats['last_login'])): ?>
-                                    <span style="font-size:12px"><?php echo get_date_from_gmt($stats['last_login'], 'd.m.Y'); ?></span>
+                                    <span style="font-size: 1.2rem"><?php echo get_date_from_gmt($stats['last_login'], 'd.m.Y'); ?></span>
                                     <br><small style="color:#666"><?php echo get_date_from_gmt($stats['last_login'], 'H:i'); ?></small>
                                 <?php else: ?>
-                                    <span style="color:#999;font-size:12px">Brak danych</span>
+                                    <span style="color:#999;font-size: 1.2rem">Brak danych</span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <?php if (!empty($stats['last_action'])): ?>
-                                    <span style="font-size:12px"><?php echo get_date_from_gmt($stats['last_action'], 'd.m.Y'); ?></span>
+                                    <span style="font-size: 1.2rem"><?php echo get_date_from_gmt($stats['last_action'], 'd.m.Y'); ?></span>
                                     <br><small style="color:#666"><?php echo get_date_from_gmt($stats['last_action'], 'H:i'); ?></small>
                                 <?php else: ?>
-                                    <span style="color:#999;font-size:12px">Brak aktywności</span>
+                                    <span style="color:#999;font-size: 1.2rem">Brak aktywności</span>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -3201,7 +3201,7 @@ class JG_Map_Admin {
                                         'edit_places' => 'edycja'
                                     );
                                     foreach ($stats['restrictions'] as $r): ?>
-                                        <span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin:2px;display:inline-block">⚠️ <?php echo $labels[$r] ?? $r; ?></span>
+                                        <span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size: 1.1rem;margin:2px;display:inline-block">⚠️ <?php echo $labels[$r] ?? $r; ?></span>
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <span style="color:#999">Brak</span>
@@ -3254,17 +3254,17 @@ class JG_Map_Admin {
 
                     <div style="margin-bottom:20px;">
                         <h3>Limity dzienne (tymczasowe)</h3>
-                        <p style="font-size:12px;color:#666;margin:8px 0">Zmiany obowiązują tylko do północy. O północy limity są automatycznie resetowane do domyślnych wartości (5/5).</p>
+                        <p style="font-size: 1.2rem;color:#666;margin:8px 0">Zmiany obowiązują tylko do północy. O północy limity są automatycznie resetowane do domyślnych wartości (5/5).</p>
                         <div id="jg-current-limits" style="background:#f0f9ff;padding:12px;border-radius:8px;margin-bottom:12px;border:2px solid #3b82f6;">
                             <strong>Aktualne limity:</strong>
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
                                 <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
-                                    <div style="font-size:24px;font-weight:700;color:#3b82f6;" id="limit-places-display">-</div>
-                                    <div style="font-size:11px;color:#666;">miejsc/ciekawostek</div>
+                                    <div style="font-size: 2.4rem;font-weight:700;color:#3b82f6;" id="limit-places-display">-</div>
+                                    <div style="font-size: 1.1rem;color:#666;">miejsc/ciekawostek</div>
                                 </div>
                                 <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
-                                    <div style="font-size:24px;font-weight:700;color:#3b82f6;" id="limit-reports-display">-</div>
-                                    <div style="font-size:11px;color:#666;">zgłoszeń</div>
+                                    <div style="font-size: 2.4rem;font-weight:700;color:#3b82f6;" id="limit-reports-display">-</div>
+                                    <div style="font-size: 1.1rem;color:#666;">zgłoszeń</div>
                                 </div>
                             </div>
                         </div>
@@ -3286,16 +3286,16 @@ class JG_Map_Admin {
 
                     <!-- Daily Edit Limit -->
                     <div style="background:#fef3c7;padding:16px;border-radius:8px;margin-top:16px;border:2px solid #f59e0b;">
-                        <h3 style="margin:0 0 12px 0;font-size:14px;color:#78350f;">✏️ Dzienny limit edycji miejsc</h3>
-                        <p style="font-size:12px;color:#92400e;margin:0 0 12px 0">Użytkownik może wykonać maksymalnie 2 edycje na dobę (wszystkie miejsca łącznie). Licznik resetuje się o północy.</p>
+                        <h3 style="margin:0 0 12px 0;font-size: 1.4rem;color:#78350f;">✏️ Dzienny limit edycji miejsc</h3>
+                        <p style="font-size: 1.2rem;color:#92400e;margin:0 0 12px 0">Użytkownik może wykonać maksymalnie 2 edycje na dobę (wszystkie miejsca łącznie). Licznik resetuje się o północy.</p>
                         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px;">
                             <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
-                                <div style="font-size:24px;font-weight:700;color:#f59e0b;" id="edit-count-display">-</div>
-                                <div style="font-size:11px;color:#666;">wykorzystano dzisiaj</div>
+                                <div style="font-size: 2.4rem;font-weight:700;color:#f59e0b;" id="edit-count-display">-</div>
+                                <div style="font-size: 1.1rem;color:#666;">wykorzystano dzisiaj</div>
                             </div>
                             <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
-                                <div style="font-size:24px;font-weight:700;color:#78350f;">2</div>
-                                <div style="font-size:11px;color:#666;">limit dzienny</div>
+                                <div style="font-size: 2.4rem;font-weight:700;color:#78350f;">2</div>
+                                <div style="font-size: 1.1rem;color:#666;">limit dzienny</div>
                             </div>
                         </div>
                         <div style="display:flex;gap:8px;">
@@ -3305,15 +3305,15 @@ class JG_Map_Admin {
 
                     <!-- Monthly Photo Upload Limit -->
                     <div style="background:#f8fafc;padding:16px;border-radius:8px;margin-top:16px;">
-                        <h3 style="margin:0 0 12px 0;font-size:14px;color:#334155;">📸 Miesięczny limit przesyłania zdjęć</h3>
+                        <h3 style="margin:0 0 12px 0;font-size: 1.4rem;color:#334155;">📸 Miesięczny limit przesyłania zdjęć</h3>
                         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px;">
                             <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
-                                <div style="font-size:24px;font-weight:700;color:#8b5cf6;" id="photo-used-display">-</div>
-                                <div style="font-size:11px;color:#666;">wykorzystano (MB)</div>
+                                <div style="font-size: 2.4rem;font-weight:700;color:#8b5cf6;" id="photo-used-display">-</div>
+                                <div style="font-size: 1.1rem;color:#666;">wykorzystano (MB)</div>
                             </div>
                             <div style="text-align:center;background:#fff;padding:8px;border-radius:6px;">
-                                <div style="font-size:24px;font-weight:700;color:#3b82f6;" id="photo-limit-display">-</div>
-                                <div style="font-size:11px;color:#666;">limit (MB)</div>
+                                <div style="font-size: 2.4rem;font-weight:700;color:#3b82f6;" id="photo-limit-display">-</div>
+                                <div style="font-size: 1.1rem;color:#666;">limit (MB)</div>
                             </div>
                         </div>
                         <div style="margin-bottom:8px;">
@@ -3328,8 +3328,8 @@ class JG_Map_Admin {
 
                     <!-- Delete User Profile -->
                     <div style="background:#fee2e2;padding:16px;border-radius:8px;margin-top:16px;border:2px solid #dc2626;">
-                        <h3 style="margin:0 0 12px 0;font-size:14px;color:#7f1d1d;">🗑️ Usuń profil użytkownika</h3>
-                        <p style="font-size:12px;color:#991b1b;margin:0 0 12px 0">
+                        <h3 style="margin:0 0 12px 0;font-size: 1.4rem;color:#7f1d1d;">🗑️ Usuń profil użytkownika</h3>
+                        <p style="font-size: 1.2rem;color:#991b1b;margin:0 0 12px 0">
                             <strong>UWAGA:</strong> Ta operacja jest nieodwracalna! Zostaną usunięte wszystkie pinezki użytkownika, wszystkie przesłane zdjęcia oraz profil ze wszystkimi danymi.
                         </p>
                         <button class="button jg-delete-user-profile" style="background:#dc2626;color:#fff;border-color:#dc2626;font-weight:700;">
@@ -3929,8 +3929,8 @@ class JG_Map_Admin {
                         $user_name = $user ? $user->display_name : 'Użytkownik #' . $log['user_id'];
                         $is_admin_user = $user && (user_can($user->ID, 'manage_options') || user_can($user->ID, 'jg_map_moderate'));
                         $role_badge = $is_admin_user
-                            ? '<span style="background:#d63638;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">Admin</span>'
-                            : '<span style="background:#2271b1;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px">User</span>';
+                            ? '<span style="background:#d63638;color:#fff;padding:1px 6px;border-radius:3px;font-size: 1.1rem;margin-left:4px">Admin</span>'
+                            : '<span style="background:#2271b1;color:#fff;padding:1px 6px;border-radius:3px;font-size: 1.1rem;margin-left:4px">User</span>';
                     ?>
                         <tr>
                             <td><?php echo esc_html(get_date_from_gmt($log['created_at'], 'Y-m-d H:i:s')); ?></td>
@@ -4242,9 +4242,9 @@ class JG_Map_Admin {
                             if (response.success && response.data && response.data.length > 0) {
                                 var html = '';
                                 $.each(response.data, function(i, page) {
-                                    html += '<div class="jg-autocomplete-item" data-url="' + page.url + '" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px">' +
+                                    html += '<div class="jg-autocomplete-item" data-url="' + page.url + '" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size: 1.3rem">' +
                                         '<strong>' + page.title + '</strong>' +
-                                        '<div style="color:#999;font-size:11px;margin-top:2px">' + page.url + '</div>' +
+                                        '<div style="color:#999;font-size: 1.1rem;margin-top:2px">' + page.url + '</div>' +
                                     '</div>';
                                 });
                                 suggestionsDiv.html(html).show();
@@ -4329,10 +4329,10 @@ class JG_Map_Admin {
                 .jg-category-item:hover, .jg-reason-item:hover { background: #f0f0f0; border-color: #999; }
                 .jg-category-item.active { background: #e3f2fd; border-color: #2196f3; }
                 .jg-category-item .cat-name { flex: 1; font-weight: 500; cursor: pointer; }
-                .jg-category-item .cat-count { background: #e0e0e0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
-                .jg-reason-item .reason-icon { font-size: 20px; width: 30px; text-align: center; }
+                .jg-category-item .cat-count { background: #e0e0e0; padding: 2px 8px; border-radius: 10px; font-size: 1.2rem; }
+                .jg-reason-item .reason-icon { font-size: 2rem; width: 30px; text-align: center; }
                 .jg-reason-item .reason-label { flex: 1; }
-                .jg-reason-item .reason-category { font-size: 11px; color: #666; background: #eee; padding: 2px 6px; border-radius: 4px; }
+                .jg-reason-item .reason-category { font-size: 1.1rem; color: #666; background: #eee; padding: 2px 6px; border-radius: 4px; }
                 .jg-action-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; }
                 .jg-action-btn:hover { background: #e0e0e0; }
                 .jg-action-btn.delete:hover { background: #ffebee; color: #c62828; }
@@ -4341,14 +4341,14 @@ class JG_Map_Admin {
                 .jg-add-form label { display: block; margin-bottom: 5px; font-weight: 500; }
                 .jg-add-form input[type="text"], .jg-add-form select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
                 .jg-emoji-picker { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; max-height: 200px; overflow-y: auto; }
-                .jg-emoji-btn { padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; font-size: 16px; background: none; transition: all 0.2s; line-height: 1; }
+                .jg-emoji-btn { padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; font-size: 1.6rem; background: none; transition: all 0.2s; line-height: 1; }
                 .jg-emoji-btn:hover { background: #e3f2fd; }
                 .jg-emoji-btn.selected { background: #2196f3; border-color: #1976d2; }
                 .jg-icon-preview { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-                .jg-icon-preview .preview { font-size: 32px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #ddd; border-radius: 8px; }
+                .jg-icon-preview .preview { font-size: 3.2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #ddd; border-radius: 8px; }
                 .jg-manual-emoji { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-                .jg-manual-emoji input { width: 60px; font-size: 24px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
-                .jg-manual-emoji .hint { font-size: 11px; color: #666; }
+                .jg-manual-emoji input { width: 60px; font-size: 2.4rem; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
+                .jg-manual-emoji .hint { font-size: 1.1rem; color: #666; }
                 .jg-manual-emoji input.invalid { border-color: #c62828; }
                 .jg-icon-mode { display: flex; gap: 10px; margin-bottom: 10px; }
                 .jg-icon-mode label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
@@ -5424,7 +5424,7 @@ JAVASCRIPT;
                     background: #fafafa; transition: all 0.2s;
                 }
                 .jg-category-item:hover { background: #f0f0f0; border-color: #999; }
-                .jg-category-item .cat-icon { font-size: 20px; width: 30px; text-align: center; }
+                .jg-category-item .cat-icon { font-size: 2rem; width: 30px; text-align: center; }
                 .jg-category-item .cat-name { flex: 1; font-weight: 500; }
                 .jg-action-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; }
                 .jg-action-btn:hover { background: #e0e0e0; }
@@ -5434,14 +5434,14 @@ JAVASCRIPT;
                 .jg-add-form label { display: block; margin-bottom: 5px; font-weight: 500; }
                 .jg-add-form input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
                 .jg-emoji-picker { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; max-height: 200px; overflow-y: auto; }
-                .jg-emoji-btn { padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; font-size: 16px; background: none; transition: all 0.2s; line-height: 1; }
+                .jg-emoji-btn { padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; font-size: 1.6rem; background: none; transition: all 0.2s; line-height: 1; }
                 .jg-emoji-btn:hover { background: #e3f2fd; }
                 .jg-emoji-btn.selected { background: #2196f3; border-color: #1976d2; }
                 .jg-icon-preview { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-                .jg-icon-preview .preview { font-size: 32px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #ddd; border-radius: 8px; }
+                .jg-icon-preview .preview { font-size: 3.2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #ddd; border-radius: 8px; }
                 .jg-manual-emoji { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-                .jg-manual-emoji input { width: 60px; font-size: 24px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
-                .jg-manual-emoji .hint { font-size: 11px; color: #666; }
+                .jg-manual-emoji input { width: 60px; font-size: 2.4rem; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
+                .jg-manual-emoji .hint { font-size: 1.1rem; color: #666; }
                 .jg-manual-emoji input.invalid { border-color: #c62828; }
                 .jg-btn-row { display: flex; gap: 10px; margin-top: 15px; }
                 .jg-edit-inline { display: none; padding: 15px; background: #fff3e0; border-radius: 6px; margin-top: 15px; }
@@ -5792,7 +5792,7 @@ JAVASCRIPT;
                     background: #fafafa; transition: all 0.2s;
                 }
                 .jg-category-item:hover { background: #f0f0f0; border-color: #999; }
-                .jg-category-item .cat-icon { font-size: 20px; width: 30px; text-align: center; }
+                .jg-category-item .cat-icon { font-size: 2rem; width: 30px; text-align: center; }
                 .jg-category-item .cat-name { flex: 1; font-weight: 500; }
                 .jg-action-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; }
                 .jg-action-btn:hover { background: #e0e0e0; }
@@ -5802,14 +5802,14 @@ JAVASCRIPT;
                 .jg-add-form label { display: block; margin-bottom: 5px; font-weight: 500; }
                 .jg-add-form input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
                 .jg-emoji-picker { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; max-height: 200px; overflow-y: auto; }
-                .jg-emoji-btn { padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; font-size: 16px; background: none; transition: all 0.2s; line-height: 1; }
+                .jg-emoji-btn { padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; font-size: 1.6rem; background: none; transition: all 0.2s; line-height: 1; }
                 .jg-emoji-btn:hover { background: #e3f2fd; }
                 .jg-emoji-btn.selected { background: #2196f3; border-color: #1976d2; }
                 .jg-icon-preview { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-                .jg-icon-preview .preview { font-size: 32px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #ddd; border-radius: 8px; }
+                .jg-icon-preview .preview { font-size: 3.2rem; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #fff; border: 2px solid #ddd; border-radius: 8px; }
                 .jg-manual-emoji { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-                .jg-manual-emoji input { width: 60px; font-size: 24px; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
-                .jg-manual-emoji .hint { font-size: 11px; color: #666; }
+                .jg-manual-emoji input { width: 60px; font-size: 2.4rem; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
+                .jg-manual-emoji .hint { font-size: 1.1rem; color: #666; }
                 .jg-manual-emoji input.invalid { border-color: #c62828; }
                 .jg-btn-row { display: flex; gap: 10px; margin-top: 15px; }
                 .jg-edit-inline { display: none; padding: 15px; background: #fff3e0; border-radius: 6px; margin-top: 15px; }
@@ -6170,7 +6170,7 @@ JAVASCRIPT;
                     var xpVal = isActive ? (savedData.xp || 0) : action.defaultXp;
                     var labelVal = isActive && savedData.label ? savedData.label : '';
                     tr.setAttribute('data-key', action.key);
-                    tr.innerHTML = '<td><strong>' + esc(action.key) + '</strong><br><span style="color:#6b7280;font-size:12px">' + esc(action.name) + '</span></td>' +
+                    tr.innerHTML = '<td><strong>' + esc(action.key) + '</strong><br><span style="color:#6b7280;font-size: 1.2rem">' + esc(action.name) + '</span></td>' +
                         '<td><input type="text" value="' + esc(labelVal) + '" class="xp-label regular-text" style="width:100%" placeholder="' + esc(action.name) + '"></td>' +
                         '<td><input type="number" value="' + xpVal + '" class="xp-amount" style="width:80px" min="0"></td>' +
                         '<td style="text-align:center"><input type="checkbox" class="xp-active"' + (isActive ? ' checked' : '') + '></td>';
@@ -6254,19 +6254,19 @@ JAVASCRIPT;
             <p>Konfiguruj osiągnięcia dostępne dla użytkowników. Rzadkość determinuje kolor poświaty wokół osiągnięcia.</p>
 
             <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#f3f4f6;border:2px solid #d1d5db;font-size:13px">
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#f3f4f6;border:2px solid #d1d5db;font-size: 1.3rem">
                     <span style="width:10px;height:10px;border-radius:50%;background:#d1d5db;box-shadow:0 0 6px #d1d5db"></span> Zwykłe (common)
                 </span>
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#ecfdf5;border:2px solid #10b981;font-size:13px">
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#ecfdf5;border:2px solid #10b981;font-size: 1.3rem">
                     <span style="width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981"></span> Niepospolite (uncommon)
                 </span>
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#eff6ff;border:2px solid #3b82f6;font-size:13px">
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#eff6ff;border:2px solid #3b82f6;font-size: 1.3rem">
                     <span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;box-shadow:0 0 6px #3b82f6"></span> Rzadkie (rare)
                 </span>
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#faf5ff;border:2px solid #8b5cf6;font-size:13px">
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#faf5ff;border:2px solid #8b5cf6;font-size: 1.3rem">
                     <span style="width:10px;height:10px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 6px #8b5cf6"></span> Epickie (epic)
                 </span>
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#fffbeb;border:2px solid #f59e0b;font-size:13px">
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#fffbeb;border:2px solid #f59e0b;font-size: 1.3rem">
                     <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;box-shadow:0 0 6px #f59e0b"></span> Legendarne (legendary)
                 </span>
             </div>
@@ -6319,7 +6319,7 @@ JAVASCRIPT;
                         '<td><input type="text" value="' + esc(ach.slug) + '" class="ach-slug" style="width:100%"></td>' +
                         '<td><input type="text" value="' + esc(ach.name) + '" class="ach-name" style="width:100%"></td>' +
                         '<td><input type="text" value="' + esc(ach.description) + '" class="ach-desc" style="width:100%"></td>' +
-                        '<td><input type="text" value="' + esc(ach.icon) + '" class="ach-icon" style="width:40px;text-align:center;font-size:18px"></td>' +
+                        '<td><input type="text" value="' + esc(ach.icon) + '" class="ach-icon" style="width:40px;text-align:center;font-size: 1.8rem"></td>' +
                         '<td><select class="ach-rarity">' + rarityOptions + '</select></td>' +
                         '<td><select class="ach-condition">' + conditionOptions + '</select></td>' +
                         '<td><input type="number" value="' + (ach.condition_value || 1) + '" class="ach-value" style="width:60px" min="1"></td>' +
@@ -6425,7 +6425,7 @@ JAVASCRIPT;
                 .jg-tags-manager h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #eee; }
                 .jg-tags-search-wrap { position: relative; margin-bottom: 20px; }
                 .jg-tags-search-input {
-                    width: 100%; padding: 10px 14px; font-size: 14px;
+                    width: 100%; padding: 10px 14px; font-size: 1.4rem;
                     border: 1px solid #ddd; border-radius: 6px;
                     box-sizing: border-box; transition: border-color 0.2s;
                 }
@@ -6438,7 +6438,7 @@ JAVASCRIPT;
                 }
                 .jg-tags-suggestions.visible { display: block; }
                 .jg-tags-suggestion-item {
-                    padding: 8px 14px; cursor: pointer; font-size: 13px;
+                    padding: 8px 14px; cursor: pointer; font-size: 1.3rem;
                     border-bottom: 1px solid #f3f4f6; transition: background 0.15s;
                 }
                 .jg-tags-suggestion-item:last-child { border-bottom: none; }
@@ -6447,27 +6447,27 @@ JAVASCRIPT;
                 .jg-tags-stats { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
                 .jg-tags-stat {
                     background: #f9fafb; padding: 10px 16px; border-radius: 6px;
-                    border: 1px solid #e5e7eb; font-size: 13px; color: #666;
+                    border: 1px solid #e5e7eb; font-size: 1.3rem; color: #666;
                 }
-                .jg-tags-stat strong { color: #333; font-size: 16px; display: block; margin-bottom: 2px; }
+                .jg-tags-stat strong { color: #333; font-size: 1.6rem; display: block; margin-bottom: 2px; }
                 .jg-tags-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
                 .jg-tags-table th {
                     text-align: left; padding: 10px 12px; background: #f9fafb;
-                    border-bottom: 2px solid #e5e7eb; font-size: 13px; color: #666;
+                    border-bottom: 2px solid #e5e7eb; font-size: 1.3rem; color: #666;
                     font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
                 }
-                .jg-tags-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+                .jg-tags-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; font-size: 1.4rem; }
                 .jg-tags-table tr:hover td { background: #f9fafb; }
                 .jg-tag-name { font-weight: 500; color: #333; }
                 .jg-tag-count {
                     display: inline-flex; align-items: center; justify-content: center;
                     background: #e5e7eb; color: #374151; padding: 2px 10px;
-                    border-radius: 12px; font-size: 12px; font-weight: 600; min-width: 24px;
+                    border-radius: 12px; font-size: 1.2rem; font-weight: 600; min-width: 24px;
                 }
                 .jg-tag-actions { display: flex; gap: 6px; }
                 .jg-tag-btn {
                     background: none; border: 1px solid #ddd; cursor: pointer;
-                    padding: 5px 10px; border-radius: 4px; font-size: 12px;
+                    padding: 5px 10px; border-radius: 4px; font-size: 1.2rem;
                     transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
                 }
                 .jg-tag-btn:hover { background: #f3f4f6; border-color: #999; }
@@ -6479,19 +6479,19 @@ JAVASCRIPT;
                 }
                 .jg-tags-pagination button {
                     padding: 6px 12px; border: 1px solid #ddd; background: #fff;
-                    border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s;
+                    border-radius: 4px; cursor: pointer; font-size: 1.3rem; transition: all 0.2s;
                     min-width: 36px;
                 }
                 .jg-tags-pagination button:hover:not(:disabled) { background: #f3f4f6; border-color: #999; }
                 .jg-tags-pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
                 .jg-tags-pagination button.current { background: #8d2324; color: #fff; border-color: #8d2324; }
-                .jg-tags-pagination .page-info { font-size: 13px; color: #666; margin: 0 8px; }
-                .jg-tags-empty { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
+                .jg-tags-pagination .page-info { font-size: 1.3rem; color: #666; margin: 0 8px; }
+                .jg-tags-empty { text-align: center; padding: 40px 20px; color: #999; font-size: 1.4rem; }
                 .jg-tags-loading { text-align: center; padding: 30px; color: #666; }
                 .jg-tag-edit-row td { background: #fffbeb !important; }
                 .jg-tag-edit-input {
                     padding: 6px 10px; border: 1px solid #f59e0b; border-radius: 4px;
-                    font-size: 14px; width: 250px; outline: none;
+                    font-size: 1.4rem; width: 250px; outline: none;
                 }
                 .jg-tag-edit-input:focus { border-color: #d97706; box-shadow: 0 0 0 2px rgba(245,158,11,0.2); }
                 .jg-tag-btn.save { background: #059669; color: #fff; border-color: #059669; }
@@ -6500,7 +6500,7 @@ JAVASCRIPT;
                 .jg-tag-btn.cancel:hover { background: #4b5563; }
                 .jg-tags-toast {
                     position: fixed; bottom: 30px; right: 30px; z-index: 9999;
-                    padding: 12px 20px; border-radius: 8px; color: #fff; font-size: 14px;
+                    padding: 12px 20px; border-radius: 8px; color: #fff; font-size: 1.4rem;
                     box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0;
                     transform: translateY(10px); transition: all 0.3s;
                 }
@@ -6516,11 +6516,11 @@ JAVASCRIPT;
                     background: #fff; border-radius: 12px; padding: 24px; max-width: 420px;
                     width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
                 }
-                .jg-confirm-box h3 { margin: 0 0 8px; font-size: 16px; color: #333; }
-                .jg-confirm-box p { margin: 0 0 20px; font-size: 14px; color: #666; line-height: 1.5; }
+                .jg-confirm-box h3 { margin: 0 0 8px; font-size: 1.6rem; color: #333; }
+                .jg-confirm-box p { margin: 0 0 20px; font-size: 1.4rem; color: #666; line-height: 1.5; }
                 .jg-confirm-box .jg-btn-row { display: flex; gap: 10px; justify-content: flex-end; }
                 .jg-confirm-box button {
-                    padding: 8px 18px; border-radius: 6px; font-size: 13px;
+                    padding: 8px 18px; border-radius: 6px; font-size: 1.3rem;
                     cursor: pointer; border: 1px solid #ddd; transition: all 0.2s;
                 }
                 .jg-confirm-box .btn-cancel { background: #f3f4f6; color: #333; }
@@ -6991,7 +6991,7 @@ JAVASCRIPT;
                         <tbody id="jg-nav-menu-body">
                             <?php foreach ($items as $idx => $item) : ?>
                             <tr class="jg-nav-row">
-                                <td style="color:#9ca3af;font-size:13px"><?php echo $idx + 1; ?></td>
+                                <td style="color:#9ca3af;font-size: 1.3rem"><?php echo $idx + 1; ?></td>
                                 <td>
                                     <input type="text"
                                            name="jg_nav_label[]"
@@ -7054,7 +7054,7 @@ JAVASCRIPT;
                     var tr    = document.createElement('tr');
                     tr.className = 'jg-nav-row';
                     tr.innerHTML =
-                        '<td style="color:#9ca3af;font-size:13px">' + (count + 1) + '</td>' +
+                        '<td style="color:#9ca3af;font-size: 1.3rem">' + (count + 1) + '</td>' +
                         '<td><input type="text" name="jg_nav_label[]" placeholder="np. Aktualności" class="regular-text" required></td>' +
                         '<td><input type="url"  name="jg_nav_url[]"   placeholder="https://..."    class="regular-text" required></td>' +
                         '<td style="text-align:center"><input type="checkbox" name="jg_nav_new_tab[' + count + ']" value="1"></td>' +
