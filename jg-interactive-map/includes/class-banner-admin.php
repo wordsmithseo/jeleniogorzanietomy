@@ -114,14 +114,14 @@ class JG_Map_Banner_Admin {
         }
         .jg-banner-title {
             font-weight: 600;
-            font-size: 1.4rem;
+            font-size: calc(14 * var(--jg));
             margin-bottom: 5px;
         }
         .jg-banner-stats {
             display: flex;
             gap: 20px;
             margin-top: 8px;
-            font-size: 1.3rem;
+            font-size: calc(13 * var(--jg));
             color: #666;
         }
         .jg-banner-stat {
@@ -185,7 +185,7 @@ class JG_Map_Banner_Admin {
             display: inline-block;
             padding: 3px 8px;
             border-radius: 3px;
-            font-size: 1.1rem;
+            font-size: calc(11 * var(--jg));
             font-weight: 600;
             text-transform: uppercase;
         }
@@ -198,7 +198,7 @@ class JG_Map_Banner_Admin {
             color: #842029;
         }
         .jg-banner-section-title {
-            font-size: 1.8rem;
+            font-size: calc(18 * var(--jg));
             font-weight: 600;
             margin: 30px 0 15px 0;
             padding-bottom: 10px;
@@ -445,13 +445,13 @@ CSS;
                     <div style="margin-top:15px;padding:12px;background:#f0f7ff;border-left:4px solid #0073aa;border-radius:4px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
                             <span style="font-weight:600;color:#555;">💰 Budżet kampanii:</span>
-                            <span style="font-weight:700;color:#0073aa;font-size: 1.6rem;"><?php echo number_format($budget_total, 2, ',', ' '); ?> PLN</span>
+                            <span style="font-weight:700;color:#0073aa;font-size:calc(16 * var(--jg));"><?php echo number_format($budget_total, 2, ',', ' '); ?> PLN</span>
                         </div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;font-size: 1.3rem;margin-top:5px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:calc(13 * var(--jg));margin-top:5px;">
                             <span style="color:#666;">Wykorzystano:</span>
                             <span style="font-weight:600;color:#d63638;"><?php echo number_format($budget_used, 2, ',', ' '); ?> PLN</span>
                         </div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;font-size: 1.3rem;margin-top:5px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:calc(13 * var(--jg));margin-top:5px;">
                             <span style="color:#666;">Pozostało:</span>
                             <span style="font-weight:600;color:#0a7e07;"><?php echo number_format($budget_remaining, 2, ',', ' '); ?> PLN</span>
                         </div>
@@ -463,7 +463,7 @@ CSS;
                 <?php endif; ?>
 
                 <?php if ($banner['start_date'] || $banner['end_date']) : ?>
-                    <div style="margin-top:8px;font-size: 1.2rem;color:#666;">
+                    <div style="margin-top:8px;font-size:calc(12 * var(--jg));color:#666;">
                         <?php if ($banner['start_date']) : ?>
                             📅 Od: <?php echo date('d.m.Y H:i', strtotime($banner['start_date'])); ?>
                         <?php endif; ?>
@@ -474,7 +474,7 @@ CSS;
                     </div>
                 <?php endif; ?>
 
-                <div style="margin-top:8px;font-size: 1.2rem;color:#666;">
+                <div style="margin-top:8px;font-size:calc(12 * var(--jg));color:#666;">
                     🔗 <a href="<?php echo esc_url($banner['link_url']); ?>" target="_blank"><?php echo esc_html($banner['link_url']); ?></a>
                 </div>
             </div>
@@ -737,12 +737,12 @@ CSS;
             border-bottom: 3px solid #0073aa;
         }
         .header h1 {
-            font-size: 2.8rem;
+            font-size: calc(28 * var(--jg));
             color: #0073aa;
             margin-bottom: 10px;
         }
         .header .subtitle {
-            font-size: 1.4rem;
+            font-size: calc(14 * var(--jg));
             color: #666;
         }
         .banner-info {
@@ -752,7 +752,7 @@ CSS;
             margin-bottom: 30px;
         }
         .banner-info h2 {
-            font-size: 2rem;
+            font-size: calc(20 * var(--jg));
             margin-bottom: 15px;
             color: #333;
         }
@@ -796,12 +796,12 @@ CSS;
             background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         }
         .stat-label {
-            font-size: 1.4rem;
+            font-size: calc(14 * var(--jg));
             opacity: 0.9;
             margin-bottom: 8px;
         }
         .stat-value {
-            font-size: 3.2rem;
+            font-size: calc(32 * var(--jg));
             font-weight: 700;
         }
         .campaign-preview {
@@ -822,7 +822,7 @@ CSS;
             margin-top: 40px;
             padding-top: 20px;
             border-top: 1px solid #e0e0e0;
-            font-size: 1.3rem;
+            font-size: calc(13 * var(--jg));
             color: #666;
         }
         .print-button {
@@ -834,7 +834,7 @@ CSS;
             border: none;
             padding: 12px 24px;
             border-radius: 6px;
-            font-size: 1.6rem;
+            font-size: calc(16 * var(--jg));
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,115,170,0.3);
             z-index: 1000;
@@ -886,7 +886,7 @@ CSS;
             </div>
             <div class="info-row">
                 <span class="info-label">Link docelowy:</span>
-                <span class="info-value" style="font-size: 1.2rem;word-break:break-all;"><?php echo esc_html($banner['link_url']); ?></span>
+                <span class="info-value" style="font-size:calc(12 * var(--jg));word-break:break-all;"><?php echo esc_html($banner['link_url']); ?></span>
             </div>
         </div>
 
@@ -914,15 +914,15 @@ CSS;
             <h2 style="color:#0073aa;margin-bottom:20px;">💰 Podsumowanie finansowe</h2>
             <div class="info-row">
                 <span class="info-label">Budżet kampanii (łącznie):</span>
-                <span class="info-value" style="font-size: 1.8rem;font-weight:700;color:#0073aa;"><?php echo number_format($budget_total, 2, ',', ' '); ?> PLN</span>
+                <span class="info-value" style="font-size:calc(18 * var(--jg));font-weight:700;color:#0073aa;"><?php echo number_format($budget_total, 2, ',', ' '); ?> PLN</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Wykorzystano:</span>
-                <span class="info-value" style="font-size: 1.6rem;font-weight:600;color:#d63638;"><?php echo number_format($budget_used, 2, ',', ' '); ?> PLN</span>
+                <span class="info-value" style="font-size:calc(16 * var(--jg));font-weight:600;color:#d63638;"><?php echo number_format($budget_used, 2, ',', ' '); ?> PLN</span>
             </div>
             <div class="info-row">
                 <span class="info-label">Pozostało do wykorzystania:</span>
-                <span class="info-value" style="font-size: 1.6rem;font-weight:600;color:#0a7e07;"><?php echo number_format($budget_remaining, 2, ',', ' '); ?> PLN</span>
+                <span class="info-value" style="font-size:calc(16 * var(--jg));font-weight:600;color:#0a7e07;"><?php echo number_format($budget_remaining, 2, ',', ' '); ?> PLN</span>
             </div>
             <div class="info-row" style="border-bottom:none;margin-top:10px;padding-top:15px;border-top:2px solid #0073aa;">
                 <span class="info-label">Cena za wyświetlenie:</span>
@@ -937,7 +937,7 @@ CSS;
         </div>
 
         <div class="footer">
-            <p style="font-size: 1.2rem;color:#999;">© <?php echo date('Y'); ?> <?php echo esc_html($site_name); ?> • Raport wygenerowany automatycznie</p>
+            <p style="font-size:calc(12 * var(--jg));color:#999;">© <?php echo date('Y'); ?> <?php echo esc_html($site_name); ?> • Raport wygenerowany automatycznie</p>
         </div>
     </div>
 

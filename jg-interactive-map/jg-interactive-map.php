@@ -669,9 +669,9 @@ class JG_Interactive_Map {
         }
         .jg-sp-site-header a { display: flex; align-items: center; gap: 10px; }
         .jg-sp-site-logo { height: 40px; width: auto; }
-        .jg-sp-site-name { font-size: 1.6rem; font-weight: 700; color: #111; }
+        .jg-sp-site-name { font-size: calc(16 * var(--jg)); font-weight: 700; color: #111; }
         .jg-sp-site-nav a {
-            font-size: 1.4rem; font-weight: 600; color: #fff; background: <?php echo $type_color; ?>;
+            font-size: calc(14 * var(--jg)); font-weight: 600; color: #fff; background: <?php echo $type_color; ?>;
             padding: 8px 16px; border-radius: 8px; transition: opacity 0.15s;
         }
         .jg-sp-site-nav a:hover { opacity: 0.85; }
@@ -689,9 +689,9 @@ class JG_Interactive_Map {
             animation: jg-cta-pulse 1.8s ease-in-out infinite;
         }
         .jg-sp-map-cta:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); animation: none; }
-        .jg-sp-map-cta-text { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
-        .jg-sp-map-cta-sub { font-size: 1.3rem; opacity: 0.9; margin-top: 4px; color: #fff; }
-        .jg-sp-map-cta-arrow { font-size: 2.8rem; flex-shrink: 0; color: #fff; animation: jg-cta-arrow-nudge 1s ease-in-out infinite; }
+        .jg-sp-map-cta-text { font-size: calc(18 * var(--jg)); font-weight: 700; color: #fff; line-height: 1.3; }
+        .jg-sp-map-cta-sub { font-size: calc(13 * var(--jg)); opacity: 0.9; margin-top: 4px; color: #fff; }
+        .jg-sp-map-cta-arrow { font-size: calc(28 * var(--jg)); flex-shrink: 0; color: #fff; animation: jg-cta-arrow-nudge 1s ease-in-out infinite; }
         @keyframes jg-cta-pulse {
             0% { transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 0 0 0 <?php echo $type_color; ?>99; }
             50% { transform: scale(1.02); box-shadow: 0 6px 20px rgba(0,0,0,0.2), 0 0 0 14px <?php echo $type_color; ?>00; }
@@ -704,14 +704,14 @@ class JG_Interactive_Map {
 
         /* Header with badges */
         .jg-sp-header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px; flex-wrap: wrap; }
-        .jg-sp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 1.2rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.5; }
+        .jg-sp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: calc(12 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.5; }
 
         /* Title */
-        .jg-sp-title { font-size: 3.2rem; font-weight: 800; color: #111; margin: 0 0 8px 0; line-height: 1.2; }
-        .jg-sp-date { font-size: 1.3rem; color: #9ca3af; margin-bottom: 18px; }
+        .jg-sp-title { font-size: calc(32 * var(--jg)); font-weight: 800; color: #111; margin: 0 0 8px 0; line-height: 1.2; }
+        .jg-sp-date { font-size: calc(13 * var(--jg)); color: #9ca3af; margin-bottom: 18px; }
 
         /* Content */
-        .jg-sp-content { font-size: 1.6rem; line-height: 1.75; color: #374151; margin-bottom: 24px; word-wrap: break-word; }
+        .jg-sp-content { font-size: calc(16 * var(--jg)); line-height: 1.75; color: #374151; margin-bottom: 24px; word-wrap: break-word; }
         .jg-sp-content p { margin: 0 0 12px 0; }
         .jg-sp-content p:last-child { margin-bottom: 0; }
         .jg-sp-content strong, .jg-sp-content b { font-weight: 700; color: #111; }
@@ -729,7 +729,7 @@ class JG_Interactive_Map {
 
         /* Contact & Social */
         .jg-sp-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 24px; }
-        .jg-sp-contact-link { color: #2563eb; font-size: 1.5rem; display: inline-flex; align-items: center; gap: 6px; }
+        .jg-sp-contact-link { color: #2563eb; font-size: calc(15 * var(--jg)); display: inline-flex; align-items: center; gap: 6px; }
         .jg-sp-contact-link:hover { text-decoration: underline; }
         .jg-sp-social {
             display: inline-flex; align-items: center; justify-content: center;
@@ -740,7 +740,7 @@ class JG_Interactive_Map {
         .jg-sp-social svg { width: 20px; height: 20px; fill: #fff; }
 
         /* Address */
-        .jg-sp-address { font-size: 1.5rem; color: #6b7280; margin-bottom: 24px; }
+        .jg-sp-address { font-size: calc(15 * var(--jg)); color: #6b7280; margin-bottom: 24px; }
 
         /* Gallery grid */
         .jg-sp-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 28px; }
@@ -759,7 +759,7 @@ class JG_Interactive_Map {
         .jg-sp-share { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
         .jg-sp-share-btn {
             display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 16px; border-radius: 8px; font-size: 1.3rem; font-weight: 600;
+            padding: 8px 16px; border-radius: 8px; font-size: calc(13 * var(--jg)); font-weight: 600;
             color: #fff; border: none; cursor: pointer; transition: opacity 0.15s; line-height: 1.4;
         }
         .jg-sp-share-btn:hover { opacity: 0.85; }
@@ -770,16 +770,16 @@ class JG_Interactive_Map {
         /* Footer */
         .jg-sp-site-footer {
             background: #1f2937; color: #9ca3af; text-align: center;
-            padding: 24px 20px; font-size: 1.3rem; line-height: 1.6;
+            padding: 24px 20px; font-size: calc(13 * var(--jg)); line-height: 1.6;
         }
         .jg-sp-site-footer a { color: #d1d5db; text-decoration: underline; }
         .jg-sp-site-footer a:hover { color: #fff; }
 
         @media (max-width: 640px) {
             .jg-sp { padding: 16px 12px 32px; }
-            .jg-sp-title { font-size: 2.4rem; }
+            .jg-sp-title { font-size: calc(24 * var(--jg)); }
             .jg-sp-map-cta { padding: 14px 16px; }
-            .jg-sp-map-cta-text { font-size: 1.6rem; }
+            .jg-sp-map-cta-text { font-size: calc(16 * var(--jg)); }
             .jg-sp-gallery { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
             .jg-sp-hero-img { max-height: 300px; }
             .jg-sp-site-name { display: none; }
@@ -958,7 +958,7 @@ class JG_Interactive_Map {
 
         ?>
         <div style="max-width:800px;margin:0 auto;padding:24px 20px 0;">
-            <h2 style="font-size: 1.8rem;font-weight:700;color:#374151;margin-bottom:16px;">Inne miejsca w Jeleniej Górze</h2>
+            <h2 style="font-size:calc(18 * var(--jg));font-weight:700;color:#374151;margin-bottom:16px;">Inne miejsca w Jeleniej Górze</h2>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
                 <?php foreach ($related as $r):
                     $path = isset($type_paths[$r['type']]) ? $type_paths[$r['type']] : 'miejsce';
@@ -966,11 +966,11 @@ class JG_Interactive_Map {
                     $label = isset($type_labels[$r['type']]) ? $type_labels[$r['type']] : '';
                 ?>
                 <a href="<?php echo esc_url($url); ?>" style="display:block;padding:14px 16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;transition:border-color 0.15s;">
-                    <div style="font-size: 1.4rem;font-weight:600;color:#111;line-height:1.4;"><?php echo esc_html($r['title']); ?></div>
+                    <div style="font-size:calc(14 * var(--jg));font-weight:600;color:#111;line-height:1.4;"><?php echo esc_html($r['title']); ?></div>
                     <?php if (!empty($r['address'])): ?>
-                    <div style="font-size: 1.2rem;color:#9ca3af;margin-top:4px;"><?php echo esc_html($r['address']); ?></div>
+                    <div style="font-size:calc(12 * var(--jg));color:#9ca3af;margin-top:4px;"><?php echo esc_html($r['address']); ?></div>
                     <?php endif; ?>
-                    <div style="font-size: 1.1rem;color:#6b7280;margin-top:4px;"><?php echo esc_html($label); ?></div>
+                    <div style="font-size:calc(11 * var(--jg));color:#6b7280;margin-top:4px;"><?php echo esc_html($label); ?></div>
                 </a>
                 <?php endforeach; ?>
             </div>
