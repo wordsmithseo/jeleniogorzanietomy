@@ -11180,6 +11180,7 @@
         toggleFAB();
 
         // Create input overlay
+        var fabOverlayMouseDownOnBg = false;
         var overlay = $('<div>')
           .attr('id', 'jg-fab-input-overlay')
           .css({
@@ -11194,8 +11195,11 @@
             alignItems: 'center',
             justifyContent: 'center'
           })
+          .on('mousedown', function(e) {
+            fabOverlayMouseDownOnBg = (e.target === this);
+          })
           .on('click', function(e) {
-            if (e.target === this) {
+            if (e.target === this && fabOverlayMouseDownOnBg) {
               $(this).remove();
             }
           });
@@ -11474,6 +11478,7 @@
         toggleFAB();
 
         // Create input overlay
+        var fabCoordsMouseDownOnBg = false;
         var overlay = $('<div>')
           .attr('id', 'jg-fab-input-overlay')
           .css({
@@ -11488,8 +11493,11 @@
             alignItems: 'center',
             justifyContent: 'center'
           })
+          .on('mousedown', function(e) {
+            fabCoordsMouseDownOnBg = (e.target === this);
+          })
           .on('click', function(e) {
-            if (e.target === this) {
+            if (e.target === this && fabCoordsMouseDownOnBg) {
               $(this).remove();
             }
           });
