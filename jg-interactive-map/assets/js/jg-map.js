@@ -5707,6 +5707,7 @@
 
         var data = {
           action: 'jg_track_stat',
+          _ajax_nonce: CFG.nonce || '',
           point_id: pointId,
           action_type: actionType
         };
