@@ -6753,6 +6753,74 @@
         });
       }
 
+      // --- Input mask helpers for sponsored pin fields ---
+
+      function applyPhoneMask(input) {
+        if (!input) return;
+        input.addEventListener('input', function() {
+          var pos = this.selectionStart;
+          var clean = this.value.replace(/[^0-9\s\-\+\(\)]/g, '').slice(0, 20);
+          if (this.value !== clean) {
+            this.value = clean;
+            try { this.setSelectionRange(Math.min(pos, clean.length), Math.min(pos, clean.length)); } catch (e) {}
+          }
+        });
+      }
+
+      function applyWebsiteMask(input) {
+        if (!input) return;
+        input.addEventListener('input', function() {
+          var clean = this.value.replace(/\s+/g, '');
+          if (this.value !== clean) this.value = clean;
+        });
+        input.addEventListener('blur', function() {
+          this.value = this.value.replace(/^https?:\/\//i, '').trim();
+        });
+      }
+
+      function applySocialMask(input, prefixes) {
+        if (!input) return;
+        function normalize(v) {
+          v = v.trim();
+          if (!v) return v;
+          v = v.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+          for (var i = 0; i < prefixes.length; i++) {
+            if (v.toLowerCase().indexOf(prefixes[i].toLowerCase()) === 0) {
+              v = v.slice(prefixes[i].length);
+              break;
+            }
+          }
+          v = v.replace(/^@+/, '');
+          return v;
+        }
+        function setValidity(inp) {
+          var v = inp.value.trim();
+          if (!v) {
+            inp.style.borderColor = '#ddd';
+            inp.title = '';
+            return;
+          }
+          var hasSpaces = /\s/.test(v);
+          inp.style.borderColor = hasSpaces ? '#ef4444' : '#22c55e';
+          inp.title = hasSpaces ? 'Nazwa profilu nie może zawierać spacji' : '';
+        }
+        input.addEventListener('input', function() {
+          var clean = this.value.replace(/\s+/g, '');
+          if (this.value !== clean) this.value = clean;
+          setValidity(this);
+        });
+        input.addEventListener('blur', function() {
+          this.value = normalize(this.value);
+          setValidity(this);
+        });
+        input.addEventListener('focus', function() {
+          this.style.borderColor = '#ddd';
+          this.title = '';
+        });
+      }
+
+      // --- End input mask helpers ---
+
       function openEditModal(p, fromReports) {
         // Check if user is banned or has edit_places restriction (skip for admin editing from reports)
         if (!fromReports && window.JG_USER_RESTRICTIONS) {
@@ -7041,6 +7109,14 @@
               ctaTypeSelection.style.display = ctaEnabledCheckbox.checked ? '' : 'none';
             });
           }
+
+          // Apply input masks to sponsored contact fields
+          applyPhoneMask(qs('#edit-phone-input', modalEdit));
+          applyWebsiteMask(qs('#edit-website-input', modalEdit));
+          applySocialMask(qs('#edit-facebook-input', modalEdit), ['facebook.com/', 'fb.com/', 'm.facebook.com/']);
+          applySocialMask(qs('#edit-instagram-input', modalEdit), ['instagram.com/', 'instagr.am/', 'm.instagram.com/']);
+          applySocialMask(qs('#edit-linkedin-input', modalEdit), ['linkedin.com/in/', 'linkedin.com/company/', 'linkedin.com/']);
+          applySocialMask(qs('#edit-tiktok-input', modalEdit), ['tiktok.com/@', 'tiktok.com/']);
         }
 
         // Address autocomplete and geocoding for edit form
@@ -7265,6 +7341,24 @@
             msg.textContent = 'Podaj tytuł.';
             msg.style.color = '#b91c1c';
             return;
+          }
+
+          // Validate sponsored contact fields
+          if (isSponsored) {
+            var editPhoneEl = qs('#edit-phone-input', modalEdit);
+            var editWebsiteEl = qs('#edit-website-input', modalEdit);
+            if (editPhoneEl && editPhoneEl.value.trim() && !/^[0-9\s\-\+\(\)]{1,20}$/.test(editPhoneEl.value.trim())) {
+              msg.textContent = 'Numer telefonu zawiera niedozwolone znaki (dozwolone: cyfry, spacje, +, -, nawiasy).';
+              msg.style.color = '#b91c1c';
+              editPhoneEl.focus();
+              return;
+            }
+            if (editWebsiteEl && editWebsiteEl.value.trim() && /\s/.test(editWebsiteEl.value)) {
+              msg.textContent = 'Adres strony internetowej nie może zawierać spacji.';
+              msg.style.color = '#b91c1c';
+              editWebsiteEl.focus();
+              return;
+            }
           }
 
           // Use FormData to support file uploads
@@ -7518,6 +7612,10 @@
           });
         }
 
+        // Apply input masks to phone and website fields
+        applyPhoneMask(phoneInput);
+        applyWebsiteMask(websiteInput);
+
         saveBtn.onclick = function() {
           var selectedSponsored = qs('input[name="sponsored_status"]:checked', modalStatus);
           if (!selectedSponsored) {
@@ -7532,6 +7630,22 @@
           var phone = phoneInput.value.trim();
           var ctaEnabled = ctaEnabledCheckbox.checked;
           var ctaType = null;
+
+          // Validate phone format
+          if (phone && !/^[0-9\s\-\+\(\)]{1,20}$/.test(phone)) {
+            msg.textContent = 'Numer telefonu zawiera niedozwolone znaki (dozwolone: cyfry, spacje, +, -, nawiasy).';
+            msg.style.color = '#b91c1c';
+            phoneInput.focus();
+            return;
+          }
+
+          // Validate website format
+          if (website && /\s/.test(website)) {
+            msg.textContent = 'Adres strony internetowej nie może zawierać spacji.';
+            msg.style.color = '#b91c1c';
+            websiteInput.focus();
+            return;
+          }
 
           // Get CTA type if enabled
           if (ctaEnabled) {
