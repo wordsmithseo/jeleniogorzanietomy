@@ -12133,7 +12133,7 @@
             alignItems: 'center',
             justifyContent: 'center'
           })
-          .on('click',     function(e) { e.stopPropagation(); e.preventDefault(); })
+          .on('click',     function(e) { e.stopPropagation(); })
           .on('dblclick',  function(e) { e.stopPropagation(); e.preventDefault(); })
           .on('wheel',     function(e) { e.stopPropagation(); e.preventDefault(); })
           .on('mousedown', function(e) { e.stopPropagation(); });
@@ -12150,13 +12150,20 @@
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: 'default',
+            cursor: CFG.usersUrl ? 'pointer' : 'default',
             userSelect: 'none',
             position: 'relative',
             outline: '3px solid transparent',
             outlineOffset: '0px',
             transition: 'outline-color 0.3s ease, outline-offset 0.3s ease'
           });
+
+        if (CFG.usersUrl) {
+          circle.on('click', function(e) {
+            e.stopPropagation();
+            window.location.href = CFG.usersUrl;
+          });
+        }
 
         // White number label
         var countLabel = $('<span>')
