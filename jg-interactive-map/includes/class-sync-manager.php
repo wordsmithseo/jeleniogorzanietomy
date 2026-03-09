@@ -405,6 +405,11 @@ class JG_Map_Sync_Manager {
         $is_admin_or_mod  = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $online_users     = $this->track_and_get_online_users($current_user_id);
 
+        // Total registered WordPress users (for the circle indicator)
+        $registered_users = $is_admin_or_mod
+            ? (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->users}")
+            : null;
+
         // Build response
         $response['jg_map_sync'] = array(
             'new_points' => intval($new_points),
@@ -415,8 +420,13 @@ class JG_Map_Sync_Manager {
             // Include current user info for session change detection
             'current_user_id' => $current_user_id,
             'is_admin' => $is_admin_or_mod,
-            // Online users data (only meaningful for admin/mod indicator)
-            'online_users' => $is_admin_or_mod ? $online_users : null,
+            // User indicator data (admin/mod only):
+            //   registered_users – total registered accounts (shown in circle)
+            //   others           – currently active sessions excluding the viewer (badge/border)
+            'online_users' => $is_admin_or_mod ? array(
+                'registered' => $registered_users,
+                'others'     => $online_users['others'],
+            ) : null,
         );
 
         return $response;
