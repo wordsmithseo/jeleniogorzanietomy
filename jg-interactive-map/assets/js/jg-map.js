@@ -6755,8 +6755,47 @@
 
       // --- Input mask helpers for sponsored pin fields ---
 
+      function normalizeSocialValue(v, prefixes) {
+        v = v.trim();
+        if (!v) return v;
+        v = v.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+        for (var i = 0; i < prefixes.length; i++) {
+          if (v.toLowerCase().indexOf(prefixes[i].toLowerCase()) === 0) {
+            v = v.slice(prefixes[i].length);
+            break;
+          }
+        }
+        v = v.replace(/^@+/, '');
+        return v;
+      }
+
+      function isValidPhone(v) {
+        if (!v) return true;
+        var digits = v.replace(/[^0-9]/g, '');
+        return digits.length >= 9 && digits.length <= 15 && /^[\+]?[0-9\s\-\(\)]+$/.test(v);
+      }
+
+      function isValidWebsite(v) {
+        if (!v) return true;
+        v = v.replace(/^https?:\/\//i, '').trim();
+        return /^[a-zA-Z0-9][a-zA-Z0-9\-\.]*\.[a-zA-Z]{2,}(\/[^\s]*)?$/.test(v);
+      }
+
+      function isValidSocialUsername(v) {
+        if (!v) return true;
+        return v.length > 0 && v.length <= 150 && !/\s/.test(v);
+      }
+
       function applyPhoneMask(input) {
         if (!input) return;
+        function setPhoneValidity(inp) {
+          var v = inp.value.trim();
+          if (!v) { inp.style.borderColor = '#ddd'; inp.title = ''; return; }
+          var digits = v.replace(/[^0-9]/g, '');
+          var ok = isValidPhone(v);
+          inp.style.borderColor = ok ? '#22c55e' : '#ef4444';
+          inp.title = ok ? '' : (digits.length < 9 ? 'Numer musi zawierać co najmniej 9 cyfr (wpisano: ' + digits.length + ')' : 'Niedozwolone znaki w numerze');
+        }
         input.addEventListener('input', function() {
           var pos = this.selectionStart;
           var clean = this.value.replace(/[^0-9\s\-\+\(\)]/g, '').slice(0, 20);
@@ -6764,45 +6803,41 @@
             this.value = clean;
             try { this.setSelectionRange(Math.min(pos, clean.length), Math.min(pos, clean.length)); } catch (e) {}
           }
+          setPhoneValidity(this);
         });
+        input.addEventListener('blur', function() { setPhoneValidity(this); });
+        input.addEventListener('focus', function() { this.style.borderColor = '#ddd'; this.title = ''; });
       }
 
       function applyWebsiteMask(input) {
         if (!input) return;
+        function setWebsiteValidity(inp) {
+          var v = inp.value.trim();
+          if (!v) { inp.style.borderColor = '#ddd'; inp.title = ''; return; }
+          var ok = isValidWebsite(v);
+          inp.style.borderColor = ok ? '#22c55e' : '#ef4444';
+          inp.title = ok ? '' : 'Podaj poprawny adres strony, np. jeleniagora.pl';
+        }
         input.addEventListener('input', function() {
           var clean = this.value.replace(/\s+/g, '');
           if (this.value !== clean) this.value = clean;
+          setWebsiteValidity(this);
         });
         input.addEventListener('blur', function() {
           this.value = this.value.replace(/^https?:\/\//i, '').trim();
+          setWebsiteValidity(this);
         });
+        input.addEventListener('focus', function() { this.style.borderColor = '#ddd'; this.title = ''; });
       }
 
       function applySocialMask(input, prefixes) {
         if (!input) return;
-        function normalize(v) {
-          v = v.trim();
-          if (!v) return v;
-          v = v.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
-          for (var i = 0; i < prefixes.length; i++) {
-            if (v.toLowerCase().indexOf(prefixes[i].toLowerCase()) === 0) {
-              v = v.slice(prefixes[i].length);
-              break;
-            }
-          }
-          v = v.replace(/^@+/, '');
-          return v;
-        }
         function setValidity(inp) {
           var v = inp.value.trim();
-          if (!v) {
-            inp.style.borderColor = '#ddd';
-            inp.title = '';
-            return;
-          }
-          var hasSpaces = /\s/.test(v);
-          inp.style.borderColor = hasSpaces ? '#ef4444' : '#22c55e';
-          inp.title = hasSpaces ? 'Nazwa profilu nie może zawierać spacji' : '';
+          if (!v) { inp.style.borderColor = '#ddd'; inp.title = ''; return; }
+          var ok = isValidSocialUsername(v);
+          inp.style.borderColor = ok ? '#22c55e' : '#ef4444';
+          inp.title = ok ? '' : 'Nazwa profilu nie może zawierać spacji';
         }
         input.addEventListener('input', function() {
           var clean = this.value.replace(/\s+/g, '');
@@ -6810,13 +6845,10 @@
           setValidity(this);
         });
         input.addEventListener('blur', function() {
-          this.value = normalize(this.value);
+          this.value = normalizeSocialValue(this.value, prefixes);
           setValidity(this);
         });
-        input.addEventListener('focus', function() {
-          this.style.borderColor = '#ddd';
-          this.title = '';
-        });
+        input.addEventListener('focus', function() { this.style.borderColor = '#ddd'; this.title = ''; });
       }
 
       // --- End input mask helpers ---
@@ -7343,21 +7375,57 @@
             return;
           }
 
-          // Validate sponsored contact fields
+          // Normalize and validate sponsored contact fields
           if (isSponsored) {
             var editPhoneEl = qs('#edit-phone-input', modalEdit);
             var editWebsiteEl = qs('#edit-website-input', modalEdit);
-            if (editPhoneEl && editPhoneEl.value.trim() && !/^[0-9\s\-\+\(\)]{1,20}$/.test(editPhoneEl.value.trim())) {
-              msg.textContent = 'Numer telefonu zawiera niedozwolone znaki (dozwolone: cyfry, spacje, +, -, nawiasy).';
+            var editFacebookEl = qs('#edit-facebook-input', modalEdit);
+            var editInstagramEl = qs('#edit-instagram-input', modalEdit);
+            var editLinkedinEl = qs('#edit-linkedin-input', modalEdit);
+            var editTiktokEl = qs('#edit-tiktok-input', modalEdit);
+
+            // Normalize values (replicates blur-handler logic for unsaved changes)
+            if (editWebsiteEl) editWebsiteEl.value = editWebsiteEl.value.replace(/^https?:\/\//i, '').trim();
+            if (editFacebookEl) editFacebookEl.value = normalizeSocialValue(editFacebookEl.value, ['facebook.com/', 'fb.com/', 'm.facebook.com/']);
+            if (editInstagramEl) editInstagramEl.value = normalizeSocialValue(editInstagramEl.value, ['instagram.com/', 'instagr.am/', 'm.instagram.com/']);
+            if (editLinkedinEl) editLinkedinEl.value = normalizeSocialValue(editLinkedinEl.value, ['linkedin.com/in/', 'linkedin.com/company/', 'linkedin.com/']);
+            if (editTiktokEl) editTiktokEl.value = normalizeSocialValue(editTiktokEl.value, ['tiktok.com/@', 'tiktok.com/']);
+
+            var phoneVal = editPhoneEl ? editPhoneEl.value.trim() : '';
+            var websiteVal = editWebsiteEl ? editWebsiteEl.value.trim() : '';
+
+            if (phoneVal && !isValidPhone(phoneVal)) {
+              var phoneDigits = phoneVal.replace(/[^0-9]/g, '');
+              msg.textContent = phoneDigits.length < 9
+                ? 'Numer telefonu musi zawierać co najmniej 9 cyfr (wpisano: ' + phoneDigits.length + ').'
+                : 'Numer telefonu zawiera niedozwolone znaki (dozwolone: cyfry, spacje, +, -, nawiasy).';
               msg.style.color = '#b91c1c';
-              editPhoneEl.focus();
+              if (editPhoneEl) { editPhoneEl.style.borderColor = '#ef4444'; editPhoneEl.focus(); }
               return;
             }
-            if (editWebsiteEl && editWebsiteEl.value.trim() && /\s/.test(editWebsiteEl.value)) {
-              msg.textContent = 'Adres strony internetowej nie może zawierać spacji.';
+
+            if (websiteVal && !isValidWebsite(websiteVal)) {
+              msg.textContent = 'Podaj poprawny adres strony internetowej (np. jeleniagora.pl).';
               msg.style.color = '#b91c1c';
-              editWebsiteEl.focus();
+              if (editWebsiteEl) { editWebsiteEl.style.borderColor = '#ef4444'; editWebsiteEl.focus(); }
               return;
+            }
+
+            var socialValidations = [
+              { el: editFacebookEl, name: 'Facebook' },
+              { el: editInstagramEl, name: 'Instagram' },
+              { el: editLinkedinEl, name: 'LinkedIn' },
+              { el: editTiktokEl, name: 'TikTok' }
+            ];
+            for (var si = 0; si < socialValidations.length; si++) {
+              var sv = socialValidations[si];
+              if (sv.el && sv.el.value.trim() && !isValidSocialUsername(sv.el.value.trim())) {
+                msg.textContent = 'Profil ' + sv.name + ' zawiera niedozwolone znaki.';
+                msg.style.color = '#b91c1c';
+                sv.el.style.borderColor = '#ef4444';
+                sv.el.focus();
+                return;
+              }
             }
           }
 
@@ -7626,23 +7694,31 @@
 
           var isSponsored = selectedSponsored.value === '1';
           var sponsoredUntil = dateInput.value || '';
+
+          // Normalize before reading (replicates blur-handler logic)
+          websiteInput.value = websiteInput.value.replace(/^https?:\/\//i, '').trim();
           var website = websiteInput.value.trim();
           var phone = phoneInput.value.trim();
           var ctaEnabled = ctaEnabledCheckbox.checked;
           var ctaType = null;
 
           // Validate phone format
-          if (phone && !/^[0-9\s\-\+\(\)]{1,20}$/.test(phone)) {
-            msg.textContent = 'Numer telefonu zawiera niedozwolone znaki (dozwolone: cyfry, spacje, +, -, nawiasy).';
+          if (phone && !isValidPhone(phone)) {
+            var promoPhoneDigits = phone.replace(/[^0-9]/g, '');
+            msg.textContent = promoPhoneDigits.length < 9
+              ? 'Numer telefonu musi zawierać co najmniej 9 cyfr (wpisano: ' + promoPhoneDigits.length + ').'
+              : 'Numer telefonu zawiera niedozwolone znaki (dozwolone: cyfry, spacje, +, -, nawiasy).';
             msg.style.color = '#b91c1c';
+            phoneInput.style.borderColor = '#ef4444';
             phoneInput.focus();
             return;
           }
 
           // Validate website format
-          if (website && /\s/.test(website)) {
-            msg.textContent = 'Adres strony internetowej nie może zawierać spacji.';
+          if (website && !isValidWebsite(website)) {
+            msg.textContent = 'Podaj poprawny adres strony internetowej (np. jeleniagora.pl).';
             msg.style.color = '#b91c1c';
+            websiteInput.style.borderColor = '#ef4444';
             websiteInput.focus();
             return;
           }
