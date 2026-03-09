@@ -10996,9 +10996,29 @@
             refreshData(true);
             // Re-sync Leaflet map size in case the container shifted while tab was hidden
             inv();
+          } else {
+            // Tab hidden (switch, screen-off, phone sleep) – signal server immediately
+            jgSendLeaveBeacon();
           }
         });
+
+        // Also fire on hard close / navigation away
+        window.addEventListener('beforeunload', jgSendLeaveBeacon);
       }); // End of $(document).ready()
+
+      /**
+       * Fire-and-forget beacon to remove the current user from the online list immediately.
+       * Uses sendBeacon so it survives tab/browser close and doesn't block navigation.
+       * Only sent for logged-in users (guest heartbeats don't affect the admin indicator).
+       */
+      function jgSendLeaveBeacon() {
+        if (!CFG || !CFG.ajax || !CFG.nonce || !(CFG.currentUserId > 0)) return;
+        if (!navigator.sendBeacon) return;
+        var fd = new FormData();
+        fd.append('action',      'jg_user_leave');
+        fd.append('_ajax_nonce', CFG.nonce);
+        navigator.sendBeacon(CFG.ajax, fd);
+      }
 
       // ========================================================================
       // FLOATING ACTION BUTTON (FAB) - Quick Add Place
