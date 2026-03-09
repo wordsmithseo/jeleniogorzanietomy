@@ -12077,25 +12077,30 @@
       var userCountIndicator = null;
 
       /**
-       * Create the golden circle indicator showing how many users are online.
-       * Visible only to admins/moderators. Positioned centered at the bottom,
-       * halfway between the onboarding FAB (bottom-left) and the add-places FAB (bottom-right).
+       * Create the golden circle indicator showing total registered users.
+       * Visible only to admins/moderators. Positioned centered at the bottom of the map
+       * (halfway between the onboarding FAB on the left and the add-places FAB on the right).
+       *
+       * - Circle: solid gold fill, white bold number = total registered users
+       * - When someone else is currently logged in:
+       *     • pulsating gold border around the circle
+       *     • red FB-style badge (top-right) with count of other active sessions
        */
       function createUserCountIndicator() {
         if (!CFG.isAdmin) return;
 
-        // Inject pulsating border keyframes once
+        // Inject keyframes once
         if (!document.getElementById('jg-uci-style')) {
           $('<style>').attr('id', 'jg-uci-style').text(
             '@keyframes jg-uci-pulse {' +
-              '0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.7), 0 4px 16px rgba(0,0,0,0.25); }' +
-              '50%  { box-shadow: 0 0 0 6px rgba(34,197,94,0.15), 0 4px 16px rgba(0,0,0,0.25); }' +
-              '100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.0), 0 4px 16px rgba(0,0,0,0.25); }' +
+              '0%   { outline-color: rgba(251,191,36,0.9); outline-offset: 0px; }' +
+              '50%  { outline-color: rgba(251,191,36,0.3); outline-offset: 4px; }' +
+              '100% { outline-color: rgba(251,191,36,0.9); outline-offset: 0px; }' +
             '}'
           ).appendTo('head');
         }
 
-        // Wrapper – horizontally centered at the bottom of the map
+        // Wrapper – horizontally centred at the bottom of the map
         userCountIndicator = $('<div>')
           .attr('id', 'jg-user-count-indicator')
           .css({
@@ -12108,110 +12113,97 @@
             alignItems: 'center',
             justifyContent: 'center'
           })
-          .on('click',    function(e) { e.stopPropagation(); e.preventDefault(); })
-          .on('dblclick', function(e) { e.stopPropagation(); e.preventDefault(); })
-          .on('wheel',    function(e) { e.stopPropagation(); e.preventDefault(); })
-          .on('mousedown',function(e) { e.stopPropagation(); });
+          .on('click',     function(e) { e.stopPropagation(); e.preventDefault(); })
+          .on('dblclick',  function(e) { e.stopPropagation(); e.preventDefault(); })
+          .on('wheel',     function(e) { e.stopPropagation(); e.preventDefault(); })
+          .on('mousedown', function(e) { e.stopPropagation(); });
 
-        // Golden circle button
+        // Gold circle
         var circle = $('<div>')
           .attr('id', 'jg-uci-circle')
           .css({
             width: '60px',
             height: '60px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 60%, #d97706 100%)',
-            border: '3px solid transparent',
+            background: '#f59e0b',
             boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'default',
             userSelect: 'none',
             position: 'relative',
-            transition: 'border-color 0.4s ease, box-shadow 0.4s ease'
+            outline: '3px solid transparent',
+            outlineOffset: '0px',
+            transition: 'outline-color 0.3s ease, outline-offset 0.3s ease'
           });
 
-        // Crown icon
-        var crown = $('<div>').css({
-          fontSize: '16px',
-          lineHeight: '1',
-          marginBottom: '1px'
-        }).text('👑');
-
-        // User count label
-        var countLabel = $('<div>')
+        // White number label
+        var countLabel = $('<span>')
           .attr('id', 'jg-uci-count')
           .css({
-            fontSize: '14px',
+            fontSize: '20px',
             fontWeight: '700',
-            color: '#78350f',
-            lineHeight: '1'
+            color: '#fff',
+            lineHeight: '1',
+            letterSpacing: '-0.5px'
           })
-          .text('—');
+          .text('…');
 
-        circle.append(crown, countLabel);
-
-        // Badge (top-right corner) – hidden by default
+        // FB-style red badge – top-right corner, hidden by default
         var badge = $('<div>')
           .attr('id', 'jg-uci-badge')
           .css({
             position: 'absolute',
-            top: '-4px',
-            right: '-4px',
+            top: '-5px',
+            right: '-5px',
             minWidth: '20px',
             height: '20px',
             borderRadius: '10px',
-            background: '#16a34a',
+            background: '#e11d48',
             color: '#fff',
             fontSize: '11px',
             fontWeight: '700',
             display: 'none',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '0 4px',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+            padding: '0 5px',
+            border: '2px solid #fff',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
             lineHeight: '1'
           });
 
-        circle.append(badge);
+        circle.append(countLabel, badge);
         userCountIndicator.append(circle);
         $(elMap).append(userCountIndicator);
       }
 
       /**
        * Update the user count indicator with fresh data from heartbeat.
-       * @param {Object} onlineUsers  – { total: int, others: int }
+       * @param {Object} data  – { registered: int, others: int }
+       *   registered – total registered users (shown in circle)
+       *   others     – other currently active sessions, excluding the viewer (badge/border)
        */
-      function updateUserCountIndicator(onlineUsers) {
-        if (!userCountIndicator || !onlineUsers) return;
+      function updateUserCountIndicator(data) {
+        if (!userCountIndicator || !data) return;
 
-        var total  = onlineUsers.total  || 0;
-        var others = onlineUsers.others || 0;
+        var registered = data.registered != null ? data.registered : '?';
+        var others     = data.others || 0;
 
-        // Update displayed total
-        $('#jg-uci-count').text(total);
+        // Update the number displayed in the circle
+        $('#jg-uci-count').text(registered);
 
         var circle = $('#jg-uci-circle');
         var badge  = $('#jg-uci-badge');
 
         if (others > 0) {
-          // Pulsating green border
-          circle.css({
-            border: '3px solid #22c55e',
-            animation: 'jg-uci-pulse 1.8s ease-in-out infinite'
-          });
+          // Pulsating gold outline
+          circle.css('animation', 'jg-uci-pulse 1.6s ease-in-out infinite');
 
-          // Show badge with count of other active users
+          // Show red badge with count of other active sessions
           badge.text(others).css('display', 'flex');
         } else {
-          // No other users – plain gold, no animation
-          circle.css({
-            border: '3px solid transparent',
-            animation: 'none',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.25)'
-          });
+          circle.css('animation', 'none');
           badge.hide();
         }
       }
