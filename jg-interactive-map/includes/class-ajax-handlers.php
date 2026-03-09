@@ -7246,61 +7246,68 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Cache: use normalized query as key
-        $cache_key = 'jg_photon_' . md5(strtolower(trim($queryForSearch)));
+        $cache_key = 'jg_addr_' . md5(strtolower(trim($queryForSearch)));
         $cached = get_transient($cache_key);
         if ($cached !== false) {
             wp_send_json_success($cached);
             return;
         }
 
-        // Use Photon (photon.komoot.io) — built on OSM data, supports partial/autocomplete queries.
-        // bbox format: min_lon,min_lat,max_lon,max_lat (matches map maxBounds)
+        // --- PRIMARY: Photon (photon.komoot.io) ---
+        // Supports partial/autocomplete queries unlike Nominatim.
+        // bbox: min_lon,min_lat,max_lon,max_lat
+        $data = $this->_fetch_photon($queryForSearch);
+
+        // --- FALLBACK: Nominatim ---
+        // Used when Photon is unreachable. Requires complete words,
+        // so we try the full query and — if no results — each word separately.
+        if ($data === null) {
+            $data = $this->_fetch_nominatim($queryForSearch);
+        }
+
+        if ($data === null) {
+            wp_send_json_error(array('message' => 'Błąd połączenia z serwerem geokodowania'));
+            return;
+        }
+
+        // Cache results for 1 hour
+        set_transient($cache_key, $data, HOUR_IN_SECONDS);
+
+        wp_send_json_success($data);
+    }
+
+    /**
+     * Fetch address suggestions from Photon (supports partial/autocomplete queries).
+     * Returns flat array of {display_name, lat, lon} or null on failure.
+     */
+    private function _fetch_photon(string $query): ?array {
         $url = sprintf(
-            'https://photon.komoot.io/api/?q=%s&limit=5&lang=pl&bbox=15.58,50.75,15.85,50.98',
-            urlencode($queryForSearch)
+            'https://photon.komoot.io/api/?q=%s&limit=5&bbox=15.58,50.75,15.85,50.98',
+            urlencode($query)
         );
 
-        // Make server-side request with proper headers
         $response = wp_remote_get($url, array(
-            'timeout' => 10,
-            'headers' => array(
-                'User-Agent' => 'JG-Interactive-Map/1.0 (WordPress)',
-            ),
+            'timeout' => 8,
+            'headers' => array('User-Agent' => 'JG-Interactive-Map/1.0 (WordPress)'),
         ));
 
         if (is_wp_error($response)) {
-            wp_send_json_error(array(
-                'message' => 'Błąd połączenia z serwerem geokodowania',
-                'error' => $response->get_error_message()
-            ));
-            return;
+            return null;
+        }
+        if (wp_remote_retrieve_response_code($response) !== 200) {
+            return null;
         }
 
-        $status_code = wp_remote_retrieve_response_code($response);
-        if ($status_code !== 200) {
-            wp_send_json_error(array(
-                'message' => 'Błąd serwera geokodowania',
-                'status' => $status_code
-            ));
-            return;
+        $geojson = json_decode(wp_remote_retrieve_body($response), true);
+        if (!isset($geojson['features']) || !is_array($geojson['features'])) {
+            return null;
         }
 
-        $body = wp_remote_retrieve_body($response);
-        $geojson = json_decode($body, true);
-
-        if ($geojson === null || !isset($geojson['features'])) {
-            wp_send_json_error(array('message' => 'Błąd parsowania odpowiedzi'));
-            return;
-        }
-
-        // Convert Photon GeoJSON features to flat array compatible with frontend
-        // (frontend expects: display_name, lat, lon)
         $data = array();
         foreach ($geojson['features'] as $feature) {
-            $props = $feature['properties'] ?? array();
+            $props  = $feature['properties'] ?? array();
             $coords = $feature['geometry']['coordinates'] ?? array(0, 0);
 
-            // Build human-readable display_name from available properties
             $parts = array();
             if (!empty($props['name'])) {
                 $parts[] = $props['name'];
@@ -7320,8 +7327,7 @@ class JG_Map_Ajax_Handlers {
             }
             if (!empty($props['city'])) {
                 $parts[] = $props['city'];
-            }
-            if (!empty($props['county']) && empty($props['city'])) {
+            } elseif (!empty($props['county'])) {
                 $parts[] = $props['county'];
             }
 
@@ -7332,11 +7338,71 @@ class JG_Map_Ajax_Handlers {
             );
         }
 
-        // Cache results for 1 hour — search results are relatively stable
-        set_transient($cache_key, $data, HOUR_IN_SECONDS);
+        return $data; // may be empty array — that's valid
+    }
 
-        // Return results directly - JavaScript will handle display
-        wp_send_json_success($data);
+    /**
+     * Fetch address suggestions from Nominatim (fallback when Photon unavailable).
+     * Nominatim needs complete words; tries full query then individual words to improve coverage.
+     * Returns flat array of {display_name, lat, lon} or null on failure.
+     */
+    private function _fetch_nominatim(string $query): ?array {
+        // viewbox: left,top,right,bottom (min_lon,max_lat,max_lon,min_lat)
+        $viewbox  = '15.58,50.98,15.85,50.75';
+        $base_url = 'https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&bounded=1&countrycodes=pl&viewbox=' . $viewbox . '&q=';
+
+        $attempts = array($query);
+
+        // If multi-word query, also try each word separately and merge unique results
+        $words = preg_split('/\s+/', trim($query), -1, PREG_SPLIT_NO_EMPTY);
+        if (count($words) > 1) {
+            foreach ($words as $word) {
+                if (mb_strlen($word) >= 3) {
+                    $attempts[] = $word;
+                }
+            }
+        }
+
+        $seen = array();
+        $data = array();
+
+        foreach ($attempts as $attempt) {
+            $response = wp_remote_get($base_url . urlencode($attempt), array(
+                'timeout' => 8,
+                'headers' => array('User-Agent' => 'JG-Interactive-Map/1.0 (WordPress)'),
+            ));
+
+            if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+                // If even the first attempt (full query) fails at network level, signal failure
+                if ($attempt === $query) {
+                    return null;
+                }
+                continue;
+            }
+
+            $results = json_decode(wp_remote_retrieve_body($response), true);
+            if (!is_array($results)) {
+                continue;
+            }
+
+            foreach ($results as $r) {
+                $key = $r['osm_id'] ?? $r['display_name'];
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+                $data[] = array(
+                    'display_name' => $r['display_name'],
+                    'lat'          => (string) $r['lat'],
+                    'lon'          => (string) $r['lon'],
+                );
+                if (count($data) >= 5) {
+                    break 2;
+                }
+            }
+        }
+
+        return $data;
     }
 
     /**
