@@ -7256,7 +7256,7 @@ class JG_Map_Ajax_Handlers {
         // Use Photon (photon.komoot.io) — built on OSM data, supports partial/autocomplete queries.
         // bbox format: min_lon,min_lat,max_lon,max_lat (matches map maxBounds)
         $url = sprintf(
-            'https://photon.komoot.io/api/?q=%s&limit=5&lang=pl&bbox=15.58,50.75,15.85,50.98',
+            'https://photon.komoot.io/api/?q=%s&limit=5&bbox=15.58,50.75,15.85,50.98',
             urlencode($queryForSearch)
         );
 
