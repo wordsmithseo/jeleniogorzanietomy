@@ -80,6 +80,13 @@ class JG_Map_Sync_Manager {
         // Register heartbeat handler for non-logged-in users (guests)
         add_filter('heartbeat_nopriv_received', array($this, 'heartbeat_handler'), 10, 2);
 
+        // Explicit leave signal (sendBeacon from JS on tab-close / visibility-hidden)
+        add_action('wp_ajax_jg_user_leave',        array($this, 'ajax_user_leave'));
+        add_action('wp_ajax_nopriv_jg_user_leave', array($this, 'ajax_user_leave'));
+
+        // Remove user immediately on WordPress logout
+        add_action('wp_logout', array($this, 'on_user_logout'));
+
         // Register cleanup cron
         add_action('jg_map_sync_cleanup', array($this, 'cleanup_old_queue_entries'));
 
@@ -87,6 +94,45 @@ class JG_Map_Sync_Manager {
         if (!wp_next_scheduled('jg_map_sync_cleanup')) {
             wp_schedule_event(time(), 'hourly', 'jg_map_sync_cleanup');
         }
+    }
+
+    /**
+     * Remove the current user from the online transient immediately.
+     * Called via wp_ajax when JS fires sendBeacon on page hide/unload.
+     */
+    public function ajax_user_leave() {
+        $user_id = get_current_user_id();
+        if ($user_id > 0) {
+            $this->remove_user_from_online($user_id);
+        }
+        // sendBeacon ignores the response body – send minimal output
+        wp_die('', '', array('response' => 200));
+    }
+
+    /**
+     * Remove the logging-out user from the online transient immediately.
+     *
+     * @param int $user_id
+     */
+    public function on_user_logout($user_id) {
+        if ($user_id > 0) {
+            $this->remove_user_from_online($user_id);
+        }
+    }
+
+    /**
+     * Remove a single user ID from the jg_online_users transient.
+     *
+     * @param int $user_id
+     */
+    private function remove_user_from_online($user_id) {
+        $online = get_transient('jg_online_users');
+        if (!is_array($online) || !isset($online[$user_id])) {
+            return;
+        }
+        unset($online[$user_id]);
+        // Preserve whatever TTL is left; use 90 s as a safe ceiling
+        set_transient('jg_online_users', $online, 90);
     }
 
     /**
@@ -301,7 +347,7 @@ class JG_Map_Sync_Manager {
      */
     private function track_and_get_online_users($current_user_id) {
         $now       = time();
-        $ttl       = 180; // 3 minutes window = "online"
+        $ttl       = 90; // 90 s window – explicit leave beacons handle most cases sooner
         $threshold = $now - $ttl;
 
         $online = get_transient('jg_online_users');
@@ -321,8 +367,6 @@ class JG_Map_Sync_Manager {
             }
         }
 
-        // Persist with a bit more than the TTL so the transient itself doesn't expire
-        // before all users have a chance to be evicted by the logic above.
         set_transient('jg_online_users', $online, $ttl + 30);
 
         $total  = count($online);

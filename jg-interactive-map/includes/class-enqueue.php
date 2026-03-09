@@ -423,6 +423,9 @@ class JG_Map_Enqueue {
                 'hasSponsoredPoint' => $has_sponsored_point,
                 'ghostPin' => $ghost_pin,
                 'isAdmin' => current_user_can('manage_options') || current_user_can('jg_map_moderate'),
+                'usersUrl' => (current_user_can('manage_options') || current_user_can('jg_map_moderate'))
+                    ? admin_url('admin.php?page=jg-map-users')
+                    : '',
                 'currentUserId' => get_current_user_id(),
                 'loginUrl' => wp_login_url(get_permalink()),
                 'registrationEnabled' => (bool) get_option('jg_map_registration_enabled', 1),

@@ -10996,9 +10996,29 @@
             refreshData(true);
             // Re-sync Leaflet map size in case the container shifted while tab was hidden
             inv();
+          } else {
+            // Tab hidden (switch, screen-off, phone sleep) – signal server immediately
+            jgSendLeaveBeacon();
           }
         });
+
+        // Also fire on hard close / navigation away
+        window.addEventListener('beforeunload', jgSendLeaveBeacon);
       }); // End of $(document).ready()
+
+      /**
+       * Fire-and-forget beacon to remove the current user from the online list immediately.
+       * Uses sendBeacon so it survives tab/browser close and doesn't block navigation.
+       * Only sent for logged-in users (guest heartbeats don't affect the admin indicator).
+       */
+      function jgSendLeaveBeacon() {
+        if (!CFG || !CFG.ajax || !CFG.nonce || !(CFG.currentUserId > 0)) return;
+        if (!navigator.sendBeacon) return;
+        var fd = new FormData();
+        fd.append('action',      'jg_user_leave');
+        fd.append('_ajax_nonce', CFG.nonce);
+        navigator.sendBeacon(CFG.ajax, fd);
+      }
 
       // ========================================================================
       // FLOATING ACTION BUTTON (FAB) - Quick Add Place
@@ -12113,7 +12133,7 @@
             alignItems: 'center',
             justifyContent: 'center'
           })
-          .on('click',     function(e) { e.stopPropagation(); e.preventDefault(); })
+          .on('click',     function(e) { e.stopPropagation(); })
           .on('dblclick',  function(e) { e.stopPropagation(); e.preventDefault(); })
           .on('wheel',     function(e) { e.stopPropagation(); e.preventDefault(); })
           .on('mousedown', function(e) { e.stopPropagation(); });
@@ -12130,13 +12150,20 @@
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: 'default',
+            cursor: CFG.usersUrl ? 'pointer' : 'default',
             userSelect: 'none',
             position: 'relative',
             outline: '3px solid transparent',
             outlineOffset: '0px',
             transition: 'outline-color 0.3s ease, outline-offset 0.3s ease'
           });
+
+        if (CFG.usersUrl) {
+          circle.on('click', function(e) {
+            e.stopPropagation();
+            window.location.href = CFG.usersUrl;
+          });
+        }
 
         // White number label
         var countLabel = $('<span>')
