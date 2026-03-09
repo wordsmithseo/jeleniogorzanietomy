@@ -7235,7 +7235,7 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Strip Polish street type prefixes that Nominatim doesn't understand
+        // Strip Polish street type prefixes for cleaner queries
         $street_prefixes = array('ul.', 'al.', 'pl.', 'os.', 'rondo ', 'aleja ', 'ulica ', 'plac ', 'osiedle ');
         $queryForSearch = trim($query);
         foreach ($street_prefixes as $prefix) {
@@ -7245,22 +7245,19 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
-        $searchQuery = $queryForSearch;
-
         // Cache: use normalized query as key
-        $cache_key = 'jg_search_' . md5(strtolower(trim($searchQuery)));
+        $cache_key = 'jg_photon_' . md5(strtolower(trim($queryForSearch)));
         $cached = get_transient($cache_key);
         if ($cached !== false) {
             wp_send_json_success($cached);
             return;
         }
 
-        // Use map bounding box (SW: 50.75,15.58 / NE: 50.98,15.85) as viewbox
-        // Nominatim viewbox format: left,top,right,bottom (min_lon,max_lat,max_lon,min_lat)
-        // bounded=1 restricts results to the viewbox; countrycodes=pl limits to Poland
+        // Use Photon (photon.komoot.io) — built on OSM data, supports partial/autocomplete queries.
+        // bbox format: min_lon,min_lat,max_lon,max_lat (matches map maxBounds)
         $url = sprintf(
-            'https://nominatim.openstreetmap.org/search?format=json&q=%s&limit=5&addressdetails=1&viewbox=15.58,50.98,15.85,50.75&bounded=1&countrycodes=pl',
-            urlencode($searchQuery)
+            'https://photon.komoot.io/api/?q=%s&limit=5&lang=pl&bbox=15.58,50.75,15.85,50.98',
+            urlencode($queryForSearch)
         );
 
         // Make server-side request with proper headers
@@ -7289,11 +7286,50 @@ class JG_Map_Ajax_Handlers {
         }
 
         $body = wp_remote_retrieve_body($response);
-        $data = json_decode($body, true);
+        $geojson = json_decode($body, true);
 
-        if ($data === null) {
+        if ($geojson === null || !isset($geojson['features'])) {
             wp_send_json_error(array('message' => 'Błąd parsowania odpowiedzi'));
             return;
+        }
+
+        // Convert Photon GeoJSON features to flat array compatible with frontend
+        // (frontend expects: display_name, lat, lon)
+        $data = array();
+        foreach ($geojson['features'] as $feature) {
+            $props = $feature['properties'] ?? array();
+            $coords = $feature['geometry']['coordinates'] ?? array(0, 0);
+
+            // Build human-readable display_name from available properties
+            $parts = array();
+            if (!empty($props['name'])) {
+                $parts[] = $props['name'];
+            } elseif (!empty($props['street'])) {
+                $parts[] = $props['street'];
+            }
+            if (!empty($props['housenumber'])) {
+                $last = count($parts) - 1;
+                if ($last >= 0) {
+                    $parts[$last] .= ' ' . $props['housenumber'];
+                } else {
+                    $parts[] = $props['housenumber'];
+                }
+            }
+            if (!empty($props['district']) && $props['district'] !== ($props['city'] ?? '')) {
+                $parts[] = $props['district'];
+            }
+            if (!empty($props['city'])) {
+                $parts[] = $props['city'];
+            }
+            if (!empty($props['county']) && empty($props['city'])) {
+                $parts[] = $props['county'];
+            }
+
+            $data[] = array(
+                'display_name' => implode(', ', array_filter($parts)) ?: ($props['name'] ?? 'Nieznana lokalizacja'),
+                'lat'          => (string) $coords[1],
+                'lon'          => (string) $coords[0],
+            );
         }
 
         // Cache results for 1 hour — search results are relatively stable
