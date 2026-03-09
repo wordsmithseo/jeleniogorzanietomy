@@ -1117,6 +1117,7 @@ class JG_Map_Ajax_Handlers {
      * Get stats for a single point (for live updates)
      */
     public function get_point_stats() {
+        $this->verify_nonce();
         global $wpdb;
         $table = $wpdb->prefix . 'jg_map_points';
 
@@ -1197,6 +1198,7 @@ class JG_Map_Ajax_Handlers {
      * Get visitors list for a point (for stats modal)
      */
     public function get_point_visitors() {
+        $this->verify_nonce();
         global $wpdb;
         $table_points = $wpdb->prefix . 'jg_map_points';
         $table_visits = $wpdb->prefix . 'jg_map_point_visits';
@@ -1239,9 +1241,10 @@ class JG_Map_Ajax_Handlers {
             $point_id
         ), ARRAY_A);
 
-        // Check for SQL errors
+        // Check for SQL errors (log internally, never expose to client)
         if ($wpdb->last_error) {
-            wp_send_json_error(array('message' => 'Database error: ' . $wpdb->last_error));
+            error_log('[JG Map] get_point_visitors DB error for point ' . $point_id . ': ' . $wpdb->last_error);
+            wp_send_json_error(array('message' => 'Błąd pobierania danych'));
             return;
         }
 
@@ -7297,6 +7300,7 @@ class JG_Map_Ajax_Handlers {
      * Tracks: views, phone_clicks, website_clicks, social_clicks, cta_clicks, gallery_clicks
      */
     public function track_stat() {
+        $this->verify_nonce();
         global $wpdb;
         $table = $wpdb->prefix . 'jg_map_points';
 
@@ -7308,6 +7312,26 @@ class JG_Map_Ajax_Handlers {
         // FIX: Properly convert string "true"/"false" to boolean
         // URLSearchParams sends booleans as strings, and (bool)"false" = true in PHP
         $is_unique = isset($_POST['is_unique']) && filter_var($_POST['is_unique'], FILTER_VALIDATE_BOOLEAN);
+
+        // Whitelist allowed action types
+        $allowed_action_types = array('view', 'time_spent', 'phone_click', 'website_click', 'social_click', 'cta_click', 'gallery_click');
+        if ($action_type && !in_array($action_type, $allowed_action_types, true)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy typ akcji'));
+            return;
+        }
+
+        // Whitelist allowed social platforms
+        $allowed_platforms = array('facebook', 'instagram', 'linkedin', 'tiktok');
+        if ($platform && !in_array($platform, $allowed_platforms, true)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowa platforma'));
+            return;
+        }
+
+        // Bound image_index to reasonable range (max 12 images for sponsored)
+        if ($image_index > 11) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy indeks zdjęcia'));
+            return;
+        }
 
         if (!$point_id || !$action_type) {
             wp_send_json_error(array('message' => 'Brak wymaganych parametrów'));
@@ -7330,6 +7354,16 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_success(array('message' => 'Tracking disabled for non-sponsored places'));
             return;
         }
+
+        // Rate limit: max 60 stat events per minute per IP per point (prevents stat inflation bots)
+        $visitor_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $rate_identifier = $visitor_ip . '_point_' . $point_id;
+        $rate_check = $this->check_rate_limit('track_stat', $rate_identifier, 60, 60);
+        if (!$rate_check['allowed']) {
+            wp_send_json_success(array('message' => 'Rate limit reached'));
+            return;
+        }
+        $this->check_rate_limit('track_stat', $rate_identifier, 60, 60, array(), true);
 
         $current_time = current_time('mysql', true); // GMT time for consistency with other timestamps
         $result = false;
@@ -7355,6 +7389,7 @@ class JG_Map_Ajax_Handlers {
                             $current_time,
                             $existing_visit['id']
                         ));
+                        $server_is_unique = false; // Returning visitor
                     } else {
                         // First visit - insert
                         $wpdb->insert($visitor_table, array(
@@ -7364,6 +7399,7 @@ class JG_Map_Ajax_Handlers {
                             'first_visited' => $current_time,
                             'last_visited' => $current_time
                         ));
+                        $server_is_unique = true; // New visitor
                     }
                 } else {
                     // Not logged in - track by fingerprint (IP + User Agent hash)
@@ -7384,6 +7420,7 @@ class JG_Map_Ajax_Handlers {
                             $current_time,
                             $existing_visit['id']
                         ));
+                        $server_is_unique = false; // Returning visitor
                     } else {
                         // First visit - insert
                         $wpdb->insert($visitor_table, array(
@@ -7393,6 +7430,7 @@ class JG_Map_Ajax_Handlers {
                             'first_visited' => $current_time,
                             'last_visited' => $current_time
                         ));
+                        $server_is_unique = true; // New visitor
                     }
                 }
 
@@ -7402,8 +7440,8 @@ class JG_Map_Ajax_Handlers {
                     'stats_last_viewed' => $current_time
                 );
 
-                // Track unique visitor if flagged
-                if ($is_unique) {
+                // Track unique visitor based on server-side check (not client-supplied flag)
+                if ($server_is_unique) {
                     $updates['stats_unique_visitors'] = 'COALESCE(stats_unique_visitors, 0) + 1';
                 }
 
