@@ -1,5 +1,26 @@
 /* JG Interactive Map Styles */
 
+/*
+ * BASE FONT SIZE — 62.5% trick: 1rem = 10px
+ * Pozwala na łatwe przeliczanie: 14px → 1.4rem, 16px → 1.6rem, itp.
+ *
+ * Zabezpieczenie przed Elementorem:
+ *   - Elementor ustawia font-size w px na własnych elementach → niezależne od rem
+ *   - !important chroni przed nadpisaniem przez motyw lub Elementora
+ *   - Blok poniżej resetuje bazę dla kontenerów Elementora do 16px (1.6rem)
+ */
+html {
+  font-size: 62.5% !important; /* 1rem = 10px */
+}
+
+/* Reset bazy dla elementów Elementora — zapobiega zmniejszeniu ich czcionek */
+.elementor-widget-container,
+.elementor-section,
+.e-con,
+.elementor-column {
+  font-size: 1.6rem; /* = 16px przy bazie 10px */
+}
+
 .jg-map-tiles .leaflet-tile {
   will-change: transform;
   transform: translateZ(0);
@@ -18,7 +39,7 @@
   justify-content: space-between;
   align-items: center;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  font-size: 15px;
+  font-size: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 9999;
 }
@@ -32,7 +53,7 @@
 
 .jg-top-bar-user {
   margin-right: 6px;
-  font-size: 15px;
+  font-size: 1.5rem;
   display: flex;
   align-items: center;
 }
@@ -47,7 +68,7 @@
 }
 
 .jg-top-bar-level-num {
-  font-size: 1rem;
+  font-size: 1.6rem;
   font-weight: 800;
   color: #fbbf24;
   white-space: nowrap;
@@ -147,7 +168,7 @@
   border-radius: 6px;
   padding: 7px 16px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 500;
   text-decoration: none;
   transition: all 0.2s;
@@ -212,14 +233,14 @@
   background: #ef4444;
   color: #fff;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 700;
   line-height: 1;
 }
 
 #jg-top-bar-datetime {
   font-weight: 500;
-  font-size: 15px;
+  font-size: 1.5rem;
   letter-spacing: 0.3px;
 }
 
@@ -268,7 +289,7 @@
 /* ── Desktop filter bar – Elementor isolation ── */
 #jg-map-filters-wrapper {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
-  font-size: 14px !important;
+  font-size: 1.4rem !important;
   line-height: 1.4 !important;
   color: #374151 !important;
   text-transform: none !important;
@@ -305,7 +326,7 @@
   position: relative !important;
   color: #374151 !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
-  font-size: 13.5px !important;
+  font-size: 1.35rem !important;
   font-weight: 500 !important;
   line-height: 1.4 !important;
   text-decoration: none !important;
@@ -330,7 +351,7 @@
 }
 
 .jg-filter-icon {
-  font-size: 20px;
+  font-size: 2rem;
   line-height: 1;
   display: none;
 }
@@ -375,7 +396,7 @@
   background: #f9fafb !important;
   color: #6b7280 !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
-  font-size: 11px !important;
+  font-size: 1.1rem !important;
   font-weight: 600 !important;
   line-height: 1 !important;
   white-space: nowrap !important;
@@ -437,7 +458,7 @@
 
 /* Icon */
 .jg-sync-icon {
-  font-size: 12px !important;
+  font-size: 1.2rem !important;
   line-height: 1 !important;
   display: inline-block !important;
 }
@@ -519,7 +540,7 @@
 
 .jg-category-dropdown-header {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 1.3rem;
   color: #374151;
   margin-bottom: 8px;
   padding-bottom: 8px;
@@ -539,7 +560,7 @@
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 1.3rem;
   transition: background 0.2s;
 }
 
@@ -563,7 +584,7 @@
 
 .jg-filter-expand-btn {
   margin-left: 4px;
-  font-size: 10px;
+  font-size: 1rem;
   color: #6b7280;
   cursor: pointer;
   padding: 2px 4px;
@@ -584,7 +605,7 @@
   padding: 8px 40px 8px 14px !important;
   border: 1.5px solid #e5e7eb !important;
   border-radius: 8px !important;
-  font-size: 13.5px !important;
+  font-size: 1.35rem !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
   transition: border-color 0.15s, box-shadow 0.15s !important;
   background: #ffffff !important;
@@ -667,7 +688,7 @@
 
 .jg-suggest-header {
   padding: 6px 12px;
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: #8d2324;
@@ -692,7 +713,7 @@
 }
 
 .jg-suggest-main {
-  font-size: 13px;
+  font-size: 1.3rem;
   font-weight: 500;
   color: #111827;
   white-space: nowrap;
@@ -703,7 +724,7 @@
 }
 
 .jg-suggest-sub {
-  font-size: 11px;
+  font-size: 1.1rem;
   color: #9ca3af;
   white-space: nowrap;
   overflow: hidden;
@@ -767,7 +788,7 @@
 
 .jg-search-panel-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 1.8rem;
   font-weight: 600;
 }
 
@@ -784,7 +805,7 @@
   border-width: 1px !important;
   border-radius: 8px !important;
   padding: 8px 12px !important;
-  font-size: 14px !important;
+  font-size: 1.4rem !important;
   font-weight: 400 !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   line-height: 1.4 !important;
@@ -808,7 +829,7 @@
   background: rgba(255, 255, 255, 0.2);
   padding: 4px 12px;
   border-radius: 12px;
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 600;
 }
 
@@ -844,7 +865,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 16px;
+  font-size: 1.6rem;
 }
 
 .jg-search-result-icon--miejsce {
@@ -874,7 +895,7 @@
 
 .jg-search-result-title {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 1.5rem;
   color: #111827;
   margin-bottom: 4px;
   white-space: nowrap;
@@ -883,7 +904,7 @@
 }
 
 .jg-search-result-excerpt {
-  font-size: 13px;
+  font-size: 1.3rem;
   color: #6b7280;
   line-height: 1.4;
   display: -webkit-box;
@@ -917,7 +938,7 @@
   width: 36px !important;
   height: 36px !important;
   line-height: 36px !important;
-  font-size: 18px !important;
+  font-size: 1.8rem !important;
   font-weight: 600 !important;
   color: #111827 !important;
   background: #fff !important;
@@ -957,7 +978,7 @@
   width: 36px !important;
   height: 36px !important;
   line-height: 36px !important;
-  font-size: 18px !important;
+  font-size: 1.8rem !important;
   color: #111827 !important;
   background: #fff !important;
   border: none !important;
@@ -1063,7 +1084,7 @@ body.jg-fullscreen-active #jg-search-panel {
 }
 
 .jg-fs-search-title {
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 600;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   flex: 1;
@@ -1077,7 +1098,7 @@ body.jg-fullscreen-active #jg-search-panel {
   background: rgba(255, 255, 255, 0.2);
   padding: 2px 8px;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 600;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   flex-shrink: 0;
@@ -1093,7 +1114,7 @@ body.jg-fullscreen-active #jg-search-panel {
   background: rgba(255, 255, 255, 0.15) !important;
   border: none !important;
   color: #fff !important;
-  font-size: 20px !important;
+  font-size: 2rem !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
@@ -1171,7 +1192,7 @@ body.jg-fullscreen-active #jg-search-panel {
     cursor: pointer;
     user-select: none;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    font-size: 14px;
+    font-size: 1.4rem;
     font-weight: 600;
     color: #374151;
     border-radius: 16px;
@@ -1187,7 +1208,7 @@ body.jg-fullscreen-active #jg-search-panel {
   }
 
   .jg-fs-panel-arrow {
-    font-size: 11px;
+    font-size: 1.1rem;
     color: #9ca3af;
     transition: transform 0.2s;
   }
@@ -1270,7 +1291,7 @@ body.jg-fullscreen-active #jg-search-panel {
   }
 
   .jg-fs-notif-icon {
-    font-size: 18px;
+    font-size: 1.8rem;
     line-height: 1;
   }
 
@@ -1280,7 +1301,7 @@ body.jg-fullscreen-active #jg-search-panel {
     right: -4px;
     background: #dc2626;
     color: #fff;
-    font-size: 11px;
+    font-size: 1.1rem;
     font-weight: 700;
     min-width: 18px;
     height: 18px;
@@ -1383,7 +1404,7 @@ body.jg-fullscreen-active #jg-search-panel {
 
 .jg-fs-promo-label {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  font-size: 9px;
+  font-size: 0.9rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
   text-transform: uppercase;
@@ -1487,7 +1508,7 @@ body.jg-fullscreen-active #jg-search-panel {
     cursor: pointer;
     user-select: none;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    font-size: 13px;
+    font-size: 1.3rem;
     font-weight: 600;
     color: #374151;
     border-radius: 12px;
@@ -1514,7 +1535,7 @@ body.jg-fullscreen-active #jg-search-panel {
   }
 
   .jg-fs-filter-panel .jg-fs-panel-arrow {
-    font-size: 10px;
+    font-size: 1rem;
     color: #9ca3af;
     transition: transform 0.2s;
   }
@@ -1618,7 +1639,7 @@ body.jg-fullscreen-active #jg-search-panel {
   }
 
   .jg-fs-promo-label {
-    font-size: 8px;
+    font-size: 0.8rem;
     letter-spacing: 1px;
     margin-bottom: 2px;
   }
@@ -1674,7 +1695,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
   font-weight: 500 !important;
   background: transparent !important;
@@ -1711,7 +1732,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 16px !important;
+  font-size: 1.6rem !important;
   line-height: 1 !important;
   border-radius: 0 !important;
   transition: color 0.15s;
@@ -1771,7 +1792,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   border: none !important;
   padding: 6px 10px !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   font-weight: 500 !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
   cursor: pointer !important;
@@ -1796,7 +1817,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 }
 
 .jg-fs-filter-arrow {
-  font-size: 9px;
+  font-size: 0.9rem;
   color: #9ca3af;
   transition: transform 0.2s;
 }
@@ -1839,7 +1860,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 .jg-fs-filter-dropdown-panel .jg-filter-label {
   justify-content: flex-start !important;
   width: 100% !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   padding: 8px 10px !important;
   border-radius: 8px !important;
   margin-left: 0 !important;
@@ -1851,7 +1872,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 .jg-fs-filter-dropdown-panel .jg-filter-icon {
   display: inline !important;
-  font-size: 16px !important;
+  font-size: 1.6rem !important;
 }
 
 .jg-fs-filter-dropdown-panel .jg-filter-text {
@@ -1898,7 +1919,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
   .jg-top-bar-btn {
     padding: 7px 14px;
-    font-size: 14px;
+    font-size: 1.4rem;
   }
 }
 
@@ -1916,15 +1937,15 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
   .jg-top-bar-btn {
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 1.3rem;
   }
 
   .jg-top-bar-user {
-    font-size: 14px;
+    font-size: 1.4rem;
   }
 
   #jg-top-bar-datetime {
-    font-size: 14px;
+    font-size: 1.4rem;
   }
 
   .jg-top-bar-xp-bar {
@@ -1982,7 +2003,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   /* Top bar mobile responsive */
   .jg-custom-top-bar {
     padding: 8px 12px;
-    font-size: 14px;
+    font-size: 1.4rem;
     flex-wrap: wrap;
     gap: 8px;
   }
@@ -1996,13 +2017,13 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   /* Make buttons smaller on mobile */
   .jg-top-bar-btn {
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 1.3rem;
     white-space: nowrap;
   }
 
   /* Reduce datetime font size on mobile */
   #jg-top-bar-datetime {
-    font-size: 13px;
+    font-size: 1.3rem;
   }
 
   /* Compact level indicator on mobile */
@@ -2012,7 +2033,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 
   .jg-top-bar-level-num {
-    font-size: 0.85rem;
+    font-size: 1.36rem;
   }
 
   .jg-search-panel {
@@ -2054,7 +2075,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     width: 100%;
     cursor: pointer;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    font-size: 14px;
+    font-size: 1.4rem;
     line-height: 1.4;
     font-weight: 600;
     border-radius: 12px;
@@ -2067,7 +2088,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
   .jg-mobile-filters-toggle .jg-toggle-arrow {
     transition: transform 0.2s;
-    font-size: 12px;
+    font-size: 1.2rem;
     color: rgba(255, 255, 255, 0.7) !important;
   }
 
@@ -2101,7 +2122,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
   .jg-filter-icon {
     display: block;
-    font-size: 24px;
+    font-size: 2.4rem;
   }
 
   .jg-filter-text {
@@ -2192,7 +2213,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    font-size: 28px;
+    font-size: 2.8rem;
     color: #374151;
     margin: 0 !important;
     flex-shrink: 0;
@@ -2225,7 +2246,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
   /* First row: User info + level indicator side by side */
   .jg-top-bar-user {
-    font-size: 0.95rem;
+    font-size: 1.52rem;
     text-align: left;
     order: 1;
     margin: 0;
@@ -2304,7 +2325,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
   /* Show only emoji by setting font-size to 22px for emoji characters */
   .jg-top-bar-notif span:first-child::before {
-    font-size: 22px;
+    font-size: 2.2rem;
     line-height: 1;
     display: inline-block;
   }
@@ -2333,7 +2354,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     right: -2px;
     min-width: 18px;
     height: 18px;
-    font-size: 10px;
+    font-size: 1rem;
     background: #ef4444;
     border: 2px solid #8d2324;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -2346,7 +2367,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     height: auto;
     border-radius: 0;
     padding: 4px 8px;
-    font-size: 0.85rem;
+    font-size: 1.36rem;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -2366,7 +2387,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   /* Edit Profile button icon - white Unicode symbol */
   #jg-edit-profile-btn::before {
     content: "◉";
-    font-size: 16px;
+    font-size: 1.6rem;
     display: inline-block;
     color: #ffffff;
   }
@@ -2374,7 +2395,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   /* Admin Panel button icon - white Unicode gear */
   .jg-top-bar-btn-admin::before {
     content: "⚙";
-    font-size: 16px;
+    font-size: 1.6rem;
     display: inline-block;
     color: #ffffff;
   }
@@ -2382,7 +2403,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   /* Logout button icon - white Unicode arrow */
   .jg-top-bar-btn[href*="logout"]::before {
     content: "→";
-    font-size: 16px;
+    font-size: 1.6rem;
     display: inline-block;
     color: #ffffff;
   }
@@ -2394,7 +2415,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     height: auto;
     border-radius: 0;
     padding: 4px 8px;
-    font-size: 0.85rem;
+    font-size: 1.36rem;
     background: transparent;
     border: none;
     color: #ffffff;
@@ -2412,14 +2433,14 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   /* Add white Unicode icons to login/register buttons */
   #jg-login-btn::before {
     content: "→";
-    font-size: 16px;
+    font-size: 1.6rem;
     display: inline-block;
     color: #ffffff;
   }
 
   #jg-register-btn::before {
     content: "✚";
-    font-size: 16px;
+    font-size: 1.6rem;
     display: inline-block;
     color: #ffffff;
   }
@@ -2444,7 +2465,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     width: 32px !important;
     height: 32px !important;
     line-height: 32px !important;
-    font-size: 16px !important;
+    font-size: 1.6rem !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2518,7 +2539,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 /* Compact datetime on small mobile screens */
 @media (max-width: 480px) {
   #jg-top-bar-datetime {
-    font-size: 12px;
+    font-size: 1.2rem;
   }
 }
 
@@ -2566,14 +2587,14 @@ body.jg-modal-open {
 
 .jg-modal header h3 {
   margin: 0;
-  font-size: 1.375rem; /* 22px */
+  font-size: 2.2rem; /* 22px */
   font-weight: 700;
   color: #111;
 }
 
 /* Place title in modal - improved readability */
 .jg-place-title {
-  font-size: 1.75rem !important; /* 28px - larger, more prominent */
+  font-size: 2.8rem !important; /* 28px - larger, more prominent */
   font-weight: 700 !important;
   line-height: 1.3 !important;
   color: #111 !important;
@@ -2584,7 +2605,7 @@ body.jg-modal-open {
 /* Place content/description - improved readability */
 .jg-place-content,
 .jg-place-excerpt {
-  font-size: 1.25rem !important; /* 20px - larger for better readability */
+  font-size: 2rem !important; /* 20px - larger for better readability */
   line-height: 1.8 !important; /* More breathing room */
   color: #374151 !important; /* Softer black for less eye strain */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
@@ -2597,7 +2618,7 @@ body.jg-modal-open {
 .jg-place-content div,
 .jg-place-content span,
 .jg-place-excerpt {
-  font-size: 1.25rem !important; /* 20px */
+  font-size: 2rem !important; /* 20px */
   line-height: 1.8 !important;
   color: #374151 !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
@@ -2662,7 +2683,7 @@ body.jg-modal-open {
   border-radius: 8px !important;
   padding: 6px 10px !important;
   cursor: pointer !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   font-weight: 400 !important;
   line-height: 1 !important;
   transition: background 0.15s !important;
@@ -2699,7 +2720,7 @@ body.jg-modal-open {
   min-height: 96px;
   max-height: 300px;
   overflow-y: auto;
-  font-size: 14px;
+  font-size: 1.4rem;
   line-height: 1.6;
   color: #111;
   outline: none;
@@ -2728,7 +2749,7 @@ body.jg-modal-open {
 }
 .jg-rte-counter {
   padding: 4px 12px 6px;
-  font-size: 11px;
+  font-size: 1.1rem;
   color: #999;
   text-align: right;
   background: #fafafa;
@@ -2751,7 +2772,7 @@ body.jg-modal-open {
 }
 .jg-rte-link-dialog label {
   display: block;
-  font-size: 13px;
+  font-size: 1.3rem;
   color: #111;
 }
 .jg-rte-link-dialog-header {
@@ -2763,13 +2784,13 @@ body.jg-modal-open {
   border-bottom: 1px solid #ddd;
 }
 .jg-rte-link-dialog-header strong {
-  font-size: 14px;
+  font-size: 1.4rem;
   color: #111;
 }
 .jg-rte-link-close {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 2rem;
   cursor: pointer;
   color: #999;
   padding: 0 4px;
@@ -2794,7 +2815,7 @@ body.jg-modal-open {
 }
 .jg-rte-pin-hint {
   padding: 12px;
-  font-size: 12px;
+  font-size: 1.2rem;
   color: #9ca3af;
   text-align: center;
 }
@@ -2804,7 +2825,7 @@ body.jg-modal-open {
   gap: 8px;
   padding: 8px 10px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 1.3rem;
   border-bottom: 1px solid #f3f4f6;
   transition: background 0.1s;
 }
@@ -2822,7 +2843,7 @@ body.jg-modal-open {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 600;
   color: #fff;
   flex-shrink: 0;
@@ -2839,7 +2860,7 @@ body.jg-modal-open {
 /* Small buttons for RTE dialogs */
 .jg-btn--sm {
   padding: 6px 14px !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   min-height: auto !important;
   border-radius: 8px !important;
 }
@@ -2852,7 +2873,7 @@ body.jg-modal-open {
   }
   .jg-rte-btn {
     padding: 5px 7px;
-    font-size: 12px;
+    font-size: 1.2rem;
   }
   .jg-rte-sep {
     height: 16px;
@@ -2868,7 +2889,7 @@ body.jg-modal-open {
 }
 
 .jg-modal header .jg-close {
-  font-size: 24px;
+  font-size: 2.4rem;
   line-height: 1;
   background: rgba(0, 0, 0, 0.08);
   border: none;
@@ -2919,7 +2940,7 @@ body.jg-modal-open {
   border-radius: 8px;
   padding: 8px 12px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 1.4rem;
 }
 
 .jg-btn:hover {
@@ -2971,7 +2992,7 @@ body.jg-modal-open {
   border-radius: 8px !important;
   padding: 8px 12px !important;
   cursor: pointer !important;
-  font-size: 14px !important;
+  font-size: 1.4rem !important;
   font-weight: 400 !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   line-height: 1.4 !important;
@@ -3048,7 +3069,7 @@ body.jg-modal-open {
 #jg-map-wrap .jg-btn.jg-btn--sm,
 .jg-modal-bg .jg-btn.jg-btn--sm {
   padding: 6px 14px !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
 }
 
 .jg-search-panel-footer .jg-btn {
@@ -3071,7 +3092,7 @@ body.jg-modal-open {
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  font-size: 10px !important;
+  font-size: 1rem !important;
   font-weight: 800;
   text-align: center;
   text-decoration: none;
@@ -3132,7 +3153,7 @@ body.jg-modal-open {
   color: #111;
   border-radius: 999px;
   padding: 4px 8px;
-  font-size: 12px;
+  font-size: 1.2rem;
   margin-right: 6px;
 }
 
@@ -3144,13 +3165,13 @@ body.jg-modal-open {
   border-radius: 999px;
   font-weight: 700;
   margin-right: 6px;
-  font-size: 12px;
+  font-size: 1.2rem;
 }
 
 /* Responsive badge on mobile */
 @media (max-width: 768px) {
   .jg-promo-tag {
-    font-size: 11px;
+    font-size: 1.1rem;
     padding: 3px 6px;
     white-space: nowrap;
   }
@@ -3158,7 +3179,7 @@ body.jg-modal-open {
 
 @media (max-width: 480px) {
   .jg-promo-tag {
-    font-size: 10px;
+    font-size: 1rem;
     padding: 2px 5px;
   }
 }
@@ -3183,7 +3204,7 @@ body.jg-modal-open {
   background: #fff;
   cursor: pointer;
   border-radius: 0.5rem;
-  font-size: 1rem;
+  font-size: 1.6rem;
   transition: all 0.2s;
   font-weight: 600;
 }
@@ -3207,14 +3228,14 @@ body.jg-modal-open {
 
 .jg-vote .cnt {
   font-weight: 600;
-  font-size: 2rem;
+  font-size: 3.2rem;
   min-width: auto;
   text-align: center;
   line-height: 1;
 }
 
 .jg-vote-label {
-  font-size: 0.85rem;
+  font-size: 1.36rem;
   color: #64748b;
   font-weight: 500;
   line-height: 1;
@@ -3235,21 +3256,21 @@ body.jg-modal-open {
 }
 
 .jg-vote--own .cnt {
-  font-size: 2rem;
+  font-size: 3.2rem;
   font-weight: 600;
   min-width: auto;
   line-height: 1;
 }
 
 .jg-vote-own-label {
-  font-size: 1rem;
+  font-size: 1.6rem;
   color: #64748b;
   font-weight: 500;
   line-height: 1;
 }
 
 .jg-vote-own-icon {
-  font-size: 1rem;
+  font-size: 1.6rem;
 }
 
 /* Share bar */
@@ -3261,7 +3282,7 @@ body.jg-modal-open {
 }
 
 .jg-share-label {
-  font-size: 13px;
+  font-size: 1.3rem;
   font-weight: 500;
   color: #64748b;
   margin-right: 4px;
@@ -3363,7 +3384,7 @@ body.jg-modal-open {
     min-width: 44px;
     min-height: 44px;
     padding: 10px 16px;
-    font-size: 16px;
+    font-size: 1.6rem;
     top: 6px;
     right: 6px;
     display: flex;
@@ -3427,7 +3448,7 @@ img.emoji {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   color: #fff;
   background: #111;
-  font-size: 20px;
+  font-size: 2rem;
 }
 
 .jg-pin--ciekawostka {
@@ -3441,7 +3462,7 @@ img.emoji {
 .jg-pin--promo {
   background: linear-gradient(135deg, #f59e0b, #fbbf24, #f59e0b);
   color: #111;
-  font-size: 28px;
+  font-size: 2.8rem;
   font-weight: 800;
   box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7), 0 4px 16px rgba(245, 158, 11, 0.5);
 }
@@ -3468,7 +3489,7 @@ img.emoji {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 1.1rem;
   font-weight: 700;
   border: 2px solid #fff;
   z-index: 10;
@@ -3486,7 +3507,7 @@ img.emoji {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 700;
   border: 2px solid #dc2626;
   z-index: 10;
@@ -3512,7 +3533,7 @@ img.emoji {
   color: #111;
   padding: 4px 8px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 600;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -3526,7 +3547,7 @@ img.emoji {
   background: linear-gradient(135deg, #fff7e6, #fef3c7);
   border: 2px solid #f59e0b;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: 1.3rem;
   font-weight: 700;
   box-shadow: 0 3px 12px rgba(245, 158, 11, 0.4);
 }
@@ -3565,7 +3586,7 @@ img.emoji {
   font-weight: 700;
   color: #92400e;
   margin-bottom: 8px;
-  font-size: 14px;
+  font-size: 1.4rem;
 }
 
 .jg-admin-note-content {
@@ -3608,7 +3629,7 @@ img.emoji {
   font-weight: 700;
   color: #dc2626;
   margin-bottom: 8px;
-  font-size: 16px;
+  font-size: 1.6rem;
 }
 
 .jg-report-item {
@@ -3632,13 +3653,13 @@ img.emoji {
 }
 
 .jg-report-item-date {
-  font-size: 12px;
+  font-size: 1.2rem;
   color: #666;
 }
 
 .jg-report-item-reason {
   color: #444;
-  font-size: 14px;
+  font-size: 1.4rem;
   line-height: 1.5;
 }
 
@@ -3647,7 +3668,7 @@ img.emoji {
   display: flex !important;
   align-items: center !important;
   flex-wrap: wrap !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   color: #6b7280 !important;
   font-family: inherit !important;
   font-weight: normal !important;
@@ -3658,7 +3679,7 @@ img.emoji {
 .jg-date-info .jg-meta-date,
 .jg-date-info .jg-meta-sep,
 .jg-date-info .jg-meta-author {
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   color: #6b7280 !important;
   font-family: inherit !important;
   font-weight: normal !important;
@@ -3666,7 +3687,7 @@ img.emoji {
 }
 
 .jg-date-info .jg-meta-author-link {
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   color: #6b7280 !important;
   font-family: inherit !important;
   font-weight: 600 !important;
@@ -3696,28 +3717,28 @@ img.emoji {
 }
 
 .jg-meta-row .jg-vote .cnt {
-  font-size: 1.4rem !important;
+  font-size: 2.24rem !important;
 }
 
 .jg-meta-row .jg-vote button {
   padding: 0.3rem 0.55rem !important;
-  font-size: 0.85rem !important;
+  font-size: 1.36rem !important;
 }
 
 .jg-meta-row .jg-vote--own .cnt {
-  font-size: 1.4rem !important;
+  font-size: 2.24rem !important;
 }
 
 .jg-meta-row .jg-vote-own-label {
-  font-size: 0.85rem !important;
+  font-size: 1.36rem !important;
 }
 
 .jg-meta-row .jg-vote-own-icon {
-  font-size: 0.85rem !important;
+  font-size: 1.36rem !important;
 }
 
 .jg-meta-row .jg-vote-label {
-  font-size: 0.75rem !important;
+  font-size: 1.2rem !important;
 }
 
 /* Status Badge */
@@ -3725,7 +3746,7 @@ img.emoji {
   display: inline-block;
   padding: 6px 12px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 1.3rem;
   font-weight: 600;
   margin-bottom: 12px;
 }
@@ -3755,7 +3776,7 @@ img.emoji {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 1.1rem;
   font-weight: 500;
   margin-bottom: 12px;
   margin-left: 8px;
@@ -3783,7 +3804,7 @@ img.emoji {
 }
 
 .jg-map-toggle-label {
-  font-size: 13px;
+  font-size: 1.3rem;
   font-weight: 500;
   color: #9ca3af;
   cursor: pointer;
@@ -3976,7 +3997,7 @@ img.emoji {
 }
 
 .jg-cluster-icon {
-  font-size: 18px;
+  font-size: 1.8rem;
 }
 
 .jg-cluster-num {
@@ -3991,7 +4012,7 @@ img.emoji {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 1.1rem;
   font-weight: 800;
   border: 2px solid currentColor;
   z-index: 10;
@@ -4114,7 +4135,7 @@ img.emoji {
 }
 
 .jg-modal-message-content {
-  font-size: 16px;
+  font-size: 1.6rem;
   line-height: 1.6;
   color: #374151;
   margin-bottom: 24px;
@@ -4131,7 +4152,7 @@ img.emoji {
 .jg-modal-message-buttons .jg-btn {
   min-width: 120px;
   padding: 12px 24px;
-  font-size: 15px;
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
@@ -4203,13 +4224,13 @@ img.emoji {
 }
 
 .jg-sidebar-stat-icon {
-  font-size: 20px;
+  font-size: 2rem;
   line-height: 1;
   flex-shrink: 0;
 }
 
 .jg-sidebar-stat-value {
-  font-size: 18px;
+  font-size: 1.8rem;
   font-weight: 700;
   color: #8d2324;
   line-height: 1;
@@ -4235,7 +4256,7 @@ img.emoji {
   background: #8d2324 !important;
   color: #ffffff !important;
   border-radius: 6px !important;
-  font-size: 0.875rem !important;
+  font-size: 1.4rem !important;
   font-weight: 600 !important;
   transition: background-color 0.2s !important;
   position: relative !important;
@@ -4253,7 +4274,7 @@ img.emoji {
 }
 
 .jg-sidebar-toggle-icon {
-  font-size: 0.75rem !important;
+  font-size: 1.2rem !important;
   transition: transform 0.2s !important;
   color: #ffffff !important;
   pointer-events: none !important;
@@ -4268,7 +4289,7 @@ img.emoji {
 .jg-sidebar-filter-section h4,
 .jg-sidebar-sort-section h4 {
   margin: 0 0 8px 0;
-  font-size: 0.8125rem;
+  font-size: 1.3rem;
   font-weight: 600;
   color: #1f2937;
 }
@@ -4293,7 +4314,7 @@ img.emoji {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 1.2rem;
   color: #374151;
   transition: all 0.2s;
   white-space: nowrap;
@@ -4309,7 +4330,7 @@ img.emoji {
 }
 
 .jg-sidebar-filter-icon {
-  font-size: 16px;
+  font-size: 1.6rem;
   line-height: 1;
   display: none;
 }
@@ -4339,7 +4360,7 @@ img.emoji {
 }
 
 .jg-sidebar-sort-controls label {
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #1f2937;
   white-space: nowrap;
@@ -4350,7 +4371,7 @@ img.emoji {
   padding: 8px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 1.2rem;
   color: #374151;
   background: #fff;
   cursor: pointer;
@@ -4410,7 +4431,7 @@ img.emoji {
   padding: 40px 20px;
   text-align: center;
   color: #6b7280;
-  font-size: 15px;
+  font-size: 1.5rem;
 }
 
 /* Error State */
@@ -4421,12 +4442,12 @@ img.emoji {
   background: #fee2e2;
   border-radius: 8px;
   margin: 10px;
-  font-size: 14px;
+  font-size: 1.4rem;
 }
 
 /* Section Titles */
 .jg-sidebar-section-title {
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 700;
   color: #1f2937;
   padding: 12px 4px 8px 4px;
@@ -4507,7 +4528,7 @@ img.emoji {
 }
 
 .jg-sidebar-star-icon {
-  font-size: 40px;
+  font-size: 4rem;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
@@ -4522,12 +4543,12 @@ img.emoji {
 }
 
 .jg-sidebar-no-photo-icon {
-  font-size: 24px;
+  font-size: 2.4rem;
   opacity: 0.6;
 }
 
 .jg-sidebar-no-photo-text {
-  font-size: 10px;
+  font-size: 1rem;
   color: #6b7280;
   font-weight: 500;
   text-transform: uppercase;
@@ -4556,7 +4577,7 @@ img.emoji {
   gap: 4px;
   padding: 4px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 1.1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -4570,7 +4591,7 @@ img.emoji {
 .jg-sidebar-item__badge--sponsored {
   background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
   color: #78350f;
-  font-size: 10px;
+  font-size: 1rem;
   padding: 3px 6px;
 }
 
@@ -4590,7 +4611,7 @@ img.emoji {
 }
 
 .jg-sidebar-item__title {
-  font-size: 15px;
+  font-size: 1.5rem;
   font-weight: 600;
   color: #1f2937;
   margin: 0;
@@ -4615,7 +4636,7 @@ img.emoji {
 }
 
 .jg-sidebar-item__votes {
-  font-size: 13px;
+  font-size: 1.3rem;
   font-weight: 600;
   padding: 4px 8px;
   border-radius: 6px;
@@ -4639,7 +4660,7 @@ img.emoji {
 }
 
 .jg-sidebar-item__date {
-  font-size: 12px;
+  font-size: 1.2rem;
   color: #9ca3af;
   white-space: nowrap;
   overflow: hidden;
@@ -4676,7 +4697,7 @@ img.emoji {
   border-radius: 5px;
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
-  font-size: 13px;
+  font-size: 1.3rem;
   line-height: 1;
   cursor: default;
   transition: background 0.15s, border-color 0.15s;
@@ -4708,7 +4729,7 @@ img.emoji {
   background: rgba(31, 41, 55, 0.96);
   color: #f9fafb;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  font-size: 11px;
+  font-size: 1.1rem;
   font-weight: 500;
   line-height: 1.4;
   white-space: nowrap;
@@ -4761,11 +4782,11 @@ img.emoji {
   }
 
   .jg-sidebar-stat-icon {
-    font-size: 18px;
+    font-size: 1.8rem;
   }
 
   .jg-sidebar-stat-value {
-    font-size: 16px;
+    font-size: 1.6rem;
   }
 
   /* Sidebar filters - icon only on mobile */
@@ -4786,7 +4807,7 @@ img.emoji {
 
   .jg-sidebar-filter-icon {
     display: block;
-    font-size: 20px;
+    font-size: 2rem;
   }
 
   .jg-sidebar-filter-text {
@@ -4798,13 +4819,13 @@ img.emoji {
   }
 
   .jg-sidebar-collapsible-header {
-    font-size: 0.8rem;
+    font-size: 1.28rem;
     padding: 6px 10px;
   }
 
   .jg-sidebar-filter-section h4,
   .jg-sidebar-sort-section h4 {
-    font-size: 0.75rem;
+    font-size: 1.2rem;
   }
 
   .jg-sidebar-filter-group {
@@ -4812,7 +4833,7 @@ img.emoji {
   }
 
   .jg-sidebar-filter-group label {
-    font-size: 11px;
+    font-size: 1.1rem;
   }
 
   .jg-sidebar-sort-controls {
@@ -4821,11 +4842,11 @@ img.emoji {
   }
 
   .jg-sidebar-sort-controls label {
-    font-size: 11px;
+    font-size: 1.1rem;
   }
 
   .jg-sidebar-section-title {
-    font-size: 12px;
+    font-size: 1.2rem;
     padding: 10px 4px 6px 4px;
     margin-bottom: 10px;
   }
@@ -4841,25 +4862,25 @@ img.emoji {
   }
 
   .jg-sidebar-star-icon {
-    font-size: 32px;
+    font-size: 3.2rem;
   }
 
   .jg-sidebar-item__title {
-    font-size: 13px;
+    font-size: 1.3rem;
   }
 
   .jg-sidebar-item__badge {
-    font-size: 10px;
+    font-size: 1rem;
     padding: 3px 8px;
   }
 
   .jg-sidebar-item__votes {
-    font-size: 11px;
+    font-size: 1.1rem;
     padding: 3px 6px;
   }
 
   .jg-sidebar-item__date {
-    font-size: 11px;
+    font-size: 1.1rem;
   }
 }
 
@@ -4876,12 +4897,12 @@ img.emoji {
   }
 
   .jg-sidebar-stat-label {
-    font-size: 8px;
+    font-size: 0.8rem;
     margin-bottom: 2px;
   }
 
   .jg-sidebar-stat-value {
-    font-size: 16px;
+    font-size: 1.6rem;
   }
 
   .jg-sidebar-filters-sort {
@@ -4889,13 +4910,13 @@ img.emoji {
   }
 
   .jg-sidebar-collapsible-header {
-    font-size: 0.75rem;
+    font-size: 1.2rem;
     padding: 6px 8px;
   }
 
   .jg-sidebar-filter-section h4,
   .jg-sidebar-sort-section h4 {
-    font-size: 0.6875rem;
+    font-size: 1.1rem;
   }
 
   .jg-sidebar-filter-group {
@@ -4903,7 +4924,7 @@ img.emoji {
   }
 
   .jg-sidebar-filter-group label {
-    font-size: 10px;
+    font-size: 1rem;
   }
 
   .jg-sidebar-filter-group input[type="checkbox"] {
@@ -4912,11 +4933,11 @@ img.emoji {
   }
 
   .jg-sidebar-sort-controls label {
-    font-size: 10px;
+    font-size: 1rem;
   }
 
   .jg-sidebar-sort-controls select {
-    font-size: 11px;
+    font-size: 1.1rem;
     padding: 6px 10px;
   }
 
@@ -4925,7 +4946,7 @@ img.emoji {
   }
 
   .jg-sidebar-section-title {
-    font-size: 11px;
+    font-size: 1.1rem;
     padding: 8px 4px 4px 4px;
     letter-spacing: 0.3px;
     margin-bottom: 8px;
@@ -4942,26 +4963,26 @@ img.emoji {
   }
 
   .jg-sidebar-star-icon {
-    font-size: 28px;
+    font-size: 2.8rem;
   }
 
   .jg-sidebar-item__title {
-    font-size: 12px;
+    font-size: 1.2rem;
     line-height: 1.3;
   }
 
   .jg-sidebar-item__badge {
-    font-size: 9px;
+    font-size: 0.9rem;
     padding: 2px 6px;
   }
 
   .jg-sidebar-item__votes {
-    font-size: 10px;
+    font-size: 1rem;
     padding: 2px 5px;
   }
 
   .jg-sidebar-item__date {
-    font-size: 10px;
+    font-size: 1rem;
   }
 
   .jg-sidebar-item__footer {
@@ -4983,15 +5004,15 @@ img.emoji {
   }
 
   .jg-sidebar-stat-label {
-    font-size: 7px;
+    font-size: 0.7rem;
   }
 
   .jg-sidebar-stat-value {
-    font-size: 14px;
+    font-size: 1.4rem;
   }
 
   .jg-sidebar-section-title {
-    font-size: 10px;
+    font-size: 1rem;
     padding: 6px 4px 4px 4px;
     margin-bottom: 6px;
   }
@@ -5007,15 +5028,15 @@ img.emoji {
   }
 
   .jg-sidebar-star-icon {
-    font-size: 24px;
+    font-size: 2.4rem;
   }
 
   .jg-sidebar-item__title {
-    font-size: 11px;
+    font-size: 1.1rem;
   }
 
   .jg-sidebar-item__badge {
-    font-size: 8px;
+    font-size: 0.8rem;
     padding: 2px 4px;
   }
 }
@@ -5044,13 +5065,13 @@ img.emoji {
 
 .jg-onboarding-header h2 {
   margin: 0 0 8px 0;
-  font-size: 1.5rem;
+  font-size: 2.4rem;
   font-weight: 700;
 }
 
 .jg-onboarding-header p {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.52rem;
   opacity: 0.9;
   line-height: 1.5;
 }
@@ -5072,7 +5093,7 @@ img.emoji {
 
 .jg-onboarding-step h3 {
   margin: 0 0 16px 0;
-  font-size: 1.15rem;
+  font-size: 1.84rem;
   font-weight: 700;
   color: #111;
 }
@@ -5104,14 +5125,14 @@ img.emoji {
 
 .jg-onboarding-type-item strong {
   display: block;
-  font-size: 0.95rem;
+  font-size: 1.52rem;
   color: #111;
   margin-bottom: 2px;
 }
 
 .jg-onboarding-type-item p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 1.36rem;
   color: #6b7280;
   line-height: 1.4;
 }
@@ -5141,12 +5162,12 @@ img.emoji {
   background: #8d2324;
   color: #fff;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 1.4rem;
   flex-shrink: 0;
 }
 
 .jg-onboarding-how-item span {
-  font-size: 0.9rem;
+  font-size: 1.44rem;
   color: #374151;
   line-height: 1.4;
 }
@@ -5189,7 +5210,7 @@ img.emoji {
 
 .jg-onboarding-nav .jg-btn {
   padding: 10px 20px;
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 600;
 }
 
@@ -5240,7 +5261,7 @@ img.emoji {
 
 .jg-help-panel-header h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.6rem;
   font-weight: 700;
 }
 
@@ -5248,7 +5269,7 @@ img.emoji {
   background: none;
   border: none;
   color: #fff;
-  font-size: 22px;
+  font-size: 2.2rem;
   cursor: pointer;
   padding: 0 4px;
   opacity: 0.8;
@@ -5275,7 +5296,7 @@ img.emoji {
 
 .jg-help-section h4 {
   margin: 0 0 10px 0;
-  font-size: 0.875rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: #8d2324;
   text-transform: uppercase;
@@ -5332,13 +5353,13 @@ img.emoji {
 
 .jg-help-type strong {
   display: block;
-  font-size: 0.85rem;
+  font-size: 1.36rem;
   color: #111;
 }
 
 .jg-help-type p {
   margin: 2px 0 0;
-  font-size: 0.8rem;
+  font-size: 1.28rem;
   color: #6b7280;
   line-height: 1.4;
 }
@@ -5360,7 +5381,7 @@ img.emoji {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  font-size: 18px;
+  font-size: 1.8rem;
   line-height: 1;
   color: #fff;
 }
@@ -5373,7 +5394,7 @@ img.emoji {
 }
 
 .jg-help-steps li {
-  font-size: 0.85rem;
+  font-size: 1.36rem;
   color: #374151;
   line-height: 1.5;
   margin-bottom: 4px;
@@ -5381,7 +5402,7 @@ img.emoji {
 
 .jg-help-tip {
   margin: 10px 0 0;
-  font-size: 0.8rem;
+  font-size: 1.28rem;
   color: #6b7280;
   font-style: italic;
 }
@@ -5394,7 +5415,7 @@ img.emoji {
 }
 
 .jg-help-features li {
-  font-size: 0.85rem;
+  font-size: 1.36rem;
   color: #374151;
   line-height: 1.5;
   margin-bottom: 8px;
@@ -5458,7 +5479,7 @@ img.emoji {
   color: #fff;
   padding: 14px 18px;
   border-radius: 12px;
-  font-size: 0.9rem;
+  font-size: 1.44rem;
   font-weight: 500;
   line-height: 1.4;
   box-shadow: 0 4px 16px rgba(141, 35, 36, 0.35);
@@ -5470,7 +5491,7 @@ img.emoji {
   background: rgba(255, 255, 255, 0.2);
   border: none;
   color: #fff;
-  font-size: 16px;
+  font-size: 1.6rem;
   cursor: pointer;
   padding: 2px 6px;
   flex-shrink: 0;
@@ -5515,7 +5536,7 @@ img.emoji {
 
   .jg-tip-content {
     max-width: 100%;
-    font-size: 0.85rem;
+    font-size: 1.36rem;
     padding: 12px 14px;
   }
 }
@@ -5540,7 +5561,7 @@ img.emoji {
 
   .jg-tip-content {
     max-width: 100%;
-    font-size: 0.82rem;
+    font-size: 1.312rem;
   }
 }
 
@@ -5555,11 +5576,11 @@ img.emoji {
   }
 
   .jg-onboarding-header h2 {
-    font-size: 1.3rem;
+    font-size: 2.08rem;
   }
 
   .jg-onboarding-header p {
-    font-size: 0.875rem;
+    font-size: 1.4rem;
   }
 
   .jg-onboarding-steps {
@@ -5567,7 +5588,7 @@ img.emoji {
   }
 
   .jg-onboarding-step h3 {
-    font-size: 1.05rem;
+    font-size: 1.68rem;
     margin-bottom: 12px;
   }
 
@@ -5580,7 +5601,7 @@ img.emoji {
   }
 
   .jg-onboarding-type-item p {
-    font-size: 0.8rem;
+    font-size: 1.28rem;
   }
 
   .jg-onboarding-how-list {
@@ -5590,11 +5611,11 @@ img.emoji {
   .jg-onboarding-how-item::before {
     width: 28px;
     height: 28px;
-    font-size: 13px;
+    font-size: 1.3rem;
   }
 
   .jg-onboarding-how-item span {
-    font-size: 0.85rem;
+    font-size: 1.36rem;
   }
 
   .jg-onboarding-footer {
@@ -5603,7 +5624,7 @@ img.emoji {
 
   .jg-onboarding-nav .jg-btn {
     padding: 8px 16px;
-    font-size: 13px;
+    font-size: 1.3rem;
   }
 }
 
@@ -5618,12 +5639,12 @@ img.emoji {
   }
 
   .jg-onboarding-header h2 {
-    font-size: 1.15rem;
+    font-size: 1.84rem;
     margin-bottom: 4px;
   }
 
   .jg-onboarding-header p {
-    font-size: 0.8rem;
+    font-size: 1.28rem;
   }
 
   .jg-onboarding-steps {
@@ -5816,7 +5837,7 @@ img.emoji {
 }
 
 .jg-approval-checkmark {
-  font-size: 40px;
+  font-size: 4rem;
   color: #fff;
   font-weight: 700;
   animation: jgCheckmarkPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
@@ -5838,7 +5859,7 @@ img.emoji {
 }
 
 .jg-approval-modal-title {
-  font-size: 28px;
+  font-size: 2.8rem;
   font-weight: 800;
   color: #1f2937;
   margin: 12px 0 8px;
@@ -5849,7 +5870,7 @@ img.emoji {
 }
 
 .jg-approval-modal-subtitle {
-  font-size: 16px;
+  font-size: 1.6rem;
   color: #6b7280;
   margin: 0 0 20px;
 }
@@ -5868,7 +5889,7 @@ img.emoji {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #fff;
   padding: 4px 10px;
@@ -5877,7 +5898,7 @@ img.emoji {
 }
 
 .jg-approval-modal-name {
-  font-size: 16px;
+  font-size: 1.6rem;
   font-weight: 600;
   color: #1f2937;
   text-align: left;
@@ -5885,7 +5906,7 @@ img.emoji {
 }
 
 .jg-approval-modal-info {
-  font-size: 14px;
+  font-size: 1.4rem;
   color: #6b7280;
   margin: 0;
   line-height: 1.5;
@@ -5902,7 +5923,7 @@ img.emoji {
   flex: 1;
   max-width: 160px;
   padding: 12px 20px;
-  font-size: 14px;
+  font-size: 1.4rem;
   font-weight: 600;
 }
 
@@ -5959,16 +5980,16 @@ img.emoji {
   }
 
   .jg-approval-checkmark {
-    font-size: 28px;
+    font-size: 2.8rem;
   }
 
   .jg-approval-modal-title {
-    font-size: 22px;
+    font-size: 2.2rem;
     margin: 8px 0 6px;
   }
 
   .jg-approval-modal-subtitle {
-    font-size: 14px;
+    font-size: 1.4rem;
     margin: 0 0 14px;
   }
 
@@ -5982,7 +6003,7 @@ img.emoji {
   }
 
   .jg-approval-modal-info {
-    font-size: 13px;
+    font-size: 1.3rem;
   }
 
   .jg-approval-modal-actions {
@@ -5992,7 +6013,7 @@ img.emoji {
 
   .jg-approval-modal-actions .jg-btn {
     padding: 10px 16px;
-    font-size: 13px;
+    font-size: 1.3rem;
   }
 }
 
@@ -6005,11 +6026,11 @@ img.emoji {
   }
 
   .jg-approval-checkmark {
-    font-size: 24px;
+    font-size: 2.4rem;
   }
 
   .jg-approval-modal-title {
-    font-size: 20px;
+    font-size: 2rem;
   }
 
   .jg-approval-modal-content {
@@ -6034,11 +6055,11 @@ img.emoji {
   }
 
   .jg-approval-checkmark {
-    font-size: 32px;
+    font-size: 3.2rem;
   }
 
   .jg-approval-modal-title {
-    font-size: 24px;
+    font-size: 2.4rem;
   }
 
   .jg-approval-modal-content {
@@ -6064,15 +6085,15 @@ img.emoji {
   }
 
   .jg-approval-checkmark {
-    font-size: 24px;
+    font-size: 2.4rem;
   }
 
   .jg-approval-modal-title {
-    font-size: 20px;
+    font-size: 2rem;
   }
 
   .jg-approval-modal-subtitle {
-    font-size: 13px;
+    font-size: 1.3rem;
   }
 
   .jg-approval-modal-content {
@@ -6093,7 +6114,7 @@ img.emoji {
   display: inline-block;
   padding: 0.3rem 0.75rem;
   border-radius: 0.75rem;
-  font-size: 0.85rem;
+  font-size: 1.36rem;
   font-weight: 800;
   color: #fff;
   background: rgba(255,255,255,0.25);
@@ -6175,7 +6196,7 @@ img.emoji {
 }
 
 .jg-xp-bar-text {
-  font-size: 10px;
+  font-size: 1rem;
   color: rgba(255,255,255,0.8);
   text-align: right;
   line-height: 1;
@@ -6208,12 +6229,12 @@ img.emoji {
 }
 
 .jg-achievement-icon span {
-  font-size: 16px;
+  font-size: 1.6rem;
   line-height: 1;
 }
 
 .jg-achievement-more {
-  font-size: 11px;
+  font-size: 1.1rem;
   color: rgba(255,255,255,0.8);
   font-weight: 600;
   padding: 0 4px;
@@ -6266,26 +6287,26 @@ img.emoji {
 
 .jg-achievement-card-name {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 1.4rem;
   color: #111;
   margin-bottom: 2px;
 }
 
 .jg-achievement-card-desc {
-  font-size: 12px;
+  font-size: 1.2rem;
   color: #6b7280;
   margin-bottom: 4px;
 }
 
 .jg-achievement-card-rarity {
-  font-size: 11px;
+  font-size: 1.1rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .jg-achievement-card-date {
-  font-size: 11px;
+  font-size: 1.1rem;
   color: #9ca3af;
   margin-top: 2px;
 }
@@ -6297,13 +6318,13 @@ img.emoji {
 }
 
 .jg-levelup-icon {
-  font-size: 48px;
+  font-size: 4.8rem;
   margin-bottom: 12px;
   animation: jg-levelup-bounce 0.6s ease;
 }
 
 .jg-levelup-title {
-  font-size: 14px;
+  font-size: 1.4rem;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -6312,7 +6333,7 @@ img.emoji {
 }
 
 .jg-levelup-level {
-  font-size: 64px;
+  font-size: 6.4rem;
   font-weight: 900;
   background: linear-gradient(135deg, #667eea, #764ba2);
   -webkit-background-clip: text;
@@ -6323,7 +6344,7 @@ img.emoji {
 }
 
 .jg-levelup-subtitle {
-  font-size: 15px;
+  font-size: 1.5rem;
   color: #374151;
 }
 
@@ -6340,7 +6361,7 @@ img.emoji {
   transform: translateX(-50%);
   background: rgba(251, 191, 36, 0.95);
   color: #1a1a1a;
-  font-size: 11px;
+  font-size: 1.1rem;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 10px;
@@ -6408,7 +6429,7 @@ img.emoji {
 }
 
 .jg-achievement-modal-title {
-  font-size: 14px;
+  font-size: 1.4rem;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -6417,19 +6438,19 @@ img.emoji {
 }
 
 .jg-achievement-modal-name {
-  font-size: 24px;
+  font-size: 2.4rem;
   font-weight: 800;
   margin-bottom: 6px;
 }
 
 .jg-achievement-modal-desc {
-  font-size: 14px;
+  font-size: 1.4rem;
   color: #374151;
   margin-bottom: 8px;
 }
 
 .jg-achievement-modal-rarity {
-  font-size: 12px;
+  font-size: 1.2rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -6490,7 +6511,7 @@ img.emoji {
 }
 
 .jg-ranking-trophy {
-  font-size: 2.5rem;
+  font-size: 4rem;
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
@@ -6498,7 +6519,7 @@ img.emoji {
 .jg-modal .jg-ranking-header .jg-ranking-title {
   margin: 0;
   color: #fff;
-  font-size: 1.35rem;
+  font-size: 2.16rem;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
@@ -6506,7 +6527,7 @@ img.emoji {
 .jg-ranking-subtitle {
   margin: 4px 0 0 0;
   color: rgba(255,255,255,0.85);
-  font-size: 0.875rem;
+  font-size: 1.4rem;
 }
 
 .jg-ranking-body {
@@ -6548,12 +6569,12 @@ img.emoji {
 .jg-ranking-gold .jg-ranking-pos {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #fff;
-  font-size: 1.1rem;
+  font-size: 1.76rem;
   box-shadow: 0 2px 8px rgba(245,158,11,0.4);
 }
 
 .jg-ranking-gold .jg-ranking-name {
-  font-size: 1.1rem;
+  font-size: 1.76rem;
   font-weight: 700;
   color: #78350f;
 }
@@ -6600,7 +6621,7 @@ img.emoji {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.9375rem;
+  font-size: 1.5rem;
   color: #6b7280;
   background: #e5e7eb;
   flex-shrink: 0;
@@ -6613,7 +6634,7 @@ img.emoji {
 
 .jg-ranking-name {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.6rem;
   color: #111827;
   white-space: nowrap;
   overflow: hidden;
@@ -6622,7 +6643,7 @@ img.emoji {
 }
 
 .jg-ranking-star {
-  font-size: 0.9375rem;
+  font-size: 1.5rem;
 }
 
 .jg-ranking-user-link {
@@ -6641,7 +6662,7 @@ img.emoji {
   display: flex;
   gap: 12px;
   margin-top: 3px;
-  font-size: 0.8125rem;
+  font-size: 1.3rem;
   color: #6b7280;
 }
 
@@ -6655,7 +6676,7 @@ img.emoji {
 }
 
 .jg-ranking-count {
-  font-size: 1.5rem;
+  font-size: 2.4rem;
   font-weight: 700;
   color: #374151;
   flex-shrink: 0;
@@ -6859,11 +6880,11 @@ img.emoji {
   }
 
   .jg-ranking-trophy {
-    font-size: 2rem;
+    font-size: 3.2rem;
   }
 
   .jg-ranking-title {
-    font-size: 1.2rem;
+    font-size: 1.92rem;
   }
 
   #jg-map-modal-ranking .jg-modal {
@@ -6880,15 +6901,15 @@ img.emoji {
   }
 
   .jg-ranking-trophy {
-    font-size: 1.75rem;
+    font-size: 2.8rem;
   }
 
   .jg-ranking-title {
-    font-size: 1.1rem;
+    font-size: 1.76rem;
   }
 
   .jg-ranking-subtitle {
-    font-size: 0.75rem;
+    font-size: 1.2rem;
   }
 
   .jg-ranking-body {
@@ -6903,28 +6924,28 @@ img.emoji {
   .jg-ranking-pos {
     width: 30px;
     height: 30px;
-    font-size: 0.8125rem;
+    font-size: 1.3rem;
   }
 
   .jg-ranking-gold .jg-ranking-pos {
-    font-size: 0.9375rem;
+    font-size: 1.5rem;
   }
 
   .jg-ranking-name {
-    font-size: 0.875rem;
+    font-size: 1.4rem;
   }
 
   .jg-ranking-gold .jg-ranking-name {
-    font-size: 0.9375rem;
+    font-size: 1.5rem;
   }
 
   .jg-ranking-meta {
     gap: 8px;
-    font-size: 0.75rem;
+    font-size: 1.2rem;
   }
 
   .jg-ranking-count {
-    font-size: 1.2rem;
+    font-size: 1.92rem;
     min-width: 30px;
   }
 
@@ -6948,7 +6969,7 @@ img.emoji {
   /* Ranking button icon on mobile */
   #jg-ranking-btn::before {
     content: "🏆";
-    font-size: 16px;
+    font-size: 1.6rem;
     display: inline-block;
   }
 }
@@ -6967,7 +6988,7 @@ img.emoji {
 }
 
 .jg-business-promo__icon {
-  font-size: 2rem;
+  font-size: 3.2rem;
   line-height: 1;
   flex-shrink: 0;
 }
@@ -6979,7 +7000,7 @@ img.emoji {
 
 .jg-business-promo__text strong {
   color: #1e40af;
-  font-size: 1rem;
+  font-size: 1.6rem;
 }
 
 .jg-business-promo__btn {
@@ -6989,7 +7010,7 @@ img.emoji {
   color: #fff;
   border: none;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 1.44rem;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -7015,7 +7036,7 @@ img.emoji {
   padding: 8px !important;
   background: #fff !important;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important;
-  font-size: 14px !important;
+  font-size: 1.4rem !important;
   line-height: 1.5 !important;
   box-shadow: none !important;
   margin: 0 !important;
@@ -7038,7 +7059,7 @@ img.emoji {
   border-radius: 16px !important;
   background: #f3f4f6 !important;
   border: 1px solid #e5e7eb !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   color: #374151 !important;
   line-height: 1.4 !important;
   margin: 0 !important;
@@ -7054,7 +7075,7 @@ img.emoji {
   border: none !important;
   color: #9ca3af !important;
   cursor: pointer !important;
-  font-size: 16px !important;
+  font-size: 1.6rem !important;
   line-height: 1 !important;
   padding: 0 2px !important;
   margin-left: 2px !important;
@@ -7072,7 +7093,7 @@ img.emoji {
   border: none !important;
   border-radius: 0 !important;
   outline: none !important;
-  font-size: 14px !important;
+  font-size: 1.4rem !important;
   font-family: inherit !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -7089,7 +7110,7 @@ img.emoji {
 }
 
 .jg-tags-counter {
-  font-size: 11px !important;
+  font-size: 1.1rem !important;
   color: #9ca3af !important;
   text-align: right !important;
   margin-top: 4px !important;
@@ -7114,7 +7135,7 @@ img.emoji {
 .jg-tags-suggestion-item {
   padding: 8px 12px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 1.3rem;
   color: #374151;
 }
 
@@ -7160,7 +7181,7 @@ a.jg-place-tag:hover {
 }
 
 .jg-dir-tag-inline {
-  font-size: 12px;
+  font-size: 1.2rem;
   color: #8d2324;
   font-weight: 500;
   text-decoration: none;
@@ -7201,7 +7222,7 @@ a.jg-dir-tag-inline:hover {
   border-radius: 20px !important;
   border: 1.5px dashed #8d2324 !important;
   color: #8d2324 !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   font-weight: 600 !important;
   text-decoration: none !important;
   white-space: nowrap !important;
@@ -7244,7 +7265,7 @@ a.jg-dir-tag-inline:hover {
   border-radius: 4px;
   text-decoration: none;
   color: #6b7280;
-  font-size: 14px;
+  font-size: 1.4rem;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
@@ -7255,7 +7276,7 @@ a.jg-dir-tag-inline:hover {
 }
 
 .jg-banner-advertise-cta__label {
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -7272,7 +7293,7 @@ a.jg-dir-tag-inline:hover {
 }
 
 .jg-banner-advertise-cta__arrow {
-  font-size: 16px;
+  font-size: 1.6rem;
   flex-shrink: 0;
 }
 
@@ -7284,7 +7305,7 @@ a.jg-dir-tag-inline:hover {
 
 .jg-banner-label {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 600;
   color: #8d2324;
   text-transform: uppercase;
@@ -7304,7 +7325,7 @@ a.jg-dir-tag-inline:hover {
   }
 
   .jg-banner-label {
-    font-size: 8px;
+    font-size: 0.8rem;
     margin-bottom: 2px;
     letter-spacing: 0.8px;
   }
@@ -7462,13 +7483,13 @@ button.jg-mobile-map-filter-btn {
 /* Show both icon and text in the panel */
 .jg-mobile-map-filter-panel .jg-filter-icon {
   display: block !important;
-  font-size: 18px !important;
+  font-size: 1.8rem !important;
   flex-shrink: 0 !important;
 }
 
 .jg-mobile-map-filter-panel .jg-filter-text {
   display: inline !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   font-weight: 500 !important;
   color: #374151 !important;
   text-transform: none !important;
@@ -7501,7 +7522,7 @@ button.jg-mobile-map-filter-btn {
 
 .jg-mobile-map-filter-panel .jg-search input[type="text"],
 .jg-mobile-map-filter-panel .jg-search input {
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   padding: 8px 36px 8px 12px !important;
   background: #fff !important;
   background-color: #fff !important;
@@ -7550,7 +7571,7 @@ button.jg-mobile-map-filter-btn {
 
 .jg-mobile-map-filter-panel .jg-suggest-header {
   padding: 5px 10px !important;
-  font-size: 9px !important;
+  font-size: 0.9rem !important;
   font-weight: 700 !important;
   letter-spacing: 0.08em !important;
   color: #8d2324 !important;
@@ -7567,7 +7588,7 @@ button.jg-mobile-map-filter-btn {
   align-items: baseline !important;
   gap: 6px !important;
   transition: background 0.1s !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
 }
 
 .jg-mobile-map-filter-panel .jg-suggest-item:hover,
@@ -7576,7 +7597,7 @@ button.jg-mobile-map-filter-btn {
 }
 
 .jg-mobile-map-filter-panel .jg-suggest-main {
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   font-weight: 500 !important;
   color: #111827 !important;
   white-space: nowrap !important;
@@ -7585,7 +7606,7 @@ button.jg-mobile-map-filter-btn {
 }
 
 .jg-mobile-map-filter-panel .jg-suggest-sub {
-  font-size: 11px !important;
+  font-size: 1.1rem !important;
   color: #9ca3af !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -7649,7 +7670,7 @@ button.jg-mobile-map-filter-btn {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
   box-sizing: border-box !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
-  font-size: 15px !important;
+  font-size: 1.5rem !important;
   color: #1f2937 !important;
   line-height: 1 !important;
   overflow: visible !important;
@@ -7776,7 +7797,7 @@ button.jg-mobile-map-filter-btn {
   margin: 0 !important;
   box-sizing: border-box !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
-  font-size: 15px !important;
+  font-size: 1.5rem !important;
   color: #1f2937 !important;
   line-height: 1.5 !important;
   contain: style !important;
@@ -7813,7 +7834,7 @@ button.jg-mobile-map-filter-btn {
   background-image: none !important;
   text-decoration: none !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
-  font-size: 15px !important;
+  font-size: 1.5rem !important;
   font-weight: 500 !important;
   line-height: 1.5 !important;
   letter-spacing: normal !important;
@@ -7931,7 +7952,7 @@ body.jg-fullscreen-active .jg-modal-bg {
   border: none !important;
   outline: none !important;
   background: transparent !important;
-  font-size: 14px !important;
+  font-size: 1.4rem !important;
   color: #374151 !important;
   padding: 0 !important;
   margin: 0 !important;
@@ -7942,7 +7963,7 @@ body.jg-fullscreen-active .jg-modal-bg {
 
 .jg-mobile-search-bar-input::placeholder {
   color: #9ca3af !important;
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
 }
 
 .jg-mobile-search-bar-clear {
@@ -7956,7 +7977,7 @@ body.jg-fullscreen-active .jg-modal-bg {
   background: #e5e7eb !important;
   border-radius: 50% !important;
   color: #6b7280 !important;
-  font-size: 14px !important;
+  font-size: 1.4rem !important;
   line-height: 1 !important;
   cursor: pointer !important;
   padding: 0 !important;
@@ -7988,7 +8009,7 @@ body.jg-fullscreen-active .jg-modal-bg {
 
 .jg-mobile-search-bar-suggestions .jg-suggest-header {
   padding: 5px 10px !important;
-  font-size: 9px !important;
+  font-size: 0.9rem !important;
   font-weight: 700 !important;
   letter-spacing: 0.08em !important;
   color: #8d2324 !important;
@@ -8005,7 +8026,7 @@ body.jg-fullscreen-active .jg-modal-bg {
   align-items: baseline !important;
   gap: 6px !important;
   transition: background 0.1s !important;
-  font-size: 14px !important;
+  font-size: 1.4rem !important;
 }
 
 .jg-mobile-search-bar-suggestions .jg-suggest-item:hover,
@@ -8014,7 +8035,7 @@ body.jg-fullscreen-active .jg-modal-bg {
 }
 
 .jg-mobile-search-bar-suggestions .jg-suggest-main {
-  font-size: 13px !important;
+  font-size: 1.3rem !important;
   font-weight: 500 !important;
   color: #111827 !important;
   white-space: nowrap !important;
@@ -8023,7 +8044,7 @@ body.jg-fullscreen-active .jg-modal-bg {
 }
 
 .jg-mobile-search-bar-suggestions .jg-suggest-sub {
-  font-size: 11px !important;
+  font-size: 1.1rem !important;
   color: #9ca3af !important;
   white-space: nowrap !important;
   overflow: hidden !important;

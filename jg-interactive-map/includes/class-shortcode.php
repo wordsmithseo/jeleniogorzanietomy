@@ -112,7 +112,7 @@ class JG_Map_Shortcode {
             <!-- Loader positioned relative to map container -->
             <div id="jg-map-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:400;background:#fff;padding:30px 40px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15);pointer-events:none;">
                 <div class="jg-spinner"></div>
-                <div style="margin-top:16px;font-size:16px;color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
+                <div style="margin-top:16px;font-size: 1.6rem;color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
             </div>
 
             <div id="jg-map" class="jg-map" style="opacity: 0; transition: opacity 0.3s;"
@@ -336,40 +336,40 @@ class JG_Map_Shortcode {
             <style>
                 .jg-directory { padding: 4px 0; }
                 .jg-dir-section { margin-bottom: 24px; }
-                .jg-dir-section h3 { font-size: 0.8rem; font-weight: 600; color: #6b7280; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+                .jg-dir-section h3 { font-size: 1.28rem; font-weight: 600; color: #6b7280; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
                 .jg-dir-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0; }
-                .jg-dir-item { font-size: 14px; line-height: 1.6; padding: 4px 0; }
+                .jg-dir-item { font-size: 1.4rem; line-height: 1.6; padding: 4px 0; }
                 .jg-dir-item:not(:last-child)::after { content: "·"; margin: 0 10px; color: #d1d5db; }
                 .jg-dir-item a { color: #2563eb; text-decoration: none; }
                 .jg-dir-item a:hover { text-decoration: underline; }
-                .jg-dir-addr { color: #9ca3af; font-size: 12px; }
+                .jg-dir-addr { color: #9ca3af; font-size: 1.2rem; }
                 .jg-dir-tag-cloud { margin-bottom: 24px; }
-                .jg-dir-tag-cloud h3 { font-size: 0.8rem; font-weight: 600; color: #6b7280; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+                .jg-dir-tag-cloud h3 { font-size: 1.28rem; font-weight: 600; color: #6b7280; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
                 .jg-dir-tag-list { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
                 .jg-dir-tag-item { display: inline-block; }
                 .jg-dir-tag-item a {
                     display: inline-block; padding: 4px 12px; border-radius: 16px;
-                    font-size: 13px; text-decoration: none; color: #374151;
+                    font-size: 1.3rem; text-decoration: none; color: #374151;
                     background: #f3f4f6; border: 1px solid #e5e7eb; transition: all 0.15s;
                 }
                 .jg-dir-tag-item a:hover { background: #8d2324; color: #fff; border-color: #8d2324; }
                 .jg-dir-tag-item a.jg-dir-tag-active { background: #8d2324; color: #fff; border-color: #8d2324; }
-                .jg-dir-tag-count { font-size: 11px; color: #9ca3af; margin-left: 2px; }
+                .jg-dir-tag-count { font-size: 1.1rem; color: #9ca3af; margin-left: 2px; }
                 .jg-dir-tag-active .jg-dir-tag-count { color: rgba(255,255,255,0.7); }
-                .jg-dir-active-filter { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 10px 16px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; font-size: 14px; color: #78350f; }
+                .jg-dir-active-filter { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 10px 16px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; font-size: 1.4rem; color: #78350f; }
                 .jg-dir-active-filter a { color: #8d2324; font-weight: 600; text-decoration: none; }
                 .jg-dir-active-filter a:hover { text-decoration: underline; }
                 .jg-dir-pagination { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
                 .jg-dir-pagination a, .jg-dir-pagination span {
                     display: inline-flex; align-items: center; justify-content: center;
                     min-width: 36px; height: 36px; padding: 0 10px;
-                    border-radius: 8px; font-size: 14px; font-weight: 500; text-decoration: none;
+                    border-radius: 8px; font-size: 1.4rem; font-weight: 500; text-decoration: none;
                 }
                 .jg-dir-pagination a { color: #2563eb; background: #f3f4f6; }
                 .jg-dir-pagination a:hover { background: #e5e7eb; }
                 .jg-dir-pagination .current { color: #fff; background: #2563eb; font-weight: 700; }
                 .jg-dir-pagination .dots { color: #9ca3af; background: none; }
-                .jg-dir-info { font-size: 13px; color: #9ca3af; margin-top: 8px; }
+                .jg-dir-info { font-size: 1.3rem; color: #9ca3af; margin-top: 8px; }
             </style>
 
             <?php $this->render_tag_cloud($table, $base_url_no_tag, $active_tag); ?>
@@ -378,7 +378,7 @@ class JG_Map_Shortcode {
                 <div class="jg-dir-active-filter">
                     Filtrowanie po tagu: <strong>#<?php echo esc_html($active_tag); ?></strong>
                     <a href="<?php echo esc_url($base_url_no_tag); ?>">Usuń filtr &times;</a>
-                    <span style="color:#9ca3af;margin-left:auto;font-size:12px"><?php echo $total; ?> <?php echo $total === 1 ? 'wynik' : ($total < 5 ? 'wyniki' : 'wyników'); ?></span>
+                    <span style="color:#9ca3af;margin-left:auto;font-size: 1.2rem"><?php echo $total; ?> <?php echo $total === 1 ? 'wynik' : ($total < 5 ? 'wyniki' : 'wyników'); ?></span>
                 </div>
             <?php endif; ?>
 
@@ -609,7 +609,7 @@ class JG_Map_Shortcode {
         <div class="jg-banner-wrap">
             <div class="jg-banner-label" id="jg-banner-label">Sponsorowane</div>
             <div id="jg-banner-container" class="jg-banner-container" style="max-width:<?php echo esc_attr($atts['width']); ?>;width:100%;margin:0 auto;box-sizing:border-box;">
-                <div id="jg-banner-loading" style="display:flex;align-items:center;justify-content:center;aspect-ratio:<?php echo intval($atts['width']) . '/' . intval($atts['height']); ?>;background:#f5f5f5;color:#999;font-size:14px;">
+                <div id="jg-banner-loading" style="display:flex;align-items:center;justify-content:center;aspect-ratio:<?php echo intval($atts['width']) . '/' . intval($atts['height']); ?>;background:#f5f5f5;color:#999;font-size: 1.4rem;">
                     Ładowanie banneru...
                 </div>
                 <a id="jg-banner-link" href="#" target="_blank" style="display:none;">
