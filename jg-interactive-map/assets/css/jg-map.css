@@ -549,6 +549,8 @@
   padding: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   min-width: 200px;
+  /* JS sets display:flex when open – ensure children stack vertically */
+  flex-direction: column;
 }
 
 .jg-category-dropdown-header {
