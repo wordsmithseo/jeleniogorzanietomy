@@ -307,7 +307,7 @@
   box-sizing: border-box !important;
   min-width: 0 !important; /* prevent grid item from expanding beyond grid track */
   max-width: 100% !important;
-  overflow-x: hidden !important; /* clip filter bar at column boundary */
+  position: relative !important; /* anchor for absolutely-positioned category dropdowns */
 }
 
 .jg-filters {
@@ -525,22 +525,22 @@
   }
 }
 
-/* Category Filters */
+/* Category Filters – floats over the map, does not push it down */
 .jg-category-filters {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
+  position: absolute;
+  top: 100%; /* directly below the filter bar */
+  left: 0;
+  z-index: 1010; /* above Leaflet controls (z-index 1000) */
   flex-wrap: wrap;
   gap: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  padding: 8px 0 0;
+  /* no background/shadow – individual dropdowns have their own */
+  pointer-events: auto;
 }
 
-.jg-category-filters:empty,
 .jg-category-filters[style*="display: none"],
 .jg-category-filters[style*="display:none"] {
-  padding: 0;
-  margin: 0;
+  pointer-events: none;
 }
 
 .jg-category-dropdown {
@@ -549,6 +549,8 @@
   padding: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   min-width: 200px;
+  /* JS sets display:flex when open – ensure children stack vertically */
+  flex-direction: column;
 }
 
 .jg-category-dropdown-header {
