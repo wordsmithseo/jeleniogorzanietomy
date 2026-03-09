@@ -10080,11 +10080,12 @@
           elFilters.querySelectorAll('input[data-type]').forEach(function(cb) {
             if (cb.checked) enabled[cb.getAttribute('data-type')] = true;
           });
-          var pr = elFilters.querySelector('input[data-promo]');
-          promoOnly = !!(pr && pr.checked);
-          var myPlaces = elFilters.querySelector('input[data-my-places]');
-          myPlacesOnly = !!(myPlaces && myPlaces.checked);
         }
+        // data-promo and data-my-places may be in the place-categories dropdown
+        var pr = document.querySelector('input[data-promo]');
+        promoOnly = !!(pr && pr.checked);
+        var myPlaces = document.querySelector('input[data-my-places]');
+        myPlacesOnly = !!(myPlaces && myPlaces.checked);
 
         // Get enabled place categories
         document.querySelectorAll('input[data-map-place-category]').forEach(function(cb) {
@@ -10573,8 +10574,12 @@
           var html = '<div class="jg-category-dropdown-header">Kategorie miejsc:</div><div class="jg-category-checkboxes">';
           for (var i = 0; i < sortedPlace.length; i++) {
             var cat = sortedPlace[i];
-            html += '<label class="jg-category-filter-label"><input type="checkbox" data-map-place-category="' + cat.key + '" checked><span class="jg-filter-icon">' + (cat.icon || '📍') + '</span><span>' + cat.label + '</span></label>';
+            html += '<label class="jg-category-filter-label"><input type="checkbox" data-map-place-category="' + cat.key + '" checked><span class="jg-filter-icon">' + (cat.icon || '📍') + '</span><span class="jg-category-filter-label__text">' + cat.label + '</span></label>';
           }
+          html += '</div>';
+          html += '<div class="jg-category-dropdown-section-header">Dodatkowe filtry:</div><div class="jg-category-extra-filters">';
+          html += '<label class="jg-category-filter-label"><input type="checkbox" data-my-places><span class="jg-filter-icon">👤</span><span class="jg-category-filter-label__text">Moje miejsca</span></label>';
+          html += '<label class="jg-category-filter-label"><input type="checkbox" data-promo><span class="jg-filter-icon">⭐</span><span class="jg-category-filter-label__text">Tylko miejsca sponsorowane</span></label>';
           html += '</div>';
           placeCategoriesContainer.innerHTML = html;
         }
@@ -10642,6 +10647,14 @@
         // Add event listeners to category checkboxes
         var categoryCheckboxes = document.querySelectorAll('input[data-map-place-category], input[data-map-curiosity-category]');
         categoryCheckboxes.forEach(function(cb) {
+          cb.addEventListener('change', function() {
+            apply(true);
+          });
+        });
+
+        // Add event listeners to extra filters (my-places, promo) rendered inside place dropdown
+        var extraFilters = document.querySelectorAll('#jg-place-categories input[data-my-places], #jg-place-categories input[data-promo]');
+        extraFilters.forEach(function(cb) {
           cb.addEventListener('change', function() {
             apply(true);
           });
