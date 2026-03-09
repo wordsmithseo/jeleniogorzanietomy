@@ -7245,11 +7245,7 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
-        // Add context of Jelenia Góra if not already in query
         $searchQuery = $queryForSearch;
-        if (stripos($query, 'jelenia') === false && stripos($query, 'góra') === false) {
-            $searchQuery = $queryForSearch . ', Jelenia Góra, Poland';
-        }
 
         // Cache: use normalized query as key
         $cache_key = 'jg_search_' . md5(strtolower(trim($searchQuery)));
@@ -7259,9 +7255,11 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        // Build Nominatim API URL
+        // Use map bounding box (SW: 50.75,15.58 / NE: 50.98,15.85) as viewbox
+        // Nominatim viewbox format: left,top,right,bottom (min_lon,max_lat,max_lon,min_lat)
+        // bounded=1 restricts results to the viewbox; countrycodes=pl limits to Poland
         $url = sprintf(
-            'https://nominatim.openstreetmap.org/search?format=json&q=%s&limit=5&addressdetails=1',
+            'https://nominatim.openstreetmap.org/search?format=json&q=%s&limit=5&addressdetails=1&viewbox=15.58,50.98,15.85,50.75&bounded=1&countrycodes=pl',
             urlencode($searchQuery)
         );
 

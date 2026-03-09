@@ -11566,13 +11566,9 @@
 
       function geocodeAddress(address) {
         // Use Nominatim for geocoding (free, no API key needed)
-        // Add context of Jelenia Góra if not already in query
-        var searchQuery = address;
-        if (address.toLowerCase().indexOf('jelenia') === -1 && address.toLowerCase().indexOf('góra') === -1) {
-          searchQuery = address + ', Jelenia Góra, Poland';
-        }
-
-        var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(searchQuery) + '&limit=1';
+        // Use map bounding box as viewbox to cover the entire visible area
+        // viewbox format: left,top,right,bottom (min_lon,max_lat,max_lon,min_lat)
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(address) + '&limit=1&viewbox=15.58,50.98,15.85,50.75&bounded=1&countrycodes=pl';
 
         $.ajax({
           url: url,
