@@ -7235,10 +7235,20 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
+        // Strip Polish street type prefixes that Nominatim doesn't understand
+        $street_prefixes = array('ul.', 'al.', 'pl.', 'os.', 'rondo ', 'aleja ', 'ulica ', 'plac ', 'osiedle ');
+        $queryForSearch = trim($query);
+        foreach ($street_prefixes as $prefix) {
+            if (mb_stripos($queryForSearch, $prefix) === 0) {
+                $queryForSearch = trim(mb_substr($queryForSearch, mb_strlen($prefix)));
+                break;
+            }
+        }
+
         // Add context of Jelenia Góra if not already in query
-        $searchQuery = $query;
+        $searchQuery = $queryForSearch;
         if (stripos($query, 'jelenia') === false && stripos($query, 'góra') === false) {
-            $searchQuery = $query . ', Jelenia Góra, Poland';
+            $searchQuery = $queryForSearch . ', Jelenia Góra, Poland';
         }
 
         // Cache: use normalized query as key
