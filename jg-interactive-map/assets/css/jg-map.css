@@ -8114,3 +8114,36 @@ body.jg-fullscreen-active .jg-modal-bg {
 #jg-map-wrap.jg-fullscreen .jg-mobile-search-bar {
   display: none !important;
 }
+
+/* ========================================
+   80/20 MAP–SIDEBAR LAYOUT OVERRIDE
+   Force map column to 80% and sidebar column to 20%
+   regardless of Elementor settings, on non-mobile screens.
+   ======================================== */
+@media (min-width: 769px) {
+  /* Classic Elementor columns */
+  .elementor-column:has(#jg-map-wrap),
+  .elementor-column:has(.jg-wrap) {
+    width: 80% !important;
+    max-width: 80% !important;
+  }
+
+  .elementor-column:has(#jg-map-sidebar) {
+    width: 20% !important;
+    max-width: 20% !important;
+  }
+
+  /* Flex-based Elementor containers (e-con) */
+  .e-con:has(#jg-map-wrap),
+  .e-con:has(.jg-wrap) {
+    flex: 0 0 80% !important;
+    max-width: 80% !important;
+    width: 80% !important;
+  }
+
+  .e-con:has(#jg-map-sidebar) {
+    flex: 0 0 20% !important;
+    max-width: 20% !important;
+    width: 20% !important;
+  }
+}
