@@ -1872,6 +1872,11 @@
           document.execCommand('insertText', false, text);
         });
 
+        // Prevent editor from losing focus when clicking toolbar buttons (preserves selection)
+        toolbar.addEventListener('mousedown', function(e) {
+          if (e.target.closest('.jg-rte-btn')) e.preventDefault();
+        });
+
         // Toolbar button commands
         toolbar.addEventListener('click', function(e) {
           var btn = e.target.closest('.jg-rte-btn');
@@ -1896,15 +1901,17 @@
             var rangeMark = selMark.getRangeAt(0);
             if (!editor.contains(rangeMark.commonAncestorContainer)) return;
             var fragMark = rangeMark.extractContents();
-            // Apply class directly to block elements (browsers strip spans wrapping blocks)
+            // Apply class directly to all block elements
             fragMark.querySelectorAll('ul,ol,li,p,div,h1,h2,h3,h4,h5,h6,blockquote,table,tr,td,th').forEach(function(el) {
               el.classList.add('jg-section-incomplete');
             });
-            var spanMark = document.createElement('span');
-            spanMark.className = 'jg-section-incomplete';
-            spanMark.appendChild(fragMark);
-            rangeMark.insertNode(spanMark);
-            selMark.collapse(spanMark, spanMark.childNodes.length);
+            // Use div wrapper when content has block elements (span wrapping blocks is invalid HTML)
+            var hasBlocksMark = fragMark.querySelector('ul,ol,li,p,div,h1,h2,h3,h4,h5,h6,blockquote,table,tr,td,th') !== null;
+            var wrapperMark = document.createElement(hasBlocksMark ? 'div' : 'span');
+            wrapperMark.className = 'jg-section-incomplete';
+            wrapperMark.appendChild(fragMark);
+            rangeMark.insertNode(wrapperMark);
+            selMark.collapse(wrapperMark, wrapperMark.childNodes.length);
             syncContent();
             return;
           }
@@ -1916,21 +1923,33 @@
               nodeUnmark = selUnmark.getRangeAt(0).commonAncestorContainer;
               if (nodeUnmark.nodeType === 3) nodeUnmark = nodeUnmark.parentNode;
             }
-            var targetUnmark = nodeUnmark && nodeUnmark.closest ? nodeUnmark.closest('.jg-section-incomplete') : null;
-            if (!targetUnmark) return;
-            if (targetUnmark.tagName.toLowerCase() === 'span') {
-              // Inline span: unwrap
-              var parentUnmark = targetUnmark.parentNode;
-              while (targetUnmark.firstChild) {
-                parentUnmark.insertBefore(targetUnmark.firstChild, targetUnmark);
+            if (!nodeUnmark) return;
+            // Find the TOPMOST .jg-section-incomplete ancestor within the editor
+            // (not just the closest — nested elements like ul>li all have the class)
+            var topUnmark = null;
+            var currUnmark = nodeUnmark;
+            while (currUnmark && currUnmark !== editor) {
+              if (currUnmark.classList && currUnmark.classList.contains('jg-section-incomplete')) {
+                topUnmark = currUnmark;
               }
-              parentUnmark.removeChild(targetUnmark);
+              currUnmark = currUnmark.parentNode;
+            }
+            if (!topUnmark) return;
+            // Remove class from all descendants first
+            topUnmark.querySelectorAll('.jg-section-incomplete').forEach(function(el) {
+              el.classList.remove('jg-section-incomplete');
+            });
+            var tagUnmark = topUnmark.tagName.toLowerCase();
+            if (tagUnmark === 'span' || tagUnmark === 'div') {
+              // Wrapper element added by markSection — unwrap it entirely
+              var parentUnmark = topUnmark.parentNode;
+              while (topUnmark.firstChild) {
+                parentUnmark.insertBefore(topUnmark.firstChild, topUnmark);
+              }
+              parentUnmark.removeChild(topUnmark);
             } else {
-              // Block element: remove class from it and its marked descendants
-              targetUnmark.classList.remove('jg-section-incomplete');
-              targetUnmark.querySelectorAll('.jg-section-incomplete').forEach(function(el) {
-                el.classList.remove('jg-section-incomplete');
-              });
+              // Block element (ul, li, etc.) — just remove the class
+              topUnmark.classList.remove('jg-section-incomplete');
             }
             syncContent();
             return;

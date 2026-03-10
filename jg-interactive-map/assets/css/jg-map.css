@@ -2775,6 +2775,7 @@ body.jg-modal-open {
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
+div.jg-section-incomplete,
 ul.jg-section-incomplete,
 ol.jg-section-incomplete,
 li.jg-section-incomplete,
