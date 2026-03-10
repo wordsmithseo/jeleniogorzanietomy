@@ -655,6 +655,14 @@ class JG_Interactive_Map {
     <link rel="icon" href="<?php echo esc_url(get_site_icon_url(32)); ?>" sizes="32x32">
     <link rel="icon" href="<?php echo esc_url(get_site_icon_url(192)); ?>" sizes="192x192">
     <link rel="apple-touch-icon" href="<?php echo esc_url(get_site_icon_url(180)); ?>">
+    <!-- Google Analytics (GA4) – added manually because wp_head() is not called on pin pages -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-B6E2GMXWCL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-B6E2GMXWCL');
+    </script>
     <style>
         /* Standalone point page styles - no Elementor dependency */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
