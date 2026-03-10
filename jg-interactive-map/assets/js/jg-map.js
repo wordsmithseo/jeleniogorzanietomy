@@ -2085,35 +2085,40 @@
         document.body.appendChild(sectionTooltipEl);
 
         var sectionTooltipVisible = false;
+        var _tipCurrentSpan = null;
 
-        function showSectionTooltip(target) {
-          var rect = target.getBoundingClientRect();
+        function showSectionTooltip(spanEl) {
+          var rect = spanEl.getBoundingClientRect();
           var tipLeft = rect.left;
           var tipTop = rect.bottom + 6;
-          // Keep tooltip within viewport horizontally
           var tipWidth = 220;
-          if (tipLeft + tipWidth > window.innerWidth - 8) {
-            tipLeft = window.innerWidth - tipWidth - 8;
-          }
+          if (tipLeft + tipWidth > window.innerWidth - 8) tipLeft = window.innerWidth - tipWidth - 8;
           sectionTooltipEl.style.left = Math.max(8, tipLeft) + 'px';
           sectionTooltipEl.style.top = tipTop + 'px';
           sectionTooltipEl.classList.add('jg-section-tooltip--visible');
           sectionTooltipVisible = true;
+          _tipCurrentSpan = spanEl;
         }
 
         function hideSectionTooltip() {
           sectionTooltipEl.classList.remove('jg-section-tooltip--visible');
           sectionTooltipVisible = false;
+          _tipCurrentSpan = null;
         }
 
-        // Desktop: hover over incomplete section
-        editor.addEventListener('mouseover', function(e) {
-          var target = e.target;
-          if (target.nodeType === 3) target = target.parentNode;
-          var incomplete = target.closest ? target.closest('.jg-section-incomplete') : null;
-          if (incomplete) {
-            showSectionTooltip(incomplete);
-          } else {
+        function incompleteUnderPoint(x, y) {
+          var el = document.elementFromPoint(x, y);
+          if (!el) return null;
+          var span = el.closest ? el.closest('.jg-section-incomplete') : null;
+          return (span && editor.contains(span)) ? span : null;
+        }
+
+        // Desktop: mouse movement
+        editor.addEventListener('mousemove', function(e) {
+          var span = incompleteUnderPoint(e.clientX, e.clientY);
+          if (span) {
+            if (_tipCurrentSpan !== span) showSectionTooltip(span);
+          } else if (sectionTooltipVisible) {
             hideSectionTooltip();
           }
         });
@@ -2122,22 +2127,20 @@
           hideSectionTooltip();
         });
 
-        // Mobile: tap to toggle tooltip
-        editor.addEventListener('click', function(e) {
-          if (!window.matchMedia('(hover: none)').matches) return;
-          var target = e.target;
-          if (target.nodeType === 3) target = target.parentNode;
-          var incomplete = target.closest ? target.closest('.jg-section-incomplete') : null;
-          if (incomplete) {
-            if (sectionTooltipVisible) {
+        // Mobile: touchstart fires before contenteditable focus, elementFromPoint is reliable
+        editor.addEventListener('touchstart', function(e) {
+          var t = e.changedTouches[0];
+          var span = incompleteUnderPoint(t.clientX, t.clientY);
+          if (span) {
+            if (sectionTooltipVisible && _tipCurrentSpan === span) {
               hideSectionTooltip();
             } else {
-              showSectionTooltip(incomplete);
+              showSectionTooltip(span);
             }
           } else if (sectionTooltipVisible) {
             hideSectionTooltip();
           }
-        });
+        }, { passive: true });
 
         // Set initial content
         function setContent(html) {
