@@ -2788,6 +2788,7 @@ h5.jg-section-incomplete,
 h6.jg-section-incomplete,
 blockquote.jg-section-incomplete {
   display: block;
+  position: relative;
   padding: 2px 4px;
   box-sizing: border-box;
 }
@@ -2798,24 +2799,30 @@ blockquote.jg-section-incomplete {
 a.jg-section-incomplete {
   display: inline;
 }
-.jg-section-tooltip {
-  position: fixed;
-  z-index: 99999;
-  background: #333;
+/* Badge in the top-right corner of the outermost incomplete section */
+.jg-section-incomplete:not(.jg-section-incomplete *)::after {
+  content: '⚠ Uzupełnij dane';
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+  background: #b91c1c;
   color: #fff;
-  padding: 7px 11px;
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.6;
+  padding: 1px 6px;
+  border-radius: 0 2px 0 4px;
   pointer-events: none;
-  max-width: 220px;
-  white-space: normal;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  opacity: 0;
-  transition: opacity 0.15s;
+  white-space: nowrap;
+  max-width: calc(100% - 8px);
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.jg-section-tooltip--visible {
-  opacity: 1;
+span.jg-section-incomplete:not(.jg-section-incomplete *) {
+  display: inline-block;
+  position: relative;
 }
 
 .jg-rte-editor {

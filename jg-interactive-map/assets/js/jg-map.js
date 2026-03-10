@@ -9385,55 +9385,6 @@
           });
         }
 
-        // --- Incomplete section spans in view modal ---
-        var placeContent = modalView.querySelector('.jg-place-content');
-        if (placeContent && placeContent.querySelector('.jg-section-incomplete')) {
-          var incTip = document.getElementById('jg-section-tooltip-el');
-          if (!incTip) {
-            incTip = document.createElement('div');
-            incTip.id = 'jg-section-tooltip-el';
-            incTip.className = 'jg-section-tooltip';
-            incTip.textContent = 'Informacje niekompletne. Uzupełnij je, jeśli możesz.';
-            document.body.appendChild(incTip);
-          } else {
-            incTip.classList.remove('jg-section-tooltip--visible');
-          }
-          var incTipHideTimer;
-          // Desktop: tooltip follows cursor
-          placeContent.addEventListener('mousemove', function(e) {
-            var span = e.target.closest ? e.target.closest('.jg-section-incomplete') : null;
-            if (span) {
-              var x = e.clientX + 14;
-              var y = e.clientY + 14;
-              if (x + 220 > window.innerWidth - 8) x = e.clientX - 224;
-              if (y + 60 > window.innerHeight - 8) y = e.clientY - 50;
-              incTip.style.left = Math.max(8, x) + 'px';
-              incTip.style.top = Math.max(8, y) + 'px';
-              incTip.classList.add('jg-section-tooltip--visible');
-            } else {
-              incTip.classList.remove('jg-section-tooltip--visible');
-            }
-          });
-          placeContent.addEventListener('mouseleave', function() {
-            incTip.classList.remove('jg-section-tooltip--visible');
-          });
-          // Mobile: tap shows tooltip briefly
-          placeContent.addEventListener('click', function(e) {
-            var span = e.target.closest ? e.target.closest('.jg-section-incomplete') : null;
-            if (!span) return;
-            var r = span.getBoundingClientRect();
-            var left = r.left;
-            if (left + 220 > window.innerWidth - 8) left = window.innerWidth - 228;
-            incTip.style.left = Math.max(8, left) + 'px';
-            incTip.style.top = (r.bottom + 6) + 'px';
-            incTip.classList.add('jg-section-tooltip--visible');
-            clearTimeout(incTipHideTimer);
-            incTipHideTimer = setTimeout(function() {
-              incTip.classList.remove('jg-section-tooltip--visible');
-            }, 3000);
-          });
-        }
-
         // Setup voting handlers only if not promo
         if (!p.sponsored) {
           var cnt = qs('#v-cnt', modalView);
