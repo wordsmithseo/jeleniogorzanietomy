@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.24.3
+ * Version: 3.24.4
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.24.3');
+define('JG_MAP_VERSION', '3.24.4');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -793,9 +793,69 @@ class JG_Interactive_Map {
             .jg-sp-hero-img { max-height: 300px; }
             .jg-sp-site-name { display: none; }
         }
+
+        /* Redirect banner */
+        .jg-redirect-banner {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+            background: <?php echo $type_color; ?>; color: #fff;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+        }
+        .jg-redirect-banner-inner {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 16px; flex-wrap: wrap;
+        }
+        .jg-redirect-icon { font-size: 22px; flex-shrink: 0; }
+        .jg-redirect-text { flex: 1; min-width: 0; }
+        .jg-redirect-text strong { display: block; font-size: 14px; font-weight: 700; line-height: 1.3; }
+        .jg-redirect-text span { font-size: 12px; opacity: 0.9; }
+        .jg-redirect-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .jg-redirect-btn-go {
+            background: #fff; color: <?php echo $type_color; ?>;
+            padding: 7px 16px; border-radius: 7px; font-size: 13px; font-weight: 700;
+            white-space: nowrap; text-decoration: none; border: none; cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .jg-redirect-btn-go:hover { opacity: 0.88; }
+        .jg-redirect-btn-cancel {
+            background: rgba(255,255,255,0.18); color: #fff;
+            padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.4); cursor: pointer; white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .jg-redirect-btn-cancel:hover { background: rgba(255,255,255,0.28); }
+        .jg-redirect-progress {
+            height: 3px; background: rgba(255,255,255,0.4);
+            transform-origin: left; width: 100%;
+        }
+        .jg-redirect-progress-bar {
+            height: 100%; background: #fff; width: 100%;
+            transition: width linear;
+        }
+        /* offset body so banner doesn't overlap header */
+        body { padding-top: 58px; }
+        @media (max-width: 480px) {
+            .jg-redirect-text strong { font-size: 13px; }
+            body { padding-top: 72px; }
+        }
     </style>
 </head>
 <body>
+        <!-- Sticky redirect banner -->
+        <div id="jg-redirect-banner" class="jg-redirect-banner">
+            <div class="jg-redirect-banner-inner">
+                <span class="jg-redirect-icon">🗺️</span>
+                <div class="jg-redirect-text">
+                    <strong>Mapa interaktywna Jelenia Góra</strong>
+                    <span id="jg-banner-sub">Odkryj setki miejsc, ciekawostek i zgłoszeń &mdash; przenosisz się za <strong id="jg-countdown">10</strong>s</span>
+                </div>
+                <div class="jg-redirect-actions">
+                    <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" id="jg-redirect-now" class="jg-redirect-btn-go">Otwórz mapę &rarr;</a>
+                    <button onclick="jgCancelRedirect()" class="jg-redirect-btn-cancel">Zostań</button>
+                </div>
+            </div>
+            <div class="jg-redirect-progress"><div id="jg-progress-bar" class="jg-redirect-progress-bar"></div></div>
+        </div>
+
         <!-- Minimal site header -->
         <header class="jg-sp-site-header">
             <a href="<?php echo esc_url(home_url('/')); ?>">
@@ -912,6 +972,53 @@ class JG_Interactive_Map {
             <a href="<?php echo esc_url(home_url('/')); ?>">Wróć do mapy</a>
         </footer>
 
+        <script>
+        (function() {
+            var DELAY = 10;
+            var mapUrl = <?php echo json_encode(home_url('/?from=point#point-' . $point['id'])); ?>;
+            var countdown = DELAY;
+            var timer = null;
+            var cancelled = false;
+
+            var bar = document.getElementById('jg-progress-bar');
+            var countEl = document.getElementById('jg-countdown');
+
+            // Animate the progress bar over DELAY seconds
+            if (bar) {
+                bar.style.transition = 'width ' + DELAY + 's linear';
+                // Trigger in next frame so transition fires
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        bar.style.width = '0%';
+                    });
+                });
+            }
+
+            timer = setInterval(function() {
+                if (cancelled) return;
+                countdown--;
+                if (countEl) countEl.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    window.location.href = mapUrl;
+                }
+            }, 1000);
+
+            window.jgCancelRedirect = function() {
+                cancelled = true;
+                clearInterval(timer);
+                var banner = document.getElementById('jg-redirect-banner');
+                if (banner) {
+                    banner.style.transition = 'opacity 0.3s';
+                    banner.style.opacity = '0';
+                    setTimeout(function() {
+                        banner.style.display = 'none';
+                        document.body.style.paddingTop = '0';
+                    }, 300);
+                }
+            };
+        })();
+        </script>
 </body>
 </html>
         <?php
