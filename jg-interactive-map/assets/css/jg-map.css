@@ -8121,29 +8121,40 @@ body.jg-fullscreen-active .jg-modal-bg {
    regardless of Elementor settings, on non-mobile screens.
    ======================================== */
 @media (min-width: 769px) {
-  /* Classic Elementor columns */
-  .elementor-column:has(#jg-map-wrap),
-  .elementor-column:has(.jg-wrap) {
-    width: 80% !important;
-    max-width: 80% !important;
+  /* 1. Remove the "boxed" max-width constraint from the section that
+        wraps both map and sidebar, so it stretches full-width. */
+  .e-con-boxed:has(#jg-map-wrap):has(#jg-map-sidebar) {
+    --container-max-width: 100% !important;
+  }
+  .e-con-boxed:has(#jg-map-wrap):has(#jg-map-sidebar) > .e-con-inner {
+    max-width: 100% !important;
+    width: 100% !important;
   }
 
-  .elementor-column:has(#jg-map-sidebar) {
-    width: 20% !important;
-    max-width: 20% !important;
-  }
-
-  /* Flex-based Elementor containers (e-con) */
-  .e-con:has(#jg-map-wrap),
-  .e-con:has(.jg-wrap) {
+  /* 2. Set the two child columns to 80% / 20%.
+        :not() guard ensures we only hit the direct column, not the parent section. */
+  .e-con:has(#jg-map-wrap):not(:has(#jg-map-sidebar)),
+  .e-con:has(.jg-wrap):not(:has(#jg-map-sidebar)) {
     flex: 0 0 80% !important;
     max-width: 80% !important;
     width: 80% !important;
   }
 
-  .e-con:has(#jg-map-sidebar) {
+  .e-con:has(#jg-map-sidebar):not(:has(#jg-map-wrap)) {
     flex: 0 0 20% !important;
     max-width: 20% !important;
     width: 20% !important;
+  }
+
+  /* 3. Classic Elementor (non-flex) columns fallback */
+  .elementor-column:has(#jg-map-wrap):not(:has(#jg-map-sidebar)),
+  .elementor-column:has(.jg-wrap):not(:has(#jg-map-sidebar)) {
+    width: 80% !important;
+    max-width: 80% !important;
+  }
+
+  .elementor-column:has(#jg-map-sidebar):not(:has(#jg-map-wrap)) {
+    width: 20% !important;
+    max-width: 20% !important;
   }
 }
