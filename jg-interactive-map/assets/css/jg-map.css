@@ -7337,9 +7337,11 @@ a.jg-dir-tag-inline:hover {
   justify-content: center;
   gap: 12px;
   width: 100%;
-  min-height: 90px;
-  padding: 12px 24px;
+  height: 90px;
+  max-height: 90px;
+  padding: 6px 16px;
   box-sizing: border-box;
+  overflow: hidden;
   background: repeating-linear-gradient(
     -45deg,
     #fafafa,
@@ -7351,7 +7353,7 @@ a.jg-dir-tag-inline:hover {
   border-radius: 4px;
   text-decoration: none;
   color: #6b7280;
-  font-size: calc(14 * var(--jg));
+  font-size: calc(12 * var(--jg));
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
@@ -7379,7 +7381,7 @@ a.jg-dir-tag-inline:hover {
 }
 
 .jg-banner-advertise-cta__arrow {
-  font-size: calc(16 * var(--jg));
+  font-size: calc(13 * var(--jg));
   flex-shrink: 0;
 }
 
