@@ -7337,11 +7337,9 @@ a.jg-dir-tag-inline:hover {
   justify-content: center;
   gap: 12px;
   width: 100%;
-  height: 90px;
-  max-height: 90px;
-  padding: 6px 16px;
+  min-height: 90px;
+  padding: 12px 24px;
   box-sizing: border-box;
-  overflow: hidden;
   background: repeating-linear-gradient(
     -45deg,
     #fafafa,
@@ -7353,7 +7351,7 @@ a.jg-dir-tag-inline:hover {
   border-radius: 4px;
   text-decoration: none;
   color: #6b7280;
-  font-size: calc(12 * var(--jg));
+  font-size: calc(14 * var(--jg));
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
@@ -7381,7 +7379,7 @@ a.jg-dir-tag-inline:hover {
 }
 
 .jg-banner-advertise-cta__arrow {
-  font-size: calc(13 * var(--jg));
+  font-size: calc(16 * var(--jg));
   flex-shrink: 0;
 }
 
@@ -7426,9 +7424,30 @@ a.jg-dir-tag-inline:hover {
     box-sizing: border-box;
   }
 
+  #jg-banner-link {
+    display: block;
+    height: 90px;
+    overflow: hidden;
+  }
+
   #jg-banner-image {
     width: 100% !important;
-    height: auto !important;
+    height: 90px !important;
+    object-fit: contain !important;
+  }
+
+  .jg-banner-advertise-cta {
+    height: 90px;
+    max-height: 90px;
+    min-height: unset;
+    padding: 6px 12px;
+    gap: 8px;
+    font-size: calc(11 * var(--jg));
+    overflow: hidden;
+  }
+
+  .jg-banner-advertise-cta__arrow {
+    font-size: calc(12 * var(--jg));
   }
 }
 
