@@ -2765,6 +2765,33 @@ body.jg-modal-open {
   margin: 0 3px;
   flex-shrink: 0;
 }
+.jg-section-incomplete {
+  background: rgba(255, 30, 30, 0.1);
+  border: 2px dotted rgba(220, 38, 38, 0.5);
+  border-radius: 3px;
+  padding: 1px 2px;
+  cursor: help;
+  display: inline;
+}
+.jg-section-tooltip {
+  position: absolute;
+  z-index: 100;
+  background: #222;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+  max-width: 220px;
+  white-space: normal;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.jg-section-tooltip--visible {
+  opacity: 1;
+}
 .jg-rte-editor {
   padding: 10px 12px;
   min-height: 96px;

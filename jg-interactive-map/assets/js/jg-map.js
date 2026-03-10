@@ -1544,6 +1544,9 @@
             '<span class="jg-rte-sep"></span>' +
             '<button type="button" data-cmd="link" title="Wstaw link" class="jg-rte-btn">&#128279; Link</button>' +
             '<button type="button" data-cmd="pinLink" title="Link do pineski" class="jg-rte-btn">&#128205; Pineska</button>' +
+            '<span class="jg-rte-sep"></span>' +
+            '<button type="button" data-cmd="markSection" title="Oznacz zaznaczony fragment jako wymagający uzupełnienia" class="jg-rte-btn">&#9888; Zachęta</button>' +
+            '<button type="button" data-cmd="unmarkSection" title="Usuń oznaczenie zachęty z fragmentu" class="jg-rte-btn">&#10006; Usuń zachętę</button>' +
           '</div>' +
           '<div class="jg-rte-editor" id="' + id + '-editor" contenteditable="true" style="min-height:' + minH + 'px" data-placeholder="Opisz miejsce..."></div>' +
           '<input type="hidden" name="content" id="' + id + '-hidden">' +
@@ -1887,6 +1890,39 @@
             return;
           }
 
+          if (cmd === 'markSection') {
+            var selMark = window.getSelection();
+            if (!selMark.rangeCount || selMark.isCollapsed) return;
+            var rangeMark = selMark.getRangeAt(0);
+            if (!editor.contains(rangeMark.commonAncestorContainer)) return;
+            var fragMark = rangeMark.extractContents();
+            var spanMark = document.createElement('span');
+            spanMark.className = 'jg-section-incomplete';
+            spanMark.appendChild(fragMark);
+            rangeMark.insertNode(spanMark);
+            selMark.collapse(spanMark, spanMark.childNodes.length);
+            syncContent();
+            return;
+          }
+
+          if (cmd === 'unmarkSection') {
+            var selUnmark = window.getSelection();
+            var nodeUnmark = null;
+            if (selUnmark.rangeCount > 0) {
+              nodeUnmark = selUnmark.getRangeAt(0).commonAncestorContainer;
+              if (nodeUnmark.nodeType === 3) nodeUnmark = nodeUnmark.parentNode;
+            }
+            var targetUnmark = nodeUnmark && nodeUnmark.closest ? nodeUnmark.closest('.jg-section-incomplete') : null;
+            if (!targetUnmark) return;
+            var parentUnmark = targetUnmark.parentNode;
+            while (targetUnmark.firstChild) {
+              parentUnmark.insertBefore(targetUnmark.firstChild, targetUnmark);
+            }
+            parentUnmark.removeChild(targetUnmark);
+            syncContent();
+            return;
+          }
+
           editor.focus();
           document.execCommand(cmd, false, null);
           syncContent();
@@ -2040,6 +2076,64 @@
           document.execCommand('insertHTML', false, link);
           syncContent();
           updateCounter();
+        });
+
+        // --- Section incomplete tooltip ---
+        var wrapEl = qs('#' + id + '-wrap', parentEl);
+        var sectionTooltipEl = document.createElement('div');
+        sectionTooltipEl.className = 'jg-section-tooltip';
+        sectionTooltipEl.textContent = 'Informacje niekompletne. Uzupełnij je, jeśli możesz.';
+        wrapEl.appendChild(sectionTooltipEl);
+
+        var sectionTooltipVisible = false;
+
+        function showSectionTooltip(target) {
+          var wrapRect = wrapEl.getBoundingClientRect();
+          var targetRect = target.getBoundingClientRect();
+          var relTop = targetRect.bottom - wrapRect.top + 4;
+          var relLeft = targetRect.left - wrapRect.left;
+          sectionTooltipEl.style.top = relTop + 'px';
+          sectionTooltipEl.style.left = Math.max(0, relLeft) + 'px';
+          sectionTooltipEl.classList.add('jg-section-tooltip--visible');
+          sectionTooltipVisible = true;
+        }
+
+        function hideSectionTooltip() {
+          sectionTooltipEl.classList.remove('jg-section-tooltip--visible');
+          sectionTooltipVisible = false;
+        }
+
+        // Desktop: hover over incomplete section
+        editor.addEventListener('mouseover', function(e) {
+          var target = e.target;
+          if (target.nodeType === 3) target = target.parentNode;
+          var incomplete = target.closest ? target.closest('.jg-section-incomplete') : null;
+          if (incomplete) {
+            showSectionTooltip(incomplete);
+          } else {
+            hideSectionTooltip();
+          }
+        });
+
+        editor.addEventListener('mouseleave', function() {
+          hideSectionTooltip();
+        });
+
+        // Mobile: tap to toggle tooltip
+        editor.addEventListener('click', function(e) {
+          if (!window.matchMedia('(hover: none)').matches) return;
+          var target = e.target;
+          if (target.nodeType === 3) target = target.parentNode;
+          var incomplete = target.closest ? target.closest('.jg-section-incomplete') : null;
+          if (incomplete) {
+            if (sectionTooltipVisible) {
+              hideSectionTooltip();
+            } else {
+              showSectionTooltip(incomplete);
+            }
+          } else if (sectionTooltipVisible) {
+            hideSectionTooltip();
+          }
         });
 
         // Set initial content
