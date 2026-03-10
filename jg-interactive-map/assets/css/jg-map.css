@@ -7432,7 +7432,7 @@ a.jg-dir-tag-inline:hover {
 
   #jg-banner-image {
     width: 100% !important;
-    height: 90px !important;
+    height: 100% !important;
     object-fit: cover !important;
   }
 
