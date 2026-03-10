@@ -2808,7 +2808,7 @@ a.jg-section-incomplete {
   z-index: 10;
   background: #b91c1c;
   color: #fff;
-  font-size: calc(10 * var(--jg));
+  font-size: calc(13 * var(--jg));
   font-weight: 600;
   line-height: 1.6;
   padding: calc(1 * var(--jg)) calc(6 * var(--jg));
