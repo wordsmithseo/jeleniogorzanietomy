@@ -7424,21 +7424,10 @@ a.jg-dir-tag-inline:hover {
     box-sizing: border-box;
   }
 
-  #jg-banner-link {
-    display: block;
-    height: 90px;
-    overflow: hidden;
-  }
-
-  #jg-banner-image {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-  }
-
   .jg-banner-advertise-cta {
-    height: 90px;
-    max-height: 90px;
+    aspect-ratio: 728 / 90;
+    height: auto;
+    max-height: unset;
     min-height: unset;
     padding: 6px 12px;
     gap: 8px;
