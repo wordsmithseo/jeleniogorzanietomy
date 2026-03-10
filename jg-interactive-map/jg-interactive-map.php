@@ -661,6 +661,7 @@ class JG_Interactive_Map {
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #111; background: #f9fafb; line-height: 1.5; -webkit-font-smoothing: antialiased; }
         a { text-decoration: none; color: inherit; }
         img { max-width: 100%; height: auto; display: block; }
+        img.emoji { display: inline; width: 1em; height: 1em; vertical-align: -0.1em; max-width: none; }
 
         /* Minimal site header */
         .jg-sp-site-header {
