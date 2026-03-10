@@ -2078,15 +2078,6 @@
           updateCounter();
         });
 
-        // --- Section incomplete: click/tap to show info modal ---
-        editor.addEventListener('click', function(e) {
-          var target = e.target;
-          var span = target.closest ? target.closest('.jg-section-incomplete') : null;
-          if (span && editor.contains(span)) {
-            showAlert('⚠️ Informacje niekompletne. Uzupełnij je, jeśli możesz.');
-          }
-        });
-
         // Set initial content
         function setContent(html) {
           editor.innerHTML = html || '';
@@ -9359,6 +9350,34 @@
         if (ctaBtnGA) {
           ctaBtnGA.addEventListener('click', function() {
             trackGA('pin_cta_click', { pin_id: p.id, pin_title: p.title || '' });
+          });
+        }
+
+        // --- Incomplete section spans in view modal ---
+        var incompleteSpans = modalView.querySelectorAll('.jg-section-incomplete');
+        if (incompleteSpans.length) {
+          var incTip = document.createElement('div');
+          incTip.className = 'jg-section-tooltip';
+          incTip.textContent = 'Informacje niekompletne. Uzupełnij je, jeśli możesz.';
+          document.body.appendChild(incTip);
+
+          incompleteSpans.forEach(function(span) {
+            // Desktop: tooltip on hover
+            span.addEventListener('mouseenter', function() {
+              var r = span.getBoundingClientRect();
+              var left = r.left;
+              if (left + 220 > window.innerWidth - 8) left = window.innerWidth - 228;
+              incTip.style.left = Math.max(8, left) + 'px';
+              incTip.style.top = (r.bottom + 6) + 'px';
+              incTip.classList.add('jg-section-tooltip--visible');
+            });
+            span.addEventListener('mouseleave', function() {
+              incTip.classList.remove('jg-section-tooltip--visible');
+            });
+            // Mobile: modal on tap
+            span.addEventListener('click', function() {
+              showAlert('Informacje niekompletne. Uzupełnij je, jeśli możesz.');
+            });
           });
         }
 
