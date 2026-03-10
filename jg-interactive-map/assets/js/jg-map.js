@@ -2226,6 +2226,43 @@
         unlockBodyScroll();
       }
 
+      // Save current edit modal form state to sessionStorage (invoked on backdrop/Escape close).
+      function saveEditModalState() {
+        var form = qs('#edit-form', modalEdit);
+        if (!form) return;
+        var pointIdInput = qs('#edit-point-id', modalEdit);
+        if (!pointIdInput) return;
+        var editorEl = qs('#edit-rte-editor', form);
+        var state = {
+          pointId: parseInt(pointIdInput.value, 10),
+          title: (qs('input[name="title"]', form) || {value: ''}).value,
+          type: (qs('#edit-type-select', form) || {value: ''}).value,
+          category: (qs('#edit-category-select', form) || {value: ''}).value,
+          place_category: (qs('#edit-place-category-select', form) || {value: ''}).value,
+          curiosity_category: (qs('#edit-curiosity-category-select', form) || {value: ''}).value,
+          address: (qs('#edit-address-input', form) || {value: ''}).value,
+          lat: (qs('#edit-lat-input', form) || {value: ''}).value,
+          lng: (qs('#edit-lng-input', form) || {value: ''}).value,
+          description: editorEl ? editorEl.innerHTML : '',
+          tags: (qs('#edit-tags-hidden', form) || {value: ''}).value,
+          website: (qs('#edit-website-input', form) || {value: ''}).value,
+          phone: (qs('#edit-phone-input', form) || {value: ''}).value,
+          facebook_url: (qs('#edit-facebook-input', form) || {value: ''}).value,
+          instagram_url: (qs('#edit-instagram-input', form) || {value: ''}).value,
+          linkedin_url: (qs('#edit-linkedin-input', form) || {value: ''}).value,
+          tiktok_url: (qs('#edit-tiktok-input', form) || {value: ''}).value,
+          cta_enabled: !!(qs('#edit-cta-enabled-checkbox', form) || {}).checked,
+          cta_type: ''
+        };
+        var ctaTypeRadios = form.querySelectorAll('input[name="cta_type"]');
+        ctaTypeRadios.forEach(function(radio) {
+          if (radio.checked) state.cta_type = radio.value;
+        });
+        try {
+          sessionStorage.setItem('jg_edit_modal_state', JSON.stringify(state));
+        } catch(e) {}
+      }
+
       // Close regular modals by clicking their backdrop (lightbox handled separately below).
       // We track mousedown target to avoid closing when user merely drags text selection
       // starting inside the modal and releasing over the backdrop.
@@ -2236,7 +2273,23 @@
           mouseDownOnBg = (e.target === bg);
         });
         bg.addEventListener('click', function(e) {
-          if (e.target === bg && mouseDownOnBg) close(bg);
+          if (!(e.target === bg && mouseDownOnBg)) return;
+          if (bg === modalAdd) {
+            // Confirm before discarding new pin creation
+            showConfirm(
+              'Czy na pewno chcesz przerwać tworzenie nowego miejsca? Wszystkie wprowadzone dane zostaną utracone.',
+              'Przerwij tworzenie?',
+              'Tak, porzuć'
+            ).then(function(confirmed) {
+              if (confirmed) close(bg);
+            });
+          } else if (bg === modalEdit) {
+            // Save form state so the user can resume, then close
+            saveEditModalState();
+            close(bg);
+          } else {
+            close(bg);
+          }
         });
       });
 
@@ -2272,7 +2325,20 @@
 
       document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-          [modalAdd, modalView, modalReport, modalReportsList, modalEdit, modalAuthor, modalStatus, modalRanking, lightbox].forEach(close);
+          [modalView, modalReport, modalReportsList, modalAuthor, modalStatus, modalRanking, lightbox].forEach(close);
+          if (modalAdd && modalAdd.style.display === 'flex') {
+            showConfirm(
+              'Czy na pewno chcesz przerwać tworzenie nowego miejsca? Wszystkie wprowadzone dane zostaną utracone.',
+              'Przerwij tworzenie?',
+              'Tak, porzuć'
+            ).then(function(confirmed) {
+              if (confirmed) close(modalAdd);
+            });
+          }
+          if (modalEdit && modalEdit.style.display === 'flex') {
+            saveEditModalState();
+            close(modalEdit);
+          }
         }
       });
 
@@ -7048,6 +7114,7 @@
 
             var formHtml = '<header><h3>Edytuj</h3><button class="jg-close" id="edt-close">&times;</button></header>' +
               '<form id="edit-form" class="jg-grid cols-2">' +
+              '<input type="hidden" id="edit-point-id" value="' + p.id + '">' +
               approvalNoticeHtml +
               limitsHtml +
               '<label>Tytuł* <input name="title" required value="' + esc(p.title || '') + '" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
@@ -7092,10 +7159,12 @@
             open(modalEdit, formHtml);
 
         qs('#edt-close', modalEdit).onclick = function() {
+          try { sessionStorage.removeItem('jg_edit_modal_state'); } catch(e) {}
           close(modalEdit);
         };
 
         qs('#edt-cancel', modalEdit).onclick = function() {
+          try { sessionStorage.removeItem('jg_edit_modal_state'); } catch(e) {}
           close(modalEdit);
         };
 
@@ -7113,6 +7182,92 @@
         if (editTagInput && p.tags) {
           editTagInput.setTags(p.tags);
         }
+
+        // Restore saved draft state if the user re-opens after an accidental backdrop/Escape close
+        try {
+          var savedStateStr = sessionStorage.getItem('jg_edit_modal_state');
+          if (savedStateStr) {
+            var savedState = JSON.parse(savedStateStr);
+            if (savedState && +savedState.pointId === +p.id) {
+              var titleInput = qs('input[name="title"]', form);
+              if (titleInput && savedState.title !== undefined) titleInput.value = savedState.title;
+
+              var typeSelectEl = qs('#edit-type-select', form);
+              if (typeSelectEl && savedState.type) {
+                typeSelectEl.value = savedState.type;
+                typeSelectEl.dispatchEvent(new Event('change'));
+              }
+
+              var catSelect = qs('#edit-category-select', form);
+              if (catSelect && savedState.category !== undefined) catSelect.value = savedState.category;
+
+              var placeCatSelect = qs('#edit-place-category-select', form);
+              if (placeCatSelect && savedState.place_category !== undefined) placeCatSelect.value = savedState.place_category;
+
+              var curiosityCatSelect = qs('#edit-curiosity-category-select', form);
+              if (curiosityCatSelect && savedState.curiosity_category !== undefined) curiosityCatSelect.value = savedState.curiosity_category;
+
+              var addressInputEl = qs('#edit-address-input', form);
+              if (addressInputEl && savedState.address !== undefined) addressInputEl.value = savedState.address;
+
+              var latInputEl = qs('#edit-lat-input', form);
+              if (latInputEl && savedState.lat) latInputEl.value = savedState.lat;
+
+              var lngInputEl = qs('#edit-lng-input', form);
+              if (lngInputEl && savedState.lng) lngInputEl.value = savedState.lng;
+
+              if (editRte && savedState.description !== undefined) {
+                editRte.setContent(savedState.description);
+              }
+
+              if (editTagInput && savedState.tags) {
+                editTagInput.setTags(savedState.tags.split(',').filter(Boolean));
+              }
+
+              // Sponsored fields
+              var websiteInput = qs('#edit-website-input', form);
+              if (websiteInput && savedState.website !== undefined) websiteInput.value = savedState.website;
+
+              var phoneInput = qs('#edit-phone-input', form);
+              if (phoneInput && savedState.phone !== undefined) phoneInput.value = savedState.phone;
+
+              var facebookInput = qs('#edit-facebook-input', form);
+              if (facebookInput && savedState.facebook_url !== undefined) facebookInput.value = savedState.facebook_url;
+
+              var instagramInput = qs('#edit-instagram-input', form);
+              if (instagramInput && savedState.instagram_url !== undefined) instagramInput.value = savedState.instagram_url;
+
+              var linkedinInput = qs('#edit-linkedin-input', form);
+              if (linkedinInput && savedState.linkedin_url !== undefined) linkedinInput.value = savedState.linkedin_url;
+
+              var tiktokInput = qs('#edit-tiktok-input', form);
+              if (tiktokInput && savedState.tiktok_url !== undefined) tiktokInput.value = savedState.tiktok_url;
+
+              var ctaCheckbox = qs('#edit-cta-enabled-checkbox', form);
+              if (ctaCheckbox && savedState.cta_enabled !== undefined) {
+                ctaCheckbox.checked = savedState.cta_enabled;
+                ctaCheckbox.dispatchEvent(new Event('change'));
+              }
+
+              if (savedState.cta_type) {
+                var ctaRadios = form.querySelectorAll('input[name="cta_type"]');
+                ctaRadios.forEach(function(radio) {
+                  radio.checked = radio.value === savedState.cta_type;
+                });
+              }
+
+              msg.style.color = '#2563eb';
+              msg.innerHTML = 'Wznowiono edycję z poprzedniej sesji. <button type="button" style="background:none;border:none;color:#2563eb;text-decoration:underline;cursor:pointer;padding:0;font-size:12px" id="edit-discard-saved-state">Zacznij od nowa</button>';
+              var discardBtn = qs('#edit-discard-saved-state', form);
+              if (discardBtn) {
+                discardBtn.onclick = function() {
+                  try { sessionStorage.removeItem('jg_edit_modal_state'); } catch(e) {}
+                  openEditModal(p, fromReports);
+                };
+              }
+            }
+          }
+        } catch(e) {}
 
         // On form submit, sync the rich editor content
         form.addEventListener('submit', function() {
@@ -7549,6 +7704,8 @@
 
             msg.textContent = 'Zaktualizowano.';
             msg.style.color = '#15803d';
+            // Clear any saved draft state on successful submission
+            try { sessionStorage.removeItem('jg_edit_modal_state'); } catch(e) {}
             // Invalidate tag cache so updated tags appear in suggestions immediately
             cachedAllTags = null;
             cachedAllTagsTime = 0;
