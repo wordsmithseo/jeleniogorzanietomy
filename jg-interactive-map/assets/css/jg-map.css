@@ -2808,10 +2808,10 @@ a.jg-section-incomplete {
   z-index: 10;
   background: #b91c1c;
   color: #fff;
-  font-size: 10px;
+  font-size: calc(10 * var(--jg));
   font-weight: 600;
   line-height: 1.6;
-  padding: 1px 6px;
+  padding: calc(1 * var(--jg)) calc(6 * var(--jg));
   border-radius: 0 2px 0 4px;
   pointer-events: none;
   white-space: nowrap;
