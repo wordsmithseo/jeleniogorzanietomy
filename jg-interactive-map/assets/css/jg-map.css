@@ -7417,33 +7417,18 @@ a.jg-dir-tag-inline:hover {
   }
 
   .jg-banner-container {
-    position: relative !important;
-    width: 100% !important;
     max-width: 100% !important;
-    padding: 0 !important;
+    width: 100% !important;
+    padding: 0 10px;
     margin: 0 auto !important;
     box-sizing: border-box;
-    height: 0 !important;
-    padding-bottom: calc(90 / 728 * 100%) !important;
-    overflow: hidden !important;
-  }
-
-  #jg-banner-loading,
-  #jg-banner-link,
-  .jg-banner-advertise-cta {
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  #jg-banner-image {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: contain !important;
   }
 
   .jg-banner-advertise-cta {
+    aspect-ratio: 728 / 90;
+    height: auto;
+    max-height: unset;
+    min-height: unset;
     padding: 6px 12px;
     gap: 8px;
     font-size: calc(11 * var(--jg));
