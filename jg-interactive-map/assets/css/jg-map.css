@@ -7424,9 +7424,16 @@ a.jg-dir-tag-inline:hover {
     box-sizing: border-box;
   }
 
+  #jg-banner-link {
+    display: block;
+    height: 90px;
+    overflow: hidden;
+  }
+
   #jg-banner-image {
     width: 100% !important;
-    height: auto !important;
+    height: 90px !important;
+    object-fit: contain !important;
   }
 
   .jg-banner-advertise-cta {
