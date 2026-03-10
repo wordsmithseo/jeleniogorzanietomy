@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.24.6
+ * Version: 3.24.7
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.24.6');
+define('JG_MAP_VERSION', '3.24.7');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -870,6 +870,15 @@ class JG_Interactive_Map {
         </header>
 
         <div class="jg-sp">
+            <!-- Prominent "View on Map" CTA (manual click only, no auto-redirect) -->
+            <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" class="jg-sp-map-cta">
+                <div>
+                    <div class="jg-sp-map-cta-text">Zobacz na mapie interaktywnej</div>
+                    <div class="jg-sp-map-cta-sub"><?php echo esc_html($point['title']); ?> &mdash; <?php echo esc_html($type_label); ?> w Jeleniej Górze</div>
+                </div>
+                <span class="jg-sp-map-cta-arrow">&rarr;</span>
+            </a>
+
             <!-- Header with badges -->
             <div class="jg-sp-header">
                 <?php if ($point['is_promo']): ?>
