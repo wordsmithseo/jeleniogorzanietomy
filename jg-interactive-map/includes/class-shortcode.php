@@ -611,7 +611,7 @@ class JG_Map_Shortcode {
                     Ładowanie banneru...
                 </div>
                 <a id="jg-banner-link" href="#" target="_blank" style="display:none;">
-                    <img id="jg-banner-image" src="" alt="Banner" style="width:100%;height:auto;display:block;object-fit:contain;background:#f5f5f5;">
+                    <img id="jg-banner-image" src="" alt="Banner" style="width:100%;height:auto;display:block;object-fit:cover;">
                 </a>
                 <a id="jg-banner-fallback-cta" href="/reklama" class="jg-banner-advertise-cta" style="display:none;">
                     <span class="jg-banner-advertise-cta__label">Reklama</span>
