@@ -1896,6 +1896,10 @@
             var rangeMark = selMark.getRangeAt(0);
             if (!editor.contains(rangeMark.commonAncestorContainer)) return;
             var fragMark = rangeMark.extractContents();
+            // Apply class directly to block elements (browsers strip spans wrapping blocks)
+            fragMark.querySelectorAll('ul,ol,li,p,div,h1,h2,h3,h4,h5,h6,blockquote,table,tr,td,th').forEach(function(el) {
+              el.classList.add('jg-section-incomplete');
+            });
             var spanMark = document.createElement('span');
             spanMark.className = 'jg-section-incomplete';
             spanMark.appendChild(fragMark);
@@ -1914,11 +1918,20 @@
             }
             var targetUnmark = nodeUnmark && nodeUnmark.closest ? nodeUnmark.closest('.jg-section-incomplete') : null;
             if (!targetUnmark) return;
-            var parentUnmark = targetUnmark.parentNode;
-            while (targetUnmark.firstChild) {
-              parentUnmark.insertBefore(targetUnmark.firstChild, targetUnmark);
+            if (targetUnmark.tagName.toLowerCase() === 'span') {
+              // Inline span: unwrap
+              var parentUnmark = targetUnmark.parentNode;
+              while (targetUnmark.firstChild) {
+                parentUnmark.insertBefore(targetUnmark.firstChild, targetUnmark);
+              }
+              parentUnmark.removeChild(targetUnmark);
+            } else {
+              // Block element: remove class from it and its marked descendants
+              targetUnmark.classList.remove('jg-section-incomplete');
+              targetUnmark.querySelectorAll('.jg-section-incomplete').forEach(function(el) {
+                el.classList.remove('jg-section-incomplete');
+              });
             }
-            parentUnmark.removeChild(targetUnmark);
             syncContent();
             return;
           }
@@ -9354,30 +9367,51 @@
         }
 
         // --- Incomplete section spans in view modal ---
-        var incompleteSpans = modalView.querySelectorAll('.jg-section-incomplete');
-        if (incompleteSpans.length) {
-          var incTip = document.createElement('div');
-          incTip.className = 'jg-section-tooltip';
-          incTip.textContent = 'Informacje niekompletne. Uzupełnij je, jeśli możesz.';
-          document.body.appendChild(incTip);
-
-          incompleteSpans.forEach(function(span) {
-            // Desktop: tooltip on hover
-            span.addEventListener('mouseenter', function() {
-              var r = span.getBoundingClientRect();
-              var left = r.left;
-              if (left + 220 > window.innerWidth - 8) left = window.innerWidth - 228;
-              incTip.style.left = Math.max(8, left) + 'px';
-              incTip.style.top = (r.bottom + 6) + 'px';
+        var placeContent = modalView.querySelector('.jg-place-content');
+        if (placeContent && placeContent.querySelector('.jg-section-incomplete')) {
+          var incTip = document.getElementById('jg-section-tooltip-el');
+          if (!incTip) {
+            incTip = document.createElement('div');
+            incTip.id = 'jg-section-tooltip-el';
+            incTip.className = 'jg-section-tooltip';
+            incTip.textContent = 'Informacje niekompletne. Uzupełnij je, jeśli możesz.';
+            document.body.appendChild(incTip);
+          } else {
+            incTip.classList.remove('jg-section-tooltip--visible');
+          }
+          var incTipHideTimer;
+          // Desktop: tooltip follows cursor
+          placeContent.addEventListener('mousemove', function(e) {
+            var span = e.target.closest ? e.target.closest('.jg-section-incomplete') : null;
+            if (span) {
+              var x = e.clientX + 14;
+              var y = e.clientY + 14;
+              if (x + 220 > window.innerWidth - 8) x = e.clientX - 224;
+              if (y + 60 > window.innerHeight - 8) y = e.clientY - 50;
+              incTip.style.left = Math.max(8, x) + 'px';
+              incTip.style.top = Math.max(8, y) + 'px';
               incTip.classList.add('jg-section-tooltip--visible');
-            });
-            span.addEventListener('mouseleave', function() {
+            } else {
               incTip.classList.remove('jg-section-tooltip--visible');
-            });
-            // Mobile: modal on tap
-            span.addEventListener('click', function() {
-              showAlert('Informacje niekompletne. Uzupełnij je, jeśli możesz.');
-            });
+            }
+          });
+          placeContent.addEventListener('mouseleave', function() {
+            incTip.classList.remove('jg-section-tooltip--visible');
+          });
+          // Mobile: tap shows tooltip briefly
+          placeContent.addEventListener('click', function(e) {
+            var span = e.target.closest ? e.target.closest('.jg-section-incomplete') : null;
+            if (!span) return;
+            var r = span.getBoundingClientRect();
+            var left = r.left;
+            if (left + 220 > window.innerWidth - 8) left = window.innerWidth - 228;
+            incTip.style.left = Math.max(8, left) + 'px';
+            incTip.style.top = (r.bottom + 6) + 'px';
+            incTip.classList.add('jg-section-tooltip--visible');
+            clearTimeout(incTipHideTimer);
+            incTipHideTimer = setTimeout(function() {
+              incTip.classList.remove('jg-section-tooltip--visible');
+            }, 3000);
           });
         }
 
