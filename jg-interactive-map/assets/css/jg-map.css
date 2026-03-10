@@ -2773,25 +2773,7 @@ body.jg-modal-open {
   cursor: help;
   display: inline;
 }
-.jg-section-tooltip {
-  position: fixed;
-  z-index: 99999;
-  background: #222;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  line-height: 1.4;
-  pointer-events: none;
-  max-width: 220px;
-  white-space: normal;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.jg-section-tooltip--visible {
-  opacity: 1;
-}
+
 .jg-rte-editor {
   padding: 10px 12px;
   min-height: 96px;
