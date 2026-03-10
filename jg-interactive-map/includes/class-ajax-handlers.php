@@ -7883,6 +7883,7 @@ class JG_Map_Ajax_Handlers {
                 ),
                 'featured_image'   => $this->get_featured_image_url($point),
                 'has_description'  => !empty($point['content']) || !empty($point['excerpt']),
+                'has_incomplete_sections' => strpos($point['content'] ?? '', 'jg-section-incomplete') !== false,
                 'has_tags'         => $this->point_has_tags($point),
                 'category'         => !empty($point['category']) ? sanitize_text_field($point['category']) : '',
                 'images_count'     => $this->get_images_count($point)
