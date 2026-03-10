@@ -2079,21 +2079,24 @@
         });
 
         // --- Section incomplete tooltip ---
-        var wrapEl = qs('#' + id + '-wrap', parentEl);
         var sectionTooltipEl = document.createElement('div');
         sectionTooltipEl.className = 'jg-section-tooltip';
         sectionTooltipEl.textContent = 'Informacje niekompletne. Uzupełnij je, jeśli możesz.';
-        wrapEl.appendChild(sectionTooltipEl);
+        document.body.appendChild(sectionTooltipEl);
 
         var sectionTooltipVisible = false;
 
         function showSectionTooltip(target) {
-          var wrapRect = wrapEl.getBoundingClientRect();
-          var targetRect = target.getBoundingClientRect();
-          var relTop = targetRect.bottom - wrapRect.top + 4;
-          var relLeft = targetRect.left - wrapRect.left;
-          sectionTooltipEl.style.top = relTop + 'px';
-          sectionTooltipEl.style.left = Math.max(0, relLeft) + 'px';
+          var rect = target.getBoundingClientRect();
+          var tipLeft = rect.left;
+          var tipTop = rect.bottom + 6;
+          // Keep tooltip within viewport horizontally
+          var tipWidth = 220;
+          if (tipLeft + tipWidth > window.innerWidth - 8) {
+            tipLeft = window.innerWidth - tipWidth - 8;
+          }
+          sectionTooltipEl.style.left = Math.max(8, tipLeft) + 'px';
+          sectionTooltipEl.style.top = tipTop + 'px';
           sectionTooltipEl.classList.add('jg-section-tooltip--visible');
           sectionTooltipVisible = true;
         }

@@ -2774,8 +2774,8 @@ body.jg-modal-open {
   display: inline;
 }
 .jg-section-tooltip {
-  position: absolute;
-  z-index: 100;
+  position: fixed;
+  z-index: 99999;
   background: #222;
   color: #fff;
   padding: 6px 10px;
