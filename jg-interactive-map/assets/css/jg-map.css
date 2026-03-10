@@ -2770,7 +2770,31 @@ body.jg-modal-open {
   border: 2px dotted rgba(220, 38, 38, 0.5);
   border-radius: 3px;
   padding: 1px 2px;
-  cursor: help;
+  cursor: help !important;
+  display: inline;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+ul.jg-section-incomplete,
+ol.jg-section-incomplete,
+li.jg-section-incomplete,
+p.jg-section-incomplete,
+h1.jg-section-incomplete,
+h2.jg-section-incomplete,
+h3.jg-section-incomplete,
+h4.jg-section-incomplete,
+h5.jg-section-incomplete,
+h6.jg-section-incomplete,
+blockquote.jg-section-incomplete {
+  display: block;
+  padding: 2px 4px;
+  box-sizing: border-box;
+}
+.jg-section-incomplete a,
+.jg-section-incomplete * {
+  cursor: help !important;
+}
+a.jg-section-incomplete {
   display: inline;
 }
 .jg-section-tooltip {
