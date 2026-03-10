@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.24.4
+ * Version: 3.24.5
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.24.4');
+define('JG_MAP_VERSION', '3.24.5');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -806,8 +806,8 @@ class JG_Interactive_Map {
         }
         .jg-redirect-icon { font-size: 22px; flex-shrink: 0; }
         .jg-redirect-text { flex: 1; min-width: 0; }
-        .jg-redirect-text strong { display: block; font-size: 14px; font-weight: 700; line-height: 1.3; }
-        .jg-redirect-text span { font-size: 12px; opacity: 0.9; }
+        .jg-redirect-title { display: block; font-size: calc(17 * var(--jg)); font-weight: 700; line-height: 1.3; }
+        .jg-redirect-text span { font-size: calc(14 * var(--jg)); opacity: 0.9; }
         .jg-redirect-actions { display: flex; gap: 8px; flex-shrink: 0; }
         .jg-redirect-btn-go {
             background: #fff; color: <?php echo $type_color; ?>;
@@ -834,7 +834,7 @@ class JG_Interactive_Map {
         /* offset body so banner doesn't overlap header */
         body { padding-top: 58px; }
         @media (max-width: 480px) {
-            .jg-redirect-text strong { font-size: 13px; }
+            .jg-redirect-title { font-size: calc(15 * var(--jg)); }
             body { padding-top: 72px; }
         }
     </style>
@@ -845,7 +845,7 @@ class JG_Interactive_Map {
             <div class="jg-redirect-banner-inner">
                 <span class="jg-redirect-icon">🗺️</span>
                 <div class="jg-redirect-text">
-                    <strong>Mapa interaktywna Jelenia Góra</strong>
+                    <strong class="jg-redirect-title">Mapa interaktywna Jelenia Góra</strong>
                     <span id="jg-banner-sub">Odkryj setki miejsc, ciekawostek i zgłoszeń &mdash; przenosisz się za <strong id="jg-countdown">10</strong>s</span>
                 </div>
                 <div class="jg-redirect-actions">
@@ -870,15 +870,6 @@ class JG_Interactive_Map {
         </header>
 
         <div class="jg-sp">
-            <!-- Prominent "View on Map" CTA (manual click only, no auto-redirect) -->
-            <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" class="jg-sp-map-cta">
-                <div>
-                    <div class="jg-sp-map-cta-text">Zobacz na mapie interaktywnej</div>
-                    <div class="jg-sp-map-cta-sub"><?php echo esc_html($point['title']); ?> &mdash; <?php echo esc_html($type_label); ?> w Jeleniej Górze</div>
-                </div>
-                <span class="jg-sp-map-cta-arrow">&rarr;</span>
-            </a>
-
             <!-- Header with badges -->
             <div class="jg-sp-header">
                 <?php if ($point['is_promo']): ?>
