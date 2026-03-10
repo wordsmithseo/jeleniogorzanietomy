@@ -2078,70 +2078,6 @@
           updateCounter();
         });
 
-        // --- Section incomplete tooltip ---
-        var sectionTooltipEl = document.createElement('div');
-        sectionTooltipEl.className = 'jg-section-tooltip';
-        sectionTooltipEl.textContent = 'Informacje niekompletne. Uzupełnij je, jeśli możesz.';
-        document.body.appendChild(sectionTooltipEl);
-
-        var sectionTooltipVisible = false;
-        var _tipCurrentSpan = null;
-
-        function showSectionTooltip(spanEl) {
-          var rect = spanEl.getBoundingClientRect();
-          var tipLeft = rect.left;
-          var tipTop = rect.bottom + 6;
-          var tipWidth = 220;
-          if (tipLeft + tipWidth > window.innerWidth - 8) tipLeft = window.innerWidth - tipWidth - 8;
-          sectionTooltipEl.style.left = Math.max(8, tipLeft) + 'px';
-          sectionTooltipEl.style.top = tipTop + 'px';
-          sectionTooltipEl.classList.add('jg-section-tooltip--visible');
-          sectionTooltipVisible = true;
-          _tipCurrentSpan = spanEl;
-        }
-
-        function hideSectionTooltip() {
-          sectionTooltipEl.classList.remove('jg-section-tooltip--visible');
-          sectionTooltipVisible = false;
-          _tipCurrentSpan = null;
-        }
-
-        function incompleteUnderPoint(x, y) {
-          var el = document.elementFromPoint(x, y);
-          if (!el) return null;
-          var span = el.closest ? el.closest('.jg-section-incomplete') : null;
-          return (span && editor.contains(span)) ? span : null;
-        }
-
-        // Desktop: mouse movement
-        editor.addEventListener('mousemove', function(e) {
-          var span = incompleteUnderPoint(e.clientX, e.clientY);
-          if (span) {
-            if (_tipCurrentSpan !== span) showSectionTooltip(span);
-          } else if (sectionTooltipVisible) {
-            hideSectionTooltip();
-          }
-        });
-
-        editor.addEventListener('mouseleave', function() {
-          hideSectionTooltip();
-        });
-
-        // Mobile: touchstart fires before contenteditable focus, elementFromPoint is reliable
-        editor.addEventListener('touchstart', function(e) {
-          var t = e.changedTouches[0];
-          var span = incompleteUnderPoint(t.clientX, t.clientY);
-          if (span) {
-            if (sectionTooltipVisible && _tipCurrentSpan === span) {
-              hideSectionTooltip();
-            } else {
-              showSectionTooltip(span);
-            }
-          } else if (sectionTooltipVisible) {
-            hideSectionTooltip();
-          }
-        }, { passive: true });
-
         // Set initial content
         function setContent(html) {
           editor.innerHTML = html || '';
@@ -9414,6 +9350,34 @@
         if (ctaBtnGA) {
           ctaBtnGA.addEventListener('click', function() {
             trackGA('pin_cta_click', { pin_id: p.id, pin_title: p.title || '' });
+          });
+        }
+
+        // --- Incomplete section spans in view modal ---
+        var incompleteSpans = modalView.querySelectorAll('.jg-section-incomplete');
+        if (incompleteSpans.length) {
+          var incTip = document.createElement('div');
+          incTip.className = 'jg-section-tooltip';
+          incTip.textContent = 'Informacje niekompletne. Uzupełnij je, jeśli możesz.';
+          document.body.appendChild(incTip);
+
+          incompleteSpans.forEach(function(span) {
+            // Desktop: tooltip on hover
+            span.addEventListener('mouseenter', function() {
+              var r = span.getBoundingClientRect();
+              var left = r.left;
+              if (left + 220 > window.innerWidth - 8) left = window.innerWidth - 228;
+              incTip.style.left = Math.max(8, left) + 'px';
+              incTip.style.top = (r.bottom + 6) + 'px';
+              incTip.classList.add('jg-section-tooltip--visible');
+            });
+            span.addEventListener('mouseleave', function() {
+              incTip.classList.remove('jg-section-tooltip--visible');
+            });
+            // Mobile: modal on tap
+            span.addEventListener('click', function() {
+              showAlert('Informacje niekompletne. Uzupełnij je, jeśli możesz.');
+            });
           });
         }
 
