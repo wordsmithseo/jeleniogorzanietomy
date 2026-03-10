@@ -216,13 +216,13 @@
     hideBanner: function() {
       $('#jg-banner-loading').hide();
       $('#jg-banner-label').hide();
-      var ctaHtml = '<a href="/reklama" style="display:flex !important;align-items:center;justify-content:center;gap:12px;width:100%;height:90px;max-height:90px;padding:6px 16px;box-sizing:border-box;overflow:hidden;border-radius:4px;text-decoration:none;background:#8d2324;font-family:system-ui,-apple-system,sans-serif">' +
-        '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.7);flex-shrink:0">Reklama</span>' +
-        '<span style="font-size:13px;font-weight:700;color:#fff">Tu może być Twoja reklama — napisz do nas</span>' +
-        '<span style="font-size:14px;flex-shrink:0;color:#fff">→</span>' +
+      var ctaHtml = '<a href="/reklama" style="display:flex !important;align-items:center;justify-content:center;gap:16px;width:100%;min-height:90px;padding:16px 28px;box-sizing:border-box;border-radius:4px;text-decoration:none;background:#8d2324;font-family:system-ui,-apple-system,sans-serif">' +
+        '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.7);flex-shrink:0">Reklama</span>' +
+        '<span style="font-size:16px;font-weight:700;color:#fff">Tu może być Twoja reklama — napisz do nas</span>' +
+        '<span style="font-size:20px;flex-shrink:0;color:#fff">→</span>' +
       '</a>';
       var $container = $('#jg-banner-container');
-      $container.css({ display: 'block', height: '90px', maxHeight: '90px', overflow: 'hidden' }).html(ctaHtml);
+      $container.css({ display: 'block', minHeight: '90px', overflow: 'visible' }).html(ctaHtml);
     }
   };
 
