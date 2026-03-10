@@ -7433,7 +7433,7 @@ a.jg-dir-tag-inline:hover {
   #jg-banner-image {
     width: 100% !important;
     height: 90px !important;
-    object-fit: contain !important;
+    object-fit: cover !important;
   }
 
   .jg-banner-advertise-cta {
