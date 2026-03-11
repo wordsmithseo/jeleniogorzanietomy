@@ -778,6 +778,20 @@
         return;
       }
 
+      // Ensure GA4 is available for virtual page_view events (modal opens).
+      // jg-map.js runs in the footer, after all head scripts have executed.
+      // If a GA plugin defined window.gtag already — skip. Otherwise bootstrap GA4.
+      if (typeof window.gtag !== 'function') {
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function() { dataLayer.push(arguments); };
+        gtag('js', new Date());
+        gtag('config', 'G-B6E2GMXWCL');
+        var ga4s = document.createElement('script');
+        ga4s.async = true;
+        ga4s.src = 'https://www.googletagmanager.com/gtag/js?id=G-B6E2GMXWCL';
+        document.head.appendChild(ga4s);
+      }
+
       var elMap = document.getElementById('jg-map');
       var elFilters = document.getElementById('jg-map-filters');
       var modalAdd = document.getElementById('jg-map-modal-add');
@@ -9270,11 +9284,15 @@
           trackStat(p.id, 'view', { is_unique: isUnique }, p.author_id);
         }
 
-        // GA: virtual page view — identical URL to standalone pin HTML page
+        // GA4: virtual page view — identical URL to standalone pin HTML page
+        // Must use page_location (full URL) — GA4 ignores page_path for path reporting
+        // and instead derives page path from page_location. Without page_location,
+        // all modal opens would be attributed to '/' (the map page URL).
         if (typeof gtag === 'function' && p.slug && p.type) {
           var gaTypePath = p.type === 'ciekawostka' ? 'ciekawostka' : (p.type === 'zgloszenie' ? 'zgloszenie' : 'miejsce');
+          var gaPinPath = '/' + gaTypePath + '/' + p.slug + '/';
           gtag('event', 'page_view', {
-            page_path: '/' + gaTypePath + '/' + p.slug + '/',
+            page_location: window.location.origin + gaPinPath,
             page_title: p.title || ''
           });
         }
