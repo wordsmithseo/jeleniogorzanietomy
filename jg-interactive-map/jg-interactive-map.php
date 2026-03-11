@@ -663,6 +663,14 @@ class JG_Interactive_Map {
       gtag('js', new Date());
       gtag('config', 'G-B6E2GMXWCL');
     </script>
+    <!-- Microsoft Clarity – added manually because wp_head() is not called on pin pages -->
+    <script type="text/javascript">
+      (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window,document,"clarity","script","vrf65qsjp5");
+    </script>
     <style>
         /* Standalone point page styles - no Elementor dependency */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
