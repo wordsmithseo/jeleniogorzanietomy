@@ -4913,6 +4913,11 @@
                 if (fromPoint) {
                   // Coming from point page: skip pulsing, open modal immediately.
                   // HTML pin page already fired GA4 page_view — skip the modal's hit.
+                  // Clean URL immediately to prevent a second checkDeepLink() call
+                  // (triggered by background cache refresh) from seeing from=point again.
+                  if (history.replaceState) {
+                    history.replaceState(null, '', window.location.origin + window.location.pathname);
+                  }
                   skipNextGaPageView = true;
                   setTimeout(openAndClean, 100);
                 } else {
