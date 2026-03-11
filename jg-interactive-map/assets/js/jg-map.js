@@ -9270,14 +9270,14 @@
           trackStat(p.id, 'view', { is_unique: isUnique }, p.author_id);
         }
 
-        // GA: track pin view for ALL pins
-        trackGA('pin_view', {
-          pin_id: p.id,
-          pin_title: p.title || '',
-          pin_type: p.type || '',
-          pin_category: p.category || '',
-          pin_sponsored: p.sponsored ? 'yes' : 'no'
-        });
+        // GA: virtual page view — identical URL to standalone pin HTML page
+        if (typeof gtag === 'function' && p.slug && p.type) {
+          var gaTypePath = p.type === 'ciekawostka' ? 'ciekawostka' : (p.type === 'zgloszenie' ? 'zgloszenie' : 'miejsce');
+          gtag('event', 'page_view', {
+            page_path: '/' + gaTypePath + '/' + p.slug + '/',
+            page_title: p.title || ''
+          });
+        }
 
         // Copy link button handler
         var copyBtn = qs('#btn-copy-link', modalView);
