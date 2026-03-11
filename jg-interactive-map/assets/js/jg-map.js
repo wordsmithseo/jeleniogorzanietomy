@@ -778,6 +778,20 @@
         return;
       }
 
+      // Ensure GA4 is available for virtual page_view events (modal opens).
+      // jg-map.js runs in the footer, after all head scripts have executed.
+      // If a GA plugin defined window.gtag already — skip. Otherwise bootstrap GA4.
+      if (typeof window.gtag !== 'function') {
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function() { dataLayer.push(arguments); };
+        gtag('js', new Date());
+        gtag('config', 'G-B6E2GMXWCL');
+        var ga4s = document.createElement('script');
+        ga4s.async = true;
+        ga4s.src = 'https://www.googletagmanager.com/gtag/js?id=G-B6E2GMXWCL';
+        document.head.appendChild(ga4s);
+      }
+
       var elMap = document.getElementById('jg-map');
       var elFilters = document.getElementById('jg-map-filters');
       var modalAdd = document.getElementById('jg-map-modal-add');
