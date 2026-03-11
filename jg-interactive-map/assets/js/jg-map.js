@@ -9284,11 +9284,15 @@
           trackStat(p.id, 'view', { is_unique: isUnique }, p.author_id);
         }
 
-        // GA: virtual page view — identical URL to standalone pin HTML page
+        // GA4: virtual page view — identical URL to standalone pin HTML page
+        // Must use page_location (full URL) — GA4 ignores page_path for path reporting
+        // and instead derives page path from page_location. Without page_location,
+        // all modal opens would be attributed to '/' (the map page URL).
         if (typeof gtag === 'function' && p.slug && p.type) {
           var gaTypePath = p.type === 'ciekawostka' ? 'ciekawostka' : (p.type === 'zgloszenie' ? 'zgloszenie' : 'miejsce');
+          var gaPinPath = '/' + gaTypePath + '/' + p.slug + '/';
           gtag('event', 'page_view', {
-            page_path: '/' + gaTypePath + '/' + p.slug + '/',
+            page_location: window.location.origin + gaPinPath,
             page_title: p.title || ''
           });
         }
