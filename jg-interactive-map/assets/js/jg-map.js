@@ -3,26 +3,28 @@
  * Version: 3.0.0
  */
 
-// GA4 page_view deduplication: intercept dataLayer to drop duplicate page_view
-// events for the same URL within 2 seconds (e.g. Site Kit + our manual call).
+// Block GTM's automatic History Change page_view for map pin modal URL changes.
+// GTM (GT-TX2S859S / GTM-5PFNSKQH) fires page_view on every replaceState call
+// via its "History Change" trigger. We suppress gtm.historyChange events when:
+//   - new URL is a pin path (/miejsce/, /ciekawostka/, /zgloszenie/) — modal opening
+//   - old URL is a pin path — modal closing (replaceState back to /)
+// Our manual gtag('event','page_view') call in openDetailsModalContent remains
+// the sole source of pin page_view events.
 (function() {
-  var _lastUrl = '';
-  var _lastTime = 0;
+  var PIN_PATH_RE = /\/(miejsce|ciekawostka|zgloszenie)\//;
+
   var dl = window.dataLayer = window.dataLayer || [];
   var _origPush = dl.push.bind(dl);
   dl.push = function() {
     var args = Array.prototype.slice.call(arguments);
     for (var i = 0; i < args.length; i++) {
       var item = args[i];
-      // gtag pushes Arguments objects: item[0]='event', item[1]='page_view'
-      if (item && item[0] === 'event' && item[1] === 'page_view') {
-        var url = (item[2] && item[2].page_location) || window.location.href;
-        var now = Date.now();
-        if (url === _lastUrl && now - _lastTime < 2000) {
-          return; // drop duplicate
+      if (item && (item.event === 'gtm.historyChange' || item.event === 'gtm.historyChange-v2')) {
+        var newUrl = String(item['gtm.newUrl'] || '');
+        var oldUrl = String(item['gtm.oldUrl'] || '');
+        if (PIN_PATH_RE.test(newUrl) || PIN_PATH_RE.test(oldUrl)) {
+          return; // suppress — modal open/close, not real navigation
         }
-        _lastUrl = url;
-        _lastTime = now;
       }
     }
     return _origPush.apply(dl, args);
@@ -5005,7 +5007,6 @@
       var ALL = [];
       var dataLoaded = false; // Track if data has been loaded (even if empty)
       var skipNextGaPageView = false; // Set when modal auto-opens from HTML pin redirect
-      var lastGaPageView = { url: '', time: 0 }; // Dedup: track last fired page_view
       var lastModified = 0;
       // v6: Added user_id to cache to prevent showing admin data to guests
       var CACHE_KEY = 'jg_map_cache_v6';
@@ -9316,17 +9317,10 @@
         } else if (typeof gtag === 'function' && p.slug && p.type) {
           var gaTypePath = p.type === 'ciekawostka' ? 'ciekawostka' : (p.type === 'zgloszenie' ? 'zgloszenie' : 'miejsce');
           var gaPinPath = '/' + gaTypePath + '/' + p.slug + '/';
-          var gaPinUrl = window.location.origin + gaPinPath;
-          var now = Date.now();
-          // Dedup: skip if same URL was fired within last 2 seconds (prevents double-fire
-          // from external scripts such as Site Kit or theme analytics intercepting replaceState)
-          if (lastGaPageView.url !== gaPinUrl || now - lastGaPageView.time > 2000) {
-            lastGaPageView = { url: gaPinUrl, time: now };
-            gtag('event', 'page_view', {
-              page_location: gaPinUrl,
-              page_title: p.title || ''
-            });
-          }
+          gtag('event', 'page_view', {
+            page_location: window.location.origin + gaPinPath,
+            page_title: p.title || ''
+          });
         }
 
         // Copy link button handler
