@@ -876,8 +876,8 @@ class JG_Map_Enqueue {
      * before Leaflet requests the first tile (saves ~100ms per provider).
      */
     public function add_tile_preconnect() {
-        echo '<link rel="preconnect" href="https://api.maptiler.com" crossorigin>' . "\n";
-        echo '<link rel="dns-prefetch" href="https://api.maptiler.com">' . "\n";
+        echo '<link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin>' . "\n";
+        echo '<link rel="dns-prefetch" href="https://basemaps.cartocdn.com">' . "\n";
         echo '<link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>' . "\n";
         echo '<link rel="dns-prefetch" href="https://server.arcgisonline.com">' . "\n";
     }
