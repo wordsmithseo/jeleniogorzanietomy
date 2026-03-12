@@ -4095,11 +4095,11 @@ img.emoji {
    SATELLITE MODE: white outline on pins & clusters
    ======================================== */
 .jg-map--satellite .jg-pin-svg-wrapper {
-  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #fff) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
 }
 
 .jg-map--satellite .jg-pin-marker--promo .jg-pin-svg-wrapper {
-  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #fff) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3));
 }
 
 .jg-map--satellite .jg-cluster-cell {
