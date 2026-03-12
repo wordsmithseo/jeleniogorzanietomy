@@ -11,7 +11,7 @@
 
     init: function() {
       this.config = window.JG_EXT_CFG || {};
-      var $wrap = $('.jg-topframe').first();
+      var $wrap = $('[data-cid]').first();
       if (!$wrap.length) return;
 
       // Read server-generated random IDs from data attributes

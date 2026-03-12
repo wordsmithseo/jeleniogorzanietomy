@@ -1418,76 +1418,9 @@ body.jg-fullscreen-active #jg-search-panel {
     }
   }
 
-  /* ── Fullscreen: floating promotional content (desktop) ── */
-  body.jg-fullscreen-active .jg-fs-float {
-    /* Center in the visible map area (excluding sidebar overlay) */
-    left: calc((100% - min(380px, 30vw)) / 2);
-    max-width: calc(100% - min(380px, 30vw) - 200px);
-  }
 }
 
-/* ── Fullscreen: floating promotional content (base) ── */
-.jg-fs-float {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: auto;
-  max-width: calc(100% - 160px);
-  animation: jgFloatIn 0.35s ease-out;
-}
-
-@keyframes jgFloatIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-.jg-fs-float-tag {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  font-size: calc(9 * var(--jg));
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 4px;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
-  user-select: none;
-  pointer-events: none;
-}
-
-.jg-fs-float-inner {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
-  max-width: 728px;
-  transition: opacity 0.3s ease;
-}
-
-.jg-fs-float-inner a {
-  display: block;
-  line-height: 0;
-  text-decoration: none;
-}
-
-.jg-fs-float-inner img {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-}
+/* Fullscreen float styles are injected inline with randomised class names (see class-slot-keys.php) */
 
 /* Mobile fullscreen */
 @media (max-width: 768px) {
@@ -1674,35 +1607,11 @@ body.jg-fullscreen-active #jg-search-panel {
     line-height: 32px !important;
   }
 
-  /* ── Mobile fullscreen: floating promotional content ── */
-  body.jg-fullscreen-active .jg-fs-float {
-    bottom: 80px;  /* Just above FABs (15px + 56px + 9px gap) */
-    left: 50%;
-    max-width: calc(100% - 24px);
-    transform: translateX(-50%) scale(1.8);
-    transform-origin: center bottom;
-  }
-
-  .jg-fs-float-inner {
-    max-width: 100%;
-    border-radius: 6px;
-  }
-
-  .jg-fs-float-tag {
-    font-size: calc(8 * var(--jg));
-    letter-spacing: 1px;
-    margin-bottom: 2px;
-  }
 }
 
 /* Very small phones */
 @media (max-width: 380px) {
-  body.jg-fullscreen-active .jg-fs-float {
-    bottom: 76px;
-    max-width: calc(100% - 16px);
-    transform: translateX(-50%) scale(1.7);
-    transform-origin: center bottom;
-  }
+  /* Float styles for very small phones are injected inline (see class-slot-keys.php) */
 }
 
 /* === Fullscreen topbar: absolute positioning (not in Leaflet container) === */
@@ -7363,115 +7272,7 @@ a.jg-dir-tag-inline:hover {
   border-style: solid !important;
 }
 
-/* ===== TOP SLOT FALLBACK CTA ===== */
-.jg-topframe-cta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 90px;
-  padding: 12px 24px;
-  box-sizing: border-box;
-  background: repeating-linear-gradient(
-    -45deg,
-    #fafafa,
-    #fafafa 10px,
-    #f3f4f6 10px,
-    #f3f4f6 20px
-  );
-  border: 1.5px dashed #d1d5db;
-  border-radius: 4px;
-  text-decoration: none;
-  color: #6b7280;
-  font-size: calc(14 * var(--jg));
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
-}
-
-.jg-topframe-cta:hover {
-  background: #fef3f2;
-  border-color: #8d2324;
-  color: #8d2324;
-}
-
-.jg-topframe-cta__label {
-  font-size: calc(10 * var(--jg));
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #9ca3af;
-  flex-shrink: 0;
-}
-
-.jg-topframe-cta:hover .jg-topframe-cta__label {
-  color: #c45455;
-}
-
-.jg-topframe-cta__text {
-  font-weight: 500;
-}
-
-.jg-topframe-cta__arrow {
-  font-size: calc(16 * var(--jg));
-  flex-shrink: 0;
-}
-
-/* ===== TOP SLOT - RESPONSIVE ===== */
-.jg-topframe {
-  text-align: center;
-  margin: 16px auto;
-}
-
-.jg-topframe-tag {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  font-size: calc(10 * var(--jg));
-  font-weight: 600;
-  color: #8d2324;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 5px;
-  user-select: none;
-}
-
-.jg-topframe-box {
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-@media (max-width: 768px) {
-  .jg-topframe {
-    margin: 4px auto;
-  }
-
-  .jg-topframe-tag {
-    font-size: calc(8 * var(--jg));
-    margin-bottom: 2px;
-    letter-spacing: 0.8px;
-  }
-
-  .jg-topframe-box {
-    max-width: 100% !important;
-    width: 100% !important;
-    padding: 0 10px;
-    margin: 0 auto !important;
-    box-sizing: border-box;
-  }
-
-  .jg-topframe-cta {
-    aspect-ratio: 728 / 90;
-    height: auto;
-    max-height: unset;
-    min-height: unset;
-    padding: 6px 12px;
-    gap: 8px;
-    font-size: calc(11 * var(--jg));
-    overflow: hidden;
-  }
-
-  .jg-topframe-cta__arrow {
-    font-size: calc(12 * var(--jg));
-  }
-}
+/* Top slot styles are injected inline with randomised class names (see class-slot-keys.php) */
 
 /* ========================================
    MOBILE: ON-MAP FILTER BUTTON & PANEL

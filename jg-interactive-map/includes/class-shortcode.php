@@ -602,28 +602,24 @@ class JG_Map_Shortcode {
             'jg_banner'
         );
 
-        // Generate random IDs on every page render — prevents static selector targeting
-        $id_cid  = 'jg' . substr(md5(mt_rand()), 0, 9);
-        $id_lid  = 'jg' . substr(md5(mt_rand()), 0, 9);
-        $id_iid  = 'jg' . substr(md5(mt_rand()), 0, 9);
-        $id_spin = 'jg' . substr(md5(mt_rand()), 0, 9);
-        $id_tag  = 'jg' . substr(md5(mt_rand()), 0, 9);
+        // Get per-request random keys (IDs and CSS class names)
+        $k = JG_Slot_Keys::get();
 
         ob_start();
         ?>
-        <div class="jg-topframe"
-             data-cid="<?php echo esc_attr($id_cid); ?>"
-             data-lid="<?php echo esc_attr($id_lid); ?>"
-             data-iid="<?php echo esc_attr($id_iid); ?>"
-             data-spin="<?php echo esc_attr($id_spin); ?>"
-             data-tag="<?php echo esc_attr($id_tag); ?>">
-            <div class="jg-topframe-tag" id="<?php echo esc_attr($id_tag); ?>">Sponsorowane</div>
-            <div id="<?php echo esc_attr($id_cid); ?>" class="jg-topframe-box" style="max-width:<?php echo esc_attr($atts['width']); ?>;width:100%;margin:0 auto;box-sizing:border-box;">
-                <div id="<?php echo esc_attr($id_spin); ?>" style="display:flex;align-items:center;justify-content:center;aspect-ratio:<?php echo intval($atts['width']) . '/' . intval($atts['height']); ?>;background:#f5f5f5;color:#999;font-size:calc(14 * var(--jg));">
+        <div class="<?php echo esc_attr($k['cls_wrap']); ?>"
+             data-cid="<?php echo esc_attr($k['id_cid']); ?>"
+             data-lid="<?php echo esc_attr($k['id_lid']); ?>"
+             data-iid="<?php echo esc_attr($k['id_iid']); ?>"
+             data-spin="<?php echo esc_attr($k['id_spin']); ?>"
+             data-tag="<?php echo esc_attr($k['id_tag']); ?>">
+            <div class="<?php echo esc_attr($k['cls_tag']); ?>" id="<?php echo esc_attr($k['id_tag']); ?>">Sponsorowane</div>
+            <div id="<?php echo esc_attr($k['id_cid']); ?>" class="<?php echo esc_attr($k['cls_box']); ?>" style="max-width:<?php echo esc_attr($atts['width']); ?>;width:100%;margin:0 auto;box-sizing:border-box;">
+                <div id="<?php echo esc_attr($k['id_spin']); ?>" style="display:flex;align-items:center;justify-content:center;aspect-ratio:<?php echo intval($atts['width']) . '/' . intval($atts['height']); ?>;background:#f5f5f5;color:#999;font-size:calc(14 * var(--jg));">
                     Ładowanie...
                 </div>
-                <a id="<?php echo esc_attr($id_lid); ?>" href="#" target="_blank" style="display:none;">
-                    <img id="<?php echo esc_attr($id_iid); ?>" src="" alt="" style="width:100%;height:auto;display:block;">
+                <a id="<?php echo esc_attr($k['id_lid']); ?>" href="#" target="_blank" style="display:none;">
+                    <img id="<?php echo esc_attr($k['id_iid']); ?>" src="" alt="" style="width:100%;height:auto;display:block;">
                 </a>
             </div>
         </div>

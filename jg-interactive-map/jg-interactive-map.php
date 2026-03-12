@@ -65,6 +65,7 @@ class JG_Interactive_Map {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-database.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-sync-manager.php';
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-slot-keys.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-manager.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-admin.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-levels-achievements.php';

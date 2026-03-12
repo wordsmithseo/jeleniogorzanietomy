@@ -2938,9 +2938,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           L.DomEvent.disableClickPropagation(fsSearchPanel);
           L.DomEvent.disableScrollPropagation(fsSearchPanel);
 
-          // Create floating promotional content container for fullscreen
+          // Create floating content container for fullscreen
           var fsPromoWrap = document.createElement('div');
-          fsPromoWrap.className = 'jg-fs-float';
+          var _extCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
+          fsPromoWrap.className = _extCls.fs || '';
           fsPromoWrap.style.display = 'none';
           elMap.appendChild(fsPromoWrap);
 
@@ -3303,23 +3304,24 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
             // Show floating content in fullscreen
             (function setupFsPromo() {
-              var $wrap = document.querySelector('.jg-topframe');
+              var $wrap = document.querySelector('[data-cid]');
               if (!$wrap) return;
-              var lidAttr = $wrap ? $wrap.getAttribute('data-lid') : null;
-              var iidAttr = $wrap ? $wrap.getAttribute('data-iid') : null;
+              var lidAttr = $wrap.getAttribute('data-lid');
+              var iidAttr = $wrap.getAttribute('data-iid');
               var origLink = lidAttr ? document.getElementById(lidAttr) : null;
               var origImg  = iidAttr ? document.getElementById(iidAttr) : null;
               if (!origLink || !origImg || !origImg.src || origImg.src === '' || origLink.style.display === 'none') return;
 
+              var extCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
               fsPromoWrap.innerHTML = '';
 
               var label = document.createElement('div');
-              label.className = 'jg-fs-float-tag';
+              label.className = extCls.fsTag || '';
               label.textContent = 'Sponsorowane';
               fsPromoWrap.appendChild(label);
 
               var inner = document.createElement('div');
-              inner.className = 'jg-fs-float-inner';
+              inner.className = extCls.fsIn || '';
 
               var link = document.createElement('a');
               link.href = origLink.href;
@@ -3340,7 +3342,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
               link.addEventListener('click', function() {
                 var bannerId = origLink.closest('[data-bid]') ? origLink.closest('[data-bid]').getAttribute('data-bid')
-                             : (document.querySelector('.jg-topframe-box[data-bid]') ? document.querySelector('.jg-topframe-box[data-bid]').getAttribute('data-bid') : null);
+                             : (document.querySelector('[data-bid]') ? document.querySelector('[data-bid]').getAttribute('data-bid') : null);
                 if (bannerId && ajaxUrl && navigator.sendBeacon) {
                   var fd = new FormData();
                   fd.append('action', act.engage || '');
