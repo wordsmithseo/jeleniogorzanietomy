@@ -4,21 +4,41 @@
  */
 
 // GA4 page_view deduplication: intercept dataLayer to drop duplicate page_view
-// events for the same URL within 2 seconds (e.g. Site Kit + our manual call).
+// events for the same URL within 10 seconds (e.g. Site Kit + our manual call).
+// Handles both gtag Arguments format {0:'event',1:'page_view',2:{page_location}}
+// and GTM object format {event:'page_view', page_location:'...'}.
 (function() {
   var _lastUrl = '';
   var _lastTime = 0;
+  var DEDUP_MS = 10000;
+
+  function isPageView(item) {
+    if (!item) return false;
+    // gtag Arguments-style: item[0]='event', item[1]='page_view'
+    if (item[0] === 'event' && item[1] === 'page_view') return true;
+    // GTM object-style: {event: 'page_view'}
+    if (item.event === 'page_view') return true;
+    return false;
+  }
+
+  function getUrl(item) {
+    // Arguments-style params are in item[2]
+    if (item[0] === 'event' && item[2] && item[2].page_location) return item[2].page_location;
+    // Object-style
+    if (item.page_location) return item.page_location;
+    return window.location.href;
+  }
+
   var dl = window.dataLayer = window.dataLayer || [];
   var _origPush = dl.push.bind(dl);
   dl.push = function() {
     var args = Array.prototype.slice.call(arguments);
     for (var i = 0; i < args.length; i++) {
       var item = args[i];
-      // gtag pushes Arguments objects: item[0]='event', item[1]='page_view'
-      if (item && item[0] === 'event' && item[1] === 'page_view') {
-        var url = (item[2] && item[2].page_location) || window.location.href;
+      if (isPageView(item)) {
+        var url = getUrl(item);
         var now = Date.now();
-        if (url === _lastUrl && now - _lastTime < 2000) {
+        if (url === _lastUrl && now - _lastTime < DEDUP_MS) {
           return; // drop duplicate
         }
         _lastUrl = url;
