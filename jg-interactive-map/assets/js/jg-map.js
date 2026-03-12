@@ -3,6 +3,32 @@
  * Version: 3.0.0
  */
 
+// GA4 page_view deduplication: intercept dataLayer to drop duplicate page_view
+// events for the same URL within 2 seconds (e.g. Site Kit + our manual call).
+(function() {
+  var _lastUrl = '';
+  var _lastTime = 0;
+  var dl = window.dataLayer = window.dataLayer || [];
+  var _origPush = dl.push.bind(dl);
+  dl.push = function() {
+    var args = Array.prototype.slice.call(arguments);
+    for (var i = 0; i < args.length; i++) {
+      var item = args[i];
+      // gtag pushes Arguments objects: item[0]='event', item[1]='page_view'
+      if (item && item[0] === 'event' && item[1] === 'page_view') {
+        var url = (item[2] && item[2].page_location) || window.location.href;
+        var now = Date.now();
+        if (url === _lastUrl && now - _lastTime < 2000) {
+          return; // drop duplicate
+        }
+        _lastUrl = url;
+        _lastTime = now;
+      }
+    }
+    return _origPush.apply(dl, args);
+  };
+})();
+
 (function($) {
   'use strict';
 
@@ -4979,6 +5005,7 @@
       var ALL = [];
       var dataLoaded = false; // Track if data has been loaded (even if empty)
       var skipNextGaPageView = false; // Set when modal auto-opens from HTML pin redirect
+      var lastGaPageView = { url: '', time: 0 }; // Dedup: track last fired page_view
       var lastModified = 0;
       // v6: Added user_id to cache to prevent showing admin data to guests
       var CACHE_KEY = 'jg_map_cache_v6';
@@ -9289,10 +9316,17 @@
         } else if (typeof gtag === 'function' && p.slug && p.type) {
           var gaTypePath = p.type === 'ciekawostka' ? 'ciekawostka' : (p.type === 'zgloszenie' ? 'zgloszenie' : 'miejsce');
           var gaPinPath = '/' + gaTypePath + '/' + p.slug + '/';
-          gtag('event', 'page_view', {
-            page_location: window.location.origin + gaPinPath,
-            page_title: p.title || ''
-          });
+          var gaPinUrl = window.location.origin + gaPinPath;
+          var now = Date.now();
+          // Dedup: skip if same URL was fired within last 2 seconds (prevents double-fire
+          // from external scripts such as Site Kit or theme analytics intercepting replaceState)
+          if (lastGaPageView.url !== gaPinUrl || now - lastGaPageView.time > 2000) {
+            lastGaPageView = { url: gaPinUrl, time: now };
+            gtag('event', 'page_view', {
+              page_location: gaPinUrl,
+              page_title: p.title || ''
+            });
+          }
         }
 
         // Copy link button handler
