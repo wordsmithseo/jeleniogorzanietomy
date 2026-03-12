@@ -238,7 +238,7 @@ class JG_Interactive_Map {
             "img-src 'self' data: https: blob:",
             "font-src 'self' data: https://fonts.gstatic.com",
             "worker-src blob: 'self'",
-            "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://api.maptiler.com https://server.arcgisonline.com https://analytics.ahrefs.com https://api.mixpanel.com https://api-eu.mixpanel.com https://www.clarity.ms https://*.clarity.ms",
+            "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://basemaps.cartocdn.com https://server.arcgisonline.com https://analytics.ahrefs.com https://api.mixpanel.com https://api-eu.mixpanel.com https://www.clarity.ms https://*.clarity.ms",
             "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
             "frame-ancestors 'self'",
             "base-uri 'self'",
