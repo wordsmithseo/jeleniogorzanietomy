@@ -70,7 +70,7 @@ class JG_Map_Shortcode {
                     <label class="jg-filter-label" data-filter-type="zgloszenie"><input type="checkbox" data-type="zgloszenie" checked><span class="jg-filter-icon">⚠️</span><span class="jg-filter-text"><?php _e('Zgłoszenia', 'jg-map'); ?></span></label>
                     <label class="jg-filter-label jg-filter-label--expandable" data-filter-type="ciekawostka"><input type="checkbox" data-type="ciekawostka" checked><span class="jg-filter-icon">💡</span><span class="jg-filter-text"><?php _e('Ciekawostki', 'jg-map'); ?></span><span class="jg-filter-expand-btn" data-expand-target="curiosity-categories">▼</span></label>
                     <label class="jg-filter-label jg-filter-label--expandable" data-filter-type="miejsce"><input type="checkbox" data-type="miejsce" checked><span class="jg-filter-icon">📍</span><span class="jg-filter-text"><?php _e('Miejsca', 'jg-map'); ?></span><span class="jg-filter-expand-btn" data-expand-target="place-categories">▼</span></label>
-                    <?php if ($show_advertise_link) : ?><a href="/reklama" class="jg-partner-link" title="Dowiedz się jak promować firmę na mapie">📣 <?php _e('Reklamuj swoją firmę na mapie →', 'jg-map'); ?></a><?php endif; ?>
+                    <?php if ($show_advertise_link) : ?><a href="/reklama/" class="jg-partner-link" title="Dowiedz się jak promować firmę na mapie">📣 <?php _e('Reklamuj swoją firmę na mapie →', 'jg-map'); ?></a><?php endif; ?>
                     <div class="jg-search">
                         <input type="text" id="jg-search-input" placeholder="🔍 <?php _e('Szukaj po nazwie, adresie, tagach...', 'jg-map'); ?>" />
                         <button id="jg-search-btn" class="jg-search-btn" title="Szukaj">
