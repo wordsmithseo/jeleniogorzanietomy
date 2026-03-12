@@ -2940,10 +2940,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
           // Create floating promotional content container for fullscreen
           var fsPromoWrap = document.createElement('div');
-          fsPromoWrap.className = 'jg-fs-promo-wrap';
+          fsPromoWrap.className = 'jg-fs-float';
           fsPromoWrap.style.display = 'none';
           elMap.appendChild(fsPromoWrap);
-          var fsPromoObfInterval = null;
 
           // Prevent map interactions when clicking the promo area
           L.DomEvent.disableClickPropagation(fsPromoWrap);
@@ -3302,85 +3301,66 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
             syncNotifications();
 
-            // Show floating promotional content in fullscreen
+            // Show floating content in fullscreen
             (function setupFsPromo() {
-              var origBanner = document.getElementById('jg-banner-container');
-              if (!origBanner) return;
-
-              var origLink = origBanner.querySelector('#jg-banner-link');
-              var origImg = origBanner.querySelector('#jg-banner-image');
+              var $wrap = document.querySelector('.jg-topframe');
+              if (!$wrap) return;
+              var lidAttr = $wrap ? $wrap.getAttribute('data-lid') : null;
+              var iidAttr = $wrap ? $wrap.getAttribute('data-iid') : null;
+              var origLink = lidAttr ? document.getElementById(lidAttr) : null;
+              var origImg  = iidAttr ? document.getElementById(iidAttr) : null;
               if (!origLink || !origImg || !origImg.src || origImg.src === '' || origLink.style.display === 'none') return;
 
               fsPromoWrap.innerHTML = '';
 
-              // "Reklama" label
               var label = document.createElement('div');
-              label.className = 'jg-fs-promo-label';
-              label.textContent = 'Reklama';
+              label.className = 'jg-fs-float-tag';
+              label.textContent = 'Sponsorowane';
               fsPromoWrap.appendChild(label);
 
-              // Inner container with anti-adblock obfuscation
               var inner = document.createElement('div');
-              inner.className = 'jg-fs-promo-inner';
-              var obfClass = 'obf-' + Math.random().toString(36).substr(2, 8);
-              inner.classList.add(obfClass);
+              inner.className = 'jg-fs-float-inner';
 
-              // Clone banner content
               var link = document.createElement('a');
               link.href = origLink.href;
               link.target = '_blank';
               link.rel = 'noopener';
 
               var img = document.createElement('img');
-              img.src = origImg.src.split('?')[0] + '?t=' + Date.now();
-              img.alt = origImg.alt || '';
+              img.src = origImg.src;
+              img.alt = '';
 
               link.appendChild(img);
               inner.appendChild(link);
               fsPromoWrap.appendChild(inner);
 
-              // Track click on fullscreen banner via sendBeacon
+              var extCfg = window.JG_EXT_CFG || {};
+              var ajaxUrl = extCfg.ajax || '';
+              var act = extCfg.act || {};
+
               link.addEventListener('click', function() {
-                var bannerId = origBanner.getAttribute('data-bid');
-                var ajaxUrl = (window.JG_BANNER_CFG && window.JG_BANNER_CFG.ajax) ? window.JG_BANNER_CFG.ajax : '';
-                if (bannerId && ajaxUrl) {
-                  if (navigator.sendBeacon) {
-                    var formData = new FormData();
-                    formData.append('action', 'jg_banner_click');
-                    formData.append('banner_id', bannerId);
-                    navigator.sendBeacon(ajaxUrl, formData);
-                  }
+                var bannerId = origLink.closest('[data-bid]') ? origLink.closest('[data-bid]').getAttribute('data-bid')
+                             : (document.querySelector('.jg-topframe-box[data-bid]') ? document.querySelector('.jg-topframe-box[data-bid]').getAttribute('data-bid') : null);
+                if (bannerId && ajaxUrl && navigator.sendBeacon) {
+                  var fd = new FormData();
+                  fd.append('action', act.engage || '');
+                  fd.append('banner_id', bannerId);
+                  navigator.sendBeacon(ajaxUrl, fd);
                 }
               });
 
-              // Track fullscreen impression
-              var bannerId = origBanner.getAttribute('data-bid');
-              var ajaxUrl = (window.JG_BANNER_CFG && window.JG_BANNER_CFG.ajax) ? window.JG_BANNER_CFG.ajax : '';
+              var cid = $wrap ? $wrap.getAttribute('data-cid') : null;
+              var bannerBox = cid ? document.getElementById(cid) : null;
+              var bannerId = bannerBox ? bannerBox.getAttribute('data-bid') : null;
               if (bannerId && ajaxUrl && window.jQuery) {
                 jQuery.ajax({
                   url: ajaxUrl,
                   type: 'POST',
-                  data: { action: 'jg_banner_impression', banner_id: bannerId }
+                  data: { action: act.view || '', banner_id: bannerId }
                 });
               }
 
               fsPromoWrap.style.display = '';
-
-              // Start anti-adblock obfuscation refresh (every 15 minutes)
-              if (fsPromoObfInterval) clearInterval(fsPromoObfInterval);
-              fsPromoObfInterval = setInterval(function() {
-                // Remove old obfuscation classes
-                var classes = inner.className.split(/\s+/);
-                classes.forEach(function(cls) {
-                  if (cls.startsWith('obf-')) inner.classList.remove(cls);
-                });
-                // Add new random class
-                inner.classList.add('obf-' + Math.random().toString(36).substr(2, 8));
-                // Refresh image cache-busting timestamp
-                if (img.src) {
-                  img.src = img.src.split('?')[0] + '?t=' + Date.now();
-                }
-              }, 900000);
             })();
 
             btn.innerHTML = exitIcon;
@@ -3424,13 +3404,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             fsNotifContainer.innerHTML = '';
             fsSearchPanel.classList.remove('active');
             fsSearchPanel.querySelector('.jg-fs-search-list').innerHTML = '';
-            // Hide floating promotional content
+            // Hide floating content
             fsPromoWrap.style.display = 'none';
             fsPromoWrap.innerHTML = '';
-            if (fsPromoObfInterval) {
-              clearInterval(fsPromoObfInterval);
-              fsPromoObfInterval = null;
-            }
             btn.innerHTML = enterIcon;
             btn.title = 'Pełny ekran';
             setTimeout(function() { map.invalidateSize(); }, 350);

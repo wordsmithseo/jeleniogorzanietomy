@@ -499,12 +499,12 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_get_ranking', array($this, 'get_ranking'));
         add_action('wp_ajax_jg_get_sidebar_points', array($this, 'get_sidebar_points'));
         add_action('wp_ajax_nopriv_jg_get_sidebar_points', array($this, 'get_sidebar_points'));
-        add_action('wp_ajax_jg_banner_impression', array($this, 'track_banner_impression'));
-        add_action('wp_ajax_nopriv_jg_banner_impression', array($this, 'track_banner_impression'));
-        add_action('wp_ajax_jg_banner_click', array($this, 'track_banner_click'));
-        add_action('wp_ajax_nopriv_jg_banner_click', array($this, 'track_banner_click'));
-        add_action('wp_ajax_jg_get_banner', array($this, 'get_banner'));
-        add_action('wp_ajax_nopriv_jg_get_banner', array($this, 'get_banner'));
+        add_action('wp_ajax_jg_map_ext_ping', array($this, 'track_banner_impression'));
+        add_action('wp_ajax_nopriv_jg_map_ext_ping', array($this, 'track_banner_impression'));
+        add_action('wp_ajax_jg_map_ext_tap', array($this, 'track_banner_click'));
+        add_action('wp_ajax_nopriv_jg_map_ext_tap', array($this, 'track_banner_click'));
+        add_action('wp_ajax_jg_map_ext_fetch', array($this, 'get_banner'));
+        add_action('wp_ajax_nopriv_jg_map_ext_fetch', array($this, 'get_banner'));
         add_action('wp_ajax_jg_get_tags', array($this, 'get_tags'));
         add_action('wp_ajax_nopriv_jg_get_tags', array($this, 'get_tags'));
 

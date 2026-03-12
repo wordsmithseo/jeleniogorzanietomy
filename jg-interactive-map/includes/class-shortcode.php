@@ -70,7 +70,7 @@ class JG_Map_Shortcode {
                     <label class="jg-filter-label" data-filter-type="zgloszenie"><input type="checkbox" data-type="zgloszenie" checked><span class="jg-filter-icon">⚠️</span><span class="jg-filter-text"><?php _e('Zgłoszenia', 'jg-map'); ?></span></label>
                     <label class="jg-filter-label jg-filter-label--expandable" data-filter-type="ciekawostka"><input type="checkbox" data-type="ciekawostka" checked><span class="jg-filter-icon">💡</span><span class="jg-filter-text"><?php _e('Ciekawostki', 'jg-map'); ?></span><span class="jg-filter-expand-btn" data-expand-target="curiosity-categories">▼</span></label>
                     <label class="jg-filter-label jg-filter-label--expandable" data-filter-type="miejsce"><input type="checkbox" data-type="miejsce" checked><span class="jg-filter-icon">📍</span><span class="jg-filter-text"><?php _e('Miejsca', 'jg-map'); ?></span><span class="jg-filter-expand-btn" data-expand-target="place-categories">▼</span></label>
-                    <?php if ($show_advertise_link) : ?><a href="/reklama" class="jg-advertise-link" title="Dowiedz się jak promować firmę na mapie">📣 <?php _e('Reklamuj swoją firmę na mapie →', 'jg-map'); ?></a><?php endif; ?>
+                    <?php if ($show_advertise_link) : ?><a href="/reklama" class="jg-partner-link" title="Dowiedz się jak promować firmę na mapie">📣 <?php _e('Reklamuj swoją firmę na mapie →', 'jg-map'); ?></a><?php endif; ?>
                     <div class="jg-search">
                         <input type="text" id="jg-search-input" placeholder="🔍 <?php _e('Szukaj po nazwie, adresie, tagach...', 'jg-map'); ?>" />
                         <button id="jg-search-btn" class="jg-search-btn" title="Szukaj">
@@ -588,7 +588,7 @@ class JG_Map_Shortcode {
     }
 
     /**
-     * Render banner shortcode
+     * Render top slot shortcode
      *
      * Usage: [jg_banner]
      */
@@ -602,21 +602,28 @@ class JG_Map_Shortcode {
             'jg_banner'
         );
 
+        // Generate random IDs on every page render — prevents static selector targeting
+        $id_cid  = 'jg' . substr(md5(mt_rand()), 0, 9);
+        $id_lid  = 'jg' . substr(md5(mt_rand()), 0, 9);
+        $id_iid  = 'jg' . substr(md5(mt_rand()), 0, 9);
+        $id_spin = 'jg' . substr(md5(mt_rand()), 0, 9);
+        $id_tag  = 'jg' . substr(md5(mt_rand()), 0, 9);
+
         ob_start();
         ?>
-        <div class="jg-banner-wrap">
-            <div class="jg-banner-label" id="jg-banner-label">Sponsorowane</div>
-            <div id="jg-banner-container" class="jg-banner-container" style="max-width:<?php echo esc_attr($atts['width']); ?>;width:100%;margin:0 auto;box-sizing:border-box;">
-                <div id="jg-banner-loading" style="display:flex;align-items:center;justify-content:center;aspect-ratio:<?php echo intval($atts['width']) . '/' . intval($atts['height']); ?>;background:#f5f5f5;color:#999;font-size:calc(14 * var(--jg));">
-                    Ładowanie banneru...
+        <div class="jg-topframe"
+             data-cid="<?php echo esc_attr($id_cid); ?>"
+             data-lid="<?php echo esc_attr($id_lid); ?>"
+             data-iid="<?php echo esc_attr($id_iid); ?>"
+             data-spin="<?php echo esc_attr($id_spin); ?>"
+             data-tag="<?php echo esc_attr($id_tag); ?>">
+            <div class="jg-topframe-tag" id="<?php echo esc_attr($id_tag); ?>">Sponsorowane</div>
+            <div id="<?php echo esc_attr($id_cid); ?>" class="jg-topframe-box" style="max-width:<?php echo esc_attr($atts['width']); ?>;width:100%;margin:0 auto;box-sizing:border-box;">
+                <div id="<?php echo esc_attr($id_spin); ?>" style="display:flex;align-items:center;justify-content:center;aspect-ratio:<?php echo intval($atts['width']) . '/' . intval($atts['height']); ?>;background:#f5f5f5;color:#999;font-size:calc(14 * var(--jg));">
+                    Ładowanie...
                 </div>
-                <a id="jg-banner-link" href="#" target="_blank" style="display:none;">
-                    <img id="jg-banner-image" src="" alt="Banner" style="width:100%;height:auto;display:block;">
-                </a>
-                <a id="jg-banner-fallback-cta" href="/reklama" class="jg-banner-advertise-cta" style="display:none;">
-                    <span class="jg-banner-advertise-cta__label">Reklama</span>
-                    <span class="jg-banner-advertise-cta__text">Tu może być Twoja reklama — napisz do nas</span>
-                    <span class="jg-banner-advertise-cta__arrow">→</span>
+                <a id="<?php echo esc_attr($id_lid); ?>" href="#" target="_blank" style="display:none;">
+                    <img id="<?php echo esc_attr($id_iid); ?>" src="" alt="" style="width:100%;height:auto;display:block;">
                 </a>
             </div>
         </div>

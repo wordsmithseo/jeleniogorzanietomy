@@ -216,19 +216,22 @@ class JG_Map_Enqueue {
     public function enqueue_frontend_assets() {
         global $post;
 
-        // Always enqueue banner script (it's small and will only init if container exists)
-        // This avoids issues with caching and post detection
+        // Enqueue top-slot script
         wp_enqueue_script(
-            'jg-map-banner',
-            JG_MAP_PLUGIN_URL . 'assets/js/jg-banner.js',
+            'jg-map-ext',
+            JG_MAP_PLUGIN_URL . 'assets/js/jg-map-ext.js',
             array('jquery'),
             JG_MAP_VERSION . '-' . time(),
             true
         );
 
-        // Localize banner script
-        wp_localize_script('jg-map-banner', 'JG_BANNER_CFG', array(
-            'ajax' => admin_url('admin-ajax.php')
+        wp_localize_script('jg-map-ext', 'JG_EXT_CFG', array(
+            'ajax' => admin_url('admin-ajax.php'),
+            'act'  => array(
+                'fetch'  => 'jg_map_ext_fetch',
+                'view'   => 'jg_map_ext_ping',
+                'engage' => 'jg_map_ext_tap',
+            ),
         ));
 
         // Only load map assets on pages with map shortcode
@@ -609,7 +612,7 @@ class JG_Map_Enqueue {
                 var navBarEl  = document.getElementById('jg-nav-bar');
                 var topBarEl  = document.getElementById('jg-custom-top-bar');
                 var mapWrapEl = document.getElementById('jg-map-wrap');
-                var bannerEl  = document.querySelector('.jg-banner-container');
+                var bannerEl  = document.querySelector('.jg-topframe-box');
 
                 if (!mapWrapEl) { jgFitting = false; return; }
 
