@@ -2173,15 +2173,15 @@
             var newUrl = '/' + typePath + '/' + point.slug + '/';
 
 
-            // Push state to browser history
-            if (window.history && window.history.pushState) {
-              window.history.pushState(
+            // Replace state in browser history (replaceState won't trigger GA4 auto page_view)
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState(
                 { pointId: point.id, pointSlug: point.slug, pointType: point.type },
                 point.title || '',
                 newUrl
               );
             } else {
-              debugError('[JG MAP] history.pushState not supported');
+              debugError('[JG MAP] history.replaceState not supported');
             }
           } else {
             debugWarn('[JG MAP] Point missing slug or type:', point);
@@ -2209,11 +2209,11 @@
 
         // Reset URL to homepage when closing point detail modal
         if (bg.id === 'jg-map-modal-view') {
-          if (window.history && window.history.pushState) {
+          if (window.history && window.history.replaceState) {
             // Check if current URL is a point URL (starts with /miejsce/, /ciekawostka/, or /zgloszenie/)
             var currentPath = window.location.pathname;
             if (currentPath.match(/^\/(miejsce|ciekawostka|zgloszenie)\//)) {
-              window.history.pushState({}, '', '/');
+              window.history.replaceState({}, '', '/');
             }
           }
           // Also close lightbox if it was opened from within this modal
