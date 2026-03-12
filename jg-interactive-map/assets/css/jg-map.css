@@ -25,6 +25,7 @@
 .jg-map-tiles .leaflet-tile {
   will-change: transform;
   transform: translateZ(0);
+  filter: contrast(1.2);
 }
 
 /* Custom Top Bar - Fixed at top of page */
