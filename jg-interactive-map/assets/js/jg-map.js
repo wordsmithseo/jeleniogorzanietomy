@@ -3,33 +3,16 @@
  * Version: 3.0.0
  */
 
-// Block GTM's automatic History Change page_view for map pin modal URL changes.
-// GTM (GT-TX2S859S / GTM-5PFNSKQH) fires page_view on every replaceState call
-// via its "History Change" trigger. We suppress gtm.historyChange events when:
-//   - new URL is a pin path (/miejsce/, /ciekawostka/, /zgloszenie/) — modal opening
-//   - old URL is a pin path — modal closing (replaceState back to /)
-// Our manual gtag('event','page_view') call in openDetailsModalContent remains
-// the sole source of pin page_view events.
-(function() {
-  var PIN_PATH_RE = /\/(miejsce|ciekawostka|zgloszenie)\//;
-
-  var dl = window.dataLayer = window.dataLayer || [];
-  var _origPush = dl.push.bind(dl);
-  dl.push = function() {
-    var args = Array.prototype.slice.call(arguments);
-    for (var i = 0; i < args.length; i++) {
-      var item = args[i];
-      if (item && (item.event === 'gtm.historyChange' || item.event === 'gtm.historyChange-v2')) {
-        var newUrl = String(item['gtm.newUrl'] || '');
-        var oldUrl = String(item['gtm.oldUrl'] || '');
-        if (PIN_PATH_RE.test(newUrl) || PIN_PATH_RE.test(oldUrl)) {
-          return; // suppress — modal open/close, not real navigation
-        }
-      }
-    }
-    return _origPush.apply(dl, args);
-  };
-})();
+// Save native history.replaceState before GTM (GT-TX2S859S / GTM-5PFNSKQH) patches it.
+// GTM wraps replaceState to detect URL changes and fires GA4 page_view via its
+// History Change trigger — causing a duplicate alongside our manual gtag call.
+// By capturing the native function here (synchronously, before GTM's async script
+// runs) we can update the browser URL bar without GTM detecting the change.
+// Our manual gtag('event','page_view') in openDetailsModalContent remains the
+// sole source of pin page_view events.
+var _jgNativeReplaceState = (window.history && window.history.replaceState)
+  ? window.history.replaceState.bind(window.history)
+  : null;
 
 (function($) {
   'use strict';
@@ -2201,15 +2184,14 @@
             var newUrl = '/' + typePath + '/' + point.slug + '/';
 
 
-            // Replace state in browser history (replaceState won't trigger GA4 auto page_view)
-            if (window.history && window.history.replaceState) {
-              window.history.replaceState(
+            // Use native replaceState (saved before GTM patches it) so GTM's
+            // History Change trigger doesn't fire a duplicate GA4 page_view.
+            if (_jgNativeReplaceState) {
+              _jgNativeReplaceState(
                 { pointId: point.id, pointSlug: point.slug, pointType: point.type },
                 point.title || '',
                 newUrl
               );
-            } else {
-              debugError('[JG MAP] history.replaceState not supported');
             }
           } else {
             debugWarn('[JG MAP] Point missing slug or type:', point);
@@ -2237,11 +2219,10 @@
 
         // Reset URL to homepage when closing point detail modal
         if (bg.id === 'jg-map-modal-view') {
-          if (window.history && window.history.replaceState) {
-            // Check if current URL is a point URL (starts with /miejsce/, /ciekawostka/, or /zgloszenie/)
+          if (_jgNativeReplaceState) {
             var currentPath = window.location.pathname;
             if (currentPath.match(/^\/(miejsce|ciekawostka|zgloszenie)\//)) {
-              window.history.replaceState({}, '', '/');
+              _jgNativeReplaceState({}, '', '/');
             }
           }
           // Also close lightbox if it was opened from within this modal
@@ -4869,7 +4850,7 @@
                   // Remove parameter from URL
                   var newUrl = window.location.pathname + window.location.search.replace(/[?&]jg_view_reports=\d+/, '').replace(/^\&/, '?');
                   if (newUrl.endsWith('?')) newUrl = newUrl.slice(0, -1);
-                  window.history.replaceState({}, '', newUrl);
+                  if (_jgNativeReplaceState) _jgNativeReplaceState({}, '', newUrl);
                 }, 800);
               }, 100);
               return; // Exit early
@@ -4892,7 +4873,7 @@
                   // Remove parameter from URL
                   var newUrl = window.location.pathname + window.location.search.replace(/[?&]jg_view_point=\d+/, '').replace(/^\&/, '?');
                   if (newUrl.endsWith('?')) newUrl = newUrl.slice(0, -1);
-                  window.history.replaceState({}, '', newUrl);
+                  if (_jgNativeReplaceState) _jgNativeReplaceState({}, '', newUrl);
                 }, 800);
               }, 300);
               return; // Exit early
@@ -4932,9 +4913,9 @@
                 var openAndClean = function() {
                   openDetails(point);
                   // Clean URL (remove parameters and hash) after modal opens
-                  if (history.replaceState) {
+                  if (_jgNativeReplaceState) {
                     var cleanUrl = window.location.origin + window.location.pathname;
-                    history.replaceState(null, '', cleanUrl);
+                    _jgNativeReplaceState(null, '', cleanUrl);
                   }
                 };
 
@@ -4943,8 +4924,8 @@
                   // HTML pin page already fired GA4 page_view — skip the modal's hit.
                   // Clean URL immediately to prevent a second checkDeepLink() call
                   // (triggered by background cache refresh) from seeing from=point again.
-                  if (history.replaceState) {
-                    history.replaceState(null, '', window.location.origin + window.location.pathname);
+                  if (_jgNativeReplaceState) {
+                    _jgNativeReplaceState(null, '', window.location.origin + window.location.pathname);
                   }
                   skipNextGaPageView = true;
                   setTimeout(openAndClean, 100);
