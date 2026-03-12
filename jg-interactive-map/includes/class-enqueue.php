@@ -103,6 +103,10 @@ class JG_Map_Enqueue {
             JG_MAP_VERSION . '.' . filemtime(JG_MAP_PLUGIN_DIR . 'assets/css/jg-map.css')
         );
 
+        // Inject per-request random CSS for promotional slot elements.
+        // Class names change on every page load — no static selector to target.
+        wp_add_inline_style('jg-map-topbar', JG_Slot_Keys::get_css());
+
         // Load Heartbeat and notifications script for admins/moderators only
         if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('jg_map_moderate'))) {
             wp_enqueue_script('heartbeat');
@@ -216,19 +220,31 @@ class JG_Map_Enqueue {
     public function enqueue_frontend_assets() {
         global $post;
 
-        // Always enqueue banner script (it's small and will only init if container exists)
-        // This avoids issues with caching and post detection
+        // Enqueue top-slot script
         wp_enqueue_script(
-            'jg-map-banner',
-            JG_MAP_PLUGIN_URL . 'assets/js/jg-banner.js',
+            'jg-map-ext',
+            JG_MAP_PLUGIN_URL . 'assets/js/jg-map-ext.js',
             array('jquery'),
             JG_MAP_VERSION . '-' . time(),
             true
         );
 
-        // Localize banner script
-        wp_localize_script('jg-map-banner', 'JG_BANNER_CFG', array(
-            'ajax' => admin_url('admin-ajax.php')
+        $k = JG_Slot_Keys::get();
+        wp_localize_script('jg-map-ext', 'JG_EXT_CFG', array(
+            'ajax' => admin_url('admin-ajax.php'),
+            'act'  => array(
+                'fetch'  => 'jg_map_ext_fetch',
+                'view'   => 'jg_map_ext_ping',
+                'engage' => 'jg_map_ext_tap',
+            ),
+            'cls'  => array(
+                'wrap'  => $k['cls_wrap'],
+                'box'   => $k['cls_box'],
+                'tag'   => $k['cls_tag'],
+                'fs'    => $k['cls_fs'],
+                'fsIn'  => $k['cls_fs_in'],
+                'fsTag' => $k['cls_fs_tag'],
+            ),
         ));
 
         // Only load map assets on pages with map shortcode
@@ -609,7 +625,8 @@ class JG_Map_Enqueue {
                 var navBarEl  = document.getElementById('jg-nav-bar');
                 var topBarEl  = document.getElementById('jg-custom-top-bar');
                 var mapWrapEl = document.getElementById('jg-map-wrap');
-                var bannerEl  = document.querySelector('.jg-banner-container');
+                var _slotWrap = document.querySelector('[data-cid]');
+                var bannerEl  = _slotWrap ? document.getElementById(_slotWrap.dataset.cid) : null;
 
                 if (!mapWrapEl) { jgFitting = false; return; }
 

@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.24.15
+ * Version: 3.24.16
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.24.15');
+define('JG_MAP_VERSION', '3.24.16');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -65,6 +65,7 @@ class JG_Interactive_Map {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-database.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-activity-log.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-sync-manager.php';
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-slot-keys.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-manager.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-admin.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-levels-achievements.php';
@@ -803,12 +804,12 @@ class JG_Interactive_Map {
         }
 
         /* Redirect banner */
-        .jg-redirect-banner {
+        .jg-redirect-notify {
             position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
             background: <?php echo $type_color; ?>; color: #fff;
             box-shadow: 0 2px 12px rgba(0,0,0,0.25);
         }
-        .jg-redirect-banner-inner {
+        .jg-redirect-notify-inner {
             display: flex; align-items: center; gap: 12px;
             padding: 10px 16px; flex-wrap: wrap;
         }
@@ -849,12 +850,12 @@ class JG_Interactive_Map {
 </head>
 <body>
         <!-- Sticky redirect banner -->
-        <div id="jg-redirect-banner" class="jg-redirect-banner">
-            <div class="jg-redirect-banner-inner">
+        <div id="jg-redirect-notify" class="jg-redirect-notify">
+            <div class="jg-redirect-notify-inner">
                 <span class="jg-redirect-icon">🗺️</span>
                 <div class="jg-redirect-text">
                     <strong class="jg-redirect-title">Mapa interaktywna Jelenia Góra</strong>
-                    <span id="jg-banner-sub">Odkryj setki miejsc, ciekawostek i zgłoszeń &mdash; przenosisz się za <strong id="jg-countdown">10</strong>s</span>
+                    <span id="jg-redirect-sub">Odkryj setki miejsc, ciekawostek i zgłoszeń &mdash; przenosisz się za <strong id="jg-countdown">10</strong>s</span>
                 </div>
                 <div class="jg-redirect-actions">
                     <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" id="jg-redirect-now" class="jg-redirect-btn-go">Otwórz mapę &rarr;</a>
@@ -1015,7 +1016,7 @@ class JG_Interactive_Map {
             window.jgCancelRedirect = function() {
                 cancelled = true;
                 clearInterval(timer);
-                var banner = document.getElementById('jg-redirect-banner');
+                var banner = document.getElementById('jg-redirect-notify');
                 if (banner) {
                     banner.style.transition = 'opacity 0.3s';
                     banner.style.opacity = '0';
