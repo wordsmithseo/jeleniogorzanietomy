@@ -70,7 +70,8 @@ class JG_Map_Activity_Log {
             KEY user_id (user_id),
             KEY action (action),
             KEY object_type (object_type),
-            KEY created_at (created_at)
+            KEY created_at (created_at),
+            KEY user_created (user_id, created_at)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');

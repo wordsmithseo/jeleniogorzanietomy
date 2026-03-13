@@ -4114,35 +4114,32 @@ class JG_Map_Admin {
             $where[] = $wpdb->prepare('user_id = %d', $user_filter);
         }
 
-        // Role filter - get user IDs by role
-        if ($role_filter === 'admin') {
-            $admin_users = get_users(array('role__in' => array('administrator'), 'fields' => 'ID'));
-            $mod_users = get_users(array('capability' => 'jg_map_moderate', 'fields' => 'ID'));
+        // Role filter - get user IDs by role (queries run once and shared between both branches)
+        if ($role_filter === 'admin' || $role_filter === 'user') {
+            $admin_users   = get_users(array('role__in' => array('administrator'), 'fields' => 'ID'));
+            $mod_users     = get_users(array('capability' => 'jg_map_moderate', 'fields' => 'ID'));
             $admin_mod_ids = array_unique(array_merge($admin_users, $mod_users));
-            if (!empty($admin_mod_ids)) {
-                $placeholders = implode(',', array_fill(0, count($admin_mod_ids), '%d'));
-                $where[] = $wpdb->prepare("user_id IN ($placeholders)", $admin_mod_ids);
-            } else {
-                $where[] = '1=0';
-            }
-        } elseif ($role_filter === 'user') {
-            $admin_users = get_users(array('role__in' => array('administrator'), 'fields' => 'ID'));
-            $mod_users = get_users(array('capability' => 'jg_map_moderate', 'fields' => 'ID'));
-            $admin_mod_ids = array_unique(array_merge($admin_users, $mod_users));
-            if (!empty($admin_mod_ids)) {
-                $placeholders = implode(',', array_fill(0, count($admin_mod_ids), '%d'));
-                $where[] = $wpdb->prepare("user_id NOT IN ($placeholders)", $admin_mod_ids);
+            if ($role_filter === 'admin') {
+                if (!empty($admin_mod_ids)) {
+                    $placeholders = implode(',', array_fill(0, count($admin_mod_ids), '%d'));
+                    $where[] = $wpdb->prepare("user_id IN ($placeholders)", $admin_mod_ids);
+                } else {
+                    $where[] = '1=0';
+                }
+            } else { // 'user'
+                if (!empty($admin_mod_ids)) {
+                    $placeholders = implode(',', array_fill(0, count($admin_mod_ids), '%d'));
+                    $where[] = $wpdb->prepare("user_id NOT IN ($placeholders)", $admin_mod_ids);
+                }
             }
         }
 
         $where_clause = implode(' AND ', $where);
 
-        // Get logs
+        // Get logs (LIMIT/OFFSET are intval-sanitized above, safe to interpolate)
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $logs = $wpdb->get_results(
-            "SELECT * FROM $log_table
-             WHERE $where_clause
-             ORDER BY created_at DESC
-             LIMIT $per_page OFFSET $offset",
+            "SELECT * FROM $log_table WHERE $where_clause ORDER BY created_at DESC LIMIT $per_page OFFSET $offset",
             ARRAY_A
         );
 
@@ -4155,15 +4152,16 @@ class JG_Map_Admin {
         }
 
         // Get total count
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $total = $wpdb->get_var("SELECT COUNT(*) FROM $log_table WHERE $where_clause");
         $total_pages = ceil($total / $per_page);
 
-        // Get unique actions for filter
-        $actions = $wpdb->get_col("SELECT DISTINCT action FROM $log_table ORDER BY action");
+        // Get unique actions for filter dropdown (capped at 200 — more than enough)
+        $actions = $wpdb->get_col("SELECT DISTINCT action FROM $log_table ORDER BY action LIMIT 200");
 
-        // Get users who have logged actions
+        // Get users who have logged actions (capped at 500)
         $users_with_logs = $wpdb->get_results(
-            "SELECT DISTINCT user_id FROM $log_table ORDER BY user_id"
+            "SELECT DISTINCT user_id FROM $log_table ORDER BY user_id LIMIT 500"
         );
 
         // PERFORMANCE OPTIMIZATION: Prime user cache for filter dropdown to avoid N+1 queries
