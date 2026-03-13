@@ -6533,7 +6533,6 @@ class JG_Map_Ajax_Handlers {
         $message .= "Aby aktywować swoje konto w serwisie Jeleniogórzanie to my, kliknij w poniższy link:\n\n";
         $message .= $activation_link . "\n\n";
         $message .= "Link aktywacyjny jest ważny przez 24 godziny.\n\n";
-        $message .= "UWAGA: Link musi zostać otwarty w tej samej przeglądarce, w której dokonałeś rejestracji.\n\n";
         $message .= "Jeśli nie rejestrowałeś się w naszym serwisie, zignoruj tę wiadomość.\n\n";
         $message .= "Pozdrawiamy,\n";
         $message .= "Zespół Jeleniogórzanie to my";
@@ -6544,6 +6543,9 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_error('Wystąpił błąd podczas wysyłania emaila');
             exit;
         }
+
+        // Record when activation email was sent (overwrites previous send time)
+        update_user_meta($user->ID, 'jg_map_email_sent_at', time());
 
         // Increment rate limit after successful send
         $this->check_rate_limit('resend_activation', $ip, 3, 3600, $user_data, true);
@@ -6895,6 +6897,9 @@ class JG_Map_Ajax_Handlers {
         $message .= "Zespół Jeleniórzanie to my";
 
         $this->send_plugin_email($email, $subject, $message);
+
+        // Record when activation email was sent (persists even after activation)
+        update_user_meta($user_id, 'jg_map_email_sent_at', time());
 
         // Don't auto login - user must verify email first
         wp_send_json_success('Rejestracja zakończona pomyślnie! Sprawdź swoją skrzynkę email i kliknij w link aktywacyjny.');

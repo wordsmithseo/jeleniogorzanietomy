@@ -946,6 +946,7 @@ class JG_Map_Enqueue {
 
         // Activate account
         update_user_meta($user->ID, 'jg_map_account_status', 'active');
+        update_user_meta($user->ID, 'jg_map_activated_at', time());
         delete_user_meta($user->ID, 'jg_map_activation_key');
         delete_user_meta($user->ID, 'jg_map_activation_key_time');
 
