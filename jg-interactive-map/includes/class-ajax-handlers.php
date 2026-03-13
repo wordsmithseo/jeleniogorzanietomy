@@ -631,16 +631,11 @@ class JG_Map_Ajax_Handlers {
      * Check if user is admin or moderator
      */
     private function check_admin() {
-        $user_id = get_current_user_id();
-        $can_manage = current_user_can('manage_options');
-        $can_moderate = current_user_can('jg_map_moderate');
-
-
-        if (!$can_manage && !$can_moderate) {
+        // jg_map_manage is dynamically granted to manage_options and jg_map_admin users
+        if (!current_user_can('jg_map_manage') && !current_user_can('jg_map_moderate')) {
             wp_send_json_error(array('message' => 'Brak uprawnień'));
             exit;
         }
-
     }
 
     /**

@@ -1124,13 +1124,12 @@ class JG_Map_Database {
         // Get point data before deletion to clean up images
         $point = self::get_point($point_id);
 
-        // Delete physical image files from filesystem
-        if ($point && !empty($point['images'])) {
-            self::delete_point_images($point['images']);
-        }
+        // Wrap all DB deletes in a transaction so related rows are never
+        // left orphaned if one statement fails mid-way
+        $wpdb->query('START TRANSACTION');
 
         // Delete related data first
-        $wpdb->delete($votes_table, array('point_id' => $point_id), array('%d'));
+        $wpdb->delete($votes_table,   array('point_id' => $point_id), array('%d'));
         $wpdb->delete($reports_table, array('point_id' => $point_id), array('%d'));
         $wpdb->delete($history_table, array('point_id' => $point_id), array('%d'));
 
@@ -1141,10 +1140,20 @@ class JG_Map_Database {
             array('%d')
         );
 
-        // Invalidate points cache after deletion
-        if ($result !== false) {
-            self::invalidate_points_cache();
+        if ($result === false) {
+            $wpdb->query('ROLLBACK');
+            return false;
         }
+
+        $wpdb->query('COMMIT');
+
+        // Delete physical image files from filesystem (after successful DB commit)
+        if ($point && !empty($point['images'])) {
+            self::delete_point_images($point['images']);
+        }
+
+        // Invalidate points cache after deletion
+        self::invalidate_points_cache();
 
         return $result;
     }

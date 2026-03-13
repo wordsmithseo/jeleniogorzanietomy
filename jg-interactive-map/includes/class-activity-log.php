@@ -70,7 +70,8 @@ class JG_Map_Activity_Log {
             KEY user_id (user_id),
             KEY action (action),
             KEY object_type (object_type),
-            KEY created_at (created_at)
+            KEY created_at (created_at),
+            KEY user_created (user_id, created_at)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -83,8 +84,9 @@ class JG_Map_Activity_Log {
     public static function log($action, $object_type, $object_id = null, $description = '') {
         global $wpdb;
 
-        // Only log for admins and moderators
-        if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
+        // Only log for admins, plugin admins, and moderators
+        // jg_map_manage covers manage_options and jg_map_admin (via user_has_cap filter)
+        if (!current_user_can('jg_map_manage') && !current_user_can('jg_map_moderate')) {
             return false;
         }
 
