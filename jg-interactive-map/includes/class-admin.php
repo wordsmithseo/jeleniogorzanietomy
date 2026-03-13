@@ -3061,24 +3061,93 @@ class JG_Map_Admin {
 
         ?>
         <style>
-        .jg-users-header{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+        /* ===== JG Admin — zarządzanie użytkownikami ===== */
+        .jg-users-header{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px}
         .jg-users-header h1{margin:0;flex:1 1 auto}
-        .jg-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-        .jg-action-btns{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+        .jg-back-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1d4ed8;color:#fff!important;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;border:none;transition:background .15s}
+        .jg-back-btn:hover{background:#1e40af}
+
+        /* Info box */
+        .jg-info-box{background:#fff7e6;border:2px solid #f59e0b;padding:15px 18px;border-radius:10px;margin:16px 0}
+        .jg-info-box h3{margin:0 0 8px}
+
+        /* Blocked IPs — scroll on mobile */
+        .jg-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px}
+
+        /* Main users table */
+        .jg-user-table{width:100%;border-collapse:collapse;font-size:13px}
+        .jg-user-table th{background:#f8fafc;padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;text-transform:uppercase;letter-spacing:.4px}
+        .jg-user-table td{padding:10px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+        .jg-user-table tbody tr:last-child td{border-bottom:none}
+        .jg-user-table tbody tr:hover{background:#f8fafc}
+        .jg-user-table-wrap{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+
+        /* Action buttons */
+        .jg-action-btns{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+        .jg-action-btns form{margin:0}
+
+        /* ===== MOBILE — karty ===== */
         @media(max-width:782px){
-            .jg-table-wrap table{min-width:900px}
+            /* ukryj header tabeli, każdy <tr> staje się kartą */
+            .jg-user-table thead{display:none}
+            .jg-user-table tbody{display:flex;flex-direction:column;gap:10px;padding:10px}
+            .jg-user-table tbody tr{
+                display:grid;
+                grid-template-columns:1fr 1fr;
+                gap:0;
+                background:#fff;
+                border:1px solid #e5e7eb;
+                border-radius:12px;
+                overflow:hidden;
+                box-shadow:0 1px 3px rgba(0,0,0,.06)
+            }
+            .jg-user-table-wrap{border-radius:12px;overflow:visible;box-shadow:none;border:none;background:transparent}
+            .jg-user-table{background:transparent}
+
+            /* każda komórka = wiersz z etykietą */
+            .jg-user-table td{
+                display:flex;
+                flex-direction:column;
+                padding:10px 12px;
+                border-bottom:1px solid #f1f5f9;
+                border-right:none;
+                font-size:13px;
+                line-height:1.4
+            }
+            .jg-user-table td::before{
+                content:attr(data-label);
+                font-weight:700;
+                font-size:10px;
+                color:#9ca3af;
+                text-transform:uppercase;
+                letter-spacing:.5px;
+                margin-bottom:3px
+            }
+
+            /* Użytkownik i Akcje — pełna szerokość */
+            .jg-td-user,.jg-td-actions{grid-column:1 / -1}
+            .jg-td-user{background:#f8fafc;border-bottom:2px solid #e5e7eb}
+            .jg-td-actions{background:#f8fafc;border-top:2px solid #e5e7eb;border-bottom:none}
+
+            /* ID — ukryj na mobile (mały i nieważny) */
+            .jg-td-id{display:none}
+
+            /* Przyciski na pełną szerokość */
+            .jg-action-btns{flex-direction:column;width:100%}
+            .jg-action-btns .button,.jg-action-btns form,.jg-action-btns form button{width:100%;box-sizing:border-box;text-align:center;justify-content:center}
+            .jg-action-btns .button,.jg-action-btns form button{padding:10px;font-size:14px}
         }
         </style>
         <div class="wrap">
             <div class="jg-users-header">
                 <h1>Zarządzanie użytkownikami</h1>
-                <a href="<?php echo esc_url(home_url('/')); ?>" class="button" target="_blank">
+                <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-back-btn" target="_blank">
                     ← Powrót na mapę
                 </a>
             </div>
 
-            <div style="background:#fff7e6;border:2px solid #f59e0b;padding:15px;border-radius:8px;margin:20px 0">
-                <h3 style="margin-top:0">ℹ️ Zarządzanie użytkownikami:</h3>
+            <div class="jg-info-box">
+                <h3>ℹ️ Zarządzanie użytkownikami:</h3>
                 <ul>
                     <li>Zobacz statystyki aktywności użytkowników</li>
                     <li>Zarządzaj banami i blokadami</li>
@@ -3093,7 +3162,8 @@ class JG_Map_Admin {
                         Poniżej znajdują się adresy IP zablokowane po 5 nieudanych próbach logowania.
                         Blokada trwa 15 minut od pierwszej próby.
                     </p>
-                    <table class="wp-list-table widefat fixed striped" style="margin-top:10px">
+                    <div class="jg-table-scroll">
+                    <table class="wp-list-table widefat fixed striped" style="margin-top:10px;min-width:560px">
                         <thead>
                             <tr>
                                 <th style="width:15%">Adres IP</th>
@@ -3139,6 +3209,7 @@ class JG_Map_Admin {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             <?php endif; ?>
 
@@ -3149,7 +3220,8 @@ class JG_Map_Admin {
                         Poniżej znajdują się adresy IP zablokowane po 3 nieudanych próbach rejestracji.
                         Blokada trwa 1 godzinę od pierwszej próby.
                     </p>
-                    <table class="wp-list-table widefat fixed striped" style="margin-top:10px">
+                    <div class="jg-table-scroll">
+                    <table class="wp-list-table widefat fixed striped" style="margin-top:10px;min-width:560px">
                         <thead>
                             <tr>
                                 <th style="width:15%">Adres IP</th>
@@ -3195,25 +3267,26 @@ class JG_Map_Admin {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             <?php endif; ?>
 
             <h2>Wszyscy użytkownicy</h2>
-            <div class="jg-table-wrap">
-            <table class="wp-list-table widefat fixed striped">
+            <div class="jg-user-table-wrap">
+            <table class="jg-user-table">
                 <thead>
                     <tr>
                         <th style="width:3%">ID</th>
-                        <th style="width:12%">Użytkownik</th>
+                        <th style="width:14%">Użytkownik</th>
                         <th style="width:7%">Miejsca</th>
-                        <th style="width:8%">Data rejestracji</th>
-                        <th style="width:8%">Ostatnie logowanie</th>
-                        <th style="width:8%">Ostatnia akcja</th>
-                        <th style="width:10%">Status konta</th>
-                        <th style="width:8%">Email wysłany</th>
-                        <th style="width:8%">Data aktywacji</th>
-                        <th style="width:10%">Status bana</th>
-                        <th style="width:10%">Blokady</th>
+                        <th style="width:8%">Rejestracja</th>
+                        <th style="width:8%">Ostatnie log.</th>
+                        <th style="width:8%">Ost. akcja</th>
+                        <th style="width:11%">Status konta</th>
+                        <th style="width:8%">Email</th>
+                        <th style="width:8%">Aktywacja</th>
+                        <th style="width:9%">Ban</th>
+                        <th style="width:8%">Blokady</th>
                         <th style="width:8%">Akcje</th>
                     </tr>
                 </thead>
@@ -3223,80 +3296,81 @@ class JG_Map_Admin {
                         $is_banned = JG_Map_Ajax_Handlers::is_user_banned($user->ID);
                         ?>
                         <tr>
-                            <td><?php echo $user->ID; ?></td>
-                            <td>
+                            <td class="jg-td-id" data-label="ID"><?php echo $user->ID; ?></td>
+                            <td class="jg-td-user" data-label="Użytkownik">
                                 <strong><?php echo esc_html($user->display_name); ?></strong>
                                 <br><small style="color:#666"><?php echo esc_html($user->user_email); ?></small>
+                                <br><small style="color:#aaa">#<?php echo $user->ID; ?></small>
                             </td>
-                            <td>
-                                <span style="background:#e5e7eb;padding:4px 8px;border-radius:4px"><?php echo $stats['points']; ?> opubl.</span>
+                            <td data-label="Miejsca">
+                                <span style="background:#e5e7eb;padding:3px 7px;border-radius:4px"><?php echo $stats['points']; ?> opubl.</span>
                                 <?php if ($stats['pending'] > 0): ?>
-                                    <span style="background:#fbbf24;padding:4px 8px;border-radius:4px;margin-left:4px"><?php echo $stats['pending']; ?> oczek.</span>
+                                    <br><span style="background:#fbbf24;padding:3px 7px;border-radius:4px;margin-top:4px;display:inline-block"><?php echo $stats['pending']; ?> oczek.</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
-                                <span style="font-size:calc(12 * var(--jg))"><?php echo get_date_from_gmt($user->user_registered, 'd.m.Y'); ?></span>
+                            <td data-label="Rejestracja">
+                                <?php echo get_date_from_gmt($user->user_registered, 'd.m.Y'); ?>
                                 <br><small style="color:#666"><?php echo get_date_from_gmt($user->user_registered, 'H:i'); ?></small>
                             </td>
-                            <td>
+                            <td data-label="Ostatnie log.">
                                 <?php if (!empty($stats['last_login'])): ?>
-                                    <span style="font-size:calc(12 * var(--jg))"><?php echo get_date_from_gmt($stats['last_login'], 'd.m.Y'); ?></span>
+                                    <?php echo get_date_from_gmt($stats['last_login'], 'd.m.Y'); ?>
                                     <br><small style="color:#666"><?php echo get_date_from_gmt($stats['last_login'], 'H:i'); ?></small>
                                 <?php else: ?>
-                                    <span style="color:#999;font-size:calc(12 * var(--jg))">Brak danych</span>
+                                    <span style="color:#bbb">—</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td data-label="Ost. akcja">
                                 <?php if (!empty($stats['last_action'])): ?>
-                                    <span style="font-size:calc(12 * var(--jg))"><?php echo get_date_from_gmt($stats['last_action'], 'd.m.Y'); ?></span>
+                                    <?php echo get_date_from_gmt($stats['last_action'], 'd.m.Y'); ?>
                                     <br><small style="color:#666"><?php echo get_date_from_gmt($stats['last_action'], 'H:i'); ?></small>
                                 <?php else: ?>
-                                    <span style="color:#999;font-size:calc(12 * var(--jg))">Brak aktywności</span>
+                                    <span style="color:#bbb">—</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td data-label="Status konta">
                                 <?php
                                 $acc_status = $stats['account_status'];
                                 if ($acc_status === 'active') {
                                     echo '<span style="color:#16a34a;font-weight:600">✔ Aktywny</span>';
                                 } elseif ($acc_status === 'pending') {
-                                    echo '<span style="color:#d97706;font-weight:600">⏳ Oczekuje na aktywację przez email</span>';
+                                    echo '<span style="color:#d97706;font-weight:600">⏳ Oczekuje</span>';
                                 } else {
-                                    echo '<span style="color:#6b7280" title="Konto istniało przed wprowadzeniem weryfikacji email">✔ Aktywny (stare konto)</span>';
+                                    echo '<span style="color:#6b7280" title="Konto istniało przed wprowadzeniem weryfikacji email">✔ Aktywny*</span>';
                                 }
                                 ?>
                             </td>
-                            <td>
+                            <td data-label="Email wysłany">
                                 <?php if (!empty($stats['email_sent_at'])): ?>
-                                    <span style="font-size:calc(12 * var(--jg))"><?php echo get_date_from_gmt(date('Y-m-d H:i:s', (int)$stats['email_sent_at']), 'd.m.Y'); ?></span>
+                                    <?php echo get_date_from_gmt(date('Y-m-d H:i:s', (int)$stats['email_sent_at']), 'd.m.Y'); ?>
                                     <br><small style="color:#666"><?php echo get_date_from_gmt(date('Y-m-d H:i:s', (int)$stats['email_sent_at']), 'H:i'); ?></small>
                                 <?php else: ?>
-                                    <span style="color:#999;font-size:calc(12 * var(--jg))">—</span>
+                                    <span style="color:#bbb">—</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td data-label="Aktywacja">
                                 <?php if (!empty($stats['activated_at'])): ?>
-                                    <span style="font-size:calc(12 * var(--jg))"><?php echo get_date_from_gmt(date('Y-m-d H:i:s', (int)$stats['activated_at']), 'd.m.Y'); ?></span>
+                                    <?php echo get_date_from_gmt(date('Y-m-d H:i:s', (int)$stats['activated_at']), 'd.m.Y'); ?>
                                     <br><small style="color:#666"><?php echo get_date_from_gmt(date('Y-m-d H:i:s', (int)$stats['activated_at']), 'H:i'); ?></small>
                                 <?php else: ?>
-                                    <span style="color:#999;font-size:calc(12 * var(--jg))">—</span>
+                                    <span style="color:#bbb">—</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td data-label="Ban">
                                 <?php if ($is_banned): ?>
                                     <?php if ($stats['ban_status'] === 'permanent'): ?>
-                                        <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700">🚫 Ban permanentny</span>
+                                        <span style="background:#dc2626;color:#fff;padding:3px 7px;border-radius:4px;font-weight:700;font-size:12px">🚫 Perm.</span>
                                     <?php else: ?>
-                                        <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700">🚫 Ban do <?php echo get_date_from_gmt($stats['ban_until'], 'Y-m-d'); ?></span>
+                                        <span style="background:#dc2626;color:#fff;padding:3px 7px;border-radius:4px;font-weight:700;font-size:12px">🚫 <?php echo get_date_from_gmt($stats['ban_until'], 'd.m.Y'); ?></span>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px">✓ OK</span>
+                                    <span style="background:#10b981;color:#fff;padding:3px 7px;border-radius:4px;font-size:12px">✓ OK</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td data-label="Blokady">
                                 <?php if (!empty($stats['restrictions'])): ?>
                                     <?php
-                                    $labels = array(
+                                    $restriction_labels = array(
                                         'voting' => 'głosowanie',
                                         'add_places' => 'dodawanie miejsc',
                                         'add_events' => 'wydarzenia',
@@ -3304,13 +3378,13 @@ class JG_Map_Admin {
                                         'edit_places' => 'edycja'
                                     );
                                     foreach ($stats['restrictions'] as $r): ?>
-                                        <span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:calc(11 * var(--jg));margin:2px;display:inline-block">⚠️ <?php echo $labels[$r] ?? $r; ?></span>
+                                        <span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;margin:2px;display:inline-block">⚠️ <?php echo $restriction_labels[$r] ?? $r; ?></span>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <span style="color:#999">Brak</span>
+                                    <span style="color:#bbb">Brak</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td class="jg-td-actions">
                                 <div class="jg-action-btns">
                                     <button class="button button-small jg-manage-user"
                                             data-user-id="<?php echo $user->ID; ?>"
@@ -3324,7 +3398,7 @@ class JG_Map_Admin {
                                             <input type="hidden" name="action" value="jg_map_activate_user">
                                             <input type="hidden" name="user_id" value="<?php echo $user->ID; ?>">
                                             <?php wp_nonce_field('jg_map_activate_user_' . $user->ID, 'jg_map_activate_nonce'); ?>
-                                            <button type="submit" class="button button-small" style="background:#16a34a;color:#fff;border-color:#16a34a;white-space:nowrap">
+                                            <button type="submit" class="button button-small" style="background:#16a34a;color:#fff;border-color:#16a34a">
                                                 ✔ Aktywuj ręcznie
                                             </button>
                                         </form>
@@ -3335,7 +3409,7 @@ class JG_Map_Admin {
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            </div><!-- /.jg-table-wrap -->
+            </div><!-- /.jg-user-table-wrap -->
 
             <!-- Modal for user management -->
             <div id="jg-user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
