@@ -366,23 +366,33 @@ class JG_Map_Admin {
             'JG Map',
             'JG Map',
             'manage_options',
-            'jg-map-places',
-            array($this, 'render_places_page'),
+            'jg-map-dashboard',
+            array($this, 'render_main_page'),
             'dashicons-location-alt',
             30
         );
 
         add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
+            'Dashboard',
+            'Dashboard',
+            'manage_options',
+            'jg-map-dashboard',
+            array($this, 'render_main_page')
+        );
+
+        // --- Moderacja ---
+        add_submenu_page(
+            'jg-map-dashboard',
             'Miejsca',
             'Miejsca',
-            'read', // Allow all logged-in users to see their own places
+            'read',
             'jg-map-places',
             array($this, 'render_places_page')
         );
 
         add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
             'Promocje',
             'Promocje',
             'manage_options',
@@ -391,7 +401,7 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
             'Galeria zdjęć',
             'Galeria zdjęć',
             'manage_options',
@@ -399,8 +409,9 @@ class JG_Map_Admin {
             array($this, 'render_gallery_page')
         );
 
+        // --- Użytkownicy ---
         add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
             'Użytkownicy',
             'Użytkownicy',
             'manage_options',
@@ -409,16 +420,7 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map-places',
-            'Konserwacja',
-            'Konserwacja',
-            'manage_options',
-            'jg-map-maintenance',
-            array($this, 'render_maintenance_page')
-        );
-
-        add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
             'Role użytkowników',
             'Role użytkowników',
             'manage_options',
@@ -427,7 +429,7 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
             'Activity Log',
             'Activity Log',
             'manage_options',
@@ -435,62 +437,27 @@ class JG_Map_Admin {
             array($this, 'render_activity_log_page')
         );
 
+        // --- Treści ---
         add_submenu_page(
-            'jg-map-places',
-            'Ustawienia',
-            'Ustawienia',
-            'manage_options',
-            'jg-map-settings',
-            array($this, 'render_settings_page')
-        );
-
-        add_submenu_page(
-            'jg-map-places',
-            'Powody zgłoszeń',
-            'Powody zgłoszeń',
-            'manage_options',
-            'jg-map-report-reasons',
-            array($this, 'render_report_reasons_page')
-        );
-
-        add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
             'Kategorie miejsc',
-            'Kategorie miejsc',
+            'Kat. miejsc',
             'manage_options',
             'jg-map-place-categories',
             array($this, 'render_place_categories_page')
         );
 
         add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
             'Kategorie ciekawostek',
-            'Kategorie ciekawostek',
+            'Kat. ciekawostek',
             'manage_options',
             'jg-map-curiosity-categories',
             array($this, 'render_curiosity_categories_page')
         );
 
         add_submenu_page(
-            'jg-map-places',
-            'Doświadczenie (XP)',
-            'Doświadczenie (XP)',
-            'manage_options',
-            'jg-map-xp-editor',
-            array($this, 'render_xp_editor_page')
-        );
-
-        add_submenu_page(
-            'jg-map-places',
-            'Osiągnięcia',
-            'Osiągnięcia',
-            'manage_options',
-            'jg-map-achievements-editor',
-            array($this, 'render_achievements_editor_page')
-        );
-
-        add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
             'Zarządzanie tagami',
             'Tagi',
             'manage_options',
@@ -499,12 +466,59 @@ class JG_Map_Admin {
         );
 
         add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
+            'Powody zgłoszeń',
+            'Powody zgłoszeń',
+            'manage_options',
+            'jg-map-report-reasons',
+            array($this, 'render_report_reasons_page')
+        );
+
+        // --- Gamifikacja ---
+        add_submenu_page(
+            'jg-map-dashboard',
+            'Doświadczenie (XP)',
+            'Doświadczenie (XP)',
+            'manage_options',
+            'jg-map-xp-editor',
+            array($this, 'render_xp_editor_page')
+        );
+
+        add_submenu_page(
+            'jg-map-dashboard',
+            'Osiągnięcia',
+            'Osiągnięcia',
+            'manage_options',
+            'jg-map-achievements-editor',
+            array($this, 'render_achievements_editor_page')
+        );
+
+        // --- Konfiguracja ---
+        add_submenu_page(
+            'jg-map-dashboard',
+            'Ustawienia',
+            'Ustawienia',
+            'manage_options',
+            'jg-map-settings',
+            array($this, 'render_settings_page')
+        );
+
+        add_submenu_page(
+            'jg-map-dashboard',
             'Menu nawigacyjne',
             'Menu nawigacyjne',
             'manage_options',
             'jg-map-nav-menu',
             array($this, 'render_nav_menu_page')
+        );
+
+        add_submenu_page(
+            'jg-map-dashboard',
+            'Konserwacja',
+            'Konserwacja',
+            'manage_options',
+            'jg-map-maintenance',
+            array($this, 'render_maintenance_page')
         );
 
     }
@@ -530,77 +544,196 @@ class JG_Map_Admin {
         $history_table = JG_Map_Database::get_history_table();
         $edits = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $history_table WHERE status = %s", 'pending'));
 
+        // Liczba użytkowników pending
+        $pending_users = count(get_users(array(
+            'meta_key'   => 'jg_map_account_status',
+            'meta_value' => 'pending',
+            'number'     => -1,
+            'fields'     => 'ids',
+        )));
         ?>
+        <style>
+        /* ===== JG Admin — Dashboard ===== */
+        .jg-dash-header{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+        .jg-dash-header h1{margin:0;flex:1 1 auto;font-size:22px}
+
+        /* Stat cards */
+        .jg-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px}
+        .jg-stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit;transition:box-shadow .15s,transform .15s}
+        .jg-stat-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.1);transform:translateY(-2px);color:inherit;text-decoration:none}
+        .jg-stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af}
+        .jg-stat-value{font-size:32px;font-weight:800;line-height:1;color:#111827}
+        .jg-stat-sub{font-size:12px;color:#6b7280;margin-top:2px}
+        .jg-stat-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;margin-top:4px;width:fit-content}
+        .jg-stat-card.has-action .jg-stat-sub{color:#2563eb;font-weight:600}
+
+        /* Nav sections */
+        .jg-nav-section{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:20px}
+        .jg-nav-section-title{padding:12px 18px;background:#f8fafc;border-bottom:1px solid #e5e7eb;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#6b7280;margin:0}
+        .jg-nav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0}
+        .jg-nav-item{display:flex;align-items:center;gap:10px;padding:13px 18px;border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;text-decoration:none;color:#374151;font-size:13px;font-weight:500;transition:background .12s}
+        .jg-nav-item:hover{background:#f0f7ff;color:#1d4ed8;text-decoration:none}
+        .jg-nav-item .jg-nav-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center}
+
+        /* Shortcode box */
+        .jg-shortcode-box{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 22px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+        .jg-shortcode-box h3{margin:0 0 10px;font-size:13px;color:#374151}
+        .jg-shortcode-box code{background:#f1f5f9;padding:3px 8px;border-radius:5px;font-size:12px}
+
+        @media(max-width:782px){
+            .jg-stat-grid{grid-template-columns:repeat(2,1fr)}
+            .jg-stat-value{font-size:26px}
+            .jg-nav-grid{grid-template-columns:repeat(2,1fr)}
+        }
+        @media(max-width:480px){
+            .jg-stat-grid{grid-template-columns:repeat(2,1fr)}
+            .jg-nav-grid{grid-template-columns:1fr}
+        }
+        </style>
         <div class="wrap">
-            <h1>JG Interactive Map - Panel Administracyjny</h1>
 
-            <div class="jg-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin:30px 0">
-                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
-                    <h3 style="margin:0 0 10px">📍 Wszystkie miejsca</h3>
-                    <p style="font-size:calc(32 * var(--jg));font-weight:700;margin:0;color:#2271b1"><?php echo $total; ?></p>
-                </div>
+            <div class="jg-dash-header">
+                <h1>JG Interactive Map</h1>
+                <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-back-btn" target="_blank">← Otwórz mapę</a>
+            </div>
 
-                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
-                    <h3 style="margin:0 0 10px">⏳ Oczekujące</h3>
-                    <p style="font-size:calc(32 * var(--jg));font-weight:700;margin:0;color:#d63638"><?php echo $pending; ?></p>
-                    <?php if ($pending > 0): ?>
-                    <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="button">Moderuj</a>
-                    <?php endif; ?>
-                </div>
+            <!-- STAT CARDS -->
+            <div class="jg-stat-grid">
 
-                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
-                    <h3 style="margin:0 0 10px">✏️ Edycje do zatwierdzenia</h3>
-                    <p style="font-size:calc(32 * var(--jg));font-weight:700;margin:0;color:#9333ea"><?php echo $edits; ?></p>
-                    <?php if ($edits > 0): ?>
-                    <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="button">Zobacz</a>
-                    <?php endif; ?>
-                </div>
+                <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="jg-stat-card">
+                    <span class="jg-stat-label">📍 Wszystkie miejsca</span>
+                    <span class="jg-stat-value"><?php echo (int)$total; ?></span>
+                    <span class="jg-stat-sub">opublikowane</span>
+                </a>
 
-                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
-                    <h3 style="margin:0 0 10px">🚨 Zgłoszenia</h3>
-                    <p style="font-size:calc(32 * var(--jg));font-weight:700;margin:0;color:#d63638"><?php echo $reports; ?></p>
-                    <?php if ($reports > 0): ?>
-                    <a href="<?php echo admin_url('admin.php?page=jg-map-reports'); ?>" class="button">Zobacz</a>
-                    <?php endif; ?>
-                </div>
+                <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="jg-stat-card<?php echo $pending > 0 ? ' has-action' : ''; ?>">
+                    <span class="jg-stat-label">⏳ Oczekujące</span>
+                    <span class="jg-stat-value" style="color:<?php echo $pending > 0 ? '#dc2626' : '#111827'; ?>"><?php echo (int)$pending; ?></span>
+                    <span class="jg-stat-sub"><?php echo $pending > 0 ? '→ kliknij, aby moderować' : 'brak nowych'; ?></span>
+                </a>
 
-                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
-                    <h3 style="margin:0 0 10px">🗑️ Żądania usunięcia</h3>
-                    <p style="font-size:calc(32 * var(--jg));font-weight:700;margin:0;color:#dc2626"><?php echo $deletions; ?></p>
-                    <?php if ($deletions > 0): ?>
-                    <a href="<?php echo admin_url('admin.php?page=jg-map-deletions'); ?>" class="button">Zarządzaj</a>
-                    <?php endif; ?>
-                </div>
+                <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="jg-stat-card<?php echo $edits > 0 ? ' has-action' : ''; ?>">
+                    <span class="jg-stat-label">✏️ Edycje</span>
+                    <span class="jg-stat-value" style="color:<?php echo $edits > 0 ? '#7c3aed' : '#111827'; ?>"><?php echo (int)$edits; ?></span>
+                    <span class="jg-stat-sub"><?php echo $edits > 0 ? '→ do zatwierdzenia' : 'brak nowych'; ?></span>
+                </a>
 
-                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
-                    <h3 style="margin:0 0 10px">⭐ Promocje</h3>
-                    <p style="font-size:calc(32 * var(--jg));font-weight:700;margin:0;color:#f59e0b"><?php echo $promos; ?></p>
-                    <a href="<?php echo admin_url('admin.php?page=jg-map-promos'); ?>" class="button">Zarządzaj</a>
+                <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="jg-stat-card<?php echo $reports > 0 ? ' has-action' : ''; ?>">
+                    <span class="jg-stat-label">🚨 Zgłoszenia</span>
+                    <span class="jg-stat-value" style="color:<?php echo $reports > 0 ? '#dc2626' : '#111827'; ?>"><?php echo (int)$reports; ?></span>
+                    <span class="jg-stat-sub"><?php echo $reports > 0 ? '→ wymagają uwagi' : 'brak nowych'; ?></span>
+                </a>
+
+                <a href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>" class="jg-stat-card<?php echo $deletions > 0 ? ' has-action' : ''; ?>">
+                    <span class="jg-stat-label">🗑️ Usunięcia</span>
+                    <span class="jg-stat-value" style="color:<?php echo $deletions > 0 ? '#dc2626' : '#111827'; ?>"><?php echo (int)$deletions; ?></span>
+                    <span class="jg-stat-sub"><?php echo $deletions > 0 ? '→ żądania usunięcia' : 'brak żądań'; ?></span>
+                </a>
+
+                <a href="<?php echo admin_url('admin.php?page=jg-map-users'); ?>" class="jg-stat-card<?php echo $pending_users > 0 ? ' has-action' : ''; ?>">
+                    <span class="jg-stat-label">👤 Konta</span>
+                    <span class="jg-stat-value" style="color:<?php echo $pending_users > 0 ? '#d97706' : '#111827'; ?>"><?php echo (int)$pending_users; ?></span>
+                    <span class="jg-stat-sub"><?php echo $pending_users > 0 ? '→ oczekuje na aktywację' : 'wszystkie aktywne'; ?></span>
+                </a>
+
+                <a href="<?php echo admin_url('admin.php?page=jg-map-promos'); ?>" class="jg-stat-card">
+                    <span class="jg-stat-label">⭐ Promocje</span>
+                    <span class="jg-stat-value" style="color:#f59e0b"><?php echo (int)$promos; ?></span>
+                    <span class="jg-stat-sub">aktywne miejsca promo</span>
+                </a>
+
+            </div>
+
+            <!-- NAV GRID: Moderacja -->
+            <div class="jg-nav-section">
+                <p class="jg-nav-section-title">Moderacja</p>
+                <div class="jg-nav-grid">
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-places'); ?>">
+                        <span class="jg-nav-icon">📍</span> Miejsca
+                    </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-promos'); ?>">
+                        <span class="jg-nav-icon">⭐</span> Promocje
+                    </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-gallery'); ?>">
+                        <span class="jg-nav-icon">🖼️</span> Galeria zdjęć
+                    </a>
                 </div>
             </div>
 
-            <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);margin-top:30px">
-                <h2>Jak używać pluginu?</h2>
-                <p>Wstaw shortcode <code>[jg_map]</code> na dowolnej stronie lub wpisie.</p>
-
-                <h3>Opcje shortcode:</h3>
-                <ul>
-                    <li><code>[jg_map]</code> - podstawowa mapa</li>
-                    <li><code>[jg_map lat="50.904" lng="15.734" zoom="13"]</code> - z niestandardową lokalizacją</li>
-                    <li><code>[jg_map height="600px"]</code> - z niestandardową wysokością</li>
-                </ul>
-
-                <h3>Funkcje:</h3>
-                <ul>
-                    <li>✅ Auto-refresh co 30 sekund - zmiany widoczne w czasie rzeczywistym</li>
-                    <li>✅ Historia edycji - pełna kontrola nad zmianami</li>
-                    <li>✅ System moderacji - wszystko pod kontrolą</li>
-                    <li>✅ Promocje z pulsowaniem - zawsze widoczne, nigdy w clusterze</li>
-                    <li>✅ Ograniczenie mapy do regionu Jeleniej Góry</li>
-                    <li>✅ Upload zdjęć - maksymalnie 6 na miejsce</li>
-                    <li>✅ Głosowanie (wyłączone dla promocji)</li>
-                </ul>
+            <!-- NAV GRID: Użytkownicy -->
+            <div class="jg-nav-section">
+                <p class="jg-nav-section-title">Użytkownicy</p>
+                <div class="jg-nav-grid">
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-users'); ?>">
+                        <span class="jg-nav-icon">👥</span> Zarządzanie
+                    </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-roles'); ?>">
+                        <span class="jg-nav-icon">🛡️</span> Role
+                    </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-activity-log'); ?>">
+                        <span class="jg-nav-icon">📋</span> Activity Log
+                    </a>
+                </div>
             </div>
+
+            <!-- NAV GRID: Treści -->
+            <div class="jg-nav-section">
+                <p class="jg-nav-section-title">Treści</p>
+                <div class="jg-nav-grid">
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-place-categories'); ?>">
+                        <span class="jg-nav-icon">🏷️</span> Kat. miejsc
+                    </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-curiosity-categories'); ?>">
+                        <span class="jg-nav-icon">💡</span> Kat. ciekawostek
+                    </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-tags'); ?>">
+                        <span class="jg-nav-icon">🔖</span> Tagi
+                    </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-report-reasons'); ?>">
+                        <span class="jg-nav-icon">🚩</span> Powody zgłoszeń
+                    </a>
+                </div>
+            </div>
+
+            <!-- NAV GRID: Gamifikacja -->
+            <div class="jg-nav-section">
+                <p class="jg-nav-section-title">Gamifikacja</p>
+                <div class="jg-nav-grid">
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-xp-editor'); ?>">
+                        <span class="jg-nav-icon">⚡</span> Doświadczenie (XP)
+                    </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-achievements-editor'); ?>">
+                        <span class="jg-nav-icon">🏆</span> Osiągnięcia
+                    </a>
+                </div>
+            </div>
+
+            <!-- NAV GRID: Konfiguracja -->
+            <div class="jg-nav-section">
+                <p class="jg-nav-section-title">Konfiguracja</p>
+                <div class="jg-nav-grid">
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-settings'); ?>">
+                        <span class="jg-nav-icon">⚙️</span> Ustawienia
+                    </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-nav-menu'); ?>">
+                        <span class="jg-nav-icon">🧭</span> Menu nawigacyjne
+                    </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-maintenance'); ?>">
+                        <span class="jg-nav-icon">🔧</span> Konserwacja
+                    </a>
+                </div>
+            </div>
+
+            <!-- Shortcode info -->
+            <div class="jg-shortcode-box">
+                <h3>Shortcode</h3>
+                <p style="margin:0;font-size:13px;color:#6b7280">
+                    Wstaw mapę na stronie: <code>[jg_map]</code>&nbsp;&nbsp;
+                    z parametrami: <code>[jg_map lat="50.904" lng="15.734" zoom="13"]</code>&nbsp;&nbsp;
+                    z wysokością: <code>[jg_map height="600px"]</code>
+                </p>
+            </div>
+
         </div>
         <?php
     }
