@@ -210,8 +210,8 @@ class JG_Map_Admin {
             if ($status === 'pending') {
                 return '<span style="color:#d97706;font-weight:600">⏳ Oczekuje na aktywację przez email</span>';
             }
-            // Older accounts created before this mechanism existed
-            return '<span style="color:#6b7280">—</span>';
+            // Older accounts created before this mechanism existed — not blocked by login
+            return '<span style="color:#6b7280" title="Konto istniało przed wprowadzeniem weryfikacji email — może się logować">✔ Aktywny (stare konto)</span>';
         }
 
         if ($column_name === 'jg_email_sent_at') {
