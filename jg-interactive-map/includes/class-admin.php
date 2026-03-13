@@ -36,6 +36,7 @@ class JG_Map_Admin {
         // Real-time notifications via Heartbeat API
         add_filter('heartbeat_received', array($this, 'heartbeat_received'), 10, 2);
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_bar_script'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_styles'));
 
         // Handle manual activation from plugin users page
         add_action('admin_post_jg_map_activate_user', array($this, 'handle_manual_activate_user'));
@@ -775,7 +776,7 @@ class JG_Map_Admin {
 
         ?>
         <div class="wrap">
-            <h1>Zarządzanie miejscami</h1>
+            <?php $this->render_page_header('Zarządzanie miejscami'); ?>
 
             <!-- Search bar -->
             <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
@@ -2239,7 +2240,7 @@ class JG_Map_Admin {
 
         ?>
         <div class="wrap">
-            <h1>Zarządzanie promocjami</h1>
+            <?php $this->render_page_header('Zarządzanie promocjami'); ?>
 
             <div style="background:#fff7e6;border:2px solid #f59e0b;padding:15px;border-radius:8px;margin:20px 0">
                 <h3 style="margin-top:0">ℹ️ O promocjach:</h3>
@@ -2490,7 +2491,7 @@ class JG_Map_Admin {
 
         ?>
         <div class="wrap">
-            <h1>Zarządzanie rolami użytkowników</h1>
+            <?php $this->render_page_header('Zarządzanie rolami użytkowników'); ?>
 
             <div style="background:#fff7e6;border:2px solid #f59e0b;padding:15px;border-radius:8px;margin:20px 0">
                 <h3 style="margin-top:0">ℹ️ O rolach:</h3>
@@ -2742,7 +2743,7 @@ class JG_Map_Admin {
 
         ?>
         <div class="wrap">
-            <h1>Galeria wszystkich zdjęć</h1>
+            <?php $this->render_page_header('Galeria wszystkich zdjęć'); ?>
 
             <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);margin:20px 0">
                 <p><strong>Łącznie miejsc ze zdjęciami:</strong> <?php echo count($points); ?></p>
@@ -3195,10 +3196,6 @@ class JG_Map_Admin {
         ?>
         <style>
         /* ===== JG Admin — zarządzanie użytkownikami ===== */
-        .jg-users-header{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px}
-        .jg-users-header h1{margin:0;flex:1 1 auto}
-        .jg-back-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1d4ed8;color:#fff!important;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;border:none;transition:background .15s}
-        .jg-back-btn:hover{background:#1e40af}
 
         /* Info box */
         .jg-info-box{background:#fff7e6;border:2px solid #f59e0b;padding:15px 18px;border-radius:10px;margin:16px 0}
@@ -3272,12 +3269,7 @@ class JG_Map_Admin {
         }
         </style>
         <div class="wrap">
-            <div class="jg-users-header">
-                <h1>Zarządzanie użytkownikami</h1>
-                <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-back-btn" target="_blank">
-                    ← Powrót na mapę
-                </a>
-            </div>
+            <?php $this->render_page_header('Zarządzanie użytkownikami'); ?>
 
             <div class="jg-info-box">
                 <h3>ℹ️ Zarządzanie użytkownikami:</h3>
@@ -4184,7 +4176,7 @@ class JG_Map_Admin {
 
         ?>
         <div class="wrap">
-            <h1>Activity Log</h1>
+            <?php $this->render_page_header('Activity Log'); ?>
 
             <div style="background:#fff;padding:15px;border:1px solid #ddd;border-radius:4px;margin:20px 0">
                 <form method="get" style="display:flex;gap:15px;align-items:flex-end">
@@ -4344,7 +4336,7 @@ class JG_Map_Admin {
         $privacy_type = $privacy_url ? 'url' : ($privacy_content ? 'content' : 'url');
         ?>
         <div class="wrap">
-            <h1>Ustawienia JG Map</h1>
+            <?php $this->render_page_header('Ustawienia JG Map'); ?>
 
             <form method="post" action="">
                 <?php wp_nonce_field('jg_map_settings_nonce'); ?>
@@ -4637,7 +4629,7 @@ class JG_Map_Admin {
         );
         ?>
         <div class="wrap">
-            <h1>Zarządzanie powodami zgłoszeń</h1>
+            <?php $this->render_page_header('Zarządzanie powodami zgłoszeń'); ?>
 
             <style>
                 .jg-report-editor { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; margin-top: 20px; }
@@ -5438,6 +5430,39 @@ class JG_Map_Admin {
     /**
      * Enqueue admin bar script for real-time updates
      */
+    /**
+     * Shared CSS for all JG Map admin pages
+     */
+    public function enqueue_admin_styles($hook) {
+        if (strpos($hook, 'jg-map') === false) {
+            return;
+        }
+        $css = '
+        /* ===== JG Admin — shared page chrome ===== */
+        .jg-page-header{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+        .jg-page-header h1{margin:0;flex:1 1 auto;font-size:22px}
+        .jg-back-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1d4ed8;color:#fff!important;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;border:none;cursor:pointer;transition:background .15s}
+        .jg-back-btn:hover{background:#1e40af;color:#fff!important;text-decoration:none}
+        ';
+        wp_add_inline_style('wp-admin', $css);
+    }
+
+    /**
+     * Standard page header: h1 + "← Dashboard" button
+     */
+    private function render_page_header($title) {
+        $dashboard_url = admin_url('admin.php?page=jg-map-dashboard');
+        ?>
+        <div class="jg-page-header">
+            <h1><?php echo esc_html($title); ?></h1>
+            <a href="<?php echo esc_url($dashboard_url); ?>" class="jg-back-btn">&#8592; Dashboard</a>
+        </div>
+        <?php
+    }
+
+    /**
+     * Heartbeat real-time notifications for admin bar
+     */
     public function enqueue_admin_bar_script() {
         // Only for admins and moderators
         if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
@@ -5552,7 +5577,7 @@ JAVASCRIPT;
 
         ?>
         <div class="wrap">
-            <h1>🔧 Konserwacja bazy danych</h1>
+            <?php $this->render_page_header('Konserwacja bazy danych'); ?>
 
             <div style="background:#fff;padding:20px;border:1px solid #ccd0d4;border-radius:4px;margin-top:20px;">
                 <h2>Status automatycznej konserwacji</h2>
@@ -5734,7 +5759,7 @@ JAVASCRIPT;
         );
         ?>
         <div class="wrap">
-            <h1>Zarządzanie kategoriami miejsc</h1>
+            <?php $this->render_page_header('Zarządzanie kategoriami miejsc'); ?>
 
             <style>
                 .jg-category-editor { max-width: 800px; margin-top: 20px; }
@@ -6102,7 +6127,7 @@ JAVASCRIPT;
         );
         ?>
         <div class="wrap">
-            <h1>Zarządzanie kategoriami ciekawostek</h1>
+            <?php $this->render_page_header('Zarządzanie kategoriami ciekawostek'); ?>
 
             <style>
                 .jg-category-editor { max-width: 800px; margin-top: 20px; }
@@ -6448,8 +6473,8 @@ JAVASCRIPT;
         $nonce = wp_create_nonce('jg_map_admin_nonce');
         ?>
         <div class="wrap">
-            <h1>Edytor doświadczenia (XP)</h1>
-            <p>Konfiguruj za jakie akcje użytkownicy otrzymują doświadczenie (XP) i ile punktów przyznawać.</p>
+            <?php $this->render_page_header('Edytor doświadczenia (XP)'); ?>
+            <p style="margin-top:0;color:#6b7280">Konfiguruj za jakie akcje użytkownicy otrzymują doświadczenie (XP) i ile punktów przyznawać.</p>
             <p><strong>Formuła poziomów:</strong> Poziom N wymaga N&sup2; &times; 100 XP (np. poziom 2 = 400 XP, poziom 5 = 2500 XP, poziom 10 = 10000 XP)</p>
 
             <div id="jg-xp-editor" style="max-width:800px;margin-top:20px">
@@ -6573,8 +6598,8 @@ JAVASCRIPT;
         $nonce = wp_create_nonce('jg_map_admin_nonce');
         ?>
         <div class="wrap">
-            <h1>Edytor osiągnięć</h1>
-            <p>Konfiguruj osiągnięcia dostępne dla użytkowników. Rzadkość determinuje kolor poświaty wokół osiągnięcia.</p>
+            <?php $this->render_page_header('Edytor osiągnięć'); ?>
+            <p style="margin-top:0;color:#6b7280">Konfiguruj osiągnięcia dostępne dla użytkowników. Rzadkość determinuje kolor poświaty wokół osiągnięcia.</p>
 
             <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
                 <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#f3f4f6;border:2px solid #d1d5db;font-size:calc(13 * var(--jg))">
@@ -6740,7 +6765,7 @@ JAVASCRIPT;
     public function render_tags_page() {
         ?>
         <div class="wrap">
-            <h1>Zarządzanie tagami</h1>
+            <?php $this->render_page_header('Zarządzanie tagami'); ?>
 
             <style>
                 .jg-tags-manager { max-width: 900px; margin-top: 20px; }
@@ -7290,8 +7315,8 @@ JAVASCRIPT;
         $items = get_option('jg_map_nav_menu', array());
         ?>
         <div class="wrap">
-            <h1>Menu nawigacyjne (mobilny pasek)</h1>
-            <p class="description" style="margin-bottom:16px">
+            <?php $this->render_page_header('Menu nawigacyjne (mobilny pasek)'); ?>
+            <p class="description" style="margin-bottom:16px;color:#6b7280">
                 Pozycje wyświetlane w rozwijanym menu hamburgerowym na pasku z logo portalu (widocznym na urządzeniach mobilnych).
             </p>
 
