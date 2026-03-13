@@ -3531,7 +3531,7 @@ class JG_Map_Ajax_Handlers {
     /**
      * Send email with proper headers for spam prevention
      */
-    private function send_plugin_email($to, $subject, $message) {
+    public function send_plugin_email($to, $subject, $message) {
         // Temporarily override email sender for this email
         add_filter('wp_mail_from_name', array($this, 'get_plugin_email_from_name'), 99);
         add_filter('wp_mail_from', array($this, 'get_plugin_email_from'), 99);

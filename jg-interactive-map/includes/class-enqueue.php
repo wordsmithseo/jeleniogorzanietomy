@@ -950,6 +950,16 @@ class JG_Map_Enqueue {
         delete_user_meta($user->ID, 'jg_map_activation_key');
         delete_user_meta($user->ID, 'jg_map_activation_key_time');
 
+        // Send activation success email
+        $subject = 'Konto aktywowane - ' . get_bloginfo('name');
+        $message  = "Witaj " . $user->user_login . "!\n\n";
+        $message .= "Twoje konto w serwisie " . get_bloginfo('name') . " zostało pomyślnie aktywowane.\n\n";
+        $message .= "Możesz teraz zalogować się na stronie:\n";
+        $message .= home_url() . "\n\n";
+        $message .= "Pozdrawiamy,\n";
+        $message .= "Zespół " . get_bloginfo('name');
+        JG_Map_Ajax_Handlers::get_instance()->send_plugin_email($user->user_email, $subject, $message);
+
         // DO NOT auto login - require manual login for security
         // Redirect to home with success message (will show modal)
         wp_redirect(add_query_arg('activation', 'success', home_url()));
