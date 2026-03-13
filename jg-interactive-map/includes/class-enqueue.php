@@ -56,6 +56,21 @@ class JG_Map_Enqueue {
 
         // Block non-admin users from accessing /wp-admin/
         add_action('admin_init', array($this, 'block_non_admin_access'));
+
+        // Dynamic capability: jg_map_manage = manage_options OR jg_map_admin (plugin admin)
+        add_filter('user_has_cap', array($this, 'grant_plugin_caps'), 10, 3);
+    }
+
+    /**
+     * Grant the jg_map_manage capability to full WP admins and plugin admins (jg_map_admin).
+     * All plugin pages that require full admin access use jg_map_manage so that
+     * plugin admins work without touching every manage_options check.
+     */
+    public function grant_plugin_caps($allcaps, $caps, $args) {
+        if (!empty($allcaps['manage_options']) || !empty($allcaps['jg_map_admin'])) {
+            $allcaps['jg_map_manage'] = true;
+        }
+        return $allcaps;
     }
 
     /**
@@ -67,8 +82,8 @@ class JG_Map_Enqueue {
     }
 
     /**
-     * Block non-admin users from accessing /wp-admin/
-     * Only users with manage_options or jg_map_moderate capability can access
+     * Block non-admin users from /wp-admin/ and restrict moderators/plugin-admins
+     * to plugin pages only.
      */
     public function block_non_admin_access() {
         // Allow AJAX requests (admin-ajax.php is used by frontend)
@@ -81,12 +96,33 @@ class JG_Map_Enqueue {
             return;
         }
 
-        // Check if user has admin or moderator permissions
-        if (current_user_can('manage_options') || current_user_can('jg_map_moderate')) {
+        // Full WP admin: unrestricted access
+        if (current_user_can('manage_options')) {
             return;
         }
 
-        // Redirect non-admin users to home page
+        $page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : '';
+
+        // Plugin admin (jg_map_manage via jg_map_admin cap): allow any jg-map-* page
+        if (current_user_can('jg_map_manage')) {
+            if (strpos($page, 'jg-map-') === 0) {
+                return;
+            }
+            wp_safe_redirect(admin_url('admin.php?page=jg-map-dashboard'));
+            exit;
+        }
+
+        // Moderator: allow only specific plugin pages
+        if (current_user_can('jg_map_moderate')) {
+            $allowed = array('jg-map-dashboard', 'jg-map-places', 'jg-map-users', 'jg-map-roles');
+            if (in_array($page, $allowed, true)) {
+                return;
+            }
+            wp_safe_redirect(admin_url('admin.php?page=jg-map-dashboard'));
+            exit;
+        }
+
+        // No relevant permissions: redirect to home page
         wp_safe_redirect(home_url());
         exit;
     }
@@ -702,8 +738,8 @@ class JG_Map_Enqueue {
                 <?php if (is_user_logged_in()) : ?>
                     <?php
                     $current_user = wp_get_current_user();
-                    $is_admin = current_user_can('manage_options');
-                    $is_moderator = current_user_can('jg_map_moderate');
+                    $is_admin     = current_user_can('manage_options') || current_user_can('jg_map_admin');
+                    $is_moderator = !$is_admin && current_user_can('jg_map_moderate');
 
                     // Check if user has sponsored places
                     global $wpdb;
@@ -832,8 +868,8 @@ class JG_Map_Enqueue {
                         <?php endforeach; ?>
                     </div>
 
-                    <?php if ($is_admin) : ?>
-                        <a href="<?php echo admin_url(); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin">Panel administratora</a>
+                    <?php if ($is_admin || $is_moderator) : ?>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=jg-map-dashboard')); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin">Panel administratora</a>
                     <?php endif; ?>
                     <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn">Wyloguj</a>
                 <?php else : ?>

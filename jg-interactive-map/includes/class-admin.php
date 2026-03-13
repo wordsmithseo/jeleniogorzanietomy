@@ -30,6 +30,8 @@ class JG_Map_Admin {
      */
     private function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
+        // Remove all non-plugin WP menus for moderators and plugin admins
+        add_action('admin_menu', array($this, 'restrict_sidebar_for_non_wp_admins'), 9999);
         add_action('admin_bar_menu', array($this, 'add_admin_bar_notifications'), 100);
         add_filter('admin_title', array($this, 'modify_admin_title'), 999, 2);
 
@@ -363,10 +365,11 @@ class JG_Map_Admin {
      * Add admin menu
      */
     public function add_admin_menu() {
+        // Main menu: visible to moderators, plugin admins, and WP admins
         add_menu_page(
             'JG Map',
             'JG Map',
-            'manage_options',
+            'jg_map_moderate',
             'jg-map-dashboard',
             array($this, 'render_main_page'),
             'dashicons-location-alt',
@@ -377,7 +380,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Dashboard',
             'Dashboard',
-            'manage_options',
+            'jg_map_moderate',
             'jg-map-dashboard',
             array($this, 'render_main_page')
         );
@@ -387,7 +390,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Miejsca',
             'Miejsca',
-            'read',
+            'jg_map_moderate',
             'jg-map-places',
             array($this, 'render_places_page')
         );
@@ -396,7 +399,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Promocje',
             'Promocje',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-promos',
             array($this, 'render_promos_page')
         );
@@ -405,7 +408,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Galeria zdjęć',
             'Galeria zdjęć',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-gallery',
             array($this, 'render_gallery_page')
         );
@@ -415,7 +418,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Użytkownicy',
             'Użytkownicy',
-            'manage_options',
+            'jg_map_moderate',
             'jg-map-users',
             array($this, 'render_users_page')
         );
@@ -424,7 +427,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Role użytkowników',
             'Role użytkowników',
-            'manage_options',
+            'jg_map_moderate',
             'jg-map-roles',
             array($this, 'render_roles_page')
         );
@@ -433,7 +436,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Activity Log',
             'Activity Log',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-activity-log',
             array($this, 'render_activity_log_page')
         );
@@ -443,7 +446,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Kategorie miejsc',
             'Kat. miejsc',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-place-categories',
             array($this, 'render_place_categories_page')
         );
@@ -452,7 +455,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Kategorie ciekawostek',
             'Kat. ciekawostek',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-curiosity-categories',
             array($this, 'render_curiosity_categories_page')
         );
@@ -461,7 +464,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Zarządzanie tagami',
             'Tagi',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-tags',
             array($this, 'render_tags_page')
         );
@@ -470,7 +473,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Powody zgłoszeń',
             'Powody zgłoszeń',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-report-reasons',
             array($this, 'render_report_reasons_page')
         );
@@ -480,7 +483,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Doświadczenie (XP)',
             'Doświadczenie (XP)',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-xp-editor',
             array($this, 'render_xp_editor_page')
         );
@@ -489,7 +492,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Osiągnięcia',
             'Osiągnięcia',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-achievements-editor',
             array($this, 'render_achievements_editor_page')
         );
@@ -499,7 +502,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Ustawienia',
             'Ustawienia',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-settings',
             array($this, 'render_settings_page')
         );
@@ -508,7 +511,7 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Menu nawigacyjne',
             'Menu nawigacyjne',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-nav-menu',
             array($this, 'render_nav_menu_page')
         );
@@ -517,11 +520,45 @@ class JG_Map_Admin {
             'jg-map-dashboard',
             'Konserwacja',
             'Konserwacja',
-            'manage_options',
+            'jg_map_manage',
             'jg-map-maintenance',
             array($this, 'render_maintenance_page')
         );
 
+    }
+
+    /**
+     * Remove all standard WordPress admin menus for moderators and plugin admins
+     * (non-WP-admins). They should see only the JG Map plugin menu.
+     */
+    public function restrict_sidebar_for_non_wp_admins() {
+        // Full WP admins keep the full sidebar
+        if (current_user_can('manage_options')) {
+            return;
+        }
+
+        // Only restrict users who have some plugin access
+        if (!current_user_can('jg_map_manage') && !current_user_can('jg_map_moderate')) {
+            return;
+        }
+
+        // Remove every standard WP core menu
+        $core_menus = array(
+            'index.php',                    // Dashboard
+            'edit.php',                     // Posts
+            'upload.php',                   // Media
+            'edit.php?post_type=page',      // Pages
+            'edit-comments.php',            // Comments
+            'themes.php',                   // Appearance
+            'plugins.php',                  // Plugins
+            'users.php',                    // Users
+            'tools.php',                    // Tools
+            'options-general.php',          // Settings
+            'profile.php',                  // Profile
+        );
+        foreach ($core_menus as $menu) {
+            remove_menu_page($menu);
+        }
     }
 
     /**
@@ -2462,24 +2499,40 @@ class JG_Map_Admin {
             $action = sanitize_text_field($_POST['role_action'] ?? '');
             $role_type = sanitize_text_field($_POST['role_type'] ?? 'moderator');
 
-            if ($user_id && in_array($action, array('add', 'remove')) && in_array($role_type, array('moderator', 'test_user'))) {
-                $user = get_userdata($user_id);
-                if ($user) {
-                    if ($role_type === 'moderator') {
-                        if ($action === 'add') {
-                            $user->add_cap('jg_map_moderate');
-                            echo '<div class="notice notice-success"><p>Uprawnienia moderatora dodane!</p></div>';
-                        } else {
-                            $user->remove_cap('jg_map_moderate');
-                            echo '<div class="notice notice-success"><p>Uprawnienia moderatora usunięte!</p></div>';
-                        }
-                    } else { // test_user
-                        if ($action === 'add') {
-                            $user->add_cap('jg_map_bypass_maintenance');
-                            echo '<div class="notice notice-success"><p>Użytkownik oznaczony jako testowy!</p></div>';
-                        } else {
-                            $user->remove_cap('jg_map_bypass_maintenance');
-                            echo '<div class="notice notice-success"><p>Użytkownik przestał być testowym!</p></div>';
+            if ($user_id && in_array($action, array('add', 'remove')) && in_array($role_type, array('moderator', 'test_user', 'plugin_admin'))) {
+                // Only full WP admins can assign the plugin_admin role
+                if ($role_type === 'plugin_admin' && !current_user_can('manage_options')) {
+                    echo '<div class="notice notice-error"><p>Tylko administratorzy WordPress mogą nadawać uprawnienia administratora pluginu.</p></div>';
+                } else {
+                    $user = get_userdata($user_id);
+                    if ($user) {
+                        if ($role_type === 'moderator') {
+                            if ($action === 'add') {
+                                $user->add_cap('jg_map_moderate');
+                                echo '<div class="notice notice-success"><p>Uprawnienia moderatora dodane!</p></div>';
+                            } else {
+                                $user->remove_cap('jg_map_moderate');
+                                echo '<div class="notice notice-success"><p>Uprawnienia moderatora usunięte!</p></div>';
+                            }
+                        } elseif ($role_type === 'plugin_admin') {
+                            if ($action === 'add') {
+                                $user->add_cap('jg_map_admin');
+                                // Plugin admin also gets moderator capability
+                                $user->add_cap('jg_map_moderate');
+                                echo '<div class="notice notice-success"><p>Uprawnienia administratora pluginu dodane!</p></div>';
+                            } else {
+                                $user->remove_cap('jg_map_admin');
+                                $user->remove_cap('jg_map_moderate');
+                                echo '<div class="notice notice-success"><p>Uprawnienia administratora pluginu usunięte!</p></div>';
+                            }
+                        } else { // test_user
+                            if ($action === 'add') {
+                                $user->add_cap('jg_map_bypass_maintenance');
+                                echo '<div class="notice notice-success"><p>Użytkownik oznaczony jako testowy!</p></div>';
+                            } else {
+                                $user->remove_cap('jg_map_bypass_maintenance');
+                                echo '<div class="notice notice-success"><p>Użytkownik przestał być testowym!</p></div>';
+                            }
                         }
                     }
                 }
@@ -2496,12 +2549,13 @@ class JG_Map_Admin {
             <div style="background:#fff7e6;border:2px solid #f59e0b;padding:15px;border-radius:8px;margin:20px 0">
                 <h3 style="margin-top:0">ℹ️ O rolach:</h3>
                 <ul>
-                    <li><strong>Administrator</strong> - pełny dostęp do wszystkich funkcji pluginu</li>
-                    <li><strong>Moderator JG Map</strong> - może moderować miejsca, zgłoszenia i edycje</li>
+                    <li><strong>WP Admin</strong> - pełny dostęp do WordPressa i wszystkich funkcji pluginu (nadawany przez WP, nie można tu zmienić)</li>
+                    <li><strong>Admin pluginu ⭐</strong> - pełny dostęp do wszystkich funkcji pluginu JG Map; nie ma dostępu do rdzennego WP admina</li>
+                    <li><strong>Moderator JG Map 🛡️</strong> - może moderować miejsca, zgłoszenia i edycje; widzi tylko Dashboard i zarządzanie użytkownikami</li>
                     <li><strong>Użytkownik testowy</strong> - może logować się pomimo trybu konserwacji w Elementorze</li>
                     <li><strong>Użytkownik</strong> - może dodawać i edytować swoje miejsca</li>
                 </ul>
-                <p><strong>Uwaga:</strong> Uprawnienia można nadać dowolnemu użytkownikowi. Administratorzy WordPress mają automatycznie wszystkie uprawnienia.</p>
+                <p><strong>Uwaga:</strong> Tytuł "Admin pluginu" może nadawać tylko administrator WordPress.</p>
             </div>
 
             <table class="wp-list-table widefat fixed striped">
@@ -2511,6 +2565,7 @@ class JG_Map_Admin {
                         <th>Nazwa użytkownika</th>
                         <th>Email</th>
                         <th>Rola WordPress</th>
+                        <th>Admin pluginu</th>
                         <th>Moderator</th>
                         <th>Użytkownik testowy</th>
                         <th>Poziom użytkownika</th>
@@ -2519,9 +2574,10 @@ class JG_Map_Admin {
                 </thead>
                 <tbody>
                     <?php foreach ($users as $user):
-                        $is_admin = user_can($user->ID, 'manage_options');
-                        $is_moderator = user_can($user->ID, 'jg_map_moderate');
-                        $is_test_user = user_can($user->ID, 'jg_map_bypass_maintenance');
+                        $is_wp_admin    = user_can($user->ID, 'manage_options');
+                        $is_plugin_admin = !$is_wp_admin && user_can($user->ID, 'jg_map_admin');
+                        $is_moderator   = user_can($user->ID, 'jg_map_moderate') && !$is_wp_admin && !$is_plugin_admin;
+                        $is_test_user   = user_can($user->ID, 'jg_map_bypass_maintenance');
                         $roles = implode(', ', $user->roles);
                         $user_xp_data = JG_Map_Levels_Achievements::get_user_xp_data($user->ID);
                         $user_level = $user_xp_data['level'];
@@ -2532,8 +2588,17 @@ class JG_Map_Admin {
                             <td><?php echo esc_html($user->user_email); ?></td>
                             <td><?php echo esc_html(ucfirst($roles)); ?></td>
                             <td>
-                                <?php if ($is_admin): ?>
-                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:calc(12 * var(--jg))">✓ Admin</span>
+                                <?php if ($is_wp_admin): ?>
+                                    <span style="background:#6b7280;color:#fff;padding:4px 8px;border-radius:4px;font-size:calc(12 * var(--jg))">WP Admin</span>
+                                <?php elseif ($is_plugin_admin): ?>
+                                    <span style="background:#7c3aed;color:#fff;padding:4px 8px;border-radius:4px;font-size:calc(12 * var(--jg))">✓ Tak</span>
+                                <?php else: ?>
+                                    <span style="background:#e5e7eb;color:#6b7280;padding:4px 8px;border-radius:4px;font-size:calc(12 * var(--jg))">Nie</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($is_wp_admin || $is_plugin_admin): ?>
+                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:calc(12 * var(--jg))">✓ Auto</span>
                                 <?php elseif ($is_moderator): ?>
                                     <span style="background:#3b82f6;color:#fff;padding:4px 8px;border-radius:4px;font-size:calc(12 * var(--jg))">✓ Tak</span>
                                 <?php else: ?>
@@ -2541,8 +2606,8 @@ class JG_Map_Admin {
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php if ($is_admin): ?>
-                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:calc(12 * var(--jg))">✓ Admin</span>
+                                <?php if ($is_wp_admin || $is_plugin_admin): ?>
+                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px;font-size:calc(12 * var(--jg))">✓ Auto</span>
                                 <?php elseif ($is_test_user): ?>
                                     <span style="background:#f59e0b;color:#fff;padding:4px 8px;border-radius:4px;font-size:calc(12 * var(--jg))">✓ Tak</span>
                                 <?php else: ?>
@@ -2553,8 +2618,28 @@ class JG_Map_Admin {
                                 <span style="background:#fbbf24;color:#78350f;padding:4px 10px;border-radius:4px;font-size:calc(12 * var(--jg));font-weight:700">Poz. <?php echo $user_level; ?></span>
                             </td>
                             <td>
-                                <?php if (!$is_admin): ?>
-                                    <!-- Moderator buttons -->
+                                <?php if ($is_wp_admin): ?>
+                                    <em style="color:#6b7280">WP Admin (automatycznie)</em>
+                                <?php else: ?>
+                                    <?php if (current_user_can('manage_options')): ?>
+                                    <!-- Plugin admin buttons (only full WP admins can assign) -->
+                                    <form method="post" style="display:inline;margin-right:5px">
+                                        <?php wp_nonce_field('jg_roles_update', 'jg_roles_nonce'); ?>
+                                        <input type="hidden" name="user_id" value="<?php echo $user->ID; ?>">
+                                        <input type="hidden" name="jg_update_roles" value="1">
+                                        <input type="hidden" name="role_type" value="plugin_admin">
+                                        <?php if ($is_plugin_admin): ?>
+                                            <input type="hidden" name="role_action" value="remove">
+                                            <button type="submit" class="button button-small" style="border-color:#7c3aed;color:#7c3aed" title="Usuń uprawnienia admina pluginu">❌ Admin pluginu</button>
+                                        <?php else: ?>
+                                            <input type="hidden" name="role_action" value="add">
+                                            <button type="submit" class="button button-small" style="background:#7c3aed;border-color:#7c3aed;color:#fff" title="Nadaj uprawnienia admina pluginu">⭐ Admin pluginu</button>
+                                        <?php endif; ?>
+                                    </form>
+                                    <?php endif; ?>
+
+                                    <!-- Moderator buttons (hidden when user is plugin admin) -->
+                                    <?php if (!$is_plugin_admin): ?>
                                     <form method="post" style="display:inline;margin-right:5px">
                                         <?php wp_nonce_field('jg_roles_update', 'jg_roles_nonce'); ?>
                                         <input type="hidden" name="user_id" value="<?php echo $user->ID; ?>">
@@ -2568,6 +2653,7 @@ class JG_Map_Admin {
                                             <button type="submit" class="button button-small button-primary" title="Dodaj uprawnienia moderatora">➕ Moderator</button>
                                         <?php endif; ?>
                                     </form>
+                                    <?php endif; ?>
 
                                     <!-- Test user buttons -->
                                     <form method="post" style="display:inline">
@@ -2583,8 +2669,6 @@ class JG_Map_Admin {
                                             <button type="submit" class="button button-small button-primary" title="Oznacz jako użytkownika testowego">➕ Testowy</button>
                                         <?php endif; ?>
                                     </form>
-                                <?php else: ?>
-                                    <em style="color:#6b7280">Administrator (automatycznie)</em>
                                 <?php endif; ?>
                             </td>
                         </tr>

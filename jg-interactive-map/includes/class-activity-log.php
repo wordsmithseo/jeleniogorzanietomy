@@ -84,8 +84,9 @@ class JG_Map_Activity_Log {
     public static function log($action, $object_type, $object_id = null, $description = '') {
         global $wpdb;
 
-        // Only log for admins and moderators
-        if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
+        // Only log for admins, plugin admins, and moderators
+        // jg_map_manage covers manage_options and jg_map_admin (via user_has_cap filter)
+        if (!current_user_can('jg_map_manage') && !current_user_can('jg_map_moderate')) {
             return false;
         }
 
