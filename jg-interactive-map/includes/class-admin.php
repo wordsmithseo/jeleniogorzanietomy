@@ -37,12 +37,7 @@ class JG_Map_Admin {
         add_filter('heartbeat_received', array($this, 'heartbeat_received'), 10, 2);
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_bar_script'));
 
-        // Users list: custom columns for account activation status
-        add_filter('manage_users_columns', array($this, 'add_user_activation_columns'));
-        add_filter('manage_users_custom_column', array($this, 'render_user_activation_column'), 10, 3);
-        add_filter('user_row_actions', array($this, 'add_manual_activate_action'), 10, 2);
-
-        // Handle manual activation
+        // Handle manual activation from plugin users page
         add_action('admin_post_jg_map_activate_user', array($this, 'handle_manual_activate_user'));
     }
 
@@ -183,96 +178,19 @@ class JG_Map_Admin {
     }
 
     /**
-     * Add custom columns to the WordPress users list
-     */
-    public function add_user_activation_columns($columns) {
-        $new_columns = array();
-        foreach ($columns as $key => $label) {
-            $new_columns[$key] = $label;
-            if ($key === 'role') {
-                $new_columns['jg_account_status']   = 'Status konta';
-                $new_columns['jg_email_sent_at']    = 'Email wysłany';
-                $new_columns['jg_activated_at']     = 'Data aktywacji';
-            }
-        }
-        return $new_columns;
-    }
-
-    /**
-     * Render custom column values for the users list
-     */
-    public function render_user_activation_column($output, $column_name, $user_id) {
-        if ($column_name === 'jg_account_status') {
-            $status = get_user_meta($user_id, 'jg_map_account_status', true);
-            if ($status === 'active') {
-                return '<span style="color:#16a34a;font-weight:600">✔ Aktywny</span>';
-            }
-            if ($status === 'pending') {
-                return '<span style="color:#d97706;font-weight:600">⏳ Oczekuje na aktywację przez email</span>';
-            }
-            // Older accounts created before this mechanism existed — not blocked by login
-            return '<span style="color:#6b7280" title="Konto istniało przed wprowadzeniem weryfikacji email — może się logować">✔ Aktywny (stare konto)</span>';
-        }
-
-        if ($column_name === 'jg_email_sent_at') {
-            $ts = get_user_meta($user_id, 'jg_map_email_sent_at', true);
-            if (!$ts) {
-                return '<span style="color:#6b7280">—</span>';
-            }
-            return '<span title="' . esc_attr(date_i18n('Y-m-d H:i:s', $ts)) . '">'
-                . esc_html(date_i18n('d.m.Y H:i', $ts))
-                . '</span>';
-        }
-
-        if ($column_name === 'jg_activated_at') {
-            $ts = get_user_meta($user_id, 'jg_map_activated_at', true);
-            if (!$ts) {
-                return '<span style="color:#6b7280">—</span>';
-            }
-            return '<span title="' . esc_attr(date_i18n('Y-m-d H:i:s', $ts)) . '">'
-                . esc_html(date_i18n('d.m.Y H:i', $ts))
-                . '</span>';
-        }
-
-        return $output;
-    }
-
-    /**
-     * Add "Aktywuj ręcznie" to row actions in users list
-     */
-    public function add_manual_activate_action($actions, $user) {
-        if (!current_user_can('manage_options')) {
-            return $actions;
-        }
-
-        $status = get_user_meta($user->ID, 'jg_map_account_status', true);
-        if ($status !== 'pending') {
-            return $actions;
-        }
-
-        $url = wp_nonce_url(
-            admin_url('admin-post.php?action=jg_map_activate_user&user_id=' . $user->ID),
-            'jg_map_activate_' . $user->ID
-        );
-        $actions['jg_activate'] = '<a href="' . esc_url($url) . '" style="color:#16a34a;font-weight:600">✔ Aktywuj ręcznie</a>';
-
-        return $actions;
-    }
-
-    /**
-     * Handle manual account activation from users list
+     * Handle manual account activation from plugin users page
      */
     public function handle_manual_activate_user() {
         if (!current_user_can('manage_options')) {
             wp_die('Brak uprawnień.', 403);
         }
 
-        $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
         if (!$user_id) {
             wp_die('Nieprawidłowy użytkownik.');
         }
 
-        check_admin_referer('jg_map_activate_' . $user_id);
+        check_admin_referer('jg_map_activate_user_' . $user_id, 'jg_map_activate_nonce');
 
         $user = get_userdata($user_id);
         if (!$user) {
@@ -284,9 +202,19 @@ class JG_Map_Admin {
         delete_user_meta($user_id, 'jg_map_activation_key');
         delete_user_meta($user_id, 'jg_map_activation_key_time');
 
+        // Send activation success email
+        $subject  = 'Konto aktywowane - ' . get_bloginfo('name');
+        $message  = "Witaj " . $user->user_login . "!\n\n";
+        $message .= "Twoje konto w serwisie " . get_bloginfo('name') . " zostało aktywowane przez administratora.\n\n";
+        $message .= "Możesz teraz zalogować się na stronie:\n";
+        $message .= home_url() . "\n\n";
+        $message .= "Pozdrawiamy,\n";
+        $message .= "Zespół " . get_bloginfo('name');
+        JG_Map_Ajax_Handlers::get_instance()->send_plugin_email($user->user_email, $subject, $message);
+
         wp_redirect(add_query_arg(
-            array('update' => 'jg_activated', 'user_id' => $user_id),
-            admin_url('users.php')
+            array('page' => 'jg-map-users', 'jg_activated' => $user_id),
+            admin_url('admin.php')
         ));
         exit;
     }
@@ -3113,6 +3041,10 @@ class JG_Map_Admin {
             // Get the most recent action
             $last_action = !empty($last_actions) ? max($last_actions) : null;
 
+            $account_status = get_user_meta($user->ID, 'jg_map_account_status', true);
+            $email_sent_at  = get_user_meta($user->ID, 'jg_map_email_sent_at', true);
+            $activated_at   = get_user_meta($user->ID, 'jg_map_activated_at', true);
+
             $user_stats[$user->ID] = array(
                 'points' => $points_count,
                 'pending' => $pending_count,
@@ -3120,7 +3052,10 @@ class JG_Map_Admin {
                 'ban_until' => $ban_until,
                 'restrictions' => $restrictions,
                 'last_login' => $last_login,
-                'last_action' => $last_action
+                'last_action' => $last_action,
+                'account_status' => $account_status,
+                'email_sent_at'  => $email_sent_at,
+                'activated_at'   => $activated_at,
             );
         }
 
@@ -3253,14 +3188,17 @@ class JG_Map_Admin {
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
-                        <th style="width:4%">ID</th>
-                        <th style="width:16%">Użytkownik</th>
-                        <th style="width:9%">Miejsca</th>
-                        <th style="width:10%">Data rejestracji</th>
-                        <th style="width:10%">Ostatnie logowanie</th>
-                        <th style="width:12%">Ostatnia akcja</th>
-                        <th style="width:12%">Status</th>
-                        <th style="width:18%">Blokady</th>
+                        <th style="width:3%">ID</th>
+                        <th style="width:12%">Użytkownik</th>
+                        <th style="width:7%">Miejsca</th>
+                        <th style="width:8%">Data rejestracji</th>
+                        <th style="width:8%">Ostatnie logowanie</th>
+                        <th style="width:8%">Ostatnia akcja</th>
+                        <th style="width:10%">Status konta</th>
+                        <th style="width:8%">Email wysłany</th>
+                        <th style="width:8%">Data aktywacji</th>
+                        <th style="width:10%">Status bana</th>
+                        <th style="width:10%">Blokady</th>
                         <th style="width:8%">Akcje</th>
                     </tr>
                 </thead>
@@ -3302,6 +3240,34 @@ class JG_Map_Admin {
                                 <?php endif; ?>
                             </td>
                             <td>
+                                <?php
+                                $acc_status = $stats['account_status'];
+                                if ($acc_status === 'active') {
+                                    echo '<span style="color:#16a34a;font-weight:600">✔ Aktywny</span>';
+                                } elseif ($acc_status === 'pending') {
+                                    echo '<span style="color:#d97706;font-weight:600">⏳ Oczekuje na aktywację przez email</span>';
+                                } else {
+                                    echo '<span style="color:#6b7280" title="Konto istniało przed wprowadzeniem weryfikacji email">✔ Aktywny (stare konto)</span>';
+                                }
+                                ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($stats['email_sent_at'])): ?>
+                                    <span style="font-size:calc(12 * var(--jg))"><?php echo get_date_from_gmt(date('Y-m-d H:i:s', (int)$stats['email_sent_at']), 'd.m.Y'); ?></span>
+                                    <br><small style="color:#666"><?php echo get_date_from_gmt(date('Y-m-d H:i:s', (int)$stats['email_sent_at']), 'H:i'); ?></small>
+                                <?php else: ?>
+                                    <span style="color:#999;font-size:calc(12 * var(--jg))">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($stats['activated_at'])): ?>
+                                    <span style="font-size:calc(12 * var(--jg))"><?php echo get_date_from_gmt(date('Y-m-d H:i:s', (int)$stats['activated_at']), 'd.m.Y'); ?></span>
+                                    <br><small style="color:#666"><?php echo get_date_from_gmt(date('Y-m-d H:i:s', (int)$stats['activated_at']), 'H:i'); ?></small>
+                                <?php else: ?>
+                                    <span style="color:#999;font-size:calc(12 * var(--jg))">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
                                 <?php if ($is_banned): ?>
                                     <?php if ($stats['ban_status'] === 'permanent'): ?>
                                         <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700">🚫 Ban permanentny</span>
@@ -3309,7 +3275,7 @@ class JG_Map_Admin {
                                         <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-weight:700">🚫 Ban do <?php echo get_date_from_gmt($stats['ban_until'], 'Y-m-d'); ?></span>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px">✓ Aktywny</span>
+                                    <span style="background:#10b981;color:#fff;padding:4px 8px;border-radius:4px">✓ OK</span>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -3337,6 +3303,16 @@ class JG_Map_Admin {
                                         data-restrictions='<?php echo esc_attr(json_encode($stats['restrictions'])); ?>'>
                                     Zarządzaj
                                 </button>
+                                <?php if ($stats['account_status'] === 'pending'): ?>
+                                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline;margin-left:4px">
+                                        <input type="hidden" name="action" value="jg_map_activate_user">
+                                        <input type="hidden" name="user_id" value="<?php echo $user->ID; ?>">
+                                        <?php wp_nonce_field('jg_map_activate_user_' . $user->ID, 'jg_map_activate_nonce'); ?>
+                                        <button type="submit" class="button button-small" style="background:#16a34a;color:#fff;border-color:#16a34a">
+                                            ✔ Aktywuj ręcznie
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
