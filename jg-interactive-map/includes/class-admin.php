@@ -3060,8 +3060,22 @@ class JG_Map_Admin {
         }
 
         ?>
+        <style>
+        .jg-users-header{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+        .jg-users-header h1{margin:0;flex:1 1 auto}
+        .jg-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+        .jg-action-btns{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+        @media(max-width:782px){
+            .jg-table-wrap table{min-width:900px}
+        }
+        </style>
         <div class="wrap">
-            <h1>Zarządzanie użytkownikami</h1>
+            <div class="jg-users-header">
+                <h1>Zarządzanie użytkownikami</h1>
+                <a href="<?php echo esc_url(home_url('/')); ?>" class="button" target="_blank">
+                    ← Powrót na mapę
+                </a>
+            </div>
 
             <div style="background:#fff7e6;border:2px solid #f59e0b;padding:15px;border-radius:8px;margin:20px 0">
                 <h3 style="margin-top:0">ℹ️ Zarządzanie użytkownikami:</h3>
@@ -3185,6 +3199,7 @@ class JG_Map_Admin {
             <?php endif; ?>
 
             <h2>Wszyscy użytkownicy</h2>
+            <div class="jg-table-wrap">
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
@@ -3296,28 +3311,31 @@ class JG_Map_Admin {
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <button class="button button-small jg-manage-user"
-                                        data-user-id="<?php echo $user->ID; ?>"
-                                        data-user-name="<?php echo esc_attr($user->display_name); ?>"
-                                        data-ban-status="<?php echo esc_attr($stats['ban_status']); ?>"
-                                        data-restrictions='<?php echo esc_attr(json_encode($stats['restrictions'])); ?>'>
-                                    Zarządzaj
-                                </button>
-                                <?php if ($stats['account_status'] === 'pending'): ?>
-                                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline;margin-left:4px">
-                                        <input type="hidden" name="action" value="jg_map_activate_user">
-                                        <input type="hidden" name="user_id" value="<?php echo $user->ID; ?>">
-                                        <?php wp_nonce_field('jg_map_activate_user_' . $user->ID, 'jg_map_activate_nonce'); ?>
-                                        <button type="submit" class="button button-small" style="background:#16a34a;color:#fff;border-color:#16a34a">
-                                            ✔ Aktywuj ręcznie
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
+                                <div class="jg-action-btns">
+                                    <button class="button button-small jg-manage-user"
+                                            data-user-id="<?php echo $user->ID; ?>"
+                                            data-user-name="<?php echo esc_attr($user->display_name); ?>"
+                                            data-ban-status="<?php echo esc_attr($stats['ban_status']); ?>"
+                                            data-restrictions='<?php echo esc_attr(json_encode($stats['restrictions'])); ?>'>
+                                        Zarządzaj
+                                    </button>
+                                    <?php if ($stats['account_status'] === 'pending'): ?>
+                                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                                            <input type="hidden" name="action" value="jg_map_activate_user">
+                                            <input type="hidden" name="user_id" value="<?php echo $user->ID; ?>">
+                                            <?php wp_nonce_field('jg_map_activate_user_' . $user->ID, 'jg_map_activate_nonce'); ?>
+                                            <button type="submit" class="button button-small" style="background:#16a34a;color:#fff;border-color:#16a34a;white-space:nowrap">
+                                                ✔ Aktywuj ręcznie
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div><!-- /.jg-table-wrap -->
 
             <!-- Modal for user management -->
             <div id="jg-user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
