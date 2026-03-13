@@ -36,6 +36,14 @@ class JG_Map_Admin {
         // Real-time notifications via Heartbeat API
         add_filter('heartbeat_received', array($this, 'heartbeat_received'), 10, 2);
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_bar_script'));
+
+        // Users list: custom columns for account activation status
+        add_filter('manage_users_columns', array($this, 'add_user_activation_columns'));
+        add_filter('manage_users_custom_column', array($this, 'render_user_activation_column'), 10, 3);
+        add_filter('user_row_actions', array($this, 'add_manual_activate_action'), 10, 2);
+
+        // Handle manual activation
+        add_action('admin_post_jg_map_activate_user', array($this, 'handle_manual_activate_user'));
     }
 
     /**
@@ -172,6 +180,115 @@ class JG_Map_Admin {
                 'href' => admin_url('admin.php?page=jg-map-places#section-deletion_pending')
             ));
         }
+    }
+
+    /**
+     * Add custom columns to the WordPress users list
+     */
+    public function add_user_activation_columns($columns) {
+        $new_columns = array();
+        foreach ($columns as $key => $label) {
+            $new_columns[$key] = $label;
+            if ($key === 'role') {
+                $new_columns['jg_account_status']   = 'Status konta';
+                $new_columns['jg_email_sent_at']    = 'Email wysłany';
+                $new_columns['jg_activated_at']     = 'Data aktywacji';
+            }
+        }
+        return $new_columns;
+    }
+
+    /**
+     * Render custom column values for the users list
+     */
+    public function render_user_activation_column($output, $column_name, $user_id) {
+        if ($column_name === 'jg_account_status') {
+            $status = get_user_meta($user_id, 'jg_map_account_status', true);
+            if ($status === 'active') {
+                return '<span style="color:#16a34a;font-weight:600">✔ Aktywny</span>';
+            }
+            if ($status === 'pending') {
+                return '<span style="color:#d97706;font-weight:600">⏳ Oczekuje na aktywację przez email</span>';
+            }
+            // Older accounts created before this mechanism existed — not blocked by login
+            return '<span style="color:#6b7280" title="Konto istniało przed wprowadzeniem weryfikacji email — może się logować">✔ Aktywny (stare konto)</span>';
+        }
+
+        if ($column_name === 'jg_email_sent_at') {
+            $ts = get_user_meta($user_id, 'jg_map_email_sent_at', true);
+            if (!$ts) {
+                return '<span style="color:#6b7280">—</span>';
+            }
+            return '<span title="' . esc_attr(date_i18n('Y-m-d H:i:s', $ts)) . '">'
+                . esc_html(date_i18n('d.m.Y H:i', $ts))
+                . '</span>';
+        }
+
+        if ($column_name === 'jg_activated_at') {
+            $ts = get_user_meta($user_id, 'jg_map_activated_at', true);
+            if (!$ts) {
+                return '<span style="color:#6b7280">—</span>';
+            }
+            return '<span title="' . esc_attr(date_i18n('Y-m-d H:i:s', $ts)) . '">'
+                . esc_html(date_i18n('d.m.Y H:i', $ts))
+                . '</span>';
+        }
+
+        return $output;
+    }
+
+    /**
+     * Add "Aktywuj ręcznie" to row actions in users list
+     */
+    public function add_manual_activate_action($actions, $user) {
+        if (!current_user_can('manage_options')) {
+            return $actions;
+        }
+
+        $status = get_user_meta($user->ID, 'jg_map_account_status', true);
+        if ($status !== 'pending') {
+            return $actions;
+        }
+
+        $url = wp_nonce_url(
+            admin_url('admin-post.php?action=jg_map_activate_user&user_id=' . $user->ID),
+            'jg_map_activate_' . $user->ID
+        );
+        $actions['jg_activate'] = '<a href="' . esc_url($url) . '" style="color:#16a34a;font-weight:600">✔ Aktywuj ręcznie</a>';
+
+        return $actions;
+    }
+
+    /**
+     * Handle manual account activation from users list
+     */
+    public function handle_manual_activate_user() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Brak uprawnień.', 403);
+        }
+
+        $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+        if (!$user_id) {
+            wp_die('Nieprawidłowy użytkownik.');
+        }
+
+        check_admin_referer('jg_map_activate_' . $user_id);
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            wp_die('Użytkownik nie istnieje.');
+        }
+
+        update_user_meta($user_id, 'jg_map_account_status', 'active');
+        update_user_meta($user_id, 'jg_map_activated_at', time());
+        delete_user_meta($user_id, 'jg_map_activation_key');
+        delete_user_meta($user_id, 'jg_map_activation_key_time');
+
+        wp_redirect(add_query_arg(
+            array('update' => 'jg_activated', 'user_id' => $user_id),
+            admin_url('users.php')
+        ));
+        exit;
     }
 
     /**
