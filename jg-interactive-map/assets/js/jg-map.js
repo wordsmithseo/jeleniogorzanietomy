@@ -3571,6 +3571,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             });
 
             deskPromoWrap.style.display = '';
+
+            // Position the banner just below the floating filter bar.
+            // The banner is position:fixed so getBoundingClientRect().bottom of
+            // the filter wrapper gives the exact viewport-Y to use as top.
+            var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
+            if (dwFiltersWrapper) {
+              var dwFBCR = dwFiltersWrapper.getBoundingClientRect();
+              deskPromoWrap.style.setProperty('top', (dwFBCR.bottom + 8) + 'px', 'important');
+              deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
+            }
           }
 
           function enterDeskWide() {

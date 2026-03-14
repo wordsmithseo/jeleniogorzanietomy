@@ -73,7 +73,7 @@ class JG_Slot_Keys {
 .{$fi} a{display:block;line-height:0;text-decoration:none}
 .{$fi} img{display:block;width:100%;height:auto;object-fit:contain}
 @media(min-width:769px){body.jg-fullscreen-active .{$fs}{left:calc((100% - min(380px,30vw)) / 2);max-width:calc(100% - min(380px,30vw) - 200px)}}
-@media(min-width:769px){body.jg-desktop-wide-active .{$fs}{bottom:auto;top:12px;left:calc((100% - min(380px,30vw)) / 2);max-width:calc(100% - min(380px,30vw) - 200px);transform:translateX(-50%)}}
+@media(min-width:769px){body.jg-desktop-wide-active .{$fs}{bottom:auto;top:70px;left:calc((100% - min(380px,30vw)) / 2);max-width:calc(100% - min(380px,30vw) - 200px);transform:translateX(-50%)}}
 @media(max-width:768px){
   body.jg-fullscreen-active .{$fs}{bottom:80px;left:50%;max-width:calc(100% - 24px);transform:translateX(-50%) scale(1.8);transform-origin:center bottom}
   .{$fi}{max-width:100%;border-radius:6px}
