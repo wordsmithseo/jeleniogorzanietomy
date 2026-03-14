@@ -1650,6 +1650,11 @@ body.jg-fullscreen-active #jg-search-panel {
     border-radius: 0 !important;
   }
 
+  /* White background so no page colour bleeds through while tiles load */
+  #jg-map-wrap.jg-desktop-wide {
+    background: #fff !important;
+  }
+
   /* Sidebar: floating overlay on the right (mirrors fullscreen behaviour) */
   .jg-sidebar-desktop-wide-overlay {
     position: absolute !important;

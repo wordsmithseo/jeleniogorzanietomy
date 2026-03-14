@@ -3459,17 +3459,43 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           L.DomEvent.disableClickPropagation(deskPromoWrap);
           L.DomEvent.disableScrollPropagation(deskPromoWrap);
 
+          // References to header/footer elements so we can restore them on exit
+          var dwHeaderEl = null;
+          var dwFooterEl = null;
+          var dwFooterOrigStyle = null;
+
           function dwDetectHeaderFooter() {
-            var headerH = 0, footerH = 0;
+            // Header height (for map top offset)
+            var headerH = 0;
             var hSel = ['.elementor-location-header', 'header.elementor-section', '#masthead', '.site-header', 'header'];
-            var fSel = ['.elementor-location-footer', 'footer.elementor-section', '#colophon', '.site-footer', 'footer'];
             for (var _hi = 0; _hi < hSel.length; _hi++) {
               var _hEl = document.querySelector(hSel[_hi]);
-              if (_hEl && _hEl.offsetHeight) { headerH = _hEl.offsetHeight; break; }
+              if (_hEl && _hEl.offsetHeight) { dwHeaderEl = _hEl; headerH = _hEl.offsetHeight; break; }
             }
-            for (var _fi = 0; _fi < fSel.length; _fi++) {
-              var _fEl = document.querySelector(fSel[_fi]);
-              if (_fEl && _fEl.offsetHeight) { footerH = _fEl.offsetHeight; break; }
+
+            // Footer: fix it to the viewport bottom so it remains visible,
+            // and use its height as the map's bottom offset.
+            var footerH = 0;
+            if (!dwFooterEl) {
+              var fSel = ['.elementor-location-footer', 'footer.elementor-section', '#colophon', '.site-footer', 'footer'];
+              for (var _fi = 0; _fi < fSel.length; _fi++) {
+                var _fEl = document.querySelector(fSel[_fi]);
+                if (_fEl && _fEl.offsetHeight) { dwFooterEl = _fEl; break; }
+              }
+            }
+            if (dwFooterEl) {
+              footerH = dwFooterEl.offsetHeight;
+              // Make footer stick to the viewport bottom (save original style once)
+              if (dwFooterOrigStyle === null) {
+                dwFooterOrigStyle = dwFooterEl.getAttribute('style') || '';
+                dwFooterEl.style.setProperty('position', 'fixed', 'important');
+                dwFooterEl.style.setProperty('bottom', '0', 'important');
+                dwFooterEl.style.setProperty('left', '0', 'important');
+                dwFooterEl.style.setProperty('right', '0', 'important');
+                dwFooterEl.style.setProperty('width', '100vw', 'important');
+                dwFooterEl.style.setProperty('box-sizing', 'border-box', 'important');
+                dwFooterEl.style.setProperty('z-index', '999', 'important');
+              }
             }
             return { top: headerH, bottom: footerH };
           }
@@ -3599,6 +3625,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
             }
 
+            // Restore footer to its original positioning
+            if (dwFooterEl) {
+              if (dwFooterOrigStyle) {
+                dwFooterEl.setAttribute('style', dwFooterOrigStyle);
+              } else {
+                dwFooterEl.removeAttribute('style');
+              }
+              dwFooterEl = null;
+              dwFooterOrigStyle = null;
+            }
+
             // Remove placeholder
             if (dwPlaceholder.parentNode) {
               dwPlaceholder.parentNode.removeChild(dwPlaceholder);
@@ -3619,10 +3656,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 if (isDeskWide) exitDeskWide();
               } else {
                 if (isDeskWide) {
-                  // Update fixed-position offsets for new header/footer heights
-                  var dims = dwDetectHeaderFooter();
-                  mapWrap.style.setProperty('top', dims.top + 'px', 'important');
-                  mapWrap.style.setProperty('bottom', dims.bottom + 'px', 'important');
+                  // Recalculate header height; footer height may change too on resize
+                  var headerH2 = dwHeaderEl ? dwHeaderEl.offsetHeight : 0;
+                  var footerH2 = dwFooterEl ? dwFooterEl.offsetHeight : 0;
+                  mapWrap.style.setProperty('top', headerH2 + 'px', 'important');
+                  mapWrap.style.setProperty('bottom', footerH2 + 'px', 'important');
                   map.invalidateSize();
                 } else {
                   enterDeskWide();
