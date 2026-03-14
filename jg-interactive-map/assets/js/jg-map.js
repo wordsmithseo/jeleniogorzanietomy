@@ -2884,6 +2884,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
       // Fullscreen control - positioned next to zoom controls (topleft)
       var isFullscreen = false;
+      var isDeskWide = false;
+      var _wasDeskWideBeforeFs = false;
       var FullscreenControl = L.Control.extend({
         options: { position: 'topleft' },
         onAdd: function() {
@@ -3050,6 +3052,27 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
           function enterFullscreen() {
             isFullscreen = true;
+
+            // Pause desktop-wide mode so fullscreen CSS takes full control
+            _wasDeskWideBeforeFs = isDeskWide;
+            if (isDeskWide) {
+              isDeskWide = false;
+              mapWrap.classList.remove('jg-desktop-wide');
+              document.body.classList.remove('jg-desktop-wide-active');
+              if (sidebar) sidebar.classList.remove('jg-sidebar-desktop-wide-overlay');
+              if (typeof deskPromoWrap !== 'undefined' && deskPromoWrap) {
+                deskPromoWrap.style.display = 'none';
+                deskPromoWrap.innerHTML = '';
+              }
+              if (typeof dwPlaceholder !== 'undefined' && dwPlaceholder && dwPlaceholder.parentNode) {
+                dwPlaceholder.parentNode.removeChild(dwPlaceholder);
+              }
+              // Restore mapWrap inline style so fullscreen positioning starts clean
+              if (mapWrap._origInlineStyle !== undefined) {
+                mapWrap.setAttribute('style', mapWrap._origInlineStyle || '');
+              }
+            }
+
             mapWrap.classList.add('jg-fullscreen');
             document.body.classList.add('jg-fullscreen-active');
 
@@ -3414,6 +3437,203 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             btn.innerHTML = enterIcon;
             btn.title = 'Pełny ekran';
             setTimeout(function() { map.invalidateSize(); }, 350);
+            // Re-enter desktop-wide mode if it was active before fullscreen
+            if (_wasDeskWideBeforeFs && window.innerWidth > 768) {
+              setTimeout(enterDeskWide, 100);
+            }
+          }
+
+          // ── Desktop-Wide Mode ──
+          // Auto-activated on desktop (≥769 px). The map fills the full viewport
+          // area between the Elementor header and footer. Sidebar, filters and
+          // search float as overlays; the banner floats at the top of the map.
+
+          var dwPlaceholder = document.createElement('div');
+          dwPlaceholder.id = 'jg-desktop-wide-placeholder';
+
+          var deskPromoWrap = document.createElement('div');
+          var _dwExtCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
+          deskPromoWrap.className = _dwExtCls.fs || '';
+          deskPromoWrap.style.display = 'none';
+          elMap.appendChild(deskPromoWrap);
+          L.DomEvent.disableClickPropagation(deskPromoWrap);
+          L.DomEvent.disableScrollPropagation(deskPromoWrap);
+
+          function dwDetectHeaderFooter() {
+            var headerH = 0, footerH = 0;
+            var hSel = ['.elementor-location-header', 'header.elementor-section', '#masthead', '.site-header', 'header'];
+            var fSel = ['.elementor-location-footer', 'footer.elementor-section', '#colophon', '.site-footer', 'footer'];
+            for (var _hi = 0; _hi < hSel.length; _hi++) {
+              var _hEl = document.querySelector(hSel[_hi]);
+              if (_hEl && _hEl.offsetHeight) { headerH = _hEl.offsetHeight; break; }
+            }
+            for (var _fi = 0; _fi < fSel.length; _fi++) {
+              var _fEl = document.querySelector(fSel[_fi]);
+              if (_fEl && _fEl.offsetHeight) { footerH = _fEl.offsetHeight; break; }
+            }
+            return { top: headerH, bottom: footerH };
+          }
+
+          function dwShowPromo() {
+            var $dwWrap = document.querySelector('[data-cid]');
+            if (!$dwWrap) return;
+            var lidAttr = $dwWrap.getAttribute('data-lid');
+            var iidAttr = $dwWrap.getAttribute('data-iid');
+            var origLink = lidAttr ? document.getElementById(lidAttr) : null;
+            var origImg  = iidAttr ? document.getElementById(iidAttr) : null;
+            if (!origLink || !origImg || !origImg.src || origImg.src === '' || origLink.style.display === 'none') return;
+
+            var extCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
+            deskPromoWrap.innerHTML = '';
+
+            var dwLabel = document.createElement('div');
+            dwLabel.className = extCls.fsTag || '';
+            dwLabel.textContent = 'Sponsorowane';
+            deskPromoWrap.appendChild(dwLabel);
+
+            var dwInner = document.createElement('div');
+            dwInner.className = extCls.fsIn || '';
+
+            var dwLink = document.createElement('a');
+            dwLink.href = origLink.href;
+            dwLink.target = '_blank';
+            dwLink.rel = 'noopener';
+
+            var dwImg = document.createElement('img');
+            dwImg.src = origImg.src;
+            dwImg.alt = '';
+
+            dwLink.appendChild(dwImg);
+            dwInner.appendChild(dwLink);
+            deskPromoWrap.appendChild(dwInner);
+
+            var extCfg = window.JG_EXT_CFG || {};
+            var dwAjaxUrl = extCfg.ajax || '';
+            var dwAct = extCfg.act || {};
+
+            dwLink.addEventListener('click', function() {
+              var dwBid = document.querySelector('[data-bid]') ? document.querySelector('[data-bid]').getAttribute('data-bid') : null;
+              if (dwBid && dwAjaxUrl && navigator.sendBeacon) {
+                var fd = new FormData();
+                fd.append('action', dwAct.engage || '');
+                fd.append('banner_id', dwBid);
+                navigator.sendBeacon(dwAjaxUrl, fd);
+              }
+            });
+
+            deskPromoWrap.style.display = '';
+          }
+
+          function enterDeskWide() {
+            if (window.innerWidth <= 768) return;
+            if (isFullscreen) return;
+            isDeskWide = true;
+
+            var dims = dwDetectHeaderFooter();
+
+            // Save original inline style and override with fixed positioning
+            mapWrap._origInlineStyle = mapWrap.getAttribute('style');
+            mapWrap.style.setProperty('position', 'fixed', 'important');
+            mapWrap.style.setProperty('top', dims.top + 'px', 'important');
+            mapWrap.style.setProperty('left', '0', 'important');
+            mapWrap.style.setProperty('right', '0', 'important');
+            mapWrap.style.setProperty('bottom', dims.bottom + 'px', 'important');
+            mapWrap.style.setProperty('width', '100vw', 'important');
+            mapWrap.style.setProperty('height', 'auto', 'important');
+            mapWrap.style.setProperty('display', 'flex', 'important');
+            mapWrap.style.setProperty('flex-direction', 'column', 'important');
+            mapWrap.style.setProperty('border-radius', '0', 'important');
+            mapWrap.style.setProperty('z-index', '1000', 'important');
+
+            mapWrap.classList.add('jg-desktop-wide');
+            document.body.classList.add('jg-desktop-wide-active');
+
+            // Insert a placeholder div to preserve the Elementor column height
+            if (!document.getElementById('jg-desktop-wide-placeholder')) {
+              dwPlaceholder.style.height = (mapWrap._origInlineStyle && mapWrap._origInlineStyle.match(/height:\s*([\d.]+px)/) ? mapWrap._origInlineStyle.match(/height:\s*([\d.]+px)/)[1] : '600px');
+              if (mapWrap.parentNode) {
+                mapWrap.parentNode.insertBefore(dwPlaceholder, mapWrap.nextSibling);
+              }
+            }
+
+            // Move sidebar into the map as a floating overlay
+            if (sidebar && !sidebar.classList.contains('jg-sidebar-desktop-wide-overlay')) {
+              // Only save the original height on the very first call
+              if (sidebar._origHeightDw === undefined) {
+                sidebar._origHeightDw = sidebar.style.height;
+              }
+              sidebar.style.setProperty('height', 'calc(100% - 24px)', 'important');
+              elMap.appendChild(sidebar);
+              sidebar.classList.add('jg-sidebar-desktop-wide-overlay');
+              L.DomEvent.disableScrollPropagation(sidebar);
+            }
+
+            // Show the banner after a short delay to allow it to finish loading
+            setTimeout(function() { if (isDeskWide && !isFullscreen) dwShowPromo(); }, 700);
+            setTimeout(function() { map.invalidateSize(); }, 100);
+          }
+
+          function exitDeskWide() {
+            isDeskWide = false;
+
+            // Restore original inline style
+            if (mapWrap._origInlineStyle !== null && mapWrap._origInlineStyle !== undefined) {
+              mapWrap.setAttribute('style', mapWrap._origInlineStyle);
+            } else {
+              mapWrap.removeAttribute('style');
+            }
+
+            mapWrap.classList.remove('jg-desktop-wide');
+            document.body.classList.remove('jg-desktop-wide-active');
+
+            // Restore sidebar to its original DOM position
+            if (sidebar && sidebar.classList.contains('jg-sidebar-desktop-wide-overlay')) {
+              sidebar.classList.remove('jg-sidebar-desktop-wide-overlay');
+              if (sidebar._origHeightDw !== undefined) {
+                sidebar.style.setProperty('height', sidebar._origHeightDw, 'important');
+              }
+              if (sidebarOriginalNext) {
+                sidebarOriginalParent.insertBefore(sidebar, sidebarOriginalNext);
+              } else {
+                sidebarOriginalParent.appendChild(sidebar);
+              }
+            }
+
+            // Remove placeholder
+            if (dwPlaceholder.parentNode) {
+              dwPlaceholder.parentNode.removeChild(dwPlaceholder);
+            }
+
+            // Hide and clear the floating banner
+            deskPromoWrap.style.display = 'none';
+            deskPromoWrap.innerHTML = '';
+          }
+
+          // Recalculate on window resize
+          var _dwResizeTimer;
+          window.addEventListener('resize', function() {
+            clearTimeout(_dwResizeTimer);
+            _dwResizeTimer = setTimeout(function() {
+              if (isFullscreen) return;
+              if (window.innerWidth <= 768) {
+                if (isDeskWide) exitDeskWide();
+              } else {
+                if (isDeskWide) {
+                  // Update fixed-position offsets for new header/footer heights
+                  var dims = dwDetectHeaderFooter();
+                  mapWrap.style.setProperty('top', dims.top + 'px', 'important');
+                  mapWrap.style.setProperty('bottom', dims.bottom + 'px', 'important');
+                  map.invalidateSize();
+                } else {
+                  enterDeskWide();
+                }
+              }
+            }, 200);
+          });
+
+          // Auto-enter desktop-wide mode on initial page load (desktop only)
+          if (window.innerWidth > 768) {
+            setTimeout(enterDeskWide, 150);
           }
 
           L.DomEvent.on(btn, 'click', function(e) {
