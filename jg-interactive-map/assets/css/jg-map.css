@@ -1615,6 +1615,83 @@ body.jg-fullscreen-active #jg-search-panel {
   /* Float styles for very small phones are injected inline (see class-slot-keys.php) */
 }
 
+/* ── Desktop-Wide Mode (auto-activated on desktop ≥769px) ──
+   Map fills the full viewport between Elementor header and footer.
+   Sidebar, filter bar and search float as overlays above the map.
+   Banner floats at the top, centred between zoom controls and satellite toggle. */
+@media (min-width: 769px) {
+  /* Prevent page scroll while map occupies the full content area */
+  body.jg-desktop-wide-active {
+    overflow: hidden !important;
+  }
+
+  /* Filter bar: lifted out of document flow, floats at the top of the map */
+  #jg-map-wrap.jg-desktop-wide #jg-map-filters-wrapper {
+    position: absolute !important;
+    top: 8px !important;
+    left: 12px !important;
+    right: calc(min(380px, 30vw) + 24px) !important;
+    bottom: auto !important;
+    z-index: 1001 !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  /* Remove bottom margin from floating filter bar */
+  #jg-map-wrap.jg-desktop-wide .jg-filters {
+    margin-bottom: 0 !important;
+  }
+
+  /* Map element expands to fill all available height */
+  #jg-map-wrap.jg-desktop-wide .jg-map {
+    flex: 1 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Sidebar: floating overlay on the right (mirrors fullscreen behaviour) */
+  .jg-sidebar-desktop-wide-overlay {
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 380px !important;
+    max-width: 30vw !important;
+    height: calc(100% - 24px) !important;
+    max-height: calc(100% - 24px) !important;
+    min-height: 0 !important;
+    z-index: 1001 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    overflow-y: auto !important;
+    flex-grow: 0 !important;
+    flex-shrink: 1 !important;
+    flex-basis: auto !important;
+  }
+
+  /* Search results panel: shifted left to avoid the floating sidebar */
+  body.jg-desktop-wide-active #jg-search-panel {
+    right: calc(min(380px, 30vw) + 12px) !important;
+  }
+
+  /* FAB: shifted left to stay clear of the floating sidebar */
+  body.jg-desktop-wide-active #jg-fab-container {
+    right: calc(30vw + 40px) !important;
+    transition: right 0.3s ease !important;
+  }
+
+  @supports (width: min(380px, 30vw)) {
+    body.jg-desktop-wide-active #jg-fab-container {
+      right: calc(min(380px, 30vw) + 40px) !important;
+    }
+  }
+}
+
 /* === Fullscreen topbar: absolute positioning (not in Leaflet container) === */
 
 /* Combined controls container */
