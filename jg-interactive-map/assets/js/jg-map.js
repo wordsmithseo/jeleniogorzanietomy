@@ -3067,6 +3067,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (typeof dwPlaceholder !== 'undefined' && dwPlaceholder && dwPlaceholder.parentNode) {
                 dwPlaceholder.parentNode.removeChild(dwPlaceholder);
               }
+              // Restore satellite toggle to its original parent so fullscreen can
+              // re-acquire it cleanly via its own toggleCtrl._origParent flow.
+              var _toggleDwPause = elMap.querySelector('.jg-map-toggle-control');
+              if (_toggleDwPause && _toggleDwPause._origParentDw) {
+                _toggleDwPause._origParentDw.appendChild(_toggleDwPause);
+                _toggleDwPause._origParentDw = null;
+              }
               // Restore mapWrap inline style so fullscreen positioning starts clean
               if (mapWrap._origInlineStyle !== undefined) {
                 mapWrap.setAttribute('style', mapWrap._origInlineStyle || '');
@@ -3465,16 +3472,28 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var dwFooterOrigStyle = null;
 
           function dwDetectHeaderFooter() {
-            // Header height (for map top offset)
-            var headerH = 0;
-            var hSel = ['.elementor-location-header', 'header.elementor-section', '#masthead', '.site-header', 'header'];
+            // Header: scan all known header selectors, take the maximum
+            // getBoundingClientRect().bottom value (works for sticky, fixed, or
+            // static headers and correctly accumulates stacked bars like #jg-top-bar
+            // + .elementor-location-header).
+            var hSel = ['#jg-top-bar', '.elementor-location-header', 'header.elementor-section', '#masthead', '.site-header', 'header'];
+            var hMax = 0;
             for (var _hi = 0; _hi < hSel.length; _hi++) {
               var _hEl = document.querySelector(hSel[_hi]);
-              if (_hEl && _hEl.offsetHeight) { dwHeaderEl = _hEl; headerH = _hEl.offsetHeight; break; }
+              if (_hEl) {
+                var _hRect = _hEl.getBoundingClientRect();
+                // Only count elements whose bottom is in the top 40 % of the viewport
+                if (_hRect.bottom > hMax && _hRect.bottom < window.innerHeight * 0.4) {
+                  hMax = _hRect.bottom;
+                  dwHeaderEl = _hEl;
+                }
+              }
             }
+            var headerH = Math.ceil(hMax);
 
             // Footer: fix it to the viewport bottom so it remains visible,
-            // and use its height as the map's bottom offset.
+            // and use its height (capped at 30 % of the viewport) as the map's
+            // bottom offset to prevent an oversized footer from squashing the map.
             var footerH = 0;
             if (!dwFooterEl) {
               var fSel = ['.elementor-location-footer', 'footer.elementor-section', '#colophon', '.site-footer', 'footer'];
@@ -3484,7 +3503,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
             }
             if (dwFooterEl) {
-              footerH = dwFooterEl.offsetHeight;
+              // Cap so a tall multi-section footer doesn't shrink the map excessively
+              var cappedFooterH = Math.min(dwFooterEl.offsetHeight, Math.floor(window.innerHeight * 0.3));
               // Make footer stick to the viewport bottom (save original style once)
               if (dwFooterOrigStyle === null) {
                 dwFooterOrigStyle = dwFooterEl.getAttribute('style') || '';
@@ -3495,7 +3515,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 dwFooterEl.style.setProperty('width', '100vw', 'important');
                 dwFooterEl.style.setProperty('box-sizing', 'border-box', 'important');
                 dwFooterEl.style.setProperty('z-index', '999', 'important');
+                dwFooterEl.style.setProperty('max-height', cappedFooterH + 'px', 'important');
+                dwFooterEl.style.setProperty('overflow-y', 'hidden', 'important');
               }
+              footerH = cappedFooterH;
             }
             return { top: headerH, bottom: footerH };
           }
@@ -3582,6 +3605,15 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
             }
 
+            // Move map/satellite toggle to topleft (satellite toggle is normally
+            // in topright, which is hidden by the floating sidebar in desktop-wide)
+            var toggleCtrlDw = elMap.querySelector('.jg-map-toggle-control');
+            if (toggleCtrlDw && !toggleCtrlDw._origParentDw) {
+              toggleCtrlDw._origParentDw = toggleCtrlDw.parentNode;
+              var leftContainerDw = elMap.querySelector('.leaflet-top.leaflet-left');
+              if (leftContainerDw) leftContainerDw.appendChild(toggleCtrlDw);
+            }
+
             // Move sidebar into the map as a floating overlay
             if (sidebar && !sidebar.classList.contains('jg-sidebar-desktop-wide-overlay')) {
               // Only save the original height on the very first call
@@ -3634,6 +3666,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
               dwFooterEl = null;
               dwFooterOrigStyle = null;
+            }
+
+            // Restore map/satellite toggle to its original parent
+            var toggleCtrlDwExit = elMap.querySelector('.jg-map-toggle-control');
+            if (toggleCtrlDwExit && toggleCtrlDwExit._origParentDw) {
+              toggleCtrlDwExit._origParentDw.appendChild(toggleCtrlDwExit);
+              toggleCtrlDwExit._origParentDw = null;
             }
 
             // Remove placeholder
