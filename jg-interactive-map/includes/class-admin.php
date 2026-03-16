@@ -759,6 +759,9 @@ class JG_Map_Admin {
                     <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-maintenance'); ?>">
                         <span class="jg-nav-icon">🔧</span> Konserwacja
                     </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-banners'); ?>">
+                        <span class="jg-nav-icon">📢</span> Banery reklamowe
+                    </a>
                 </div>
             </div>
 
@@ -2276,11 +2279,36 @@ class JG_Map_Admin {
         );
 
         ?>
+        <style>
+        .jg-admin-table{width:100%;border-collapse:collapse;font-size:13px}
+        .jg-admin-table th{background:#f8fafc;padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;text-transform:uppercase;letter-spacing:.4px}
+        .jg-admin-table td{padding:10px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+        .jg-admin-table tbody tr:last-child td{border-bottom:none}
+        .jg-admin-table tbody tr:hover{background:#f8fafc}
+        .jg-admin-table-wrap{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:20px}
+        .jg-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+        .jg-action-btns{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+        .jg-action-btns form{margin:0}
+        .jg-info-box{background:#fff7e6;border:2px solid #f59e0b;padding:15px 18px;border-radius:10px;margin:16px 0}
+        .jg-info-box h3{margin:0 0 8px}
+        @media(max-width:782px){
+            .jg-admin-table thead{display:none}
+            .jg-admin-table tbody{display:flex;flex-direction:column;gap:10px;padding:10px}
+            .jg-admin-table tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:0;background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+            .jg-admin-table-wrap{border-radius:12px;overflow:visible;box-shadow:none;border:none;background:transparent}
+            .jg-admin-table td{display:flex;flex-direction:column;padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;line-height:1.4}
+            .jg-admin-table td::before{content:attr(data-label);font-weight:700;font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+            .jg-td-actions{grid-column:1 / -1;background:#f8fafc;border-top:2px solid #e5e7eb;border-bottom:none}
+            .jg-td-main{grid-column:1 / -1;background:#f8fafc;border-bottom:2px solid #e5e7eb}
+            .jg-action-btns{flex-direction:column;width:100%}
+            .jg-action-btns .button,.jg-action-btns form,.jg-action-btns form button{width:100%;box-sizing:border-box;text-align:center}
+        }
+        </style>
         <div class="wrap">
             <?php $this->render_page_header('Zarządzanie promocjami'); ?>
 
-            <div style="background:#fff7e6;border:2px solid #f59e0b;padding:15px;border-radius:8px;margin:20px 0">
-                <h3 style="margin-top:0">ℹ️ O promocjach:</h3>
+            <div class="jg-info-box">
+                <h3>ℹ️ O promocjach:</h3>
                 <ul>
                     <li>Miejsca z promocją mają większy, złoty pin z pulsowaniem</li>
                     <li>Nigdy nie są grupowane w klaster - zawsze widoczne</li>
@@ -2291,57 +2319,63 @@ class JG_Map_Admin {
             </div>
 
             <?php if (!empty($promos)): ?>
-            <table class="wp-list-table widefat fixed striped">
-                <thead>
-                    <tr>
-                        <th>Tytuł</th>
-                        <th>Typ</th>
-                        <th>Data wygaśnięcia</th>
-                        <th>Status</th>
-                        <th>Akcje</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($promos as $promo):
-                        $expired = false;
-                        if ($promo['promo_until']) {
-                            $expired = strtotime($promo['promo_until']) < time();
-                        }
-                        ?>
-                        <tr <?php echo $expired ? 'style="opacity:0.6"' : ''; ?>>
-                            <td><strong><?php echo esc_html($promo['title']); ?></strong></td>
-                            <td><?php echo esc_html($promo['type']); ?></td>
-                            <td>
-                                <?php if ($promo['promo_until']): ?>
-                                    <?php echo get_date_from_gmt($promo['promo_until'], 'Y-m-d H:i'); ?>
-                                    <?php if ($expired): ?>
-                                        <span style="color:#dc2626;font-weight:700">(Wygasła)</span>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    Bez limitu
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <?php if ($expired): ?>
-                                    <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px">Nieaktywna</span>
-                                <?php else: ?>
-                                    <span style="background:#16a34a;color:#fff;padding:4px 8px;border-radius:4px">Aktywna</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <button type="button" class="button jg-edit-promo-date" data-id="<?php echo $promo['id']; ?>" data-current="<?php echo $promo['promo_until'] ? get_date_from_gmt($promo['promo_until'], 'Y-m-d\TH:i') : ''; ?>">Edytuj datę</button>
-                                <form method="post" style="display:inline" onsubmit="return confirm('Na pewno usunąć promocję?');">
-                                    <?php wp_nonce_field('jg_promo_action', 'jg_promo_nonce'); ?>
-                                    <input type="hidden" name="jg_promo_action" value="1">
-                                    <input type="hidden" name="point_id" value="<?php echo $promo['id']; ?>">
-                                    <input type="hidden" name="action_type" value="remove">
-                                    <button type="submit" class="button">Usuń promocję</button>
-                                </form>
-                            </td>
+            <div class="jg-admin-table-wrap">
+              <div class="jg-table-scroll">
+                <table class="jg-admin-table">
+                    <thead>
+                        <tr>
+                            <th>Tytuł</th>
+                            <th>Typ</th>
+                            <th>Data wygaśnięcia</th>
+                            <th>Status</th>
+                            <th>Akcje</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($promos as $promo):
+                            $expired = false;
+                            if ($promo['promo_until']) {
+                                $expired = strtotime($promo['promo_until']) < time();
+                            }
+                            ?>
+                            <tr <?php echo $expired ? 'style="opacity:0.6"' : ''; ?>>
+                                <td data-label="Tytuł" class="jg-td-main"><strong><?php echo esc_html($promo['title']); ?></strong></td>
+                                <td data-label="Typ"><?php echo esc_html($promo['type']); ?></td>
+                                <td data-label="Data wygaśnięcia">
+                                    <?php if ($promo['promo_until']): ?>
+                                        <?php echo get_date_from_gmt($promo['promo_until'], 'Y-m-d H:i'); ?>
+                                        <?php if ($expired): ?>
+                                            <span style="color:#dc2626;font-weight:700">(Wygasła)</span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        Bez limitu
+                                    <?php endif; ?>
+                                </td>
+                                <td data-label="Status">
+                                    <?php if ($expired): ?>
+                                        <span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px">Nieaktywna</span>
+                                    <?php else: ?>
+                                        <span style="background:#16a34a;color:#fff;padding:4px 8px;border-radius:4px">Aktywna</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td data-label="Akcje" class="jg-td-actions">
+                                    <div class="jg-action-btns">
+                                        <button type="button" class="button jg-edit-promo-date" data-id="<?php echo $promo['id']; ?>" data-current="<?php echo $promo['promo_until'] ? get_date_from_gmt($promo['promo_until'], 'Y-m-d\TH:i') : ''; ?>">Edytuj datę</button>
+                                        <form method="post" onsubmit="return confirm('Na pewno usunąć promocję?');">
+                                            <?php wp_nonce_field('jg_promo_action', 'jg_promo_nonce'); ?>
+                                            <input type="hidden" name="jg_promo_action" value="1">
+                                            <input type="hidden" name="point_id" value="<?php echo $promo['id']; ?>">
+                                            <input type="hidden" name="action_type" value="remove">
+                                            <button type="submit" class="button">Usuń promocję</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+              </div>
+            </div>
             <?php else: ?>
             <p>Brak aktywnych promocji.</p>
             <?php endif; ?>
