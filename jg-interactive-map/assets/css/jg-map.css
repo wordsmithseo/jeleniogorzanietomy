@@ -8192,7 +8192,19 @@ body.jg-fullscreen-active .jg-modal-bg {
    MOBILE REDESIGN — Full-height map + floating overlays
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* ── 0. #jg-map-wrap must be the containing block for #jg-mobile-overlays ── */
+/* position:absolute on overlays anchors to nearest positioned ancestor.
+   Without this, overlays anchor to a distant Elementor container instead. */
+@media (max-width: 768px) {
+  #jg-map-wrap {
+    position: relative !important;
+  }
+}
+
 /* ── 1. Hide top bar AND Elementor/theme site header on mobile when map is present ── */
+/* The inline <style> in wp_head (hide_elementor_header_early) handles desktop flash
+   with zero FOUC by detecting the map page in PHP before body renders. These CSS
+   rules are fallbacks for the mobile viewport. */
 @media (max-width: 768px) {
   body:has(#jg-map-wrap) .jg-custom-top-bar,
   body:has(#jg-map-wrap) .elementor-location-header,
@@ -8203,13 +8215,6 @@ body.jg-fullscreen-active .jg-modal-bg {
   body:has(#jg-map-wrap) .wp-block-template-part[class*="header"] {
     display: none !important;
   }
-}
-
-/* On desktop: .jg-has-map is added to <body> via PHP body_class filter (no FOUC).
-   :has() is a JS-free CSS fallback for dynamic/nested shortcodes. */
-.jg-has-map .elementor-location-header,
-body:has(#jg-map-wrap) .elementor-location-header {
-  display: none !important;
 }
 
 /* ── 2. Floating overlays container ── */

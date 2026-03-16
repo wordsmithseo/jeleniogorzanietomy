@@ -932,22 +932,36 @@ class JG_Map_Enqueue {
      * Preconnect to map tile CDNs so the TCP/TLS handshake is done
      * before Leaflet requests the first tile (saves ~100ms per provider).
      */
-    public function add_map_body_class($classes) {
+    /**
+     * Return true if the current page contains the map shortcode.
+     * Checks both standard post_content and Elementor's _elementor_data meta.
+     */
+    private function is_map_page() {
         global $post;
-        if ($post && (has_shortcode($post->post_content, 'jg_map') || has_shortcode($post->post_content, 'jg_map_advanced'))) {
+        if (!$post) return false;
+        if (has_shortcode($post->post_content, 'jg_map') || has_shortcode($post->post_content, 'jg_map_advanced')) {
+            return true;
+        }
+        // Elementor stores widget content in _elementor_data (JSON), not post_content
+        $elementor_data = get_post_meta($post->ID, '_elementor_data', true);
+        return $elementor_data && strpos($elementor_data, 'jg_map') !== false;
+    }
+
+    public function add_map_body_class($classes) {
+        if ($this->is_map_page()) {
             $classes[] = 'jg-has-map';
         }
         return $classes;
     }
 
     public function hide_elementor_header_early() {
-        // .jg-has-map is set via body_class filter (fires before body content = no FOUC).
-        // The :has() fallback covers cases where the shortcode is nested/dynamic.
+        // Only output on the map page — detected in PHP before body renders.
+        // Unconditional hide (no selector prefix) so there is zero FOUC:
+        // the style is parsed before any body element is painted.
+        if (!$this->is_map_page()) return;
         echo '<style>' .
-            '.jg-has-map .elementor-location-header{display:none!important}' .
-            '.jg-has-map header.elementor-section{display:none!important}' .
-            'body:has(#jg-map-wrap) .elementor-location-header{display:none!important}' .
-            'body:has(#jg-map-wrap) header.elementor-section{display:none!important}' .
+            '.elementor-location-header{display:none!important}' .
+            'header.elementor-section[class*="elementor-location"]{display:none!important}' .
             '</style>' . "\n";
     }
 

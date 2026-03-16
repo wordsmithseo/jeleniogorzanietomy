@@ -3146,8 +3146,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // ── Orientation change: re-fit map after portrait/landscape switch ─────
       if (isMobile) {
         window.addEventListener('orientationchange', function() {
+          // Scroll to top first — prevents grey gap caused by the page
+          // remaining at a non-zero scroll position after rotation.
+          window.scrollTo(0, 0);
           // Wait for the browser to finish reflowing after rotation
           setTimeout(function() {
+            window.scrollTo(0, 0);
             map.invalidateSize();
             // Re-position filter panel if open
             if (typeof mcrFilterPanel !== 'undefined' && mcrFilterPanel &&
