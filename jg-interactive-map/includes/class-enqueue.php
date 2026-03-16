@@ -926,6 +926,72 @@ class JG_Map_Enqueue {
             });
         })();
         </script>
+
+        <!-- Sidebar collapse/expand tab (desktop only) -->
+        <button id="jg-sidebar-toggle-tab" type="button">&#9664;</button>
+        <script>
+        (function () {
+            var STORAGE_KEY = 'jg_sidebar_hidden';
+            var tab = document.getElementById('jg-sidebar-toggle-tab');
+            if (!tab) return;
+
+            function positionTab() {
+                if (window.innerWidth <= 768) {
+                    tab.style.right = '0px';
+                    return;
+                }
+                var isHidden = document.body.classList.contains('jg-sidebar-hidden');
+                if (isHidden) {
+                    tab.style.right = '0px';
+                } else {
+                    var sidebar = document.getElementById('jg-map-sidebar');
+                    if (sidebar) {
+                        var rect = sidebar.getBoundingClientRect();
+                        tab.style.right = (window.innerWidth - rect.left) + 'px';
+                    } else {
+                        tab.style.right = '0px';
+                    }
+                }
+            }
+
+            function applyState(hidden) {
+                if (hidden) {
+                    document.body.classList.add('jg-sidebar-hidden');
+                    tab.innerHTML = '&#9654;';
+                    tab.title = 'Pokaż listę miejsc';
+                } else {
+                    document.body.classList.remove('jg-sidebar-hidden');
+                    tab.innerHTML = '&#9664;';
+                    tab.title = 'Ukryj listę miejsc';
+                }
+                setTimeout(function () {
+                    positionTab();
+                    window.dispatchEvent(new Event('resize'));
+                }, 50);
+            }
+
+            function init() {
+                var saved = localStorage.getItem(STORAGE_KEY) === '1';
+                applyState(saved);
+                window.addEventListener('load', positionTab);
+                window.addEventListener('resize', positionTab);
+                setTimeout(positionTab, 300);
+                setTimeout(positionTab, 800);
+            }
+
+            tab.addEventListener('click', function () {
+                var isHidden = document.body.classList.contains('jg-sidebar-hidden');
+                localStorage.setItem(STORAGE_KEY, isHidden ? '0' : '1');
+                applyState(!isHidden);
+            });
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                requestAnimationFrame(init);
+            }
+        })();
+        </script>
         <?php
     }
 
