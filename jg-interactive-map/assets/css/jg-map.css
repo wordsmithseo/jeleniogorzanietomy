@@ -8192,25 +8192,6 @@ body.jg-fullscreen-active .jg-modal-bg {
    MOBILE REDESIGN — Full-height map + floating overlays
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── 0. Full-viewport map on mobile — body fills 100dvh, map inherits height ── */
-/* 100dvh (dynamic viewport height) updates on orientation change automatically */
-@media (max-width: 768px) {
-  body:has(#jg-map-wrap) {
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    overflow: hidden !important;
-  }
-  /* Elementor containers that wrap the map should fill available height */
-  body:has(#jg-map-wrap) .elementor,
-  body:has(#jg-map-wrap) .elementor-section,
-  body:has(#jg-map-wrap) .e-con,
-  body:has(#jg-map-wrap) .e-con-inner {
-    height: calc(100dvh - 52px) !important;
-    max-height: calc(100dvh - 52px) !important;
-    overflow: hidden !important;
-  }
-}
-
 /* ── 1. Hide top bar AND Elementor/theme site header on mobile when map is present ── */
 @media (max-width: 768px) {
   body:has(#jg-map-wrap) .jg-custom-top-bar,
@@ -8224,8 +8205,9 @@ body.jg-fullscreen-active .jg-modal-bg {
   }
 }
 
-/* On desktop: hide Elementor header briefly flash is caused by it showing
-   before jg-desktop-wide-active JS class is applied — hide it always when map present */
+/* On desktop: .jg-has-map is added to <body> via PHP body_class filter (no FOUC).
+   :has() is a JS-free CSS fallback for dynamic/nested shortcodes. */
+.jg-has-map .elementor-location-header,
 body:has(#jg-map-wrap) .elementor-location-header {
   display: none !important;
 }
@@ -8436,73 +8418,110 @@ body:has(#jg-map-wrap) .elementor-location-header {
     letter-spacing: normal !important;
   }
 
-  /* Filter button */
-  .jg-mcr-filter-btn {
-    all: unset;
+  /* Filter button — high-specificity prefix beats Elementor's button rules */
+  #jg-mobile-controls-row .jg-mcr-filter-btn {
+    all: unset !important;
     display: flex !important;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    border-radius: 8px;
-    color: #374151;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    flex-shrink: 0;
-    box-sizing: border-box;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    border-radius: 8px !important;
+    color: #374151 !important;
+    cursor: pointer !important;
+    transition: background 0.15s, color 0.15s !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+    font-size: calc(14 * var(--jg)) !important;
+    font-weight: normal !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 1 !important;
   }
-  .jg-mcr-filter-btn:active,
-  .jg-mcr-filter-btn.jg-active {
-    background: #8d2324;
-    color: #fff;
+  #jg-mobile-controls-row .jg-mcr-filter-btn:active,
+  #jg-mobile-controls-row .jg-mcr-filter-btn.jg-active {
+    background: #8d2324 !important;
+    color: #fff !important;
   }
 
   /* Search wrapper (flex-grow) */
-  .jg-mcr-search {
-    display: flex;
-    align-items: center;
-    flex: 1;
-    min-width: 0;
-    gap: 5px;
-    padding: 0 4px;
+  #jg-mobile-controls-row .jg-mcr-search {
+    display: flex !important;
+    align-items: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    gap: 5px !important;
+    padding: 0 4px !important;
+    background: transparent !important;
+    border: none !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
   }
-  .jg-mcr-search-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: #9ca3af;
-    pointer-events: none;
+  #jg-mobile-controls-row .jg-mcr-search-icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    color: #9ca3af !important;
+    pointer-events: none !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
-  .jg-mcr-search-input {
-    all: unset;
-    flex: 1;
-    min-width: 0;
-    font-size: calc(14 * var(--jg));
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    color: #374151;
-    caret-color: #8d2324;
+  #jg-mobile-controls-row .jg-mcr-search-input {
+    all: unset !important;
+    display: block !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    font-size: calc(14 * var(--jg)) !important;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+    color: #374151 !important;
+    caret-color: #8d2324 !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    font-weight: normal !important;
+    line-height: 1.4 !important;
+    border-radius: 0 !important;
   }
-  .jg-mcr-search-input::placeholder {
-    color: #9ca3af;
-    font-size: calc(13 * var(--jg));
+  #jg-mobile-controls-row .jg-mcr-search-input::placeholder {
+    color: #9ca3af !important;
+    font-size: calc(13 * var(--jg)) !important;
   }
-  .jg-mcr-search-clear {
-    all: unset;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    background: #e5e7eb;
-    border-radius: 50%;
-    color: #6b7280;
-    font-size: 13px;
-    line-height: 1;
-    cursor: pointer;
-    box-sizing: border-box;
+  #jg-mobile-controls-row .jg-mcr-search-clear {
+    all: unset !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 18px !important;
+    height: 18px !important;
+    flex-shrink: 0 !important;
+    background: #e5e7eb !important;
+    border-radius: 50% !important;
+    color: #6b7280 !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-transform: none !important;
+  }
+  #jg-mobile-controls-row .jg-mcr-search-clear.jg-visible {
+    display: flex !important;
   }
 
   /* Map/satellite toggle inside controls row — icons only, no text */
@@ -8531,34 +8550,45 @@ body:has(#jg-map-wrap) .elementor-location-header {
     display: none !important; /* hide the toggle switch; clicking labels is enough */
   }
 
-  /* Zoom buttons (right) */
-  .jg-mcr-zoom {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    flex-shrink: 0;
-  }
-  .jg-mcr-zoom-btn {
-    all: unset;
+  /* Zoom buttons (right) — high-specificity prefix */
+  #jg-mobile-controls-row .jg-mcr-zoom {
     display: flex !important;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 7px;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb !important;
-    color: #374151;
-    font-size: 20px;
-    line-height: 1;
-    font-weight: 400;
-    cursor: pointer;
-    box-sizing: border-box;
-    transition: background 0.15s;
-    flex-shrink: 0;
+    align-items: center !important;
+    gap: 3px !important;
+    flex-shrink: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
-  .jg-mcr-zoom-btn:active {
-    background: #e5e7eb;
+  #jg-mobile-controls-row .jg-mcr-zoom-btn {
+    all: unset !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    border-radius: 7px !important;
+    background: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    color: #374151 !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+    font-weight: 400 !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    transition: background 0.15s !important;
+    flex-shrink: 0 !important;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+  #jg-mobile-controls-row .jg-mcr-zoom-btn:active {
+    background: #e5e7eb !important;
   }
 }
 
@@ -8567,14 +8597,14 @@ body:has(#jg-map-wrap) .elementor-location-header {
   .jg-mobile-banner-slot {
     border-radius: 10px;
     overflow: hidden;
-    max-height: 72px;
+    max-height: 120px;
     line-height: 0;
     display: block;
   }
   .jg-mobile-banner-slot > * {
     border-radius: 10px !important;
     overflow: hidden !important;
-    max-height: 72px !important;
+    max-height: 120px !important;
     width: 100% !important;
     max-width: 100% !important;
     display: block !important;

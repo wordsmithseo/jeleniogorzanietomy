@@ -2684,7 +2684,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         mcrInput.addEventListener('input', function() {
           var val = this.value;
           if (origMobInput) origMobInput.value = val;
-          mcrClearBtn.style.display = val ? 'flex' : 'none';
+          mcrClearBtn.style.setProperty('display', val ? 'flex' : 'none', 'important');
           clearTimeout(mcrDebounce);
           mcrDebounce = setTimeout(function() { mcrBuildSugg(val.toLowerCase().trim()); }, 200);
         });
@@ -2726,7 +2726,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         });
         mcrClearBtn.addEventListener('click', function() {
           mcrInput.value = '';
-          mcrClearBtn.style.display = 'none';
+          mcrClearBtn.style.setProperty('display', 'none', 'important');
           if (origMobInput) { origMobInput.value = ''; origMobInput.dispatchEvent(new Event('input', { bubbles: true })); }
           mcrHideSugg();
           mcrInput.focus();
@@ -3810,7 +3810,41 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var iidAttr = $dwWrap.getAttribute('data-iid');
             var origLink = lidAttr ? document.getElementById(lidAttr) : null;
             var origImg  = iidAttr ? document.getElementById(iidAttr) : null;
-            if (!origLink || !origImg || !origImg.src || origImg.src === '' || origLink.style.display === 'none') return;
+
+            // hideSlot() case: ext.js replaced #id_cid.innerHTML with CTA, removing origLink/origImg.
+            // Detect this: origLink is null but #id_cid has content → clone it into deskPromoWrap.
+            if (!origLink || !origImg) {
+              var cidAttr = $dwWrap.getAttribute('data-cid');
+              var cidEl = cidAttr ? document.getElementById(cidAttr) : null;
+              if (cidEl && cidEl.children.length > 0) {
+                deskPromoWrap.innerHTML = '';
+                var clonedCta = cidEl.cloneNode(true);
+                clonedCta.style.maxWidth = '728px';
+                clonedCta.style.width = '100%';
+                clonedCta.style.margin = '0';
+                deskPromoWrap.appendChild(clonedCta);
+                deskPromoWrap.style.setProperty('position', 'absolute', 'important');
+                deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
+                deskPromoWrap.style.setProperty('right', 'auto', 'important');
+                deskPromoWrap.style.setProperty('transform', 'none', 'important');
+                var dwFiltersWrapperCta = document.getElementById('jg-map-filters-wrapper');
+                var dwFilterHCta = dwFiltersWrapperCta ? dwFiltersWrapperCta.getBoundingClientRect().height : 44;
+                deskPromoWrap.style.setProperty('top', (8 + dwFilterHCta + 8) + 'px', 'important');
+                var dwLeftCtrlCta = elMap.querySelector('.leaflet-top.leaflet-left');
+                if (dwLeftCtrlCta) {
+                  var dwMapRectCta = elMap.getBoundingClientRect();
+                  var dwCtrlRectCta = dwLeftCtrlCta.getBoundingClientRect();
+                  deskPromoWrap.style.setProperty('left', (dwCtrlRectCta.right - dwMapRectCta.left + 8) + 'px', 'important');
+                } else {
+                  deskPromoWrap.style.setProperty('left', '10px', 'important');
+                }
+                deskPromoWrap.style.display = '';
+              }
+              return;
+            }
+
+            // Banner not loaded yet — will be retried by caller
+            if (!origImg.src || origImg.src === '' || origLink.style.display === 'none') return;
 
             var extCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
             deskPromoWrap.innerHTML = '';
@@ -3927,11 +3961,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             }
 
             // Show the banner after a short delay. The banner data (origImg.src)
-            // is loaded asynchronously, so retry at 2 s and 5 s if the first
-            // attempt returns early because the data is not ready yet.
+            // is loaded asynchronously, so retry until it appears (up to ~15 s).
             setTimeout(function() { if (isDeskWide && !isFullscreen) dwShowPromo(); }, 700);
             setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 2000);
             setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 5000);
+            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 10000);
+            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 15000);
             setTimeout(function() { map.invalidateSize(); }, 100);
           }
 
