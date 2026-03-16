@@ -729,6 +729,13 @@
   overflow-y: auto;
 }
 
+@media (min-width: 769px) {
+  .jg-search .jg-search-suggestions {
+    right: auto;
+    min-width: 420px;
+  }
+}
+
 .jg-suggest-group {
   border-bottom: 1px solid #e5e7eb;
 }
@@ -8601,26 +8608,24 @@ body.jg-fullscreen-active .jg-modal-bg {
 @media (max-width: 768px) {
   .jg-mobile-banner-slot {
     border-radius: 10px;
-    overflow: hidden;
-    max-height: 120px;
-    line-height: 0;
+    overflow: visible;
+    max-height: none;
     display: block;
   }
   .jg-mobile-banner-slot > * {
     border-radius: 10px !important;
     overflow: hidden !important;
-    max-height: 120px !important;
     width: 100% !important;
     max-width: 100% !important;
     display: block !important;
   }
 }
 
-/* ── 6. Hide superseded mobile controls on mobile ── */
+/* ── 6. Hide superseded mobile controls on mobile; fullscreen button hidden everywhere ── */
+.jg-fullscreen-control { display: none !important; }
 @media (max-width: 768px) {
   .jg-mobile-search-bar          { display: none !important; }
   .jg-mobile-map-filter-control  { display: none !important; }
-  .jg-fullscreen-control         { display: none !important; }
 }
 
 /* ── 7. Filter panel: position below controls row (via JS top, override CSS) ── */
