@@ -3570,12 +3570,14 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
             });
 
-            // Position banner below the filter bar, to the right of the left controls.
-            // top: below filter bar (8px margin + filter height + 8px gap)
-            // left: right edge of .leaflet-top.leaflet-left controls + 8px gap
+            // Position banner: 8px below filter bar, 8px to the right of the
+            // left-side controls (zoom + fullscreen + map/satellite toggle).
+            // CSS class has transform:translateX(-50%) — override to none so the
+            // left value is the actual left edge, not the center anchor point.
             deskPromoWrap.style.setProperty('position', 'absolute', 'important');
             deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
             deskPromoWrap.style.setProperty('right', 'auto', 'important');
+            deskPromoWrap.style.setProperty('transform', 'none', 'important');
             var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
             var dwFilterH = dwFiltersWrapper ? dwFiltersWrapper.getBoundingClientRect().height : 44;
             deskPromoWrap.style.setProperty('top', (8 + dwFilterH + 8) + 'px', 'important');
