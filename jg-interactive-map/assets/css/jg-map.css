@@ -731,7 +731,10 @@
 
 @media (min-width: 769px) {
   .jg-search .jg-search-suggestions {
-    right: auto;
+    /* Anchor to the right edge of the search box and extend leftward
+       so the dropdown does not disappear under the right-side sidebar */
+    left: auto;
+    right: 0;
     min-width: 420px;
   }
 }
@@ -5731,6 +5734,28 @@ img.emoji {
     max-width: 100%;
     font-size: calc(13.6 * var(--jg));
     padding: 12px 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* On mobile the flex chain sometimes fails to scroll the steps area;
+     make the whole modal scrollable so buttons are always reachable. */
+  .jg-onboarding-modal {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  #jg-onboarding-content {
+    overflow: visible !important;
+    min-height: 0;
+  }
+  .jg-onboarding-steps {
+    overflow-y: visible !important;
+  }
+  .jg-onboarding-footer {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    z-index: 2;
   }
 }
 

@@ -3912,6 +3912,21 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             deskPromoWrap.style.display = '';
           }
 
+          // Returns a latlng shifted so that, when used as the Leaflet map centre,
+          // the ORIGINAL latlng appears visually centred in the area between the
+          // left viewport edge and the floating sidebar.
+          // On mobile or when desktop-wide mode is inactive it returns the original.
+          function dwCenteredLatLng(latlng, zoom) {
+            if (!isDeskWide || window.innerWidth <= 768) return latlng;
+            // Sidebar: width min(380px, 30vw) + 12px right gap + 12px left breathing room
+            var sidebarW = Math.min(380, window.innerWidth * 0.3) + 24;
+            var z = (zoom !== undefined) ? zoom : map.getZoom();
+            var px = map.project(L.latLng(latlng), z);
+            // Shift the centre point right by half the sidebar width so the target
+            // ends up in the centre of the visible (non-sidebar) area.
+            return map.unproject(px.add([sidebarW / 2, 0]), z);
+          }
+
           function enterDeskWide() {
             if (window.innerWidth <= 768) return;
             if (isFullscreen) return;
@@ -3972,10 +3987,21 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 5000);
             setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 10000);
             setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 15000);
-            setTimeout(function() { map.invalidateSize(); }, 100);
+            setTimeout(function() {
+              map.invalidateSize();
+              // Pan right by half the sidebar width so the initial view is centred
+              // in the visible area (between left edge and sidebar).
+              var _sbW = Math.min(380, window.innerWidth * 0.3) + 24;
+              map.panBy([_sbW / 2, 0], { animate: false });
+            }, 100);
           }
 
           function exitDeskWide() {
+            // Undo the sidebar pan offset before restoring original map position
+            if (isDeskWide) {
+              var _sbW = Math.min(380, window.innerWidth * 0.3) + 24;
+              map.panBy([-_sbW / 2, 0], { animate: false });
+            }
             isDeskWide = false;
 
             // Restore original inline style
@@ -5464,7 +5490,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             if (targetPoint) {
               // Zoom to max zoom level (19) to show point clearly
               setTimeout(function() {
-                map.setView([targetPoint.lat, targetPoint.lng], 19, { animate: true });
+                map.setView(dwCenteredLatLng([targetPoint.lat, targetPoint.lng], 19), 19, { animate: true });
                 // Wait for zoom, then open modal
                 setTimeout(function() {
                   openDetails(targetPoint);
@@ -5487,7 +5513,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               // Map is already scrolled to by earlyScrollCheck()
               // Wait for map to be ready, then zoom to point with maximum zoom
               setTimeout(function() {
-                map.setView([targetPoint.lat, targetPoint.lng], 18, { animate: true });
+                map.setView(dwCenteredLatLng([targetPoint.lat, targetPoint.lng], 18), 18, { animate: true });
                 // Wait for zoom, then open modal
                 setTimeout(function() {
                   openDetails(targetPoint);
@@ -5529,7 +5555,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               // STEP 2: Wait for map to be ready, then zoom
               setTimeout(function() {
                 // Zoom to point with maximum zoom level
-                map.setView([point.lat, point.lng], 19, { animate: !fromPoint });
+                map.setView(dwCenteredLatLng([point.lat, point.lng], 19), 19, { animate: !fromPoint });
 
                 var openAndClean = function() {
                   openDetails(point);
@@ -11315,7 +11341,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         function zoomToSearchResult(point) {
 
           // Zoom to point
-          map.setView([point.lat, point.lng], 19, { animate: true });
+          map.setView(dwCenteredLatLng([point.lat, point.lng], 19), 19, { animate: true });
 
           // On mobile: close panel and scroll to map
           if (window.innerWidth <= 768) {
@@ -12534,7 +12560,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
       function goToLocationAndOpenModal(lat, lng) {
         // Fly to location with maximum zoom (19)
-        map.flyTo([lat, lng], 19, {
+        map.flyTo(dwCenteredLatLng([lat, lng], 19), 19, {
           duration: 1.5
         });
 
@@ -13335,7 +13361,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // Export zoom-to-point function for sidebar use
       // Zooms the map to given coordinates and shows a pulsing marker animation
       window.jgZoomToPoint = function(lat, lng) {
-        map.setView([lat, lng], 19, { animate: true });
+        map.setView(dwCenteredLatLng([lat, lng], 19), 19, { animate: true });
 
         // On mobile: scroll viewport to the map element
         if (window.innerWidth <= 768) {
