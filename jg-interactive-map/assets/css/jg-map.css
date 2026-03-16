@@ -353,19 +353,21 @@
   width: 28px;
   height: 60px;
   background: #8d2324;
-  color: #fff;
   border: none;
   border-radius: 6px 0 0 6px;
   cursor: pointer;
   display: none; /* shown via JS on desktop */
   align-items: center;
   justify-content: center;
-  font-size: 13px;
   z-index: 9990;
-  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.3);
   transition: background 0.2s;
   padding: 0;
-  line-height: 1;
+}
+
+#jg-sidebar-toggle-tab svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 #jg-sidebar-toggle-tab:hover {
@@ -375,23 +377,6 @@
 @media (min-width: 769px) {
   #jg-sidebar-toggle-tab {
     display: flex;
-  }
-}
-
-/* Sidebar hidden state — collapse sidebar column, expand map column */
-@media (min-width: 769px) {
-  body.jg-sidebar-hidden .e-con:has(#jg-map-sidebar):not(:has(#jg-map-wrap)),
-  body.jg-sidebar-hidden .elementor-column:has(#jg-map-sidebar):not(:has(#jg-map-wrap)) {
-    display: none !important;
-  }
-
-  body.jg-sidebar-hidden .e-con:has(#jg-map-wrap):not(:has(#jg-map-sidebar)),
-  body.jg-sidebar-hidden .e-con:has(.jg-wrap):not(:has(#jg-map-sidebar)),
-  body.jg-sidebar-hidden .elementor-column:has(#jg-map-wrap):not(:has(#jg-map-sidebar)),
-  body.jg-sidebar-hidden .elementor-column:has(.jg-wrap):not(:has(#jg-map-sidebar)) {
-    flex: 0 0 100% !important;
-    max-width: 100% !important;
-    width: 100% !important;
   }
 }
 

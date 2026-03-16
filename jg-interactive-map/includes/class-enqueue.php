@@ -928,18 +928,30 @@ class JG_Map_Enqueue {
         </script>
 
         <!-- Sidebar collapse/expand tab (desktop only) -->
-        <button id="jg-sidebar-toggle-tab" type="button">&#9664;</button>
+        <button id="jg-sidebar-toggle-tab" type="button" title="Ukryj listę miejsc"></button>
         <script>
         (function () {
             var STORAGE_KEY = 'jg_sidebar_hidden';
             var tab = document.getElementById('jg-sidebar-toggle-tab');
             if (!tab) return;
 
-            function positionTab() {
-                if (window.innerWidth <= 768) {
-                    tab.style.right = '0px';
-                    return;
+            var SVG_LEFT  = '<svg width="10" height="16" viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg"><polygon points="10,0 0,8 10,16" fill="#ffffff"/></svg>';
+            var SVG_RIGHT = '<svg width="10" height="16" viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg"><polygon points="0,0 10,8 0,16" fill="#ffffff"/></svg>';
+
+            /* Walk up from element until we hit an Elementor column */
+            function getColumn(el) {
+                var node = el ? el.parentElement : null;
+                while (node) {
+                    if (node.classList && (node.classList.contains('e-con') || node.classList.contains('elementor-column'))) {
+                        return node;
+                    }
+                    node = node.parentElement;
                 }
+                return null;
+            }
+
+            function positionTab() {
+                if (window.innerWidth <= 768) return;
                 var isHidden = document.body.classList.contains('jg-sidebar-hidden');
                 if (isHidden) {
                     tab.style.right = '0px';
@@ -947,7 +959,7 @@ class JG_Map_Enqueue {
                     var sidebar = document.getElementById('jg-map-sidebar');
                     if (sidebar) {
                         var rect = sidebar.getBoundingClientRect();
-                        tab.style.right = (window.innerWidth - rect.left) + 'px';
+                        tab.style.right = Math.max(0, window.innerWidth - rect.left) + 'px';
                     } else {
                         tab.style.right = '0px';
                     }
@@ -955,15 +967,33 @@ class JG_Map_Enqueue {
             }
 
             function applyState(hidden) {
+                var sidebar    = document.getElementById('jg-map-sidebar');
+                var mapWrap    = document.getElementById('jg-map-wrap');
+                var sidebarCol = getColumn(sidebar);
+                var mapCol     = getColumn(mapWrap);
+
                 if (hidden) {
                     document.body.classList.add('jg-sidebar-hidden');
-                    tab.innerHTML = '&#9654;';
-                    tab.title = 'Pokaż listę miejsc';
+                    if (sidebarCol) sidebarCol.style.setProperty('display', 'none', 'important');
+                    if (mapCol) {
+                        mapCol.style.setProperty('flex',      '0 0 100%', 'important');
+                        mapCol.style.setProperty('max-width', '100%',     'important');
+                        mapCol.style.setProperty('width',     '100%',     'important');
+                    }
+                    tab.innerHTML = SVG_RIGHT;
+                    tab.title     = 'Pokaż listę miejsc';
                 } else {
                     document.body.classList.remove('jg-sidebar-hidden');
-                    tab.innerHTML = '&#9664;';
-                    tab.title = 'Ukryj listę miejsc';
+                    if (sidebarCol) sidebarCol.style.removeProperty('display');
+                    if (mapCol) {
+                        mapCol.style.removeProperty('flex');
+                        mapCol.style.removeProperty('max-width');
+                        mapCol.style.removeProperty('width');
+                    }
+                    tab.innerHTML = SVG_LEFT;
+                    tab.title     = 'Ukryj listę miejsc';
                 }
+
                 setTimeout(function () {
                     positionTab();
                     window.dispatchEvent(new Event('resize'));
@@ -971,9 +1001,10 @@ class JG_Map_Enqueue {
             }
 
             function init() {
+                tab.innerHTML = SVG_LEFT;
                 var saved = localStorage.getItem(STORAGE_KEY) === '1';
                 applyState(saved);
-                window.addEventListener('load', positionTab);
+                window.addEventListener('load',   positionTab);
                 window.addEventListener('resize', positionTab);
                 setTimeout(positionTab, 300);
                 setTimeout(positionTab, 800);
