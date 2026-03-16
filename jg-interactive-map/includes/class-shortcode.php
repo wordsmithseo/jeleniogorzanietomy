@@ -186,6 +186,11 @@ class JG_Map_Shortcode {
                     </button>
                 </div>
                 <?php endif; ?>
+
+                <!-- Banner slot: JS moves this into .jg-mobile-banner-slot above controls row (mobile)
+                     and into deskPromoWrap next to map/satellite selector (desktop wide mode).
+                     Rendered here so it exists on every map page without a separate [jg_banner] shortcode. -->
+                <?php echo $this->render_banner([]); ?>
             </div>
 
             <!-- Loader positioned relative to map container -->

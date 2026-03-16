@@ -960,8 +960,12 @@ class JG_Map_Enqueue {
         // the style is parsed before any body element is painted.
         if (!$this->is_map_page()) return;
         echo '<style>' .
+            '#site-header{display:none!important}' .
+            '.site-header{display:none!important}' .
             '.elementor-location-header{display:none!important}' .
             'header.elementor-section[class*="elementor-location"]{display:none!important}' .
+            '#wpadminbar{display:none!important}' .
+            'html{margin-top:0!important}' .
             '</style>' . "\n";
     }
 
