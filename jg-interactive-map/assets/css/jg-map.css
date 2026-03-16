@@ -1626,11 +1626,11 @@ body.jg-fullscreen-active #jg-search-panel {
   }
 
   /* Filter bar: lifted out of document flow, floats at the top of the map.
-     left: 55px clears the Leaflet zoom/fullscreen/toggle controls (~36px wide)
-     that are stacked in the top-left corner. */
+     top/left use 10px to match Leaflet's standard control offset so all
+     navigation elements share the same margin from the map edge. */
   #jg-map-wrap.jg-desktop-wide #jg-map-filters-wrapper {
     position: absolute !important;
-    top: 8px !important;
+    top: 10px !important;
     left: 55px !important;
     right: calc(min(380px, 30vw) + 24px) !important;
     bottom: auto !important;
