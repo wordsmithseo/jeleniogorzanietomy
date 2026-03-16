@@ -212,41 +212,6 @@ class JG_Map_Enqueue {
             'isLoggedIn' => is_user_logged_in()
         ));
 
-        // Inline script for clock - loads on ALL pages
-        $inline_script = "
-        (function() {
-            function updateDateTime() {
-                var el = document.getElementById('jg-top-bar-datetime');
-                if (!el) return;
-
-                var now = new Date();
-                var days = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
-                var dayName = days[now.getDay()];
-
-                var day = String(now.getDate()).padStart(2, '0');
-                var month = String(now.getMonth() + 1).padStart(2, '0');
-                var year = now.getFullYear();
-
-                var hours = String(now.getHours()).padStart(2, '0');
-                var minutes = String(now.getMinutes()).padStart(2, '0');
-                var seconds = String(now.getSeconds()).padStart(2, '0');
-
-                el.textContent = dayName + ', ' + day + '.' + month + '.' + year + ' • ' + hours + ':' + minutes + ':' + seconds;
-            }
-
-            function initClock() {
-                updateDateTime();
-                setInterval(updateDateTime, 1000);
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initClock);
-            } else {
-                initClock();
-            }
-        })();
-        ";
-        wp_add_inline_script('jquery', $inline_script);
 
         // Twemoji – cross-platform emoji consistency, loaded on ALL pages
         // (top bar contains emoji icons that must look the same everywhere)
@@ -753,7 +718,12 @@ class JG_Map_Enqueue {
         <!-- Custom Top Bar -->
         <div id="jg-custom-top-bar" class="jg-custom-top-bar">
             <div class="jg-top-bar-left">
-                <span id="jg-top-bar-datetime"></span>
+                <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-top-bar-logo-link" aria-label="Strona główna">
+                    <span class="jg-top-bar-logo-wrap">
+                        <img src="https://jeleniogorzanietomy.pl/wp-content/uploads/2025/10/jg-logo-1.svg" alt="Jelenia Góra to my" class="jg-top-bar-logo-img">
+                        <span class="jg-top-bar-logo-overlay"></span>
+                    </span>
+                </a>
             </div>
             <div class="jg-top-bar-right">
                 <?php if (is_user_logged_in()) : ?>
@@ -858,8 +828,35 @@ class JG_Map_Enqueue {
                     $xp_needed = $next_level_xp - $current_level_xp;
                     $xp_progress = $xp_needed > 0 ? min(100, round(($xp_in_level / $xp_needed) * 100)) : 100;
                     ?>
+                    <?php
+                    $top_bar_menu_items = get_option('jg_map_nav_menu', array());
+                    ?>
+                    <div class="jg-top-bar-menu-wrap">
+                        <button class="jg-top-bar-btn jg-top-bar-menu-btn" id="jg-top-bar-menu-btn" aria-haspopup="true" aria-expanded="false" type="button">
+                            Menu <span class="jg-top-bar-menu-chevron">&#9660;</span>
+                        </button>
+                        <div class="jg-top-bar-menu-dropdown" id="jg-top-bar-menu-dropdown" aria-hidden="true">
+                            <?php if (!empty($top_bar_menu_items)) : ?>
+                                <?php foreach ($top_bar_menu_items as $item) :
+                                    $mi_label  = isset($item['label']) ? $item['label'] : '';
+                                    $mi_url    = isset($item['url'])   ? $item['url']   : '#';
+                                    $mi_target = !empty($item['new_tab']) ? '_blank' : '_self';
+                                    $mi_rel    = $mi_target === '_blank' ? 'noopener noreferrer' : '';
+                                ?>
+                                    <a href="<?php echo esc_url($mi_url); ?>"
+                                       class="jg-top-bar-menu-item"
+                                       target="<?php echo esc_attr($mi_target); ?>"
+                                       <?php echo $mi_rel ? 'rel="' . esc_attr($mi_rel) . '"' : ''; ?>>
+                                        <?php echo esc_html($mi_label); ?>
+                                    </a>
+                                <?php endforeach; ?>
+                            <?php else : ?>
+                                <span class="jg-top-bar-menu-item jg-top-bar-menu-empty">Brak pozycji menu</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                     <span class="jg-top-bar-user">
-                        Zalogowano jako:&nbsp;<strong><a href="#" id="jg-my-profile-link" style="color:inherit;text-decoration:none;cursor:pointer" data-user-id="<?php echo esc_attr($current_user->ID); ?>"><?php echo esc_html($current_user->display_name); ?></a></strong><?php echo $role_icon; ?>
+                        <strong><a href="#" id="jg-my-profile-link" style="color:inherit;text-decoration:none;cursor:pointer" data-user-id="<?php echo esc_attr($current_user->ID); ?>"><?php echo esc_html($current_user->display_name); ?></a></strong><?php echo $role_icon; ?>
                     </span>
                     <?php
                     // Level color tiers (Forza Horizon style prestige colors)
@@ -898,6 +895,40 @@ class JG_Map_Enqueue {
                 <?php endif; ?>
             </div>
         </div>
+        <script>
+        (function () {
+            var menuBtn      = document.getElementById('jg-top-bar-menu-btn');
+            var menuDropdown = document.getElementById('jg-top-bar-menu-dropdown');
+            if (!menuBtn || !menuDropdown) return;
+
+            function openTopMenu() {
+                menuDropdown.classList.add('jg-top-bar-menu-open');
+                menuBtn.setAttribute('aria-expanded', 'true');
+                menuDropdown.setAttribute('aria-hidden', 'false');
+            }
+
+            function closeTopMenu() {
+                menuDropdown.classList.remove('jg-top-bar-menu-open');
+                menuBtn.setAttribute('aria-expanded', 'false');
+                menuDropdown.setAttribute('aria-hidden', 'true');
+            }
+
+            menuBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                menuDropdown.classList.contains('jg-top-bar-menu-open') ? closeTopMenu() : openTopMenu();
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+                    closeTopMenu();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeTopMenu();
+            });
+        })();
+        </script>
         <?php
     }
 
