@@ -36,7 +36,8 @@
   right: 0;
   background: #8d2324;
   color: #fff;
-  padding: 10px 24px;
+  padding: 8px 24px;
+  min-height: 52px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -248,25 +249,11 @@
   line-height: 0;
 }
 
-.jg-top-bar-logo-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
 .jg-top-bar-logo-img {
-  height: 32px;
+  height: 40px;
   width: auto;
   display: block;
   filter: brightness(0) invert(1);
-}
-
-.jg-top-bar-logo-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.15);
-  pointer-events: none;
-  border-radius: 2px;
 }
 
 /* Top bar navigation menu dropdown */
@@ -277,9 +264,33 @@
 }
 
 .jg-top-bar-menu-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  padding: 7px 16px !important;
+  cursor: pointer !important;
+  font-size: calc(14 * var(--jg)) !important;
+  font-weight: 500 !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
+  text-decoration: none !important;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+  outline: none !important;
+  line-height: normal !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
+.jg-top-bar-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-1px) !important;
+  color: #fff !important;
 }
 
 .jg-top-bar-menu-chevron {
