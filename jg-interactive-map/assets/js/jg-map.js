@@ -3580,12 +3580,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             deskPromoWrap.style.setProperty('transform', 'none', 'important');
             var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
             var dwFilterH = dwFiltersWrapper ? dwFiltersWrapper.getBoundingClientRect().height : 44;
-            deskPromoWrap.style.setProperty('top', (8 + dwFilterH + 8) + 'px', 'important');
+            deskPromoWrap.style.setProperty('top', (10 + dwFilterH + 10) + 'px', 'important');
             var dwLeftCtrl = elMap.querySelector('.leaflet-top.leaflet-left');
             if (dwLeftCtrl) {
               var dwMapRect = elMap.getBoundingClientRect();
               var dwCtrlRect = dwLeftCtrl.getBoundingClientRect();
-              deskPromoWrap.style.setProperty('left', (dwCtrlRect.right - dwMapRect.left + 8) + 'px', 'important');
+              deskPromoWrap.style.setProperty('left', (dwCtrlRect.right - dwMapRect.left + 10) + 'px', 'important');
             } else {
               deskPromoWrap.style.setProperty('left', '10px', 'important');
             }
