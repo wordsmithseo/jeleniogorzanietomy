@@ -983,17 +983,17 @@ class JG_Map_Enqueue {
     }
 
     public function hide_elementor_header_early() {
-        // Only output on the map page — detected in PHP before body renders.
-        // Unconditional hide (no selector prefix) so there is zero FOUC:
-        // the style is parsed before any body element is painted.
-        if (!$this->is_map_page()) return;
+        // Hide theme site-header globally (plugin nav bar replaces it on every page).
+        // #wpadminbar is hidden only on the map page so admins retain it elsewhere.
+        $hide_adminbar = $this->is_map_page()
+            ? '#wpadminbar{display:none!important}html{margin-top:0!important}'
+            : '';
         echo '<style>' .
             '#site-header{display:none!important}' .
             '.site-header{display:none!important}' .
             '.elementor-location-header{display:none!important}' .
             'header.elementor-section[class*="elementor-location"]{display:none!important}' .
-            '#wpadminbar{display:none!important}' .
-            'html{margin-top:0!important}' .
+            $hide_adminbar .
             '</style>' . "\n";
     }
 
