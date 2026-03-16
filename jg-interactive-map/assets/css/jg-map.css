@@ -9,31 +9,31 @@
  *   font-size: calc(14 * var(--jg))   →  14px na mobile, ~15px na 1440px
  *   font-size: calc(13 * var(--jg))   →  13px na mobile, ~14px na 1440px
  *
- * Zakresy clamp(1px, 0.065vw, 1.1px):
- *   < 1538px viewport  → skaluje się liniowo z vw
- *   ≥ 1538px viewport  → 1.1px (+10%, max — duże monitory)
+ * Zakresy clamp(0.9px, 0.055vw, 1.0px):
+ *   < 1636px viewport  → skaluje się liniowo z vw
+ *   ≥ 1636px viewport  → 1.0px (max — bez skalowania w górę)
  *
  * Duże wyświetlacze (dodatkowe zmniejszenie przez media query):
- *   ≥ 1600px  → --jg: 1.05px (+5%)
- *   ≥ 1920px  → --jg: 1px    (bazowa wielkość, brak skalowania)
+ *   ≥ 1600px  → --jg: 0.95px (-5%)
+ *   ≥ 1920px  → --jg: 0.9px  (-10%)
  *
  * NIE zmienia html/body font-size → bezpieczne dla Leaflet, motywu i Elementora.
  * Elementor ustawia własne font-size w px — nie reaguje na --jg.
  * ────────────────────────────────────────────────────────────────────────────
  */
 :root {
-  --jg: clamp(1px, 0.065vw, 1.1px);
+  --jg: clamp(0.9px, 0.055vw, 1.0px);
 }
 
 @media (min-width: 1600px) {
   :root {
-    --jg: 1.05px;
+    --jg: 0.95px;
   }
 }
 
 @media (min-width: 1920px) {
   :root {
-    --jg: 1px;
+    --jg: 0.9px;
   }
 }
 
