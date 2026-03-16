@@ -2369,7 +2369,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       var isMobile = window.innerWidth <= 768;
 
       var map = L.map(elMap, {
-        zoomControl: true,
+        zoomControl: !isMobile, // On mobile, zoom is handled by the custom controls row
         scrollWheelZoom: !isMobile, // Disable scroll zoom on mobile
         dragging: true, // Always enable dragging (mobile: one finger pans map, two fingers zoom)
         minZoom: 12,
@@ -2511,8 +2511,265 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
       map.addControl(new MapToggleControl());
 
-      // Mobile: Filter button on the map (topright, next to map/satellite toggle)
+      // Mobile: unified controls row (filter button | search | map/sat toggle | +/-)
       if (isMobile) {
+        // ── Build the controls row container ──────────────────────────────────
+        var mcrRow = document.createElement('div');
+        mcrRow.id = 'jg-mobile-controls-row';
+        mcrRow.className = 'jg-mobile-controls-row';
+        L.DomEvent.disableClickPropagation(mcrRow);
+        L.DomEvent.disableScrollPropagation(mcrRow);
+        mcrRow.addEventListener('click', function(e) { e.stopPropagation(); });
+        mcrRow.addEventListener('touchstart', function(e) { e.stopPropagation(); });
+        mcrRow.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+
+        // ── Filter button (left) ──────────────────────────────────────────────
+        var mcrFilterBtn = document.createElement('button');
+        mcrFilterBtn.type = 'button';
+        mcrFilterBtn.className = 'jg-mcr-filter-btn';
+        mcrFilterBtn.title = 'Filtry';
+        mcrFilterBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
+
+        // ── Search wrapper (middle, flex-grow) ────────────────────────────────
+        var mcrSearchWrap = document.createElement('div');
+        mcrSearchWrap.className = 'jg-mcr-search';
+        var mcrSearchIcon = document.createElement('span');
+        mcrSearchIcon.className = 'jg-mcr-search-icon';
+        mcrSearchIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
+        var mcrInput = document.createElement('input');
+        mcrInput.type = 'text';
+        mcrInput.className = 'jg-mcr-search-input';
+        mcrInput.placeholder = 'Szukaj...';
+        mcrInput.setAttribute('autocomplete', 'off');
+        var mcrClearBtn = document.createElement('button');
+        mcrClearBtn.type = 'button';
+        mcrClearBtn.className = 'jg-mcr-search-clear';
+        mcrClearBtn.innerHTML = '&times;';
+        mcrClearBtn.title = 'Wyczyść';
+        mcrClearBtn.style.display = 'none';
+        mcrSearchWrap.appendChild(mcrSearchIcon);
+        mcrSearchWrap.appendChild(mcrInput);
+        mcrSearchWrap.appendChild(mcrClearBtn);
+
+        // ── Zoom buttons (right) ──────────────────────────────────────────────
+        var mcrZoom = document.createElement('div');
+        mcrZoom.className = 'jg-mcr-zoom';
+        var mcrZoomIn = document.createElement('button');
+        mcrZoomIn.type = 'button';
+        mcrZoomIn.className = 'jg-mcr-zoom-btn';
+        mcrZoomIn.title = 'Powiększ';
+        mcrZoomIn.innerHTML = '+';
+        var mcrZoomOut = document.createElement('button');
+        mcrZoomOut.type = 'button';
+        mcrZoomOut.className = 'jg-mcr-zoom-btn';
+        mcrZoomOut.title = 'Pomniejsz';
+        mcrZoomOut.innerHTML = '&minus;';
+        mcrZoomIn.addEventListener('click', function() { map.zoomIn(); });
+        mcrZoomOut.addEventListener('click', function() { map.zoomOut(); });
+        mcrZoom.appendChild(mcrZoomIn);
+        mcrZoom.appendChild(mcrZoomOut);
+
+        mcrRow.appendChild(mcrFilterBtn);
+        mcrRow.appendChild(mcrSearchWrap);
+        mcrRow.appendChild(mcrZoom);
+
+        var mobileOverlays = document.getElementById('jg-mobile-overlays');
+        if (mobileOverlays) {
+          mobileOverlays.appendChild(mcrRow);
+        }
+
+        // ── Filter panel (clone of desktop filters) ───────────────────────────
+        var mcrFilterPanel = document.createElement('div');
+        mcrFilterPanel.className = 'jg-mobile-map-filter-panel';
+        mcrFilterPanel.style.display = 'none';
+
+        var filtersEl = document.getElementById('jg-map-filters');
+        if (filtersEl) {
+          var filtersClone = filtersEl.cloneNode(true);
+          filtersClone.removeAttribute('id');
+          filtersClone.querySelectorAll('[id]').forEach(function(el) { el.removeAttribute('id'); });
+          var cloneSearch = filtersClone.querySelector('.jg-search');
+          if (cloneSearch) cloneSearch.parentNode.removeChild(cloneSearch);
+          mcrFilterPanel.appendChild(filtersClone);
+          var clonedCheckboxes = filtersClone.querySelectorAll('input[type="checkbox"]');
+          var origCheckboxes = filtersEl.querySelectorAll('input[type="checkbox"]');
+          clonedCheckboxes.forEach(function(cloneChk, i) {
+            if (origCheckboxes[i]) {
+              cloneChk.checked = origCheckboxes[i].checked;
+              cloneChk.addEventListener('change', function() {
+                origCheckboxes[i].checked = cloneChk.checked;
+                origCheckboxes[i].dispatchEvent(new Event('change', { bubbles: true }));
+              });
+            }
+          });
+        }
+
+        L.DomEvent.disableClickPropagation(mcrFilterPanel);
+        L.DomEvent.disableScrollPropagation(mcrFilterPanel);
+        mcrFilterPanel.addEventListener('click', function(e) { e.stopPropagation(); });
+        mcrFilterPanel.addEventListener('touchstart', function(e) { e.stopPropagation(); });
+        mcrFilterPanel.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+        elMap.appendChild(mcrFilterPanel);
+
+        mcrFilterBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var isOpen = mcrFilterPanel.style.display !== 'none';
+          mcrFilterPanel.style.display = isOpen ? 'none' : 'block';
+          mcrFilterBtn.classList.toggle('jg-active', !isOpen);
+          if (!isOpen) {
+            // Position filter panel below the controls row
+            var rowRect = mcrRow.getBoundingClientRect();
+            var mapRect = elMap.getBoundingClientRect();
+            var topOffset = rowRect.bottom - mapRect.top + 8;
+            mcrFilterPanel.style.setProperty('top', topOffset + 'px', 'important');
+          }
+        });
+        elMap.addEventListener('click', function() {
+          if (mcrFilterPanel.style.display !== 'none') {
+            mcrFilterPanel.style.display = 'none';
+            mcrFilterBtn.classList.remove('jg-active');
+          }
+        });
+
+        // ── Search wiring ─────────────────────────────────────────────────────
+        var mcrSuggestions = document.createElement('div');
+        mcrSuggestions.className = 'jg-search-suggestions jg-mobile-search-bar-suggestions';
+        mcrSuggestions.style.display = 'none';
+        document.body.appendChild(mcrSuggestions);
+
+        function mcrPositionSugg() {
+          var rect = mcrInput.getBoundingClientRect();
+          var vv = window.visualViewport;
+          var visibleBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
+          var spaceBelow = visibleBottom - rect.bottom - 4;
+          mcrSuggestions.style.position = 'fixed';
+          mcrSuggestions.style.left = rect.left + 'px';
+          mcrSuggestions.style.right = (window.innerWidth - rect.right) + 'px';
+          mcrSuggestions.style.width = 'auto';
+          mcrSuggestions.style.zIndex = '99999';
+          if (spaceBelow >= 80) {
+            mcrSuggestions.style.top = (rect.bottom + 4) + 'px';
+            mcrSuggestions.style.bottom = 'auto';
+            mcrSuggestions.style.maxHeight = Math.min(spaceBelow - 4, 300) + 'px';
+          } else {
+            mcrSuggestions.style.top = 'auto';
+            mcrSuggestions.style.bottom = (window.innerHeight - visibleBottom + 4) + 'px';
+            mcrSuggestions.style.maxHeight = Math.min(rect.top - 10, 250) + 'px';
+          }
+        }
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', function() {
+            if (document.activeElement === mcrInput && mcrSuggestions.style.display !== 'none') {
+              mcrPositionSugg();
+            }
+          });
+        }
+
+        var origMobInput = document.getElementById('jg-search-input');
+        var origMobBtn   = document.getElementById('jg-search-btn');
+
+        var mcrBuildSugg = function(q) {
+          if (_jgFsBuildSuggestions) {
+            _jgFsBuildSuggestions(q, mcrSuggestions, mcrInput);
+            if (mcrSuggestions.style.display !== 'none') mcrPositionSugg();
+          }
+        };
+        var mcrHideSugg = function() {
+          if (_jgFsHideSuggestions) _jgFsHideSuggestions(mcrSuggestions);
+        };
+        var mcrDebounce = null;
+
+        mcrInput.addEventListener('input', function() {
+          var val = this.value;
+          if (origMobInput) origMobInput.value = val;
+          mcrClearBtn.style.display = val ? 'flex' : 'none';
+          clearTimeout(mcrDebounce);
+          mcrDebounce = setTimeout(function() { mcrBuildSugg(val.toLowerCase().trim()); }, 200);
+        });
+        mcrInput.addEventListener('blur', function() { setTimeout(mcrHideSugg, 150); });
+        mcrInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            var activeItem = mcrSuggestions.querySelector('.jg-suggest-active');
+            if (activeItem) {
+              var fill = activeItem.getAttribute('data-fill');
+              if (fill) { mcrInput.value = fill; if (origMobInput) origMobInput.value = fill; }
+            }
+            mcrHideSugg();
+            if (origMobBtn) origMobBtn.click();
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            var items = mcrSuggestions.querySelectorAll('.jg-suggest-item');
+            var ai = Array.prototype.indexOf.call(items, mcrSuggestions.querySelector('.jg-suggest-active'));
+            if (items[ai]) items[ai].classList.remove('jg-suggest-active');
+            items[(ai + 1) % items.length] && items[(ai + 1) % items.length].classList.add('jg-suggest-active');
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            var items2 = mcrSuggestions.querySelectorAll('.jg-suggest-item');
+            var ai2 = Array.prototype.indexOf.call(items2, mcrSuggestions.querySelector('.jg-suggest-active'));
+            if (items2[ai2]) items2[ai2].classList.remove('jg-suggest-active');
+            var prev = ai2 > 0 ? ai2 - 1 : items2.length - 1;
+            items2[prev] && items2[prev].classList.add('jg-suggest-active');
+          }
+        });
+        mcrSuggestions.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          var item = e.target.closest('.jg-suggest-item');
+          if (item) {
+            var fill = item.getAttribute('data-fill');
+            if (fill) { mcrInput.value = fill; if (origMobInput) origMobInput.value = fill; }
+            mcrHideSugg();
+            if (origMobBtn) origMobBtn.click();
+          }
+        });
+        mcrClearBtn.addEventListener('click', function() {
+          mcrInput.value = '';
+          mcrClearBtn.style.display = 'none';
+          if (origMobInput) { origMobInput.value = ''; origMobInput.dispatchEvent(new Event('input', { bubbles: true })); }
+          mcrHideSugg();
+          mcrInput.focus();
+        });
+        mcrSuggestions.addEventListener('click', function(e) { e.stopPropagation(); });
+        mcrSuggestions.addEventListener('touchstart', function(e) { e.stopPropagation(); });
+
+        // ── Wire mobile user panel buttons to top-bar button handlers ─────────
+        setTimeout(function() {
+          var mupRankingBtn = document.getElementById('jg-mup-ranking-btn');
+          var rankingBtn    = document.getElementById('jg-ranking-btn');
+          if (mupRankingBtn && rankingBtn) mupRankingBtn.addEventListener('click', function() { rankingBtn.click(); });
+
+          var mupProfileBtn  = document.getElementById('jg-mup-profile-btn');
+          var editProfileBtn = document.getElementById('jg-edit-profile-btn');
+          if (mupProfileBtn && editProfileBtn) mupProfileBtn.addEventListener('click', function() { editProfileBtn.click(); });
+
+          var mupAuthBtn = document.getElementById('jg-mup-auth-btn');
+          var authBtn    = document.getElementById('jg-auth-btn');
+          if (mupAuthBtn && authBtn) mupAuthBtn.addEventListener('click', function() { authBtn.click(); });
+
+          var mupUsernameLink = document.getElementById('jg-mup-username-link');
+          var myProfileLink   = document.getElementById('jg-my-profile-link');
+          if (mupUsernameLink && myProfileLink) {
+            mupUsernameLink.addEventListener('click', function(e) { e.preventDefault(); myProfileLink.click(); });
+          }
+        }, 0);
+
+        // ── Move map/sat toggle into controls row & move banner to overlays ───
+        requestAnimationFrame(function() {
+          var toggleCtrl = elMap.querySelector('.jg-map-toggle-control');
+          if (toggleCtrl && mcrZoom) {
+            mcrRow.insertBefore(toggleCtrl, mcrZoom);
+          }
+          // Move ad banner slot into overlays container
+          var slotWrap = document.querySelector('[data-cid]');
+          if (slotWrap && mobileOverlays) {
+            var bannerContainer = document.createElement('div');
+            bannerContainer.className = 'jg-mobile-banner-slot';
+            bannerContainer.appendChild(slotWrap);
+            mobileOverlays.appendChild(bannerContainer);
+          }
+        });
+
+        // ── Legacy: keep MobileFilterControl stub so rest of code doesn't break ─
         var MobileFilterControl = L.Control.extend({
           options: { position: 'topright' },
           onAdd: function() {
@@ -2709,11 +2966,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }
         });
 
-        map.addControl(new MobileFilterControl());
+        // Note: MobileFilterControl is defined as legacy stub above — do NOT add as Leaflet control.
+        // The new unified controls row (mcrRow) replaces it on mobile.
+        void MobileFilterControl; // reference to prevent unused-variable linting warnings
       }
 
-      // Mobile: Standalone search bar positioned below filter/toggle buttons
-      if (isMobile) {
+      // Mobile: standalone search bar replaced by unified controls row above.
+      if (false && isMobile) { // DISABLED — replaced by jg-mobile-controls-row
         var mobileSearchBar = document.createElement('div');
         mobileSearchBar.className = 'jg-mobile-search-bar';
 

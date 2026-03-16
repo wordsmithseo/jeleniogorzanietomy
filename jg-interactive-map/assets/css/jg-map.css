@@ -8187,3 +8187,396 @@ body.jg-fullscreen-active .jg-modal-bg {
     max-width: 20% !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE REDESIGN — Full-height map + floating overlays
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Hide top bar on mobile when map is present ── */
+@media (max-width: 768px) {
+  body:has(#jg-map-wrap) .jg-custom-top-bar {
+    display: none !important;
+  }
+}
+
+/* ── 2. Floating overlays container ── */
+#jg-mobile-overlays {
+  display: none;
+}
+@media (max-width: 768px) {
+  #jg-mobile-overlays {
+    display: flex !important;
+    flex-direction: column;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 900;
+    gap: 8px;
+    pointer-events: none;
+  }
+  #jg-mobile-overlays > * {
+    pointer-events: auto;
+  }
+}
+
+/* ── 3. Mobile user panel ── */
+.jg-mobile-user-panel {
+  display: none;
+}
+@media (max-width: 768px) {
+  .jg-mobile-user-panel {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #8d2324;
+    border-radius: 12px;
+    padding: 8px 12px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.28);
+    color: #fff;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-size: calc(13 * var(--jg));
+    min-height: 0;
+    box-sizing: border-box;
+  }
+  .jg-mobile-user-panel--guest {
+    justify-content: center;
+  }
+  .jg-mup-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .jg-mup-username {
+    color: #fff !important;
+    font-weight: 700;
+    text-decoration: none !important;
+    font-size: calc(13 * var(--jg));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+  }
+  .jg-mup-role {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .jg-mup-role--spon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: #f59e0b;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .jg-mup-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .jg-mup-level-num {
+    font-size: calc(12 * var(--jg));
+    font-weight: 800;
+    white-space: nowrap;
+    color: #fbbf24; /* default bronze-ish, overridden by prestige classes below */
+  }
+  .jg-mup-xp-bar {
+    display: inline-block;
+    width: 3rem;
+    height: 5px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .jg-mup-xp-fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    transition: width 0.4s ease;
+  }
+  .jg-mup-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .jg-mup-btn {
+    all: unset;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
+  .jg-mup-btn:active {
+    background: rgba(255,255,255,0.18);
+  }
+  .jg-mup-btn--admin {
+    color: #fbbf24 !important;
+  }
+  .jg-mup-login-btn {
+    all: unset;
+    display: flex !important;
+    align-items: center;
+    gap: 7px;
+    color: #fff;
+    font-weight: 600;
+    font-size: calc(14 * var(--jg));
+    cursor: pointer;
+    padding: 4px 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+
+  /* Prestige level colours for mobile user panel */
+  .jg-level-prestige-bronze .jg-mup-level-num  { color: #cd7f32; }
+  .jg-level-prestige-bronze .jg-mup-xp-fill    { background: linear-gradient(90deg, #cd7f32, #a0522d); }
+  .jg-level-prestige-silver .jg-mup-level-num  { color: #e0e0e0; }
+  .jg-level-prestige-silver .jg-mup-xp-fill    { background: linear-gradient(90deg, #c0c0c0, #d4d4d4); }
+  .jg-level-prestige-gold .jg-mup-level-num    { color: #fbbf24; text-shadow: 0 1px 3px rgba(251,191,36,.5); }
+  .jg-level-prestige-gold .jg-mup-xp-fill      { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+  .jg-level-prestige-emerald .jg-mup-level-num { color: #34d399; text-shadow: 0 1px 3px rgba(52,211,153,.5); }
+  .jg-level-prestige-emerald .jg-mup-xp-fill   { background: linear-gradient(90deg, #34d399, #10b981); }
+  .jg-level-prestige-purple .jg-mup-level-num  { color: #a78bfa; text-shadow: 0 1px 3px rgba(167,139,250,.5); }
+  .jg-level-prestige-purple .jg-mup-xp-fill    { background: linear-gradient(90deg, #a78bfa, #8b5cf6); }
+  .jg-level-prestige-diamond .jg-mup-level-num { color: #67e8f9; text-shadow: 0 1px 3px rgba(103,232,249,.5); }
+  .jg-level-prestige-diamond .jg-mup-xp-fill   { background: linear-gradient(90deg, #67e8f9, #22d3ee); }
+  .jg-level-prestige-ruby .jg-mup-level-num    { color: #fb7185; text-shadow: 0 1px 3px rgba(251,113,133,.5); }
+  .jg-level-prestige-ruby .jg-mup-xp-fill      { background: linear-gradient(90deg, #fb7185, #e11d48); }
+  .jg-level-prestige-legend .jg-mup-level-num  {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b, #fb7185, #a78bfa, #67e8f9);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    text-shadow: none;
+  }
+  .jg-level-prestige-legend .jg-mup-xp-fill    { background: linear-gradient(90deg, #fbbf24, #fb7185, #a78bfa, #67e8f9); }
+}
+
+/* ── 4. Mobile controls row ── */
+#jg-mobile-controls-row {
+  display: none;
+}
+@media (max-width: 768px) {
+  #jg-mobile-controls-row {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 12px;
+    padding: 5px 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+    box-sizing: border-box;
+  }
+
+  /* Filter button */
+  .jg-mcr-filter-btn {
+    all: unset;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 8px;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
+  .jg-mcr-filter-btn:active,
+  .jg-mcr-filter-btn.jg-active {
+    background: #8d2324;
+    color: #fff;
+  }
+
+  /* Search wrapper (flex-grow) */
+  .jg-mcr-search {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    gap: 5px;
+    padding: 0 4px;
+  }
+  .jg-mcr-search-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #9ca3af;
+    pointer-events: none;
+  }
+  .jg-mcr-search-input {
+    all: unset;
+    flex: 1;
+    min-width: 0;
+    font-size: calc(14 * var(--jg));
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: #374151;
+    caret-color: #8d2324;
+  }
+  .jg-mcr-search-input::placeholder {
+    color: #9ca3af;
+    font-size: calc(13 * var(--jg));
+  }
+  .jg-mcr-search-clear {
+    all: unset;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    background: #e5e7eb;
+    border-radius: 50%;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+
+  /* Map/satellite toggle inside controls row — icons only, no text */
+  #jg-mobile-controls-row .jg-map-toggle-control {
+    flex-shrink: 0;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+  }
+  #jg-mobile-controls-row .jg-map-toggle {
+    gap: 0 !important;
+    padding: 2px !important;
+    border: none !important;
+  }
+  #jg-mobile-controls-row .jg-map-toggle-text {
+    display: none !important;
+  }
+  #jg-mobile-controls-row .jg-map-toggle-label {
+    padding: 5px 8px !important;
+    border-radius: 6px !important;
+    font-size: 0 !important; /* extra safety */
+  }
+  #jg-mobile-controls-row .jg-map-toggle-switch {
+    display: none !important; /* hide the toggle switch; clicking labels is enough */
+  }
+
+  /* Zoom buttons (right) */
+  .jg-mcr-zoom {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .jg-mcr-zoom-btn {
+    all: unset;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb !important;
+    color: #374151;
+    font-size: 20px;
+    line-height: 1;
+    font-weight: 400;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .jg-mcr-zoom-btn:active {
+    background: #e5e7eb;
+  }
+}
+
+/* ── 5. Mobile banner slot ── */
+@media (max-width: 768px) {
+  .jg-mobile-banner-slot {
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 72px;
+    line-height: 0;
+    display: block;
+  }
+  .jg-mobile-banner-slot > * {
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    max-height: 72px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+  }
+}
+
+/* ── 6. Hide superseded mobile controls on mobile ── */
+@media (max-width: 768px) {
+  .jg-mobile-search-bar          { display: none !important; }
+  .jg-mobile-map-filter-control  { display: none !important; }
+  .jg-fullscreen-control         { display: none !important; }
+}
+
+/* ── 7. Filter panel: position below controls row (via JS top, override CSS) ── */
+@media (max-width: 768px) {
+  #jg-map .jg-mobile-map-filter-panel,
+  .jg-mobile-map-filter-panel {
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: none !important;
+    /* top is set dynamically by JS */
+  }
+}
+
+/* ── 8. Landscape orientation overlay ── */
+#jg-landscape-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: #111827;
+  color: #fff;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  text-align: center;
+  padding: 32px 24px;
+  box-sizing: border-box;
+}
+#jg-landscape-overlay p {
+  font-size: 16px;
+  font-weight: 500;
+  color: #d1d5db;
+  max-width: 280px;
+  margin: 0;
+  line-height: 1.5;
+}
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  #jg-landscape-overlay {
+    display: flex !important;
+  }
+}
