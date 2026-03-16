@@ -3916,7 +3916,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           function dwCenteredLatLng(latlng, zoom) {
             if (!isDeskWide || window.innerWidth <= 768) return latlng;
             // Sidebar: width min(380px, 30vw) + 12px right gap + 12px left breathing room
-            var sidebarW = Math.min(380, window.innerWidth * 0.3) + 24;
+            var sidebarW = Math.min(361, window.innerWidth * 0.285) + 24;
             var z = (zoom !== undefined) ? zoom : map.getZoom();
             var px = map.project(L.latLng(latlng), z);
             // Shift the centre point right by half the sidebar width so the target
@@ -3988,7 +3988,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               map.invalidateSize();
               // Pan right by half the sidebar width so the initial view is centred
               // in the visible area (between left edge and sidebar).
-              var _sbW = Math.min(380, window.innerWidth * 0.3) + 24;
+              var _sbW = Math.min(361, window.innerWidth * 0.285) + 24;
               map.panBy([_sbW / 2, 0], { animate: false });
             }, 100);
           }
@@ -3996,7 +3996,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           function exitDeskWide() {
             // Undo the sidebar pan offset before restoring original map position
             if (isDeskWide) {
-              var _sbW = Math.min(380, window.innerWidth * 0.3) + 24;
+              var _sbW = Math.min(361, window.innerWidth * 0.285) + 24;
               map.panBy([-_sbW / 2, 0], { animate: false });
             }
             isDeskWide = false;
