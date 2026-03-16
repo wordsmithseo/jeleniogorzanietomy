@@ -34,9 +34,9 @@ class JG_Map_Banner_Admin {
      */
     public static function add_admin_menu() {
         add_submenu_page(
-            'jg-map-places',
+            'jg-map-dashboard',
             'Banery reklamowe',
-            'Banery 728x90',
+            'Banery reklamowe',
             'manage_options',
             'jg-map-banners',
             array(__CLASS__, 'render_admin_page')
