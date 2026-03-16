@@ -745,6 +745,8 @@ class JG_Map_Enqueue {
                     </div>
                 </div>
             </div>
+            <!-- Ad banner slot: populated by JS on desktop (≥769px) -->
+            <div id="jg-top-bar-banner-slot" class="jg-top-bar-banner-slot"></div>
             <div class="jg-top-bar-right">
                 <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-top-bar-logo-link" aria-label="Strona główna">
                     <img src="https://jeleniogorzanietomy.pl/wp-content/uploads/2025/10/jg-logo-1.svg" alt="Jelenia Góra to my" class="jg-top-bar-logo-img">
