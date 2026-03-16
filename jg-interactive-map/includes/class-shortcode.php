@@ -107,6 +107,87 @@ class JG_Map_Shortcode {
                 </div>
             </div>
 
+            <!-- Mobile floating overlays: user panel + controls row + banner (JS-injected) -->
+            <div id="jg-mobile-overlays" class="jg-mobile-overlays">
+                <?php
+                /* ── Mobile user panel ── */
+                if (is_user_logged_in()) :
+                    $mup_user        = wp_get_current_user();
+                    $mup_is_admin    = current_user_can('manage_options') || current_user_can('jg_map_admin');
+                    $mup_is_mod      = !$mup_is_admin && current_user_can('jg_map_moderate');
+                    global $wpdb;
+                    $mup_pts_tbl     = JG_Map_Database::get_points_table();
+                    $mup_has_spon    = (bool) $wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM $mup_pts_tbl WHERE author_id = %d AND is_promo = 1 AND status = 'publish'",
+                        $mup_user->ID
+                    ));
+
+                    /* Role badge */
+                    $mup_role_badge  = '';
+                    if ($mup_is_admin) {
+                        $mup_role_badge = '<span class="jg-mup-role jg-mup-role--admin" title="Administrator"><svg width="12" height="12" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>';
+                    } elseif ($mup_is_mod) {
+                        $mup_role_badge = '<span class="jg-mup-role jg-mup-role--mod" title="Moderator"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>';
+                    }
+                    if ($mup_has_spon) {
+                        $mup_role_badge .= '<span class="jg-mup-role jg-mup-role--spon" title="Użytkownik sponsorowany">$</span>';
+                    }
+
+                    /* Level & XP */
+                    $mup_xp_data     = JG_Map_Levels_Achievements::get_user_xp_data($mup_user->ID);
+                    $mup_level       = $mup_xp_data['level'];
+                    $mup_xp          = $mup_xp_data['xp'];
+                    $mup_cur_xp      = JG_Map_Levels_Achievements::xp_for_level($mup_level);
+                    $mup_next_xp     = JG_Map_Levels_Achievements::xp_for_level($mup_level + 1);
+                    $mup_xp_in_lvl   = $mup_xp - $mup_cur_xp;
+                    $mup_xp_needed   = $mup_next_xp - $mup_cur_xp;
+                    $mup_progress    = $mup_xp_needed > 0 ? min(100, round(($mup_xp_in_lvl / $mup_xp_needed) * 100)) : 100;
+
+                    if ($mup_level >= 50)      $mup_tier = 'prestige-legend';
+                    elseif ($mup_level >= 40)  $mup_tier = 'prestige-ruby';
+                    elseif ($mup_level >= 30)  $mup_tier = 'prestige-diamond';
+                    elseif ($mup_level >= 20)  $mup_tier = 'prestige-purple';
+                    elseif ($mup_level >= 15)  $mup_tier = 'prestige-emerald';
+                    elseif ($mup_level >= 10)  $mup_tier = 'prestige-gold';
+                    elseif ($mup_level >= 5)   $mup_tier = 'prestige-silver';
+                    else                       $mup_tier = 'prestige-bronze';
+                ?>
+                <div id="jg-mobile-user-panel" class="jg-mobile-user-panel">
+                    <div class="jg-mup-info">
+                        <a href="#" id="jg-mup-username-link" class="jg-mup-username" data-user-id="<?php echo esc_attr($mup_user->ID); ?>"><?php echo esc_html($mup_user->display_name); ?></a>
+                        <?php echo $mup_role_badge; ?>
+                        <div class="jg-mup-level jg-level-<?php echo $mup_tier; ?>" title="Poziom <?php echo $mup_level; ?> — <?php echo $mup_xp_in_lvl; ?>/<?php echo $mup_xp_needed; ?> XP">
+                            <span class="jg-mup-level-num">Poz.&nbsp;<?php echo $mup_level; ?></span>
+                            <span class="jg-mup-xp-bar"><span class="jg-mup-xp-fill" style="width:<?php echo $mup_progress; ?>%"></span></span>
+                        </div>
+                    </div>
+                    <div class="jg-mup-actions">
+                        <button id="jg-mup-ranking-btn" class="jg-mup-btn" title="Ranking">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                        </button>
+                        <button id="jg-mup-profile-btn" class="jg-mup-btn" title="Edytuj profil">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </button>
+                        <?php if ($mup_is_admin || $mup_is_mod) : ?>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=jg-map-dashboard')); ?>" class="jg-mup-btn jg-mup-btn--admin" title="Panel administratora">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </a>
+                        <?php endif; ?>
+                        <a href="<?php echo esc_url(wp_logout_url(get_permalink())); ?>" class="jg-mup-btn" title="Wyloguj">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        </a>
+                    </div>
+                </div>
+                <?php else : ?>
+                <div id="jg-mobile-user-panel" class="jg-mobile-user-panel jg-mobile-user-panel--guest">
+                    <button id="jg-mup-auth-btn" class="jg-mup-login-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        Zaloguj się
+                    </button>
+                </div>
+                <?php endif; ?>
+            </div>
+
             <!-- Loader positioned relative to map container -->
             <div id="jg-map-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:400;background:#fff;padding:30px 40px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15);pointer-events:none;">
                 <div class="jg-spinner"></div>

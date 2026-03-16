@@ -609,6 +609,17 @@ class JG_Map_Enqueue {
         </nav>
         <div id="jg-nav-overlay" class="jg-nav-overlay" aria-hidden="true"></div>
 
+        <!-- Landscape orientation overlay (mobile only) -->
+        <div id="jg-landscape-overlay" role="alert" aria-live="polite">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 2v4"/><path d="M8 2v4"/>
+                <polyline points="9 13 12 10 15 13"/>
+                <line x1="12" y1="10" x2="12" y2="17"/>
+            </svg>
+            <p>Obróć telefon do widoku pionowego, aby korzystać z mapy.</p>
+        </div>
+
         <script>
         (function () {
             var btn     = document.getElementById('jg-hamburger-btn');
