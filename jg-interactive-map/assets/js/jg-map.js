@@ -2434,6 +2434,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       var _jgFsBuildSuggestions = null;
       var _jgFsHideSuggestions = null;
 
+      // Shared ref: dwGetFabCenterX() is defined inside FullscreenControl.onAdd
+      // but also needed by createUserCountIndicator() in the outer scope.
+      var _jgDwGetFabCenterX = null;
+
       if (currentLayerIsSatellite) {
         satelliteLayer.addTo(map);
         elMap.classList.add('jg-map--satellite');
@@ -3802,6 +3806,21 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             return { top: headerH, bottom: footerH };
           }
 
+          // Returns the X coordinate (px from map left edge) of the midpoint
+          // between the onboarding FAB (#jg-help-fab, left) and the add-places
+          // FAB (#jg-fab-container, right).  In desktop-wide mode the right FAB
+          // is shifted left because the sidebar occupies the right side, so we
+          // must read the actual DOM positions rather than assuming 50 %.
+          function dwGetFabCenterX() {
+            var mapRect  = elMap.getBoundingClientRect();
+            var leftFab  = document.getElementById('jg-help-fab');
+            var rightFab = document.getElementById('jg-fab-container');
+            var leftEdge  = leftFab  ? (leftFab.getBoundingClientRect().right  - mapRect.left) : 0;
+            var rightEdge = rightFab ? (rightFab.getBoundingClientRect().left  - mapRect.left) : mapRect.width;
+            return Math.round((leftEdge + rightEdge) / 2);
+          }
+          _jgDwGetFabCenterX = dwGetFabCenterX;
+
           function dwShowPromo() {
             // Never show the floating banner when in portrait/mobile layout —
             // guards against stale setTimeout callbacks firing after exitDeskWide.
@@ -3829,7 +3848,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 deskPromoWrap.style.setProperty('top', 'auto', 'important');
                 deskPromoWrap.style.setProperty('right', 'auto', 'important');
                 deskPromoWrap.style.setProperty('bottom', '15px', 'important');
-                deskPromoWrap.style.setProperty('left', '50%', 'important');
+                deskPromoWrap.style.setProperty('left', dwGetFabCenterX() + 'px', 'important');
                 deskPromoWrap.style.setProperty('transform', 'translateX(-50%)', 'important');
                 deskPromoWrap.style.display = '';
                 // Move user count indicator to the right of the banner
@@ -3887,13 +3906,15 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
             });
 
-            // Position banner: bottom-centre of the map, halfway between the
-            // onboarding FAB (bottom-left) and the add-places FAB (bottom-right).
+            // Position banner: bottom of the map, horizontally centred between
+            // the onboarding FAB (#jg-help-fab, bottom-left) and the add-places
+            // FAB (#jg-fab-container, bottom-right).  dwGetFabCenterX() reads the
+            // actual DOM positions so the sidebar shift is automatically accounted for.
             deskPromoWrap.style.setProperty('position', 'absolute', 'important');
             deskPromoWrap.style.setProperty('top', 'auto', 'important');
             deskPromoWrap.style.setProperty('right', 'auto', 'important');
             deskPromoWrap.style.setProperty('bottom', '15px', 'important');
-            deskPromoWrap.style.setProperty('left', '50%', 'important');
+            deskPromoWrap.style.setProperty('left', dwGetFabCenterX() + 'px', 'important');
             deskPromoWrap.style.setProperty('transform', 'translateX(-50%)', 'important');
 
             deskPromoWrap.style.display = '';
@@ -4050,10 +4071,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             // Hide and clear the floating banner
             deskPromoWrap.style.display = 'none';
             deskPromoWrap.innerHTML = '';
-            // Reset user count indicator to centre (no banner)
+            // Reset user count indicator to centre between FABs (no banner)
             var uciExit = document.getElementById('jg-user-count-indicator');
             if (uciExit) {
-              uciExit.style.left = '50%';
+              uciExit.style.left = dwGetFabCenterX() + 'px';
               uciExit.style.transform = 'translateX(-50%)';
             }
           }
@@ -13020,14 +13041,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           ).appendTo('head');
         }
 
-        // Wrapper – horizontally centred at the bottom of the map
+        // Wrapper – horizontally centred between the two FABs.
+        // _jgDwGetFabCenterX() accounts for the sidebar shifting the right FAB.
+        var _uciInitLeft = _jgDwGetFabCenterX ? (_jgDwGetFabCenterX() + 'px') : '50%';
+        var _uciInitTransform = 'translateX(-50%)';
         userCountIndicator = $('<div>')
           .attr('id', 'jg-user-count-indicator')
           .css({
             position: 'absolute',
             bottom: '30px',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: _uciInitLeft,
+            transform: _uciInitTransform,
             zIndex: 9997,
             display: 'flex',
             alignItems: 'center',
