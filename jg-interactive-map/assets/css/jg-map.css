@@ -36,8 +36,8 @@
   right: 0;
   background: #8d2324;
   color: #fff;
-  padding: 8px 24px;
-  min-height: 52px;
+  padding: 14px 24px;
+  min-height: 64px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -45,6 +45,7 @@
   font-size: calc(15 * var(--jg));
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 9999;
+  box-sizing: border-box;
 }
 
 .jg-top-bar-left,
@@ -250,7 +251,7 @@
 }
 
 .jg-top-bar-logo-img {
-  height: 40px;
+  height: 48px;
   width: auto;
   display: block;
   filter: brightness(0) invert(1);
@@ -342,6 +343,56 @@
   color: rgba(255, 255, 255, 0.5);
   font-style: italic;
   cursor: default;
+}
+
+/* ── Sidebar collapse/expand tab ── */
+#jg-sidebar-toggle-tab {
+  position: fixed;
+  top: 50vh;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 60px;
+  background: #8d2324;
+  color: #fff;
+  border: none;
+  border-radius: 6px 0 0 6px;
+  cursor: pointer;
+  display: none; /* shown via JS on desktop */
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  z-index: 9990;
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.25);
+  transition: background 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+#jg-sidebar-toggle-tab:hover {
+  background: #a02829;
+}
+
+@media (min-width: 769px) {
+  #jg-sidebar-toggle-tab {
+    display: flex;
+  }
+}
+
+/* Sidebar hidden state — collapse sidebar column, expand map column */
+@media (min-width: 769px) {
+  body.jg-sidebar-hidden .e-con:has(#jg-map-sidebar):not(:has(#jg-map-wrap)),
+  body.jg-sidebar-hidden .elementor-column:has(#jg-map-sidebar):not(:has(#jg-map-wrap)) {
+    display: none !important;
+  }
+
+  body.jg-sidebar-hidden .e-con:has(#jg-map-wrap):not(:has(#jg-map-sidebar)),
+  body.jg-sidebar-hidden .e-con:has(.jg-wrap):not(:has(#jg-map-sidebar)),
+  body.jg-sidebar-hidden .elementor-column:has(#jg-map-wrap):not(:has(#jg-map-sidebar)),
+  body.jg-sidebar-hidden .elementor-column:has(.jg-wrap):not(:has(#jg-map-sidebar)) {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
 }
 
 .jg-wrap {
@@ -2060,7 +2111,8 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 /* Responsive navbar - Better spacing on narrow monitors (laptops) */
 @media (max-width: 1280px) {
   .jg-custom-top-bar {
-    padding: 10px 16px;
+    padding: 12px 16px;
+    min-height: 60px;
     gap: 10px;
   }
 
@@ -2078,7 +2130,8 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 /* Tablet responsive - More compact layout */
 @media (max-width: 1024px) {
   .jg-custom-top-bar {
-    padding: 8px 14px;
+    padding: 10px 14px;
+    min-height: 56px;
     gap: 8px;
   }
 
