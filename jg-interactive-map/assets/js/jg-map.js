@@ -3639,8 +3639,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               L.DomEvent.disableScrollPropagation(sidebar);
             }
 
-            // Show the banner after a short delay to allow it to finish loading
+            // Show the banner after a short delay. The banner data (origImg.src)
+            // is loaded asynchronously, so retry at 2 s and 5 s if the first
+            // attempt returns early because the data is not ready yet.
             setTimeout(function() { if (isDeskWide && !isFullscreen) dwShowPromo(); }, 700);
+            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 2000);
+            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 5000);
             setTimeout(function() { map.invalidateSize(); }, 100);
           }
 
