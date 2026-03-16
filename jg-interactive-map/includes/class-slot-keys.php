@@ -72,8 +72,8 @@ class JG_Slot_Keys {
 .{$fi}{background:rgba(255,255,255,.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.18);overflow:hidden;max-width:728px;transition:opacity .3s ease}
 .{$fi} a{display:block;line-height:0;text-decoration:none}
 .{$fi} img{display:block;width:100%;height:auto;object-fit:contain}
-@media(min-width:769px){body.jg-fullscreen-active .{$fs}{left:calc((100% - min(343px,27.1vw)) / 2);max-width:calc(100% - min(343px,27.1vw) - 200px)}}
-@media(min-width:769px){body.jg-desktop-wide-active .{$fs}{bottom:auto;top:70px;left:calc((100% - min(343px,27.1vw)) / 2);max-width:calc(100% - min(343px,27.1vw) - 200px);transform:translateX(-50%)}}
+@media(min-width:769px){body.jg-fullscreen-active .{$fs}{left:calc((100% - min(361px,28.5vw)) / 2);max-width:calc(100% - min(361px,28.5vw) - 200px)}}
+@media(min-width:769px){body.jg-desktop-wide-active .{$fs}{bottom:auto;top:70px;left:calc((100% - min(361px,28.5vw)) / 2);max-width:calc(100% - min(361px,28.5vw) - 200px);transform:translateX(-50%)}}
 @media(max-width:768px){
   body.jg-fullscreen-active .{$fs}{bottom:80px;left:50%;max-width:calc(100% - 24px);transform:translateX(-50%) scale(1.8);transform-origin:center bottom}
   .{$fi}{max-width:100%;border-radius:6px}
