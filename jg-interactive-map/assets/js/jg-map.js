@@ -3570,22 +3570,22 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
             });
 
-            // Position banner at top-left of the map, just to the right of the
-            // Leaflet top-left controls (zoom + fullscreen + map/satellite toggle).
+            // Position banner below the filter bar, to the right of the left controls.
+            // top: below filter bar (8px margin + filter height + 8px gap)
+            // left: right edge of .leaflet-top.leaflet-left controls + 8px gap
             deskPromoWrap.style.setProperty('position', 'absolute', 'important');
             deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
             deskPromoWrap.style.setProperty('right', 'auto', 'important');
+            var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
+            var dwFilterH = dwFiltersWrapper ? dwFiltersWrapper.getBoundingClientRect().height : 44;
+            deskPromoWrap.style.setProperty('top', (8 + dwFilterH + 8) + 'px', 'important');
             var dwLeftCtrl = elMap.querySelector('.leaflet-top.leaflet-left');
-            var dwMapRect = elMap.getBoundingClientRect();
             if (dwLeftCtrl) {
+              var dwMapRect = elMap.getBoundingClientRect();
               var dwCtrlRect = dwLeftCtrl.getBoundingClientRect();
-              deskPromoWrap.style.setProperty('top', (dwCtrlRect.top - dwMapRect.top) + 'px', 'important');
               deskPromoWrap.style.setProperty('left', (dwCtrlRect.right - dwMapRect.left + 8) + 'px', 'important');
             } else {
-              var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
-              var dwFilterH = dwFiltersWrapper ? dwFiltersWrapper.getBoundingClientRect().height : 44;
-              deskPromoWrap.style.setProperty('top', (8 + dwFilterH + 8) + 'px', 'important');
-              deskPromoWrap.style.setProperty('left', '8px', 'important');
+              deskPromoWrap.style.setProperty('left', '10px', 'important');
             }
 
             deskPromoWrap.style.display = '';
