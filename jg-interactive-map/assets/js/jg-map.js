@@ -812,35 +812,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       if ((elMap.offsetHeight || 0) < 50) elMap.style.minHeight = '520px';
 
       // ====================================
-      // Custom Top Bar: Clock and Profile
+      // Custom Top Bar: Profile
       // ====================================
-      var topBarDateTime = document.getElementById('jg-top-bar-datetime');
       var editProfileBtn = document.getElementById('jg-edit-profile-btn');
-
-      // Update clock display
-      function updateDateTime() {
-        if (!topBarDateTime) return;
-
-        var now = new Date();
-        var days = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
-        var dayName = days[now.getDay()];
-
-        var day = String(now.getDate()).padStart(2, '0');
-        var month = String(now.getMonth() + 1).padStart(2, '0');
-        var year = now.getFullYear();
-
-        var hours = String(now.getHours()).padStart(2, '0');
-        var minutes = String(now.getMinutes()).padStart(2, '0');
-        var seconds = String(now.getSeconds()).padStart(2, '0');
-
-        topBarDateTime.textContent = dayName + ', ' + day + '.' + month + '.' + year + ' • ' + hours + ':' + minutes + ':' + seconds;
-      }
-
-      // Update clock every second
-      if (topBarDateTime) {
-        updateDateTime();
-        setInterval(updateDateTime, 1000);
-      }
 
       // Edit profile button handler
       if (editProfileBtn && !editProfileBtn.jgHandlerAttached) {

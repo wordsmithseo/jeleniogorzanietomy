@@ -240,10 +240,97 @@
   line-height: 1;
 }
 
-#jg-top-bar-datetime {
+/* Top bar logo */
+.jg-top-bar-logo-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  line-height: 0;
+}
+
+.jg-top-bar-logo-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.jg-top-bar-logo-img {
+  height: 32px;
+  width: auto;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
+.jg-top-bar-logo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+/* Top bar navigation menu dropdown */
+.jg-top-bar-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.jg-top-bar-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.jg-top-bar-menu-chevron {
+  font-size: 0.7em;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+
+.jg-top-bar-menu-btn[aria-expanded="true"] .jg-top-bar-menu-chevron {
+  transform: rotate(180deg);
+}
+
+.jg-top-bar-menu-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 180px;
+  background: #8d2324;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  z-index: 10001;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.jg-top-bar-menu-dropdown.jg-top-bar-menu-open {
+  display: flex;
+}
+
+.jg-top-bar-menu-item {
+  display: block;
+  padding: 10px 16px;
+  color: #fff;
+  text-decoration: none;
+  font-size: calc(14 * var(--jg));
   font-weight: 500;
-  font-size: calc(15 * var(--jg));
-  letter-spacing: 0.3px;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.jg-top-bar-menu-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.jg-top-bar-menu-empty {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  cursor: default;
 }
 
 .jg-wrap {
@@ -1998,10 +2085,6 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     font-size: calc(14 * var(--jg));
   }
 
-  #jg-top-bar-datetime {
-    font-size: calc(14 * var(--jg));
-  }
-
   .jg-top-bar-xp-bar {
     width: 45px;
   }
@@ -2073,11 +2156,6 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     padding: 6px 12px;
     font-size: calc(13 * var(--jg));
     white-space: nowrap;
-  }
-
-  /* Reduce datetime font size on mobile */
-  #jg-top-bar-datetime {
-    font-size: calc(13 * var(--jg));
   }
 
   /* Compact level indicator on mobile */
@@ -2590,12 +2668,6 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
 }
 
-/* Compact datetime on small mobile screens */
-@media (max-width: 480px) {
-  #jg-top-bar-datetime {
-    font-size: calc(12 * var(--jg));
-  }
-}
 
 /* Prevent page scroll when modal is open */
 body.jg-modal-open {
