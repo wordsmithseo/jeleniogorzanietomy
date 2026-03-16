@@ -3826,21 +3826,22 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 clonedCta.style.margin = '0';
                 deskPromoWrap.appendChild(clonedCta);
                 deskPromoWrap.style.setProperty('position', 'absolute', 'important');
-                deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
+                deskPromoWrap.style.setProperty('top', 'auto', 'important');
                 deskPromoWrap.style.setProperty('right', 'auto', 'important');
-                deskPromoWrap.style.setProperty('transform', 'none', 'important');
-                var dwFiltersWrapperCta = document.getElementById('jg-map-filters-wrapper');
-                var dwFilterHCta = dwFiltersWrapperCta ? dwFiltersWrapperCta.getBoundingClientRect().height : 44;
-                deskPromoWrap.style.setProperty('top', (8 + dwFilterHCta + 8) + 'px', 'important');
-                var dwLeftCtrlCta = elMap.querySelector('.leaflet-top.leaflet-left');
-                if (dwLeftCtrlCta) {
-                  var dwMapRectCta = elMap.getBoundingClientRect();
-                  var dwCtrlRectCta = dwLeftCtrlCta.getBoundingClientRect();
-                  deskPromoWrap.style.setProperty('left', (dwCtrlRectCta.right - dwMapRectCta.left + 8) + 'px', 'important');
-                } else {
-                  deskPromoWrap.style.setProperty('left', '10px', 'important');
-                }
+                deskPromoWrap.style.setProperty('bottom', '15px', 'important');
+                deskPromoWrap.style.setProperty('left', '50%', 'important');
+                deskPromoWrap.style.setProperty('transform', 'translateX(-50%)', 'important');
                 deskPromoWrap.style.display = '';
+                // Move user count indicator to the right of the banner
+                setTimeout(function() {
+                  var uci = document.getElementById('jg-user-count-indicator');
+                  if (uci && deskPromoWrap.offsetWidth > 0) {
+                    var br = deskPromoWrap.getBoundingClientRect();
+                    var mr = elMap.getBoundingClientRect();
+                    uci.style.left = (br.right - mr.left + 12) + 'px';
+                    uci.style.transform = 'none';
+                  }
+                }, 50);
               }
               return;
             }
@@ -3886,27 +3887,26 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
             });
 
-            // Position banner: 8px below filter bar, 8px to the right of the
-            // left-side controls (zoom + fullscreen + map/satellite toggle).
-            // CSS class has transform:translateX(-50%) — override to none so the
-            // left value is the actual left edge, not the center anchor point.
+            // Position banner: bottom-centre of the map, halfway between the
+            // onboarding FAB (bottom-left) and the add-places FAB (bottom-right).
             deskPromoWrap.style.setProperty('position', 'absolute', 'important');
-            deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
+            deskPromoWrap.style.setProperty('top', 'auto', 'important');
             deskPromoWrap.style.setProperty('right', 'auto', 'important');
-            deskPromoWrap.style.setProperty('transform', 'none', 'important');
-            var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
-            var dwFilterH = dwFiltersWrapper ? dwFiltersWrapper.getBoundingClientRect().height : 44;
-            deskPromoWrap.style.setProperty('top', (10 + dwFilterH + 10) + 'px', 'important');
-            var dwLeftCtrl = elMap.querySelector('.leaflet-top.leaflet-left');
-            if (dwLeftCtrl) {
-              var dwMapRect = elMap.getBoundingClientRect();
-              var dwCtrlRect = dwLeftCtrl.getBoundingClientRect();
-              deskPromoWrap.style.setProperty('left', (dwCtrlRect.right - dwMapRect.left + 10) + 'px', 'important');
-            } else {
-              deskPromoWrap.style.setProperty('left', '10px', 'important');
-            }
+            deskPromoWrap.style.setProperty('bottom', '15px', 'important');
+            deskPromoWrap.style.setProperty('left', '50%', 'important');
+            deskPromoWrap.style.setProperty('transform', 'translateX(-50%)', 'important');
 
             deskPromoWrap.style.display = '';
+            // Move user count indicator to the right of the banner
+            setTimeout(function() {
+              var uci = document.getElementById('jg-user-count-indicator');
+              if (uci && deskPromoWrap.offsetWidth > 0) {
+                var br = deskPromoWrap.getBoundingClientRect();
+                var mr = elMap.getBoundingClientRect();
+                uci.style.left = (br.right - mr.left + 12) + 'px';
+                uci.style.transform = 'none';
+              }
+            }, 50);
           }
 
           // Returns a latlng shifted so that, when used as the Leaflet map centre,
@@ -4050,6 +4050,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             // Hide and clear the floating banner
             deskPromoWrap.style.display = 'none';
             deskPromoWrap.innerHTML = '';
+            // Reset user count indicator to centre (no banner)
+            var uciExit = document.getElementById('jg-user-count-indicator');
+            if (uciExit) {
+              uciExit.style.left = '50%';
+              uciExit.style.transform = 'translateX(-50%)';
+            }
           }
 
           // Recalculate on window resize
