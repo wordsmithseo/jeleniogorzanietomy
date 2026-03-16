@@ -3462,7 +3462,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var _dwExtCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
           deskPromoWrap.className = _dwExtCls.fs || '';
           deskPromoWrap.style.display = 'none';
-          elMap.appendChild(deskPromoWrap);
+          // Append to mapWrap (position:fixed) so position:absolute works relative to it
+          mapWrap.appendChild(deskPromoWrap);
           L.DomEvent.disableClickPropagation(deskPromoWrap);
           L.DomEvent.disableScrollPropagation(deskPromoWrap);
 
@@ -3570,17 +3571,21 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
             });
 
-            deskPromoWrap.style.display = '';
-
-            // Position the banner just below the floating filter bar.
-            // The banner is position:fixed so getBoundingClientRect().bottom of
-            // the filter wrapper gives the exact viewport-Y to use as top.
+            // Position banner just below the floating filter bar.
+            // deskPromoWrap is position:absolute inside mapWrap, so we use
+            // offsetTop + offsetHeight on the filter wrapper (also absolute inside
+            // mapWrap) for a reliable offset that doesn't depend on viewport coords.
+            deskPromoWrap.style.setProperty('position', 'absolute', 'important');
+            deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
             var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
             if (dwFiltersWrapper) {
-              var dwFBCR = dwFiltersWrapper.getBoundingClientRect();
-              deskPromoWrap.style.setProperty('top', (dwFBCR.bottom + 8) + 'px', 'important');
-              deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
+              var dwBannerTop = dwFiltersWrapper.offsetTop + dwFiltersWrapper.offsetHeight + 8;
+              deskPromoWrap.style.setProperty('top', dwBannerTop + 'px', 'important');
+            } else {
+              deskPromoWrap.style.setProperty('top', '70px', 'important');
             }
+
+            deskPromoWrap.style.display = '';
           }
 
           function enterDeskWide() {
