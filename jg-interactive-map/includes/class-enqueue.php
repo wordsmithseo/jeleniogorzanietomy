@@ -68,7 +68,10 @@ class JG_Map_Enqueue {
      */
     public function grant_plugin_caps($allcaps, $caps, $args) {
         if (!empty($allcaps['manage_options']) || !empty($allcaps['jg_map_admin'])) {
+            // Full plugin management access
             $allcaps['jg_map_manage'] = true;
+            // Also grant moderator access so the plugin menu (using jg_map_moderate) is visible
+            $allcaps['jg_map_moderate'] = true;
         }
         return $allcaps;
     }
