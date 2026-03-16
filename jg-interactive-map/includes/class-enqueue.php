@@ -168,11 +168,13 @@ class JG_Map_Enqueue {
 
             // Localize script with config data
             wp_localize_script('jg-map-notifications', 'jgNotificationsConfig', array(
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('jg_map_nonce'),
+                'ajaxUrl'       => admin_url('admin-ajax.php'),
+                'nonce'         => wp_create_nonce('jg_map_nonce'),
                 'moderationUrl' => admin_url('admin.php?page=jg-map-places&status=new_pending'),
-                'reportsUrl' => admin_url('admin.php?page=jg-map-places&status=reported'),
-                'deletionsUrl' => admin_url('admin.php?page=jg-map-places&status=deletion_pending')
+                'pointsUrl'     => admin_url('admin.php?page=jg-map-places&status=new_pending'),
+                'editsUrl'      => admin_url('admin.php?page=jg-map-places&status=edit_pending'),
+                'reportsUrl'    => admin_url('admin.php?page=jg-map-places&status=reported'),
+                'deletionsUrl'  => admin_url('admin.php?page=jg-map-places&status=deletion_pending'),
             ));
         }
 

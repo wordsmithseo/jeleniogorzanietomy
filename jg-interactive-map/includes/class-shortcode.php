@@ -152,30 +152,99 @@ class JG_Map_Shortcode {
                     elseif ($mup_level >= 5)   $mup_tier = 'prestige-silver';
                     else                       $mup_tier = 'prestige-bronze';
                 ?>
+                <?php
+                    /* ── Moderation notifications for mobile ── */
+                    $mup_mod_notifs = array();
+                    if ($mup_is_admin || $mup_is_mod) {
+                        $mup_history_tbl = JG_Map_Database::get_history_table();
+                        $mup_reports_tbl = JG_Map_Database::get_reports_table();
+                        $mup_pending_points = $wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(*) FROM $mup_pts_tbl WHERE status = %s", 'pending'
+                        ));
+                        $mup_pending_edits = $wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(*) FROM $mup_history_tbl WHERE status = %s AND action_type = %s", 'pending', 'edit'
+                        ));
+                        $mup_pending_reports = $wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(DISTINCT r.point_id) FROM $mup_reports_tbl r
+                             INNER JOIN $mup_pts_tbl p ON r.point_id = p.id
+                             WHERE r.status = %s AND p.status = %s", 'pending', 'publish'
+                        ));
+                        $mup_pending_deletions = $wpdb->get_var($wpdb->prepare(
+                            "SELECT COUNT(*) FROM $mup_pts_tbl WHERE is_deletion_requested = %d AND status = %s", 1, 'publish'
+                        ));
+                        if ($mup_pending_points > 0) {
+                            $mup_mod_notifs[] = array(
+                                'type'  => 'points',
+                                'title' => 'Nowe miejsca (' . $mup_pending_points . ')',
+                                'count' => $mup_pending_points,
+                                'url'   => admin_url('admin.php?page=jg-map-places&status=new_pending'),
+                                'icon'  => '<path d="M12 5v14M5 12h14"/>',
+                            );
+                        }
+                        if ($mup_pending_edits > 0) {
+                            $mup_mod_notifs[] = array(
+                                'type'  => 'edits',
+                                'title' => 'Edycje (' . $mup_pending_edits . ')',
+                                'count' => $mup_pending_edits,
+                                'url'   => admin_url('admin.php?page=jg-map-places&status=edit_pending'),
+                                'icon'  => '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+                            );
+                        }
+                        if ($mup_pending_reports > 0) {
+                            $mup_mod_notifs[] = array(
+                                'type'  => 'reports',
+                                'title' => 'Zgłoszenia (' . $mup_pending_reports . ')',
+                                'count' => $mup_pending_reports,
+                                'url'   => admin_url('admin.php?page=jg-map-places&status=reported'),
+                                'icon'  => '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+                            );
+                        }
+                        if ($mup_pending_deletions > 0) {
+                            $mup_mod_notifs[] = array(
+                                'type'  => 'deletions',
+                                'title' => 'Usunięcia (' . $mup_pending_deletions . ')',
+                                'count' => $mup_pending_deletions,
+                                'url'   => admin_url('admin.php?page=jg-map-places&status=deletion_pending'),
+                                'icon'  => '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>',
+                            );
+                        }
+                    }
+                ?>
                 <div id="jg-mobile-user-panel" class="jg-mobile-user-panel">
-                    <div class="jg-mup-info">
-                        <a href="#" id="jg-mup-username-link" class="jg-mup-username" data-user-id="<?php echo esc_attr($mup_user->ID); ?>"><?php echo esc_html($mup_user->display_name); ?></a>
-                        <?php echo $mup_role_badge; ?>
-                        <div class="jg-mup-level jg-level-<?php echo $mup_tier; ?>" title="Poziom <?php echo $mup_level; ?> — <?php echo $mup_xp_in_lvl; ?>/<?php echo $mup_xp_needed; ?> XP">
-                            <span class="jg-mup-level-num">Poz.&nbsp;<?php echo $mup_level; ?></span>
-                            <span class="jg-mup-xp-bar"><span class="jg-mup-xp-fill" style="width:<?php echo $mup_progress; ?>%"></span></span>
+                    <div class="jg-mup-main-row">
+                        <div class="jg-mup-info">
+                            <a href="#" id="jg-mup-username-link" class="jg-mup-username" data-user-id="<?php echo esc_attr($mup_user->ID); ?>"><?php echo esc_html($mup_user->display_name); ?></a>
+                            <?php echo $mup_role_badge; ?>
+                            <div class="jg-mup-level jg-level-<?php echo $mup_tier; ?>" title="Poziom <?php echo $mup_level; ?> — <?php echo $mup_xp_in_lvl; ?>/<?php echo $mup_xp_needed; ?> XP">
+                                <span class="jg-mup-level-num">Poz.&nbsp;<?php echo $mup_level; ?></span>
+                                <span class="jg-mup-xp-bar"><span class="jg-mup-xp-fill" style="width:<?php echo $mup_progress; ?>%"></span></span>
+                            </div>
+                        </div>
+                        <div class="jg-mup-actions">
+                            <button id="jg-mup-ranking-btn" class="jg-mup-btn" title="Ranking">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                            </button>
+                            <button id="jg-mup-profile-btn" class="jg-mup-btn" title="Edytuj profil">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            </button>
+                            <?php if ($mup_is_admin || $mup_is_mod) : ?>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=jg-map-dashboard')); ?>" class="jg-mup-btn jg-mup-btn--admin" title="Panel administratora">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </a>
+                            <?php endif; ?>
+                            <a href="<?php echo esc_url(wp_logout_url(get_permalink())); ?>" class="jg-mup-btn" title="Wyloguj">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            </a>
                         </div>
                     </div>
-                    <div class="jg-mup-actions">
-                        <button id="jg-mup-ranking-btn" class="jg-mup-btn" title="Ranking">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
-                        </button>
-                        <button id="jg-mup-profile-btn" class="jg-mup-btn" title="Edytuj profil">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        </button>
-                        <?php if ($mup_is_admin || $mup_is_mod) : ?>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=jg-map-dashboard')); ?>" class="jg-mup-btn jg-mup-btn--admin" title="Panel administratora">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <!-- Moderation notifications row (hidden when empty, updated by JS) -->
+                    <div id="jg-mup-notifications" class="jg-mup-notifications<?php echo empty($mup_mod_notifs) ? ' jg-mup-notifications--empty' : ''; ?>">
+                        <?php foreach ($mup_mod_notifs as $n) : ?>
+                        <a href="<?php echo esc_url($n['url']); ?>" class="jg-mup-notif-btn" data-type="<?php echo esc_attr($n['type']); ?>" title="<?php echo esc_attr($n['title']); ?>">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><?php echo $n['icon']; ?></svg>
+                            <span class="jg-mup-notif-badge"><?php echo $n['count']; ?></span>
                         </a>
-                        <?php endif; ?>
-                        <a href="<?php echo esc_url(wp_logout_url(get_permalink())); ?>" class="jg-mup-btn" title="Wyloguj">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                        </a>
+                        <?php endforeach; ?>
                     </div>
                 </div>
                 <?php else : ?>
