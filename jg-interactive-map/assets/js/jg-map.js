@@ -2638,13 +2638,15 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         document.body.appendChild(mcrSuggestions);
 
         function mcrPositionSugg() {
-          var rect = mcrInput.getBoundingClientRect();
+          // Use the full controls row width so suggestions are wider than just the input
+          var rowRect  = mcrRow.getBoundingClientRect();
+          var rect     = mcrInput.getBoundingClientRect();
           var vv = window.visualViewport;
           var visibleBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
           var spaceBelow = visibleBottom - rect.bottom - 4;
           mcrSuggestions.style.position = 'fixed';
-          mcrSuggestions.style.left = rect.left + 'px';
-          mcrSuggestions.style.right = (window.innerWidth - rect.right) + 'px';
+          mcrSuggestions.style.left  = rowRect.left + 'px';
+          mcrSuggestions.style.right = (window.innerWidth - rowRect.right) + 'px';
           mcrSuggestions.style.width = 'auto';
           mcrSuggestions.style.zIndex = '99999';
           if (spaceBelow >= 80) {
