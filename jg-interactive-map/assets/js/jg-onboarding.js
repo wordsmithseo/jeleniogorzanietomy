@@ -354,21 +354,6 @@
     }
   ];
 
-  // Mobile-only fullscreen encouragement tip (prepended in init if on mobile)
-  var mobileFsTip = {
-    id: 'mobile_fullscreen',
-    text: 'Wskaz\u00f3wka dla telefonu: naci\u015bnij ikon\u0119 pe\u0142nego ekranu w lewym g\u00f3rnym rogu mapy \u2197\ufe0f, aby prze\u0142\u0105czy\u0107 na tryb pe\u0142noekranowy \u2014 du\u017co wygodniej na telefonie!',
-    delay: 600,
-    onShow: function() {
-      var fsCtrl = document.querySelector('.jg-fullscreen-control');
-      if (fsCtrl) fsCtrl.classList.add('jg-onboarding-fs-pulse');
-    },
-    onDismiss: function() {
-      var fsCtrl = document.querySelector('.jg-fullscreen-control');
-      if (fsCtrl) fsCtrl.classList.remove('jg-onboarding-fs-pulse');
-    }
-  };
-
   var tipTimeout = null;
   var currentTipIndex = 0;
 
@@ -481,11 +466,6 @@
 
     initHelpPanel(mapEl);
     initMobileFilters();
-
-    // Prepend mobile fullscreen encouragement tip (shown only on mobile, only once)
-    if (window.innerWidth <= 768) {
-      tipQueue.unshift(mobileFsTip);
-    }
 
     // Show welcome modal on first visit
     if (!getFlag(WELCOME_KEY)) {
