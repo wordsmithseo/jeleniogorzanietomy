@@ -728,18 +728,15 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
     var elapsed = Date.now() - loadStartTime;
     var remaining = minLoadingTime - elapsed;
 
+    function doHide() {
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (window._jgLoad) window._jgLoad.setMap();
+    }
 
     if (remaining > 0) {
-      setTimeout(function() {
-        if (loadingEl) {
-          loadingEl.style.display = 'none';
-        }
-      }, remaining);
+      setTimeout(doHide, remaining);
     } else {
-      if (loadingEl) {
-        loadingEl.style.display = 'none';
-      } else {
-      }
+      doHide();
     }
   }
 
@@ -765,6 +762,23 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       }
     }, 100);
   }
+
+  // Coordinated loading: reveal sidebar only after both map AND sidebar data are ready.
+  // jg-sidebar.js calls window._jgLoad.setSidebar() when its data is loaded.
+  // hideLoading() below calls window._jgLoad.setMap() when map is ready.
+  // If no sidebar element exists on the page, sidebar is auto-marked ready.
+  window._jgLoad = {
+    map: false,
+    sidebar: !document.getElementById('jg-map-sidebar'),
+    _check: function() {
+      if (this.map && this.sidebar) {
+        var s = document.getElementById('jg-map-sidebar');
+        if (s) s.style.opacity = '1';
+      }
+    },
+    setMap: function() { this.map = true; this._check(); },
+    setSidebar: function() { this.sidebar = true; this._check(); }
+  };
 
   wait(init, 100);
 
@@ -5979,8 +5993,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               hideLoading();
               // Check for deep-linked point after map is fully ready
               checkDeepLink();
-            }, 600);
-          }, 400);
+            }, 400);
+          }, 300);
         } else {
           // Wait for cluster animation to complete before showing map
           setTimeout(function() {
@@ -5988,7 +6002,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             hideLoading();
             // Check for deep-linked point after map is fully ready
             checkDeepLink();
-          }, 600);
+          }, 400);
         }
       }
 

@@ -584,7 +584,7 @@ class JG_Map_Shortcode {
 
         ob_start();
         ?>
-        <div id="jg-map-sidebar" class="jg-map-sidebar" style="height: <?php echo esc_attr($atts['height']); ?> !important;">
+        <div id="jg-map-sidebar" class="jg-map-sidebar" style="height: <?php echo esc_attr($atts['height']); ?> !important; opacity: 0; transition: opacity 0.3s ease;">
 
             <!-- Statistics Summary -->
             <div class="jg-sidebar-stats">

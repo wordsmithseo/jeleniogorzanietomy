@@ -25,6 +25,34 @@
     // Current sponsored pin ID to maintain consistency
     let currentSponsoredId = null;
 
+    // LocalStorage cache keys (v1: first versioned sidebar cache)
+    var SIDEBAR_CACHE_KEY      = 'jg_sidebar_cache_v1';
+    var SIDEBAR_CACHE_META_KEY = 'jg_sidebar_cache_meta_v1';
+
+    function getSidebarUserId() {
+        return (window.JG_MAP_CFG && JG_MAP_CFG.currentUserId)
+            ? JG_MAP_CFG.currentUserId.toString()
+            : '0';
+    }
+
+    function loadSidebarFromCache() {
+        try {
+            var cached = localStorage.getItem(SIDEBAR_CACHE_KEY);
+            var meta   = JSON.parse(localStorage.getItem(SIDEBAR_CACHE_META_KEY) || '{}');
+            if (cached && meta.userId === getSidebarUserId()) {
+                return JSON.parse(cached); // { points, stats }
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    function saveSidebarToCache(points, stats) {
+        try {
+            localStorage.setItem(SIDEBAR_CACHE_KEY, JSON.stringify({ points: points, stats: stats }));
+            localStorage.setItem(SIDEBAR_CACHE_META_KEY, JSON.stringify({ userId: getSidebarUserId() }));
+        } catch (e) {}
+    }
+
     // Lazy loading state
     let allRegularPoints = [];
     let renderedRegularCount = 0;
@@ -43,8 +71,20 @@
         // Setup fixed tooltip for info-badges (avoids overflow:hidden clipping)
         setupBadgeTooltip();
 
-        // Load initial data
-        loadPoints();
+        // Load from cache for instant display, then refresh in background
+        var cached = loadSidebarFromCache();
+        if (cached && cached.points && cached.points.length > 0) {
+            sidebarPoints = cached.points;
+            currentDataFingerprint = generateFingerprint(cached.points, cached.stats);
+            updateStats(cached.stats || {});
+            renderPoints(sidebarPoints);
+            // Signal coordinator: sidebar ready (from cache)
+            if (window._jgLoad) window._jgLoad.setSidebar();
+            // Background refresh to pick up any changes (silent = no flicker)
+            loadPoints(true);
+        } else {
+            loadPoints();
+        }
     }
 
     /**
@@ -333,6 +373,13 @@
                         sidebarPoints = newPoints;
                         updateStats(newStats);
                         renderPoints(sidebarPoints);
+                        // Save fresh data to cache (only default filter state)
+                        if (!currentFilters.myPlaces &&
+                            currentFilters.types.length === 3 &&
+                            currentFilters.placeCategories.length === 0 &&
+                            currentFilters.curiosityCategories.length === 0) {
+                            saveSidebarToCache(newPoints, newStats);
+                        }
                     }
                     // If silent and no changes, do nothing (no flicker)
                 } else if (!silent) {
@@ -342,6 +389,8 @@
                 if (!silent) {
                     $('#jg-sidebar-loading').hide();
                     $('#jg-sidebar-list').show();
+                    // Signal coordinator: sidebar ready
+                    if (window._jgLoad) window._jgLoad.setSidebar();
                 }
             },
             error: function(xhr, status, error) {
@@ -349,6 +398,8 @@
                     showError('Błąd połączenia z serwerem');
                     $('#jg-sidebar-loading').hide();
                     $('#jg-sidebar-list').show();
+                    // Signal coordinator even on error so map loader doesn't hang
+                    if (window._jgLoad) window._jgLoad.setSidebar();
                 }
             }
         });
