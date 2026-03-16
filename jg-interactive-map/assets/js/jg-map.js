@@ -3462,8 +3462,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var _dwExtCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
           deskPromoWrap.className = _dwExtCls.fs || '';
           deskPromoWrap.style.display = 'none';
-          // Append to mapWrap (position:fixed) so position:absolute works relative to it
-          mapWrap.appendChild(deskPromoWrap);
+          elMap.appendChild(deskPromoWrap);
           L.DomEvent.disableClickPropagation(deskPromoWrap);
           L.DomEvent.disableScrollPropagation(deskPromoWrap);
 
@@ -3572,18 +3571,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             });
 
             // Position banner just below the floating filter bar.
-            // deskPromoWrap is position:absolute inside mapWrap, so we use
-            // offsetTop + offsetHeight on the filter wrapper (also absolute inside
-            // mapWrap) for a reliable offset that doesn't depend on viewport coords.
+            // deskPromoWrap is position:absolute inside elMap (Leaflet container).
+            // elMap starts at mapWrap's top (filter wrapper is position:absolute,
+            // not in flex flow, so no in-flow children precede elMap).
+            // Filter wrapper CSS: top:8px inside mapWrap = 8px from elMap's top.
+            // We need only the filter wrapper's HEIGHT (not its position) so
+            // getBoundingClientRect().height is reliable regardless of layout state.
             deskPromoWrap.style.setProperty('position', 'absolute', 'important');
             deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
             var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
-            if (dwFiltersWrapper) {
-              var dwBannerTop = dwFiltersWrapper.offsetTop + dwFiltersWrapper.offsetHeight + 8;
-              deskPromoWrap.style.setProperty('top', dwBannerTop + 'px', 'important');
-            } else {
-              deskPromoWrap.style.setProperty('top', '70px', 'important');
-            }
+            var dwFilterH = dwFiltersWrapper ? dwFiltersWrapper.getBoundingClientRect().height : 44;
+            deskPromoWrap.style.setProperty('top', (8 + dwFilterH + 8) + 'px', 'important');
 
             deskPromoWrap.style.display = '';
           }
