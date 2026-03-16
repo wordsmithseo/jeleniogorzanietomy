@@ -51,7 +51,7 @@
   right: 0;
   background: #8d2324;
   color: #fff;
-  padding: 14px 24px;
+  padding: 10px 24px;
   min-height: 64px;
   display: flex;
   justify-content: space-between;
@@ -68,6 +68,28 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: 1;
+}
+
+.jg-top-bar-right {
+  justify-content: flex-end;
+}
+
+/* Ad banner slot between menu button and logo in the top bar */
+#jg-top-bar-banner-slot {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  overflow: hidden;
+  line-height: 0;
+  transition: border-color 0.3s ease;
+}
+
+#jg-top-bar-banner-slot.jg-top-bar-banner-visible {
+  display: flex;
 }
 
 .jg-top-bar-user {

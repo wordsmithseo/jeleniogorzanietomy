@@ -3343,6 +3343,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 deskPromoWrap.style.display = 'none';
                 deskPromoWrap.innerHTML = '';
               }
+              var _tbSlotFs = document.getElementById('jg-top-bar-banner-slot');
+              if (_tbSlotFs) { _tbSlotFs.innerHTML = ''; _tbSlotFs.classList.remove('jg-top-bar-banner-visible'); _tbSlotFs.style.borderColor = ''; }
               if (typeof dwPlaceholder !== 'undefined' && dwPlaceholder && dwPlaceholder.parentNode) {
                 dwPlaceholder.parentNode.removeChild(dwPlaceholder);
               }
@@ -3803,9 +3805,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }
 
           function dwShowPromo() {
-            // Never show the floating banner when in portrait/mobile layout —
-            // guards against stale setTimeout callbacks firing after exitDeskWide.
+            // Never show when in portrait/mobile layout — guards against stale setTimeout callbacks.
             if (window.innerWidth <= 768) return;
+            var topBarSlot = document.getElementById('jg-top-bar-banner-slot');
+            if (!topBarSlot) return;
             var $dwWrap = document.querySelector('[data-cid]');
             if (!$dwWrap) return;
             var lidAttr = $dwWrap.getAttribute('data-lid');
@@ -3814,33 +3817,18 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var origImg  = iidAttr ? document.getElementById(iidAttr) : null;
 
             // hideSlot() case: ext.js replaced #id_cid.innerHTML with CTA, removing origLink/origImg.
-            // Detect this: origLink is null but #id_cid has content → clone it into deskPromoWrap.
+            // Detect this: origLink is null but #id_cid has content → clone CTA into top bar slot.
             if (!origLink || !origImg) {
               var cidAttr = $dwWrap.getAttribute('data-cid');
               var cidEl = cidAttr ? document.getElementById(cidAttr) : null;
               if (cidEl && cidEl.children.length > 0) {
-                deskPromoWrap.innerHTML = '';
+                topBarSlot.innerHTML = '';
                 var clonedCta = cidEl.cloneNode(true);
                 clonedCta.style.maxWidth = '728px';
                 clonedCta.style.width = '100%';
                 clonedCta.style.margin = '0';
-                deskPromoWrap.appendChild(clonedCta);
-                deskPromoWrap.style.setProperty('position', 'absolute', 'important');
-                deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
-                deskPromoWrap.style.setProperty('right', 'auto', 'important');
-                deskPromoWrap.style.setProperty('transform', 'none', 'important');
-                var dwFiltersWrapperCta = document.getElementById('jg-map-filters-wrapper');
-                var dwFilterHCta = dwFiltersWrapperCta ? dwFiltersWrapperCta.getBoundingClientRect().height : 44;
-                deskPromoWrap.style.setProperty('top', (8 + dwFilterHCta + 8) + 'px', 'important');
-                var dwLeftCtrlCta = elMap.querySelector('.leaflet-top.leaflet-left');
-                if (dwLeftCtrlCta) {
-                  var dwMapRectCta = elMap.getBoundingClientRect();
-                  var dwCtrlRectCta = dwLeftCtrlCta.getBoundingClientRect();
-                  deskPromoWrap.style.setProperty('left', (dwCtrlRectCta.right - dwMapRectCta.left + 8) + 'px', 'important');
-                } else {
-                  deskPromoWrap.style.setProperty('left', '10px', 'important');
-                }
-                deskPromoWrap.style.display = '';
+                topBarSlot.appendChild(clonedCta);
+                topBarSlot.classList.add('jg-top-bar-banner-visible');
               }
               return;
             }
@@ -3848,29 +3836,56 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             // Banner not loaded yet — will be retried by caller
             if (!origImg.src || origImg.src === '' || origLink.style.display === 'none') return;
 
-            var extCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
-            deskPromoWrap.innerHTML = '';
-
-            var dwLabel = document.createElement('div');
-            dwLabel.className = extCls.fsTag || '';
-            dwLabel.textContent = 'Sponsorowane';
-            deskPromoWrap.appendChild(dwLabel);
-
-            var dwInner = document.createElement('div');
-            dwInner.className = extCls.fsIn || '';
+            topBarSlot.innerHTML = '';
 
             var dwLink = document.createElement('a');
             dwLink.href = origLink.href;
             dwLink.target = '_blank';
             dwLink.rel = 'noopener';
+            dwLink.style.cssText = 'display:block;line-height:0;text-decoration:none';
 
             var dwImg = document.createElement('img');
             dwImg.src = origImg.src;
             dwImg.alt = '';
+            dwImg.style.cssText = 'display:block;height:90px;width:auto;max-width:728px';
 
             dwLink.appendChild(dwImg);
-            dwInner.appendChild(dwLink);
-            deskPromoWrap.appendChild(dwInner);
+            topBarSlot.appendChild(dwLink);
+            topBarSlot.classList.add('jg-top-bar-banner-visible');
+
+            // Extract dominant colour from banner image and apply a lightened border
+            function jgApplyBannerBorder(img) {
+              try {
+                var canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                var r = 0, g = 0, b = 0, count = 0;
+                // Sample ~500 evenly-spaced pixels for speed
+                var step = Math.max(1, Math.floor(data.length / (4 * 500)));
+                for (var i = 0; i < data.length; i += 4 * step) {
+                  r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
+                }
+                r = Math.round(r / count);
+                g = Math.round(g / count);
+                b = Math.round(b / count);
+                // Mix with white at 55% to make it clearly lighter than the original
+                r = Math.round(r + (255 - r) * 0.55);
+                g = Math.round(g + (255 - g) * 0.55);
+                b = Math.round(b + (255 - b) * 0.55);
+                topBarSlot.style.borderColor = 'rgb(' + r + ',' + g + ',' + b + ')';
+              } catch (e) {
+                topBarSlot.style.borderColor = 'rgba(255,255,255,0.45)';
+              }
+            }
+
+            if (dwImg.complete && dwImg.naturalWidth > 0) {
+              jgApplyBannerBorder(dwImg);
+            } else {
+              dwImg.addEventListener('load', function() { jgApplyBannerBorder(dwImg); });
+            }
 
             var extCfg = window.JG_EXT_CFG || {};
             var dwAjaxUrl = extCfg.ajax || '';
@@ -3885,28 +3900,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 navigator.sendBeacon(dwAjaxUrl, fd);
               }
             });
-
-            // Position banner: 8px below filter bar, 8px to the right of the
-            // left-side controls (zoom + fullscreen + map/satellite toggle).
-            // CSS class has transform:translateX(-50%) — override to none so the
-            // left value is the actual left edge, not the center anchor point.
-            deskPromoWrap.style.setProperty('position', 'absolute', 'important');
-            deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
-            deskPromoWrap.style.setProperty('right', 'auto', 'important');
-            deskPromoWrap.style.setProperty('transform', 'none', 'important');
-            var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
-            var dwFilterH = dwFiltersWrapper ? dwFiltersWrapper.getBoundingClientRect().height : 44;
-            deskPromoWrap.style.setProperty('top', (10 + dwFilterH + 10) + 'px', 'important');
-            var dwLeftCtrl = elMap.querySelector('.leaflet-top.leaflet-left');
-            if (dwLeftCtrl) {
-              var dwMapRect = elMap.getBoundingClientRect();
-              var dwCtrlRect = dwLeftCtrl.getBoundingClientRect();
-              deskPromoWrap.style.setProperty('left', (dwCtrlRect.right - dwMapRect.left + 10) + 'px', 'important');
-            } else {
-              deskPromoWrap.style.setProperty('left', '10px', 'important');
-            }
-
-            deskPromoWrap.style.display = '';
           }
 
           // Returns a latlng shifted so that, when used as the Leaflet map centre,
@@ -3980,10 +3973,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             // Show the banner after a short delay. The banner data (origImg.src)
             // is loaded asynchronously, so retry until it appears (up to ~15 s).
             setTimeout(function() { if (isDeskWide && !isFullscreen) dwShowPromo(); }, 700);
-            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 2000);
-            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 5000);
-            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 10000);
-            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 15000);
+            setTimeout(function() { var _s = document.getElementById('jg-top-bar-banner-slot'); if (isDeskWide && !isFullscreen && _s && !_s.innerHTML) dwShowPromo(); }, 2000);
+            setTimeout(function() { var _s = document.getElementById('jg-top-bar-banner-slot'); if (isDeskWide && !isFullscreen && _s && !_s.innerHTML) dwShowPromo(); }, 5000);
+            setTimeout(function() { var _s = document.getElementById('jg-top-bar-banner-slot'); if (isDeskWide && !isFullscreen && _s && !_s.innerHTML) dwShowPromo(); }, 10000);
+            setTimeout(function() { var _s = document.getElementById('jg-top-bar-banner-slot'); if (isDeskWide && !isFullscreen && _s && !_s.innerHTML) dwShowPromo(); }, 15000);
             setTimeout(function() {
               map.invalidateSize();
               // Pan right by half the sidebar width so the initial view is centred
@@ -4047,9 +4040,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               dwPlaceholder.parentNode.removeChild(dwPlaceholder);
             }
 
-            // Hide and clear the floating banner
+            // Hide and clear the floating banner (deskPromoWrap kept empty; top bar slot cleared)
             deskPromoWrap.style.display = 'none';
             deskPromoWrap.innerHTML = '';
+            var _tbSlot = document.getElementById('jg-top-bar-banner-slot');
+            if (_tbSlot) { _tbSlot.innerHTML = ''; _tbSlot.classList.remove('jg-top-bar-banner-visible'); _tbSlot.style.borderColor = ''; }
           }
 
           // Recalculate on window resize
