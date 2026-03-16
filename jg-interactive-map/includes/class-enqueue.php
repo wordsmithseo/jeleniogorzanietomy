@@ -41,6 +41,9 @@ class JG_Map_Enqueue {
         // Add custom top bar to the page
         add_action('wp_body_open', array($this, 'render_top_bar'), 10);
 
+        // Immediately hide Elementor site header when map is present (prevents FOUC flash)
+        add_action('wp_head', array($this, 'hide_elementor_header_early'), 0);
+
         // Hide register button on Elementor maintenance screen
         add_action('wp_head', array($this, 'hide_register_on_maintenance'));
 
@@ -925,6 +928,10 @@ class JG_Map_Enqueue {
      * Preconnect to map tile CDNs so the TCP/TLS handshake is done
      * before Leaflet requests the first tile (saves ~100ms per provider).
      */
+    public function hide_elementor_header_early() {
+        echo '<style>body:has(#jg-map-wrap) .elementor-location-header{display:none!important}body:has(#jg-map-wrap) header.elementor-section{display:none!important}</style>' . "\n";
+    }
+
     public function add_tile_preconnect() {
         echo '<link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin>' . "\n";
         echo '<link rel="dns-prefetch" href="https://basemaps.cartocdn.com">' . "\n";

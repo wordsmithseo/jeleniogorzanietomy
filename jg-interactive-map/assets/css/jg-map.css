@@ -8192,6 +8192,25 @@ body.jg-fullscreen-active .jg-modal-bg {
    MOBILE REDESIGN — Full-height map + floating overlays
    ══════════════════════════════════════════════════════════════════════════ */
 
+/* ── 0. Full-viewport map on mobile — body fills 100dvh, map inherits height ── */
+/* 100dvh (dynamic viewport height) updates on orientation change automatically */
+@media (max-width: 768px) {
+  body:has(#jg-map-wrap) {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+  /* Elementor containers that wrap the map should fill available height */
+  body:has(#jg-map-wrap) .elementor,
+  body:has(#jg-map-wrap) .elementor-section,
+  body:has(#jg-map-wrap) .e-con,
+  body:has(#jg-map-wrap) .e-con-inner {
+    height: calc(100dvh - 52px) !important;
+    max-height: calc(100dvh - 52px) !important;
+    overflow: hidden !important;
+  }
+}
+
 /* ── 1. Hide top bar AND Elementor/theme site header on mobile when map is present ── */
 @media (max-width: 768px) {
   body:has(#jg-map-wrap) .jg-custom-top-bar,
@@ -8240,6 +8259,7 @@ body:has(#jg-map-wrap) .elementor-location-header {
   .jg-mobile-user-panel {
     /* Hard reset – prevent Elementor/theme from bleeding styles in */
     all: unset !important;
+    pointer-events: auto !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
@@ -8395,6 +8415,7 @@ body:has(#jg-map-wrap) .elementor-location-header {
   #jg-mobile-controls-row {
     /* Hard reset – prevent Elementor/theme from bleeding any styles in */
     all: unset !important;
+    pointer-events: auto !important;
     display: flex !important;
     align-items: center !important;
     gap: 6px !important;

@@ -3143,6 +3143,25 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         mobSbSuggestions.addEventListener('mousedown', function(e) { e.stopPropagation(); });
       }
 
+      // ── Orientation change: re-fit map after portrait/landscape switch ─────
+      if (isMobile) {
+        window.addEventListener('orientationchange', function() {
+          // Wait for the browser to finish reflowing after rotation
+          setTimeout(function() {
+            map.invalidateSize();
+            // Re-position filter panel if open
+            if (typeof mcrFilterPanel !== 'undefined' && mcrFilterPanel &&
+                mcrFilterPanel.style.display !== 'none' &&
+                typeof mcrRow !== 'undefined' && mcrRow) {
+              var rowRect = mcrRow.getBoundingClientRect();
+              var mapRect = elMap.getBoundingClientRect();
+              var topOffset = rowRect.bottom - mapRect.top + 8;
+              mcrFilterPanel.style.setProperty('top', topOffset + 'px', 'important');
+            }
+          }, 350);
+        });
+      }
+
       // Fullscreen control - positioned next to zoom controls (topleft)
       var isFullscreen = false;
       var isDeskWide = false;
@@ -3737,7 +3756,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             // getBoundingClientRect().bottom value (works for sticky, fixed, or
             // static headers and correctly accumulates stacked bars like #jg-top-bar
             // + .elementor-location-header).
-            var hSel = ['#jg-top-bar', '.elementor-location-header', 'header.elementor-section', '#masthead', '.site-header', 'header'];
+            var hSel = ['#jg-custom-top-bar', '.elementor-location-header', 'header.elementor-section', '#masthead', '.site-header', 'header'];
             var hMax = 0;
             for (var _hi = 0; _hi < hSel.length; _hi++) {
               var _hEl = document.querySelector(hSel[_hi]);
