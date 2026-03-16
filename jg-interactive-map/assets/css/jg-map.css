@@ -345,41 +345,6 @@
   cursor: default;
 }
 
-/* ── Sidebar collapse/expand tab ── */
-#jg-sidebar-toggle-tab {
-  position: fixed;
-  top: 50vh;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 60px;
-  background: #8d2324;
-  border: none;
-  border-radius: 6px 0 0 6px;
-  cursor: pointer;
-  display: none; /* shown via JS on desktop */
-  align-items: center;
-  justify-content: center;
-  z-index: 9990;
-  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.3);
-  transition: background 0.2s, right 0.3s ease, opacity 0.2s;
-  opacity: 0;
-  padding: 0;
-}
-
-#jg-sidebar-toggle-tab svg {
-  display: block;
-  flex-shrink: 0;
-}
-
-#jg-sidebar-toggle-tab:hover {
-  background: #a02829;
-}
-
-@media (min-width: 769px) {
-  #jg-sidebar-toggle-tab {
-    display: flex;
-  }
-}
 
 .jg-wrap {
   position: relative;
