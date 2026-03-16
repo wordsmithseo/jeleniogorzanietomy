@@ -955,7 +955,8 @@ class JG_Map_Enqueue {
     }
 
     public function hide_elementor_header_early() {
-        // Hide theme site-header globally (plugin nav bar replaces it on every page).
+        // Hide theme site-header and site-footer globally (plugin nav bar replaces the
+        // header on every page; no custom footer is needed either).
         // #wpadminbar is hidden only on the map page so admins retain it elsewhere.
         $hide_adminbar = $this->is_map_page()
             ? '#wpadminbar{display:none!important}html{margin-top:0!important}'
@@ -965,6 +966,10 @@ class JG_Map_Enqueue {
             '.site-header{display:none!important}' .
             '.elementor-location-header{display:none!important}' .
             'header.elementor-section[class*="elementor-location"]{display:none!important}' .
+            '#site-footer{display:none!important}' .
+            '.site-footer{display:none!important}' .
+            '.elementor-location-footer{display:none!important}' .
+            'footer.elementor-section[class*="elementor-location"]{display:none!important}' .
             $hide_adminbar .
             '</style>' . "\n";
     }
