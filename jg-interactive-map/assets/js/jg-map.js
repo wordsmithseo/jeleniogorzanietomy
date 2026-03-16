@@ -3570,18 +3570,23 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
             });
 
-            // Position banner just below the floating filter bar.
-            // deskPromoWrap is position:absolute inside elMap (Leaflet container).
-            // elMap starts at mapWrap's top (filter wrapper is position:absolute,
-            // not in flex flow, so no in-flow children precede elMap).
-            // Filter wrapper CSS: top:8px inside mapWrap = 8px from elMap's top.
-            // We need only the filter wrapper's HEIGHT (not its position) so
-            // getBoundingClientRect().height is reliable regardless of layout state.
+            // Position banner at top-left of the map, just to the right of the
+            // Leaflet top-left controls (zoom + fullscreen + map/satellite toggle).
             deskPromoWrap.style.setProperty('position', 'absolute', 'important');
             deskPromoWrap.style.setProperty('bottom', 'auto', 'important');
-            var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
-            var dwFilterH = dwFiltersWrapper ? dwFiltersWrapper.getBoundingClientRect().height : 44;
-            deskPromoWrap.style.setProperty('top', (8 + dwFilterH + 8) + 'px', 'important');
+            deskPromoWrap.style.setProperty('right', 'auto', 'important');
+            var dwLeftCtrl = elMap.querySelector('.leaflet-top.leaflet-left');
+            var dwMapRect = elMap.getBoundingClientRect();
+            if (dwLeftCtrl) {
+              var dwCtrlRect = dwLeftCtrl.getBoundingClientRect();
+              deskPromoWrap.style.setProperty('top', (dwCtrlRect.top - dwMapRect.top) + 'px', 'important');
+              deskPromoWrap.style.setProperty('left', (dwCtrlRect.right - dwMapRect.left + 8) + 'px', 'important');
+            } else {
+              var dwFiltersWrapper = document.getElementById('jg-map-filters-wrapper');
+              var dwFilterH = dwFiltersWrapper ? dwFiltersWrapper.getBoundingClientRect().height : 44;
+              deskPromoWrap.style.setProperty('top', (8 + dwFilterH + 8) + 'px', 'important');
+              deskPromoWrap.style.setProperty('left', '8px', 'important');
+            }
 
             deskPromoWrap.style.display = '';
           }
