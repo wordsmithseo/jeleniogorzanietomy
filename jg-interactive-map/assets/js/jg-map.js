@@ -3128,6 +3128,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           setTimeout(function() {
             window.scrollTo(0, 0);
             map.invalidateSize();
+            // Re-fire resize with updated dimensions so the desk-wide resize
+            // handler picks up the correct innerWidth after orientation change.
+            // On iOS Safari, the 'resize' event fires before layout updates, so
+            // the handler may see stale landscape dimensions and fail to call
+            // exitDeskWide() when rotating back to portrait.
+            window.dispatchEvent(new Event('resize'));
             // Re-position filter panel if open
             if (typeof mcrFilterPanel !== 'undefined' && mcrFilterPanel &&
                 mcrFilterPanel.style.display !== 'none' &&
@@ -3783,6 +3789,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }
 
           function dwShowPromo() {
+            // Never show the floating banner when in portrait/mobile layout —
+            // guards against stale setTimeout callbacks firing after exitDeskWide.
+            if (window.innerWidth <= 768) return;
             var $dwWrap = document.querySelector('[data-cid]');
             if (!$dwWrap) return;
             var lidAttr = $dwWrap.getAttribute('data-lid');
