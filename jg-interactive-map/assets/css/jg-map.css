@@ -8505,6 +8505,72 @@ body.jg-fullscreen-active .jg-modal-bg {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   }
 
+  /* ── Mobile user panel: two-row layout ── */
+  .jg-mobile-user-panel {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+  }
+  .jg-mup-main-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+  }
+  /* Moderation notifications row */
+  .jg-mup-notifications {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(255,255,255,0.18);
+    flex-wrap: wrap;
+  }
+  .jg-mup-notifications--empty {
+    display: none !important;
+  }
+  .jg-mup-notif-btn {
+    all: unset;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    transition: background 0.15s;
+  }
+  .jg-mup-notif-btn:active {
+    background: rgba(255,255,255,0.28);
+  }
+  .jg-mup-notif-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    min-width: 16px;
+    height: 16px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    pointer-events: none;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    line-height: 1;
+  }
+
   /* Prestige level colours for mobile user panel */
   .jg-level-prestige-bronze .jg-mup-level-num  { color: #cd7f32; }
   .jg-level-prestige-bronze .jg-mup-xp-fill    { background: linear-gradient(90deg, #cd7f32, #a0522d); }

@@ -2759,8 +2759,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var bannerContainer = document.createElement('div');
             bannerContainer.className = 'jg-mobile-banner-slot';
             bannerContainer.appendChild(slotWrap);
-            // Insert before controls row so banner appears above it
-            mobileOverlays.insertBefore(bannerContainer, mcrRow);
+            // Append after controls row so banner appears below it
+            mobileOverlays.appendChild(bannerContainer);
           }
         });
 
