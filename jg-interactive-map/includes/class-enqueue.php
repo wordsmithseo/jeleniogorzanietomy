@@ -718,14 +718,38 @@ class JG_Map_Enqueue {
         <!-- Custom Top Bar -->
         <div id="jg-custom-top-bar" class="jg-custom-top-bar">
             <div class="jg-top-bar-left">
-                <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-top-bar-logo-link" aria-label="Strona główna">
-                    <span class="jg-top-bar-logo-wrap">
-                        <img src="https://jeleniogorzanietomy.pl/wp-content/uploads/2025/10/jg-logo-1.svg" alt="Jelenia Góra to my" class="jg-top-bar-logo-img">
-                        <span class="jg-top-bar-logo-overlay"></span>
-                    </span>
-                </a>
+                <?php
+                $top_bar_menu_items_left = get_option('jg_map_nav_menu', array());
+                ?>
+                <div class="jg-top-bar-menu-wrap">
+                    <button class="jg-top-bar-menu-btn" id="jg-top-bar-menu-btn" aria-haspopup="true" aria-expanded="false" type="button">
+                        Menu <span class="jg-top-bar-menu-chevron">&#9660;</span>
+                    </button>
+                    <div class="jg-top-bar-menu-dropdown" id="jg-top-bar-menu-dropdown" aria-hidden="true">
+                        <?php if (!empty($top_bar_menu_items_left)) : ?>
+                            <?php foreach ($top_bar_menu_items_left as $item) :
+                                $mi_label  = isset($item['label']) ? $item['label'] : '';
+                                $mi_url    = isset($item['url'])   ? $item['url']   : '#';
+                                $mi_target = !empty($item['new_tab']) ? '_blank' : '_self';
+                                $mi_rel    = $mi_target === '_blank' ? 'noopener noreferrer' : '';
+                            ?>
+                                <a href="<?php echo esc_url($mi_url); ?>"
+                                   class="jg-top-bar-menu-item"
+                                   target="<?php echo esc_attr($mi_target); ?>"
+                                   <?php echo $mi_rel ? 'rel="' . esc_attr($mi_rel) . '"' : ''; ?>>
+                                    <?php echo esc_html($mi_label); ?>
+                                </a>
+                            <?php endforeach; ?>
+                        <?php else : ?>
+                            <span class="jg-top-bar-menu-item jg-top-bar-menu-empty">Brak pozycji menu</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
             <div class="jg-top-bar-right">
+                <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-top-bar-logo-link" aria-label="Strona główna">
+                    <img src="https://jeleniogorzanietomy.pl/wp-content/uploads/2025/10/jg-logo-1.svg" alt="Jelenia Góra to my" class="jg-top-bar-logo-img">
+                </a>
                 <?php if (is_user_logged_in()) : ?>
                     <?php
                     $current_user = wp_get_current_user();
@@ -828,33 +852,6 @@ class JG_Map_Enqueue {
                     $xp_needed = $next_level_xp - $current_level_xp;
                     $xp_progress = $xp_needed > 0 ? min(100, round(($xp_in_level / $xp_needed) * 100)) : 100;
                     ?>
-                    <?php
-                    $top_bar_menu_items = get_option('jg_map_nav_menu', array());
-                    ?>
-                    <div class="jg-top-bar-menu-wrap">
-                        <button class="jg-top-bar-btn jg-top-bar-menu-btn" id="jg-top-bar-menu-btn" aria-haspopup="true" aria-expanded="false" type="button">
-                            Menu <span class="jg-top-bar-menu-chevron">&#9660;</span>
-                        </button>
-                        <div class="jg-top-bar-menu-dropdown" id="jg-top-bar-menu-dropdown" aria-hidden="true">
-                            <?php if (!empty($top_bar_menu_items)) : ?>
-                                <?php foreach ($top_bar_menu_items as $item) :
-                                    $mi_label  = isset($item['label']) ? $item['label'] : '';
-                                    $mi_url    = isset($item['url'])   ? $item['url']   : '#';
-                                    $mi_target = !empty($item['new_tab']) ? '_blank' : '_self';
-                                    $mi_rel    = $mi_target === '_blank' ? 'noopener noreferrer' : '';
-                                ?>
-                                    <a href="<?php echo esc_url($mi_url); ?>"
-                                       class="jg-top-bar-menu-item"
-                                       target="<?php echo esc_attr($mi_target); ?>"
-                                       <?php echo $mi_rel ? 'rel="' . esc_attr($mi_rel) . '"' : ''; ?>>
-                                        <?php echo esc_html($mi_label); ?>
-                                    </a>
-                                <?php endforeach; ?>
-                            <?php else : ?>
-                                <span class="jg-top-bar-menu-item jg-top-bar-menu-empty">Brak pozycji menu</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
                     <span class="jg-top-bar-user">
                         <strong><a href="#" id="jg-my-profile-link" style="color:inherit;text-decoration:none;cursor:pointer" data-user-id="<?php echo esc_attr($current_user->ID); ?>"><?php echo esc_html($current_user->display_name); ?></a></strong><?php echo $role_icon; ?>
                     </span>
