@@ -1,0 +1,730 @@
+<!--
+  ============================================================
+  ARTYKUŁ SEO – Grande Roma, Cieplice Śląskie-Zdrój
+  JeleniogorzaNieTomy.pl
+
+  Yoast SEO checklist:
+    • Focus keyphrase : grande roma cieplice
+    • Meta title      : Grande Roma Cieplice – pizza, pasta, menu, opinie 2026 (55 zn.)
+    • Meta description: Restauracja Grande Roma w Cieplicach Śląskich-Zdroju – włoska
+                        kuchnia, pizza z pieca, pasta i dania główne. Menu, opinie
+                        i jak dojść. (149 zn.)
+    • Slug            : /grande-roma-cieplice/
+    • Keyphrase w H1  : ✔  |  w pierwszym akapicie : ✔
+    • Podtytuły z keph: ✔  |  Alt obrazków         : ✔
+    • Linki wewnętrzne: ✔ (do mapy, do pinezki)
+    • Linki zewnętrzne: —
+    • Schema          : Restaurant (JSON-LD, poniżej <script>)
+
+  Wklej całą zawartość do widgetu "HTML" w Elementorze.
+  ============================================================
+-->
+
+<!-- ══ SCHEMA – Restaurant ════════════════════════════════════════════ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Restaurant",
+  "name": "Grande Roma",
+  "description": "Włoska restauracja i pizzeria w Cieplicach Śląskich-Zdroju (Jelenia Góra). Pizza z pieca na cienkim cieście, pasta, dania główne i sałatki. Przytulny klimat, dobra relacja cena/jakość, w pobliżu Parku Zdrojowego.",
+  "url": "https://jeleniogorzanietomy.pl/grande-roma-cieplice/",
+  "image": "https://jeleniogorzanietomy.pl/wp-content/uploads/2026/03/Projekt-bez-nazwy.jpg",
+  "servesCuisine": ["Włoska", "Pizza", "Pasta"],
+  "priceRange": "$$",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Jelenia Góra",
+    "addressRegion": "Dolny Śląsk",
+    "addressCountry": "PL"
+  },
+  "hasMap": "https://jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/",
+  "sameAs": [
+    "https://jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/"
+  ]
+}
+</script>
+
+<!-- ══ FAQ SCHEMA ══════════════════════════════════════════════════════ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Co można zjeść w Grande Roma w Cieplicach?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Grande Roma serwuje pizze na cienkim, chrupiącym cieście (m.in. Margherita, Diavola, z szynką parmeńską), klasyczne makarony (Spaghetti Carbonara bez śmietany, Tagliatelle z kurczakiem i szpinakiem, Lasagne), dania główne z kurczaka oraz świeże sałatki."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Gdzie dokładnie jest restauracja Grande Roma w Cieplicach?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Grande Roma znajduje się w Cieplicach Śląskich-Zdroju, dzielnicy Jeleniej Góry. Dokładną lokalizację i trasę dojścia znajdziesz na karcie miejsca: jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Czy w Grande Roma można przyjść po wycieczce w górach?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Tak. Goście chwalą Grande Romę właśnie za brak dress code'u i przyjazną atmosferę. Można przyjść w sportowym ubraniu prosto po wycieczce w góry, nikt nie będzie patrzył krzywo."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Czy pizza w Grande Roma jest robiona w piecu?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Tak, pizze w Grande Roma są pieczone w piecu. Ciasto jest cienkie i chrupiące."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Czy jedzenie w Grande Roma jest drogie?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Grande Roma jest znana z dobrej relacji ceny do jakości, szczególnie na tle typowo turystycznych lokali w Cieplicach. Porcje są solidne, warto to wziąć pod uwagę przy zamawianiu."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Jakie są godziny otwarcia Grande Roma?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Aktualne godziny otwarcia Grande Roma znajdziesz na karcie miejsca: jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/"
+      }
+    }
+  ]
+}
+</script>
+
+<!-- ══ STYLE (ID-scoped, nie koliduje z motywem) ══════════════════════ -->
+<style>
+  #jg-grande-roma-wrap {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: #111827;
+    line-height: 1.7;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  #jg-grande-roma-wrap * { box-sizing: border-box; }
+  #jg-grande-roma-wrap a { color: #8d2324; }
+  #jg-grande-roma-wrap a:hover { color: #6b1a1a; }
+
+  /* ── HERO ─────────────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__hero {
+    background: linear-gradient(135deg, #6b2010 0%, #3d1008 100%);
+    border-radius: 16px;
+    padding: 56px 40px;
+    text-align: center;
+    margin-bottom: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  #jg-grande-roma-wrap .gr__hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  #jg-grande-roma-wrap .gr__hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  #jg-grande-roma-wrap .gr__hero h1 {
+    font-size: clamp(24px, 4vw, 42px);
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 16px;
+    line-height: 1.2;
+  }
+  #jg-grande-roma-wrap .gr__hero p {
+    font-size: 17px;
+    color: rgba(255,255,255,0.88);
+    max-width: 620px;
+    margin: 0 auto 32px;
+  }
+  #jg-grande-roma-wrap .gr__hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 36px;
+    flex-wrap: wrap;
+  }
+  #jg-grande-roma-wrap .gr__stat { text-align: center; }
+  #jg-grande-roma-wrap .gr__stat-icon {
+    display: block;
+    font-size: 28px;
+    margin-bottom: 6px;
+    line-height: 1;
+  }
+  #jg-grande-roma-wrap .gr__stat-label {
+    font-size: 13px;
+    color: rgba(255,255,255,0.85);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── INTRO ────────────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__intro {
+    background: #f9fafb;
+    border-left: 4px solid #8d2324;
+    border-radius: 0 12px 12px 0;
+    padding: 24px 28px;
+    margin-bottom: 48px;
+    font-size: 16px;
+    color: #374151;
+  }
+  #jg-grande-roma-wrap .gr__intro p { margin: 0; }
+
+  /* ── SPIS TREŚCI ──────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__toc {
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 48px;
+  }
+  #jg-grande-roma-wrap .gr__toc-title {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #6b7280;
+    margin: 0 0 14px;
+  }
+  #jg-grande-roma-wrap .gr__toc ol {
+    margin: 0;
+    padding-left: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 6px 24px;
+  }
+  #jg-grande-roma-wrap .gr__toc li { font-size: 15px; }
+  #jg-grande-roma-wrap .gr__toc a { color: #8d2324; text-decoration: none; font-weight: 500; }
+  #jg-grande-roma-wrap .gr__toc a:hover { text-decoration: underline; }
+
+  /* ── SEKCJE ───────────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__section { margin-bottom: 56px; }
+  #jg-grande-roma-wrap .gr__section-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 6px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #8d2324;
+    display: inline-block;
+  }
+  #jg-grande-roma-wrap .gr__section-sub {
+    font-size: 15px;
+    color: #6b7280;
+    margin: 0 0 28px;
+  }
+
+  /* ── ARTYKUŁ BODY ─────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__body {
+    font-size: 16px;
+    color: #374151;
+  }
+  #jg-grande-roma-wrap .gr__body h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 32px 0 10px;
+  }
+  #jg-grande-roma-wrap .gr__body p { margin: 0 0 16px; }
+
+  /* ── ZDJĘCIE ──────────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__photo {
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 0 0 32px;
+  }
+  #jg-grande-roma-wrap .gr__photo img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ── KARTY MENU ───────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+  #jg-grande-roma-wrap .gr__menu-card {
+    border: 2px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 22px 20px;
+    background: #fff;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  #jg-grande-roma-wrap .gr__menu-card:hover {
+    box-shadow: 0 8px 32px rgba(141,35,36,0.10);
+    border-color: #8d2324;
+  }
+  #jg-grande-roma-wrap .gr__menu-card--featured {
+    border-color: #8d2324;
+    background: linear-gradient(180deg,#fff9f9,#fff);
+  }
+  #jg-grande-roma-wrap .gr__menu-icon { font-size: 36px; display: block; margin-bottom: 12px; line-height: 1; }
+  #jg-grande-roma-wrap .gr__menu-card h3 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 8px;
+  }
+  #jg-grande-roma-wrap .gr__menu-desc { font-size: 14px; color: #4b5563; margin: 0 0 12px; line-height: 1.6; }
+  #jg-grande-roma-wrap .gr__menu-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  #jg-grande-roma-wrap .gr__menu-items li {
+    font-size: 13px;
+    color: #6b7280;
+    padding: 3px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  #jg-grande-roma-wrap .gr__menu-items li:last-child { border-bottom: none; }
+  #jg-grande-roma-wrap .gr__menu-items li::before { content: '→ '; color: #8d2324; font-weight: 700; }
+
+  /* ── OPINIE ───────────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__opinions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+  #jg-grande-roma-wrap .gr__opinion-card {
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 20px 18px;
+  }
+  #jg-grande-roma-wrap .gr__opinion-icon { font-size: 28px; display: block; margin-bottom: 10px; }
+  #jg-grande-roma-wrap .gr__opinion-card h3 {
+    font-size: 15px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 8px;
+  }
+  #jg-grande-roma-wrap .gr__opinion-card p { font-size: 13px; color: #6b7280; margin: 0; }
+
+  /* ── TIP ───────────────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__tip {
+    background: #fff9f9;
+    border: 1px solid #fca5a5;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-size: 15px;
+    color: #374151;
+  }
+  #jg-grande-roma-wrap .gr__tip strong { color: #8d2324; }
+
+  /* ── INFO BOX ──────────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__infobox {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-size: 15px;
+    color: #1e40af;
+  }
+  #jg-grande-roma-wrap .gr__infobox strong { color: #1e3a8a; }
+
+  /* ── FAQ ───────────────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__faq-item { border-bottom: 1px solid #e5e7eb; }
+  #jg-grande-roma-wrap .gr__faq-q {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 18px 0;
+    text-align: left;
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-family: inherit;
+  }
+  #jg-grande-roma-wrap .gr__faq-q:hover { color: #8d2324; }
+  #jg-grande-roma-wrap .gr__faq-q .gr-arrow {
+    flex-shrink: 0;
+    font-size: 18px;
+    transition: transform .2s;
+    color: #8d2324;
+  }
+  #jg-grande-roma-wrap .gr__faq-a {
+    font-size: 14px;
+    color: #4b5563;
+    padding: 0 0 18px;
+    display: none;
+    line-height: 1.7;
+  }
+  #jg-grande-roma-wrap .gr__faq-item.open .gr__faq-a { display: block; }
+  #jg-grande-roma-wrap .gr__faq-item.open .gr-arrow { transform: rotate(180deg); }
+
+  /* ── CTA ───────────────────────────────────────────────────── */
+  #jg-grande-roma-wrap .gr__cta {
+    background: linear-gradient(135deg, #8d2324 0%, #6b1a1a 100%);
+    border-radius: 16px;
+    padding: 48px 40px;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  #jg-grande-roma-wrap .gr__cta h2 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 12px;
+  }
+  #jg-grande-roma-wrap .gr__cta p {
+    font-size: 16px;
+    color: rgba(255,255,255,0.88);
+    margin: 0 0 28px;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #jg-grande-roma-wrap .gr__cta-btn {
+    display: inline-block;
+    background: #fff;
+    color: #8d2324;
+    font-size: 16px;
+    font-weight: 800;
+    padding: 15px 36px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+  }
+  #jg-grande-roma-wrap .gr__cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    color: #6b1a1a;
+  }
+
+  @media (max-width: 600px) {
+    #jg-grande-roma-wrap .gr__hero { padding: 40px 20px; }
+    #jg-grande-roma-wrap .gr__hero-stats { gap: 24px; }
+    #jg-grande-roma-wrap .gr__cta { padding: 36px 20px; }
+    #jg-grande-roma-wrap .gr__section-title { font-size: 22px; }
+    #jg-grande-roma-wrap .gr__toc ol { grid-template-columns: 1fr; }
+  }
+</style>
+
+<!-- ══ TREŚĆ ══════════════════════════════════════════════════════════ -->
+<div id="jg-grande-roma-wrap">
+
+  <!-- HERO -->
+  <div class="gr__hero">
+    <span class="gr__hero-badge">Restauracja w Cieplicach 2026</span>
+    <h1>Grande Roma w Cieplicach<br>– pizza, pasta, włoska kuchnia</h1>
+    <p>Włoska pizzeria i restauracja w sercu Cieplic Śląskich-Zdroju. Pizza z pieca na cienkim cieście, autentyczna pasta i dobra relacja ceny do jakości. Idealne miejsce po spacerze w Parku Zdrojowym.</p>
+    <div class="gr__hero-stats">
+      <div class="gr__stat">
+        <span class="gr__stat-icon">🍕</span>
+        <span class="gr__stat-label">Kuchnia<br>włoska</span>
+      </div>
+      <div class="gr__stat">
+        <span class="gr__stat-icon">📍</span>
+        <span class="gr__stat-label">Cieplice<br>Śląskie-Zdrój</span>
+      </div>
+      <div class="gr__stat">
+        <span class="gr__stat-icon">💰</span>
+        <span class="gr__stat-label">Dobra relacja<br>cena/jakość</span>
+      </div>
+      <div class="gr__stat">
+        <span class="gr__stat-icon">🏔️</span>
+        <span class="gr__stat-label">Blisko<br>Parku Zdrojowego</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTRO -->
+  <div class="gr__intro">
+    <p><strong>Grande Roma</strong> to włoska restauracja i pizzeria w Cieplicach Śląskich-Zdroju, dzielnicy Jeleniej Góry. Lokal z przytulnym, domowym wnętrzem, gdzie zapach świeżo pieczonego ciasta wita już od progu. Jeśli szukasz miejsca na solidny posiłek po spacerze w Parku Zdrojowym albo po zejściu z trasy na Zamek Chojnik, Grande Roma jest jednym z lepszych wyborów w tej części miasta. Sprawdź menu, opinie i <a href="https://jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/" title="Grande Roma – karta miejsca z mapą dojazdu">kartę miejsca z dokładną lokalizacją</a>.</p>
+  </div>
+
+  <!-- SPIS TREŚCI -->
+  <div class="gr__toc">
+    <p class="gr__toc-title">Spis treści</p>
+    <ol>
+      <li><a href="#o-restauracji">O Grande Roma</a></li>
+      <li><a href="#menu">Menu – co zjeść?</a></li>
+      <li><a href="#opinie">Opinie i atmosfera</a></li>
+      <li><a href="#godziny">Godziny otwarcia</a></li>
+      <li><a href="#dojazd">Jak dojść, lokalizacja</a></li>
+      <li><a href="#wskazowki">Praktyczne wskazówki</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ol>
+  </div>
+
+  <!-- SEKCJA 1: O RESTAURACJI -->
+  <div class="gr__section" id="o-restauracji">
+    <h2 class="gr__section-title">Grande Roma w Cieplicach – o restauracji</h2>
+    <p class="gr__section-sub">Włoska enklawa w uzdrowiskowej dzielnicy Jeleniej Góry.</p>
+
+    <div class="gr__body">
+      <p>
+        Cieplice Śląskie-Zdrój mają sporo restauracji nastawionych na turystów, z cenami, które to odzwierciedlają. Grande Roma wyłamuje się z tego schematu. To miejsce, które działa na zasadzie prostego włoskiego lokalu: nie ma tu wykrochmalonego personelu ani menu z ozdobnymi czcionkami na dwudziestu stronach. Jest za to pizza, która pachnie piekarnią, makaron zrobiony jak trzeba i obsługa, która nie sprawia wrażenia, że robi ci przysługę.
+      </p>
+      <p>
+        Lokal mieści się w strategicznym miejscu dla wszystkich, którzy spacerują po Parku Zdrojowym lub wracają z wycieczki w okolice Karkonoszy. Klimat wnętrza jest przytulny i bez pretensji, co dla wielu odwiedzających jest dokładnie tym, czego szukają po kilku godzinach w terenie.
+      </p>
+    </div>
+
+    <div class="gr__photo">
+      <img
+        src="https://jeleniogorzanietomy.pl/wp-content/uploads/2026/03/Projekt-bez-nazwy-1024x538.jpg"
+        srcset="https://jeleniogorzanietomy.pl/wp-content/uploads/2026/03/Projekt-bez-nazwy-300x158.jpg 300w,
+                https://jeleniogorzanietomy.pl/wp-content/uploads/2026/03/Projekt-bez-nazwy-768x403.jpg 768w,
+                https://jeleniogorzanietomy.pl/wp-content/uploads/2026/03/Projekt-bez-nazwy-1024x538.jpg 1024w,
+                https://jeleniogorzanietomy.pl/wp-content/uploads/2026/03/Projekt-bez-nazwy.jpg 1200w"
+        sizes="(max-width: 800px) 100vw, 800px"
+        alt="Pizza w restauracji Grande Roma w Cieplicach Śląskich-Zdroju, Jelenia Góra"
+        width="800"
+        height="420"
+        loading="lazy"
+      />
+    </div>
+  </div>
+
+  <!-- SEKCJA 2: MENU -->
+  <div class="gr__section" id="menu">
+    <h2 class="gr__section-title">Menu Grande Roma – co zjeść?</h2>
+    <p class="gr__section-sub">Włoskie klasyki serwowane po domowemu, bez zbędnych udziwnień.</p>
+
+    <div class="gr__menu-grid">
+
+      <div class="gr__menu-card gr__menu-card--featured">
+        <span class="gr__menu-icon">🍕</span>
+        <h3>Pizza z pieca</h3>
+        <p class="gr__menu-desc">Podstawa tutejszej kuchni. Ciasto cienkie i chrupiące, pieczone w piecu. Wybór dodatków od prostych klasyków po bardziej sycące kompozycje.</p>
+        <ul class="gr__menu-items">
+          <li>Margherita</li>
+          <li>Diavola (ostra)</li>
+          <li>Z szynką parmeńską</li>
+          <li>Z rukolą</li>
+        </ul>
+      </div>
+
+      <div class="gr__menu-card">
+        <span class="gr__menu-icon">🍝</span>
+        <h3>Makarony (Pasta)</h3>
+        <p class="gr__menu-desc">Klasyki włoskiej kuchni przygotowywane we właściwy sposób. Carbonara bez śmietany – tak, jak powinna być.</p>
+        <ul class="gr__menu-items">
+          <li>Spaghetti Carbonara</li>
+          <li>Tagliatelle z kurczakiem i szpinakiem</li>
+          <li>Lasagne</li>
+        </ul>
+      </div>
+
+      <div class="gr__menu-card">
+        <span class="gr__menu-icon">🥗</span>
+        <h3>Dania główne i sałatki</h3>
+        <p class="gr__menu-desc">Dla tych, którzy unikają mąki. Soczyste filety z kurczaka i świeże sałatki – idealne przed dalszym zwiedzaniem.</p>
+        <ul class="gr__menu-items">
+          <li>Filet z kurczaka w różnych sosach</li>
+          <li>Sałatka z fetą</li>
+          <li>Sałatka z tuńczykiem</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="gr__tip">
+      <strong>Wskazówka:</strong> Porcje w Grande Romie są naprawdę solidne. Jeśli nie jesteś mocno głodny po wycieczce, rozważ zamówienie jednej pizzy na dwie osoby – porcja to porcja.
+    </div>
+  </div>
+
+  <!-- SEKCJA 3: OPINIE -->
+  <div class="gr__section" id="opinie">
+    <h2 class="gr__section-title">Opinie o Grande Roma</h2>
+    <p class="gr__section-sub">Co mówią goście, którzy tu bywają.</p>
+
+    <div class="gr__body">
+      <p>
+        Grande Roma ma grono wiernych bywalców i łatwo zrozumieć dlaczego. Recenzje konsekwentnie wymieniają trzy rzeczy: uczciwe jedzenie, atmosferę bez pozy i sprawną obsługę, nawet gdy Cieplice są oblegane przez turystów w weekendy.
+      </p>
+    </div>
+
+    <div class="gr__opinions">
+
+      <div class="gr__opinion-card">
+        <span class="gr__opinion-icon">💰</span>
+        <h3>Cena do jakości</h3>
+        <p>Jedno z tych miejsc w Cieplicach, gdzie portfel nie ucierpi tak mocno jak w typowo turystycznych lokalach, a poziom jedzenia pozostaje wysoki.</p>
+      </div>
+
+      <div class="gr__opinion-card">
+        <span class="gr__opinion-icon">🏔️</span>
+        <h3>Bez dress code'u</h3>
+        <p>Można wpaść w sportowym ubraniu prosto po wycieczce w góry. Nikt nie będzie patrzył krzywo. To tutaj jest zasadą, nie wyjątkiem.</p>
+      </div>
+
+      <div class="gr__opinion-card">
+        <span class="gr__opinion-icon">⚡</span>
+        <h3>Sprawna obsługa</h3>
+        <p>Nawet gdy w weekendy Cieplice przeżywają oblężenie, kuchnia stara się, żeby czas oczekiwania nie psuł humoru.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SEKCJA 4: GODZINY -->
+  <div class="gr__section" id="godziny">
+    <h2 class="gr__section-title">Godziny otwarcia Grande Roma</h2>
+    <p class="gr__section-sub">Sprawdź aktualne godziny przed wizytą.</p>
+
+    <div class="gr__infobox">
+      Aktualne godziny otwarcia Grande Roma znajdziesz na <a href="https://jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/" title="Grande Roma – karta miejsca z godzinami otwarcia"><strong>karcie miejsca na jeleniogorzanietomy.pl</strong></a>. Godziny mogą się różnić w zależności od sezonu i dni tygodnia.
+    </div>
+  </div>
+
+  <!-- SEKCJA 5: DOJAZD -->
+  <div class="gr__section" id="dojazd">
+    <h2 class="gr__section-title">Jak dojść do Grande Roma?</h2>
+    <p class="gr__section-sub">Cieplice Śląskie-Zdrój, w pobliżu Parku Zdrojowego.</p>
+
+    <div class="gr__body">
+      <p>
+        Grande Roma leży w Cieplicach Śląskich-Zdroju, uzdrowiskowej dzielnicy Jeleniej Góry. To strategiczny punkt zarówno dla tych, którzy spacerują po Parku Zdrojowym, jak i dla wracających ze szlaku na Zamek Chojnik – Cieplice leżą w połowie drogi między Sobieszowem a centrum Jeleniej Góry.
+      </p>
+      <p>
+        Do Cieplic dojedziesz autobusem MZK z centrum Jeleniej Góry (kilka linii, ok. 15 minut) lub samochodem. Dokładną lokalizację i wskazówki dojazdu znajdziesz poniżej.
+      </p>
+    </div>
+
+    <div class="gr__infobox">
+      📍 <a href="https://jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/" title="Grande Roma na mapie Jeleniej Góry"><strong>Zobacz Grande Roma na mapie i wyznacz trasę</strong></a> – karta miejsca z pinezką na jeleniogorzanietomy.pl.
+    </div>
+  </div>
+
+  <!-- SEKCJA 6: WSKAZÓWKI -->
+  <div class="gr__section" id="wskazowki">
+    <h2 class="gr__section-title">Praktyczne wskazówki</h2>
+    <p class="gr__section-sub">Kilka rzeczy wartych zapamiętania przed wizytą.</p>
+
+    <div class="gr__body">
+      <ul style="padding-left:20px;font-size:16px;color:#374151;line-height:2">
+        <li><strong>Porcje są duże:</strong> serio, weź to pod uwagę przy zamawianiu. Pizza na jedną osobę to tutaj naprawdę pełna pizza.</li>
+        <li><strong>Weekendy:</strong> Cieplice w weekendy są oblegane przez turystów. Warto przyjść wcześniej lub zadzwonić z pytaniem o rezerwację.</li>
+        <li><strong>Po wycieczce:</strong> lokal jest przyjazny dla wracających z gór – sportowe ubranie, plecak i błoto na butach nie są problemem.</li>
+        <li><strong>Carbonara bez śmietany:</strong> jeśli zamawiasz, wiedz że robią ją właściwie. To dobry znak.</li>
+        <li><strong>Parking:</strong> w Cieplicach parking jest dostępny w pobliżu Parku Zdrojowego i przy ul. Jana Pawła II.</li>
+      </ul>
+    </div>
+
+    <div class="gr__tip">
+      <strong>Planując dzień:</strong> Zamek Chojnik rano, zejście przez Sobieszów do Cieplic, Grande Roma na obiad – to jeden z lepszych planów na aktywny dzień w Jeleniej Górze. Trzy kilometry spaceru i nagroda w postaci pizzy na końcu.
+    </div>
+  </div>
+
+  <!-- SEKCJA 7: FAQ -->
+  <div class="gr__section" id="faq">
+    <h2 class="gr__section-title">FAQ – często zadawane pytania</h2>
+    <p class="gr__section-sub">Odpowiedzi na najczęstsze pytania o Grande Roma w Cieplicach.</p>
+
+    <div class="gr__faq-item">
+      <button class="gr__faq-q" aria-expanded="false">
+        Co można zjeść w Grande Roma w Cieplicach?
+        <span class="gr-arrow">▾</span>
+      </button>
+      <div class="gr__faq-a">
+        Grande Roma serwuje pizze z pieca na cienkim, chrupiącym cieście (Margherita, Diavola, z szynką parmeńską, z rukolą i inne), klasyczne makarony (Spaghetti Carbonara bez śmietany, Tagliatelle z kurczakiem i szpinakiem, Lasagne), dania główne z kurczaka oraz świeże sałatki z fetą lub tuńczykiem.
+      </div>
+    </div>
+
+    <div class="gr__faq-item">
+      <button class="gr__faq-q" aria-expanded="false">
+        Gdzie dokładnie jest restauracja Grande Roma w Cieplicach?
+        <span class="gr-arrow">▾</span>
+      </button>
+      <div class="gr__faq-a">
+        Grande Roma znajduje się w Cieplicach Śląskich-Zdroju, dzielnicy Jeleniej Góry, w pobliżu Parku Zdrojowego. Dokładną lokalizację z pinezką znajdziesz na <a href="https://jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/">karcie miejsca na jeleniogorzanietomy.pl</a>.
+      </div>
+    </div>
+
+    <div class="gr__faq-item">
+      <button class="gr__faq-q" aria-expanded="false">
+        Czy w Grande Roma można przyjść po wycieczce w górach?
+        <span class="gr-arrow">▾</span>
+      </button>
+      <div class="gr__faq-a">
+        Tak. To jeden z wyróżników tego miejsca – lokal jest przyjazny dla turystów i wędrowców. Można przyjść w sportowym ubraniu i z plecakiem, atmosfera jest nieformalna i nikt nie zwraca uwagi na strój.
+      </div>
+    </div>
+
+    <div class="gr__faq-item">
+      <button class="gr__faq-q" aria-expanded="false">
+        Czy pizza w Grande Roma jest robiona w piecu?
+        <span class="gr-arrow">▾</span>
+      </button>
+      <div class="gr__faq-a">
+        Tak, pizze są pieczone w piecu. Ciasto jest cienkie i chrupiące – klasyczny styl włoskiej pizzy.
+      </div>
+    </div>
+
+    <div class="gr__faq-item">
+      <button class="gr__faq-q" aria-expanded="false">
+        Czy jedzenie w Grande Roma jest drogie?
+        <span class="gr-arrow">▾</span>
+      </button>
+      <div class="gr__faq-a">
+        Grande Roma jest znana z dobrej relacji ceny do jakości jak na Cieplice. Porcje są duże, co sprawia, że wydatek jest uzasadniony. Na tle typowo turystycznych restauracji w okolicy Parku Zdrojowego ceny są uczciwe.
+      </div>
+    </div>
+
+    <div class="gr__faq-item">
+      <button class="gr__faq-q" aria-expanded="false">
+        Jakie są godziny otwarcia Grande Roma?
+        <span class="gr-arrow">▾</span>
+      </button>
+      <div class="gr__faq-a">
+        Aktualne godziny otwarcia sprawdzisz na <a href="https://jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/">karcie miejsca Grande Roma</a> na jeleniogorzanietomy.pl – godziny mogą się zmieniać sezonowo.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CTA -->
+  <div class="gr__cta">
+    <h2>Odkryj Jelenią Górę na interaktywnej mapie</h2>
+    <p>Grande Roma, Zamek Chojnik, Park Zdrojowy i setki innych miejsc – wszystko na jednej mapie stworzonej przez lokalnych pasjonatów.</p>
+    <a href="/" class="gr__cta-btn">Otwórz mapę Jeleniej Góry →</a>
+  </div>
+
+</div>
+
+<!-- ══ FAQ SCRIPT ══════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  var items = document.querySelectorAll('#jg-grande-roma-wrap .gr__faq-item');
+  items.forEach(function(item){
+    var btn = item.querySelector('.gr__faq-q');
+    btn.addEventListener('click', function(){
+      var isOpen = item.classList.contains('open');
+      items.forEach(function(i){ i.classList.remove('open'); i.querySelector('.gr__faq-q').setAttribute('aria-expanded','false'); });
+      if(!isOpen){ item.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+    });
+  });
+})();
+</script>
