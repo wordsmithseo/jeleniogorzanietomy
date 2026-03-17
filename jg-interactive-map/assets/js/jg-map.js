@@ -2437,10 +2437,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // Shared ref: dwGetFabCenterX() is defined inside FullscreenControl.onAdd
       // but also needed by createUserCountIndicator() in the outer scope.
       var _jgDwGetFabCenterX = null;
-      // Shared ref: immediately hides the desk-wide promo element.
-      // Set inside FullscreenControl.onAdd; used by the orientationchange handler
-      // to hide the banner before the stale iOS resize fires.
-      var _jgHideDeskPromo = null;
 
       if (currentLayerIsSatellite) {
         satelliteLayer.addTo(map);
@@ -3146,13 +3142,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           // Scroll to top first — prevents grey gap caused by the page
           // remaining at a non-zero scroll position after rotation.
           window.scrollTo(0, 0);
-          // Hide the desk-wide promo immediately on any orientation change.
-          // Both Android Chrome and iOS Safari can fire resize with stale
-          // dimensions, leaving the banner visible at portrait size (small,
-          // with rounded corners) for up to ~550 ms.  Hiding here is safe:
-          // in portrait the banner is already hidden, and when rotating to
-          // landscape enterDeskWide() will re-show it after layout settles.
-          if (_jgHideDeskPromo) _jgHideDeskPromo();
           // Wait for the browser to finish reflowing after rotation
           setTimeout(function() {
             window.scrollTo(0, 0);
@@ -3236,16 +3225,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           L.DomEvent.disableClickPropagation(fsSearchPanel);
           L.DomEvent.disableScrollPropagation(fsSearchPanel);
 
-          // Create floating content container for fullscreen
-          var fsPromoWrap = document.createElement('div');
-          var _extCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
-          fsPromoWrap.className = _extCls.fs || '';
-          fsPromoWrap.style.display = 'none';
-          elMap.appendChild(fsPromoWrap);
-
-          // Prevent map interactions when clicking the promo area
-          L.DomEvent.disableClickPropagation(fsPromoWrap);
-          L.DomEvent.disableScrollPropagation(fsPromoWrap);
 
           fsSearchPanel.querySelector('.jg-fs-search-close').addEventListener('click', function(e) {
             e.stopPropagation();
@@ -3354,10 +3333,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               mapWrap.classList.remove('jg-desktop-wide');
               document.body.classList.remove('jg-desktop-wide-active');
               if (sidebar) sidebar.classList.remove('jg-sidebar-desktop-wide-overlay');
-              if (typeof deskPromoWrap !== 'undefined' && deskPromoWrap) {
-                deskPromoWrap.style.display = 'none';
-                deskPromoWrap.innerHTML = '';
-              }
               if (typeof dwPlaceholder !== 'undefined' && dwPlaceholder && dwPlaceholder.parentNode) {
                 dwPlaceholder.parentNode.removeChild(dwPlaceholder);
               }
@@ -3628,69 +3603,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
             syncNotifications();
 
-            // Show floating content in fullscreen
-            (function setupFsPromo() {
-              var $wrap = document.querySelector('[data-cid]');
-              if (!$wrap) return;
-              var lidAttr = $wrap.getAttribute('data-lid');
-              var iidAttr = $wrap.getAttribute('data-iid');
-              var origLink = lidAttr ? document.getElementById(lidAttr) : null;
-              var origImg  = iidAttr ? document.getElementById(iidAttr) : null;
-              if (!origLink || !origImg || !origImg.src || origImg.src === '' || origLink.style.display === 'none') return;
-
-              var extCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
-              fsPromoWrap.innerHTML = '';
-
-              var label = document.createElement('div');
-              label.className = extCls.fsTag || '';
-              label.textContent = 'Sponsorowane';
-              fsPromoWrap.appendChild(label);
-
-              var inner = document.createElement('div');
-              inner.className = extCls.fsIn || '';
-
-              var link = document.createElement('a');
-              link.href = origLink.href;
-              link.target = '_blank';
-              link.rel = 'noopener';
-
-              var img = document.createElement('img');
-              img.src = origImg.src;
-              img.alt = '';
-
-              link.appendChild(img);
-              inner.appendChild(link);
-              fsPromoWrap.appendChild(inner);
-
-              var extCfg = window.JG_EXT_CFG || {};
-              var ajaxUrl = extCfg.ajax || '';
-              var act = extCfg.act || {};
-
-              link.addEventListener('click', function() {
-                var bannerId = origLink.closest('[data-bid]') ? origLink.closest('[data-bid]').getAttribute('data-bid')
-                             : (document.querySelector('[data-bid]') ? document.querySelector('[data-bid]').getAttribute('data-bid') : null);
-                if (bannerId && ajaxUrl && navigator.sendBeacon) {
-                  var fd = new FormData();
-                  fd.append('action', act.engage || '');
-                  fd.append('banner_id', bannerId);
-                  navigator.sendBeacon(ajaxUrl, fd);
-                }
-              });
-
-              var cid = $wrap ? $wrap.getAttribute('data-cid') : null;
-              var bannerBox = cid ? document.getElementById(cid) : null;
-              var bannerId = bannerBox ? bannerBox.getAttribute('data-bid') : null;
-              if (bannerId && ajaxUrl && window.jQuery) {
-                jQuery.ajax({
-                  url: ajaxUrl,
-                  type: 'POST',
-                  data: { action: act.view || '', banner_id: bannerId }
-                });
-              }
-
-              fsPromoWrap.style.display = '';
-            })();
-
             btn.innerHTML = exitIcon;
             btn.title = 'Zamknij pełny ekran';
             setTimeout(function() { map.invalidateSize(); }, 350);
@@ -3732,9 +3644,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             fsNotifContainer.innerHTML = '';
             fsSearchPanel.classList.remove('active');
             fsSearchPanel.querySelector('.jg-fs-search-list').innerHTML = '';
-            // Hide floating content
-            fsPromoWrap.style.display = 'none';
-            fsPromoWrap.innerHTML = '';
             btn.innerHTML = enterIcon;
             btn.title = 'Pełny ekran';
             setTimeout(function() { map.invalidateSize(); }, 350);
@@ -3751,14 +3660,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
           var dwPlaceholder = document.createElement('div');
           dwPlaceholder.id = 'jg-desktop-wide-placeholder';
-
-          var deskPromoWrap = document.createElement('div');
-          var _dwExtCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
-          deskPromoWrap.className = _dwExtCls.fs || '';
-          deskPromoWrap.style.display = 'none';
-          elMap.appendChild(deskPromoWrap);
-          L.DomEvent.disableClickPropagation(deskPromoWrap);
-          L.DomEvent.disableScrollPropagation(deskPromoWrap);
 
           // References to header/footer elements so we can restore them on exit
           var dwHeaderEl = null;
@@ -3831,116 +3732,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             return Math.round((leftEdge + rightEdge) / 2);
           }
           _jgDwGetFabCenterX = dwGetFabCenterX;
-          _jgHideDeskPromo = function() { deskPromoWrap.style.display = 'none'; };
-
-          function dwShowPromo() {
-            // Never show the floating banner when in portrait/mobile layout —
-            // guards against stale setTimeout callbacks firing after exitDeskWide.
-            if (window.innerWidth <= 768) return;
-            var $dwWrap = document.querySelector('[data-cid]');
-            if (!$dwWrap) return;
-            var lidAttr = $dwWrap.getAttribute('data-lid');
-            var iidAttr = $dwWrap.getAttribute('data-iid');
-            var origLink = lidAttr ? document.getElementById(lidAttr) : null;
-            var origImg  = iidAttr ? document.getElementById(iidAttr) : null;
-
-            // hideSlot() case: ext.js replaced #id_cid.innerHTML with CTA, removing origLink/origImg.
-            // Detect this: origLink is null but #id_cid has content → clone it into deskPromoWrap.
-            if (!origLink || !origImg) {
-              var cidAttr = $dwWrap.getAttribute('data-cid');
-              var cidEl = cidAttr ? document.getElementById(cidAttr) : null;
-              if (cidEl && cidEl.children.length > 0) {
-                deskPromoWrap.innerHTML = '';
-                var clonedCta = cidEl.cloneNode(true);
-                clonedCta.style.maxWidth = '728px';
-                clonedCta.style.width = '100%';
-                clonedCta.style.margin = '0';
-                deskPromoWrap.appendChild(clonedCta);
-                deskPromoWrap.style.setProperty('position', 'absolute', 'important');
-                deskPromoWrap.style.setProperty('top', 'auto', 'important');
-                deskPromoWrap.style.setProperty('right', 'auto', 'important');
-                deskPromoWrap.style.setProperty('bottom', '15px', 'important');
-                deskPromoWrap.style.setProperty('left', dwGetFabCenterX() + 'px', 'important');
-                deskPromoWrap.style.setProperty('transform', 'translateX(-50%)', 'important');
-                deskPromoWrap.style.display = '';
-                // Move user count indicator to the right of the banner
-                setTimeout(function() {
-                  var uci = document.getElementById('jg-user-count-indicator');
-                  if (uci && deskPromoWrap.offsetWidth > 0) {
-                    var br = deskPromoWrap.getBoundingClientRect();
-                    var mr = elMap.getBoundingClientRect();
-                    uci.style.left = (br.right - mr.left + 12) + 'px';
-                    uci.style.transform = 'none';
-                  }
-                }, 50);
-              }
-              return;
-            }
-
-            // Banner not loaded yet — will be retried by caller
-            if (!origImg.src || origImg.src === '' || origLink.style.display === 'none') return;
-
-            var extCls = (window.JG_EXT_CFG && window.JG_EXT_CFG.cls) || {};
-            deskPromoWrap.innerHTML = '';
-
-            var dwLabel = document.createElement('div');
-            dwLabel.className = extCls.fsTag || '';
-            dwLabel.textContent = 'Sponsorowane';
-            deskPromoWrap.appendChild(dwLabel);
-
-            var dwInner = document.createElement('div');
-            dwInner.className = extCls.fsIn || '';
-
-            var dwLink = document.createElement('a');
-            dwLink.href = origLink.href;
-            dwLink.target = '_blank';
-            dwLink.rel = 'noopener';
-
-            var dwImg = document.createElement('img');
-            dwImg.src = origImg.src;
-            dwImg.alt = '';
-
-            dwLink.appendChild(dwImg);
-            dwInner.appendChild(dwLink);
-            deskPromoWrap.appendChild(dwInner);
-
-            var extCfg = window.JG_EXT_CFG || {};
-            var dwAjaxUrl = extCfg.ajax || '';
-            var dwAct = extCfg.act || {};
-
-            dwLink.addEventListener('click', function() {
-              var dwBid = document.querySelector('[data-bid]') ? document.querySelector('[data-bid]').getAttribute('data-bid') : null;
-              if (dwBid && dwAjaxUrl && navigator.sendBeacon) {
-                var fd = new FormData();
-                fd.append('action', dwAct.engage || '');
-                fd.append('banner_id', dwBid);
-                navigator.sendBeacon(dwAjaxUrl, fd);
-              }
-            });
-
-            // Position banner: bottom of the map, horizontally centred between
-            // the onboarding FAB (#jg-help-fab, bottom-left) and the add-places
-            // FAB (#jg-fab-container, bottom-right).  dwGetFabCenterX() reads the
-            // actual DOM positions so the sidebar shift is automatically accounted for.
-            deskPromoWrap.style.setProperty('position', 'absolute', 'important');
-            deskPromoWrap.style.setProperty('top', 'auto', 'important');
-            deskPromoWrap.style.setProperty('right', 'auto', 'important');
-            deskPromoWrap.style.setProperty('bottom', '15px', 'important');
-            deskPromoWrap.style.setProperty('left', dwGetFabCenterX() + 'px', 'important');
-            deskPromoWrap.style.setProperty('transform', 'translateX(-50%)', 'important');
-
-            deskPromoWrap.style.display = '';
-            // Move user count indicator to the right of the banner
-            setTimeout(function() {
-              var uci = document.getElementById('jg-user-count-indicator');
-              if (uci && deskPromoWrap.offsetWidth > 0) {
-                var br = deskPromoWrap.getBoundingClientRect();
-                var mr = elMap.getBoundingClientRect();
-                uci.style.left = (br.right - mr.left + 12) + 'px';
-                uci.style.transform = 'none';
-              }
-            }, 50);
-          }
 
           // Returns a latlng shifted so that, when used as the Leaflet map centre,
           // the ORIGINAL latlng appears visually centred in the area between the
@@ -4010,13 +3801,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               L.DomEvent.disableScrollPropagation(sidebar);
             }
 
-            // Show the banner after a short delay. The banner data (origImg.src)
-            // is loaded asynchronously, so retry until it appears (up to ~15 s).
-            setTimeout(function() { if (isDeskWide && !isFullscreen) dwShowPromo(); }, 700);
-            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 2000);
-            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 5000);
-            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 10000);
-            setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 15000);
             setTimeout(function() {
               map.invalidateSize();
               // Pan right by half the sidebar width so the initial view is centred
@@ -4080,10 +3864,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               dwPlaceholder.parentNode.removeChild(dwPlaceholder);
             }
 
-            // Hide and clear the floating banner
-            deskPromoWrap.style.display = 'none';
-            deskPromoWrap.innerHTML = '';
-            // Reset user count indicator to centre between FABs (no banner)
+            // Reset user count indicator to centre between FABs
             var uciExit = document.getElementById('jg-user-count-indicator');
             if (uciExit) {
               uciExit.style.left = dwGetFabCenterX() + 'px';
