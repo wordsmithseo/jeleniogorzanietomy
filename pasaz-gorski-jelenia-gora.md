@@ -65,7 +65,7 @@ Z centrum Jeleniej Góry jedź w kierunku Zabobrza ul. Jana Pawła II. Pasaż je
 ### Autobusem MZK
 W pobliżu zatrzymują się linie **3, 10 i 12**, łączące centrum Jeleniej Góry z Zabobrzem. Czas przejazdu z centrum ok. 10–15 minut.
 
-📍 [Zobacz Pasaż Górski na mapie i wyznacz trasę](https://jeleniogorzanietomy.pl/miejsce/pasaz-gorski/)
+📍 [Zobacz Pasaż Górski na mapie](https://jeleniogorzanietomy.pl/miejsce/pasaz-gorski/)
 
 ---
 

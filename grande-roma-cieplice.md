@@ -67,7 +67,7 @@ Grande Roma leży w Cieplicach Śląskich-Zdroju, w pobliżu Parku Zdrojowego. S
 
 Do Cieplic dojedziesz autobusem MZK z centrum (ok. 15 minut) lub samochodem.
 
-📍 [Zobacz Grande Roma na mapie i wyznacz trasę](https://jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/)
+📍 [Zobacz Grande Roma na mapie](https://jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/)
 
 ---
 
