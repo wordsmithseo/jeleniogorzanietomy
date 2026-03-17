@@ -2449,6 +2449,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         tileLayer.addTo(map);
       }
 
+      // Road visibility overlay: darkens bright tile areas (roads/background) for better contrast.
+      // Injected via JS to bypass CSS caching and GPU compositing layer limitations.
+      var tileOverlay = document.createElement('div');
+      tileOverlay.className = 'jg-tile-darken-overlay';
+      tileOverlay.style.cssText = 'position:absolute;inset:0;background:rgb(148,148,148);mix-blend-mode:darken;pointer-events:none;z-index:300;';
+      elMap.appendChild(tileOverlay);
+
       // Map/Satellite toggle control
       var MapToggleControl = L.Control.extend({
         options: { position: 'topright' },

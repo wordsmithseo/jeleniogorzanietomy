@@ -43,19 +43,6 @@
   filter: brightness(0.88) contrast(1.2) saturate(1.5);
 }
 
-.jg-map-tiles .leaflet-zoom-animated {
-  isolation: isolate;
-}
-
-.jg-map-tiles .leaflet-zoom-animated::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgb(148, 148, 148);
-  mix-blend-mode: darken;
-  pointer-events: none;
-  z-index: 9999;
-}
 
 /* Custom Top Bar - Fixed at top of page */
 .jg-custom-top-bar {
