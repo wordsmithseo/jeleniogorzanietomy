@@ -2437,6 +2437,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // Shared ref: dwGetFabCenterX() is defined inside FullscreenControl.onAdd
       // but also needed by createUserCountIndicator() in the outer scope.
       var _jgDwGetFabCenterX = null;
+      // Shared ref: immediately hides the desk-wide promo element.
+      // Set inside FullscreenControl.onAdd; used by the orientationchange handler
+      // to hide the banner before the stale iOS resize fires.
+      var _jgHideDeskPromo = null;
 
       if (currentLayerIsSatellite) {
         satelliteLayer.addTo(map);
@@ -3142,6 +3146,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           // Scroll to top first — prevents grey gap caused by the page
           // remaining at a non-zero scroll position after rotation.
           window.scrollTo(0, 0);
+          // If rotating to portrait, hide the desk-wide banner immediately.
+          // iOS Safari fires the 'resize' event with stale landscape dimensions
+          // before 'orientationchange', so the resize debounce handler sees the
+          // wrong width and keeps the banner visible for ~550 ms. Hiding here
+          // (window.orientation is already updated at this point) prevents the
+          // brief ghost banner with rounded corners at the bottom of the screen.
+          var _orientAngle = typeof window.orientation !== 'undefined' ? window.orientation : 0;
+          if (Math.abs(_orientAngle) !== 90 && _jgHideDeskPromo) {
+            _jgHideDeskPromo();
+          }
           // Wait for the browser to finish reflowing after rotation
           setTimeout(function() {
             window.scrollTo(0, 0);
@@ -3820,6 +3834,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             return Math.round((leftEdge + rightEdge) / 2);
           }
           _jgDwGetFabCenterX = dwGetFabCenterX;
+          _jgHideDeskPromo = function() { deskPromoWrap.style.display = 'none'; };
 
           function dwShowPromo() {
             // Never show the floating banner when in portrait/mobile layout —
