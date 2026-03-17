@@ -3146,16 +3146,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           // Scroll to top first — prevents grey gap caused by the page
           // remaining at a non-zero scroll position after rotation.
           window.scrollTo(0, 0);
-          // If rotating to portrait, hide the desk-wide banner immediately.
-          // iOS Safari fires the 'resize' event with stale landscape dimensions
-          // before 'orientationchange', so the resize debounce handler sees the
-          // wrong width and keeps the banner visible for ~550 ms. Hiding here
-          // (window.orientation is already updated at this point) prevents the
-          // brief ghost banner with rounded corners at the bottom of the screen.
-          var _orientAngle = typeof window.orientation !== 'undefined' ? window.orientation : 0;
-          if (Math.abs(_orientAngle) !== 90 && _jgHideDeskPromo) {
-            _jgHideDeskPromo();
-          }
+          // Hide the desk-wide promo immediately on any orientation change.
+          // Both Android Chrome and iOS Safari can fire resize with stale
+          // dimensions, leaving the banner visible at portrait size (small,
+          // with rounded corners) for up to ~550 ms.  Hiding here is safe:
+          // in portrait the banner is already hidden, and when rotating to
+          // landscape enterDeskWide() will re-show it after layout settles.
+          if (_jgHideDeskPromo) _jgHideDeskPromo();
           // Wait for the browser to finish reflowing after rotation
           setTimeout(function() {
             window.scrollTo(0, 0);
