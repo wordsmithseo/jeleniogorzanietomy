@@ -1,0 +1,546 @@
+<!--
+  ============================================================
+  ARTYKUŁ SEO – Interaktywny przewodnik po Jeleniej Górze
+  JeleniogorzaNieTomy.pl
+
+  Yoast SEO checklist:
+    • Focus keyphrase : interaktywny przewodnik Jelenia Góra
+    • Meta title      : Interaktywny przewodnik Jeleniej Góry – mapa, pineski, atrakcje (60 zn.)
+    • Meta description: Odkryj Jelenią Górę z interaktywnym przewodnikiem jeleniogorzanietomy.pl.
+                        Pineski restauracji, atrakcji i ukrytych skarbów regionu na jednej mapie. (152 zn.)
+    • Slug            : /interaktywny-przewodnik-jelenia-gora/
+    • Keyphrase w H1  : ✔  |  w pierwszym akapicie : ✔
+    • Podtytuły z keph: ✔  |  Alt obrazków         : ✔
+    • Linki wewnętrzne: ✔ (do konkretnych pineski)
+    • Linki zewnętrzne: ✔ (YouTube)
+    • Schema          : VideoObject + WebSite (JSON-LD)
+
+  Wklej całą zawartość do widgetu "HTML" w Elementorze.
+  ============================================================
+-->
+
+<!-- ══ SCHEMA – VideoObject ══════════════════════════════════════════ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "Interaktywny przewodnik Jeleniej Góry oraz okolic",
+  "description": "Poznaj nieznane fakty o Jeleniej Górze i okolicach oraz odkryj lokalizację ukrytych skarbów i ciekawostek regionu. Przewodnik po interaktywnej mapie jeleniogorzanietomy.pl.",
+  "thumbnailUrl": "https://img.youtube.com/vi/xpDyO1QqZLs/maxresdefault.jpg",
+  "embedUrl": "https://www.youtube.com/embed/xpDyO1QqZLs",
+  "url": "https://www.youtube.com/watch?v=xpDyO1QqZLs",
+  "uploadDate": "2026-03-01",
+  "publisher": {
+    "@type": "Organization",
+    "name": "JeleniogorzaNieTomy.pl",
+    "url": "https://jeleniogorzanietomy.pl"
+  }
+}
+</script>
+
+<!-- ══ SCHEMA – WebSite ══════════════════════════════════════════════ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "JeleniogorzaNieTomy.pl",
+  "description": "Interaktywny przewodnik po Jeleniej Górze i okolicach. Mapa z pineski restauracji, atrakcji turystycznych, miejsc do odpoczynku i ukrytych skarbów regionu Kotliny Jeleniogórskiej.",
+  "url": "https://jeleniogorzanietomy.pl",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://jeleniogorzanietomy.pl/?s={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+
+<!-- ══ FAQ SCHEMA ══════════════════════════════════════════════════════ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Co to jest jeleniogorzanietomy.pl?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "jeleniogorzanietomy.pl to interaktywny przewodnik po Jeleniej Górze i okolicach. Mapa z pineski atrakcji, restauracji, miejsc do odpoczynku i ukrytych skarbów regionu – stworzona przez lokalnych pasjonatów."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Co znajdę na interaktywnej mapie Jeleniej Góry?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Na mapie znajdziesz pineski restauracji i kawiarni, atrakcji turystycznych (m.in. Zamek Chojnik, Park Zdrojowy w Cieplicach), miejsc do odpoczynku, centrów handlowych oraz ukrytych skarbów i ciekawostek regionu opisanych w filmie."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Czy z przewodnika można korzystać bezpłatnie?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Tak, interaktywna mapa jeleniogorzanietomy.pl jest bezpłatna i dostępna bez rejestracji."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Jakie miejsca w okolicach Jeleniej Góry obejmuje mapa?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Mapa obejmuje Jelenią Górę i całą Kotlinę Jeleniogórską, w tym Cieplice Śląskie-Zdrój, Sobieszów, Jagniątków, Kowary, Karpacz, Szklarską Porębę i inne miejscowości w Karkonoszach i Górach Izerskich."
+      }
+    }
+  ]
+}
+</script>
+
+<!-- ══ STYLE (ID-scoped, nie koliduje z motywem) ══════════════════════ -->
+<style>
+  #jg-przewodnik-wrap {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: #111827;
+    line-height: 1.7;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  #jg-przewodnik-wrap * { box-sizing: border-box; }
+  #jg-przewodnik-wrap a { color: #8d2324; }
+  #jg-przewodnik-wrap a:hover { color: #6b1a1a; }
+
+  /* ── HERO ─────────────────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f2238 100%);
+    border-radius: 16px;
+    padding: 56px 40px;
+    text-align: center;
+    margin-bottom: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  #jg-przewodnik-wrap .ip__hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  #jg-przewodnik-wrap .ip__hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  #jg-przewodnik-wrap .ip__hero h1 {
+    font-size: clamp(24px, 4vw, 42px);
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 16px;
+    line-height: 1.2;
+  }
+  #jg-przewodnik-wrap .ip__hero p {
+    font-size: 17px;
+    color: rgba(255,255,255,0.88);
+    max-width: 620px;
+    margin: 0 auto 32px;
+  }
+  #jg-przewodnik-wrap .ip__hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 36px;
+    flex-wrap: wrap;
+  }
+  #jg-przewodnik-wrap .ip__stat { text-align: center; }
+  #jg-przewodnik-wrap .ip__stat-icon { display: block; font-size: 28px; margin-bottom: 6px; line-height: 1; }
+  #jg-przewodnik-wrap .ip__stat-label { font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 600; letter-spacing: 0.3px; }
+
+  /* ── INTRO ────────────────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__intro {
+    background: #f9fafb;
+    border-left: 4px solid #8d2324;
+    border-radius: 0 12px 12px 0;
+    padding: 24px 28px;
+    margin-bottom: 48px;
+    font-size: 16px;
+    color: #374151;
+  }
+  #jg-przewodnik-wrap .ip__intro p { margin: 0; }
+
+  /* ── SPIS TREŚCI ──────────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__toc {
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 48px;
+  }
+  #jg-przewodnik-wrap .ip__toc-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #6b7280; margin: 0 0 14px; }
+  #jg-przewodnik-wrap .ip__toc ol { margin: 0; padding-left: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 24px; }
+  #jg-przewodnik-wrap .ip__toc li { font-size: 15px; }
+  #jg-przewodnik-wrap .ip__toc a { color: #8d2324; text-decoration: none; font-weight: 500; }
+  #jg-przewodnik-wrap .ip__toc a:hover { text-decoration: underline; }
+
+  /* ── SEKCJE ───────────────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__section { margin-bottom: 56px; }
+  #jg-przewodnik-wrap .ip__section-title {
+    font-size: 26px; font-weight: 800; color: #111827;
+    margin: 0 0 6px; padding-bottom: 10px;
+    border-bottom: 3px solid #8d2324; display: inline-block;
+  }
+  #jg-przewodnik-wrap .ip__section-sub { font-size: 15px; color: #6b7280; margin: 0 0 28px; }
+
+  /* ── ARTYKUŁ BODY ─────────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__body { font-size: 16px; color: #374151; }
+  #jg-przewodnik-wrap .ip__body h3 { font-size: 20px; font-weight: 700; color: #111827; margin: 32px 0 10px; }
+  #jg-przewodnik-wrap .ip__body p { margin: 0 0 16px; }
+
+  /* ── VIDEO EMBED ──────────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__video-wrap {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 14px;
+    margin: 0 0 32px;
+    background: #000;
+  }
+  #jg-przewodnik-wrap .ip__video-wrap iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none;
+  }
+
+  /* ── KARTY KATEGORII ──────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+  #jg-przewodnik-wrap .ip__cat-card {
+    border: 2px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 22px 18px;
+    background: #fff;
+    transition: box-shadow .2s, border-color .2s;
+  }
+  #jg-przewodnik-wrap .ip__cat-card:hover { box-shadow: 0 8px 32px rgba(141,35,36,0.10); border-color: #8d2324; }
+  #jg-przewodnik-wrap .ip__cat-icon { font-size: 36px; display: block; margin-bottom: 12px; line-height: 1; }
+  #jg-przewodnik-wrap .ip__cat-card h3 { font-size: 17px; font-weight: 800; color: #111827; margin: 0 0 8px; }
+  #jg-przewodnik-wrap .ip__cat-desc { font-size: 13px; color: #4b5563; margin: 0 0 12px; line-height: 1.6; }
+  #jg-przewodnik-wrap .ip__cat-card ul { list-style: none; padding: 0; margin: 0; }
+  #jg-przewodnik-wrap .ip__cat-card ul li { font-size: 13px; color: #6b7280; padding: 3px 0; border-bottom: 1px solid #f3f4f6; }
+  #jg-przewodnik-wrap .ip__cat-card ul li:last-child { border-bottom: none; }
+  #jg-przewodnik-wrap .ip__cat-card ul li::before { content: '→ '; color: #8d2324; font-weight: 700; }
+
+  /* ── TIP ───────────────────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__tip {
+    background: #fff9f9;
+    border: 1px solid #fca5a5;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-size: 15px;
+    color: #374151;
+  }
+  #jg-przewodnik-wrap .ip__tip strong { color: #8d2324; }
+
+  /* ── INFO BOX ──────────────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__infobox {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-size: 15px;
+    color: #1e40af;
+  }
+
+  /* ── FAQ ───────────────────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__faq-item { border-bottom: 1px solid #e5e7eb; }
+  #jg-przewodnik-wrap .ip__faq-q {
+    width: 100%; background: none; border: none; padding: 18px 0;
+    text-align: left; font-size: 15px; font-weight: 700; color: #111827;
+    cursor: pointer; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; font-family: inherit;
+  }
+  #jg-przewodnik-wrap .ip__faq-q:hover { color: #8d2324; }
+  #jg-przewodnik-wrap .ip__faq-q .ip-arrow { flex-shrink: 0; font-size: 18px; transition: transform .2s; color: #8d2324; }
+  #jg-przewodnik-wrap .ip__faq-a { font-size: 14px; color: #4b5563; padding: 0 0 18px; display: none; line-height: 1.7; }
+  #jg-przewodnik-wrap .ip__faq-item.open .ip__faq-a { display: block; }
+  #jg-przewodnik-wrap .ip__faq-item.open .ip-arrow { transform: rotate(180deg); }
+
+  /* ── CTA ───────────────────────────────────────────────────── */
+  #jg-przewodnik-wrap .ip__cta {
+    background: linear-gradient(135deg, #8d2324 0%, #6b1a1a 100%);
+    border-radius: 16px; padding: 48px 40px; text-align: center; margin-bottom: 8px;
+  }
+  #jg-przewodnik-wrap .ip__cta h2 { font-size: 26px; font-weight: 800; color: #fff; margin: 0 0 12px; }
+  #jg-przewodnik-wrap .ip__cta p { font-size: 16px; color: rgba(255,255,255,0.88); margin: 0 0 28px; max-width: 520px; margin-left: auto; margin-right: auto; }
+  #jg-przewodnik-wrap .ip__cta-btn {
+    display: inline-block; background: #fff; color: #8d2324;
+    font-size: 16px; font-weight: 800; padding: 15px 36px;
+    border-radius: 8px; text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+  }
+  #jg-przewodnik-wrap .ip__cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); color: #6b1a1a; }
+
+  @media (max-width: 600px) {
+    #jg-przewodnik-wrap .ip__hero { padding: 40px 20px; }
+    #jg-przewodnik-wrap .ip__hero-stats { gap: 24px; }
+    #jg-przewodnik-wrap .ip__cta { padding: 36px 20px; }
+    #jg-przewodnik-wrap .ip__section-title { font-size: 22px; }
+    #jg-przewodnik-wrap .ip__toc ol { grid-template-columns: 1fr; }
+  }
+</style>
+
+<!-- ══ TREŚĆ ══════════════════════════════════════════════════════════ -->
+<div id="jg-przewodnik-wrap">
+
+  <!-- HERO -->
+  <div class="ip__hero">
+    <span class="ip__hero-badge">Lokalny przewodnik 2026</span>
+    <h1>Interaktywny przewodnik<br>po Jeleniej Górze i okolicach</h1>
+    <p>Mapa z pineski restauracji, atrakcji, miejsc do odpoczynku i ukrytych skarbów regionu. Wszystko w jednym miejscu, stworzone przez lokalnych pasjonatów.</p>
+    <div class="ip__hero-stats">
+      <div class="ip__stat">
+        <span class="ip__stat-icon">🗺️</span>
+        <span class="ip__stat-label">Interaktywna<br>mapa</span>
+      </div>
+      <div class="ip__stat">
+        <span class="ip__stat-icon">📍</span>
+        <span class="ip__stat-label">Pineski<br>atrakcji</span>
+      </div>
+      <div class="ip__stat">
+        <span class="ip__stat-icon">🏔️</span>
+        <span class="ip__stat-label">JG i Kotlina<br>Jeleniogórska</span>
+      </div>
+      <div class="ip__stat">
+        <span class="ip__stat-icon">🆓</span>
+        <span class="ip__stat-label">Bezpłatny<br>dostęp</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTRO -->
+  <div class="ip__intro">
+    <p><strong>jeleniogorzanietomy.pl</strong> to interaktywny przewodnik po Jeleniej Górze i okolicach — unikalny na skalę regionu. Dzięki naniesionym pineskom dowiesz się, gdzie warto zjeść, gdzie odpocząć oraz w jakie miejsca udać się na spacer. To tutaj, w jednym miejscu, poznasz nieznane fakty o regionie oraz odkryjesz lokalizację ukrytych skarbów i ciekawostek opisanych w filmie poniżej.</p>
+  </div>
+
+  <!-- SPIS TREŚCI -->
+  <div class="ip__toc">
+    <p class="ip__toc-title">Spis treści</p>
+    <ol>
+      <li><a href="#film">Film – ukryte skarby Jeleniej Góry</a></li>
+      <li><a href="#co-znajdziesz">Co znajdziesz na mapie?</a></li>
+      <li><a href="#jak-korzystac">Jak korzystać z przewodnika?</a></li>
+      <li><a href="#przykladowe-miejsca">Przykładowe miejsca</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ol>
+  </div>
+
+  <!-- SEKCJA 1: FILM -->
+  <div class="ip__section" id="film">
+    <h2 class="ip__section-title">Nieznane fakty o Jeleniej Górze – film</h2>
+    <p class="ip__section-sub">Ciekawostki, ukryte skarby i miejsca, o których nie wiedziałeś – wszystko uwiecznione na mapie.</p>
+
+    <div class="ip__video-wrap">
+      <iframe
+        src="https://www.youtube.com/embed/xpDyO1QqZLs"
+        title="Interaktywny przewodnik Jeleniej Góry oraz okolic – jeleniogorzanietomy.pl"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        loading="lazy"
+      ></iframe>
+    </div>
+
+    <div class="ip__body">
+      <p>
+        Film pokazuje Jelenią Górę i okolice od strony, której większość odwiedzających nie zna. Nieoczywiste miejsca, lokalne ciekawostki, historia ukryta za codziennymi fasadami. Każde z opisanych miejsc znajdziesz na interaktywnej mapie jeleniogorzanietomy.pl — z dokładną pinezką i wskazówkami dojazdu.
+      </p>
+    </div>
+  </div>
+
+  <!-- SEKCJA 2: CO ZNAJDZIESZ -->
+  <div class="ip__section" id="co-znajdziesz">
+    <h2 class="ip__section-title">Co znajdziesz na interaktywnej mapie?</h2>
+    <p class="ip__section-sub">Cztery kategorie miejsc opisanych przez lokalnych pasjonatów.</p>
+
+    <div class="ip__categories">
+
+      <div class="ip__cat-card">
+        <span class="ip__cat-icon">🍽️</span>
+        <h3>Gdzie zjeść</h3>
+        <p class="ip__cat-desc">Restauracje, pizzerie, kawiarnie i bary — od włoskiej kuchni w Cieplicach po lokale w centrum Jeleniej Góry.</p>
+        <ul>
+          <li>Grande Roma (Cieplice)</li>
+          <li>Restauracje przy Parku Zdrojowym</li>
+          <li>Kawiarnie w centrum JG</li>
+        </ul>
+      </div>
+
+      <div class="ip__cat-card">
+        <span class="ip__cat-icon">🏰</span>
+        <h3>Atrakcje i zabytki</h3>
+        <p class="ip__cat-desc">Zamki, parki, muzea i punkty widokowe — z dokładnymi informacjami o godzinach i cenach biletów.</p>
+        <ul>
+          <li>Zamek Chojnik (Sobieszów)</li>
+          <li>Park Zdrojowy (Cieplice)</li>
+          <li>Tężnia solankowa</li>
+        </ul>
+      </div>
+
+      <div class="ip__cat-card">
+        <span class="ip__cat-icon">🛍️</span>
+        <h3>Zakupy i usługi</h3>
+        <p class="ip__cat-desc">Centra handlowe, sklepy i punkty usługowe — z informacjami o godzinach otwarcia i dojezdzie.</p>
+        <ul>
+          <li>Pasaż Górski (Zabobrze)</li>
+          <li>Galeria Sudecka</li>
+          <li>Sklepy i markety w JG</li>
+        </ul>
+      </div>
+
+      <div class="ip__cat-card">
+        <span class="ip__cat-icon">💎</span>
+        <h3>Ukryte skarby</h3>
+        <p class="ip__cat-desc">Miejsca, o których nie mówią standardowe przewodniki. Lokalne ciekawostki i odkrycia opisane w filmie powyżej.</p>
+        <ul>
+          <li>Miejsca z filmu</li>
+          <li>Lokalne ciekawostki</li>
+          <li>Mało znane zakątki</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SEKCJA 3: JAK KORZYSTAĆ -->
+  <div class="ip__section" id="jak-korzystac">
+    <h2 class="ip__section-title">Jak korzystać z przewodnika?</h2>
+    <p class="ip__section-sub">Prosto i bezpłatnie — żadnej rejestracji, żadnej aplikacji do pobrania.</p>
+
+    <div class="ip__body">
+      <h3>1. Otwórz mapę</h3>
+      <p>
+        Wejdź na <a href="https://jeleniogorzanietomy.pl/" title="Interaktywna mapa Jeleniej Góry">jeleniogorzanietomy.pl</a> i otwórz interaktywną mapę. Dostęp jest bezpłatny i nie wymaga rejestracji.
+      </p>
+
+      <h3>2. Kliknij pineskę</h3>
+      <p>
+        Każda pinezka na mapie to osobna karta miejsca z opisem, adresem, godzinami otwarcia i wskazówkami. Klikasz, dostajesz wszystkie informacje w jednym miejscu — bez szukania po różnych stronach.
+      </p>
+
+      <h3>3. Wyznacz trasę</h3>
+      <p>
+        Jednym kliknięciem wyznaczysz trasę z dowolnego miejsca w mieście do wybranej pinezki — czy to z centrum Jeleniej Góry, czy z Zabobrza, czy spod tężni w Cieplicach.
+      </p>
+    </div>
+
+    <div class="ip__tip">
+      <strong>Wskazówka:</strong> Obejrzyj film do końca, a potem wróć na mapę i wyszukaj miejsca, o których w nim wspomniano. Każde z nich ma swoją pineskę z dokładną lokalizacją.
+    </div>
+  </div>
+
+  <!-- SEKCJA 4: PRZYKŁADOWE MIEJSCA -->
+  <div class="ip__section" id="przykladowe-miejsca">
+    <h2 class="ip__section-title">Przykładowe miejsca na mapie</h2>
+    <p class="ip__section-sub">Kilka pineski, od których warto zacząć odkrywanie.</p>
+
+    <div class="ip__body">
+      <p>
+        Mapa rośnie systematycznie o nowe miejsca. Oto kilka przykładów, które już czekają na odkrycie:
+      </p>
+    </div>
+
+    <div class="ip__infobox">
+      📍 <strong><a href="https://jeleniogorzanietomy.pl/miejsce/zamek-chojnik/" title="Zamek Chojnik na mapie Jeleniej Góry">Zamek Chojnik</a></strong> — gotyckie ruiny na bazaltowej skale w Sobieszowie. Widok na całe Karkonosze z wieży, historia sięgająca XIV wieku. <a href="/zamek-chojnik-jelenia-gora/">Pełny przewodnik po Zamku Chojnik →</a>
+    </div>
+
+    <div class="ip__infobox">
+      📍 <strong><a href="https://jeleniogorzanietomy.pl/miejsce/grande-roma-cieplice-pizzeria-i-restauracja-jelenia-gora/" title="Grande Roma na mapie Jeleniej Góry">Grande Roma</a></strong> — włoska pizzeria i restauracja w Cieplicach Śląskich-Zdroju, w pobliżu Parku Zdrojowego. Pizza z pieca, pasta, dobra relacja cena/jakość. <a href="/grande-roma-cieplice/">Pełny artykuł o Grande Roma →</a>
+    </div>
+
+    <div class="ip__infobox">
+      📍 <strong><a href="https://jeleniogorzanietomy.pl/miejsce/pasaz-gorski/" title="Pasaż Górski na mapie Jeleniej Góry">Pasaż Górski</a></strong> — centrum handlowe w dzielnicy Zabobrze z bezpłatnym parkingiem. E.Leclerc, Decathlon, RTV Euro AGD i więcej. <a href="/pasaz-gorski-jelenia-gora/">Pełny artykuł o Pasażu Górskim →</a>
+    </div>
+  </div>
+
+  <!-- SEKCJA 5: FAQ -->
+  <div class="ip__section" id="faq">
+    <h2 class="ip__section-title">FAQ – często zadawane pytania</h2>
+    <p class="ip__section-sub">Odpowiedzi na najczęstsze pytania o jeleniogorzanietomy.pl.</p>
+
+    <div class="ip__faq-item">
+      <button class="ip__faq-q" aria-expanded="false">
+        Co to jest jeleniogorzanietomy.pl?
+        <span class="ip-arrow">▾</span>
+      </button>
+      <div class="ip__faq-a">
+        jeleniogorzanietomy.pl to interaktywny przewodnik po Jeleniej Górze i okolicach — mapa z pineski atrakcji, restauracji, miejsc do odpoczynku i ukrytych skarbów regionu. Stworzony przez lokalnych pasjonatów, dostępny bezpłatnie.
+      </div>
+    </div>
+
+    <div class="ip__faq-item">
+      <button class="ip__faq-q" aria-expanded="false">
+        Co znajdę na interaktywnej mapie Jeleniej Góry?
+        <span class="ip-arrow">▾</span>
+      </button>
+      <div class="ip__faq-a">
+        Na mapie znajdziesz pineski restauracji i kawiarni, atrakcji turystycznych (m.in. Zamek Chojnik, Park Zdrojowy w Cieplicach), centrów handlowych (Pasaż Górski, Galeria Sudecka) oraz ukrytych skarbów i ciekawostek opisanych w filmie.
+      </div>
+    </div>
+
+    <div class="ip__faq-item">
+      <button class="ip__faq-q" aria-expanded="false">
+        Czy z przewodnika można korzystać bezpłatnie?
+        <span class="ip-arrow">▾</span>
+      </button>
+      <div class="ip__faq-a">
+        Tak, interaktywna mapa jeleniogorzanietomy.pl jest w całości bezpłatna i dostępna bez rejestracji — wystarczy wejść na stronę i zacząć odkrywać.
+      </div>
+    </div>
+
+    <div class="ip__faq-item">
+      <button class="ip__faq-q" aria-expanded="false">
+        Jakie miejscowości obejmuje mapa?
+        <span class="ip-arrow">▾</span>
+      </button>
+      <div class="ip__faq-a">
+        Mapa obejmuje Jelenią Górę i całą Kotlinę Jeleniogórską — w tym Cieplice Śląskie-Zdrój, Sobieszów, Jagniątków, Kowary, Karpacz, Szklarską Porębę i inne miejscowości w Karkonoszach i Górach Izerskich.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CTA -->
+  <div class="ip__cta">
+    <h2>Odkryj Jelenią Górę na interaktywnej mapie</h2>
+    <p>Setki miejsc, ukryte skarby i lokalne ciekawostki — wszystko na jednej mapie, stworzonej przez pasjonatów Jeleniej Góry.</p>
+    <a href="/" class="ip__cta-btn">Otwórz mapę Jeleniej Góry →</a>
+  </div>
+
+</div>
+
+<!-- ══ FAQ SCRIPT ══════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  var items = document.querySelectorAll('#jg-przewodnik-wrap .ip__faq-item');
+  items.forEach(function(item){
+    var btn = item.querySelector('.ip__faq-q');
+    btn.addEventListener('click', function(){
+      var isOpen = item.classList.contains('open');
+      items.forEach(function(i){ i.classList.remove('open'); i.querySelector('.ip__faq-q').setAttribute('aria-expanded','false'); });
+      if(!isOpen){ item.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+    });
+  });
+})();
+</script>
