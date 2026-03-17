@@ -3,8 +3,8 @@
  * Intercepts map tile requests and caches them for instant replay on pan/zoom.
  */
 
-var CACHE_NAME = 'jg-tiles-v8';
-var TILE_HOSTS = ['tiles.stadiamaps.com', 'server.arcgisonline.com'];
+var CACHE_NAME = 'jg-tiles-v9';
+var TILE_HOSTS = ['basemaps.cartocdn.com', 'server.arcgisonline.com'];
 
 self.addEventListener('install', function(event) {
     self.skipWaiting();

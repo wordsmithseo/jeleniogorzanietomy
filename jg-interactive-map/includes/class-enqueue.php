@@ -1004,8 +1004,8 @@ class JG_Map_Enqueue {
     }
 
     public function add_tile_preconnect() {
-        echo '<link rel="preconnect" href="https://tiles.stadiamaps.com" crossorigin>' . "\n";
-        echo '<link rel="dns-prefetch" href="https://tiles.stadiamaps.com">' . "\n";
+        echo '<link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin>' . "\n";
+        echo '<link rel="dns-prefetch" href="https://basemaps.cartocdn.com">' . "\n";
         echo '<link rel="preconnect" href="https://server.arcgisonline.com" crossorigin>' . "\n";
         echo '<link rel="dns-prefetch" href="https://server.arcgisonline.com">' . "\n";
     }
