@@ -8,7 +8,7 @@ jeleniogorzanietomy.pl to interaktywny przewodnik po Jeleniej Górze i okolicach
 
 [Film YouTube – Interaktywny przewodnik Jeleniej Góry](https://www.youtube.com/watch?v=xpDyO1QqZLs)
 
-Film pokazuje Jelenią Górę i okolice od strony, której większość odwiedzających nie zna. Nieoczywiste miejsca, lokalne ciekawostki, historia ukryta za codziennymi fasadami. Każde z opisanych miejsc znajdziesz na interaktywnej mapie jeleniogorzanietomy.pl z dokładną pinezką i wskazówkami dojazdu.
+Film pokazuje Jelenią Górę i okolice od strony, której większość odwiedzających nie zna. Nieoczywiste miejsca, lokalne ciekawostki, historia ukryta za codziennymi fasadami. Wiele z opisanych miejsc znajdziesz na interaktywnej mapie jeleniogorzanietomy.pl — kliknij pineskę i sprawdź szczegóły.
 
 ---
 
@@ -32,9 +32,9 @@ Miejsca, o których nie mówią standardowe przewodniki. Lokalne ciekawostki i o
 
 1. **Otwórz mapę** – wejdź na [jeleniogorzanietomy.pl](https://jeleniogorzanietomy.pl/). Dostęp bezpłatny, bez rejestracji.
 2. **Kliknij pineskę** – każda pinezka to karta miejsca z opisem, adresem i godzinami otwarcia.
-3. **Wyznacz trasę** – jednym kliknięciem wyznaczysz trasę z dowolnego miejsca w mieście.
+3. **Sprawdź szczegóły** – każda karta miejsca zawiera opis, adres i godziny otwarcia. Adres skopiujesz wprost do nawigacji w telefonie.
 
-**Wskazówka:** Obejrzyj film do końca, a potem wróć na mapę i wyszukaj miejsca, o których wspomniano. Każde ma swoją pineskę z dokładną lokalizacją.
+**Wskazówka:** Obejrzyj film do końca, a potem wróć na mapę i poszukaj miejsc, o których wspomniano. Część z nich znajdziesz jako pineski ze szczegółowym opisem.
 
 ---
 
