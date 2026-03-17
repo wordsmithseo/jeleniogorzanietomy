@@ -40,7 +40,6 @@
 .jg-map-tiles .leaflet-tile {
   will-change: transform;
   transform: translateZ(0);
-  filter: saturate(1.4);
 }
 
 /* Custom Top Bar - Fixed at top of page */
