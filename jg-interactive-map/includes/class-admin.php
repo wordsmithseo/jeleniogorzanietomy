@@ -589,6 +589,13 @@ class JG_Map_Admin {
             'number'     => -1,
             'fields'     => 'ids',
         )));
+
+        // Liczba aktywnych kont (wszyscy zarejestrowani minus oczekujący na aktywację)
+        $all_users_count = count(get_users(array(
+            'number' => -1,
+            'fields' => 'ids',
+        )));
+        $active_accounts = $all_users_count - $pending_users;
         ?>
         <style>
         /* ===== JG Admin — Dashboard ===== */
@@ -669,9 +676,9 @@ class JG_Map_Admin {
                 </a>
 
                 <a href="<?php echo admin_url('admin.php?page=jg-map-users'); ?>" class="jg-stat-card<?php echo $pending_users > 0 ? ' has-action' : ''; ?>">
-                    <span class="jg-stat-label">👤 Konta</span>
-                    <span class="jg-stat-value" style="color:<?php echo $pending_users > 0 ? '#d97706' : '#111827'; ?>"><?php echo (int)$pending_users; ?></span>
-                    <span class="jg-stat-sub"><?php echo $pending_users > 0 ? '→ oczekuje na aktywację' : 'wszystkie aktywne'; ?></span>
+                    <span class="jg-stat-label">👤 Aktywne konta</span>
+                    <span class="jg-stat-value" style="color:#16a34a"><?php echo (int)$active_accounts; ?></span>
+                    <span class="jg-stat-sub"><?php echo $pending_users > 0 ? '→ ' . (int)$pending_users . ' oczekuje na aktywację' : 'brak oczekujących'; ?></span>
                 </a>
 
                 <a href="<?php echo admin_url('admin.php?page=jg-map-promos'); ?>" class="jg-stat-card">
@@ -815,11 +822,29 @@ class JG_Map_Admin {
         }
 
         ?>
+        <style>
+        /* ===== Miejsca — stat cards & section headers ===== */
+        .jg-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px}
+        .jg-stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit;transition:box-shadow .15s,transform .15s}
+        .jg-stat-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.1);transform:translateY(-2px);color:inherit;text-decoration:none}
+        .jg-stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af}
+        .jg-stat-value{font-size:32px;font-weight:800;line-height:1;color:#111827}
+        .jg-stat-sub{font-size:12px;color:#6b7280;margin-top:2px}
+        .jg-stat-card.has-action .jg-stat-sub{color:#2563eb;font-weight:600}
+        .jg-places-section{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:20px}
+        .jg-places-section-title{display:flex;align-items:center;gap:10px;padding:12px 18px;background:#f8fafc;border-bottom:2px solid;font-size:13px;font-weight:700;color:#374151;margin:0}
+        .jg-places-section-count{padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;color:#fff}
+        .jg-places-empty{padding:16px 18px;color:#9ca3af;font-style:italic;font-size:13px}
+        .jg-action-buttons{display:flex;gap:5px;flex-wrap:wrap}
+        .jg-action-buttons .button{font-size:calc(12 * var(--jg));padding:4px 8px;height:auto;line-height:1.4}
+        @media(max-width:782px){.jg-stat-grid{grid-template-columns:repeat(2,1fr)}.jg-stat-value{font-size:26px}}
+        @media(max-width:480px){.jg-stat-grid{grid-template-columns:1fr}}
+        </style>
         <div class="wrap">
             <?php $this->render_page_header('Zarządzanie miejscami'); ?>
 
             <!-- Search bar -->
-            <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+            <div class="jg-places-section" style="padding:20px;margin-bottom:20px">
                 <form method="get" action="">
                     <input type="hidden" name="page" value="jg-map-places">
                     <div style="display:flex;gap:10px;align-items:center">
@@ -840,31 +865,37 @@ class JG_Map_Admin {
             </div>
 
             <!-- Statistics -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin:20px 0">
-                <div style="background:#dc2626;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:calc(32 * var(--jg));font-weight:bold"><?php echo $counts['reported']; ?></div>
-                    <div>🚨 Zgłoszone</div>
-                </div>
-                <div style="background:#f59e0b;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:calc(32 * var(--jg));font-weight:bold"><?php echo $counts['new_pending']; ?></div>
-                    <div>⏳ Nowe czekające</div>
-                </div>
-                <div style="background:#3b82f6;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:calc(32 * var(--jg));font-weight:bold"><?php echo $counts['edit_pending']; ?></div>
-                    <div>✏️ Edycje czekające</div>
-                </div>
-                <div style="background:#8b5cf6;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:calc(32 * var(--jg));font-weight:bold"><?php echo $counts['deletion_pending']; ?></div>
-                    <div>🗑️ Do usunięcia</div>
-                </div>
-                <div style="background:#10b981;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:calc(32 * var(--jg));font-weight:bold"><?php echo $counts['published']; ?></div>
-                    <div>✅ Opublikowane</div>
-                </div>
-                <div style="background:#6b7280;color:#fff;padding:20px;border-radius:8px;text-align:center">
-                    <div style="font-size:calc(32 * var(--jg));font-weight:bold"><?php echo $counts['trash']; ?></div>
-                    <div>🗑️ Kosz</div>
-                </div>
+            <div class="jg-stat-grid">
+                <a href="#section-reported" class="jg-stat-card<?php echo $counts['reported'] > 0 ? ' has-action' : ''; ?>">
+                    <span class="jg-stat-label">🚨 Zgłoszone</span>
+                    <span class="jg-stat-value" style="color:<?php echo $counts['reported'] > 0 ? '#dc2626' : '#111827'; ?>"><?php echo (int)$counts['reported']; ?></span>
+                    <span class="jg-stat-sub"><?php echo $counts['reported'] > 0 ? '→ wymagają uwagi' : 'brak zgłoszeń'; ?></span>
+                </a>
+                <a href="#section-new_pending" class="jg-stat-card<?php echo $counts['new_pending'] > 0 ? ' has-action' : ''; ?>">
+                    <span class="jg-stat-label">⏳ Nowe czekające</span>
+                    <span class="jg-stat-value" style="color:<?php echo $counts['new_pending'] > 0 ? '#f59e0b' : '#111827'; ?>"><?php echo (int)$counts['new_pending']; ?></span>
+                    <span class="jg-stat-sub"><?php echo $counts['new_pending'] > 0 ? '→ do zatwierdzenia' : 'brak nowych'; ?></span>
+                </a>
+                <a href="#section-edit_pending" class="jg-stat-card<?php echo $counts['edit_pending'] > 0 ? ' has-action' : ''; ?>">
+                    <span class="jg-stat-label">✏️ Edycje czekające</span>
+                    <span class="jg-stat-value" style="color:<?php echo $counts['edit_pending'] > 0 ? '#3b82f6' : '#111827'; ?>"><?php echo (int)$counts['edit_pending']; ?></span>
+                    <span class="jg-stat-sub"><?php echo $counts['edit_pending'] > 0 ? '→ do zatwierdzenia' : 'brak edycji'; ?></span>
+                </a>
+                <a href="#section-deletion_pending" class="jg-stat-card<?php echo $counts['deletion_pending'] > 0 ? ' has-action' : ''; ?>">
+                    <span class="jg-stat-label">🗑️ Do usunięcia</span>
+                    <span class="jg-stat-value" style="color:<?php echo $counts['deletion_pending'] > 0 ? '#8b5cf6' : '#111827'; ?>"><?php echo (int)$counts['deletion_pending']; ?></span>
+                    <span class="jg-stat-sub"><?php echo $counts['deletion_pending'] > 0 ? '→ żądania usunięcia' : 'brak żądań'; ?></span>
+                </a>
+                <a href="#section-published" class="jg-stat-card">
+                    <span class="jg-stat-label">✅ Opublikowane</span>
+                    <span class="jg-stat-value" style="color:#10b981"><?php echo (int)$counts['published']; ?></span>
+                    <span class="jg-stat-sub">aktywne miejsca</span>
+                </a>
+                <a href="#section-trash" class="jg-stat-card<?php echo $counts['trash'] > 0 ? ' has-action' : ''; ?>">
+                    <span class="jg-stat-label">🗑️ Kosz</span>
+                    <span class="jg-stat-value" style="color:<?php echo $counts['trash'] > 0 ? '#6b7280' : '#111827'; ?>"><?php echo (int)$counts['trash']; ?></span>
+                    <span class="jg-stat-sub"><?php echo $counts['trash'] > 0 ? '→ usunięte miejsca' : 'pusty'; ?></span>
+                </a>
             </div>
 
             <?php
@@ -909,20 +940,19 @@ class JG_Map_Admin {
 
                 if ($section_count > 0 || !$search) { // Show section if has places or no search active
                     ?>
-                    <div id="section-<?php echo esc_attr($status); ?>" style="margin:30px 0">
-                        <h2 style="color:<?php echo $config['color']; ?>">
-                            <?php echo $config['title']; ?>
-                            <span style="background:<?php echo $config['color']; ?>;color:#fff;padding:4px 12px;border-radius:12px;font-size:calc(14 * var(--jg))">
-                                <?php echo $section_count; ?>
-                            </span>
+                    <div id="section-<?php echo esc_attr($status); ?>" class="jg-places-section">
+                        <p class="jg-places-section-title" style="border-left:4px solid <?php echo esc_attr($config['color']); ?>">
+                            <span style="color:<?php echo esc_attr($config['color']); ?>"><?php echo $config['title']; ?></span>
+                            <span class="jg-places-section-count" style="background:<?php echo esc_attr($config['color']); ?>"><?php echo $section_count; ?></span>
                             <?php if ($status === 'trash' && $section_count > 0): ?>
-                                <button class="button jg-empty-trash" style="margin-left:15px;background:#dc2626;color:#fff;border-color:#dc2626">
+                                <button class="button jg-empty-trash" style="margin-left:auto;background:#dc2626;color:#fff;border-color:#dc2626">
                                     🗑️ Opróżnij kosz
                                 </button>
                             <?php endif; ?>
-                        </h2>
+                        </p>
 
                         <?php if ($section_count > 0): ?>
+                            <div style="overflow-x:auto">
                             <table class="wp-list-table widefat fixed striped">
                                 <thead>
                                     <tr>
@@ -945,8 +975,9 @@ class JG_Map_Admin {
                                     endforeach; ?>
                                 </tbody>
                             </table>
+                            </div>
                         <?php else: ?>
-                            <p style="color:#666;font-style:italic">Brak miejsc w tej kategorii</p>
+                            <p class="jg-places-empty">Brak miejsc w tej kategorii</p>
                         <?php endif; ?>
                     </div>
                     <?php
@@ -955,26 +986,12 @@ class JG_Map_Admin {
             ?>
 
             <?php if (empty($places) && $search): ?>
-                <div style="text-align:center;padding:40px;background:#fff;border-radius:8px">
+                <div class="jg-places-section" style="text-align:center;padding:40px">
                     <h3>Nie znaleziono miejsc</h3>
                     <p>Spróbuj zmienić kryteria wyszukiwania</p>
                 </div>
             <?php endif; ?>
         </div>
-
-        <style>
-        .jg-action-buttons {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-        .jg-action-buttons .button {
-            font-size: calc(12 * var(--jg));
-            padding: 4px 8px;
-            height: auto;
-            line-height: 1.4;
-        }
-        </style>
 
         <script>
         jQuery(document).ready(function($) {
