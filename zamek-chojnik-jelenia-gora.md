@@ -8,27 +8,35 @@ Jeśli planujesz wizytę w Jeleniej Górze i masz do dyspozycji jeden wolny dzie
 
 ## Historia Zamku Chojnik, od średniowiecza do dziś
 
-### Początki, XIV wiek i Bolko II Mały
+### Zanim powstał zamek: grody i dwory na Chojniku
 
-Zamek Chojnik powstał w drugiej połowie XIV wieku z rozkazu Bolka II Małego, ostatniego niezależnego władcę księstwa świdnicko-jaworskiego. Wybór miejsca nie był przypadkowy, bazaltowa skała wznosząca się nad doliną sama w sobie stanowiła naturalną fortecę. Strome zbocza sprawiały, że zamku właściwie nie dało się zdobyć atakiem frontalnym. Do tego lokalizacja zapewniała znakomitą kontrolę nad szlakami handlowymi przez Kotlinę Jeleniogórską. Bolko wiedział, co robi.
+Wzgórze Chojnik przyciągało ludzi na długo przed Bolkiem II. W drugiej połowie XIII wieku **Bolesław Rogatka** wzniósł tu dwór myśliwski z elementami obronnymi, który pod koniec stulecia rozbudował **Bolko I Surowy**. Punkt był znany i ceniony przez śląskich Piastów na długo przed budową właściwego zamku.
 
-Po jego śmierci w 1368 roku zamek przeszedł pod zwierzchnictwo Korony Czeskiej na mocy wcześniejszych układów sukcesyjnych, Bolko nie miał męskich potomków i zawarł stosowne umowy z Luksemburgami. Wdowa po nim, Agnieszka Habsburżanka, sprawowała władzę nad zamkiem aż do swojej śmierci. Po niej Chojnik oficjalnie przejął Karol IV Luksemburski. Koniec niezależności śląskiego księstwa.
+### Zamek Bolka II (XIV wiek)
 
-### Schaffgotschowie i złoty wiek zamku
+Bolko II Mały, ostatni niezależny władca księstwa świdnicko-jaworskiego, zastąpił poprzedni dwór kamiennym zamkiem około połowy XIV wieku. Na szczyt skalnej ściany, opadającej od południa niemal pionowo, trafiły murowane budynki: budynek mieszkalny od zachodu i potężna okrągła wieża od wschodu. Mały dziedziniec chroniony grubymi murami. Twierdza niewielka, ale przez ukształtowanie terenu praktycznie nie do zdobycia.
 
-W XV wieku zamek trafił w ręce rodu Schaffgotschów. I tu zaczął się prawdziwy rozkwit, przez ponad dwa stulecia ród rozbudowywał rezydencję, dostawiał kolejne skrzydła, kaplicę, systemy umocnień. Chojnik stał się jedną z ważniejszych siedzib śląskiej arystokracji. Naprawdę imponująca historia jak na skałę w środku lasu.
+Po śmierci Bolka II w 1368 roku zamek przeszedł pod zwierzchnictwo Korony Czeskiej na mocy wcześniejszych układów sukcesyjnych. Wdowa, Agnieszka Habsburżanka, zarządzała zamkiem do swojej śmierci; potem przejął go Karol IV Luksemburski. Koniec niezależności śląskiego księstwa.
+
+### Schaffgotschowie: dwa stulecia rozbudów (XV–XVII wiek)
+
+W 1392 roku wdowa po Bolku II oddała zamek **Gotsche Schoffowi**, przodkowi rodu Schaffgotschów. On w 1405 roku ufundował nad bramą wjazdową **kaplicę św. Jerzego i św. Katarzyny** w wykuszu z czerwonego piaskowca.
+
+W XV wieku ród miał epizod mało chwalebny — korzystając z niedostępności warowni, plądrowali kupców i okoliczną ludność podczas wojen husyckich. W tym samym stuleciu przeprowadzono jednak rozbudowę: od północnego wschodu wyrósł zamek dolny z pomieszczeniami gospodarczymi, kuchnią, kwaterami załogi i salą sądową. Na dziedzińcu stanął pręgierz. Zamek nigdy nie miał studni — wodę zbierano w skalnych cysternach.
+
+W pierwszej połowie XVI wieku doszła trzecia część: zamknięty murami dziedziniec z mieszkaniem komendanta, stajniami i wieżą z lochami. Mury zwieńczono renesansową attyką z półkolami. W 1560 roku od północy dobudowano obszerną basteję.
+
+W 1634 roku cesarz skazał na śmierć **Jana Ulryka von Schaffgotscha** i skonfiskował zamek. Zwrócono go rodzinie w 1649 roku, ale Schaffgotschowie nie zamieszkali tu już na stałe.
 
 ### Legenda o księżniczce Kunegundzie
 
-No i legenda. Bez niej Chojnik nie byłby tym samym miejscem.
+Dumna **księżniczka Kunegunda**, córka jednego z właścicieli zamku, stawiała zalotnikom niemożliwy warunek: okrążyć zamkowe mury konno po stromych zboczach bazaltowej skały. Kolejni ginęli. Aż przybył rycerz z Krakowa, który tego dokonał. I odrzucił jej rękę, wsiadł na konia i odjechał. Poniżona księżniczka rzuciła się z murów w przepaść. Skała poniżej zamku nosi do dziś nazwę Skoku Kunegundy.
 
-Dumna księżniczka Kunegunda, córka jednego z właścicieli zamku, wymyśliła niecodzienny sposób na odrzucanie zalotników: kto chciał jej ręki, musiał okrążyć zamkowe mury konno. Po stromych zboczach bazaltowej skały. Kolejni pretendenci ginęli. Aż pewnego dnia pojawił się rycerz, który tego dokonał. Kobieta, przerażona perspektywą małżeństwa, rzuciła się z wieży w przepaść. Skała poniżej zamku do dziś nosi nazwę Skoku Kunegundy. Smutna historia, ale dobrze opowiedziana.
+### Pożar, ruiny i schronisko (1675 do dziś)
 
-### Pożar w 1675 roku
+W 1675 roku piorun uderzył w zabudowania podczas burzy. Ogień zniszczył w jedną noc wszystko, co nie było z kamienia. Odbudowy nie podjęto.
 
-Koniec świetności przyszedł gwałtownie. W 1675 roku piorun uderzył w zabudowania podczas burzy i ogień strawił wszystko, co było z drewna. Schaffgotschowie próbowali jeszcze odbudować zamek, ale ostatecznie odpuścili. Od tej pory Chojnik stoi jako ruina, i trzeba przyznać, że jako ruina robi jeszcze większe wrażenie niż pewnie robiłby jako zabytek w pełnej krasie.
-
-Dziś zarządza nim PTTK, a w zachowanych murach działa schronisko. W sezonie można tu zjeść żurek albo ogrzać się herbatą po podejściu.
+W **1822 roku** w zachowanych murach otwarto schronisko turystyczne. Działa do dziś jako schronisko PTTK, jedno z najstarszych w Sudetach.
 
 ---
 
