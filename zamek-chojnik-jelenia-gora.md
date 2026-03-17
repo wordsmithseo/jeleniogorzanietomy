@@ -1,89 +1,90 @@
-# Zamek Chojnik w Jeleniej Górze — godziny otwarcia, bilety, jak dojść 2026
+# Zamek Chojnik w Jeleniej Górze, godziny otwarcia, bilety, jak dojść 2026
 
-Zamek Chojnik to jedna z najpiękniejszych i najlepiej zachowanych ruin gotyckich na Dolnym Śląsku. Wznosi się na bazaltowej skale na wysokości 627 m n.p.m. w dzielnicy Sobieszów, na terenie Karkonoskiego Parku Narodowego. Widok z wieży zamkowej na Karkonosze, Kotlinę Jeleniogórską i Rudawy Janowickie zapiera dech w piersiach — i to właśnie ten widok przyciąga tysiące turystów każdego roku. Jeśli planujesz wizytę w Jeleniej Górze, wejście na Zamek Chojnik to absolutny priorytet.
+Są miejsca w Jeleniej Górze, które można pominąć. Zamek Chojnik do nich nie należy. Gotyckie ruiny na bazaltowej skale, 627 metrów nad poziomem morza, z widokiem na całe Karkonosze, to nie jest atrakcja "do odfajkowania na liście". To jedno z tych miejsc, do których wracasz.
+
+Jeśli planujesz wizytę w Jeleniej Górze i masz do dyspozycji jeden wolny dzień, zaplanuj go właśnie tutaj. W tym przewodniku znajdziesz wszystko: godziny otwarcia, ceny biletów, trasy dojścia i trochę historii, bez zbędnego lania wody.
 
 ---
 
-## Historia Zamku Chojnik — od średniowiecza do dziś
+## Historia Zamku Chojnik, od średniowiecza do dziś
 
-### Początki — XIV wiek i Bolko II Mały
+### Początki, XIV wiek i Bolko II Mały
 
-Zamek Chojnik został zbudowany około 1364 roku przez Bolka II Małego, księcia świdnicko-jaworskiego. Wzniósł go strategicznie na bazaltowym wzgórzu, które już samo w sobie stanowiło naturalną fortecę — strome zbocza i trudno dostępna skała czyniły zamek niemal niemożliwym do zdobycia metodami frontalnego ataku.
+Zamek Chojnik powstał w drugiej połowie XIV wieku z rozkazu Bolka II Małego, ostatniego niezależnego władcę księstwa świdnicko-jaworskiego. Wybór miejsca nie był przypadkowy, bazaltowa skała wznosząca się nad doliną sama w sobie stanowiła naturalną fortecę. Strome zbocza sprawiały, że zamku właściwie nie dało się zdobyć atakiem frontalnym. Do tego lokalizacja zapewniała znakomitą kontrolę nad szlakami handlowymi przez Kotlinę Jeleniogórską. Bolko wiedział, co robi.
 
-Po śmierci Bolka II w 1368 roku Chojnik przeszedł pod panowanie czeskie jako część wiana jego żony Agnieszki Habsburżanki. W XV wieku zamek trafił w ręce możnego śląskiego rodu Schaffgotschów, który przez ponad dwa stulecia był jego gospodarzem. To właśnie za czasów Schaffgotschów zamek był rozbudowywany i przeżywał swój największy rozkwit — dobudowano m.in. reprezentacyjne komnaty, kaplicę i system umocnień.
+Po jego śmierci w 1368 roku zamek przeszedł pod zwierzchnictwo Korony Czeskiej na mocy wcześniejszych układów sukcesyjnych, Bolko nie miał męskich potomków i zawarł stosowne umowy z Luksemburgami. Wdowa po nim, Agnieszka Habsburżanka, sprawowała władzę nad zamkiem aż do swojej śmierci. Po niej Chojnik oficjalnie przejął Karol IV Luksemburski. Koniec niezależności śląskiego księstwa.
+
+### Schaffgotschowie i złoty wiek zamku
+
+W XV wieku zamek trafił w ręce rodu Schaffgotschów. I tu zaczął się prawdziwy rozkwit, przez ponad dwa stulecia ród rozbudowywał rezydencję, dostawiał kolejne skrzydła, kaplicę, systemy umocnień. Chojnik stał się jedną z ważniejszych siedzib śląskiej arystokracji. Naprawdę imponująca historia jak na skałę w środku lasu.
 
 ### Legenda o księżniczce Kunegundzie
 
-Z Zamkiem Chojnik związana jest jedna z piękniejszych śląskich legend. Dumna księżniczka Kunegunda (według legendy córka jednego z właścicieli zamku) odrzucała kolejnych zalotników w okrutny sposób: warunkiem jej ręki było okrążenie zamkowych murów konno. Zbocze było tak strome i niebezpieczne, że kolejni pretendenci ginęli próbując sprostać wyzwaniu. Pewnego dnia pojawił się rycerz, który dokonał niemożliwego — szczęśliwie okrążył mury. Zamiast jednak oddać mu rękę, Kunegunda — przerażona tym, że musi dotrzymać słowa — rzuciła się z wieży zamkowej w przepaść. Legenda żyje do dziś, a nieodległa skała zwana Skokiem Kunegundy przypomina o tej tragicznej historii.
+No i legenda. Bez niej Chojnik nie byłby tym samym miejscem.
 
-### Pożar i ruiny
+Dumna księżniczka Kunegunda, córka jednego z właścicieli zamku, wymyśliła niecodzienny sposób na odrzucanie zalotników: kto chciał jej ręki, musiał okrążyć zamkowe mury konno. Po stromych zboczach bazaltowej skały. Kolejni pretendenci ginęli. Aż pewnego dnia pojawił się rycerz, który tego dokonał. Kobieta, przerażona perspektywą małżeństwa, rzuciła się z wieży w przepaść. Skała poniżej zamku do dziś nosi nazwę Skoku Kunegundy. Smutna historia, ale dobrze opowiedziana.
 
-W 1675 roku Zamek Chojnik doszczętnie spłonął podczas gwałtownej burzy. Piorun uderzył w zabudowania, ogień strawił wszystko, co nie było z kamienia. Mimo że Schaffgotschowie jeszcze przez pewien czas próbowali odbudować zamek, ostatecznie opuścili ruiny na zawsze. Od tamtej pory Chojnik stoi jako romantyczna ruina, która przez kolejne wieki fascynowała romantyków, malarzy i poetów.
+### Pożar w 1675 roku
 
-Dziś Zamek Chojnik jest zarządzany przez Polskie Towarzystwo Turystyczno-Krajoznawcze (PTTK) i udostępniony dla turystów przez cały rok. W sezonie letnim w murach zamku działa schronisko PTTK i mała restauracja.
+Koniec świetności przyszedł gwałtownie. W 1675 roku piorun uderzył w zabudowania podczas burzy i ogień strawił wszystko, co było z drewna. Schaffgotschowie próbowali jeszcze odbudować zamek, ale ostatecznie odpuścili. Od tej pory Chojnik stoi jako ruina, i trzeba przyznać, że jako ruina robi jeszcze większe wrażenie niż pewnie robiłby jako zabytek w pełnej krasie.
+
+Dziś zarządza nim PTTK, a w zachowanych murach działa schronisko. W sezonie można tu zjeść żurek albo ogrzać się herbatą po podejściu.
 
 ---
 
 ## Co zobaczyć na Zamku Chojnik?
 
-### Wieża zamkowa i panorama
+### Wieża, panorama, dla której warto wejść na górę
 
-Najważniejszym punktem wizyty jest wejście na szczyt wieży zamkowej. Skręcone kamienne schody prowadzą na taras widokowy, z którego rozciąga się **360-stopniowy widok** na:
+Wieża to serce całej wycieczki. Kręcone kamienne schody prowadzą na taras, z którego widać, dosłownie, wszystko. Śnieżka (1603 m n.p.m.) wyraźna na horyzoncie, cała Kotlina Jeleniogórska rozłożona jak na dłoni, Rudawy Janowickie na wschodzie, Góry Izerskie w oddali. W pogodny dzień jest tu tak, jak na najlepszym zdjęciu z Instagrama, tylko że na żywo i bez filtrów.
 
-- **Karkonosze** — w tym najwyższy szczyt polskich Sudetów, Śnieżkę (1603 m n.p.m.)
-- **Kotlinę Jeleniogórską** — panorama całej doliny z centrum Jeleniej Góry
-- **Rudawy Janowickie** — charakterystyczne granitowe skałki na horyzoncie
-- **Góry Izerskie** — w pogodne dni widać aż po Izerkę
+Warto zapamiętać: wejście na wieżę jest płatne i tego nie żałujesz.
 
-Warto przyjść tutaj zarówno latem (zielone Karkonosze), jak i zimą (ośnieżone szczyty i mroźna, krystalicznie czysta atmosfera).
+### Dziedziniec, historia zapisana w kamieniu
 
-### Dziedziniec i mury obronne
+Spacer po dziedzińcu to oddzielne doświadczenie. Zachowane fragmenty murów obronnych, bramy, fundamenty dawnych komnat, i tablice, które tłumaczą, co gdzie było. Miejsce jest na tyle dobrze zachowane, że wyobraźnia sama dopowiada resztę.
 
-Spacer po dziedzińcu zamkowym pozwala poczuć klimat XIV-wiecznej fortecy. Zachowały się fragmenty murów obronnych, bramy wjazdowej, fundamenty komnat mieszkalnych i kaplicy. Tablice informacyjne (w języku polskim i angielskim) opisują poszczególne elementy zamku i ich historię.
+### Schronisko PTTK
 
-### Schronisko PTTK "Chojnik"
-
-W zaadaptowanej części ruin działa schronisko PTTK. To doskonałe miejsce na odpoczynek po wejściu — gorąca herbata, żurek, grochówka. Schronisko jest czynne w sezonie, warto jednak sprawdzić aktualne godziny otwarcia przed wycieczką (szczególnie poza sezonem).
+W zaadaptowanej części ruin działa schronisko. Żurek, grochówka, gorąca herbata, wszystko to smakuje lepiej po 45 minutach podejścia z Sobieszowa. Poza sezonem schronisko może być nieczynne lub działać w okrojonych godzinach, warto sprawdzić przed wyjazdem.
 
 ### Skała Kunegundy i okoliczne ścieżki
 
-Wokół zamku poprowadzono kilka ścieżek przyrodniczych w obrębie Karkonoskiego Parku Narodowego. Warto zejść do pobliskiej skały zwanej Skokiem Kunegundy i przejść fragment szlaku z widokiem na bazaltowe zbocza wzgórza zamkowego.
+Wokół zamku poprowadzono kilka ścieżek przyrodniczych w obrębie Karkonoskiego Parku Narodowego. Zejście do Skały Kunegundy to dobry pomysł na dodatkowe pół godziny, widok na strome zbocza wzgórza zamkowego robi wrażenie.
 
 ---
 
-## Jak dojść do Zamku Chojnik — trasy
+## Jak dojść na Zamek Chojnik, trasy
 
-### Trasa 1: Z Sobieszowa (szlak niebieski) — POLECANA
+### Trasa 1: Z Sobieszowa, szlak niebieski, ta polecana
 
-**Czas:** ok. 45–60 minut w górę | **Trudność:** Umiarkowana | **Długość:** ok. 2,5 km
+**Czas:** ok. 45–60 minut w górę | **Trudność:** umiarkowana | **Długość:** ok. 2,5 km
 
-To najbardziej popularna i najwygodniejsza trasa. Punkt startowy to centrum dzielnicy Sobieszów (przystanek autobusowy "Sobieszów Pętla"). Niebieski szlak prowadzi przez las, stopniowo się wznosząc, aż do bramy zamkowej. Szlak jest dobrze oznakowany i utrzymany, ale w niektórych miejscach jest stromy — wygodne buty trekkingowe są wskazane.
+Zdecydowana większość turystów idzie tą trasą i z dobrego powodu, jest najkrótsza, dobrze oznakowana i zaczyna się dosłownie przy pętli autobusowej w Sobieszowie. Las, stopniowe podejście, kilka stromszych odcinków. Wygodne buty to nie opcja, to konieczność.
 
-**Jak dojechać do Sobieszowa:**
-- Autobusem z centrum Jeleniej Góry (linia MZK, ok. 20 minut jazdy)
-- Samochodem — parking przy wjeździe do Sobieszowa od strony centrum JG
+Do Sobieszowa dostaniesz się autobusem MZK z centrum Jeleniej Góry (ok. 20 minut) albo samochodem, parking przy pętli.
 
-### Trasa 2: Z Jagniątkowa (szlak zielony)
+### Trasa 2: Z Jagniątkowa, szlak zielony
 
-**Czas:** ok. 40–50 minut | **Trudność:** Umiarkowana | **Długość:** ok. 2 km
+**Czas:** ok. 40–50 minut | **Trudność:** umiarkowana | **Długość:** ok. 2 km
 
-Trasa z Jagniątkowa, malowniczej osady u podnóża Karkonoszy. Zielony szlak jest nieco mniej uczęszczany, co dla wielu turystów jest atutem — spokój i kontakt z naturą. Do Jagniątkowa dojedziemy autobusem z centrum Jeleniej Góry lub samochodem.
+Trochę mniej turystów, trochę więcej spokoju. Jagniątkow to malownicza osada u podnóża Karkonoszy, warto tu zajrzeć też poza szlakiem. Do Jagniątkowa autobusem lub samochodem.
 
-### Trasa 3: Z centrum Jeleniej Góry (szlak czerwony)
+### Trasa 3: Z centrum Jeleniej Góry, szlak czerwony
 
-**Czas:** ok. 2–2,5 godziny | **Trudność:** Długa, ale łatwa technicznie | **Długość:** ok. 8 km
+**Czas:** ok. 2–2,5 godziny | **Trudność:** długa, technicznie łatwa | **Długość:** ok. 8 km
 
-Dla tych, którzy chcą zaliczyć pełną wycieczkę pieszą z centrum miasta. Czerwony szlak prowadzi przez Cieplice Śląskie-Zdrój i dalej do Sobieszowa, skąd kontynuujemy niebieskim szlakiem na zamek. To dobra opcja na cały dzień wycieczki.
+Dla tych, którzy chcą naprawdę zaliczyć wycieczkę. Czerwony szlak prowadzi przez Cieplice Śląskie-Zdrój i Sobieszów. Cały dzień w terenie, nogi potrzebne. Absolutnie warte zachodu, ale zaplanuj na to ok. 5–6 godzin w obie strony.
 
-### Wyciąg krzesełkowy ze Sobieszowa
+### Wyciąg krzesełkowy
 
-Alternatywą dla pieszego podejścia jest **wyciąg krzesełkowy** ze Sobieszowa, który wyciągnie nas na pobliski grzbiet. Z górnej stacji do zamku jest jeszcze kilka minut marszu. Wyciąg działa sezonowo — sprawdź aktualne godziny i ceny przed wizytą.
+Jeśli podejście pieszo nie wchodzi w grę, ze Sobieszowa działa wyciąg krzesełkowy. Wyciągnie Cię na pobliski grzbiet, stamtąd kilka minut marszu do zamku. Uwaga: wyciąg działa sezonowo i bywa nieczynny, sprawdź przed przyjazdem.
 
 ---
 
 ## Godziny otwarcia i ceny biletów
 
-> **Ważne:** Godziny otwarcia i ceny biletów mogą się zmieniać sezonowo. Podane informacje są orientacyjne — przed wizytą sprawdź aktualne dane na stronie PTTK lub bezpośrednio w schronisku.
+> Ceny i godziny zmieniają się co sezon. Poniżej dane orientacyjne, przed wizytą zawsze sprawdź aktualne info na stronie PTTK albo zadzwoń do schroniska.
 
 ### Godziny otwarcia (orientacyjne)
 
@@ -93,7 +94,7 @@ Alternatywą dla pieszego podejścia jest **wyciąg krzesełkowy** ze Sobieszowa
 | Wiosna/Jesień (marzec–kwiecień, październik) | 10:00–16:00 |
 | Zima (listopad–luty) | Weekendy 10:00–15:00 |
 
-Zamek jest dostępny przez cały rok, ale dostęp do wieży może być ograniczony w warunkach ekstremalnych (silny wiatr, oblodzenie).
+Przy silnym wietrze lub oblodzeniu wejście na wieżę może być zamknięte ze względów bezpieczeństwa, to normalne i lepiej nie dyskutować.
 
 ### Bilety wstępu (orientacyjne)
 
@@ -103,72 +104,72 @@ Zamek jest dostępny przez cały rok, ale dostęp do wieży może być ograniczo
 | Ulgowy (dzieci, emeryci, studenci) | ok. 4–6 zł |
 | Rodzinny | ok. 20–25 zł |
 
-Wejście na teren zewnętrzny zamku (dziedziniec) jest zazwyczaj bezpłatne — płatny jest wstęp na wieżę widokową.
+Wejście na dziedziniec, zazwyczaj bezpłatne. Wejście na wieżę, płatne i warte każdej złotówki.
 
 ---
 
-## Zamek Chojnik w różnych porach roku
+## Zamek Chojnik w różnych porach roku, kiedy jechać?
 
 ### Wiosna i lato
 
-Szczyt sezonu turystycznego — najwięcej zwiedzających, schronisko i restauracja w pełni czynne. Zielone Karkonosze w tle tworzą spektakularne tło dla zdjęć. W weekendy możliwy tłok — warto przyjść rano (przed 10:00).
+Najbardziej oblegany okres. Schronisko działa pełną parą, lasy są zielone, widoki z wieży, klasyczne. Problem: weekendy potrafią być naprawdę zatłoczone. Przyjedź wcześnie rano albo w środku tygodnia, różnica jest kolosalna.
 
 ### Jesień
 
-Złota jesień to dla wielu turystów najpiękniejsza pora na wizytę. Kolorowe lasy otaczające zamek tworzą niesamowitą atmosferę. Mniej tłumów niż latem, a pogoda często dopisuje.
+Wiele osób, które tu bywają regularnie, uważa jesień za najlepszą porę. Kolorowe lasy wokół ruin, chłodniejsze powietrze, zdecydowanie mniej ludzi. Październikowy Chojnik to oddzielne doświadczenie.
 
 ### Zima
 
-Ośnieżony Zamek Chojnik to widok rodem z bajki. Szlaki mogą być oblodzone — niezbędne są buty z protektorem lub raki turystyczne. Schronisko pracuje w ograniczonych godzinach. Za to panorama na ośnieżone Karkonosze jest absolutnie wyjątkowa i trudna do zobaczenia w innej porze roku.
+Zimą zamek wygląda jak z ilustracji do baśni. Ośnieżone mury, biała panorama Karkonoszy, robi wrażenie. Tylko szlak bywa zdradliwy: oblodzone kamienie na podejściu z Sobieszowa potrafią zaskoczyć. Buty z protektorem albo raki, nie ma kompromisu.
 
 ---
 
-## Praktyczne wskazówki przed wizytą
+## Praktyczne wskazówki (tych kilka naprawdę ważnych)
 
-- **Buty:** Zawsze wygodne, z protektorem. Zimą koniecznie z dobrą podeszwą lub z rakami turystycznymi.
-- **Woda i jedzenie:** Zabierz prowiant — ceny w schronisku są wyższe niż w mieście. Schronisko może być nieczynne poza sezonem.
-- **Aparat fotograficzny:** Nieobowiązkowy, ale będziesz żałować, jeśli go nie weźmiesz. Widoki ze szczytu wieży są spektakularne.
-- **Czas:** Zaplanuj minimum 3–4 godziny (dojście z Sobieszowa, zwiedzanie, powrót).
-- **Dzieci:** Zamek jest atrakcyjny dla dzieci — ruiny, legenda o księżniczce, wieża. Przy małych dzieciach uważaj na strome miejsca na wieży.
-- **Psy:** Mogą wchodzić na teren zamku na smyczy.
-- **Parking:** W Sobieszowie dostępny jest płatny parking przy pętli autobusowej.
+- **Buty**, trekkingowe z dobrą podeszwą. Zimą raki lub buty zimowe z protektorem. Klapki? Nie.
+- **Woda i jedzenie**, schronisko bywa nieczynne poza sezonem. Weź prowiant z domu, szczególnie jeśli idziesz z dziećmi.
+- **Aparat**, widok ze szczytu wieży wymaga zdjęcia. Serio.
+- **Czas**, zaplanuj minimum 3–4 godziny. Bez pośpiechu.
+- **Dzieci**, zamek jest świetnym miejscem dla dzieci. Historia, legenda o księżniczce, wieża, ruiny, wszystko działa na wyobraźnię. Tylko na schodach wieży trzymaj maluchy za rękę.
+- **Psy**, wchodzą na teren zamku na smyczy. Pamiętaj o zasadach KPN na szlakach.
+- **Parking**, płatny, przy pętli autobusowej w Sobieszowie.
 
 ---
 
 ## Często zadawane pytania (FAQ)
 
 **Czy można wejść do środka Zamku Chojnik?**
-Tak, zamek jest dostępny dla turystów przez cały rok. Można wejść na wieżę widokową, spacerować po dziedzińcu i zwiedzić zachowane ruiny. Wstęp na wieżę jest płatny, wejście na teren zewnętrzny zazwyczaj bezpłatne.
+Tak. Zamek jest otwarty przez cały rok, można zwiedzić dziedziniec i wejść na wieżę widokową. Dziedziniec zazwyczaj bezpłatny, wieża płatna.
 
 **Jak długo trwa wejście na Zamek Chojnik z Sobieszowa?**
-Podejście z centrum Sobieszowa zajmuje od 45 do 60 minut (w zależności od tempa marszu). Samo zwiedzanie zamku i widoki z wieży to kolejne 30–60 minut. Całą wycieczkę z powrotem warto zaplanować na 3–4 godziny.
+Samo podejście to 45–60 minut, zależnie od tempa. Na miejscu warto zostać przynajmniej godzinę. Z powrotem, całość zaplanuj na 3–4 godziny.
 
 **Czy Zamek Chojnik jest otwarty zimą?**
-Tak, zamek jest dostępny przez cały rok. Zimą dostęp do wieży może być ograniczony ze względu na bezpieczeństwo (oblodzenie, silny wiatr). Schronisko PTTK działa w ograniczonych godzinach — warto sprawdzić aktualne informacje przed wyjazdem.
+Tak, przez cały rok. Zimą schronisko działa głównie w weekendy, a wejście na wieżę może być zamknięte przy oblodzeniu lub silnym wietrze. Warto sprawdzić przed wyjazdem.
 
 **Czy Zamek Chojnik jest dostępny dla osób z wózkiem lub niepełnosprawnych?**
-Niestety, ze względu na naturalne ukształtowanie terenu (strome zbocza, kamienne ścieżki) i historyczny charakter obiektu, zamek jest trudno dostępny dla osób na wózkach i ze znacznymi ograniczeniami ruchowymi.
+Nie, kamienne szlaki, strome podejście i historyczne schody wieży są niedostępne dla osób na wózkach lub z poważniejszymi ograniczeniami ruchowymi.
 
 **Ile kosztuje wejście na Zamek Chojnik?**
-Orientacyjnie bilet normalny to ok. 7–10 zł, ulgowy ok. 4–6 zł. Ceny mogą się zmieniać — sprawdź aktualne informacje na stronie PTTK lub na miejscu.
+Orientacyjnie ok. 7–10 zł bilet normalny, ok. 4–6 zł ulgowy. Ceny mogą się zmieniać, sprawdź aktualne na stronie PTTK lub w kasie na miejscu.
 
 **Czy można dojechać samochodem bezpośrednio pod zamek?**
-Nie — zamek leży na szczycie bazaltowej skały i nie ma drogi dojazdowej do samego zamku. Najbliższy parking jest w Sobieszowie, skąd trzeba podejść pieszo (ok. 45–60 minut) lub skorzystać z wyciągu krzesełkowego.
+Nie. Drogi samochodowej na szczyt nie ma. Parking w Sobieszowie, dalej pieszo (45–60 min) albo wyciągiem krzesełkowym.
 
-**Czy w pobliżu Zamku Chojnik jest coś do jedzenia?**
-W sezonie (wiosna–jesień) w schronisku PTTK działa restauracja z ciepłymi posiłkami i napojami. Poza sezonem lub przy ograniczonych godzinach schroniska warto zabrać prowiant z domu.
+**Czy w pobliżu zamku jest coś do jedzenia?**
+W sezonie w schronisku PTTK zjesz żurek, grochówkę, dostaniesz herbatę. Poza sezonem, weź coś ze sobą.
 
 **Skąd pochodzi nazwa "Chojnik"?**
-Nazwa pochodzi prawdopodobnie od słowa "chojna" — staropolskiej nazwy sosny lub jodły. Wzgórze było niegdyś porośnięte lasem iglastym, stąd taka nazwa.
+Prawdopodobnie od staropolskiego słowa "chojna", sosna lub jodła. Wzgórze było kiedyś gęsto porośnięte lasem iglastym.
 
 ---
 
-## Jak Zamek Chojnik wpisuje się w aktywny wypoczynek w Jeleniej Górze?
+## Jak połączyć Zamek Chojnik z resztą dnia?
 
-Zamek Chojnik doskonale łączy historię z aktywnym wypoczynkiem na świeżym powietrzu — i to właśnie sprawia, że jest tak wyjątkowy. Wycieczka na zamek to jednocześnie lekcja historii Śląska, trening w pięknym otoczeniu Karkonoskiego Parku Narodowego i nagroda w postaci jednej z najpiękniejszych panoram w Sudetach.
+Najlepszy plan na pełny dzień wygląda tak: rano Sobieszów i wejście na zamek, po zejściu, Cieplice Śląskie-Zdrój (to 30 minut spaceru, jedno z najstarszych uzdrowisk w Polsce, termalny basen, park zdrojowy). Wieczorem centrum Jeleniej Góry. Trzy bardzo różne klimaty w jednym dniu, i każdy wart zachodu.
 
-Warto połączyć wizytę na zamku z innymi atrakcjami Jeleniej Góry: Cieplicami Śląskimi-Zdrojem (uzdrowisko z termalnymi basenami, 30 min piechotą od Sobieszowa), Parkiem Norweskim w Jeleniej Górze czy trasami rowerowymi Kotliny Jeleniogórskiej.
+Zamek Chojnik możesz też znaleźć na [interaktywnej mapie Jeleniej Góry](https://jeleniogorzanietomy.pl/#zamek-chojnik), z zaznaczonymi szlakami i innymi atrakcjami w okolicy.
 
 ---
 
-*Artykuł przygotowany przez redakcję JeleniogorzaNieTomy.pl — lokalnego przewodnika po Jeleniej Górze i Kotlinie Jeleniogórskiej. Zamek Chojnik znajdziesz też na naszej interaktywnej mapie Jeleniej Góry.*
+*Artykuł przygotowany przez redakcję JeleniogorzaNieTomy.pl, lokalnego przewodnika po Jeleniej Górze i Kotlinie Jeleniogórskiej.*
