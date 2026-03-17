@@ -43,12 +43,11 @@
   filter: brightness(0.88) contrast(1.2) saturate(1.5);
 }
 
-.jg-map-tiles {
-  position: relative;
+.jg-map-tiles .leaflet-zoom-animated {
   isolation: isolate;
 }
 
-.jg-map-tiles::after {
+.jg-map-tiles .leaflet-zoom-animated::after {
   content: '';
   position: absolute;
   inset: 0;
