@@ -1,16 +1,16 @@
 # Pasaż Górski Jelenia Góra – sklepy, godziny otwarcia, jak dojechać 2026
 
-Są miejsca zakupowe, do których jedziesz i wiesz dokładnie, po co. Pasaż Górski jest takim miejscem. Retail park przy ul. Jana Pawła II w Zabobrzu, z darmowym parkingiem i każdym sklepem dostępnym prosto z zewnątrz, bez szukania windy i kręcenia się po korytarzach galerii.
+Są miejsca zakupowe, do których jedziesz i wiesz dokładnie, po co. Pasaż Górski jest takim miejscem. Centrum handlowe przy ul. Jana Pawła II w Zabobrzu, z dużym bezpłatnym parkingiem i wygodnym dojazdem z każdej części Jeleniej Góry.
 
 W tym przewodniku znajdziesz pełną listę sklepów, aktualne godziny otwarcia i wszystko o dojeździe — samochodem i autobusem.
 
 ---
 
-## Czym jest Pasaż Górski?
+## Pasaż Górski — gdzie i co?
 
-Pasaż Górski to **retail park** — otwarte centrum handlowe, w którym do każdego sklepu wchodzisz bezpośrednio z parkingu. Żadnej wspólnej hali, żadnych eskalatorów, żadnego wielopoziomowego garażu. Podjeżdżasz, parkujesz bezpłatnie i wchodzisz tam, gdzie chciałeś. Format, który wygrywa wygodą i szybkością zakupów, szczególnie gdy masz konkretną listę do zrealizowania.
+Pasaż Górski to centrum handlowe przy ul. Jana Pawła II w dzielnicy Zabobrze. Dla wielu mieszkańców tej części miasta to codzienne miejsce zakupów spożywczych, sportowych i elektroniki. Dużym atutem jest **bezpłatny parking** — w przeciwieństwie do parkingów wielopoziomowych w centrum, tu nie ma opłat ani limitów czasu.
 
-Lokalizacja przy ul. Jana Pawła II sprawia, że jest to naturalne miejsce zakupów dla mieszkańców Zabobrza i okolicznych osiedli — i dobry punkt zatrzymania dla wszystkich, którzy jadą trasą do centrum lub z centrum.
+Lokalizacja przy jednej z głównych arterii Jeleniej Góry sprawia, że dojazd jest prosty zarówno samochodem, jak i autobusem MZK.
 
 ---
 
@@ -99,7 +99,7 @@ Linie MZK 3, 10 i 12 — ok. 10–15 minut z centrum Jeleniej Góry.
 W niedziele handlowe tak, w niehandlowe nie. Sprawdź aktualny kalendarz niedziel handlowych przed wizytą.
 
 **Czym Pasaż Górski różni się od Galerii Sudeckiej?**
-Pasaż Górski to retail park — do każdego sklepu wchodzisz prosto z bezpłatnego parkingu na zewnątrz. Galeria Sudecka to tradycyjne centrum handlowe z halą, parkingiem wielopoziomowym i innym asortymentem. Oba miejsca uzupełniają się.
+Oba to centra handlowe w Jeleniej Górze, ale w różnych częściach miasta i z innym asortymentem. Pasaż Górski ma bezpłatny parking przy obiekcie i sklepy takie jak E.Leclerc, Decathlon czy RTV Euro AGD. Galeria Sudecka oferuje większy wybór marek odzieżowych i restauracji.
 
 ---
 
