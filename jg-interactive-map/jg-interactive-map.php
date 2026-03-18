@@ -679,12 +679,13 @@ class JG_Interactive_Map {
          * --jg: multiplikator 1px identyczny jak w jg-map.css.
          * Ta strona nie ładuje wp_head() więc musi definiować go lokalnie.
          * Wszystkie font-size używają calc(N * var(--jg)) — to samo co reszta wtyczki.
+         * Zakres clamp(1px, 0.1vw, 1.4px): 14px staje się 14px→19.6px (+40%).
          */
         :root {
-            --jg: clamp(1px, 0.065vw, 1.1px);
+            --jg: clamp(1px, 0.1vw, 1.4px);
         }
-        @media (min-width: 1600px) { :root { --jg: 1.05px; } }
-        @media (min-width: 1920px) { :root { --jg: 1px; } }
+        @media (min-width: 1600px) { :root { --jg: 1.3px; } }
+        @media (min-width: 1920px) { :root { --jg: 1.15px; } }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #111; background: #f9fafb; line-height: 1.5; -webkit-font-smoothing: antialiased; }
@@ -825,10 +826,10 @@ class JG_Interactive_Map {
             display: flex; align-items: center; gap: 12px;
             padding: 10px 16px; flex-wrap: wrap;
         }
-        .jg-redirect-icon { font-size: 22px; flex-shrink: 0; }
+        .jg-redirect-icon { font-size: calc(22 * var(--jg)); flex-shrink: 0; }
         .jg-redirect-text { flex: 1; min-width: 0; }
-        .jg-redirect-title { display: block; font-size: calc(17 * var(--jg)); font-weight: 700; line-height: 1.3; }
-        .jg-redirect-text span { font-size: calc(14 * var(--jg)); opacity: 0.9; }
+        .jg-redirect-title { display: block; font-size: calc(19 * var(--jg)); font-weight: 700; line-height: 1.3; }
+        .jg-redirect-text span { font-size: calc(15 * var(--jg)); opacity: 0.9; }
         .jg-redirect-actions { display: flex; gap: 8px; flex-shrink: 0; }
         .jg-redirect-btn-go {
             background: #fff; color: <?php echo $type_color; ?>;
@@ -855,7 +856,7 @@ class JG_Interactive_Map {
         /* offset body so banner doesn't overlap header */
         body { padding-top: 58px; }
         @media (max-width: 480px) {
-            .jg-redirect-title { font-size: calc(15 * var(--jg)); }
+            .jg-redirect-title { font-size: calc(16 * var(--jg)); }
             body { padding-top: 72px; }
         }
 
@@ -873,53 +874,55 @@ class JG_Interactive_Map {
             display: none;
             background: linear-gradient(135deg, #8d2324 0%, #6b1a1a 100%);
             color: #fff;
-            border-radius: 12px;
-            padding: 14px 18px;
+            border-radius: 14px;
+            padding: 18px 22px;
             margin-bottom: 24px;
             animation: jg-stay-pulse 2s ease-in-out infinite;
         }
         .jg-stay-banner__inner {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 14px;
             flex-wrap: wrap;
         }
         .jg-stay-banner__icon {
-            font-size: calc(22 * var(--jg));
+            font-size: calc(32 * var(--jg));
             flex-shrink: 0;
             line-height: 1;
         }
         .jg-stay-banner__body {
             flex: 1;
-            font-size: calc(14 * var(--jg));
+            font-size: calc(16 * var(--jg));
             font-weight: 600;
-            min-width: 120px;
+            min-width: 140px;
             line-height: 1.4;
         }
         .jg-stay-banner__timer {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: calc(13 * var(--jg));
+            gap: 8px;
+            font-size: calc(14 * var(--jg));
             white-space: nowrap;
-            opacity: 0.9;
+            opacity: 0.92;
         }
         .jg-stay-countdown {
-            font-size: calc(15 * var(--jg));
+            font-size: calc(30 * var(--jg));
             font-family: monospace;
             font-variant-numeric: tabular-nums;
+            font-weight: 800;
             background: rgba(255,255,255,0.2);
-            padding: 2px 8px;
-            border-radius: 5px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            letter-spacing: 0.04em;
         }
         .jg-stay-banner__cta {
             display: inline-block;
             background: rgba(255,255,255,0.2);
             color: #fff;
-            font-size: calc(13 * var(--jg));
+            font-size: calc(15 * var(--jg));
             font-weight: 700;
-            padding: 7px 16px;
-            border-radius: 7px;
+            padding: 9px 20px;
+            border-radius: 8px;
             text-decoration: none;
             white-space: nowrap;
             transition: background 0.15s;
@@ -928,8 +931,9 @@ class JG_Interactive_Map {
             background: rgba(255,255,255,0.35);
             color: #fff;
         }
-        @media (max-width: 480px) {
+        @media (max-width: 600px) {
             .jg-stay-banner__timer { flex-basis: 100%; }
+            .jg-stay-countdown { font-size: calc(26 * var(--jg)); }
         }
     </style>
 </head>
