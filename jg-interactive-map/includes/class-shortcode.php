@@ -263,7 +263,7 @@ class JG_Map_Shortcode {
             </div>
 
             <!-- Full-screen loader covering map + sidebar until everything is ready -->
-            <div id="jg-map-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:999999;background:rgba(255,255,255,0.95);pointer-events:all;transition:opacity 0.3s;">
+            <div id="jg-map-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:999999;background:#fff;pointer-events:all;transition:opacity 0.3s;">
                 <div class="jg-loader-pins">
                     <!-- Blue pin (ciekawostka) -->
                     <svg class="jg-loader-pin" width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg" style="animation-delay:0s">
