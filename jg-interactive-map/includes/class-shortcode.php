@@ -284,11 +284,21 @@ class JG_Map_Shortcode {
                         <circle cx="16" cy="16" r="5.5" fill="#888"/>
                     </svg>
                 </div>
-                <div style="margin-top:20px;font-size:calc(16 * var(--jg));color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
+                <div id="jg-map-loading-text" style="margin-top:20px;font-size:calc(16 * var(--jg));color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
             </div>
             <script>
             // Move loader to <body> immediately so parent overflow:hidden/clip doesn't clip it
-            (function(){var e=document.getElementById('jg-map-loading');if(e)document.body.appendChild(e);})();
+            (function(){
+              var e=document.getElementById('jg-map-loading');
+              if(e)document.body.appendChild(e);
+              // If coming from a pin page, show a more relevant loading message
+              try {
+                if(new URLSearchParams(window.location.search).get('from')==='point'){
+                  var t=document.getElementById('jg-map-loading-text');
+                  if(t)t.textContent='Trwa ładowanie pineski, prosimy czekać\u2026';
+                }
+              } catch(ex){}
+            })();
             </script>
 
             <div id="jg-map" class="jg-map" style="opacity: 0; transition: opacity 0.3s;"
