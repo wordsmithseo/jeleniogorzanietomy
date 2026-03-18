@@ -8864,3 +8864,12 @@ body.jg-fullscreen-active .jg-modal-bg {
     display: flex !important;
   }
 }
+
+/* Ukryj logo portalu w stopce strony */
+.site-footer .site-logo,
+.site-footer .site-branding .site-logo,
+#site-footer .site-logo,
+footer.site-footer .custom-logo-link,
+footer.site-footer .site-branding {
+  display: none !important;
+}
