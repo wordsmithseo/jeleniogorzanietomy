@@ -1168,8 +1168,8 @@ class JG_Interactive_Map {
         if (get_option('blog_public') == '0') {
             $robots_content = 'noindex, nofollow';
         }
-        // Check maintenance mode
-        $maintenance_mode = get_option('jg_map_maintenance_mode') ?: get_option('elementor_maintenance_mode_mode');
+        // Check Elementor maintenance mode
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
         if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
             $robots_content = 'noindex, nofollow';
         }
@@ -1398,8 +1398,8 @@ class JG_Interactive_Map {
             $robots_content = 'noindex, nofollow';
         }
 
-        // Check maintenance mode - should block indexing during maintenance
-        $maintenance_mode = get_option('jg_map_maintenance_mode') ?: get_option('elementor_maintenance_mode_mode');
+        // Check Elementor maintenance mode - should block indexing during maintenance
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
         if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
             $robots_content = 'noindex, nofollow';
         }
@@ -2015,7 +2015,7 @@ class JG_Interactive_Map {
         if (get_option('blog_public') == '0') {
             $robots = 'noindex, nofollow';
         }
-        $maintenance_mode = get_option('jg_map_maintenance_mode') ?: get_option('elementor_maintenance_mode_mode');
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
         if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
             $robots = 'noindex, nofollow';
         }
