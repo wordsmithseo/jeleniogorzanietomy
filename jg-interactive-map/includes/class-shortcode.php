@@ -264,8 +264,27 @@ class JG_Map_Shortcode {
 
             <!-- Full-screen loader covering map + sidebar until everything is ready -->
             <div id="jg-map-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:999999;background:rgba(255,255,255,0.95);pointer-events:all;transition:opacity 0.3s;">
-                <div class="jg-spinner"></div>
-                <div style="margin-top:16px;font-size:calc(16 * var(--jg));color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
+                <div class="jg-loader-pins">
+                    <!-- Blue pin (ciekawostka) -->
+                    <svg class="jg-loader-pin" width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg" style="animation-delay:0s">
+                        <defs><linearGradient id="jg-ldr-blue" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#1e40af"/><stop offset="50%" style="stop-color:#3b82f6"/><stop offset="100%" style="stop-color:#1e40af"/></linearGradient></defs>
+                        <path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" fill="url(#jg-ldr-blue)"/>
+                        <circle cx="16" cy="16" r="5.5" fill="#1e3a8a"/>
+                    </svg>
+                    <!-- Green pin (miejsce) -->
+                    <svg class="jg-loader-pin" width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg" style="animation-delay:0.2s">
+                        <defs><linearGradient id="jg-ldr-green" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#15803d"/><stop offset="50%" style="stop-color:#22c55e"/><stop offset="100%" style="stop-color:#15803d"/></linearGradient></defs>
+                        <path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" fill="url(#jg-ldr-green)"/>
+                        <circle cx="16" cy="16" r="5.5" fill="#0a5a28"/>
+                    </svg>
+                    <!-- Black pin (zgłoszenie) -->
+                    <svg class="jg-loader-pin" width="32" height="40" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg" style="animation-delay:0.4s">
+                        <defs><linearGradient id="jg-ldr-black" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#000"/><stop offset="50%" style="stop-color:#1f1f1f"/><stop offset="100%" style="stop-color:#000"/></linearGradient></defs>
+                        <path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" fill="url(#jg-ldr-black)"/>
+                        <circle cx="16" cy="16" r="5.5" fill="#888"/>
+                    </svg>
+                </div>
+                <div style="margin-top:20px;font-size:calc(16 * var(--jg));color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
             </div>
             <script>
             // Move loader to <body> immediately so parent overflow:hidden/clip doesn't clip it
