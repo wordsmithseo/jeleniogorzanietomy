@@ -7956,6 +7956,21 @@ button.jg-mobile-map-filter-btn {
   cursor: pointer !important;
 }
 
+/* ── Nav site title ── */
+#jg-nav-bar .jg-nav-site-title {
+  all: unset !important;
+  display: block !important;
+  margin-left: 10px !important;
+  font-size: calc(12 * var(--jg)) !important;
+  font-weight: 700 !important;
+  color: #8d2324 !important;
+  line-height: 1.2 !important;
+  max-width: 55vw !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: normal !important;
+}
+
 /* ── Logo image ── */
 #jg-nav-bar .jg-nav-logo-img {
   all: unset !important;
