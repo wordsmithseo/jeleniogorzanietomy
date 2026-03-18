@@ -12498,7 +12498,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var input = $('<input>')
           .attr({
             type: 'text',
-            placeholder: 'np. 50.9029, 15.7277 lub 50.9029, 15.7277'
+            placeholder: 'np. 50.9029, 15.7277',
+            autocomplete: 'off'
           })
           .css({
             width: '100%',
@@ -12518,6 +12519,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           })
           .on('keydown', function(e) {
             if (e.key === 'Enter') {
+              e.preventDefault();
               var coords = $(this).val().trim();
               if (coords) {
                 parseAndGoToCoords(coords);
@@ -12534,16 +12536,40 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             fontSize: '12px',
             color: '#6b7280'
           })
-          .text('Wpisz współrzędne (szerokość, długość) i naciśnij Enter');
+          .text('Wpisz współrzędne (szerokość, długość) i naciśnij Enter lub kliknij przycisk');
 
-        inputBox.append(title, input, hint);
+        var submitBtn = $('<button>')
+          .attr('type', 'button')
+          .css({
+            marginTop: '12px',
+            width: '100%',
+            padding: '12px',
+            background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            fontFamily: 'inherit'
+          })
+          .text('🎯 Przejdź do współrzędnych')
+          .on('click', function() {
+            var coords = input.val().trim();
+            if (coords) {
+              parseAndGoToCoords(coords);
+              overlay.remove();
+            }
+          });
+
+        inputBox.append(title, input, hint, submitBtn);
         overlay.append(inputBox);
         $('body').append(overlay);
 
-        // Focus input after a short delay
+        // Focus input after animation completes
         setTimeout(function() {
           input.focus();
-        }, 100);
+        }, 350);
       }
 
       function geocodeAddress(address) {
