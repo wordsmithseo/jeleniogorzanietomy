@@ -3192,6 +3192,22 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       var isFullscreen = false;
       var isDeskWide = false;
       var _wasDeskWideBeforeFs = false;
+
+      // Returns a latlng shifted so that, when used as the Leaflet map centre,
+      // the ORIGINAL latlng appears visually centred in the area between the
+      // left viewport edge and the floating sidebar.
+      // On mobile or when desktop-wide mode is inactive it returns the original.
+      function dwCenteredLatLng(latlng, zoom) {
+        if (!isDeskWide || window.innerWidth <= 768) return latlng;
+        // Sidebar: width min(380px, 30vw) + 12px right gap + 12px left breathing room
+        var sidebarW = Math.min(343, window.innerWidth * 0.285) + 24;
+        var z = (zoom !== undefined) ? zoom : map.getZoom();
+        var px = map.project(L.latLng(latlng), z);
+        // Shift the centre point right by half the sidebar width so the target
+        // ends up in the centre of the visible (non-sidebar) area.
+        return map.unproject(px.add([sidebarW / 2, 0]), z);
+      }
+
       var FullscreenControl = L.Control.extend({
         options: { position: 'topleft' },
         onAdd: function() {
@@ -3952,21 +3968,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 uci.style.transform = 'none';
               }
             }, 50);
-          }
-
-          // Returns a latlng shifted so that, when used as the Leaflet map centre,
-          // the ORIGINAL latlng appears visually centred in the area between the
-          // left viewport edge and the floating sidebar.
-          // On mobile or when desktop-wide mode is inactive it returns the original.
-          function dwCenteredLatLng(latlng, zoom) {
-            if (!isDeskWide || window.innerWidth <= 768) return latlng;
-            // Sidebar: width min(380px, 30vw) + 12px right gap + 12px left breathing room
-            var sidebarW = Math.min(343, window.innerWidth * 0.285) + 24;
-            var z = (zoom !== undefined) ? zoom : map.getZoom();
-            var px = map.project(L.latLng(latlng), z);
-            // Shift the centre point right by half the sidebar width so the target
-            // ends up in the centre of the visible (non-sidebar) area.
-            return map.unproject(px.add([sidebarW / 2, 0]), z);
           }
 
           function enterDeskWide() {
