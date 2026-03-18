@@ -931,11 +931,11 @@ class JG_Map_Enqueue {
     }
 
     /**
-     * Hide register button during maintenance mode.
-     * Checks plugin's own option first, falls back to Elementor's if present.
+     * Hide register button on Elementor maintenance screen
+     * Registration is blocked during maintenance, so no need to show the button
      */
     public function hide_register_on_maintenance() {
-        $maintenance_mode = get_option('jg_map_maintenance_mode') ?: get_option('elementor_maintenance_mode_mode');
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
 
         if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
             ?>
@@ -963,11 +963,17 @@ class JG_Map_Enqueue {
      */
     /**
      * Return true if the current page contains the map shortcode.
+     * Checks both standard post_content and Elementor's _elementor_data meta.
      */
     private function is_map_page() {
         global $post;
         if (!$post) return false;
-        return has_shortcode($post->post_content, 'jg_map') || has_shortcode($post->post_content, 'jg_map_advanced');
+        if (has_shortcode($post->post_content, 'jg_map') || has_shortcode($post->post_content, 'jg_map_advanced')) {
+            return true;
+        }
+        // Elementor stores widget content in _elementor_data (JSON), not post_content
+        $elementor_data = get_post_meta($post->ID, '_elementor_data', true);
+        return $elementor_data && strpos($elementor_data, 'jg_map') !== false;
     }
 
     public function add_map_body_class($classes) {

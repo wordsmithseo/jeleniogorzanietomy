@@ -6697,13 +6697,13 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Check maintenance mode for users without bypass permission
+        // Check Elementor maintenance mode for users without bypass permission
         $is_admin = user_can($user->ID, 'manage_options');
         $is_moderator = user_can($user->ID, 'jg_map_moderate');
         $can_bypass_maintenance = user_can($user->ID, 'jg_map_bypass_maintenance');
 
         if (!$is_admin && !$is_moderator && !$can_bypass_maintenance) {
-            $maintenance_mode = get_option('jg_map_maintenance_mode') ?: get_option('elementor_maintenance_mode_mode');
+            $maintenance_mode = get_option('elementor_maintenance_mode_mode');
 
             if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
                 // Log user out
@@ -6770,8 +6770,8 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Check maintenance mode - block registration completely
-        $maintenance_mode = get_option('jg_map_maintenance_mode') ?: get_option('elementor_maintenance_mode_mode');
+        // Check Elementor maintenance mode - block registration completely
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
 
         if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
             wp_send_json_error('Trwają prace konserwacyjne. Rejestracja nowych kont została tymczasowo wstrzymana. Zapraszamy później.');
@@ -7002,7 +7002,7 @@ class JG_Map_Ajax_Handlers {
         ));
 
         // Check if maintenance mode is active
-        $maintenance_mode = get_option('jg_map_maintenance_mode') ?: get_option('elementor_maintenance_mode_mode');
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
         $is_maintenance = ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon');
 
         // Users who can bypass don't need to be logged out during maintenance
