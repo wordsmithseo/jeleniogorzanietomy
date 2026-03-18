@@ -12625,7 +12625,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
       function goToLocationAndOpenModal(lat, lng) {
         // Fly to location with maximum zoom (19)
-        map.flyTo(dwCenteredLatLng([lat, lng], 19), 19, {
+        map.flyTo([lat, lng], 19, {
           duration: 1.5
         });
 
