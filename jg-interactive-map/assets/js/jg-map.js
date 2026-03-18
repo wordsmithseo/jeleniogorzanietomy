@@ -729,7 +729,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
     var remaining = minLoadingTime - elapsed;
 
     function doHide() {
-      if (loadingEl) loadingEl.style.display = 'none';
+      // Signal coordinator: map is ready.
+      // The loader is hidden by _jgLoad._check() only after BOTH map AND sidebar are ready.
       if (window._jgLoad) window._jgLoad.setMap();
     }
 
@@ -772,8 +773,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
     sidebar: !document.getElementById('jg-map-sidebar'),
     _check: function() {
       if (this.map && this.sidebar) {
+        // Reveal sidebar
         var s = document.getElementById('jg-map-sidebar');
         if (s) s.style.opacity = '1';
+        // Fade out and hide the full-screen loader
+        if (loadingEl) {
+          loadingEl.style.opacity = '0';
+          setTimeout(function() {
+            if (loadingEl) loadingEl.style.display = 'none';
+          }, 300);
+        }
       }
     },
     setMap: function() { this.map = true; this._check(); },
