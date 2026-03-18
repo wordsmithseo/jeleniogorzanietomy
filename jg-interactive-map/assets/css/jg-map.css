@@ -390,7 +390,7 @@
   padding: 0 !important;
 }
 
-/* Loading spinner */
+/* Full-screen loading overlay */
 #jg-map-loading {
   display: flex;
   flex-direction: column;

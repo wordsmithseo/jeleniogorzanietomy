@@ -262,8 +262,8 @@ class JG_Map_Shortcode {
                 <?php echo $this->render_banner([]); ?>
             </div>
 
-            <!-- Loader positioned relative to map container -->
-            <div id="jg-map-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:400;background:#fff;padding:30px 40px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15);pointer-events:none;">
+            <!-- Full-screen loader covering map + sidebar until everything is ready -->
+            <div id="jg-map-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:9998;background:rgba(255,255,255,0.95);pointer-events:all;transition:opacity 0.3s;">
                 <div class="jg-spinner"></div>
                 <div style="margin-top:16px;font-size:calc(16 * var(--jg));color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
             </div>
