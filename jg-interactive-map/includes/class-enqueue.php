@@ -747,10 +747,13 @@ class JG_Map_Enqueue {
                     </div>
                 </div>
             </div>
-            <div class="jg-top-bar-right">
+            <div class="jg-top-bar-center">
                 <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-top-bar-logo-link" aria-label="Strona główna">
                     <img src="https://jeleniogorzanietomy.pl/wp-content/uploads/2025/10/jg-logo-1.svg" alt="Jelenia Góra to my" class="jg-top-bar-logo-img">
+                    <span class="jg-top-bar-site-title">Jeleniogórzanie to my - Interaktywna mapa Jeleniej Góry</span>
                 </a>
+            </div>
+            <div class="jg-top-bar-right">
                 <?php if (is_user_logged_in()) : ?>
                     <?php
                     $current_user = wp_get_current_user();
