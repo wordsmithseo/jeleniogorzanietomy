@@ -2212,6 +2212,13 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     flex-wrap: wrap;
   }
 
+  .jg-top-bar-site-title {
+    font-size: calc(11 * var(--jg));
+    white-space: normal;
+    line-height: 1.2;
+    max-width: 45vw;
+  }
+
   /* Make buttons smaller on mobile */
   .jg-top-bar-btn {
     padding: 6px 12px;
