@@ -284,7 +284,7 @@ class JG_Map_Shortcode {
                         <circle cx="16" cy="16" r="5.5" fill="#888"/>
                     </svg>
                 </div>
-                <div id="jg-map-loading-text" style="margin-top:20px;font-size:calc(16 * var(--jg));color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
+                <div id="jg-map-loading-text" style="margin-top:24px;font-size:clamp(18px,4vw,26px);color:#111;font-weight:700;letter-spacing:0.01em;text-align:center;padding:0 16px;line-height:1.4"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
             </div>
             <script>
             // Move loader to <body> immediately so parent overflow:hidden/clip doesn't clip it
