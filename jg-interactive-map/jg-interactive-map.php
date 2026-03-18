@@ -674,6 +674,18 @@ class JG_Interactive_Map {
     </script>
     <style>
         /* Standalone point page styles - no Elementor dependency */
+
+        /*
+         * --jg: multiplikator 1px identyczny jak w jg-map.css.
+         * Ta strona nie ładuje wp_head() więc musi definiować go lokalnie.
+         * Wszystkie font-size używają calc(N * var(--jg)) — to samo co reszta wtyczki.
+         */
+        :root {
+            --jg: clamp(1px, 0.065vw, 1.1px);
+        }
+        @media (min-width: 1600px) { :root { --jg: 1.05px; } }
+        @media (min-width: 1920px) { :root { --jg: 1px; } }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #111; background: #f9fafb; line-height: 1.5; -webkit-font-smoothing: antialiased; }
         a { text-decoration: none; color: inherit; }
@@ -820,14 +832,14 @@ class JG_Interactive_Map {
         .jg-redirect-actions { display: flex; gap: 8px; flex-shrink: 0; }
         .jg-redirect-btn-go {
             background: #fff; color: <?php echo $type_color; ?>;
-            padding: 7px 16px; border-radius: 7px; font-size: 13px; font-weight: 700;
+            padding: 7px 16px; border-radius: 7px; font-size: calc(13 * var(--jg)); font-weight: 700;
             white-space: nowrap; text-decoration: none; border: none; cursor: pointer;
             transition: opacity 0.15s;
         }
         .jg-redirect-btn-go:hover { opacity: 0.88; }
         .jg-redirect-btn-cancel {
             background: rgba(255,255,255,0.18); color: #fff;
-            padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 600;
+            padding: 7px 14px; border-radius: 7px; font-size: calc(13 * var(--jg)); font-weight: 600;
             border: 1px solid rgba(255,255,255,0.4); cursor: pointer; white-space: nowrap;
             transition: background 0.15s;
         }
@@ -845,6 +857,79 @@ class JG_Interactive_Map {
         @media (max-width: 480px) {
             .jg-redirect-title { font-size: calc(15 * var(--jg)); }
             body { padding-top: 72px; }
+        }
+
+        /* ── Pulsujący baner "Zostań na tym" ───────────────────────────── */
+        /* Pojawia się inline (nie zasłania treści) gdy user kliknie "Zostań" */
+        @keyframes jg-stay-pulse {
+            0%, 100% {
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 0 0 0 rgba(141,35,36,0.45);
+            }
+            50% {
+                box-shadow: 0 4px 18px rgba(0,0,0,0.2), 0 0 0 10px rgba(141,35,36,0);
+            }
+        }
+        .jg-stay-banner {
+            display: none;
+            background: linear-gradient(135deg, #8d2324 0%, #6b1a1a 100%);
+            color: #fff;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            animation: jg-stay-pulse 2s ease-in-out infinite;
+        }
+        .jg-stay-banner__inner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .jg-stay-banner__icon {
+            font-size: calc(22 * var(--jg));
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .jg-stay-banner__body {
+            flex: 1;
+            font-size: calc(14 * var(--jg));
+            font-weight: 600;
+            min-width: 120px;
+            line-height: 1.4;
+        }
+        .jg-stay-banner__timer {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: calc(13 * var(--jg));
+            white-space: nowrap;
+            opacity: 0.9;
+        }
+        .jg-stay-countdown {
+            font-size: calc(15 * var(--jg));
+            font-family: monospace;
+            font-variant-numeric: tabular-nums;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 5px;
+        }
+        .jg-stay-banner__cta {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: calc(13 * var(--jg));
+            font-weight: 700;
+            padding: 7px 16px;
+            border-radius: 7px;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .jg-stay-banner__cta:hover {
+            background: rgba(255,255,255,0.35);
+            color: #fff;
+        }
+        @media (max-width: 480px) {
+            .jg-stay-banner__timer { flex-basis: 100%; }
         }
     </style>
 </head>
@@ -887,6 +972,22 @@ class JG_Interactive_Map {
                 </div>
                 <span class="jg-sp-map-cta-arrow">&rarr;</span>
             </a>
+
+            <!-- Pulsujący baner "Zostań na tym" — ukryty, pojawia się po kliknięciu "Zostań" -->
+            <div id="jg-stay-banner" class="jg-stay-banner" role="status" aria-live="polite">
+                <div class="jg-stay-banner__inner">
+                    <span class="jg-stay-banner__icon">🎯</span>
+                    <div class="jg-stay-banner__body">
+                        Świetnie! Sprawdź to miejsce i wróć do mapy kiedy chcesz.
+                    </div>
+                    <div class="jg-stay-banner__timer">
+                        Odkryj więcej za: <strong id="jg-stay-countdown" class="jg-stay-countdown">05:00</strong>
+                    </div>
+                    <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" class="jg-stay-banner__cta">
+                        Otwórz mapę &rarr;
+                    </a>
+                </div>
+            </div>
 
             <!-- Header with badges -->
             <div class="jg-sp-header">
@@ -1024,6 +1125,31 @@ class JG_Interactive_Map {
                         banner.style.display = 'none';
                         document.body.style.paddingTop = '0';
                     }, 300);
+                }
+
+                // Pokaż pulsujący baner z odliczaniem po kliknięciu "Zostań"
+                var stayBanner = document.getElementById('jg-stay-banner');
+                if (stayBanner && !stayBanner._stayShown) {
+                    if (stayBanner) {
+                        stayBanner._stayShown = true;
+                        stayBanner.style.display = 'block';
+                        var staySeconds = 5 * 60; // 5 minut
+                        var stayEl = document.getElementById('jg-stay-countdown');
+                        var stayTimer = setInterval(function() {
+                            staySeconds--;
+                            if (stayEl) {
+                                var m = Math.floor(staySeconds / 60);
+                                var s = staySeconds % 60;
+                                stayEl.textContent = ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
+                            }
+                            if (staySeconds <= 0) {
+                                clearInterval(stayTimer);
+                                stayBanner.style.transition = 'opacity 0.5s';
+                                stayBanner.style.opacity = '0';
+                                setTimeout(function() { stayBanner.style.display = 'none'; }, 500);
+                            }
+                        }, 1000);
+                    }
                 }
             };
         })();
