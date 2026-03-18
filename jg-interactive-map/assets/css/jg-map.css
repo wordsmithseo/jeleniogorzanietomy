@@ -2212,6 +2212,13 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     flex-wrap: wrap;
   }
 
+  .jg-top-bar-site-title {
+    font-size: calc(11 * var(--jg));
+    white-space: normal;
+    line-height: 1.2;
+    max-width: 45vw;
+  }
+
   /* Make buttons smaller on mobile */
   .jg-top-bar-btn {
     padding: 6px 12px;
@@ -7947,6 +7954,21 @@ button.jg-mobile-map-filter-btn {
   flex-shrink: 0 !important;
   text-decoration: none !important;
   cursor: pointer !important;
+}
+
+/* ── Nav site title ── */
+#jg-nav-bar .jg-nav-site-title {
+  all: unset !important;
+  display: block !important;
+  margin-left: 10px !important;
+  font-size: calc(12 * var(--jg)) !important;
+  font-weight: 700 !important;
+  color: #8d2324 !important;
+  line-height: 1.2 !important;
+  max-width: 55vw !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: normal !important;
 }
 
 /* ── Logo image ── */

@@ -553,6 +553,7 @@ class JG_Map_Enqueue {
         <div id="jg-nav-bar" class="jg-nav-bar">
             <a href="<?php echo esc_url($home_url); ?>" class="jg-nav-logo-link" aria-label="Strona główna">
                 <img src="<?php echo esc_url($logo_url); ?>" alt="Jelenia Góra to my" class="jg-nav-logo-img" loading="eager">
+                <span class="jg-nav-site-title">Jeleniogórzanie to my - Interaktywna mapa Jeleniej Góry</span>
             </a>
             <button id="jg-hamburger-btn" class="jg-hamburger-btn" aria-label="Otwórz menu" aria-expanded="false" aria-controls="jg-nav-menu" type="button">
                 <span></span>
