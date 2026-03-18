@@ -69,6 +69,31 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: 1;
+}
+
+.jg-top-bar-right {
+  justify-content: flex-end;
+}
+
+.jg-top-bar-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.jg-top-bar-site-title {
+  color: #fff;
+  font-size: calc(14 * var(--jg));
+  font-weight: 600;
+  white-space: nowrap;
+  margin-left: 10px;
+  text-decoration: none;
+  letter-spacing: 0.01em;
 }
 
 .jg-top-bar-user {
@@ -263,7 +288,8 @@
   display: inline-flex;
   align-items: center;
   text-decoration: none;
-  line-height: 0;
+  line-height: normal;
+  gap: 0;
 }
 
 .jg-top-bar-logo-img {
