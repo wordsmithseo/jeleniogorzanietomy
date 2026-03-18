@@ -2166,19 +2166,9 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     overflow: hidden !important;
   }
 
-  /* Remove Elementor section/widget padding that creates dead space below the map.
+  /* Remove page-builder section/widget padding that creates dead space below the map.
      :has() is supported on iOS 16+, Chrome 105+, Firefox 121+. */
-  :is(
-    .elementor-section,
-    .e-con,
-    .e-con-inner,
-    .elementor-container,
-    .elementor-column,
-    .elementor-col-wrap,
-    .elementor-widget,
-    .elementor-widget-wrap,
-    .elementor-widget-container
-  ):has(#jg-map-wrap) {
+  *:has(#jg-map-wrap) {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     margin-top: 0 !important;
@@ -4502,11 +4492,7 @@ img.emoji {
   border: none !important;
 }
 
-/* Force equal height for map and sidebar - override Elementor container styles */
-.elementor-element .jg-map,
-.elementor-widget .jg-map,
-.elementor-element .jg-map-sidebar,
-.elementor-widget .jg-map-sidebar,
+/* Force equal height for map and sidebar */
 #jg-map,
 #jg-map-sidebar {
   max-height: none !important;
@@ -6011,40 +5997,26 @@ img.emoji {
   }
 }
 
-/* Mobile: Override Elementor container heights for map – fill entire container */
+/* Mobile: Override container heights for map – fill entire container */
 @media (max-width: 768px) {
-  /* Force Elementor containers to pass height down to the map */
-  .elementor-element:has(> .elementor-widget-container > #jg-map-wrap),
-  .elementor-element:has(> .elementor-widget-container > .jg-wrap),
-  .elementor-widget:has(#jg-map-wrap),
-  .elementor-widget:has(.jg-wrap) {
+  /* Force parent containers to pass height down to the map */
+  *:has(> #jg-map-wrap),
+  *:has(> .jg-wrap) {
     height: 100% !important;
     min-height: 0 !important;
   }
 
-  .elementor-element > .elementor-widget-container:has(#jg-map-wrap),
-  .elementor-element > .elementor-widget-container:has(.jg-wrap) {
-    height: 100% !important;
-    min-height: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-
-  .elementor-element .jg-wrap,
-  .elementor-widget .jg-wrap,
-  .elementor-element #jg-map-wrap,
-  .elementor-widget #jg-map-wrap {
+  .jg-wrap,
+  #jg-map-wrap {
     height: 100% !important;
     min-height: 0 !important;
     max-height: none !important;
     flex: 1 1 0% !important;
   }
 
-  /* Ensure the map container inside Elementor fills available space */
-  .elementor-element .jg-map,
-  .elementor-widget .jg-map,
-  .elementor-element #jg-map,
-  .elementor-widget #jg-map {
+  /* Ensure the map fills available space */
+  .jg-map,
+  #jg-map {
     flex: 1 1 0% !important;
     height: 100% !important;
     min-height: 300px !important;
@@ -6052,22 +6024,8 @@ img.emoji {
     flex-shrink: 0 !important;
   }
 
-  /* Prevent Elementor from overriding padding/margin on the map section */
-  .elementor-element .jg-map *,
-  .elementor-widget .jg-map * {
+  .jg-map * {
     box-sizing: border-box;
-  }
-
-  /* Prevent Elementor's default section heights from squishing the map */
-  .elementor-section:has(#jg-map-wrap),
-  .elementor-container:has(#jg-map-wrap),
-  .elementor-column:has(#jg-map-wrap),
-  .elementor-column-wrap:has(#jg-map-wrap),
-  .elementor-widget-wrap:has(#jg-map-wrap),
-  .e-con:has(#jg-map-wrap),
-  .e-con-inner:has(#jg-map-wrap) {
-    height: 100% !important;
-    min-height: 0 !important;
   }
 }
 
@@ -8305,45 +8263,28 @@ body.jg-fullscreen-active .jg-modal-bg {
 
 /* ========================================
    80/20 MAP–SIDEBAR LAYOUT OVERRIDE
-   Force map column to 80% and sidebar column to 20%
-   regardless of Elementor settings, on non-mobile screens.
+   Force map column to 85% and sidebar column to 15%
+   on non-mobile screens.
    ======================================== */
 @media (min-width: 769px) {
-  /* 1. Remove the "boxed" max-width constraint from the section that
-        wraps both map and sidebar, so it stretches full-width. */
-  .e-con-boxed:has(#jg-map-wrap):has(#jg-map-sidebar) {
-    --container-max-width: 100% !important;
-  }
-  .e-con-boxed:has(#jg-map-wrap):has(#jg-map-sidebar) > .e-con-inner {
+  /* Remove max-width constraint from section wrapping both map and sidebar */
+  *:has(#jg-map-wrap):has(#jg-map-sidebar) {
     max-width: 100% !important;
     width: 100% !important;
   }
 
-  /* 2. Set the two child columns to 80% / 20%.
-        :not() guard ensures we only hit the direct column, not the parent section. */
-  .e-con:has(#jg-map-wrap):not(:has(#jg-map-sidebar)),
-  .e-con:has(.jg-wrap):not(:has(#jg-map-sidebar)) {
+  /* Column with map: 85% */
+  *:has(#jg-map-wrap):not(:has(#jg-map-sidebar)) {
     flex: 0 0 85% !important;
     max-width: 85% !important;
     width: 85% !important;
   }
 
-  .e-con:has(#jg-map-sidebar):not(:has(#jg-map-wrap)) {
+  /* Column with sidebar: 15% */
+  *:has(#jg-map-sidebar):not(:has(#jg-map-wrap)) {
     flex: 0 0 15% !important;
     max-width: 15% !important;
     width: 15% !important;
-  }
-
-  /* 3. Classic Elementor (non-flex) columns fallback */
-  .elementor-column:has(#jg-map-wrap):not(:has(#jg-map-sidebar)),
-  .elementor-column:has(.jg-wrap):not(:has(#jg-map-sidebar)) {
-    width: 85% !important;
-    max-width: 85% !important;
-  }
-
-  .elementor-column:has(#jg-map-sidebar):not(:has(#jg-map-wrap)) {
-    width: 15% !important;
-    max-width: 15% !important;
   }
 }
 
@@ -8360,13 +8301,12 @@ body.jg-fullscreen-active .jg-modal-bg {
   }
 }
 
-/* ── 1. Hide top bar AND Elementor/theme site header on mobile when map is present ── */
+/* ── 1. Hide top bar AND theme site header on mobile when map is present ── */
 /* The inline <style> in wp_head (hide_elementor_header_early) handles desktop flash
    with zero FOUC by detecting the map page in PHP before body renders. These CSS
    rules are fallbacks for the mobile viewport. */
 @media (max-width: 768px) {
   body:has(#jg-map-wrap) .jg-custom-top-bar,
-  body:has(#jg-map-wrap) .elementor-location-header,
   body:has(#jg-map-wrap) header.site-header,
   body:has(#jg-map-wrap) .site-header,
   body:has(#jg-map-wrap) #masthead,
