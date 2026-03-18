@@ -931,20 +931,16 @@ class JG_Map_Enqueue {
     }
 
     /**
-     * Hide register button on Elementor maintenance screen
-     * Registration is blocked during maintenance, so no need to show the button
+     * Hide register button during maintenance mode.
+     * Checks plugin's own option first, falls back to Elementor's if present.
      */
     public function hide_register_on_maintenance() {
-        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
+        $maintenance_mode = get_option('jg_map_maintenance_mode') ?: get_option('elementor_maintenance_mode_mode');
 
         if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
             ?>
             <style>
-                /* Hide register button on Elementor maintenance/coming soon screen */
-                body.elementor-maintenance-mode a[href*="wp-login.php?action=register"],
-                body.elementor-maintenance-mode .elementor-button-link[href*="register"],
-                body.elementor-maintenance-mode a[href*="register"],
-                .elementor-maintenance-mode-register,
+                /* Hide register button during maintenance/coming soon */
                 a[href*="wp-login.php?action=register"] {
                     display: none !important;
                 }
@@ -963,17 +959,11 @@ class JG_Map_Enqueue {
      */
     /**
      * Return true if the current page contains the map shortcode.
-     * Checks both standard post_content and Elementor's _elementor_data meta.
      */
     private function is_map_page() {
         global $post;
         if (!$post) return false;
-        if (has_shortcode($post->post_content, 'jg_map') || has_shortcode($post->post_content, 'jg_map_advanced')) {
-            return true;
-        }
-        // Elementor stores widget content in _elementor_data (JSON), not post_content
-        $elementor_data = get_post_meta($post->ID, '_elementor_data', true);
-        return $elementor_data && strpos($elementor_data, 'jg_map') !== false;
+        return has_shortcode($post->post_content, 'jg_map') || has_shortcode($post->post_content, 'jg_map_advanced');
     }
 
     public function add_map_body_class($classes) {
@@ -989,16 +979,12 @@ class JG_Map_Enqueue {
         $map_only = $this->is_map_page()
             ? '#site-footer{display:none!important}' .
               '.site-footer{display:none!important}' .
-              '.elementor-location-footer{display:none!important}' .
-              'footer.elementor-section[class*="elementor-location"]{display:none!important}' .
               '#wpadminbar{display:none!important}' .
               'html{margin-top:0!important}'
             : '';
         echo '<style>' .
             '#site-header{display:none!important}' .
             '.site-header{display:none!important}' .
-            '.elementor-location-header{display:none!important}' .
-            'header.elementor-section[class*="elementor-location"]{display:none!important}' .
             $map_only .
             '</style>' . "\n";
     }
