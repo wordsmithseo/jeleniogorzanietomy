@@ -2597,8 +2597,8 @@ class JG_Map_Admin {
         <div class="wrap">
             <?php $this->render_page_header('Zarządzanie rolami użytkowników'); ?>
 
-            <div style="background:#fff7e6;border:2px solid #f59e0b;padding:15px;border-radius:8px;margin:20px 0">
-                <h3 style="margin-top:0">ℹ️ O rolach:</h3>
+            <div class="jg-info-box">
+                <h3>ℹ️ O rolach:</h3>
                 <ul>
                     <li><strong>WP Admin</strong> - pełny dostęp do WordPressa i wszystkich funkcji pluginu (nadawany przez WP, nie można tu zmienić)</li>
                     <li><strong>Admin pluginu ⭐</strong> - pełny dostęp do wszystkich funkcji pluginu JG Map; nie ma dostępu do rdzennego WP admina</li>
@@ -2609,7 +2609,8 @@ class JG_Map_Admin {
                 <p><strong>Uwaga:</strong> Tytuł "Admin pluginu" może nadawać tylko administrator WordPress.</p>
             </div>
 
-            <table class="wp-list-table widefat fixed striped">
+            <div class="jg-admin-table-wrap"><div class="jg-table-scroll">
+            <table class="jg-admin-table">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -2726,6 +2727,7 @@ class JG_Map_Admin {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div></div>
         </div>
         <?php
     }
@@ -2880,19 +2882,20 @@ class JG_Map_Admin {
         <div class="wrap">
             <?php $this->render_page_header('Galeria wszystkich zdjęć'); ?>
 
-            <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);margin:20px 0">
-                <p><strong>Łącznie miejsc ze zdjęciami:</strong> <?php echo count($points); ?></p>
+            <div class="jg-card jg-card-body" style="margin-bottom:20px">
+                <p style="margin:0"><strong>Łącznie miejsc ze zdjęciami:</strong> <?php echo count($points); ?></p>
             </div>
 
             <?php if (!empty($points)): ?>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;margin-top:30px">
+                <div class="jg-card">
+                <div class="jg-gallery-grid">
                     <?php foreach ($points as $point):
                         $images = json_decode($point['images'], true);
                         if (empty($images)) continue;
 
                         $author = get_userdata($point['author_id']);
                         ?>
-                        <div style="background:#fff;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);overflow:hidden">
+                        <div class="jg-gallery-card">
                             <div style="position:relative;height:200px;background:#f5f5f5">
                                 <img src="<?php echo esc_url($images[0]['thumb'] ?? $images[0]['full']); ?>"
                                      style="width:100%;height:100%;object-fit:cover"
@@ -2903,11 +2906,9 @@ class JG_Map_Admin {
                                     </span>
                                 <?php endif; ?>
                             </div>
-                            <div style="padding:12px">
-                                <h3 style="margin:0 0 8px;font-size:calc(16 * var(--jg))">
-                                    <?php echo esc_html($point['title']); ?>
-                                </h3>
-                                <p style="margin:0 0 8px;font-size:calc(12 * var(--jg));color:#666">
+                            <div class="jg-gallery-card-body">
+                                <h3><?php echo esc_html($point['title']); ?></h3>
+                                <p>
                                     <strong><?php echo esc_html($point['type']); ?></strong> •
                                     <?php echo $author ? esc_html($author->display_name) : 'Nieznany'; ?> •
                                     <?php echo human_time_diff(strtotime(get_date_from_gmt($point['created_at'])), current_time('timestamp')); ?> temu
@@ -2930,6 +2931,7 @@ class JG_Map_Admin {
                             </div>
                         </div>
                     <?php endforeach; ?>
+                </div>
                 </div>
 
                 <!-- Lightbox modal -->
@@ -4311,8 +4313,8 @@ class JG_Map_Admin {
         <div class="wrap">
             <?php $this->render_page_header('Activity Log'); ?>
 
-            <div style="background:#fff;padding:15px;border:1px solid #ddd;border-radius:4px;margin:20px 0">
-                <form method="get" style="display:flex;gap:15px;align-items:flex-end">
+            <div class="jg-card jg-card-body" style="margin-bottom:20px">
+                <form method="get" style="display:flex;gap:15px;align-items:flex-end;flex-wrap:wrap">
                     <input type="hidden" name="page" value="jg-map-activity-log">
 
                     <div>
@@ -4359,7 +4361,9 @@ class JG_Map_Admin {
             </div>
 
             <?php if (!empty($logs)): ?>
-            <table class="wp-list-table widefat fixed striped">
+            <div class="jg-admin-table-wrap">
+            <div class="jg-table-scroll">
+            <table class="jg-admin-table">
                 <thead>
                     <tr>
                         <th style="width:150px">Data</th>
@@ -4392,6 +4396,8 @@ class JG_Map_Admin {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
+            </div>
 
             <div class="tablenav bottom" style="padding-top:10px">
                 <div class="tablenav-pages">
@@ -4474,8 +4480,8 @@ class JG_Map_Admin {
             <form method="post" action="">
                 <?php wp_nonce_field('jg_map_settings_nonce'); ?>
 
-                <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);max-width:800px">
-                    <h2 style="margin-top:0">Rejestracja użytkowników</h2>
+                <div class="jg-card jg-card-body" style="max-width:800px">
+                    <h2>Rejestracja użytkowników</h2>
 
                     <table class="form-table">
                         <tr>
@@ -4515,8 +4521,8 @@ class JG_Map_Admin {
                     </table>
                 </div>
 
-                <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);max-width:800px">
-                    <h2 style="margin-top:0">Regulamin serwisu</h2>
+                <div class="jg-card jg-card-body" style="max-width:800px">
+                    <h2>Regulamin serwisu</h2>
                     <p class="description" style="margin-bottom:16px">Dokument regulaminu wyświetlany w formularzu rejestracji. Możesz podać URL istniejącej podstrony WordPress lub wpisać treść bezpośrednio.</p>
 
                     <table class="form-table">
@@ -4569,8 +4575,8 @@ class JG_Map_Admin {
                     </table>
                 </div>
 
-                <div style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);max-width:800px">
-                    <h2 style="margin-top:0">Polityka prywatności</h2>
+                <div class="jg-card jg-card-body" style="max-width:800px">
+                    <h2>Polityka prywatności</h2>
                     <p class="description" style="margin-bottom:16px">Dokument polityki prywatności wyświetlany w formularzu rejestracji. Możesz podać URL istniejącej podstrony WordPress lub wpisać treść bezpośrednio.</p>
 
                     <table class="form-table">
@@ -4766,8 +4772,8 @@ class JG_Map_Admin {
 
             <style>
                 .jg-report-editor { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; margin-top: 20px; }
-                .jg-report-editor .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-                .jg-report-editor h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+                .jg-report-editor .card { background: #fff; padding: 18px 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 20px; }
+                .jg-report-editor h2 { margin-top: 0; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px; font-size: 15px; font-weight: 700; color: #111827; }
                 .jg-category-list, .jg-reason-list { list-style: none; padding: 0; margin: 0; }
                 .jg-category-item, .jg-reason-item {
                     display: flex; align-items: center; gap: 10px; padding: 12px;
@@ -5576,6 +5582,69 @@ class JG_Map_Admin {
         .jg-page-header h1{margin:0;flex:1 1 auto;font-size:22px}
         .jg-back-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1d4ed8;color:#fff!important;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;border:none;cursor:pointer;transition:background .15s}
         .jg-back-btn:hover{background:#1e40af;color:#fff!important;text-decoration:none}
+
+        /* ===== JG Admin — card ===== */
+        .jg-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:20px;overflow:hidden}
+        .jg-card-body{padding:18px 20px}
+        .jg-card-body > h2:first-child,.jg-card-body > h3:first-child{margin-top:0;padding-bottom:12px;border-bottom:1px solid #e5e7eb;margin-bottom:16px;font-size:15px;font-weight:700;color:#111827}
+
+        /* ===== JG Admin — table ===== */
+        .jg-admin-table-wrap{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:20px}
+        .jg-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+        .jg-admin-table{width:100%;border-collapse:collapse;font-size:13px}
+        .jg-admin-table th{background:#f8fafc;padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;text-transform:uppercase;letter-spacing:.4px}
+        .jg-admin-table td{padding:10px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+        .jg-admin-table tbody tr:last-child td{border-bottom:none}
+        .jg-admin-table tbody tr:hover{background:#f8fafc}
+
+        /* ===== JG Admin — info box ===== */
+        .jg-info-box{background:#fff7e6;border:2px solid #f59e0b;padding:15px 18px;border-radius:10px;margin:16px 0}
+        .jg-info-box h3{margin:0 0 8px}
+
+        /* ===== JG Admin — action buttons ===== */
+        .jg-action-btns{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+        .jg-action-btns form{margin:0}
+
+        /* ===== JG Admin — stat cards (shared with dashboard & places) ===== */
+        .jg-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px}
+        .jg-stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit;transition:box-shadow .15s,transform .15s}
+        .jg-stat-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.1);transform:translateY(-2px);color:inherit;text-decoration:none}
+        .jg-stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af}
+        .jg-stat-value{font-size:32px;font-weight:800;line-height:1;color:#111827}
+        .jg-stat-sub{font-size:12px;color:#6b7280;margin-top:2px}
+        .jg-stat-card.has-action .jg-stat-sub{color:#2563eb;font-weight:600}
+
+        /* ===== JG Admin — gallery ===== */
+        .jg-gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;padding:18px 20px}
+        .jg-gallery-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+        .jg-gallery-card-body{padding:12px}
+        .jg-gallery-card-body h3{margin:0 0 8px;font-size:15px}
+        .jg-gallery-card-body p{margin:0 0 8px;font-size:12px;color:#6b7280}
+
+        /* ===== JG Admin — nav sections (shared with main dashboard) ===== */
+        .jg-nav-section{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:20px}
+        .jg-nav-section-title{padding:12px 18px;background:#f8fafc;border-bottom:1px solid #e5e7eb;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#6b7280;margin:0}
+        .jg-nav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0}
+        .jg-nav-item{display:flex;align-items:center;gap:10px;padding:13px 18px;border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;text-decoration:none;color:#374151;font-size:13px;font-weight:500;transition:background .12s}
+        .jg-nav-item:hover{background:#f0f7ff;color:#1d4ed8;text-decoration:none}
+        .jg-nav-item .jg-nav-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center}
+
+        /* ===== JG Admin — rarity badges (achievements) ===== */
+        .jg-rarity-badges{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+        .jg-rarity-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:13px}
+        .jg-rarity-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+        @media(max-width:782px){
+            .jg-stat-grid{grid-template-columns:repeat(2,1fr)}
+            .jg-stat-value{font-size:26px}
+            .jg-gallery-grid{grid-template-columns:repeat(2,1fr)}
+            .jg-nav-grid{grid-template-columns:repeat(2,1fr)}
+        }
+        @media(max-width:480px){
+            .jg-stat-grid{grid-template-columns:1fr}
+            .jg-gallery-grid{grid-template-columns:1fr}
+            .jg-nav-grid{grid-template-columns:1fr}
+        }
         ';
         wp_add_inline_style('wp-admin', $css);
     }
@@ -5712,7 +5781,7 @@ JAVASCRIPT;
         <div class="wrap">
             <?php $this->render_page_header('Konserwacja bazy danych'); ?>
 
-            <div style="background:#fff;padding:20px;border:1px solid #ccd0d4;border-radius:4px;margin-top:20px;">
+            <div class="jg-card jg-card-body">
                 <h2>Status automatycznej konserwacji</h2>
 
                 <table class="form-table">
@@ -5805,7 +5874,7 @@ JAVASCRIPT;
             $last_sync = get_option('jg_map_last_xp_sync', null);
             ?>
 
-            <div style="background:#fff;padding:20px;border:1px solid #ccd0d4;border-radius:4px;margin-top:20px;">
+            <div class="jg-card jg-card-body">
                 <h2>Synchronizacja doświadczenia i osiągnięć</h2>
                 <p>Przelicz XP i odblokuj osiągnięcia na podstawie rzeczywistych akcji użytkowników w bazie danych.
                 Używaj tej opcji gdy:</p>
@@ -5896,15 +5965,15 @@ JAVASCRIPT;
 
             <style>
                 .jg-category-editor { max-width: 800px; margin-top: 20px; }
-                .jg-category-editor .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-                .jg-category-editor h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+                .jg-category-editor .card { background: #fff; padding: 18px 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 20px; }
+                .jg-category-editor h2 { margin-top: 0; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px; font-size: 15px; font-weight: 700; color: #111827; }
                 .jg-category-list { list-style: none; padding: 0; margin: 0; }
                 .jg-category-item {
                     display: flex; align-items: center; gap: 10px; padding: 12px;
-                    border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px;
-                    background: #fafafa; transition: all 0.2s;
+                    border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px;
+                    background: #f8fafc; transition: all 0.15s;
                 }
-                .jg-category-item:hover { background: #f0f0f0; border-color: #999; }
+                .jg-category-item:hover { background: #f0f7ff; border-color: #93c5fd; }
                 .jg-category-item .cat-icon { font-size: calc(20 * var(--jg)); width: 30px; text-align: center; }
                 .jg-category-item .cat-name { flex: 1; font-weight: 500; }
                 .jg-action-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; }
@@ -6264,15 +6333,15 @@ JAVASCRIPT;
 
             <style>
                 .jg-category-editor { max-width: 800px; margin-top: 20px; }
-                .jg-category-editor .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-                .jg-category-editor h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+                .jg-category-editor .card { background: #fff; padding: 18px 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 20px; }
+                .jg-category-editor h2 { margin-top: 0; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px; font-size: 15px; font-weight: 700; color: #111827; }
                 .jg-category-list { list-style: none; padding: 0; margin: 0; }
                 .jg-category-item {
                     display: flex; align-items: center; gap: 10px; padding: 12px;
-                    border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px;
-                    background: #fafafa; transition: all 0.2s;
+                    border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px;
+                    background: #f8fafc; transition: all 0.15s;
                 }
-                .jg-category-item:hover { background: #f0f0f0; border-color: #999; }
+                .jg-category-item:hover { background: #f0f7ff; border-color: #93c5fd; }
                 .jg-category-item .cat-icon { font-size: calc(20 * var(--jg)); width: 30px; text-align: center; }
                 .jg-category-item .cat-name { flex: 1; font-weight: 500; }
                 .jg-action-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; }
@@ -6611,7 +6680,8 @@ JAVASCRIPT;
             <p><strong>Formuła poziomów:</strong> Poziom N wymaga N&sup2; &times; 100 XP (np. poziom 2 = 400 XP, poziom 5 = 2500 XP, poziom 10 = 10000 XP)</p>
 
             <div id="jg-xp-editor" style="max-width:800px;margin-top:20px">
-                <table class="wp-list-table widefat fixed striped" id="jg-xp-table">
+                <div class="jg-admin-table-wrap"><div class="jg-table-scroll">
+                <table class="jg-admin-table" id="jg-xp-table">
                     <thead>
                         <tr>
                             <th style="width:240px">Akcja</th>
@@ -6622,6 +6692,7 @@ JAVASCRIPT;
                     </thead>
                     <tbody id="jg-xp-tbody"></tbody>
                 </table>
+                </div></div>
                 <p style="margin-top:12px">
                     <button class="button button-primary" id="jg-xp-save">Zapisz zmiany</button>
                     <span id="jg-xp-status" style="margin-left:12px;color:#059669;font-weight:600;display:none">Zapisano!</span>
@@ -6734,26 +6805,27 @@ JAVASCRIPT;
             <?php $this->render_page_header('Edytor osiągnięć'); ?>
             <p style="margin-top:0;color:#6b7280">Konfiguruj osiągnięcia dostępne dla użytkowników. Rzadkość determinuje kolor poświaty wokół osiągnięcia.</p>
 
-            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#f3f4f6;border:2px solid #d1d5db;font-size:calc(13 * var(--jg))">
-                    <span style="width:10px;height:10px;border-radius:50%;background:#d1d5db;box-shadow:0 0 6px #d1d5db"></span> Zwykłe (common)
+            <div class="jg-rarity-badges">
+                <span class="jg-rarity-badge" style="background:#f3f4f6;border:2px solid #d1d5db">
+                    <span class="jg-rarity-dot" style="background:#d1d5db;box-shadow:0 0 6px #d1d5db"></span> Zwykłe (common)
                 </span>
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#ecfdf5;border:2px solid #10b981;font-size:calc(13 * var(--jg))">
-                    <span style="width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981"></span> Niepospolite (uncommon)
+                <span class="jg-rarity-badge" style="background:#ecfdf5;border:2px solid #10b981">
+                    <span class="jg-rarity-dot" style="background:#10b981;box-shadow:0 0 6px #10b981"></span> Niepospolite (uncommon)
                 </span>
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#eff6ff;border:2px solid #3b82f6;font-size:calc(13 * var(--jg))">
-                    <span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;box-shadow:0 0 6px #3b82f6"></span> Rzadkie (rare)
+                <span class="jg-rarity-badge" style="background:#eff6ff;border:2px solid #3b82f6">
+                    <span class="jg-rarity-dot" style="background:#3b82f6;box-shadow:0 0 6px #3b82f6"></span> Rzadkie (rare)
                 </span>
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#faf5ff;border:2px solid #8b5cf6;font-size:calc(13 * var(--jg))">
-                    <span style="width:10px;height:10px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 6px #8b5cf6"></span> Epickie (epic)
+                <span class="jg-rarity-badge" style="background:#faf5ff;border:2px solid #8b5cf6">
+                    <span class="jg-rarity-dot" style="background:#8b5cf6;box-shadow:0 0 6px #8b5cf6"></span> Epickie (epic)
                 </span>
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:#fffbeb;border:2px solid #f59e0b;font-size:calc(13 * var(--jg))">
-                    <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;box-shadow:0 0 6px #f59e0b"></span> Legendarne (legendary)
+                <span class="jg-rarity-badge" style="background:#fffbeb;border:2px solid #f59e0b">
+                    <span class="jg-rarity-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b"></span> Legendarne (legendary)
                 </span>
             </div>
 
             <div id="jg-ach-editor" style="max-width:1100px;margin-top:12px">
-                <table class="wp-list-table widefat fixed striped" id="jg-ach-table">
+                <div class="jg-admin-table-wrap"><div class="jg-table-scroll">
+                <table class="jg-admin-table" id="jg-ach-table">
                     <thead>
                         <tr>
                             <th style="width:40px">ID</th>
@@ -6770,6 +6842,7 @@ JAVASCRIPT;
                     </thead>
                     <tbody id="jg-ach-tbody"></tbody>
                 </table>
+                </div></div>
                 <p style="margin-top:12px">
                     <button class="button" id="jg-ach-add-row">+ Dodaj osiągnięcie</button>
                     <button class="button button-primary" id="jg-ach-save" style="margin-left:8px">Zapisz zmiany</button>
@@ -6902,8 +6975,8 @@ JAVASCRIPT;
 
             <style>
                 .jg-tags-manager { max-width: 900px; margin-top: 20px; }
-                .jg-tags-manager .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-                .jg-tags-manager h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+                .jg-tags-manager .card { background: #fff; padding: 18px 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 20px; }
+                .jg-tags-manager h2 { margin-top: 0; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; margin-bottom: 16px; font-size: 15px; font-weight: 700; color: #111827; }
                 .jg-tags-search-wrap { position: relative; margin-bottom: 20px; }
                 .jg-tags-search-input {
                     width: 100%; padding: 10px 14px; font-size: calc(14 * var(--jg));
@@ -7456,10 +7529,11 @@ JAVASCRIPT;
             <form method="post" action="" id="jg-nav-menu-form">
                 <?php wp_nonce_field('jg_nav_menu_nonce'); ?>
 
-                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);max-width:760px;margin-bottom:16px">
-                    <h2 style="margin-top:0">Pozycje menu</h2>
+                <div class="jg-card jg-card-body" style="max-width:760px">
+                    <h2>Pozycje menu</h2>
 
-                    <table class="widefat striped" id="jg-nav-menu-table">
+                    <div class="jg-admin-table-wrap"><div class="jg-table-scroll">
+                    <table class="jg-admin-table" id="jg-nav-menu-table">
                         <thead>
                             <tr>
                                 <th style="width:36px">#</th>
@@ -7502,6 +7576,7 @@ JAVASCRIPT;
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div></div>
 
                     <p style="margin-top:12px">
                         <button type="button" id="jg-nav-add-row" class="button">+ Dodaj pozycję</button>

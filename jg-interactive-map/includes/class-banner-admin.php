@@ -74,10 +74,12 @@ class JG_Map_Banner_Admin {
         return <<<'CSS'
         .jg-banner-admin-wrap {
             background: #fff;
-            padding: 20px;
-            margin: 20px 0;
-            border: 1px solid #ccd0d4;
-            box-shadow: 0 1px 1px rgba(0,0,0,.04);
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+            overflow: hidden;
         }
         .jg-banner-list {
             margin-top: 30px;
@@ -87,14 +89,14 @@ class JG_Map_Banner_Admin {
             align-items: center;
             gap: 20px;
             padding: 15px;
-            border: 1px solid #ddd;
-            margin-bottom: 15px;
-            background: #f9f9f9;
-            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
         }
         .jg-banner-item.inactive {
             opacity: 0.6;
-            background: #f0f0f0;
+            background: #f1f5f9;
         }
         .jg-banner-preview {
             flex-shrink: 0;
@@ -198,11 +200,12 @@ class JG_Map_Banner_Admin {
             color: #842029;
         }
         .jg-banner-section-title {
-            font-size: calc(18 * var(--jg));
-            font-weight: 600;
-            margin: 30px 0 15px 0;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #0073aa;
+            font-size: 15px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 16px 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
         }
 CSS;
     }
@@ -224,7 +227,10 @@ CSS;
 
         ?>
         <div class="wrap">
-            <h1>Zarządzanie banerami 728x90</h1>
+            <div class="jg-page-header">
+                <h1>Zarządzanie banerami 728x90</h1>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=jg-map-dashboard')); ?>" class="jg-back-btn">&#8592; Dashboard</a>
+            </div>
 
             <?php if ($message === 'saved') : ?>
                 <div class="notice notice-success is-dismissible">
