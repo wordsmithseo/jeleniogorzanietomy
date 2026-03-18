@@ -52,8 +52,8 @@
   right: 0;
   background: #8d2324;
   color: #fff;
-  padding: 14px 24px;
-  min-height: 64px;
+  padding: 10px 24px;
+  min-height: 52px;
   display: flex;
   justify-content: space-between;
   align-items: center;
