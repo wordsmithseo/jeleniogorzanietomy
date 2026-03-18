@@ -263,10 +263,14 @@ class JG_Map_Shortcode {
             </div>
 
             <!-- Full-screen loader covering map + sidebar until everything is ready -->
-            <div id="jg-map-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:9998;background:rgba(255,255,255,0.95);pointer-events:all;transition:opacity 0.3s;">
+            <div id="jg-map-loading" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:999999;background:rgba(255,255,255,0.95);pointer-events:all;transition:opacity 0.3s;">
                 <div class="jg-spinner"></div>
                 <div style="margin-top:16px;font-size:calc(16 * var(--jg));color:#333;font-weight:600"><?php _e('Ładowanie mapy...', 'jg-map'); ?></div>
             </div>
+            <script>
+            // Move loader to <body> immediately so parent overflow:hidden/clip doesn't clip it
+            (function(){var e=document.getElementById('jg-map-loading');if(e)document.body.appendChild(e);})();
+            </script>
 
             <div id="jg-map" class="jg-map" style="opacity: 0; transition: opacity 0.3s;"
                  data-lat="<?php echo esc_attr($atts['lat']); ?>"
