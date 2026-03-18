@@ -853,11 +853,10 @@ class JG_Interactive_Map {
             height: 100%; background: #fff; width: 100%;
             transition: width linear;
         }
-        /* offset body so banner doesn't overlap header */
-        body { padding-top: 58px; }
+        /* offset body so redirect banner doesn't overlap header — set dynamically by JS */
+        body { padding-top: 0; }
         @media (max-width: 480px) {
             .jg-redirect-title { font-size: calc(16 * var(--jg)); }
-            body { padding-top: 72px; }
         }
 
         /* ── Pulsujący baner "Zostań na tym" ───────────────────────────── */
@@ -1096,6 +1095,16 @@ class JG_Interactive_Map {
 
             var bar = document.getElementById('jg-progress-bar');
             var countEl = document.getElementById('jg-countdown');
+            var notify = document.getElementById('jg-redirect-notify');
+
+            // Dopasuj padding-top body do rzeczywistej wysokości bannera (czcionki dynamiczne = różna wysokość)
+            function syncBodyPadding() {
+                if (notify && notify.style.display !== 'none') {
+                    document.body.style.paddingTop = notify.offsetHeight + 'px';
+                }
+            }
+            syncBodyPadding();
+            window.addEventListener('resize', syncBodyPadding);
 
             // Animate the progress bar over DELAY seconds
             if (bar) {
@@ -1123,6 +1132,7 @@ class JG_Interactive_Map {
                 clearInterval(timer);
                 var banner = document.getElementById('jg-redirect-notify');
                 if (banner) {
+                    window.removeEventListener('resize', syncBodyPadding);
                     banner.style.transition = 'opacity 0.3s';
                     banner.style.opacity = '0';
                     setTimeout(function() {
