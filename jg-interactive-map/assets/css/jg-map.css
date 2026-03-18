@@ -2714,6 +2714,13 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     height: 56px !important;
   }
 
+  /* User counter: align vertically with FABs and center horizontally between them */
+  #jg-user-count-indicator {
+    bottom: 15px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+
 }
 
 
