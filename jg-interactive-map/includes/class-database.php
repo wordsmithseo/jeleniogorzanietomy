@@ -239,7 +239,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.17.0'; // Add slug_redirects table for URL redirects after title changes
+        $current_schema_version = '3.24.42'; // Add opening_hours and pending_edit columns
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -816,6 +816,20 @@ class JG_Map_Database {
         if (empty($column_exists)) {
             $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
             // Clear cache after adding column to ensure fresh data
+            self::invalidate_points_cache();
+        }
+
+        // Ensure opening_hours column exists (required by SELECT below)
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM $table LIKE %s", 'opening_hours'));
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN opening_hours text DEFAULT NULL AFTER tags");
+            self::invalidate_points_cache();
+        }
+
+        // Ensure pending_edit column exists (required by SELECT below)
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM $table LIKE %s", 'pending_edit'));
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN pending_edit tinyint(1) DEFAULT 0 AFTER opening_hours");
             self::invalidate_points_cache();
         }
 
