@@ -1537,6 +1537,119 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         });
       }
 
+      // ===== OPENING HOURS PICKER =====
+      var OH_DAYS = [
+        { key: 'Mo', label: 'Pon' },
+        { key: 'Tu', label: 'Wt'  },
+        { key: 'We', label: 'Śr'  },
+        { key: 'Th', label: 'Czw' },
+        { key: 'Fr', label: 'Pt'  },
+        { key: 'Sa', label: 'Sob' },
+        { key: 'Su', label: 'Niedz' }
+      ];
+
+      // Build time <select> options in 30-min steps 00:00–23:30, plus 24:00
+      function buildTimeOptions(selected) {
+        var html = '';
+        for (var h = 0; h < 24; h++) {
+          for (var m = 0; m < 60; m += 30) {
+            var t = (h < 10 ? '0' : '') + h + ':' + (m === 0 ? '00' : '30');
+            html += '<option value="' + t + '"' + (t === selected ? ' selected' : '') + '>' + t + '</option>';
+          }
+        }
+        html += '<option value="24:00"' + ('24:00' === selected ? ' selected' : '') + '>24:00</option>';
+        return html;
+      }
+
+      // Parse opening_hours string (one line per day: "Mo 09:00-17:00") into map
+      function parseOpeningHours(val) {
+        var parsed = {};
+        if (!val) return parsed;
+        val.split('\n').forEach(function(line) {
+          var m = line.trim().match(/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})[-–](\d{2}:\d{2})$/);
+          if (m) parsed[m[1]] = { open: m[2], close: m[3] };
+        });
+        return parsed;
+      }
+
+      // Build the picker HTML (hidden input + 7 day rows)
+      function buildOpeningHoursPickerHtml(prefix, currentValue) {
+        var parsed = parseOpeningHours(currentValue);
+        var rows = OH_DAYS.map(function(d) {
+          var active = !!parsed[d.key];
+          var openT  = (parsed[d.key] && parsed[d.key].open)  || '09:00';
+          var closeT = (parsed[d.key] && parsed[d.key].close) || '17:00';
+          return '<div class="jg-oh-row" style="display:flex;align-items:center;gap:6px;padding:3px 0">' +
+            '<label style="display:flex;align-items:center;gap:5px;min-width:70px;cursor:pointer;font-weight:' + (active ? '600' : '400') + ';color:' + (active ? '#111' : '#9ca3af') + '">' +
+            '<input type="checkbox" class="jg-oh-check" data-day="' + d.key + '" data-prefix="' + prefix + '"' + (active ? ' checked' : '') + ' style="cursor:pointer">' +
+            '<span>' + d.label + '</span></label>' +
+            '<div class="jg-oh-times-' + d.key + '" style="display:flex;align-items:center;gap:4px;' + (active ? '' : 'opacity:0.3;pointer-events:none') + '">' +
+            '<select class="jg-oh-open" data-day="' + d.key + '" data-prefix="' + prefix + '" style="padding:3px 4px;border:1px solid #ddd;border-radius:5px;font-size:13px">' + buildTimeOptions(openT) + '</select>' +
+            '<span style="color:#6b7280;font-size:13px">–</span>' +
+            '<select class="jg-oh-close" data-day="' + d.key + '" data-prefix="' + prefix + '" style="padding:3px 4px;border:1px solid #ddd;border-radius:5px;font-size:13px">' + buildTimeOptions(closeT) + '</select>' +
+            '</div>' +
+            '<span class="jg-oh-closed-label" style="font-size:12px;color:#9ca3af;' + (active ? 'display:none' : '') + '">nieczynne</span>' +
+            '</div>';
+        }).join('');
+
+        return '<div class="jg-oh-picker" id="' + prefix + '-oh-picker" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">' +
+          rows +
+          '<input type="hidden" name="opening_hours" id="' + prefix + '-oh-hidden">' +
+          '</div>';
+      }
+
+      // Init interactivity for the picker; returns { syncHidden() }
+      function initOpeningHoursPicker(prefix, container) {
+        var picker = (container || document).querySelector('#' + prefix + '-oh-picker');
+        if (!picker) return null;
+
+        function syncHidden() {
+          var lines = [];
+          OH_DAYS.forEach(function(d) {
+            var check = picker.querySelector('.jg-oh-check[data-day="' + d.key + '"]');
+            if (check && check.checked) {
+              var openSel  = picker.querySelector('.jg-oh-open[data-day="' + d.key + '"]');
+              var closeSel = picker.querySelector('.jg-oh-close[data-day="' + d.key + '"]');
+              var openVal  = openSel  ? openSel.value  : '09:00';
+              var closeVal = closeSel ? closeSel.value : '17:00';
+              lines.push(d.key + ' ' + openVal + '-' + closeVal);
+            }
+          });
+          var hidden = picker.querySelector('#' + prefix + '-oh-hidden');
+          if (hidden) hidden.value = lines.join('\n');
+        }
+
+        // Checkbox toggle: enable/disable times row
+        picker.querySelectorAll('.jg-oh-check').forEach(function(check) {
+          check.addEventListener('change', function() {
+            var day = this.getAttribute('data-day');
+            var timesDiv = picker.querySelector('.jg-oh-times-' + day);
+            var closedLabel = this.closest('.jg-oh-row').querySelector('.jg-oh-closed-label');
+            var label = this.closest('label');
+            if (this.checked) {
+              if (timesDiv) { timesDiv.style.opacity = '1'; timesDiv.style.pointerEvents = ''; }
+              if (closedLabel) closedLabel.style.display = 'none';
+              if (label) { label.style.fontWeight = '600'; label.style.color = '#111'; }
+            } else {
+              if (timesDiv) { timesDiv.style.opacity = '0.3'; timesDiv.style.pointerEvents = 'none'; }
+              if (closedLabel) closedLabel.style.display = '';
+              if (label) { label.style.fontWeight = '400'; label.style.color = '#9ca3af'; }
+            }
+            syncHidden();
+          });
+        });
+
+        // Sync on any select change
+        picker.querySelectorAll('.jg-oh-open, .jg-oh-close').forEach(function(sel) {
+          sel.addEventListener('change', syncHidden);
+        });
+
+        // Populate hidden on init
+        syncHidden();
+
+        return { syncHidden: syncHidden };
+      }
+
       // ===== RICH TEXT EDITOR =====
       // Build the toolbar + contenteditable HTML for a rich editor
       function buildRichEditorHtml(id, maxLength, initialContent, rows) {
@@ -4773,7 +4886,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 generateCuriosityCategoryOptions('') +
                 '</select></label>' +
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('add-rte', 800, '', 4) + '</div>' +
-                '<div class="cols-2" id="add-opening-hours-field"><label style="display:block;margin-bottom:4px">Godziny otwarcia</label><textarea name="opening_hours" id="add-opening-hours" rows="3" placeholder="np. Pon-Pt: 9:00-17:00&#10;Sob: 10:00-14:00&#10;Niedz: nieczynne" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical"></textarea></div>' +
+                '<div class="cols-2" id="add-opening-hours-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('add', '') + '</div>' +
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('add-tags') + '</div>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
                 '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images[]" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
@@ -4804,11 +4917,15 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               // Initialize tag input
               var addTagInput = initTagInput('add-tags', modalAdd);
 
+              // Initialize opening hours picker
+              var addOhPicker = initOpeningHoursPicker('add', modalAdd);
+
               // On form submit, ensure the hidden input has content
               var origAddSubmit = form.onsubmit;
               form.addEventListener('submit', function() {
                 if (addRte) addRte.syncContent();
                 if (addTagInput) addTagInput.syncHidden();
+                if (addOhPicker) addOhPicker.syncHidden();
               }, true);
 
               // Image preview functionality
@@ -7865,7 +7982,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<small id="edit-address-hint" style="display:block;margin-top:4px;color:#666">Obecny adres. Wpisz nowy adres aby zmienić pozycję pinezki.</small>' +
               '</div>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('edit-rte', maxDescLength, '', 6) + '</div>' +
-              (p.type === 'miejsce' ? '<div class="cols-2"><label style="display:block;margin-bottom:4px">Godziny otwarcia</label><textarea name="opening_hours" id="edit-opening-hours" rows="3" placeholder="np. Pon-Pt: 9:00-17:00&#10;Sob: 10:00-14:00&#10;Niedz: nieczynne" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical">' + esc(p.opening_hours || '') + '</textarea></div>' : '') +
+              (p.type === 'miejsce' ? '<div class="cols-2"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('edit', p.opening_hours || '') + '</div>' : '') +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('edit-tags') + '</div>' +
               sponsoredContactHtml +
               existingImagesHtml +
@@ -7904,6 +8021,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         if (editTagInput && p.tags) {
           editTagInput.setTags(p.tags);
         }
+
+        // Initialize opening hours picker (only rendered for miejsce)
+        var editOhPicker = initOpeningHoursPicker('edit', modalEdit);
 
         // Restore saved draft state if the user re-opens after an accidental backdrop/Escape close
         try {
@@ -7995,6 +8115,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         form.addEventListener('submit', function() {
           if (editRte) editRte.syncContent();
           if (editTagInput) editTagInput.syncHidden();
+          if (editOhPicker) editOhPicker.syncHidden();
         }, true);
 
         // Image preview functionality for edit
@@ -9992,11 +10113,21 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         // Build opening hours display (shown under title for miejsca)
         var openingHoursHtml = '';
         if (p.opening_hours && p.opening_hours.trim() && p.type === 'miejsce') {
-          var hoursLines = p.opening_hours.trim().split('\n').map(function(l) { return esc(l.trim()); }).filter(Boolean);
-          openingHoursHtml = '<div class="jg-opening-hours" style="display:flex;align-items:flex-start;gap:8px;margin:0 0 12px 0;padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">' +
-            '<span style="font-size:18px;line-height:1.4">🕐</span>' +
-            '<div style="font-size:0.9rem;color:#166534;line-height:1.6">' + hoursLines.join('<br>') + '</div>' +
-            '</div>';
+          var ohDayLabels = { Mo: 'Pon', Tu: 'Wt', We: 'Śr', Th: 'Czw', Fr: 'Pt', Sa: 'Sob', Su: 'Niedz' };
+          var ohRows = p.opening_hours.trim().split('\n').map(function(line) {
+            line = line.trim();
+            var m = line.match(/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+            if (m) {
+              return '<div style="display:flex;justify-content:space-between;gap:16px"><span style="min-width:36px;font-weight:600">' + esc(ohDayLabels[m[1]] || m[1]) + '</span><span>' + esc(m[2]) + ' – ' + esc(m[3]) + '</span></div>';
+            }
+            return '<div>' + esc(line) + '</div>';
+          }).filter(Boolean);
+          if (ohRows.length > 0) {
+            openingHoursHtml = '<div class="jg-opening-hours" style="display:flex;align-items:flex-start;gap:10px;margin:0 0 12px 0;padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">' +
+              '<span style="font-size:18px;line-height:1.4;flex-shrink:0">🕐</span>' +
+              '<div style="font-size:0.875rem;color:#166534;line-height:1.8;flex:1">' + ohRows.join('') + '</div>' +
+              '</div>';
+          }
         }
 
         // Build tags display (clickable, linking to catalog via clean URLs)
@@ -11453,14 +11584,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             }, 300); // Small delay to show selection
           }
 
-          // Wait for zoom, then show FAST pulsing circle
+          // Wait for zoom, then show FAST pulsing circle, then open modal
           setTimeout(function() {
-            addFastPulsingMarker(point.lat, point.lng);
+            addFastPulsingMarker(point.lat, point.lng, function() {
+              openDetails(point);
+            });
           }, 600);
         }
 
-        // Add fast pulsing red circle (1.5s total, faster pulses)
-        function addFastPulsingMarker(lat, lng) {
+        // Add fast pulsing red circle (~1.2s total), then call callback (modal opens AFTER circle ends)
+        function addFastPulsingMarker(lat, lng, callback) {
           var pulsingCircle = L.circle([lat, lng], {
             color: '#ef4444',
             fillColor: '#ef4444',
@@ -11470,25 +11603,27 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }).addTo(map);
 
           var pulseCount = 0;
-          var maxPulses = 6; // 6 fast pulses over 1.5s
+          var maxPulses = 6; // 6 pulses × 200ms = 1.2s
           var pulseInterval = setInterval(function() {
             pulseCount++;
 
-            // Toggle opacity for pulse effect (faster)
             if (pulseCount % 2 === 0) {
               pulsingCircle.setStyle({ fillOpacity: 0.3, opacity: 1 });
             } else {
               pulsingCircle.setStyle({ fillOpacity: 0.1, opacity: 0.4 });
             }
 
-            // Remove after 1.5 seconds
+            // After animation: remove circle, THEN call callback (modal opens)
             if (pulseCount >= maxPulses) {
               clearInterval(pulseInterval);
               setTimeout(function() {
                 map.removeLayer(pulsingCircle);
-              }, 250);
+                if (callback && typeof callback === 'function') {
+                  callback();
+                }
+              }, 100);
             }
-          }, 250); // Fast pulse every 250ms
+          }, 200);
         }
 
         // Close search panel
@@ -12821,7 +12956,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               generateCuriosityCategoryOptions('') +
               '</select></label>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis* (max 800 znaków)</label>' + buildRichEditorHtml('fab-rte', 800, '', 4) + '</div>' +
-              '<div class="cols-2" id="fab-opening-hours-field" style="display:none"><label style="display:block;margin-bottom:4px">Godziny otwarcia</label><textarea name="opening_hours" id="fab-opening-hours" rows="3" placeholder="np. Pon-Pt: 9:00-17:00&#10;Sob: 10:00-14:00&#10;Niedz: nieczynne" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical"></textarea></div>' +
+              '<div class="cols-2" id="fab-opening-hours-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('fab', '') + '</div>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('fab-tags') + '</div>' +
               '<label class="cols-2">Zdjęcia (opcjonalne, max 6)<input type="file" name="images" id="add-images-input" accept="image/*" multiple style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
               '<div id="add-images-preview" class="cols-2" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
@@ -12901,10 +13036,14 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             // Initialize tag input for FAB add form
             var fabTagInput = initTagInput('fab-tags', modalAdd);
 
+            // Initialize opening hours picker for FAB add form
+            var fabOhPicker = initOpeningHoursPicker('fab', modalAdd);
+
             // On form submit, sync the rich editor content and tags
             form.addEventListener('submit', function() {
               if (fabRte) fabRte.syncContent();
               if (fabTagInput) fabTagInput.syncHidden();
+              if (fabOhPicker) fabOhPicker.syncHidden();
             }, true);
 
             // Image preview functionality
