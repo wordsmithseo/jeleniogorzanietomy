@@ -4773,6 +4773,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 generateCuriosityCategoryOptions('') +
                 '</select></label>' +
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('add-rte', 800, '', 4) + '</div>' +
+                '<div class="cols-2" id="add-opening-hours-field"><label style="display:block;margin-bottom:4px">Godziny otwarcia</label><textarea name="opening_hours" id="add-opening-hours" rows="3" placeholder="np. Pon-Pt: 9:00-17:00&#10;Sob: 10:00-14:00&#10;Niedz: nieczynne" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical"></textarea></div>' +
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('add-tags') + '</div>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
                 '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images[]" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
@@ -4859,6 +4860,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               var curiosityCategoryField = qs('#add-curiosity-category-field', modalAdd);
               var curiosityCategorySelect = qs('#add-curiosity-category-select', modalAdd);
 
+              var addOpeningHoursField = qs('#add-opening-hours-field', modalAdd);
+
               if (typeSelect && categoryField && categorySelect) {
                 // Function to toggle category field visibility
                 function toggleCategoryField() {
@@ -4878,6 +4881,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                     placeCategoryField.style.display = 'block';
                   } else if (selectedType === 'ciekawostka' && curiosityCategoryField) {
                     curiosityCategoryField.style.display = 'block';
+                  }
+
+                  // Show opening hours only for miejsce
+                  if (addOpeningHoursField) {
+                    addOpeningHoursField.style.display = selectedType === 'miejsce' ? 'block' : 'none';
                   }
                 }
 
@@ -5655,7 +5663,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         // Animate the circle (pulse effect)
         var pulseCount = 0;
-        var maxPulses = 4; // 4 pulses over 2 seconds
+        var maxPulses = 4; // 4 pulses over ~1.2 seconds
         var pulseInterval = setInterval(function() {
           pulseCount++;
 
@@ -5666,19 +5674,19 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             pulsingCircle.setStyle({ fillOpacity: 0.2, weight: 2 });
           }
 
-          // Remove after 2 seconds and call callback
+          // Remove after animation ends, then call callback (modal opens AFTER circle disappears)
           if (pulseCount >= maxPulses) {
             clearInterval(pulseInterval);
             setTimeout(function() {
               map.removeLayer(pulsingCircle);
 
-              // Call callback after circle is removed
+              // Call callback AFTER circle is removed — modal opens only now
               if (callback && typeof callback === 'function') {
                 callback();
               }
             }, 100);
           }
-        }, 500); // Pulse every 500ms
+        }, 300); // Pulse every 300ms (shorter: 4×300ms = 1.2s total)
       }
 
       var ALL = [];
@@ -7857,6 +7865,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<small id="edit-address-hint" style="display:block;margin-top:4px;color:#666">Obecny adres. Wpisz nowy adres aby zmienić pozycję pinezki.</small>' +
               '</div>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('edit-rte', maxDescLength, '', 6) + '</div>' +
+              (p.type === 'miejsce' ? '<div class="cols-2"><label style="display:block;margin-bottom:4px">Godziny otwarcia</label><textarea name="opening_hours" id="edit-opening-hours" rows="3" placeholder="np. Pon-Pt: 9:00-17:00&#10;Sob: 10:00-14:00&#10;Niedz: nieczynne" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical">' + esc(p.opening_hours || '') + '</textarea></div>' : '') +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('edit-tags') + '</div>' +
               sponsoredContactHtml +
               existingImagesHtml +
@@ -9239,6 +9248,36 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '</div>');
           }
 
+          // Show place/curiosity category changes
+          if (p.type === 'miejsce' || p.type === 'ciekawostka') {
+            var prevCat = p.edit_info.prev_category ? formatCategorySlug(p.edit_info.prev_category) : '(brak)';
+            var newCat = p.edit_info.new_category ? formatCategorySlug(p.edit_info.new_category) : '(brak)';
+            if (p.edit_info.prev_category !== p.edit_info.new_category) {
+              changes.push('<div><strong>Kategoria:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(prevCat) + '</span><br><span style="color:#16a34a">→ ' + esc(newCat) + '</span></div>');
+            }
+          }
+
+          // Show address changes
+          if (p.edit_info.prev_address !== undefined && p.edit_info.new_address !== undefined && (p.edit_info.prev_address || '') !== (p.edit_info.new_address || '')) {
+            changes.push('<div><strong>📍 Adres:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(p.edit_info.prev_address || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + esc(p.edit_info.new_address || '(brak)') + '</span></div>');
+          }
+
+          // Show tags changes
+          if (p.edit_info.prev_tags !== undefined && p.edit_info.new_tags !== undefined) {
+            var prevTags = '';
+            var newTags = '';
+            try { prevTags = JSON.parse(p.edit_info.prev_tags || '[]').join(', ') || '(brak)'; } catch(e) { prevTags = p.edit_info.prev_tags || '(brak)'; }
+            try { newTags = JSON.parse(p.edit_info.new_tags || '[]').join(', ') || '(brak)'; } catch(e) { newTags = p.edit_info.new_tags || '(brak)'; }
+            if (prevTags !== newTags) {
+              changes.push('<div><strong>🏷️ Tagi:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(prevTags) + '</span><br><span style="color:#16a34a">→ ' + esc(newTags) + '</span></div>');
+            }
+          }
+
+          // Show opening_hours changes
+          if (p.edit_info.prev_opening_hours !== undefined && p.edit_info.new_opening_hours !== undefined && (p.edit_info.prev_opening_hours || '') !== (p.edit_info.new_opening_hours || '')) {
+            changes.push('<div><strong>🕐 Godziny otwarcia:</strong><br><span style="text-decoration:line-through;color:#dc2626;white-space:pre-line">' + esc(p.edit_info.prev_opening_hours || '(brak)') + '</span><br><span style="color:#16a34a;white-space:pre-line">→ ' + esc(p.edit_info.new_opening_hours || '(brak)') + '</span></div>');
+          }
+
           // Show website changes if present (for sponsored points)
           if (p.edit_info.prev_website !== undefined && p.edit_info.new_website !== undefined && p.edit_info.prev_website !== p.edit_info.new_website) {
             changes.push('<div><strong>🌐 Strona internetowa:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_website || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_website || '(brak)') + '</span></div>');
@@ -9950,6 +9989,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           '</div>';
         }
 
+        // Build opening hours display (shown under title for miejsca)
+        var openingHoursHtml = '';
+        if (p.opening_hours && p.opening_hours.trim() && p.type === 'miejsce') {
+          var hoursLines = p.opening_hours.trim().split('\n').map(function(l) { return esc(l.trim()); }).filter(Boolean);
+          openingHoursHtml = '<div class="jg-opening-hours" style="display:flex;align-items:flex-start;gap:8px;margin:0 0 12px 0;padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">' +
+            '<span style="font-size:18px;line-height:1.4">🕐</span>' +
+            '<div style="font-size:0.9rem;color:#166534;line-height:1.6">' + hoursLines.join('<br>') + '</div>' +
+            '</div>';
+        }
+
         // Build tags display (clickable, linking to catalog via clean URLs)
         var tagsHtml = '';
         if (p.tags && p.tags.length > 0) {
@@ -9970,7 +10019,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           tagsHtml += '</div>';
         }
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + metaRow + addressInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + tagsHtml + ctaButton + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + contactInfo + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + openingHoursHtml + metaRow + addressInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + tagsHtml + ctaButton + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + contactInfo + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
@@ -12772,6 +12821,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               generateCuriosityCategoryOptions('') +
               '</select></label>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis* (max 800 znaków)</label>' + buildRichEditorHtml('fab-rte', 800, '', 4) + '</div>' +
+              '<div class="cols-2" id="fab-opening-hours-field" style="display:none"><label style="display:block;margin-bottom:4px">Godziny otwarcia</label><textarea name="opening_hours" id="fab-opening-hours" rows="3" placeholder="np. Pon-Pt: 9:00-17:00&#10;Sob: 10:00-14:00&#10;Niedz: nieczynne" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical"></textarea></div>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('fab-tags') + '</div>' +
               '<label class="cols-2">Zdjęcia (opcjonalne, max 6)<input type="file" name="images" id="add-images-input" accept="image/*" multiple style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
               '<div id="add-images-preview" class="cols-2" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
@@ -12906,6 +12956,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var curiosityCategoryField = qs('#add-curiosity-category-field', modalAdd);
             var curiosityCategorySelect = qs('#add-curiosity-category-select', modalAdd);
 
+            var fabOpeningHoursField = qs('#fab-opening-hours-field', modalAdd);
+
             if (typeSelect && categoryField && categorySelect) {
               // Function to toggle category field visibility
               function toggleCategoryField() {
@@ -12925,6 +12977,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   placeCategoryField.style.display = 'block';
                 } else if (selectedType === 'ciekawostka' && curiosityCategoryField) {
                   curiosityCategoryField.style.display = 'block';
+                }
+
+                // Show opening hours only for miejsce
+                if (fabOpeningHoursField) {
+                  fabOpeningHoursField.style.display = selectedType === 'miejsce' ? 'block' : 'none';
                 }
               }
 
