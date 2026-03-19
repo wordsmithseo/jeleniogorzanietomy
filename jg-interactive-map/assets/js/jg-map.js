@@ -9395,6 +9395,15 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             }
           }
 
+          // Show lat/lng changes (position on map)
+          if (p.edit_info.prev_lat !== undefined && p.edit_info.new_lat !== undefined) {
+            var latDiff = Math.abs((parseFloat(p.edit_info.new_lat) || 0) - (parseFloat(p.edit_info.prev_lat) || 0));
+            var lngDiff = Math.abs((parseFloat(p.edit_info.new_lng) || 0) - (parseFloat(p.edit_info.prev_lng) || 0));
+            if (latDiff > 0.00001 || lngDiff > 0.00001) {
+              changes.push('<div><strong>📌 Pozycja na mapie:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + parseFloat(p.edit_info.prev_lat).toFixed(5) + ', ' + parseFloat(p.edit_info.prev_lng).toFixed(5) + '</span><br><span style="color:#16a34a">→ ' + parseFloat(p.edit_info.new_lat).toFixed(5) + ', ' + parseFloat(p.edit_info.new_lng).toFixed(5) + '</span></div>');
+            }
+          }
+
           // Show opening_hours changes
           if (p.edit_info.prev_opening_hours !== undefined && p.edit_info.new_opening_hours !== undefined && (p.edit_info.prev_opening_hours || '') !== (p.edit_info.new_opening_hours || '')) {
             changes.push('<div><strong>🕐 Godziny otwarcia:</strong><br><span style="text-decoration:line-through;color:#dc2626;white-space:pre-line">' + esc(p.edit_info.prev_opening_hours || '(brak)') + '</span><br><span style="color:#16a34a;white-space:pre-line">→ ' + esc(p.edit_info.new_opening_hours || '(brak)') + '</span></div>');
@@ -9555,6 +9564,31 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<div style="max-height:100px;overflow-y:auto;padding:8px;background:#d1fae5;border-radius:4px;margin-top:8px">' +
               '<strong style="color:#16a34a">Nowy:</strong><br>' + (newContentOwner ? esc(newContentOwner) : '<em>brak</em>') + '</div>' +
               '</div>');
+          }
+          if (p.edit_info.prev_category !== p.edit_info.new_category) {
+            ownerChanges.push('<div><strong>Kategoria:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(p.edit_info.prev_category || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + esc(p.edit_info.new_category || '(brak)') + '</span></div>');
+          }
+          if (p.edit_info.prev_tags !== undefined && p.edit_info.new_tags !== undefined) {
+            var prevTagsOwner = '';
+            var newTagsOwner = '';
+            try { prevTagsOwner = JSON.parse(p.edit_info.prev_tags || '[]').join(', ') || '(brak)'; } catch(e) { prevTagsOwner = p.edit_info.prev_tags || '(brak)'; }
+            try { newTagsOwner = JSON.parse(p.edit_info.new_tags || '[]').join(', ') || '(brak)'; } catch(e) { newTagsOwner = p.edit_info.new_tags || '(brak)'; }
+            if (prevTagsOwner !== newTagsOwner) {
+              ownerChanges.push('<div><strong>🏷️ Tagi:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(prevTagsOwner) + '</span><br><span style="color:#16a34a">→ ' + esc(newTagsOwner) + '</span></div>');
+            }
+          }
+          if ((p.edit_info.prev_address || '') !== (p.edit_info.new_address || '')) {
+            ownerChanges.push('<div><strong>📍 Adres:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(p.edit_info.prev_address || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + esc(p.edit_info.new_address || '(brak)') + '</span></div>');
+          }
+          if (p.edit_info.prev_lat !== undefined && p.edit_info.new_lat !== undefined) {
+            var latDiffOwner = Math.abs((parseFloat(p.edit_info.new_lat) || 0) - (parseFloat(p.edit_info.prev_lat) || 0));
+            var lngDiffOwner = Math.abs((parseFloat(p.edit_info.new_lng) || 0) - (parseFloat(p.edit_info.prev_lng) || 0));
+            if (latDiffOwner > 0.00001 || lngDiffOwner > 0.00001) {
+              ownerChanges.push('<div><strong>📌 Pozycja na mapie:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + parseFloat(p.edit_info.prev_lat).toFixed(5) + ', ' + parseFloat(p.edit_info.prev_lng).toFixed(5) + '</span><br><span style="color:#16a34a">→ ' + parseFloat(p.edit_info.new_lat).toFixed(5) + ', ' + parseFloat(p.edit_info.new_lng).toFixed(5) + '</span></div>');
+            }
+          }
+          if ((p.edit_info.prev_opening_hours || '') !== (p.edit_info.new_opening_hours || '')) {
+            ownerChanges.push('<div><strong>🕐 Godziny otwarcia:</strong><br><span style="text-decoration:line-through;color:#dc2626;white-space:pre-line">' + esc(p.edit_info.prev_opening_hours || '(brak)') + '</span><br><span style="color:#16a34a;white-space:pre-line">→ ' + esc(p.edit_info.new_opening_hours || '(brak)') + '</span></div>');
           }
           if (p.edit_info.new_images && p.edit_info.new_images.length > 0) {
             var ownerImagesHtml = '<div><strong>Nowe zdjęcia (' + p.edit_info.new_images.length + '):</strong><br>' +

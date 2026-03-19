@@ -834,11 +834,8 @@ class JG_Map_Ajax_Handlers {
                     $current_user = wp_get_current_user();
                     $reporter_name = $current_user ? $current_user->display_name : 'Ty';
 
-                    // Convert GMT time from DB to local WordPress time for display
-                    $local_time = get_date_from_gmt($report['created_at']);
-
                     $reporter_info = array(
-                        'reported_at' => human_time_diff(strtotime($local_time), time()) . ' temu',
+                        'reported_at' => human_time_diff(strtotime($report['created_at'] . ' UTC'), time()) . ' temu',
                         'reporter_name' => $reporter_name
                     );
                 }
