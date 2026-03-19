@@ -4880,7 +4880,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 '<label>Typ* <select name="type" id="add-type-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
                 '<option value="zgloszenie">Zgłoszenie</option>' +
                 '<option value="ciekawostka">Ciekawostka</option>' +
-                '<option value="miejsce">Miejsce</option>' +
+                '<option value="miejsce" selected>Miejsce</option>' +
                 '</select></label>' +
                 '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
                 generateCategoryOptions('') +
@@ -12984,7 +12984,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<label>Typ* <select name="type" id="add-type-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
               '<option value="zgloszenie">Zgłoszenie</option>' +
               '<option value="ciekawostka">Ciekawostka</option>' +
-              '<option value="miejsce">Miejsce</option>' +
+              '<option value="miejsce" selected>Miejsce</option>' +
               '</select></label>' +
               '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
               generateCategoryOptions('') +
