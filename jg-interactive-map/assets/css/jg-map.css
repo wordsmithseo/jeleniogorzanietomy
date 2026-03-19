@@ -4959,6 +4959,17 @@ img.emoji {
   overflow-wrap: break-word;
 }
 
+.jg-sidebar-item__hours {
+  font-size: calc(11 * var(--jg));
+  color: #166534;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.jg-sidebar-item__hours--closed {
+  color: #dc2626;
+}
+
 .jg-sidebar-item__footer {
   display: flex;
   flex-direction: column;
