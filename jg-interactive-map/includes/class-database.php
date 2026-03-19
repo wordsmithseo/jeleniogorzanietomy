@@ -841,7 +841,7 @@ class JG_Map_Database {
                        stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
                        stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
                        stats_unique_visitors, stats_avg_time_spent,
-                       address, created_at, updated_at, ip_address, tags
+                       address, created_at, updated_at, ip_address, tags, opening_hours, pending_edit
                 FROM $table WHERE $status_condition ORDER BY created_at DESC";
 
         $results = $wpdb->get_results($sql, ARRAY_A);
@@ -927,7 +927,7 @@ class JG_Map_Database {
                     stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
                     stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
                     stats_unique_visitors, stats_avg_time_spent,
-                    address, created_at, updated_at, ip_address, tags
+                    address, created_at, updated_at, ip_address, tags, opening_hours, pending_edit
              FROM $table
              WHERE author_id = %d AND status = 'pending'
              ORDER BY created_at DESC",
