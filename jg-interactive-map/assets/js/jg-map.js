@@ -1549,17 +1549,22 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       ];
 
       // Build time <select> options in 15-min steps 00:00–23:45, plus 24:00
+      var _timeOptionsBase = null;
       function buildTimeOptions(selected) {
-        var html = '';
-        for (var h = 0; h < 24; h++) {
-          for (var m = 0; m < 60; m += 15) {
-            var mm = m === 0 ? '00' : (m < 10 ? '0' + m : '' + m);
-            var t = (h < 10 ? '0' : '') + h + ':' + mm;
-            html += '<option value="' + t + '"' + (t === selected ? ' selected' : '') + '>' + t + '</option>';
+        if (!_timeOptionsBase) {
+          var parts = [];
+          for (var h = 0; h < 24; h++) {
+            for (var m = 0; m < 60; m += 15) {
+              var mm = m === 0 ? '00' : (m < 10 ? '0' + m : '' + m);
+              var t = (h < 10 ? '0' : '') + h + ':' + mm;
+              parts.push('<option value="' + t + '">' + t + '</option>');
+            }
           }
+          parts.push('<option value="24:00">24:00</option>');
+          _timeOptionsBase = parts.join('');
         }
-        html += '<option value="24:00"' + ('24:00' === selected ? ' selected' : '') + '>24:00</option>';
-        return html;
+        if (!selected) return _timeOptionsBase;
+        return _timeOptionsBase.replace('value="' + selected + '"', 'value="' + selected + '" selected');
       }
 
       // Parse opening_hours string (one line per day: "Mo 09:00-17:00") into map

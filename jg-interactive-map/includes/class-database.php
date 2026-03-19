@@ -811,14 +811,6 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_points_table();
 
-        // Ensure edit_locked column exists (in case migration hasn't run yet)
-        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM $table LIKE %s", 'edit_locked'));
-        if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
-            // Clear cache after adding column to ensure fresh data
-            self::invalidate_points_cache();
-        }
-
         // PERFORMANCE OPTIMIZATION: Use transient cache (30 seconds)
         // Cache key includes $include_pending to avoid conflicts
         $cache_key = $include_pending ? 'jg_map_points_with_pending' : 'jg_map_points_published';
@@ -826,6 +818,13 @@ class JG_Map_Database {
 
         if ($cached_results !== false) {
             return $cached_results;
+        }
+
+        // Ensure edit_locked column exists (only checked on cache miss, ~every 30s)
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM $table LIKE %s", 'edit_locked'));
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table ADD COLUMN edit_locked tinyint(1) DEFAULT 0 AFTER author_hidden");
+            self::invalidate_points_cache();
         }
 
         // Exclude trashed points from all queries
