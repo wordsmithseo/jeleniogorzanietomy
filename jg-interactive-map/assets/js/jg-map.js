@@ -6017,7 +6017,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               tiktok_url: r.tiktok_url || null,
               is_own_place: !!r.is_own_place,
               edit_locked: !!r.edit_locked,
-              tags: r.tags || []
+              tags: r.tags || [],
+              opening_hours: r.opening_hours || null
             };
           });
 
