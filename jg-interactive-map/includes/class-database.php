@@ -819,20 +819,6 @@ class JG_Map_Database {
             self::invalidate_points_cache();
         }
 
-        // Ensure opening_hours column exists (required by SELECT below)
-        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM $table LIKE %s", 'opening_hours'));
-        if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN opening_hours text DEFAULT NULL AFTER tags");
-            self::invalidate_points_cache();
-        }
-
-        // Ensure pending_edit column exists (required by SELECT below)
-        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM $table LIKE %s", 'pending_edit'));
-        if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $table ADD COLUMN pending_edit tinyint(1) DEFAULT 0 AFTER opening_hours");
-            self::invalidate_points_cache();
-        }
-
         // PERFORMANCE OPTIMIZATION: Use transient cache (30 seconds)
         // Cache key includes $include_pending to avoid conflicts
         $cache_key = $include_pending ? 'jg_map_points_with_pending' : 'jg_map_points_published';
