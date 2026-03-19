@@ -48,12 +48,12 @@ class JG_Map_Ajax_Handlers {
      */
     private static function get_default_place_categories() {
         return array(
-            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️'),
-            'kultura' => array('label' => 'Kultura', 'icon' => '🏛️'),
-            'uslugi' => array('label' => 'Usługi', 'icon' => '🏢'),
-            'sport' => array('label' => 'Sport i rekreacja', 'icon' => '⚽'),
-            'historia' => array('label' => 'Historia i zabytki', 'icon' => '🏰'),
-            'zielen' => array('label' => 'Zieleń', 'icon' => '🌲')
+            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️', 'schema_type' => 'FoodEstablishment'),
+            'kultura' => array('label' => 'Kultura', 'icon' => '🏛️', 'schema_type' => 'Museum'),
+            'uslugi' => array('label' => 'Usługi', 'icon' => '🏢', 'schema_type' => 'LocalBusiness'),
+            'sport' => array('label' => 'Sport i rekreacja', 'icon' => '⚽', 'schema_type' => 'SportsActivityLocation'),
+            'historia' => array('label' => 'Historia i zabytki', 'icon' => '🏰', 'schema_type' => 'LandmarksOrHistoricalBuildings'),
+            'zielen' => array('label' => 'Zieleń', 'icon' => '🌲', 'schema_type' => 'Park')
         );
     }
 
@@ -62,10 +62,10 @@ class JG_Map_Ajax_Handlers {
      */
     private static function get_default_curiosity_categories() {
         return array(
-            'historyczne' => array('label' => 'Historyczne', 'icon' => '📜'),
-            'przyrodnicze' => array('label' => 'Przyrodnicze', 'icon' => '🦋'),
-            'architektoniczne' => array('label' => 'Architektoniczne', 'icon' => '🏰'),
-            'legendy' => array('label' => 'Legendy i historie', 'icon' => '📖')
+            'historyczne' => array('label' => 'Historyczne', 'icon' => '📜', 'schema_type' => 'LandmarksOrHistoricalBuildings'),
+            'przyrodnicze' => array('label' => 'Przyrodnicze', 'icon' => '🦋', 'schema_type' => 'TouristAttraction'),
+            'architektoniczne' => array('label' => 'Architektoniczne', 'icon' => '🏰', 'schema_type' => 'LandmarksOrHistoricalBuildings'),
+            'legendy' => array('label' => 'Legendy i historie', 'icon' => '📖', 'schema_type' => 'TouristAttraction')
         );
     }
 
@@ -970,6 +970,8 @@ class JG_Map_Ajax_Handlers {
                                 'new_lat' => $new_values['lat'] ?? null,
                                 'prev_lng' => $old_values['lng'] ?? null,
                                 'new_lng' => $new_values['lng'] ?? null,
+                                'prev_opening_hours' => $old_values['opening_hours'] ?? null,
+                                'new_opening_hours' => $new_values['opening_hours'] ?? null,
                                 'new_images' => $new_images,
                                 'edited_at' => human_time_diff(strtotime(get_date_from_gmt($pending_history['created_at'])), current_time('timestamp')) . ' temu'
                             );
@@ -1066,6 +1068,8 @@ class JG_Map_Ajax_Handlers {
                 'last_modifier' => $is_admin ? self::get_last_modifier_info($point['id']) : null,
                 // SECURITY: For unauthenticated users, always hide moderation data
                 'admin_note' => ($current_user_id > 0) ? $point['admin_note'] : null,
+                'opening_hours' => $point['opening_hours'] ?? null,
+                'pending_edit' => (bool)($point['pending_edit'] ?? 0),
                 'is_pending' => ($current_user_id > 0) ? $is_pending : false,
                 'is_edit' => ($current_user_id > 0) ? $is_edit : false,
                 'edit_info' => ($current_user_id > 0) ? $edit_info : null,
@@ -1661,6 +1665,7 @@ class JG_Map_Ajax_Handlers {
         $address = sanitize_text_field(wp_unslash($_POST['address'] ?? ''));
         $public_name = isset($_POST['public_name']);
         $category = sanitize_text_field($_POST['category'] ?? '');
+        $opening_hours = sanitize_textarea_field(wp_unslash($_POST['opening_hours'] ?? ''));
 
         // Process tags (max 5)
         $tags_raw = isset($_POST['tags']) ? wp_unslash($_POST['tags']) : '';
@@ -1799,6 +1804,7 @@ class JG_Map_Ajax_Handlers {
             'images' => json_encode($images),
             'featured_image_index' => !empty($images) ? 0 : null, // Auto-set first image as featured
             'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : null,
+            'opening_hours' => !empty($opening_hours) ? $opening_hours : null,
             'ip_address' => $ip_address,
             'created_at' => current_time('mysql', true),  // GMT time for consistency
             'updated_at' => current_time('mysql', true)   // GMT time for consistency
@@ -1943,6 +1949,7 @@ class JG_Map_Ajax_Handlers {
         $address = sanitize_text_field(wp_unslash($_POST['address'] ?? ''));
         $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
+        $opening_hours = sanitize_textarea_field(wp_unslash($_POST['opening_hours'] ?? ''));
 
         // Normalize social media URLs - accept full URLs, domain URLs, or profile names
         $facebook_url = !empty($_POST['facebook_url']) ? $this->normalize_social_url($_POST['facebook_url'], 'facebook') : '';
@@ -2074,6 +2081,9 @@ class JG_Map_Ajax_Handlers {
             // Update tags
             $update_data['tags'] = !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : null;
 
+            // Update opening_hours (admin can edit directly for all types)
+            $update_data['opening_hours'] = !empty($opening_hours) ? $opening_hours : null;
+
             // Update lat/lng if provided (from geocoding)
             if ($lat !== null && $lng !== null) {
                 $update_data['lat'] = $lat;
@@ -2128,7 +2138,8 @@ class JG_Map_Ajax_Handlers {
                 'lat' => $point['lat'],
                 'lng' => $point['lng'],
                 'address' => $point['address'] ?? '',
-                'images' => $point['images'] ?? '[]'
+                'images' => $point['images'] ?? '[]',
+                'opening_hours' => $point['opening_hours'] ?? ''
             );
             $new_values = array(
                 'title' => $title,
@@ -2139,7 +2150,8 @@ class JG_Map_Ajax_Handlers {
                 'lat' => ($lat !== null) ? $lat : $point['lat'],
                 'lng' => ($lng !== null) ? $lng : $point['lng'],
                 'address' => !empty($address) ? $address : ($point['address'] ?? ''),
-                'images' => isset($update_data['images']) ? $update_data['images'] : ($point['images'] ?? '[]')
+                'images' => isset($update_data['images']) ? $update_data['images'] : ($point['images'] ?? '[]'),
+                'opening_hours' => $opening_hours
             );
             JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
 
@@ -2197,7 +2209,8 @@ class JG_Map_Ajax_Handlers {
                 'lat' => $point['lat'],
                 'lng' => $point['lng'],
                 'address' => $point['address'] ?? '',
-                'images' => $point['images'] ?? '[]'
+                'images' => $point['images'] ?? '[]',
+                'opening_hours' => $point['opening_hours'] ?? ''
             );
 
             $new_values = array(
@@ -2206,6 +2219,7 @@ class JG_Map_Ajax_Handlers {
                 'category' => $category,
                 'content' => $content,
                 'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : '[]',
+                'opening_hours' => $opening_hours,
                 'new_images' => json_encode($new_images) // Store new images separately for moderation
             );
 
@@ -2240,6 +2254,9 @@ class JG_Map_Ajax_Handlers {
             $point_owner_id = !$is_owner ? intval($point['author_id']) : null;
 
             JG_Map_Database::add_history($point_id, $user_id, 'edit', $old_values, $new_values, $point_owner_id);
+
+            // Mark point as having a pending edit awaiting moderation
+            JG_Map_Database::update_point($point_id, array('pending_edit' => 1));
 
             // Increment daily edit counter
             update_user_meta($user_id, 'jg_map_edits_count', $edit_count + 1);
@@ -4512,6 +4529,14 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
+        // Apply opening_hours if present in approved edit
+        if (array_key_exists('opening_hours', $new_values)) {
+            $update_data['opening_hours'] = !empty($new_values['opening_hours']) ? $new_values['opening_hours'] : null;
+        }
+
+        // Clear pending_edit flag — edit has been approved
+        $update_data['pending_edit'] = 0;
+
         // Update point with new values
         JG_Map_Database::update_point($history['point_id'], $update_data);
 
@@ -4574,6 +4599,18 @@ class JG_Map_Ajax_Handlers {
 
         // Reject history with reason
         JG_Map_Database::reject_history($history_id, get_current_user_id(), $reason);
+
+        // Clear pending_edit flag — edit has been rejected, no more pending changes
+        // (only clear if no other pending edits remain for this point)
+        global $wpdb;
+        $history_table = JG_Map_Database::get_history_table();
+        $remaining_pending = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $history_table WHERE point_id = %d AND status = 'pending' AND action_type = 'edit'",
+            $history['point_id']
+        ));
+        if (!$remaining_pending) {
+            JG_Map_Database::update_point($history['point_id'], array('pending_edit' => 0));
+        }
 
         // Queue sync event via dedicated sync manager
         JG_Map_Sync_Manager::get_instance()->queue_edit_rejected($history['point_id'], array(

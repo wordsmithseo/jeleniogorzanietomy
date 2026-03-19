@@ -1355,18 +1355,41 @@ class JG_Interactive_Map {
         'zgloszenie' => 'Zgłoszenia'
     );
     $type_label = isset($type_labels[$point['type']]) ? $type_labels[$point['type']] : 'Mapa';
+    // Resolve schema.org @type from category (fallback page)
+    $fb_schema_type = 'Place';
+    $fb_point_category = $point['category'] ?? '';
+    if ($point['type'] === 'miejsce') {
+        $fb_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
+        $fb_schema_type = isset($fb_place_cats[$fb_point_category]['schema_type']) ? $fb_place_cats[$fb_point_category]['schema_type'] : 'LocalBusiness';
+    } elseif ($point['type'] === 'ciekawostka') {
+        $fb_cur_cats = JG_Map_Ajax_Handlers::get_curiosity_categories();
+        $fb_schema_type = isset($fb_cur_cats[$fb_point_category]['schema_type']) ? $fb_cur_cats[$fb_point_category]['schema_type'] : 'TouristAttraction';
+    }
+    global $wpdb;
+    $fb_votes_table = JG_Map_Database::get_votes_table();
+    $fb_votes_up = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $fb_votes_table WHERE point_id = %d AND vote_type = 'up'", $point['id']));
+    $fb_votes_down = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $fb_votes_table WHERE point_id = %d AND vote_type = 'down'", $point['id']));
+    $fb_total_votes = $fb_votes_up + $fb_votes_down;
+    $fb_date_created = !empty($point['created_at']) ? get_date_from_gmt($point['created_at'], 'c') : null;
+    $fb_date_modified = !empty($point['updated_at']) ? get_date_from_gmt($point['updated_at'], 'c') : null;
     ?>
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@graph": [
             {
-                "@type": "<?php echo $point['type'] === 'miejsce' ? 'LocalBusiness' : 'Place'; ?>",
+                "@type": "<?php echo esc_html($fb_schema_type); ?>",
                 "@id": <?php echo json_encode($url . '#place'); ?>,
                 "name": <?php echo json_encode($point['title']); ?>,
                 "description": <?php echo json_encode($description); ?>,
                 "url": <?php echo json_encode($url); ?>,
-                "image": <?php echo json_encode($first_image); ?>,
+                <?php if (!empty($first_image)): ?>
+                "image": {
+                    "@type": "ImageObject",
+                    "url": <?php echo json_encode($first_image); ?>,
+                    "caption": <?php echo json_encode($point['title']); ?>
+                },
+                <?php endif; ?>
                 "geo": {
                     "@type": "GeoCoordinates",
                     "latitude": <?php echo json_encode($point['lat']); ?>,
@@ -1379,11 +1402,29 @@ class JG_Interactive_Map {
                     "addressRegion": "Dolnośląskie",
                     "addressCountry": "PL"
                 }
+                <?php if ($fb_date_created): ?>
+                ,"dateCreated": <?php echo json_encode($fb_date_created); ?>
+                <?php endif; ?>
+                <?php if ($fb_date_modified): ?>
+                ,"dateModified": <?php echo json_encode($fb_date_modified); ?>
+                <?php endif; ?>
                 <?php if (!empty($point['phone'])): ?>
                 ,"telephone": <?php echo json_encode($point['phone']); ?>
                 <?php endif; ?>
                 <?php if (!empty($point['website'])): ?>
                 ,"url": <?php echo json_encode($point['website']); ?>
+                <?php endif; ?>
+                <?php if (!empty($point['opening_hours'])): ?>
+                ,"openingHours": <?php echo json_encode(array_filter(array_map('trim', explode("\n", $point['opening_hours'])))); ?>
+                <?php endif; ?>
+                <?php if ($fb_total_votes > 0): ?>
+                ,"aggregateRating": {
+                    "@type": "AggregateRating",
+                    "ratingValue": <?php echo json_encode(round(($fb_votes_up / $fb_total_votes) * 5, 1)); ?>,
+                    "ratingCount": <?php echo json_encode($fb_total_votes); ?>,
+                    "bestRating": "5",
+                    "worstRating": "1"
+                }
                 <?php endif; ?>
                 <?php
                 $same_as_fb = array();
@@ -1680,17 +1721,43 @@ class JG_Interactive_Map {
         <link rel="canonical" href="<?php echo esc_url($url); ?>">
 
         <!-- Schema.org JSON-LD structured data -->
+        <?php
+        // Resolve schema.org @type from category
+        $schema_type = 'Place';
+        $point_category = $point['category'] ?? '';
+        if ($point['type'] === 'miejsce') {
+            $place_cats = JG_Map_Ajax_Handlers::get_place_categories();
+            $schema_type = isset($place_cats[$point_category]['schema_type']) ? $place_cats[$point_category]['schema_type'] : 'LocalBusiness';
+        } elseif ($point['type'] === 'ciekawostka') {
+            $cur_cats = JG_Map_Ajax_Handlers::get_curiosity_categories();
+            $schema_type = isset($cur_cats[$point_category]['schema_type']) ? $cur_cats[$point_category]['schema_type'] : 'TouristAttraction';
+        }
+        // Get votes count for aggregateRating
+        global $wpdb;
+        $votes_table = JG_Map_Database::get_votes_table();
+        $votes_up = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $votes_table WHERE point_id = %d AND vote_type = 'up'", $point['id']));
+        $votes_down = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $votes_table WHERE point_id = %d AND vote_type = 'down'", $point['id']));
+        $total_votes = $votes_up + $votes_down;
+        $date_created_schema = !empty($point['created_at']) ? get_date_from_gmt($point['created_at'], 'c') : null;
+        $date_modified_schema = !empty($point['updated_at']) ? get_date_from_gmt($point['updated_at'], 'c') : null;
+        ?>
         <script type="application/ld+json">
         {
             "@context": "https://schema.org",
             "@graph": [
                 {
-                    "@type": "<?php echo $point['type'] === 'miejsce' ? 'LocalBusiness' : 'Place'; ?>",
+                    "@type": "<?php echo esc_html($schema_type); ?>",
                     "@id": <?php echo json_encode($url . '#place'); ?>,
                     "name": <?php echo json_encode($point['title']); ?>,
                     "description": <?php echo json_encode($description); ?>,
                     "url": <?php echo json_encode($url); ?>,
-                    "image": <?php echo json_encode($first_image); ?>,
+                    <?php if (!empty($first_image)): ?>
+                    "image": {
+                        "@type": "ImageObject",
+                        "url": <?php echo json_encode($first_image); ?>,
+                        "caption": <?php echo json_encode($point['title']); ?>
+                    },
+                    <?php endif; ?>
                     "geo": {
                         "@type": "GeoCoordinates",
                         "latitude": <?php echo json_encode($point['lat']); ?>,
@@ -1705,14 +1772,31 @@ class JG_Interactive_Map {
                         "addressRegion": "Dolnośląskie",
                         "addressCountry": "PL"
                     }
+                    <?php if ($date_created_schema): ?>
+                    ,"dateCreated": <?php echo json_encode($date_created_schema); ?>
+                    <?php endif; ?>
+                    <?php if ($date_modified_schema): ?>
+                    ,"dateModified": <?php echo json_encode($date_modified_schema); ?>
+                    <?php endif; ?>
                     <?php if (!empty($point['phone'])): ?>
                     ,"telephone": <?php echo json_encode($point['phone']); ?>
                     <?php endif; ?>
                     <?php if (!empty($point['website'])): ?>
                     ,"url": <?php echo json_encode($point['website']); ?>
                     <?php endif; ?>
+                    <?php if (!empty($point['opening_hours'])): ?>
+                    ,"openingHours": <?php echo json_encode(array_filter(array_map('trim', explode("\n", $point['opening_hours'])))); ?>
+                    <?php endif; ?>
+                    <?php if ($total_votes > 0): ?>
+                    ,"aggregateRating": {
+                        "@type": "AggregateRating",
+                        "ratingValue": <?php echo json_encode(round(($votes_up / $total_votes) * 5, 1)); ?>,
+                        "ratingCount": <?php echo json_encode($total_votes); ?>,
+                        "bestRating": "5",
+                        "worstRating": "1"
+                    }
+                    <?php endif; ?>
                     <?php
-                    // sameAs should reference social media profiles, not the business website
                     $same_as = array();
                     if (!empty($point['facebook_url'])) $same_as[] = $point['facebook_url'];
                     if (!empty($point['instagram_url'])) $same_as[] = $point['instagram_url'];

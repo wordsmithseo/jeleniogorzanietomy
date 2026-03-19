@@ -84,6 +84,8 @@ class JG_Map_Database {
             approved_at datetime DEFAULT NULL,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             tags varchar(500) DEFAULT NULL,
+            opening_hours text DEFAULT NULL,
+            pending_edit tinyint(1) DEFAULT 0,
             ip_address varchar(100),
             PRIMARY KEY (id),
             UNIQUE KEY slug (slug),
@@ -512,6 +514,16 @@ class JG_Map_Database {
         // Check if tags column exists (for point tagging)
         if (!$column_exists('tags')) {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN tags varchar(500) DEFAULT NULL AFTER ip_address");
+        }
+
+        // Check if opening_hours column exists (for displaying business hours)
+        if (!$column_exists('opening_hours')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN opening_hours text DEFAULT NULL AFTER tags");
+        }
+
+        // Check if pending_edit column exists (flags points with pending moderation edits)
+        if (!$column_exists('pending_edit')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN pending_edit tinyint(1) DEFAULT 0 AFTER opening_hours");
         }
 
         // Fix tags stored with unicode escapes (e.g. "G\u00f3ry" -> "Góry")

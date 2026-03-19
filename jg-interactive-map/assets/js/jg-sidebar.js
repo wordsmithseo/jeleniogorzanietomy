@@ -530,9 +530,13 @@
                 <span class="jg-sidebar-star-icon">⭐</span>
             </div>`;
         } else {
-            // Show placeholder image for non-sponsored places without image
-            imageHtml = `<div class="jg-sidebar-item__image" style="position:relative;width:80px;height:80px;flex-shrink:0;overflow:hidden;border-radius:8px;background:#f3f4f6">
-                <img src="${JG_MAP_CFG.noPhotoSidebar}" alt="${escapeHtml(point.title)}" loading="lazy" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center" />
+            // Show crossed-camera icon for places without image
+            imageHtml = `<div class="jg-sidebar-item__image" style="position:relative;width:80px;height:80px;flex-shrink:0;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="Brak zdjęcia">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                    <circle cx="12" cy="13" r="4"/>
+                </svg>
             </div>`;
         }
 
