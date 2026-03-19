@@ -565,6 +565,26 @@
             </div>`;
         }
 
+        // Build today's opening hours line for sidebar (miejsce only)
+        var todayHoursHtml = '';
+        if (point.opening_hours && (point.type === 'miejsce' || point.type === 'ciekawostka')) {
+            var sbDayKeys = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+            var sbTodayKey = sbDayKeys[(new Date().getDay() + 6) % 7];
+            var sbParsed = {};
+            point.opening_hours.trim().split('\n').forEach(function(line) {
+                var m = line.trim().match(/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+                if (m) sbParsed[m[1]] = { open: m[2], close: m[3] };
+            });
+            var sbToday = sbParsed[sbTodayKey] || null;
+            if (Object.keys(sbParsed).length > 0) {
+                if (sbToday) {
+                    todayHoursHtml = `<div class="jg-sidebar-item__hours">🕐 ${escapeHtml(sbToday.open)} – ${escapeHtml(sbToday.close)}</div>`;
+                } else {
+                    todayHoursHtml = `<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Nieczynne</div>`;
+                }
+            }
+        }
+
         // Build item HTML
         var infoBadgesHtml = buildInfoBadges(point);
         $item.html(`
@@ -573,6 +593,7 @@
                 <div class="jg-sidebar-item__header">
                     ${badgeHtml}
                     <h4 class="jg-sidebar-item__title">${escapeHtml(point.title)}</h4>
+                    ${todayHoursHtml}
                 </div>
                 <div class="jg-sidebar-item__footer">
                     ${votesHtml}

@@ -10151,22 +10151,54 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           '</div>';
         }
 
-        // Build opening hours display (shown under title for miejsca)
+        // Build opening hours display (shown under title for miejsca and ciekawostki)
         var openingHoursHtml = '';
-        if (p.opening_hours && p.opening_hours.trim() && p.type === 'miejsce') {
+        if (p.opening_hours && p.opening_hours.trim() && (p.type === 'miejsce' || p.type === 'ciekawostka')) {
           var ohDayLabels = { Mo: 'Pon', Tu: 'Wt', We: 'Śr', Th: 'Czw', Fr: 'Pt', Sa: 'Sob', Su: 'Niedz' };
-          var ohRows = p.opening_hours.trim().split('\n').map(function(line) {
-            line = line.trim();
-            var m = line.match(/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
-            if (m) {
-              return '<div style="display:flex;justify-content:space-between;gap:16px"><span style="min-width:36px;font-weight:600">' + esc(ohDayLabels[m[1]] || m[1]) + '</span><span>' + esc(m[2]) + ' – ' + esc(m[3]) + '</span></div>';
-            }
-            return '<div>' + esc(line) + '</div>';
-          }).filter(Boolean);
-          if (ohRows.length > 0) {
-            openingHoursHtml = '<div class="jg-opening-hours" style="display:flex;align-items:flex-start;gap:10px;margin:0 0 12px 0;padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">' +
-              '<span style="font-size:18px;line-height:1.4;flex-shrink:0">🕐</span>' +
-              '<div style="font-size:0.875rem;color:#166534;line-height:1.8;flex:1">' + ohRows.join('') + '</div>' +
+          var ohAllDayKeys = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+          var todayKey = ohAllDayKeys[(new Date().getDay() + 6) % 7]; // Mon=0..Sun=6
+          var ohColors = p.type === 'ciekawostka'
+            ? { bg: '#fefce8', border: '#fde047', text: '#854d0e', btn: '#92400e' }
+            : { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', btn: '#14532d' };
+
+          // Parse all days from opening_hours string
+          var ohParsed = {};
+          p.opening_hours.trim().split('\n').forEach(function(line) {
+            var m2 = line.trim().match(/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+            if (m2) ohParsed[m2[1]] = { open: m2[2], close: m2[3] };
+          });
+
+          if (Object.keys(ohParsed).length > 0) {
+            var todayData = ohParsed[todayKey] || null;
+            var now = new Date();
+            var nowMins = now.getHours() * 60 + now.getMinutes();
+            var minsToClose = todayData ? (parseInt(todayData.close.split(':')[0]) * 60 + parseInt(todayData.close.split(':')[1])) - nowMins : -1;
+            var closingWarning = (todayData && minsToClose > 0 && minsToClose < 60) ? 'Uwaga, zamknięcie za ' + minsToClose + ' min' : '';
+
+            // Today row
+            var todayRowHtml = todayData
+              ? '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+                  '<span style="font-weight:600">' + esc(ohDayLabels[todayKey] || todayKey) + '</span>' +
+                  '<span>' + esc(todayData.open) + ' – ' + esc(todayData.close) + '</span>' +
+                  (closingWarning ? '<span id="jg-oh-warning" style="color:#d97706;font-size:0.8rem;font-weight:700">' + esc(closingWarning) + '</span>' : '') +
+                '</div>'
+              : '<div><span style="color:#dc2626;font-weight:600">Nieczynne</span></div>';
+
+            // All days rows
+            var allDaysHtml = ohAllDayKeys.map(function(dk) {
+              var dd = ohParsed[dk] || null;
+              var isToday = dk === todayKey;
+              return '<div style="display:flex;justify-content:space-between;gap:16px' + (isToday ? ';font-weight:700' : '') + '">' +
+                '<span style="min-width:36px">' + esc(ohDayLabels[dk] || dk) + '</span>' +
+                (dd ? '<span>' + esc(dd.open) + ' – ' + esc(dd.close) + '</span>' : '<span style="color:#dc2626">Nieczynne</span>') +
+                '</div>';
+            }).join('');
+
+            openingHoursHtml = '<div class="jg-opening-hours" style="margin:0 0 12px 0;padding:10px 14px;background:' + ohColors.bg + ';border-radius:8px;border:1px solid ' + ohColors.border + ';font-size:0.875rem;color:' + ohColors.text + '">' +
+              '<div id="jg-oh-title" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Dzisiejsze godziny otwarcia</div>' +
+              '<div id="jg-oh-today">' + todayRowHtml + '</div>' +
+              '<div id="jg-oh-all" style="display:none;margin-top:6px;line-height:2">' + allDaysHtml + '</div>' +
+              '<button id="btn-oh-expand" type="button" style="margin-top:6px;background:none;border:none;padding:0;color:' + ohColors.btn + ';font-size:0.8rem;cursor:pointer;text-decoration:underline;font-weight:600">Pokaż wszystkie dni</button>' +
               '</div>';
           }
         }
@@ -10219,6 +10251,20 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             page_location: window.location.origin + gaPinPath,
             page_title: p.title || ''
           });
+        }
+
+        // Opening hours expand button
+        var ohExpandBtn = qs('#btn-oh-expand', modalView);
+        if (ohExpandBtn) {
+          ohExpandBtn.onclick = function() {
+            var allDiv = qs('#jg-oh-all', modalView);
+            var titleEl = qs('#jg-oh-title', modalView);
+            var warningEl = qs('#jg-oh-warning', modalView);
+            if (allDiv) allDiv.style.display = 'block';
+            if (titleEl) titleEl.textContent = 'Godziny otwarcia';
+            if (warningEl) warningEl.style.display = 'none';
+            ohExpandBtn.style.display = 'none';
+          };
         }
 
         // Copy link button handler
