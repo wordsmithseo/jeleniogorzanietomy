@@ -10197,7 +10197,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             openingHoursHtml = '<div class="jg-opening-hours" style="margin:0 0 12px 0;padding:10px 14px;background:' + ohColors.bg + ';border-radius:8px;border:1px solid ' + ohColors.border + ';font-size:0.875rem;color:' + ohColors.text + '">' +
               '<div id="jg-oh-title" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Dzisiejsze godziny otwarcia</div>' +
               '<div id="jg-oh-today">' + todayRowHtml + '</div>' +
-              '<div id="jg-oh-all" style="display:none;margin-top:6px;line-height:2">' + allDaysHtml + '</div>' +
+              '<div id="jg-oh-all" style="display:none;margin-top:6px;line-height:2;color:' + ohColors.text + '">' + allDaysHtml + '</div>' +
               '<button id="btn-oh-expand" type="button" style="margin-top:6px;background:none;border:none;padding:0;color:' + ohColors.btn + ';font-size:0.8rem;cursor:pointer;text-decoration:underline;font-weight:600">Pokaż wszystkie dni</button>' +
               '</div>';
           }
