@@ -10253,17 +10253,27 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           });
         }
 
-        // Opening hours expand button
+        // Opening hours expand/collapse toggle
         var ohExpandBtn = qs('#btn-oh-expand', modalView);
         if (ohExpandBtn) {
           ohExpandBtn.onclick = function() {
             var allDiv = qs('#jg-oh-all', modalView);
             var titleEl = qs('#jg-oh-title', modalView);
             var warningEl = qs('#jg-oh-warning', modalView);
-            if (allDiv) allDiv.style.display = 'block';
-            if (titleEl) titleEl.textContent = 'Godziny otwarcia';
-            if (warningEl) warningEl.style.display = 'none';
-            ohExpandBtn.style.display = 'none';
+            var isExpanded = ohExpandBtn.getAttribute('data-expanded') === '1';
+            if (!isExpanded) {
+              if (allDiv) allDiv.style.display = 'block';
+              if (titleEl) titleEl.textContent = 'Godziny otwarcia';
+              if (warningEl) warningEl.style.display = 'none';
+              ohExpandBtn.textContent = 'Zwiń';
+              ohExpandBtn.setAttribute('data-expanded', '1');
+            } else {
+              if (allDiv) allDiv.style.display = 'none';
+              if (titleEl) titleEl.textContent = 'Dzisiejsze godziny otwarcia';
+              if (warningEl) warningEl.style.display = '';
+              ohExpandBtn.textContent = 'Pokaż wszystkie dni';
+              ohExpandBtn.setAttribute('data-expanded', '0');
+            }
           };
         }
 

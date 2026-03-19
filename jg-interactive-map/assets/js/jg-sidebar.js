@@ -25,9 +25,9 @@
     // Current sponsored pin ID to maintain consistency
     let currentSponsoredId = null;
 
-    // LocalStorage cache keys (v1: first versioned sidebar cache)
-    var SIDEBAR_CACHE_KEY      = 'jg_sidebar_cache_v1';
-    var SIDEBAR_CACHE_META_KEY = 'jg_sidebar_cache_meta_v1';
+    // LocalStorage cache keys (v2: added opening_hours to fingerprint)
+    var SIDEBAR_CACHE_KEY      = 'jg_sidebar_cache_v2';
+    var SIDEBAR_CACHE_META_KEY = 'jg_sidebar_cache_meta_v2';
 
     function getSidebarUserId() {
         return (window.JG_MAP_CFG && JG_MAP_CFG.currentUserId)
@@ -333,7 +333,7 @@
         }
 
         // Build fingerprint from all visible/editable fields so any change triggers re-render
-        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}:${p.has_internal_links ? 1 : 0}:${p.has_external_links ? 1 : 0}:${p.has_incomplete_sections ? 1 : 0}`).join(',');
+        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}:${p.has_internal_links ? 1 : 0}:${p.has_external_links ? 1 : 0}:${p.has_incomplete_sections ? 1 : 0}:${p.opening_hours || ''}`).join(',');
         const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
         return pointsData + statsData;
     }

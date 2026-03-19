@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.24.49
+ * Version: 3.24.50
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.24.49');
+define('JG_MAP_VERSION', '3.24.50');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -772,6 +772,14 @@ class JG_Interactive_Map {
 
         /* Address */
         .jg-sp-address { font-size: calc(15 * var(--jg)); color: #6b7280; margin-bottom: 24px; }
+        .jg-sp-oh { margin-bottom: 24px; }
+        .jg-sp-oh-title { font-size: calc(13 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin: 0 0 8px 0; }
+        .jg-sp-oh-table { width: 100%; border-collapse: collapse; font-size: calc(14 * var(--jg)); color: #374151; }
+        .jg-sp-oh-table tr { border-bottom: 1px solid #f3f4f6; }
+        .jg-sp-oh-table tr:last-child { border-bottom: none; }
+        .jg-sp-oh-day { padding: 5px 16px 5px 0; font-weight: 500; width: 55%; }
+        .jg-sp-oh-time { padding: 5px 0; }
+        .jg-sp-oh-closed { color: #dc2626; }
 
         /* Gallery grid */
         .jg-sp-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 28px; }
@@ -1049,6 +1057,40 @@ class JG_Interactive_Map {
             <!-- Address -->
             <?php if (!empty($point['address'])): ?>
                 <div class="jg-sp-address">&#128205; <?php echo esc_html($point['address']); ?></div>
+            <?php endif; ?>
+
+            <!-- Opening hours -->
+            <?php
+            $sp_oh_days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+            $sp_oh_labels = ['Mo' => 'Poniedziałek', 'Tu' => 'Wtorek', 'We' => 'Środa', 'Th' => 'Czwartek', 'Fr' => 'Piątek', 'Sa' => 'Sobota', 'Su' => 'Niedziela'];
+            $sp_oh_parsed = [];
+            if (!empty($point['opening_hours'])) {
+                foreach (explode("\n", $point['opening_hours']) as $sp_oh_line) {
+                    $sp_oh_line = trim($sp_oh_line);
+                    if (preg_match('/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/', $sp_oh_line, $sp_oh_m)) {
+                        $sp_oh_parsed[$sp_oh_m[1]] = ['open' => $sp_oh_m[2], 'close' => $sp_oh_m[3]];
+                    }
+                }
+            }
+            if (!empty($sp_oh_parsed)):
+            ?>
+            <div class="jg-sp-oh">
+                <h2 class="jg-sp-oh-title">Godziny otwarcia</h2>
+                <table class="jg-sp-oh-table">
+                    <?php foreach ($sp_oh_days as $sp_oh_key): ?>
+                    <tr>
+                        <td class="jg-sp-oh-day"><?php echo esc_html($sp_oh_labels[$sp_oh_key]); ?></td>
+                        <td class="jg-sp-oh-time">
+                            <?php if (isset($sp_oh_parsed[$sp_oh_key])): ?>
+                                <?php echo esc_html($sp_oh_parsed[$sp_oh_key]['open'] . ' – ' . $sp_oh_parsed[$sp_oh_key]['close']); ?>
+                            <?php else: ?>
+                                <span class="jg-sp-oh-closed">Nieczynne</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+            </div>
             <?php endif; ?>
 
             <!-- Image: hero if 1 image, gallery grid if multiple -->
@@ -1415,7 +1457,20 @@ class JG_Interactive_Map {
                 ,"url": <?php echo json_encode($point['website']); ?>
                 <?php endif; ?>
                 <?php if (!empty($point['opening_hours'])): ?>
+                <?php
+                $fb_oh_days = ['Mo'=>'https://schema.org/Monday','Tu'=>'https://schema.org/Tuesday','We'=>'https://schema.org/Wednesday','Th'=>'https://schema.org/Thursday','Fr'=>'https://schema.org/Friday','Sa'=>'https://schema.org/Saturday','Su'=>'https://schema.org/Sunday'];
+                $fb_oh_spec = [];
+                foreach (explode("\n", $point['opening_hours']) as $fb_oh_line) {
+                    $fb_oh_line = trim($fb_oh_line);
+                    if (preg_match('/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/', $fb_oh_line, $fb_oh_m)) {
+                        $fb_oh_spec[] = ['@type'=>'OpeningHoursSpecification','dayOfWeek'=>$fb_oh_days[$fb_oh_m[1]],'opens'=>$fb_oh_m[2],'closes'=>$fb_oh_m[3]];
+                    }
+                }
+                ?>
                 ,"openingHours": <?php echo json_encode(array_filter(array_map('trim', explode("\n", $point['opening_hours'])))); ?>
+                <?php if (!empty($fb_oh_spec)): ?>
+                ,"openingHoursSpecification": <?php echo json_encode($fb_oh_spec, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+                <?php endif; ?>
                 <?php endif; ?>
                 <?php if ($fb_total_votes > 0): ?>
                 ,"aggregateRating": {
@@ -1785,7 +1840,20 @@ class JG_Interactive_Map {
                     ,"url": <?php echo json_encode($point['website']); ?>
                     <?php endif; ?>
                     <?php if (!empty($point['opening_hours'])): ?>
+                    <?php
+                    $schema_oh_days = ['Mo'=>'https://schema.org/Monday','Tu'=>'https://schema.org/Tuesday','We'=>'https://schema.org/Wednesday','Th'=>'https://schema.org/Thursday','Fr'=>'https://schema.org/Friday','Sa'=>'https://schema.org/Saturday','Su'=>'https://schema.org/Sunday'];
+                    $schema_oh_spec = [];
+                    foreach (explode("\n", $point['opening_hours']) as $schema_oh_line) {
+                        $schema_oh_line = trim($schema_oh_line);
+                        if (preg_match('/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/', $schema_oh_line, $schema_oh_m)) {
+                            $schema_oh_spec[] = ['@type'=>'OpeningHoursSpecification','dayOfWeek'=>$schema_oh_days[$schema_oh_m[1]],'opens'=>$schema_oh_m[2],'closes'=>$schema_oh_m[3]];
+                        }
+                    }
+                    ?>
                     ,"openingHours": <?php echo json_encode(array_filter(array_map('trim', explode("\n", $point['opening_hours'])))); ?>
+                    <?php if (!empty($schema_oh_spec)): ?>
+                    ,"openingHoursSpecification": <?php echo json_encode($schema_oh_spec, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+                    <?php endif; ?>
                     <?php endif; ?>
                     <?php if ($total_votes > 0): ?>
                     ,"aggregateRating": {
