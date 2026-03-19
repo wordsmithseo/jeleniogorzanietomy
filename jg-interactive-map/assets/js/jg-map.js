@@ -1548,12 +1548,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         { key: 'Su', label: 'Niedz' }
       ];
 
-      // Build time <select> options in 30-min steps 00:00–23:30, plus 24:00
+      // Build time <select> options in 15-min steps 00:00–23:45, plus 24:00
       function buildTimeOptions(selected) {
         var html = '';
         for (var h = 0; h < 24; h++) {
-          for (var m = 0; m < 60; m += 30) {
-            var t = (h < 10 ? '0' : '') + h + ':' + (m === 0 ? '00' : '30');
+          for (var m = 0; m < 60; m += 15) {
+            var mm = m === 0 ? '00' : (m < 10 ? '0' + m : '' + m);
+            var t = (h < 10 ? '0' : '') + h + ':' + mm;
             html += '<option value="' + t + '"' + (t === selected ? ' selected' : '') + '>' + t + '</option>';
           }
         }
@@ -13632,9 +13633,19 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       window.openDetails = openDetails;
       window.openUserModal = openUserModal;
 
+      // Export function to open a point modal by ID (looks up full data from ALL)
+      window.jgOpenPointById = function(id) {
+        var p = null;
+        for (var i = 0; i < ALL.length; i++) {
+          if (+ALL[i].id === +id) { p = ALL[i]; break; }
+        }
+        if (p) openDetails(p);
+      };
+
       // Export zoom-to-point function for sidebar use
       // Zooms the map to given coordinates and shows a pulsing marker animation
-      window.jgZoomToPoint = function(lat, lng) {
+      // Optional callback is fired after the animation completes
+      window.jgZoomToPoint = function(lat, lng, callback) {
         map.setView(dwCenteredLatLng([lat, lng], 19), 19, { animate: true });
 
         // On mobile: scroll viewport to the map element
@@ -13670,6 +13681,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               clearInterval(pulseInterval);
               setTimeout(function() {
                 map.removeLayer(pulsingCircle);
+                if (typeof callback === 'function') callback();
               }, 250);
             }
           }, 250);
