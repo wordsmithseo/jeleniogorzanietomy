@@ -4970,6 +4970,13 @@ img.emoji {
   color: #dc2626;
 }
 
+.jg-sidebar-item__hours-warning {
+  margin-left: 6px;
+  color: #d97706;
+  font-weight: 700;
+  font-size: calc(10 * var(--jg));
+}
+
 .jg-sidebar-item__footer {
   display: flex;
   flex-direction: column;

@@ -578,7 +578,14 @@
             var sbToday = sbParsed[sbTodayKey] || null;
             if (Object.keys(sbParsed).length > 0) {
                 if (sbToday) {
-                    todayHoursHtml = `<div class="jg-sidebar-item__hours">🕐 ${escapeHtml(sbToday.open)} – ${escapeHtml(sbToday.close)}</div>`;
+                    var sbNow = new Date();
+                    var sbNowMins = sbNow.getHours() * 60 + sbNow.getMinutes();
+                    var sbCloseMins = parseInt(sbToday.close.split(':')[0]) * 60 + parseInt(sbToday.close.split(':')[1]);
+                    var sbMinsLeft = sbCloseMins - sbNowMins;
+                    var sbWarning = (sbMinsLeft > 0 && sbMinsLeft < 60)
+                        ? `<span class="jg-sidebar-item__hours-warning">⚠️ Zamknięcie za ${sbMinsLeft} min</span>`
+                        : '';
+                    todayHoursHtml = `<div class="jg-sidebar-item__hours">🕐 ${escapeHtml(sbToday.open)} – ${escapeHtml(sbToday.close)}${sbWarning}</div>`;
                 } else {
                     todayHoursHtml = `<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Nieczynne</div>`;
                 }
