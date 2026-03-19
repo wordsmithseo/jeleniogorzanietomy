@@ -659,7 +659,7 @@
     }
 
     /**
-     * Handle click on point item - zoom the map to the pin location.
+     * Handle click on point item - zoom the map to the pin location, then open modal.
      * Uses window.jgZoomToPoint (exported from jg-map.js) which replicates
      * the existing search result zoom mechanic (setView + pulsing circle).
      */
@@ -683,25 +683,39 @@
                     return;
                 }
 
-                // Point exists - zoom map to its location
-                zoomToPin(point.lat, point.lng);
+                // Point exists - zoom map to its location then open modal
+                zoomToPin(point.lat, point.lng, function() {
+                    if (typeof window.jgOpenPointById === 'function') {
+                        window.jgOpenPointById(point.id);
+                    } else if (typeof window.openDetails === 'function') {
+                        window.openDetails(point);
+                    }
+                });
             },
             error: function(xhr, status, error) {
                 // On network error, still try to zoom (fallback)
-                zoomToPin(point.lat, point.lng);
+                zoomToPin(point.lat, point.lng, function() {
+                    if (typeof window.jgOpenPointById === 'function') {
+                        window.jgOpenPointById(point.id);
+                    } else if (typeof window.openDetails === 'function') {
+                        window.openDetails(point);
+                    }
+                });
             }
         });
     }
 
     /**
      * Zoom the map to a pin location using the exported map mechanism.
+     * Optional callback is fired after the animation completes.
      */
-    function zoomToPin(lat, lng) {
+    function zoomToPin(lat, lng, callback) {
         if (typeof window.jgZoomToPoint === 'function') {
-            window.jgZoomToPoint(lat, lng);
+            window.jgZoomToPoint(lat, lng, callback);
         } else if (window.jgMap) {
             // Fallback: use Leaflet map directly if export not yet ready
             window.jgMap.setView([lat, lng], 19, { animate: true });
+            if (typeof callback === 'function') setTimeout(callback, 800);
         }
     }
 

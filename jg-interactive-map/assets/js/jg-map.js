@@ -13632,9 +13632,19 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       window.openDetails = openDetails;
       window.openUserModal = openUserModal;
 
+      // Export function to open a point modal by ID (looks up full data from ALL)
+      window.jgOpenPointById = function(id) {
+        var p = null;
+        for (var i = 0; i < ALL.length; i++) {
+          if (+ALL[i].id === +id) { p = ALL[i]; break; }
+        }
+        if (p) openDetails(p);
+      };
+
       // Export zoom-to-point function for sidebar use
       // Zooms the map to given coordinates and shows a pulsing marker animation
-      window.jgZoomToPoint = function(lat, lng) {
+      // Optional callback is fired after the animation completes
+      window.jgZoomToPoint = function(lat, lng, callback) {
         map.setView(dwCenteredLatLng([lat, lng], 19), 19, { animate: true });
 
         // On mobile: scroll viewport to the map element
@@ -13670,6 +13680,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               clearInterval(pulseInterval);
               setTimeout(function() {
                 map.removeLayer(pulsingCircle);
+                if (typeof callback === 'function') callback();
               }, 250);
             }
           }, 250);
