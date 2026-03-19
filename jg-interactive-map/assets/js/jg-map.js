@@ -1548,12 +1548,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         { key: 'Su', label: 'Niedz' }
       ];
 
-      // Build time <select> options in 30-min steps 00:00–23:30, plus 24:00
+      // Build time <select> options in 15-min steps 00:00–23:45, plus 24:00
       function buildTimeOptions(selected) {
         var html = '';
         for (var h = 0; h < 24; h++) {
-          for (var m = 0; m < 60; m += 30) {
-            var t = (h < 10 ? '0' : '') + h + ':' + (m === 0 ? '00' : '30');
+          for (var m = 0; m < 60; m += 15) {
+            var mm = m === 0 ? '00' : (m < 10 ? '0' + m : '' + m);
+            var t = (h < 10 ? '0' : '') + h + ':' + mm;
             html += '<option value="' + t + '"' + (t === selected ? ' selected' : '') + '>' + t + '</option>';
           }
         }
