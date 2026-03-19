@@ -4745,6 +4745,17 @@ class JG_Map_Ajax_Handlers {
                 }
             }
 
+            // Add tags if present
+            if (isset($new_values['tags'])) {
+                $tags_data = is_string($new_values['tags']) ? json_decode($new_values['tags'], true) : $new_values['tags'];
+                $update_data['tags'] = is_array($tags_data) && !empty($tags_data) ? json_encode($tags_data, JSON_UNESCAPED_UNICODE) : null;
+            }
+
+            // Apply opening_hours if present
+            if (array_key_exists('opening_hours', $new_values)) {
+                $update_data['opening_hours'] = !empty($new_values['opening_hours']) ? $new_values['opening_hours'] : null;
+            }
+
             // Handle new images if present
             if (isset($new_values['new_images'])) {
                 $new_images = json_decode($new_values['new_images'], true) ?: array();
@@ -4756,6 +4767,9 @@ class JG_Map_Ajax_Handlers {
                     $update_data['images'] = json_encode($all_images);
                 }
             }
+
+            // Clear pending_edit flag
+            $update_data['pending_edit'] = 0;
 
             // Update point with new values
             JG_Map_Database::update_point($history['point_id'], $update_data);
