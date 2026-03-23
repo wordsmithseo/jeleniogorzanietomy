@@ -584,7 +584,22 @@
                     var sbCloseMins = parseInt(sbToday.close.split(':')[0]) * 60 + parseInt(sbToday.close.split(':')[1]);
                     var sbIsOpen = sbNowMins >= sbOpenMins && sbNowMins < sbCloseMins;
                     if (!sbIsOpen) {
-                        todayHoursHtml = `<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Zamknięte</div>`;
+                        var sbDayLabels = { Mo: 'Pon', Tu: 'Wt', We: 'Śr', Th: 'Czw', Fr: 'Pt', Sa: 'Sob', Su: 'Niedz' };
+                        var sbNextOpen = '';
+                        var sbTodayIdx = sbDayKeys.indexOf(sbTodayKey);
+                        if (sbNowMins < sbOpenMins) {
+                            sbNextOpen = 'Otwiera o ' + sbToday.open;
+                        } else {
+                            for (var sbDi = 1; sbDi <= 7; sbDi++) {
+                                var sbNextKey = sbDayKeys[(sbTodayIdx + sbDi) % 7];
+                                if (sbParsed[sbNextKey]) {
+                                    var sbNextLabel = sbDi === 1 ? 'Jutro' : (sbDayLabels[sbNextKey] || sbNextKey);
+                                    sbNextOpen = sbNextLabel + ' o ' + sbParsed[sbNextKey].open;
+                                    break;
+                                }
+                            }
+                        }
+                        todayHoursHtml = `<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Zamknięte${sbNextOpen ? ' · ' + escapeHtml(sbNextOpen) : ''}</div>`;
                     } else {
                         var sbMinsLeft = sbCloseMins - sbNowMins;
                         var sbWarning = (sbMinsLeft > 0 && sbMinsLeft < 60)

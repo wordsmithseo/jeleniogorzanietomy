@@ -10186,7 +10186,25 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             if (!todayData) {
               todayRowHtml = '<div><span style="color:#dc2626;font-weight:600">Nieczynne</span></div>';
             } else if (!ohIsOpen) {
-              todayRowHtml = '<div><span style="color:#dc2626;font-weight:600">Zamknięte</span></div>';
+              // Find next opening time
+              var ohNextOpen = '';
+              var ohTodayIdx = ohAllDayKeys.indexOf(todayKey);
+              if (todayData && nowMins < ohOpenMins) {
+                ohNextOpen = 'Otwiera o ' + todayData.open;
+              } else {
+                for (var ohDi = 1; ohDi <= 7; ohDi++) {
+                  var ohNextKey = ohAllDayKeys[(ohTodayIdx + ohDi) % 7];
+                  if (ohParsed[ohNextKey]) {
+                    var ohNextLabel = ohDi === 1 ? 'Jutro' : (ohDayLabels[ohNextKey] || ohNextKey);
+                    ohNextOpen = ohNextLabel + ' o ' + ohParsed[ohNextKey].open;
+                    break;
+                  }
+                }
+              }
+              todayRowHtml = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+                '<span style="color:#dc2626;font-weight:600">Zamknięte</span>' +
+                (ohNextOpen ? '<span style="font-size:0.8rem;opacity:0.75">· ' + esc(ohNextOpen) + '</span>' : '') +
+                '</div>';
             } else {
               todayRowHtml = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
                   '<span style="font-weight:600">' + esc(ohDayLabels[todayKey] || todayKey) + '</span>' +
