@@ -4112,6 +4112,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             mapWrap.style.setProperty('flex-direction', 'column', 'important');
             mapWrap.style.setProperty('border-radius', '0', 'important');
             mapWrap.style.setProperty('z-index', '1000', 'important');
+            // Clear any max-height left behind by the mobile viewport-fitting routine
+            // (jgFitMobileViewport) which never cleans up when returning to desktop.
+            mapWrap.style.removeProperty('max-height');
 
             mapWrap.classList.add('jg-desktop-wide');
             document.body.classList.add('jg-desktop-wide-active');
@@ -4248,6 +4251,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   // correctly after non-standard resize → full-screen transitions.
                   var dims2 = dwDetectHeaderFooter();
                   var _newH = Math.max(0, window.innerHeight - dims2.top - dims2.bottom);
+                  mapWrap.style.removeProperty('max-height');
                   mapWrap.style.setProperty('top', dims2.top + 'px', 'important');
                   mapWrap.style.setProperty('bottom', dims2.bottom + 'px', 'important');
                   mapWrap.style.setProperty('height', _newH + 'px', 'important');

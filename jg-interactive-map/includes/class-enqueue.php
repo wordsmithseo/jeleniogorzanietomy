@@ -642,7 +642,16 @@ class JG_Map_Enqueue {
             var jgFitting = false;
 
             function jgFitMobileViewport() {
-                if (window.innerWidth > 768) return;
+                if (window.innerWidth > 768) {
+                    /* Returning to desktop: remove any mobile-only inline constraints
+                       that would conflict with the desktop-wide fixed layout. */
+                    var _mwEl = document.getElementById('jg-map-wrap');
+                    if (_mwEl) {
+                        _mwEl.style.removeProperty('max-height');
+                        _mwEl.style.removeProperty('height');
+                    }
+                    return;
+                }
                 if (jgFitting) return;
                 jgFitting = true;
 
