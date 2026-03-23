@@ -4233,11 +4233,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 if (isDeskWide) exitDeskWide();
               } else {
                 if (isDeskWide) {
-                  // Recalculate header height; footer height may change too on resize
-                  var headerH2 = dwHeaderEl ? dwHeaderEl.offsetHeight : 0;
-                  var footerH2 = dwFooterEl ? dwFooterEl.offsetHeight : 0;
-                  mapWrap.style.setProperty('top', headerH2 + 'px', 'important');
-                  mapWrap.style.setProperty('bottom', footerH2 + 'px', 'important');
+                  // Recalculate header/footer offsets using the same method as enterDeskWide
+                  // (getBoundingClientRect().bottom) so the map fills the full viewport
+                  // correctly after non-standard resize → full-screen transitions.
+                  var dims2 = dwDetectHeaderFooter();
+                  mapWrap.style.setProperty('top', dims2.top + 'px', 'important');
+                  mapWrap.style.setProperty('bottom', dims2.bottom + 'px', 'important');
                   map.invalidateSize();
                 } else {
                   enterDeskWide();
