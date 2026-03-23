@@ -4104,7 +4104,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             mapWrap.style.setProperty('right', '0', 'important');
             mapWrap.style.setProperty('bottom', dims.bottom + 'px', 'important');
             mapWrap.style.setProperty('width', '100vw', 'important');
-            mapWrap.style.setProperty('height', 'auto', 'important');
+            // Use an explicit pixel height instead of 'auto' so the flex child
+            // (#jg-map with flex:1;height:0) always gets the correct computed height
+            // regardless of browser behaviour for fixed+top+bottom+height:auto.
+            mapWrap.style.setProperty('height', Math.max(0, window.innerHeight - dims.top - dims.bottom) + 'px', 'important');
             mapWrap.style.setProperty('display', 'flex', 'important');
             mapWrap.style.setProperty('flex-direction', 'column', 'important');
             mapWrap.style.setProperty('border-radius', '0', 'important');
@@ -4150,6 +4153,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 10000);
             setTimeout(function() { if (isDeskWide && !isFullscreen && !deskPromoWrap.innerHTML) dwShowPromo(); }, 15000);
             setTimeout(function() {
+              if (!isDeskWide) return;
+              // Re-read dims in case the viewport shifted during the 100 ms
+              var _dims2 = dwDetectHeaderFooter();
+              var _h2 = Math.max(0, window.innerHeight - _dims2.top - _dims2.bottom);
+              mapWrap.style.setProperty('top', _dims2.top + 'px', 'important');
+              mapWrap.style.setProperty('bottom', _dims2.bottom + 'px', 'important');
+              mapWrap.style.setProperty('height', _h2 + 'px', 'important');
               map.invalidateSize();
               // Pan right by half the sidebar width so the initial view is centred
               // in the visible area (between left edge and sidebar).
@@ -4237,9 +4247,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   // (getBoundingClientRect().bottom) so the map fills the full viewport
                   // correctly after non-standard resize → full-screen transitions.
                   var dims2 = dwDetectHeaderFooter();
+                  var _newH = Math.max(0, window.innerHeight - dims2.top - dims2.bottom);
                   mapWrap.style.setProperty('top', dims2.top + 'px', 'important');
                   mapWrap.style.setProperty('bottom', dims2.bottom + 'px', 'important');
+                  mapWrap.style.setProperty('height', _newH + 'px', 'important');
                   map.invalidateSize();
+                  // Second pass after paint to catch any remaining rendering lag
+                  setTimeout(function() { if (isDeskWide) map.invalidateSize(); }, 200);
                 } else {
                   enterDeskWide();
                 }
