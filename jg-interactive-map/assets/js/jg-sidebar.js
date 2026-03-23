@@ -580,12 +580,18 @@
                 if (sbToday) {
                     var sbNow = new Date();
                     var sbNowMins = sbNow.getHours() * 60 + sbNow.getMinutes();
+                    var sbOpenMins = parseInt(sbToday.open.split(':')[0]) * 60 + parseInt(sbToday.open.split(':')[1]);
                     var sbCloseMins = parseInt(sbToday.close.split(':')[0]) * 60 + parseInt(sbToday.close.split(':')[1]);
-                    var sbMinsLeft = sbCloseMins - sbNowMins;
-                    var sbWarning = (sbMinsLeft > 0 && sbMinsLeft < 60)
-                        ? `<span class="jg-sidebar-item__hours-warning">⚠️ Zamknięcie za ${sbMinsLeft} min</span>`
-                        : '';
-                    todayHoursHtml = `<div class="jg-sidebar-item__hours">🕐 ${escapeHtml(sbToday.open)} – ${escapeHtml(sbToday.close)}${sbWarning}</div>`;
+                    var sbIsOpen = sbNowMins >= sbOpenMins && sbNowMins < sbCloseMins;
+                    if (!sbIsOpen) {
+                        todayHoursHtml = `<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Zamknięte</div>`;
+                    } else {
+                        var sbMinsLeft = sbCloseMins - sbNowMins;
+                        var sbWarning = (sbMinsLeft > 0 && sbMinsLeft < 60)
+                            ? `<br><span class="jg-sidebar-item__hours-warning">⚠️ Zamknięcie za ${sbMinsLeft} min</span>`
+                            : '';
+                        todayHoursHtml = `<div class="jg-sidebar-item__hours">🕐 ${escapeHtml(sbToday.open)} – ${escapeHtml(sbToday.close)}${sbWarning}</div>`;
+                    }
                 } else {
                     todayHoursHtml = `<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Nieczynne</div>`;
                 }
