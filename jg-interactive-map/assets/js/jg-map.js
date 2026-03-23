@@ -10172,17 +10172,28 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var todayData = ohParsed[todayKey] || null;
             var now = new Date();
             var nowMins = now.getHours() * 60 + now.getMinutes();
-            var minsToClose = todayData ? (parseInt(todayData.close.split(':')[0]) * 60 + parseInt(todayData.close.split(':')[1])) - nowMins : -1;
-            var closingWarning = (todayData && minsToClose > 0 && minsToClose < 60) ? 'Uwaga, zamknięcie za ' + minsToClose + ' min' : '';
+            var ohIsOpen = false;
+            if (todayData) {
+              var ohOpenMins = parseInt(todayData.open.split(':')[0]) * 60 + parseInt(todayData.open.split(':')[1]);
+              var ohCloseMins = parseInt(todayData.close.split(':')[0]) * 60 + parseInt(todayData.close.split(':')[1]);
+              ohIsOpen = nowMins >= ohOpenMins && nowMins < ohCloseMins;
+            }
+            var minsToClose = (todayData && ohIsOpen) ? (parseInt(todayData.close.split(':')[0]) * 60 + parseInt(todayData.close.split(':')[1])) - nowMins : -1;
+            var closingWarning = (ohIsOpen && minsToClose > 0 && minsToClose < 60) ? 'Uwaga, zamknięcie za ' + minsToClose + ' min' : '';
 
             // Today row
-            var todayRowHtml = todayData
-              ? '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+            var todayRowHtml;
+            if (!todayData) {
+              todayRowHtml = '<div><span style="color:#dc2626;font-weight:600">Nieczynne</span></div>';
+            } else if (!ohIsOpen) {
+              todayRowHtml = '<div><span style="color:#dc2626;font-weight:600">Zamknięte</span></div>';
+            } else {
+              todayRowHtml = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
                   '<span style="font-weight:600">' + esc(ohDayLabels[todayKey] || todayKey) + '</span>' +
                   '<span>' + esc(todayData.open) + ' – ' + esc(todayData.close) + '</span>' +
                   (closingWarning ? '<span id="jg-oh-warning" style="color:#d97706;font-size:0.8rem;font-weight:700">' + esc(closingWarning) + '</span>' : '') +
-                '</div>'
-              : '<div><span style="color:#dc2626;font-weight:600">Nieczynne</span></div>';
+                '</div>';
+            }
 
             // All days rows
             var allDaysHtml = ohAllDayKeys.map(function(dk) {
