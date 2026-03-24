@@ -965,22 +965,15 @@
   pointer-events: auto;
 }
 
-/* Shift FAB left when search results panel is open (desktop only) */
+/* FAB transition for smooth position changes */
 .jg-map #jg-fab-container {
   transition: right 0.3s ease-in-out;
 }
 
+/* Desktop: search panel sits above FAB (9998) so FAB hides behind it when they overlap */
 @media (min-width: 769px) {
-  /* Regular mode: search panel is 350px wide at right:0, so shift FAB past it */
-  .jg-search-panel.active ~ .jg-map #jg-fab-container,
-  #jg-fab-container.jg-fab--search-open {
-    right: 380px !important;
-    transition: right 0.3s ease-in-out !important;
-  }
-
-  /* Desktop-wide mode: search panel is shifted left by sidebar width, shift FAB further */
-  body.jg-desktop-wide-active #jg-fab-container.jg-fab--search-open {
-    right: calc(min(361px, 28.5vw) + 372px) !important;
+  .jg-search-panel {
+    z-index: 9999 !important;
   }
 }
 
