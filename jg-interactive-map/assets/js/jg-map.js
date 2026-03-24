@@ -13696,18 +13696,18 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         buttons.innerHTML = '<button class="jg-btn jg-btn--primary" id="jg-levelup-ok" style="padding:10px 32px;background:#667eea;border:none;color:#fff;border-radius:8px;font-weight:600;cursor:pointer;font-size:15px">Świetnie!</button>';
 
-        modalAlert.classList.add('active');
+        modalAlert.style.display = 'flex';
         lockBodyScroll();
 
         document.getElementById('jg-levelup-ok').onclick = function() {
-          modalAlert.classList.remove('active');
+          modalAlert.style.display = 'none';
           unlockBodyScroll();
           if (onClose) onClose();
         };
 
         modalAlert.onclick = function(e) {
           if (e.target === modalAlert) {
-            modalAlert.classList.remove('active');
+            modalAlert.style.display = 'none';
             unlockBodyScroll();
             if (onClose) onClose();
           }
@@ -13750,18 +13750,18 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         buttons.innerHTML = '<button class="jg-btn jg-btn--primary" id="jg-ach-ok" style="padding:10px 32px;background:' + color + ';border:none;color:#fff;border-radius:8px;font-weight:600;cursor:pointer;font-size:15px">Wspaniale!</button>';
 
-        modalAlert.classList.add('active');
+        modalAlert.style.display = 'flex';
         lockBodyScroll();
 
         document.getElementById('jg-ach-ok').onclick = function() {
-          modalAlert.classList.remove('active');
+          modalAlert.style.display = 'none';
           unlockBodyScroll();
           if (onClose) onClose();
         };
 
         modalAlert.onclick = function(e) {
           if (e.target === modalAlert) {
-            modalAlert.classList.remove('active');
+            modalAlert.style.display = 'none';
             unlockBodyScroll();
             if (onClose) onClose();
           }
