@@ -3170,7 +3170,7 @@ class JG_Map_Ajax_Handlers {
         $resolved_summary = isset($_POST['resolved_summary']) ? sanitize_textarea_field(wp_unslash($_POST['resolved_summary'])) : '';
         $rejection_reason = isset($_POST['rejection_reason']) ? sanitize_textarea_field(wp_unslash($_POST['rejection_reason'])) : '';
 
-        if (!$point_id || !in_array($new_status, array('added', 'needs_better_documentation', 'reported', 'resolved', 'rejected'))) {
+        if (!$point_id || !in_array($new_status, array('added', 'needs_better_documentation', 'reported', 'processing', 'resolved', 'rejected'))) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
             exit;
         }
@@ -3850,6 +3850,7 @@ class JG_Map_Ajax_Handlers {
             'added' => 'Dodane',
             'needs_better_documentation' => 'Wymaga lepszego udokumentowania',
             'reported' => 'Zgłoszone do instytucji',
+            'processing' => 'Procesowanie',
             'resolved' => 'Rozwiązane',
             'rejected' => 'Odrzucono'
         );
