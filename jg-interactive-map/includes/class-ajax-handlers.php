@@ -613,6 +613,13 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Update last pin activity timestamp for a user
+     */
+    private function update_last_activity($user_id) {
+        update_user_meta($user_id, 'jg_map_last_activity', current_time('mysql', true));
+    }
+
+    /**
      * Verify nonce
      */
     private function verify_nonce() {
@@ -1356,11 +1363,8 @@ class JG_Map_Ajax_Handlers {
             $user_id
         )));
 
-        // Get user's last activity (last point created)
-        $last_activity = $wpdb->get_var($wpdb->prepare(
-            "SELECT created_at FROM $table_points WHERE author_id = %d ORDER BY created_at DESC LIMIT 1",
-            $user_id
-        ));
+        // Get user's last activity (last pin-related action)
+        $last_activity = get_user_meta($user_id, 'jg_map_last_activity', true) ?: null;
 
         // Get user's points with pagination
         $points_offset = ($points_page - 1) * $points_per_page;
@@ -1907,6 +1911,7 @@ class JG_Map_Ajax_Handlers {
                 $response['show_report_info_modal'] = true;
             }
 
+            $this->update_last_activity($user_id);
             wp_send_json_success($response);
         } else {
             wp_send_json_error(array('message' => 'Błąd zapisu'));
@@ -2387,6 +2392,7 @@ class JG_Map_Ajax_Handlers {
                 ? 'Edycja wysłana do zatwierdzenia przez właściciela miejsca'
                 : 'Edycja wysłana do moderacji';
 
+            $this->update_last_activity($user_id);
             wp_send_json_success(array('message' => $success_msg, 'xp_result' => $xp_result));
         }
     }
@@ -2497,6 +2503,7 @@ class JG_Map_Ajax_Handlers {
             sprintf('Zgłoszono chęć usunięcia: %s. Powód: %s', $point['title'], $reason ?: 'brak')
         );
 
+        $this->update_last_activity($user_id);
         wp_send_json_success(array('message' => 'Zgłoszenie usunięcia wysłane do moderacji'));
     }
 
@@ -2632,6 +2639,7 @@ class JG_Map_Ajax_Handlers {
             );
         }
 
+        $this->update_last_activity($user_id);
         wp_send_json_success(array(
             'votes'      => $votes_count,
             'my_vote'    => $new_vote,
@@ -2742,6 +2750,7 @@ class JG_Map_Ajax_Handlers {
         // Notify reporter (confirmation email)
         $this->notify_reporter_confirmation($point_id, $email);
 
+        $this->update_last_activity($user_id);
         wp_send_json_success(array('message' => 'Zgłoszenie wysłane', 'xp_result' => $xp_result));
     }
 
