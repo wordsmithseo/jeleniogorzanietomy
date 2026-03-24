@@ -10048,6 +10048,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         // Kontakt section for all points (phone, email, website)
         var kontaktInfo = '';
+        var kontaktBoxHtml = '';
         if (p.phone || p.email || p.website) {
           var kontaktItems = [];
           if (p.phone) {
@@ -10060,7 +10061,31 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var kontaktWebUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
             kontaktItems.push('<div><strong>🌐 Strona:</strong> <a href="' + esc(kontaktWebUrl) + '" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline">' + esc(p.website) + '</a></div>');
           }
-          kontaktInfo = '<div style="margin:12px 0;padding:12px 16px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd"><div style="font-weight:700;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em;color:#0369a1;margin-bottom:8px">Kontakt</div>' + kontaktItems.join('') + '</div>';
+          kontaktBoxHtml = '<div style="font-weight:700;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em;color:#0369a1;margin-bottom:8px">Kontakt</div>' + kontaktItems.join('');
+        }
+
+        // Directions button – only when pin has clear coordinates
+        var kontaktDirectionsBtn = '';
+        if (p.lat && p.lng) {
+          var dirUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(p.lat + ',' + p.lng);
+          kontaktDirectionsBtn = '<a href="' + dirUrl + '" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:100%;height:100%;min-height:64px;background:linear-gradient(135deg,#1a73e8,#0d47a1);color:#fff;border-radius:8px;text-decoration:none;font-size:11px;font-weight:700;text-align:center;box-sizing:border-box;padding:8px;transition:opacity 0.2s" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg>' +
+            'Wyznacz trasę</a>';
+        }
+
+        // Assemble kontaktInfo with optional directions button
+        if (kontaktBoxHtml && kontaktDirectionsBtn) {
+          // Contacts + button: contact box 80%, button 20%
+          kontaktInfo = '<div style="margin:12px 0;display:flex;gap:8px;align-items:stretch">' +
+            '<div style="flex:0 0 calc(80% - 4px);padding:12px 16px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd;box-sizing:border-box">' + kontaktBoxHtml + '</div>' +
+            '<div style="flex:0 0 calc(20% - 4px);display:flex">' + kontaktDirectionsBtn + '</div>' +
+            '</div>';
+        } else if (kontaktBoxHtml) {
+          // Contacts only, no clear location – full width
+          kontaktInfo = '<div style="margin:12px 0;padding:12px 16px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">' + kontaktBoxHtml + '</div>';
+        } else if (kontaktDirectionsBtn) {
+          // No contacts but clear location – full-width button
+          kontaktInfo = '<div style="margin:12px 0">' + kontaktDirectionsBtn + '</div>';
         }
 
         // Social media and CTA for sponsored points
