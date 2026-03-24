@@ -11721,17 +11721,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           // Zoom to point
           map.setView(dwCenteredLatLng([point.lat, point.lng], 19), 19, { animate: true });
 
-          // On mobile: close panel and scroll to map
-          if (window.innerWidth <= 768) {
-            setTimeout(function() {
-              closeSearchPanel();
-              // Scroll to map smoothly
+          // Close panel and (on mobile) scroll to map
+          setTimeout(function() {
+            closeSearchPanel();
+            if (window.innerWidth <= 768) {
               var mapEl = document.getElementById('jg-map');
               if (mapEl) {
                 mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }
-            }, 300); // Small delay to show selection
-          }
+            }
+          }, 300); // Small delay to show selection
 
           // Wait for zoom, then show FAST pulsing circle, then open modal
           setTimeout(function() {
