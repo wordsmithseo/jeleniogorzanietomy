@@ -1386,7 +1386,20 @@ class JG_Map_Ajax_Handlers {
         ));
         if ($last_report) $last_actions[] = $last_report;
 
-        $last_activity = !empty($last_actions) ? max($last_actions) : null;
+        $last_activity = null;
+        $last_activity_type = null;
+        if (!empty($last_actions)) {
+            $last_activity = max($last_actions);
+            if ($last_report && $last_report === $last_activity) {
+                $last_activity_type = 'Zgłoszenie miejsca';
+            } elseif ($last_vote && $last_vote === $last_activity) {
+                $last_activity_type = 'Głosowanie';
+            } elseif ($last_edit && $last_edit === $last_activity) {
+                $last_activity_type = 'Edycja miejsca';
+            } elseif ($last_point && $last_point === $last_activity) {
+                $last_activity_type = 'Dodano/edytowano pinezkę';
+            }
+        }
 
         // Get user's points with pagination
         $points_offset = ($points_page - 1) * $points_per_page;
@@ -1478,6 +1491,7 @@ class JG_Map_Ajax_Handlers {
             'username' => $user->display_name,
             'member_since' => $user->user_registered . ' UTC',
             'last_activity' => $last_activity ? $last_activity . ' UTC' : null,
+            'last_activity_type' => $last_activity_type,
             'points_count' => intval($points_count),
             'type_counts' => $type_counts,
             'points' => $points_list,
