@@ -1447,12 +1447,6 @@ class JG_Interactive_Map {
                     "addressRegion": "Dolnośląskie",
                     "addressCountry": "PL"
                 }
-                <?php if ($fb_date_created): ?>
-                ,"dateCreated": <?php echo json_encode($fb_date_created); ?>
-                <?php endif; ?>
-                <?php if ($fb_date_modified): ?>
-                ,"dateModified": <?php echo json_encode($fb_date_modified); ?>
-                <?php endif; ?>
                 <?php if (!empty($point['phone'])): ?>
                 ,"telephone": <?php echo json_encode($point['phone']); ?>
                 <?php endif; ?>
@@ -1526,6 +1520,12 @@ class JG_Interactive_Map {
                 "isPartOf": {"@id": <?php echo json_encode(home_url('/#website')); ?>},
                 "breadcrumb": {"@id": <?php echo json_encode($url . '#breadcrumb'); ?>},
                 "inLanguage": "pl-PL"
+                <?php if ($fb_date_created): ?>
+                ,"datePublished": <?php echo json_encode($fb_date_created); ?>
+                <?php endif; ?>
+                <?php if ($fb_date_modified): ?>
+                ,"dateModified": <?php echo json_encode($fb_date_modified); ?>
+                <?php endif; ?>
             }
         ]
     }
@@ -1833,12 +1833,6 @@ class JG_Interactive_Map {
                         "addressRegion": "Dolnośląskie",
                         "addressCountry": "PL"
                     }
-                    <?php if ($date_created_schema): ?>
-                    ,"dateCreated": <?php echo json_encode($date_created_schema); ?>
-                    <?php endif; ?>
-                    <?php if ($date_modified_schema): ?>
-                    ,"dateModified": <?php echo json_encode($date_modified_schema); ?>
-                    <?php endif; ?>
                     <?php if (!empty($point['phone'])): ?>
                     ,"telephone": <?php echo json_encode($point['phone']); ?>
                     <?php endif; ?>
@@ -1915,6 +1909,12 @@ class JG_Interactive_Map {
                     "isPartOf": {"@id": <?php echo json_encode(home_url('/#website')); ?>},
                     "breadcrumb": {"@id": <?php echo json_encode($url . '#breadcrumb'); ?>},
                     "inLanguage": "pl-PL"
+                    <?php if ($date_created_schema): ?>
+                    ,"datePublished": <?php echo json_encode($date_created_schema); ?>
+                    <?php endif; ?>
+                    <?php if ($date_modified_schema): ?>
+                    ,"dateModified": <?php echo json_encode($date_modified_schema); ?>
+                    <?php endif; ?>
                 }
             ]
         }
