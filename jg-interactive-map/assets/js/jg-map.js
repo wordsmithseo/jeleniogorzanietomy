@@ -7118,7 +7118,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '<h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">📊 Statystyki pinezek</h4>' +
             typeStatsHtml +
             '<div>' +
-            '<h4 style="margin:0 0 8px 0;color:#374151">Dodane miejsca</h4>' +
+            '<h4 style="margin:0 0 8px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">📍 Dodane miejsca (' + user.points_count + ')</h4>' +
             pointsHtml +
             '</div>' +
             editedPointsHtml +
