@@ -2578,7 +2578,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       }
 
       // Apply filter to tile pane as a single rendered unit — no gap/grid artifacts.
-      map.getPanes().tilePane.style.filter = 'brightness(0.85) contrast(1.35) saturate(1.45)';
+      // Satellite view should not be affected by colour grading.
+      map.getPanes().tilePane.style.filter = currentLayerIsSatellite ? '' : 'brightness(0.85) contrast(1.35) saturate(1.45)';
 
       // Map/Satellite toggle control
       var MapToggleControl = L.Control.extend({
@@ -2615,6 +2616,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               toggle.setAttribute('data-active', 'map');
               labelMap.classList.add('jg-map-toggle-label--active');
               labelSat.classList.remove('jg-map-toggle-label--active');
+              map.getPanes().tilePane.style.filter = 'brightness(0.85) contrast(1.35) saturate(1.45)';
               setMapCookie('jg_map_layer', 'map', 365);
             } else {
               map.removeLayer(tileLayer);
@@ -2624,6 +2626,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               toggle.setAttribute('data-active', 'satellite');
               labelSat.classList.add('jg-map-toggle-label--active');
               labelMap.classList.remove('jg-map-toggle-label--active');
+              map.getPanes().tilePane.style.filter = '';
               setMapCookie('jg_map_layer', 'satellite', 365);
             }
           }

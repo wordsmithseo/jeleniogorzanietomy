@@ -43,6 +43,10 @@
   filter: brightness(0.88) contrast(1.2) saturate(1.5);
 }
 
+.jg-map--satellite .jg-map-tiles .leaflet-tile {
+  filter: none;
+}
+
 
 /* Custom Top Bar - Fixed at top of page */
 .jg-custom-top-bar {
