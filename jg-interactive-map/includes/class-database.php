@@ -240,7 +240,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.24.42'; // Add opening_hours and pending_edit columns
+        $current_schema_version = '3.24.53'; // Add email column for all points
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
