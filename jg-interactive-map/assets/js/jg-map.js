@@ -3316,12 +3316,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       var isDeskWide = false;
       var _wasDeskWideBeforeFs = false;
 
-      // elMap is narrowed to the visible area (sidebar excluded) so Leaflet's
-      // own centre already lands in the middle of the visible area.
-      // This function is kept as a no-op for call-site compatibility.
-      function dwCenteredLatLng(latlng, zoom) {
-        return latlng;
-      }
 
       var FullscreenControl = L.Control.extend({
         options: { position: 'topleft' },
@@ -4132,16 +4126,14 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (leftContainerDw) leftContainerDw.appendChild(toggleCtrlDw);
             }
 
-            // Move sidebar into the map wrapper as a floating overlay.
-            // It goes into mapWrap (NOT elMap) so that elMap can be narrowed
-            // to the visible area without misaligning the sidebar position.
+            // Move sidebar into the map as a floating overlay
             if (sidebar && !sidebar.classList.contains('jg-sidebar-desktop-wide-overlay')) {
               // Only save the original height on the very first call
               if (sidebar._origHeightDw === undefined) {
                 sidebar._origHeightDw = sidebar.style.height;
               }
               sidebar.style.setProperty('height', 'calc(100% - 24px)', 'important');
-              mapWrap.appendChild(sidebar);
+              elMap.appendChild(sidebar);
               sidebar.classList.add('jg-sidebar-desktop-wide-overlay');
               L.DomEvent.disableScrollPropagation(sidebar);
             }
@@ -4161,17 +4153,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               mapWrap.style.setProperty('top', _dims2.top + 'px', 'important');
               mapWrap.style.setProperty('bottom', _dims2.bottom + 'px', 'important');
               mapWrap.style.setProperty('height', _h2 + 'px', 'important');
-              // Narrow elMap to exclude the sidebar so Leaflet's own centre
-              // equals the centre of the visible area (no panBy hack needed).
-              var _sbW = Math.min(361, window.innerWidth * 0.285) + 24;
-              elMap.style.setProperty('width', 'calc(100% - ' + _sbW + 'px)', 'important');
               map.invalidateSize();
             }, 100);
           }
 
           function exitDeskWide() {
             // Restore elMap to full width before leaving desktop-wide mode
-            elMap.style.removeProperty('width');
             isDeskWide = false;
 
             // Restore original inline style
@@ -4229,8 +4216,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               uciExit.style.left = dwGetFabCenterX() + 'px';
               uciExit.style.transform = 'translateX(-50%)';
             }
-            // Let Leaflet recalculate for the restored (full-width) container
-            setTimeout(function() { map.invalidateSize(); }, 50);
           }
 
           // Recalculate on window resize
@@ -4252,9 +4237,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   mapWrap.style.setProperty('top', dims2.top + 'px', 'important');
                   mapWrap.style.setProperty('bottom', dims2.bottom + 'px', 'important');
                   mapWrap.style.setProperty('height', _newH + 'px', 'important');
-                  // Update elMap width to match the new viewport width
-                  var _sbWr = Math.min(361, window.innerWidth * 0.285) + 24;
-                  elMap.style.setProperty('width', 'calc(100% - ' + _sbWr + 'px)', 'important');
                   map.invalidateSize();
                   // Second pass after paint to catch any remaining rendering lag
                   setTimeout(function() { if (isDeskWide) map.invalidateSize(); }, 200);
@@ -5716,7 +5698,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             if (targetPoint) {
               // Zoom to max zoom level (19) to show point clearly
               setTimeout(function() {
-                map.setView(dwCenteredLatLng([targetPoint.lat, targetPoint.lng], 19), 19, { animate: true });
+                map.setView([targetPoint.lat, targetPoint.lng], 19, { animate: true });
                 // Wait for zoom, then open modal
                 setTimeout(function() {
                   openDetails(targetPoint);
@@ -5739,7 +5721,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               // Map is already scrolled to by earlyScrollCheck()
               // Wait for map to be ready, then zoom to point with maximum zoom
               setTimeout(function() {
-                map.setView(dwCenteredLatLng([targetPoint.lat, targetPoint.lng], 18), 18, { animate: true });
+                map.setView([targetPoint.lat, targetPoint.lng], 18, { animate: true });
                 // Wait for zoom, then open modal
                 setTimeout(function() {
                   openDetails(targetPoint);
@@ -5781,7 +5763,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               // STEP 2: Wait for map to be ready, then zoom
               setTimeout(function() {
                 // Zoom to point with maximum zoom level
-                map.setView(dwCenteredLatLng([point.lat, point.lng], 19), 19, { animate: !fromPoint });
+                map.setView([point.lat, point.lng], 19, { animate: !fromPoint });
 
                 var openAndClean = function() {
                   openDetails(point);
@@ -11988,7 +11970,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         function zoomToSearchResult(point) {
 
           // Zoom to point
-          map.setView(dwCenteredLatLng([point.lat, point.lng], 19), 19, { animate: true });
+          map.setView([point.lat, point.lng], 19, { animate: true });
 
           // Close panel and (on mobile) scroll to map
           setTimeout(function() {
@@ -13236,7 +13218,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
       function goToLocationAndOpenModal(lat, lng) {
         // Fly to location with maximum zoom (19), offset for sidebar when active
-        map.flyTo(dwCenteredLatLng([lat, lng], 19), 19, {
+        map.flyTo([lat, lng], 19, {
           duration: 1.5
         });
 
@@ -14068,7 +14050,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // Zooms the map to given coordinates and shows a pulsing marker animation
       // Optional callback is fired after the animation completes
       window.jgZoomToPoint = function(lat, lng, callback) {
-        map.setView(dwCenteredLatLng([lat, lng], 19), 19, { animate: true });
+        map.setView([lat, lng], 19, { animate: true });
 
         // On mobile: scroll viewport to the map element
         if (window.innerWidth <= 768) {
