@@ -1459,9 +1459,6 @@ class JG_Interactive_Map {
                 <?php if (!empty($point['email'])): ?>
                 ,"email": <?php echo json_encode($point['email']); ?>
                 <?php endif; ?>
-                <?php if (!empty($point['website'])): ?>
-                ,"url": <?php echo json_encode($point['website']); ?>
-                <?php endif; ?>
                 <?php if (!empty($point['opening_hours'])): ?>
                 <?php
                 $fb_oh_days = ['Mo'=>'https://schema.org/Monday','Tu'=>'https://schema.org/Tuesday','We'=>'https://schema.org/Wednesday','Th'=>'https://schema.org/Thursday','Fr'=>'https://schema.org/Friday','Sa'=>'https://schema.org/Saturday','Su'=>'https://schema.org/Sunday'];
@@ -1847,9 +1844,6 @@ class JG_Interactive_Map {
                     <?php endif; ?>
                     <?php if (!empty($point['email'])): ?>
                     ,"email": <?php echo json_encode($point['email']); ?>
-                    <?php endif; ?>
-                    <?php if (!empty($point['website'])): ?>
-                    ,"url": <?php echo json_encode($point['website']); ?>
                     <?php endif; ?>
                     <?php if (!empty($point['opening_hours'])): ?>
                     <?php
