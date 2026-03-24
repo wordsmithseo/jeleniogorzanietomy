@@ -495,6 +495,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_get_point_visitors', array($this, 'get_point_visitors'));
         add_action('wp_ajax_jg_get_user_info', array($this, 'get_user_info'));
         add_action('wp_ajax_nopriv_jg_get_user_info', array($this, 'get_user_info'));
+        add_action('wp_ajax_jg_get_user_activity', array($this, 'get_user_activity'));
+        add_action('wp_ajax_nopriv_jg_get_user_activity', array($this, 'get_user_activity'));
         add_action('wp_ajax_jg_get_ranking', array($this, 'get_ranking'));
         add_action('wp_ajax_nopriv_jg_get_ranking', array($this, 'get_ranking'));
         add_action('wp_ajax_jg_get_sidebar_points', array($this, 'get_sidebar_points'));
@@ -1509,6 +1511,122 @@ class JG_Map_Ajax_Handlers {
             'restrictions' => $restrictions,
             'is_admin' => $is_admin
         );
+
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Get last 10 pin-related actions for a user
+     */
+    public function get_user_activity() {
+        global $wpdb;
+
+        $user_id = intval($_POST['user_id'] ?? 0);
+        if (!$user_id || !get_userdata($user_id)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy użytkownik'));
+            return;
+        }
+
+        $table_points  = $wpdb->prefix . 'jg_map_points';
+        $table_votes   = JG_Map_Database::get_votes_table();
+        $table_history = JG_Map_Database::get_history_table();
+        $table_reports = JG_Map_Database::get_reports_table();
+
+        $actions = array();
+
+        // Points added
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT 'point_added' as action_type, id as point_id, title as point_title, '' as detail, created_at as ts
+             FROM $table_points WHERE author_id = %d ORDER BY created_at DESC LIMIT 10",
+            $user_id
+        ), ARRAY_A);
+        foreach ($rows as $r) $actions[] = $r;
+
+        // Points updated (updated after creation)
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT 'point_updated' as action_type, id as point_id, title as point_title, '' as detail, updated_at as ts
+             FROM $table_points WHERE author_id = %d AND updated_at > created_at ORDER BY updated_at DESC LIMIT 10",
+            $user_id
+        ), ARRAY_A);
+        foreach ($rows as $r) $actions[] = $r;
+
+        // Edits submitted
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT 'edit' as action_type, h.point_id as point_id, p.title as point_title, h.status as detail, h.created_at as ts
+             FROM $table_history h LEFT JOIN $table_points p ON p.id = h.point_id
+             WHERE h.user_id = %d ORDER BY h.created_at DESC LIMIT 10",
+            $user_id
+        ), ARRAY_A);
+        foreach ($rows as $r) $actions[] = $r;
+
+        // Votes
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT 'vote' as action_type, v.point_id as point_id, p.title as point_title, v.vote_type as detail, v.created_at as ts
+             FROM $table_votes v LEFT JOIN $table_points p ON p.id = v.point_id
+             WHERE v.user_id = %d ORDER BY v.created_at DESC LIMIT 10",
+            $user_id
+        ), ARRAY_A);
+        foreach ($rows as $r) $actions[] = $r;
+
+        // Reports submitted
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT 'report' as action_type, r.point_id as point_id, p.title as point_title, '' as detail, r.created_at as ts
+             FROM $table_reports r LEFT JOIN $table_points p ON p.id = r.point_id
+             WHERE r.user_id = %d ORDER BY r.created_at DESC LIMIT 10",
+            $user_id
+        ), ARRAY_A);
+        foreach ($rows as $r) $actions[] = $r;
+
+        // Sort descending by timestamp, take top 10
+        usort($actions, function($a, $b) {
+            return strcmp($b['ts'], $a['ts']);
+        });
+        $actions = array_slice($actions, 0, 10);
+
+        $status_labels = array(
+            'pending'  => 'oczekuje',
+            'approved' => 'zatwierdzona',
+            'rejected' => 'odrzucona',
+        );
+
+        $result = array();
+        foreach ($actions as $a) {
+            switch ($a['action_type']) {
+                case 'point_added':
+                    $label = 'Dodano pinezkę';
+                    $icon  = '📍';
+                    break;
+                case 'point_updated':
+                    $label = 'Zaktualizowano pinezkę';
+                    $icon  = '✏️';
+                    break;
+                case 'edit':
+                    $status = $status_labels[$a['detail']] ?? $a['detail'];
+                    $label  = 'Edycja miejsca (' . $status . ')';
+                    $icon   = '✏️';
+                    break;
+                case 'vote':
+                    $label = $a['detail'] === 'up' ? 'Zagłosowano za' : 'Zagłosowano przeciw';
+                    $icon  = $a['detail'] === 'up' ? '👍' : '👎';
+                    break;
+                case 'report':
+                    $label = 'Zgłoszono miejsce';
+                    $icon  = '🚩';
+                    break;
+                default:
+                    $label = $a['action_type'];
+                    $icon  = '•';
+            }
+
+            $result[] = array(
+                'action_type' => $a['action_type'],
+                'label'       => $label,
+                'icon'        => $icon,
+                'point_id'    => intval($a['point_id']),
+                'point_title' => $a['point_title'] ?: '#' . intval($a['point_id']),
+                'ts'          => $a['ts'] ? $a['ts'] . ' UTC' : null,
+            );
+        }
 
         wp_send_json_success($result);
     }

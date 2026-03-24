@@ -7111,6 +7111,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">⏱️ Ostatnia aktywność</div>' +
             '<div style="font-weight:600">' + lastActivity + '</div>' +
             (lastActivityType ? '<div style="font-size:11px;color:#9ca3af;margin-top:3px">' + lastActivityType + '</div>' : '') +
+            (user.last_activity ? '<div style="font-size:11px;color:#6366f1;margin-top:5px;cursor:pointer;text-decoration:underline" onclick="openUserActivityModal(' + userId + ')">Zobacz historię aktywności →</div>' : '') +
             '</div>' +
             '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
             '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📍 Dodane miejsca</div>' +
@@ -7244,6 +7245,46 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }
         }).catch(function(err) {
           showAlert((err && err.message) || 'Błąd pobierania informacji o użytkowniku');
+        });
+      }
+
+      /**
+       * Open last-10-activity modal for a user
+       */
+      function openUserActivityModal(userId) {
+        var html = '<header style="background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;padding:16px 20px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">' +
+          '<h3 style="margin:0;font-size:16px">⏱️ Ostatnia aktywność</h3>' +
+          '<button class="jg-close" id="activity-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
+          '</header>' +
+          '<div style="padding:20px"><p style="color:#6b7280;text-align:center">Ładowanie...</p></div>';
+        open(modalEdit, html);
+        qs('#activity-modal-close', modalEdit).onclick = function() { close(modalEdit); };
+
+        api('jg_get_user_activity', { user_id: userId }).then(function(items) {
+          if (!items || !items.length) {
+            qs('.jg-modal', modalEdit).querySelector('div[style*="padding:20px"]').innerHTML = '<p style="color:#6b7280;text-align:center">Brak zarejestrowanych aktywności.</p>';
+            return;
+          }
+          var listHtml = '<ul style="list-style:none;margin:0;padding:0">';
+          for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            var date = it.ts ? new Date(it.ts).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+            listHtml +=
+              '<li style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f1f5f9">' +
+              '<span style="font-size:20px;flex-shrink:0;margin-top:1px">' + it.icon + '</span>' +
+              '<div style="flex:1;min-width:0">' +
+              '<div style="font-weight:600;font-size:13px;color:#1f2937">' + esc(it.label) + '</div>' +
+              '<div style="font-size:12px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(it.point_title) + '">' + esc(it.point_title) + '</div>' +
+              '</div>' +
+              '<div style="font-size:11px;color:#9ca3af;white-space:nowrap;flex-shrink:0">' + date + '</div>' +
+              '</li>';
+          }
+          listHtml += '</ul>';
+          var container = qs('.jg-modal', modalEdit);
+          container.querySelector('div[style*="padding:20px"]').innerHTML = listHtml;
+        }).catch(function() {
+          var container = qs('.jg-modal', modalEdit);
+          if (container) container.querySelector('div[style*="padding:20px"]').innerHTML = '<p style="color:#ef4444;text-align:center">Błąd ładowania danych.</p>';
         });
       }
 
@@ -14038,6 +14079,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       window.jgMap = map;
       window.openDetails = openDetails;
       window.openUserModal = openUserModal;
+      window.openUserActivityModal = openUserActivityModal;
 
       // Export function to open a point modal by ID (looks up full data from ALL)
       window.jgOpenPointById = function(id) {
