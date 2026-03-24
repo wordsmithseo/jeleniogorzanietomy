@@ -7107,12 +7107,14 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📅 Członek od</div>' +
             '<div style="font-weight:600">' + memberSince + '</div>' +
             '</div>' +
-            '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
-            '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">⏱️ Ostatnia aktywność</div>' +
-            '<div style="font-weight:600">' + lastActivity + '</div>' +
-            (lastActivityType ? '<div style="font-size:11px;color:#9ca3af;margin-top:3px">' + lastActivityType + '</div>' : '') +
-            (user.last_activity ? '<div style="font-size:11px;color:#6366f1;margin-top:5px;cursor:pointer;text-decoration:underline" onclick="openUserActivityModal(' + userId + ')">Zobacz historię aktywności →</div>' : '') +
-            '</div>' +
+            (CFG.isAdmin ?
+              '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
+              '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">⏱️ Ostatnia aktywność</div>' +
+              '<div style="font-weight:600">' + lastActivity + '</div>' +
+              (lastActivityType ? '<div style="font-size:11px;color:#9ca3af;margin-top:3px">' + lastActivityType + '</div>' : '') +
+              (user.last_activity ? '<div style="font-size:11px;color:#6366f1;margin-top:5px;cursor:pointer;text-decoration:underline" onclick="openUserActivityModal(' + userId + ')">Zobacz historię aktywności →</div>' : '') +
+              '</div>'
+            : '') +
             '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
             '<div style="font-size:12px;color:#6b7280;margin-bottom:4px">📍 Dodane miejsca</div>' +
             '<div style="font-weight:600;font-size:24px">' + user.points_count + '</div>' +
