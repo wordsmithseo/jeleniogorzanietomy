@@ -11709,6 +11709,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
           // Open panel
           searchPanel.classList.add('active');
+
+          // Move FAB out of the way on desktop so it doesn't overlap search results
+          var fabEl = document.getElementById('jg-fab-container');
+          if (fabEl) { fabEl.classList.add('jg-fab--search-open'); }
         }
 
         // Zoom to search result with fast pulsing circle
@@ -11717,17 +11721,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           // Zoom to point
           map.setView(dwCenteredLatLng([point.lat, point.lng], 19), 19, { animate: true });
 
-          // On mobile: close panel and scroll to map
-          if (window.innerWidth <= 768) {
-            setTimeout(function() {
-              closeSearchPanel();
-              // Scroll to map smoothly
+          // Close panel and (on mobile) scroll to map
+          setTimeout(function() {
+            closeSearchPanel();
+            if (window.innerWidth <= 768) {
               var mapEl = document.getElementById('jg-map');
               if (mapEl) {
                 mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }
-            }, 300); // Small delay to show selection
-          }
+            }
+          }, 300); // Small delay to show selection
 
           // Wait for zoom, then show FAST pulsing circle, then open modal
           setTimeout(function() {
@@ -11776,6 +11779,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           searchPanel.classList.remove('active');
           searchInput.value = '';
           searchResults.innerHTML = '';
+
+          // Restore FAB position
+          var fabEl = document.getElementById('jg-fab-container');
+          if (fabEl) { fabEl.classList.remove('jg-fab--search-open'); }
         }
 
         // Event listeners
