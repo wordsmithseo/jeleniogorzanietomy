@@ -1363,9 +1363,8 @@ class JG_Map_Ajax_Handlers {
         $last_actions = array();
 
         $last_point = $wpdb->get_var($wpdb->prepare(
-            "SELECT GREATEST(COALESCE(created_at, '1970-01-01'), COALESCE(updated_at, '1970-01-01'))
-             FROM $table_points WHERE author_id = %d
-             ORDER BY GREATEST(COALESCE(created_at, '1970-01-01'), COALESCE(updated_at, '1970-01-01')) DESC LIMIT 1",
+            "SELECT created_at FROM $table_points WHERE author_id = %d
+             ORDER BY created_at DESC LIMIT 1",
             $user_id
         ));
         if ($last_point && $last_point !== '1970-01-01') $last_actions[] = $last_point;
@@ -1399,7 +1398,7 @@ class JG_Map_Ajax_Handlers {
             } elseif ($last_edit && $last_edit === $last_activity) {
                 $last_activity_type = 'Edycja miejsca';
             } elseif ($last_point && $last_point === $last_activity) {
-                $last_activity_type = 'Dodano/edytowano pinezkę';
+                $last_activity_type = 'Dodano pinezkę';
             }
         }
 
@@ -1538,14 +1537,6 @@ class JG_Map_Ajax_Handlers {
         $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT 'point_added' as action_type, id as point_id, title as point_title, '' as detail, created_at as ts
              FROM $table_points WHERE author_id = %d ORDER BY created_at DESC LIMIT 10",
-            $user_id
-        ), ARRAY_A);
-        foreach ($rows as $r) $actions[] = $r;
-
-        // Points updated (updated after creation)
-        $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT 'point_updated' as action_type, id as point_id, title as point_title, '' as detail, updated_at as ts
-             FROM $table_points WHERE author_id = %d AND updated_at > created_at ORDER BY updated_at DESC LIMIT 10",
             $user_id
         ), ARRAY_A);
         foreach ($rows as $r) $actions[] = $r;
