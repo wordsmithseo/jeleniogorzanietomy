@@ -536,6 +536,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_admin_reject_edit', array($this, 'admin_reject_edit'), 1);
         add_action('wp_ajax_jg_owner_approve_edit', array($this, 'owner_approve_edit'), 1);
         add_action('wp_ajax_jg_owner_reject_edit', array($this, 'owner_reject_edit'), 1);
+        add_action('wp_ajax_jg_user_revert_edit', array($this, 'user_revert_edit'), 1);
         add_action('wp_ajax_jg_admin_update_promo_date', array($this, 'admin_update_promo_date'), 1);
         add_action('wp_ajax_jg_admin_update_promo', array($this, 'admin_update_promo'), 1);
         add_action('wp_ajax_jg_admin_update_sponsored', array($this, 'admin_update_sponsored'), 1);
@@ -4422,22 +4423,15 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Check if admin is requesting to override owner approval
+        $override_owner = !empty($_POST['override_owner']) && intval($_POST['override_owner']) === 1;
+
         // Check if this edit requires owner approval
         $current_user_id = get_current_user_id();
         if ($history['point_owner_id'] !== null) {
             if ($history['owner_approval_status'] !== 'approved') {
-                // Owner hasn't approved yet - check if owner is admin/mod
-                $owner_id = intval($history['point_owner_id']);
-                $owner_user = get_userdata($owner_id);
-                $owner_is_admin_or_mod = false;
-
-                if ($owner_user) {
-                    $owner_is_admin_or_mod = in_array('administrator', $owner_user->roles) ||
-                                             in_array('jg_moderator', $owner_user->roles);
-                }
-
-                if ($owner_is_admin_or_mod) {
-                    // Owner is admin/mod - admin approval can bypass owner approval
+                if ($override_owner) {
+                    // Admin/mod is forcing override of owner approval
                     $wpdb->update(
                         $table,
                         array(
@@ -4449,11 +4443,35 @@ class JG_Map_Ajax_Handlers {
                     );
                     $history['owner_approval_status'] = 'approved';
                 } else {
-                    // Owner is regular user - owner approval is required first
-                    wp_send_json_error(array(
-                        'message' => 'Ta edycja wymaga najpierw zatwierdzenia przez właściciela miejsca'
-                    ));
-                    exit;
+                    // Owner hasn't approved yet - check if owner is admin/mod
+                    $owner_id = intval($history['point_owner_id']);
+                    $owner_user = get_userdata($owner_id);
+                    $owner_is_admin_or_mod = false;
+
+                    if ($owner_user) {
+                        $owner_is_admin_or_mod = in_array('administrator', $owner_user->roles) ||
+                                                 in_array('jg_moderator', $owner_user->roles);
+                    }
+
+                    if ($owner_is_admin_or_mod) {
+                        // Owner is admin/mod - admin approval can bypass owner approval
+                        $wpdb->update(
+                            $table,
+                            array(
+                                'owner_approval_status' => 'approved',
+                                'owner_approval_at' => current_time('mysql'),
+                                'owner_approval_by' => $current_user_id
+                            ),
+                            array('id' => $history_id)
+                        );
+                        $history['owner_approval_status'] = 'approved';
+                    } else {
+                        // Owner is regular user - owner approval is required first
+                        wp_send_json_error(array(
+                            'message' => 'Ta edycja wymaga najpierw zatwierdzenia przez właściciela miejsca'
+                        ));
+                        exit;
+                    }
                 }
             }
         }
@@ -4688,6 +4706,78 @@ class JG_Map_Ajax_Handlers {
         );
 
         wp_send_json_success(array('message' => 'Edycja odrzucona'));
+    }
+
+    /**
+     * User cancels their own pending edit
+     */
+    public function user_revert_edit() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $user_id = get_current_user_id();
+        $history_id = intval($_POST['history_id'] ?? 0);
+
+        if (!$history_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        global $wpdb;
+        $table = JG_Map_Database::get_history_table();
+        $history = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $history_id), ARRAY_A);
+
+        if (!$history) {
+            wp_send_json_error(array('message' => 'Historia nie istnieje'));
+            exit;
+        }
+
+        // Only the editor who submitted the edit can cancel it
+        if (intval($history['user_id']) !== $user_id) {
+            wp_send_json_error(array('message' => 'Brak uprawnień'));
+            exit;
+        }
+
+        // Can only cancel pending edits
+        if ($history['status'] !== 'pending') {
+            wp_send_json_error(array('message' => 'Ta edycja nie jest już oczekująca'));
+            exit;
+        }
+
+        // Cancel the pending edit
+        $wpdb->update(
+            $table,
+            array(
+                'status' => 'cancelled',
+                'rejection_reason' => 'Cofnięte przez użytkownika',
+                'resolved_at' => current_time('mysql'),
+                'resolved_by' => $user_id
+            ),
+            array('id' => $history_id)
+        );
+
+        // Clear pending_edit flag if no other pending edits remain for this point
+        $remaining_pending = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type = 'edit'",
+            $history['point_id']
+        ));
+        if (!$remaining_pending) {
+            JG_Map_Database::update_point($history['point_id'], array('pending_edit' => 0));
+        }
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'revert_edit',
+            'history',
+            $history_id,
+            sprintf('Użytkownik cofnął swoją edycję miejsca ID: %d', $history['point_id'])
+        );
+
+        wp_send_json_success(array('message' => 'Zmiany zostały cofnięte'));
     }
 
     /**
