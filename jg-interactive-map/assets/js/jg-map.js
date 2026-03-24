@@ -9131,6 +9131,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           '<div><strong>Zgłoszone do instytucji</strong></div>' +
           '</label>' +
           '<label style="display:flex;align-items:center;gap:8px;padding:12px;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer">' +
+          '<input type="radio" name="status" value="processing" ' + (currentStatus === 'processing' ? 'checked' : '') + ' style="width:20px;height:20px">' +
+          '<div><strong>Procesowanie</strong></div>' +
+          '</label>' +
+          '<label style="display:flex;align-items:center;gap:8px;padding:12px;border:2px solid #e5e7eb;border-radius:8px;cursor:pointer">' +
           '<input type="radio" name="status" value="resolved" ' + (currentStatus === 'resolved' ? 'checked' : '') + ' style="width:20px;height:20px">' +
           '<div><strong>Rozwiązane</strong></div>' +
           '</label>' +
@@ -10230,6 +10234,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             'added': { bg: '#dbeafe', border: '#3b82f6', text: '#1e3a8a' },
             'needs_better_documentation': { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
             'reported': { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
+            'processing': { bg: '#ffedd5', border: '#f97316', text: '#9a3412' },
             'resolved': { bg: '#d1fae5', border: '#10b981', text: '#065f46' },
             'rejected': { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' }
           };

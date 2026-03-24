@@ -4036,6 +4036,11 @@ img.emoji {
   color: #92400e;
 }
 
+.jg-status-badge--processing {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
 /* Case ID Badge */
 .jg-case-id-badge {
   display: inline-block;
