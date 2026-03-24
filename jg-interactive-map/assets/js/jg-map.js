@@ -3316,19 +3316,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       var isDeskWide = false;
       var _wasDeskWideBeforeFs = false;
 
-      // Returns a latlng shifted so that, when used as the Leaflet map centre,
-      // the ORIGINAL latlng appears visually centred in the area between the
-      // left viewport edge and the floating sidebar.
-      // On mobile or when desktop-wide mode is inactive it returns the original.
+      // elMap is narrowed to the visible area (sidebar excluded) so Leaflet's
+      // own centre already lands in the middle of the visible area.
+      // This function is kept as a no-op for call-site compatibility.
       function dwCenteredLatLng(latlng, zoom) {
-        if (!isDeskWide || window.innerWidth <= 768) return latlng;
-        // Sidebar: width min(380px, 30vw) + 12px right gap + 12px left breathing room
-        var sidebarW = Math.min(343, window.innerWidth * 0.285) + 24;
-        var z = (zoom !== undefined) ? zoom : map.getZoom();
-        var px = map.project(L.latLng(latlng), z);
-        // Shift the centre point right by half the sidebar width so the target
-        // ends up in the centre of the visible (non-sidebar) area.
-        return map.unproject(px.add([sidebarW / 2, 0]), z);
+        return latlng;
       }
 
       var FullscreenControl = L.Control.extend({
@@ -4140,14 +4132,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (leftContainerDw) leftContainerDw.appendChild(toggleCtrlDw);
             }
 
-            // Move sidebar into the map as a floating overlay
+            // Move sidebar into the map wrapper as a floating overlay.
+            // It goes into mapWrap (NOT elMap) so that elMap can be narrowed
+            // to the visible area without misaligning the sidebar position.
             if (sidebar && !sidebar.classList.contains('jg-sidebar-desktop-wide-overlay')) {
               // Only save the original height on the very first call
               if (sidebar._origHeightDw === undefined) {
                 sidebar._origHeightDw = sidebar.style.height;
               }
               sidebar.style.setProperty('height', 'calc(100% - 24px)', 'important');
-              elMap.appendChild(sidebar);
+              mapWrap.appendChild(sidebar);
               sidebar.classList.add('jg-sidebar-desktop-wide-overlay');
               L.DomEvent.disableScrollPropagation(sidebar);
             }
@@ -4167,20 +4161,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               mapWrap.style.setProperty('top', _dims2.top + 'px', 'important');
               mapWrap.style.setProperty('bottom', _dims2.bottom + 'px', 'important');
               mapWrap.style.setProperty('height', _h2 + 'px', 'important');
+              // Narrow elMap to exclude the sidebar so Leaflet's own centre
+              // equals the centre of the visible area (no panBy hack needed).
+              var _sbW = Math.min(361, window.innerWidth * 0.285) + 24;
+              elMap.style.setProperty('width', 'calc(100% - ' + _sbW + 'px)', 'important');
               map.invalidateSize();
-              // Pan right by half the sidebar width so the initial view is centred
-              // in the visible area (between left edge and sidebar).
-              var _sbW = Math.min(343, window.innerWidth * 0.285) + 24;
-              map.panBy([_sbW / 2, 0], { animate: false });
             }, 100);
           }
 
           function exitDeskWide() {
-            // Undo the sidebar pan offset before restoring original map position
-            if (isDeskWide) {
-              var _sbW = Math.min(343, window.innerWidth * 0.285) + 24;
-              map.panBy([-_sbW / 2, 0], { animate: false });
-            }
+            // Restore elMap to full width before leaving desktop-wide mode
+            elMap.style.removeProperty('width');
             isDeskWide = false;
 
             // Restore original inline style
@@ -4238,6 +4229,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               uciExit.style.left = dwGetFabCenterX() + 'px';
               uciExit.style.transform = 'translateX(-50%)';
             }
+            // Let Leaflet recalculate for the restored (full-width) container
+            setTimeout(function() { map.invalidateSize(); }, 50);
           }
 
           // Recalculate on window resize
@@ -4259,6 +4252,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   mapWrap.style.setProperty('top', dims2.top + 'px', 'important');
                   mapWrap.style.setProperty('bottom', dims2.bottom + 'px', 'important');
                   mapWrap.style.setProperty('height', _newH + 'px', 'important');
+                  // Update elMap width to match the new viewport width
+                  var _sbWr = Math.min(361, window.innerWidth * 0.285) + 24;
+                  elMap.style.setProperty('width', 'calc(100% - ' + _sbWr + 'px)', 'important');
                   map.invalidateSize();
                   // Second pass after paint to catch any remaining rendering lag
                   setTimeout(function() { if (isDeskWide) map.invalidateSize(); }, 200);
@@ -6220,17 +6216,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               // Show more points unclustered - use zoom 15 max
               var maxZoom = 15;
 
-              // When sidebar is visible (desktop-wide), give extra right padding
-              // so fitBounds centres the data in the visible area (left edge → sidebar),
-              // not in the full viewport width.
-              var _fbPadR = 50;
-              if (isDeskWide && window.innerWidth > 768) {
-                var _fbSbW = Math.min(343, window.innerWidth * 0.285) + 24;
-                _fbPadR = _fbSbW + 50;
-              }
               map.fitBounds(leafletBounds, {
-                paddingTopLeft: [50, 50],
-                paddingBottomRight: [_fbPadR, 50],
+                padding: [50, 50],
                 maxZoom: maxZoom,
                 animate: false
               });
