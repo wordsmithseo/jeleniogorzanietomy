@@ -2372,6 +2372,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           tags: (qs('#edit-tags-hidden', form) || {value: ''}).value,
           website: (qs('#edit-website-input', form) || {value: ''}).value,
           phone: (qs('#edit-phone-input', form) || {value: ''}).value,
+          contact_email: (qs('#edit-email-input', form) || {value: ''}).value,
           facebook_url: (qs('#edit-facebook-input', form) || {value: ''}).value,
           instagram_url: (qs('#edit-instagram-input', form) || {value: ''}).value,
           linkedin_url: (qs('#edit-linkedin-input', form) || {value: ''}).value,
@@ -4916,6 +4917,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('add-rte', 800, '', 4) + '</div>' +
                 '<div class="cols-2" id="add-opening-hours-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('add', '') + '</div>' +
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('add-tags') + '</div>' +
+                '<div class="cols-2" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin:4px 0">' +
+                '<strong style="display:block;margin-bottom:10px;color:#0369a1">📋 Dane kontaktowe (opcjonalnie)</strong>' +
+                '<label style="display:block;margin-bottom:8px">Telefon <input type="text" name="phone" id="add-phone-input" placeholder="np. 123 456 789" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '<label style="display:block;margin-bottom:8px">Email kontaktowy <input type="email" name="contact_email" id="add-email-input" placeholder="np. kontakt@firma.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '<label style="display:block;margin-bottom:0">Strona internetowa <input type="text" name="website" id="add-website-input" placeholder="np. jeleniagora.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+                '</div>' +
                 '<label class="cols-2"><input type="checkbox" name="public_name"> Pokaż moją nazwę użytkownika</label>' +
                 '<label class="cols-2">Zdjęcia (max 6) <input type="file" name="images[]" multiple accept="image/*" id="add-images-input" style="width:100%;padding:8px"></label>' +
                 '<div class="cols-2" id="add-images-preview" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
@@ -6002,6 +6009,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               sponsored_until: r.sponsored_until || null,
               website: r.website || null,
               phone: r.phone || null,
+              email: r.email || null,
               cta_enabled: !!r.cta_enabled,
               cta_type: r.cta_type || null,
               status: r.status || '',
@@ -7431,6 +7439,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             p.tiktok_url = updatedPoint.tiktok_url;
             p.website = updatedPoint.website;
             p.phone = updatedPoint.phone;
+            p.email = updatedPoint.email;
             p.cta_enabled = updatedPoint.cta_enabled;
             p.cta_type = updatedPoint.cta_type;
 
@@ -7910,14 +7919,19 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var isSponsored = !!p.sponsored;
             var maxTotalImages = isSponsored ? 12 : 6;
 
-            // Sponsored contact fields (only for sponsored points)
+            // Contact fields for all points (phone, email, website)
+            var contactFieldsHtml = '<div class="cols-2" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin:12px 0">' +
+              '<strong style="display:block;margin-bottom:12px;color:#0369a1">📋 Dane kontaktowe</strong>' +
+              '<label style="display:block;margin-bottom:8px">Telefon <input type="text" name="phone" id="edit-phone-input" value="' + esc(p.phone || '') + '" placeholder="np. 123 456 789" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+              '<label style="display:block;margin-bottom:8px">Email kontaktowy <input type="email" name="contact_email" id="edit-email-input" value="' + esc(p.email || '') + '" placeholder="np. kontakt@firma.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+              '<label style="display:block;margin-bottom:0">Strona internetowa <input type="text" name="website" id="edit-website-input" value="' + esc(p.website || '') + '" placeholder="np. jeleniagora.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+              '</div>';
+
+            // Sponsored contact fields (only for sponsored points) - social media + CTA
             var sponsoredContactHtml = '';
             if (isSponsored) {
               sponsoredContactHtml = '<div class="cols-2" style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin:12px 0">' +
-                '<strong style="display:block;margin-bottom:12px;color:#92400e">📋 Dane kontaktowe (punkt sponsorowany)</strong>' +
-                '<label style="display:block;margin-bottom:8px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="#92400e"><circle cx="12" cy="12" r="10" stroke="#92400e" stroke-width="2" fill="none"/><path d="M12 6v6l4 2" stroke="#92400e" stroke-width="2" fill="none"/></svg> Strona internetowa <input type="text" name="website" id="edit-website-input" value="' + esc(p.website || '') + '" placeholder="np. jeleniagora.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
-                '<label style="display:block;margin-bottom:16px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="#92400e"><path d="M20 10.999h2C22 5.869 18.127 2 12.99 2v2C17.052 4 20 6.943 20 10.999z"/><path d="M13 8c2.103 0 3 .897 3 3h2c0-3.225-1.775-5-5-5v2zm3.422 5.443a1.001 1.001 0 0 0-1.391.043l-2.393 2.461c-.576-.11-1.734-.471-2.926-1.66-1.192-1.193-1.553-2.354-1.66-2.926l2.459-2.394a1 1 0 0 0 .043-1.391L6.859 3.513a1 1 0 0 0-1.391-.087l-2.17 1.861a1 1 0 0 0-.29.649c-.015.25-.301 6.172 4.291 10.766C11.305 20.707 16.323 21 17.705 21c.202 0 .326-.006.359-.008a.992.992 0 0 0 .648-.291l1.86-2.171a.997.997 0 0 0-.086-1.391l-4.064-3.696z"/></svg> Telefon <input type="text" name="phone" id="edit-phone-input" value="' + esc(p.phone || '') + '" placeholder="np. 123 456 789" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
-                '<strong style="display:block;margin:16px 0 8px;color:#92400e">Media społecznościowe</strong>' +
+                '<strong style="display:block;margin:0 0 8px;color:#92400e">Media społecznościowe</strong>' +
                 '<label style="display:block;margin-bottom:8px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> Facebook <input type="text" name="facebook_url" id="edit-facebook-input" value="' + esc(p.facebook_url || '') + '" placeholder="np. facebook.com/twojstrona" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
                 '<label style="display:block;margin-bottom:8px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="url(#instagram-gradient)"><defs><linearGradient id="instagram-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#f09433;stop-opacity:1" /><stop offset="25%" style="stop-color:#e6683c;stop-opacity:1" /><stop offset="50%" style="stop-color:#dc2743;stop-opacity:1" /><stop offset="75%" style="stop-color:#cc2366;stop-opacity:1" /><stop offset="100%" style="stop-color:#bc1888;stop-opacity:1" /></linearGradient></defs><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg> Instagram <input type="text" name="instagram_url" id="edit-instagram-input" value="' + esc(p.instagram_url || '') + '" placeholder="np. instagram.com/twojprofil" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
                 '<label style="display:block;margin-bottom:8px;display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="#0077b5"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> LinkedIn <input type="text" name="linkedin_url" id="edit-linkedin-input" value="' + esc(p.linkedin_url || '') + '" placeholder="np. linkedin.com/company/twojafirma" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
@@ -8013,6 +8027,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('edit-rte', maxDescLength, '', 6) + '</div>' +
               (p.type === 'miejsce' ? '<div class="cols-2"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('edit', p.opening_hours || '') + '</div>' : '') +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('edit-tags') + '</div>' +
+              contactFieldsHtml +
               sponsoredContactHtml +
               existingImagesHtml +
               '<label class="cols-2">Dodaj nowe zdjęcia (max ' + maxTotalImages + ' łącznie) <input type="file" name="images[]" multiple accept="image/*" id="edit-images-input" style="width:100%;padding:8px"></label>' +
@@ -8095,12 +8110,15 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 editTagInput.setTags(savedState.tags.split(',').filter(Boolean));
               }
 
-              // Sponsored fields
+              // Contact fields (all pins)
               var websiteInput = qs('#edit-website-input', form);
               if (websiteInput && savedState.website !== undefined) websiteInput.value = savedState.website;
 
               var phoneInput = qs('#edit-phone-input', form);
               if (phoneInput && savedState.phone !== undefined) phoneInput.value = savedState.phone;
+
+              var emailInput = qs('#edit-email-input', form);
+              if (emailInput && savedState.contact_email !== undefined) emailInput.value = savedState.contact_email;
 
               var facebookInput = qs('#edit-facebook-input', form);
               if (facebookInput && savedState.facebook_url !== undefined) facebookInput.value = savedState.facebook_url;
@@ -8470,41 +8488,52 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             return;
           }
 
-          // Normalize and validate sponsored contact fields
+          // Validate contact fields (available for all points)
+          var editPhoneEl = qs('#edit-phone-input', modalEdit);
+          var editWebsiteEl = qs('#edit-website-input', modalEdit);
+          var editEmailEl = qs('#edit-email-input', modalEdit);
+
+          if (editWebsiteEl) editWebsiteEl.value = editWebsiteEl.value.replace(/^https?:\/\//i, '').trim();
+
+          var phoneVal = editPhoneEl ? editPhoneEl.value.trim() : '';
+          var websiteVal = editWebsiteEl ? editWebsiteEl.value.trim() : '';
+          var emailVal = editEmailEl ? editEmailEl.value.trim() : '';
+
+          if (phoneVal && !isValidPhone(phoneVal)) {
+            var phoneDigits = phoneVal.replace(/[^0-9]/g, '');
+            msg.textContent = phoneDigits.length < 9
+              ? 'Numer telefonu musi zawierać co najmniej 9 cyfr (wpisano: ' + phoneDigits.length + ').'
+              : 'Numer telefonu zawiera niedozwolone znaki (dozwolone: cyfry, spacje, +, -, nawiasy).';
+            msg.style.color = '#b91c1c';
+            if (editPhoneEl) { editPhoneEl.style.borderColor = '#ef4444'; editPhoneEl.focus(); }
+            return;
+          }
+
+          if (websiteVal && !isValidWebsite(websiteVal)) {
+            msg.textContent = 'Podaj poprawny adres strony internetowej (np. jeleniagora.pl).';
+            msg.style.color = '#b91c1c';
+            if (editWebsiteEl) { editWebsiteEl.style.borderColor = '#ef4444'; editWebsiteEl.focus(); }
+            return;
+          }
+
+          if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+            msg.textContent = 'Podaj poprawny adres email kontaktowy.';
+            msg.style.color = '#b91c1c';
+            if (editEmailEl) { editEmailEl.style.borderColor = '#ef4444'; editEmailEl.focus(); }
+            return;
+          }
+
+          // Normalize and validate sponsored social media fields
           if (isSponsored) {
-            var editPhoneEl = qs('#edit-phone-input', modalEdit);
-            var editWebsiteEl = qs('#edit-website-input', modalEdit);
             var editFacebookEl = qs('#edit-facebook-input', modalEdit);
             var editInstagramEl = qs('#edit-instagram-input', modalEdit);
             var editLinkedinEl = qs('#edit-linkedin-input', modalEdit);
             var editTiktokEl = qs('#edit-tiktok-input', modalEdit);
 
-            // Normalize values (replicates blur-handler logic for unsaved changes)
-            if (editWebsiteEl) editWebsiteEl.value = editWebsiteEl.value.replace(/^https?:\/\//i, '').trim();
             if (editFacebookEl) editFacebookEl.value = normalizeSocialValue(editFacebookEl.value, ['facebook.com/', 'fb.com/', 'm.facebook.com/']);
             if (editInstagramEl) editInstagramEl.value = normalizeSocialValue(editInstagramEl.value, ['instagram.com/', 'instagr.am/', 'm.instagram.com/']);
             if (editLinkedinEl) editLinkedinEl.value = normalizeSocialValue(editLinkedinEl.value, ['linkedin.com/in/', 'linkedin.com/company/', 'linkedin.com/']);
             if (editTiktokEl) editTiktokEl.value = normalizeSocialValue(editTiktokEl.value, ['tiktok.com/@', 'tiktok.com/']);
-
-            var phoneVal = editPhoneEl ? editPhoneEl.value.trim() : '';
-            var websiteVal = editWebsiteEl ? editWebsiteEl.value.trim() : '';
-
-            if (phoneVal && !isValidPhone(phoneVal)) {
-              var phoneDigits = phoneVal.replace(/[^0-9]/g, '');
-              msg.textContent = phoneDigits.length < 9
-                ? 'Numer telefonu musi zawierać co najmniej 9 cyfr (wpisano: ' + phoneDigits.length + ').'
-                : 'Numer telefonu zawiera niedozwolone znaki (dozwolone: cyfry, spacje, +, -, nawiasy).';
-              msg.style.color = '#b91c1c';
-              if (editPhoneEl) { editPhoneEl.style.borderColor = '#ef4444'; editPhoneEl.focus(); }
-              return;
-            }
-
-            if (websiteVal && !isValidWebsite(websiteVal)) {
-              msg.textContent = 'Podaj poprawny adres strony internetowej (np. jeleniagora.pl).';
-              msg.style.color = '#b91c1c';
-              if (editWebsiteEl) { editWebsiteEl.style.borderColor = '#ef4444'; editWebsiteEl.focus(); }
-              return;
-            }
 
             var socialValidations = [
               { el: editFacebookEl, name: 'Facebook' },
@@ -9437,14 +9466,19 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             changes.push('<div><strong>🕐 Godziny otwarcia:</strong><br><span style="text-decoration:line-through;color:#dc2626;white-space:pre-line">' + esc(p.edit_info.prev_opening_hours || '(brak)') + '</span><br><span style="color:#16a34a;white-space:pre-line">→ ' + esc(p.edit_info.new_opening_hours || '(brak)') + '</span></div>');
           }
 
-          // Show website changes if present (for sponsored points)
+          // Show website changes if present
           if (p.edit_info.prev_website !== undefined && p.edit_info.new_website !== undefined && p.edit_info.prev_website !== p.edit_info.new_website) {
             changes.push('<div><strong>🌐 Strona internetowa:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_website || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_website || '(brak)') + '</span></div>');
           }
 
-          // Show phone changes if present (for sponsored points)
+          // Show phone changes if present
           if (p.edit_info.prev_phone !== undefined && p.edit_info.new_phone !== undefined && p.edit_info.prev_phone !== p.edit_info.new_phone) {
             changes.push('<div><strong>📞 Telefon:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_phone || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_phone || '(brak)') + '</span></div>');
+          }
+
+          // Show email changes if present
+          if (p.edit_info.prev_email !== undefined && p.edit_info.new_email !== undefined && p.edit_info.prev_email !== p.edit_info.new_email) {
+            changes.push('<div><strong>✉️ Email kontaktowy:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + (p.edit_info.prev_email || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + (p.edit_info.new_email || '(brak)') + '</span></div>');
           }
 
           // Show Facebook changes if present (for sponsored points)
@@ -9617,6 +9651,15 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }
           if ((p.edit_info.prev_opening_hours || '') !== (p.edit_info.new_opening_hours || '')) {
             ownerChanges.push('<div><strong>🕐 Godziny otwarcia:</strong><br><span style="text-decoration:line-through;color:#dc2626;white-space:pre-line">' + esc(p.edit_info.prev_opening_hours || '(brak)') + '</span><br><span style="color:#16a34a;white-space:pre-line">→ ' + esc(p.edit_info.new_opening_hours || '(brak)') + '</span></div>');
+          }
+          if (p.edit_info.prev_website !== undefined && p.edit_info.new_website !== undefined && p.edit_info.prev_website !== p.edit_info.new_website) {
+            ownerChanges.push('<div><strong>🌐 Strona internetowa:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(p.edit_info.prev_website || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + esc(p.edit_info.new_website || '(brak)') + '</span></div>');
+          }
+          if (p.edit_info.prev_phone !== undefined && p.edit_info.new_phone !== undefined && p.edit_info.prev_phone !== p.edit_info.new_phone) {
+            ownerChanges.push('<div><strong>📞 Telefon:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(p.edit_info.prev_phone || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + esc(p.edit_info.new_phone || '(brak)') + '</span></div>');
+          }
+          if (p.edit_info.prev_email !== undefined && p.edit_info.new_email !== undefined && p.edit_info.prev_email !== p.edit_info.new_email) {
+            ownerChanges.push('<div><strong>✉️ Email kontaktowy:</strong><br><span style="text-decoration:line-through;color:#dc2626">' + esc(p.edit_info.prev_email || '(brak)') + '</span><br><span style="color:#16a34a">→ ' + esc(p.edit_info.new_email || '(brak)') + '</span></div>');
           }
           if (p.edit_info.new_images && p.edit_info.new_images.length > 0) {
             var ownerImagesHtml = '<div><strong>Nowe zdjęcia (' + p.edit_info.new_images.length + '):</strong><br>' +
@@ -9897,19 +9940,27 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }
         }
 
-        // Contact info for sponsored points
+        // Kontakt section for all points (phone, email, website)
+        var kontaktInfo = '';
+        if (p.phone || p.email || p.website) {
+          var kontaktItems = [];
+          if (p.phone) {
+            kontaktItems.push('<div><strong>📞 Telefon:</strong> <a href="tel:' + esc(p.phone) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.phone) + '</a></div>');
+          }
+          if (p.email) {
+            kontaktItems.push('<div><strong>✉️ Email:</strong> <a href="mailto:' + esc(p.email) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.email) + '</a></div>');
+          }
+          if (p.website) {
+            var kontaktWebUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
+            kontaktItems.push('<div><strong>🌐 Strona:</strong> <a href="' + esc(kontaktWebUrl) + '" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline">' + esc(p.website) + '</a></div>');
+          }
+          kontaktInfo = '<div style="margin:12px 0;padding:12px 16px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd"><div style="font-weight:700;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em;color:#0369a1;margin-bottom:8px">Kontakt</div>' + kontaktItems.join('') + '</div>';
+        }
+
+        // Social media and CTA for sponsored points
         var contactInfo = '';
         var contactItemsHtml = '';
-        if (p.sponsored && (p.website || p.phone || p.facebook_url || p.instagram_url || p.linkedin_url || p.tiktok_url)) {
-          var contactItems = [];
-          if (p.website) {
-            var websiteUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
-            contactItems.push('<div><strong>🌐 Strona:</strong> <a href="' + esc(websiteUrl) + '" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline">' + esc(p.website) + '</a></div>');
-          }
-          if (p.phone) {
-            contactItems.push('<div><strong>📞 Telefon:</strong> <a href="tel:' + esc(p.phone) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.phone) + '</a></div>');
-          }
-
+        if (p.sponsored && (p.facebook_url || p.instagram_url || p.linkedin_url || p.tiktok_url)) {
           // Social media icons with authentic SVG logos
           var socialIcons = [];
           if (p.facebook_url) {
@@ -9930,11 +9981,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }
 
           if (socialIcons.length > 0) {
-            contactItems.push('<div style="display:flex;gap:10px;margin-top:8px">' + socialIcons.join('') + '</div>');
-          }
-
-          if (contactItems.length > 0) {
-            contactItemsHtml = contactItems.join('');
+            contactItemsHtml = '<div style="display:flex;gap:10px;margin-top:8px">' + socialIcons.join('') + '</div>';
           }
         }
 
@@ -10274,7 +10321,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           tagsHtml += '</div>';
         }
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + openingHoursHtml + metaRow + addressInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + tagsHtml + ctaButton + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + contactInfo + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + openingHoursHtml + metaRow + addressInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + kontaktInfo + tagsHtml + ctaButton + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + contactInfo + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
@@ -13105,6 +13152,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis* (max 800 znaków)</label>' + buildRichEditorHtml('fab-rte', 800, '', 4) + '</div>' +
               '<div class="cols-2" id="fab-opening-hours-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('fab', '') + '</div>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('fab-tags') + '</div>' +
+              '<div class="cols-2" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin:4px 0">' +
+              '<strong style="display:block;margin-bottom:10px;color:#0369a1">📋 Dane kontaktowe (opcjonalnie)</strong>' +
+              '<label style="display:block;margin-bottom:8px">Telefon <input type="text" name="phone" id="add-phone-input" placeholder="np. 123 456 789" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+              '<label style="display:block;margin-bottom:8px">Email kontaktowy <input type="email" name="contact_email" id="add-email-input" placeholder="np. kontakt@firma.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+              '<label style="display:block;margin-bottom:0">Strona internetowa <input type="text" name="website" id="add-website-input" placeholder="np. jeleniagora.pl" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label>' +
+              '</div>' +
               '<label class="cols-2">Zdjęcia (opcjonalne, max 6)<input type="file" name="images" id="add-images-input" accept="image/*" multiple style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
               '<div id="add-images-preview" class="cols-2" style="display:none;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px"></div>' +
               '<div class="cols-2" style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">' +

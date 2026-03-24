@@ -75,6 +75,7 @@ class JG_Map_Database {
             images longtext,
             website varchar(255) DEFAULT NULL,
             phone varchar(50) DEFAULT NULL,
+            email varchar(255) DEFAULT NULL,
             cta_enabled tinyint(1) DEFAULT 0,
             cta_type varchar(20) DEFAULT NULL,
             is_deletion_requested tinyint(1) DEFAULT 0,
@@ -323,6 +324,11 @@ class JG_Map_Database {
         // Check if phone column exists (for sponsored points)
         if (!$column_exists('phone')) {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN phone varchar(50) DEFAULT NULL AFTER website");
+        }
+
+        // Check if email column exists (contact email for all points)
+        if (!$column_exists('email')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN email varchar(255) DEFAULT NULL AFTER phone");
         }
 
         // Check if cta_enabled column exists (for sponsored points CTA)

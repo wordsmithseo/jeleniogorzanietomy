@@ -949,6 +949,8 @@ class JG_Map_Ajax_Handlers {
                                 'new_website' => $new_values['website'] ?? null,
                                 'prev_phone' => $old_values['phone'] ?? null,
                                 'new_phone' => $new_values['phone'] ?? null,
+                                'prev_email' => $old_values['email'] ?? null,
+                                'new_email' => $new_values['email'] ?? null,
                                 'prev_facebook_url' => $old_values['facebook_url'] ?? null,
                                 'new_facebook_url' => $new_values['facebook_url'] ?? null,
                                 'prev_instagram_url' => $old_values['instagram_url'] ?? null,
@@ -1028,6 +1030,7 @@ class JG_Map_Ajax_Handlers {
                 'sponsored_until' => $sponsored_until,
                 'website' => $point['website'] ?? null,
                 'phone' => $point['phone'] ?? null,
+                'email' => $point['email'] ?? null,
                 'facebook_url' => $point['facebook_url'] ?? null,
                 'instagram_url' => $point['instagram_url'] ?? null,
                 'linkedin_url' => $point['linkedin_url'] ?? null,
@@ -1171,6 +1174,7 @@ class JG_Map_Ajax_Handlers {
             'tiktok_url' => $point['tiktok_url'],
             'website' => $point['website'],
             'phone' => $point['phone'],
+            'email' => $point['email'] ?? null,
             'cta_enabled' => $point['cta_enabled'],
             'cta_type' => $point['cta_type'],
             'stats' => array(
@@ -1663,6 +1667,9 @@ class JG_Map_Ajax_Handlers {
         $public_name = isset($_POST['public_name']);
         $category = sanitize_text_field($_POST['category'] ?? '');
         $opening_hours = sanitize_textarea_field(wp_unslash($_POST['opening_hours'] ?? ''));
+        $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
+        $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
+        $email = !empty($_POST['contact_email']) ? sanitize_email($_POST['contact_email']) : '';
 
         // Process tags (max 5)
         $tags_raw = isset($_POST['tags']) ? wp_unslash($_POST['tags']) : '';
@@ -1751,6 +1758,24 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
+        // Validate website URL if provided
+        if (!empty($website) && !filter_var($website, FILTER_VALIDATE_URL)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy format adresu strony internetowej'));
+            exit;
+        }
+
+        // Validate phone format if provided
+        if (!empty($phone) && !preg_match('/^[\d\s\+\-\(\)]+$/', $phone)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy format numeru telefonu'));
+            exit;
+        }
+
+        // Validate contact email if provided
+        if (!empty($email) && !is_email($email)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy format adresu email kontaktowego'));
+            exit;
+        }
+
         // Handle image uploads
         $images = array();
 
@@ -1802,6 +1827,9 @@ class JG_Map_Ajax_Handlers {
             'featured_image_index' => !empty($images) ? 0 : null, // Auto-set first image as featured
             'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : null,
             'opening_hours' => !empty($opening_hours) ? $opening_hours : null,
+            'website' => !empty($website) ? $website : null,
+            'phone' => !empty($phone) ? $phone : null,
+            'email' => !empty($email) ? $email : null,
             'ip_address' => $ip_address,
             'created_at' => current_time('mysql', true),  // GMT time for consistency
             'updated_at' => current_time('mysql', true)   // GMT time for consistency
@@ -1946,6 +1974,7 @@ class JG_Map_Ajax_Handlers {
         $address = sanitize_text_field(wp_unslash($_POST['address'] ?? ''));
         $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
+        $email = !empty($_POST['contact_email']) ? sanitize_email($_POST['contact_email']) : '';
         $opening_hours = sanitize_textarea_field(wp_unslash($_POST['opening_hours'] ?? ''));
 
         // Normalize social media URLs - accept full URLs, domain URLs, or profile names
@@ -2004,6 +2033,12 @@ class JG_Map_Ajax_Handlers {
         // Validate phone format if provided
         if (!empty($phone) && !preg_match('/^[\d\s\+\-\(\)]+$/', $phone)) {
             wp_send_json_error(array('message' => 'Nieprawidłowy format numeru telefonu'));
+            exit;
+        }
+
+        // Validate contact email if provided
+        if (!empty($email) && !is_email($email)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy format adresu email kontaktowego'));
             exit;
         }
 
@@ -2092,11 +2127,12 @@ class JG_Map_Ajax_Handlers {
                 $update_data['address'] = $address;
             }
 
-            // Add website, phone, social media, and CTA if point is sponsored
+            // Add website, phone, email for all points; social media and CTA for sponsored only
+            $update_data['website'] = !empty($website) ? $website : null;
+            $update_data['phone'] = !empty($phone) ? $phone : null;
+            $update_data['email'] = !empty($email) ? $email : null;
             $is_sponsored = (bool)$point['is_promo'];
             if ($is_sponsored) {
-                $update_data['website'] = !empty($website) ? $website : null;
-                $update_data['phone'] = !empty($phone) ? $phone : null;
                 $update_data['facebook_url'] = !empty($facebook_url) ? $facebook_url : null;
                 $update_data['instagram_url'] = !empty($instagram_url) ? $instagram_url : null;
                 $update_data['linkedin_url'] = !empty($linkedin_url) ? $linkedin_url : null;
@@ -2136,7 +2172,10 @@ class JG_Map_Ajax_Handlers {
                 'lng' => $point['lng'],
                 'address' => $point['address'] ?? '',
                 'images' => $point['images'] ?? '[]',
-                'opening_hours' => $point['opening_hours'] ?? ''
+                'opening_hours' => $point['opening_hours'] ?? '',
+                'website' => $point['website'] ?? null,
+                'phone' => $point['phone'] ?? null,
+                'email' => $point['email'] ?? null
             );
             $new_values = array(
                 'title' => $title,
@@ -2148,7 +2187,10 @@ class JG_Map_Ajax_Handlers {
                 'lng' => ($lng !== null) ? $lng : $point['lng'],
                 'address' => !empty($address) ? $address : ($point['address'] ?? ''),
                 'images' => isset($update_data['images']) ? $update_data['images'] : ($point['images'] ?? '[]'),
-                'opening_hours' => $opening_hours
+                'opening_hours' => $opening_hours,
+                'website' => !empty($website) ? $website : null,
+                'phone' => !empty($phone) ? $phone : null,
+                'email' => !empty($email) ? $email : null
             );
             JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
 
@@ -2207,7 +2249,10 @@ class JG_Map_Ajax_Handlers {
                 'lng' => $point['lng'],
                 'address' => $point['address'] ?? '',
                 'images' => $point['images'] ?? '[]',
-                'opening_hours' => $point['opening_hours'] ?? ''
+                'opening_hours' => $point['opening_hours'] ?? '',
+                'website' => $point['website'] ?? null,
+                'phone' => $point['phone'] ?? null,
+                'email' => $point['email'] ?? null
             );
 
             $new_values = array(
@@ -2217,7 +2262,10 @@ class JG_Map_Ajax_Handlers {
                 'content' => $content,
                 'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : '[]',
                 'opening_hours' => $opening_hours,
-                'new_images' => json_encode($new_images) // Store new images separately for moderation
+                'new_images' => json_encode($new_images), // Store new images separately for moderation
+                'website' => !empty($website) ? $website : null,
+                'phone' => !empty($phone) ? $phone : null,
+                'email' => !empty($email) ? $email : null
             );
 
             // Always include lat/lng/address in new_values for proper comparison in admin panel
@@ -2226,19 +2274,15 @@ class JG_Map_Ajax_Handlers {
             $new_values['lng'] = ($lng !== null) ? $lng : $point['lng'];
             $new_values['address'] = !empty($address) ? $address : ($point['address'] ?? '');
 
-            // Add website, phone, social media, and CTA if point is sponsored
+            // Add social media and CTA to history if point is sponsored
             $is_sponsored = (bool)$point['is_promo'];
             if ($is_sponsored) {
-                $old_values['website'] = $point['website'] ?? null;
-                $old_values['phone'] = $point['phone'] ?? null;
                 $old_values['facebook_url'] = $point['facebook_url'] ?? null;
                 $old_values['instagram_url'] = $point['instagram_url'] ?? null;
                 $old_values['linkedin_url'] = $point['linkedin_url'] ?? null;
                 $old_values['tiktok_url'] = $point['tiktok_url'] ?? null;
                 $old_values['cta_enabled'] = $point['cta_enabled'] ?? 0;
                 $old_values['cta_type'] = $point['cta_type'] ?? null;
-                $new_values['website'] = !empty($website) ? $website : null;
-                $new_values['phone'] = !empty($phone) ? $phone : null;
                 $new_values['facebook_url'] = !empty($facebook_url) ? $facebook_url : null;
                 $new_values['instagram_url'] = !empty($instagram_url) ? $instagram_url : null;
                 $new_values['linkedin_url'] = !empty($linkedin_url) ? $linkedin_url : null;
@@ -2843,8 +2887,9 @@ class JG_Map_Ajax_Handlers {
         $title = sanitize_text_field(wp_unslash($_POST['title'] ?? ''));
         $type = sanitize_text_field($_POST['type'] ?? '');
         $content = wp_kses_post(wp_unslash($_POST['content'] ?? ''));
-        $website = sanitize_text_field($_POST['website'] ?? '');
+        $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $phone = sanitize_text_field($_POST['phone'] ?? '');
+        $email = !empty($_POST['contact_email']) ? sanitize_email($_POST['contact_email']) : '';
 
         // Social media URLs
         $facebook_url = !empty($_POST['facebook_url']) ? $this->normalize_social_url($_POST['facebook_url'], 'facebook') : '';
@@ -2931,11 +2976,12 @@ class JG_Map_Ajax_Handlers {
             $update_data['address'] = $address;
         }
 
-        // Add website, phone, social media, and CTA if point is sponsored
+        // Add website, phone, email for all points; social media and CTA for sponsored only
+        $update_data['website'] = !empty($website) ? $website : null;
+        $update_data['phone'] = !empty($phone) ? $phone : null;
+        $update_data['email'] = !empty($email) ? $email : null;
         $is_sponsored = (bool)$point['is_promo'];
         if ($is_sponsored) {
-            $update_data['website'] = !empty($website) ? $website : null;
-            $update_data['phone'] = !empty($phone) ? $phone : null;
             $update_data['facebook_url'] = !empty($facebook_url) ? $facebook_url : null;
             $update_data['instagram_url'] = !empty($instagram_url) ? $instagram_url : null;
             $update_data['linkedin_url'] = !empty($linkedin_url) ? $linkedin_url : null;
@@ -4271,6 +4317,9 @@ class JG_Map_Ajax_Handlers {
         if (isset($target_state['phone'])) {
             $update_data['phone'] = $target_state['phone'];
         }
+        if (isset($target_state['email'])) {
+            $update_data['email'] = $target_state['email'];
+        }
         if (isset($target_state['facebook_url'])) {
             $update_data['facebook_url'] = $target_state['facebook_url'];
         }
@@ -4479,15 +4528,18 @@ class JG_Map_Ajax_Handlers {
             $update_data['address'] = $new_values['address'];
         }
 
-        // Add website, phone, social media, and CTA if point is sponsored and they are in new_values
+        // Add website, phone, email for all points; social media and CTA for sponsored only
+        if (isset($new_values['website'])) {
+            $update_data['website'] = $new_values['website'];
+        }
+        if (isset($new_values['phone'])) {
+            $update_data['phone'] = $new_values['phone'];
+        }
+        if (isset($new_values['email'])) {
+            $update_data['email'] = $new_values['email'];
+        }
         $is_sponsored = (bool)$point['is_promo'];
         if ($is_sponsored) {
-            if (isset($new_values['website'])) {
-                $update_data['website'] = $new_values['website'];
-            }
-            if (isset($new_values['phone'])) {
-                $update_data['phone'] = $new_values['phone'];
-            }
             if (isset($new_values['facebook_url'])) {
                 $update_data['facebook_url'] = $new_values['facebook_url'];
             }
@@ -4716,15 +4768,18 @@ class JG_Map_Ajax_Handlers {
                 $update_data['address'] = $new_values['address'];
             }
 
-            // Add website, phone, social media, and CTA if point is sponsored
+            // Add website, phone, email for all points; social media and CTA for sponsored only
+            if (isset($new_values['website'])) {
+                $update_data['website'] = $new_values['website'];
+            }
+            if (isset($new_values['phone'])) {
+                $update_data['phone'] = $new_values['phone'];
+            }
+            if (isset($new_values['email'])) {
+                $update_data['email'] = $new_values['email'];
+            }
             $is_sponsored = (bool)$point['is_promo'];
             if ($is_sponsored) {
-                if (isset($new_values['website'])) {
-                    $update_data['website'] = $new_values['website'];
-                }
-                if (isset($new_values['phone'])) {
-                    $update_data['phone'] = $new_values['phone'];
-                }
                 if (isset($new_values['facebook_url'])) {
                     $update_data['facebook_url'] = $new_values['facebook_url'];
                 }

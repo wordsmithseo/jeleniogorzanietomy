@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.24.52
+ * Version: 3.24.53
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.24.52');
+define('JG_MAP_VERSION', '3.24.53');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1031,13 +1031,16 @@ class JG_Interactive_Map {
             <?php endif; ?>
 
             <!-- Contact info & social links -->
-            <?php if (!empty($point['website']) || !empty($point['phone']) || !empty($point['facebook_url']) || !empty($point['instagram_url']) || !empty($point['linkedin_url']) || !empty($point['tiktok_url'])): ?>
+            <?php if (!empty($point['website']) || !empty($point['phone']) || !empty($point['email']) || !empty($point['facebook_url']) || !empty($point['instagram_url']) || !empty($point['linkedin_url']) || !empty($point['tiktok_url'])): ?>
                 <div class="jg-sp-contact">
-                    <?php if (!empty($point['website'])): ?>
-                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-sp-contact-link">&#127760; <?php echo esc_html(parse_url($point['website'], PHP_URL_HOST) ?: $point['website']); ?></a>
-                    <?php endif; ?>
                     <?php if (!empty($point['phone'])): ?>
                         <a href="tel:<?php echo esc_attr($point['phone']); ?>" class="jg-sp-contact-link">&#128222; <?php echo esc_html($point['phone']); ?></a>
+                    <?php endif; ?>
+                    <?php if (!empty($point['email'])): ?>
+                        <a href="mailto:<?php echo esc_attr($point['email']); ?>" class="jg-sp-contact-link">&#9993; <?php echo esc_html($point['email']); ?></a>
+                    <?php endif; ?>
+                    <?php if (!empty($point['website'])): ?>
+                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-sp-contact-link">&#127760; <?php echo esc_html(parse_url($point['website'], PHP_URL_HOST) ?: $point['website']); ?></a>
                     <?php endif; ?>
                     <?php if (!empty($point['facebook_url'])): ?>
                         <a href="<?php echo esc_url($point['facebook_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#1877f2" title="Facebook"><svg viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/></svg></a>
@@ -1453,6 +1456,9 @@ class JG_Interactive_Map {
                 <?php if (!empty($point['phone'])): ?>
                 ,"telephone": <?php echo json_encode($point['phone']); ?>
                 <?php endif; ?>
+                <?php if (!empty($point['email'])): ?>
+                ,"email": <?php echo json_encode($point['email']); ?>
+                <?php endif; ?>
                 <?php if (!empty($point['website'])): ?>
                 ,"url": <?php echo json_encode($point['website']); ?>
                 <?php endif; ?>
@@ -1556,11 +1562,14 @@ class JG_Interactive_Map {
     <?php endif; ?>
     <div class="jg-fb-cta">
         <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>">Zobacz na mapie</a>
-        <?php if (!empty($point['website'])): ?>
-        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-fb-site">Odwiedź stronę</a>
-        <?php endif; ?>
         <?php if (!empty($point['phone'])): ?>
         <a href="tel:<?php echo esc_attr($point['phone']); ?>"><?php echo esc_html($point['phone']); ?></a>
+        <?php endif; ?>
+        <?php if (!empty($point['email'])): ?>
+        <a href="mailto:<?php echo esc_attr($point['email']); ?>"><?php echo esc_html($point['email']); ?></a>
+        <?php endif; ?>
+        <?php if (!empty($point['website'])): ?>
+        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-fb-site">Odwiedź stronę</a>
         <?php endif; ?>
     </div>
     <?php if (!empty($point['address'])): ?>
@@ -1835,6 +1844,9 @@ class JG_Interactive_Map {
                     <?php endif; ?>
                     <?php if (!empty($point['phone'])): ?>
                     ,"telephone": <?php echo json_encode($point['phone']); ?>
+                    <?php endif; ?>
+                    <?php if (!empty($point['email'])): ?>
+                    ,"email": <?php echo json_encode($point['email']); ?>
                     <?php endif; ?>
                     <?php if (!empty($point['website'])): ?>
                     ,"url": <?php echo json_encode($point['website']); ?>
