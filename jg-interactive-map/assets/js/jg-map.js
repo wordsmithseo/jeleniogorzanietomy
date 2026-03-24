@@ -6220,8 +6220,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               // Show more points unclustered - use zoom 15 max
               var maxZoom = 15;
 
+              // When sidebar is visible (desktop-wide), give extra right padding
+              // so fitBounds centres the data in the visible area (left edge → sidebar),
+              // not in the full viewport width.
+              var _fbPadR = 50;
+              if (isDeskWide && window.innerWidth > 768) {
+                var _fbSbW = Math.min(343, window.innerWidth * 0.285) + 24;
+                _fbPadR = _fbSbW + 50;
+              }
               map.fitBounds(leafletBounds, {
-                padding: [50, 50],
+                paddingTopLeft: [50, 50],
+                paddingBottomRight: [_fbPadR, 50],
                 maxZoom: maxZoom,
                 animate: false
               });
@@ -13239,8 +13248,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       }
 
       function goToLocationAndOpenModal(lat, lng) {
-        // Fly to location with maximum zoom (19)
-        map.flyTo([lat, lng], 19, {
+        // Fly to location with maximum zoom (19), offset for sidebar when active
+        map.flyTo(dwCenteredLatLng([lat, lng], 19), 19, {
           duration: 1.5
         });
 
