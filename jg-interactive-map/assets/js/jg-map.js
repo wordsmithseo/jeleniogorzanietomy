@@ -4262,6 +4262,27 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   map.invalidateSize();
                   // Second pass after paint to catch any remaining rendering lag
                   setTimeout(function() { if (isDeskWide) map.invalidateSize(); }, 200);
+                  // Reposition banner and user count indicator after resize
+                  setTimeout(function() {
+                    if (!isDeskWide) return;
+                    var isBannerVisible = deskPromoWrap.style.display !== 'none' && deskPromoWrap.innerHTML !== '';
+                    if (isBannerVisible) {
+                      deskPromoWrap.style.setProperty('left', dwGetFabCenterX() + 'px', 'important');
+                      var uciResize = document.getElementById('jg-user-count-indicator');
+                      if (uciResize && deskPromoWrap.offsetWidth > 0) {
+                        var brResize = deskPromoWrap.getBoundingClientRect();
+                        var mrResize = elMap.getBoundingClientRect();
+                        uciResize.style.left = (brResize.right - mrResize.left + 12) + 'px';
+                        uciResize.style.transform = 'none';
+                      }
+                    } else {
+                      var uciResize2 = document.getElementById('jg-user-count-indicator');
+                      if (uciResize2) {
+                        uciResize2.style.left = dwGetFabCenterX() + 'px';
+                        uciResize2.style.transform = 'translateX(-50%)';
+                      }
+                    }
+                  }, 250);
                 } else {
                   enterDeskWide();
                 }
