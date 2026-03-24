@@ -1626,6 +1626,9 @@ class JG_Map_Admin {
                                 <button class="button jg-view-edit-details" data-edit='<?php echo esc_attr(json_encode($edit)); ?>'>Szczegóły</button>
                                 <button class="button button-primary jg-approve-edit" data-id="<?php echo $edit['id']; ?>">Zatwierdź</button>
                                 <button class="button jg-reject-edit" data-id="<?php echo $edit['id']; ?>">Odrzuć</button>
+                                <?php if (!empty($edit['point_owner_id']) && $edit['owner_approval_status'] !== 'approved'): ?>
+                                <button class="button jg-override-owner-approval" data-id="<?php echo $edit['id']; ?>" style="background:#7c3aed;color:#fff;border-color:#7c3aed" title="Zatwierdź bez akceptacji właściciela">⚡ Obejdź właściciela</button>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -1801,6 +1804,39 @@ class JG_Map_Admin {
                         error: function() {
                             alert('Błąd połączenia');
                             btn.prop('disabled', false).text('Odrzuć');
+                        }
+                    });
+                });
+
+                // Override owner approval
+                $('.jg-override-owner-approval').on('click', function() {
+                    if (!confirm('Zatwierdź edycję bez akceptacji właściciela?\n\nWłaściciel miejsca nie zostanie zapytany o zgodę — edycja zostanie natychmiast zatwierdzona.')) return;
+
+                    var btn = $(this);
+                    var editId = btn.data('id');
+                    btn.prop('disabled', true).text('Zatwierdzam...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'jg_admin_approve_edit',
+                            history_id: editId,
+                            override_owner: 1,
+                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Edycja zatwierdzona (obejście akceptacji właściciela)!');
+                                location.reload();
+                            } else {
+                                alert('Błąd: ' + (response.data.message || 'Nieznany błąd'));
+                                btn.prop('disabled', false).text('⚡ Obejdź właściciela');
+                            }
+                        },
+                        error: function() {
+                            alert('Błąd połączenia');
+                            btn.prop('disabled', false).text('⚡ Obejdź właściciela');
                         }
                     });
                 });

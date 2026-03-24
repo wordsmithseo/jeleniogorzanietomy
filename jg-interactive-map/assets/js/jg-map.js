@@ -9595,12 +9595,113 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             adminStatus = '<div style="display:flex;align-items:center;gap:6px"><span style="color:#f59e0b;font-size:18px">⏳</span><span>Moderator <strong style="color:#f59e0b">oczekuje</strong></span></div>';
           }
 
+          // Build list of changes made by this user
+          var myChangesList = [];
+          var mei = p.edit_info;
+          if (mei.prev_title !== mei.new_title) {
+            myChangesList.push('<div style="margin:4px 0"><strong>Tytuł:</strong> <span style="color:#991b1b;text-decoration:line-through">' + esc(mei.prev_title || '(brak)') + '</span> → <span style="color:#166534">' + esc(mei.new_title || '(brak)') + '</span></div>');
+          }
+          if (mei.prev_type !== mei.new_type) {
+            var myTypeLabels = { zgloszenie: 'Zgłoszenie', ciekawostka: 'Ciekawostka', miejsce: 'Miejsce' };
+            myChangesList.push('<div style="margin:4px 0"><strong>Typ:</strong> <span style="color:#991b1b">' + (myTypeLabels[mei.prev_type] || esc(mei.prev_type || '(brak)')) + '</span> → <span style="color:#166534">' + (myTypeLabels[mei.new_type] || esc(mei.new_type || '(brak)')) + '</span></div>');
+          }
+          if (mei.prev_category !== mei.new_category) {
+            myChangesList.push('<div style="margin:4px 0"><strong>Kategoria:</strong> <span style="color:#991b1b">' + esc(mei.prev_category || '(brak)') + '</span> → <span style="color:#166534">' + esc(mei.new_category || '(brak)') + '</span></div>');
+          }
+          if (mei.prev_content !== mei.new_content) {
+            myChangesList.push('<div style="margin:4px 0"><strong>Opis:</strong> <em style="color:#6b7280">(zmieniony)</em></div>');
+          }
+          if ((mei.prev_address || '') !== (mei.new_address || '') && (mei.prev_address || mei.new_address)) {
+            myChangesList.push('<div style="margin:4px 0"><strong>📍 Adres:</strong> <span style="color:#991b1b">' + esc(mei.prev_address || '(brak)') + '</span> → <span style="color:#166534">' + esc(mei.new_address || '(brak)') + '</span></div>');
+          }
+          if (mei.prev_lat !== undefined && mei.new_lat !== undefined) {
+            var myLatDiff = Math.abs((parseFloat(mei.new_lat) || 0) - (parseFloat(mei.prev_lat) || 0));
+            var myLngDiff = Math.abs((parseFloat(mei.new_lng) || 0) - (parseFloat(mei.prev_lng) || 0));
+            if (myLatDiff > 0.00001 || myLngDiff > 0.00001) {
+              myChangesList.push('<div style="margin:4px 0"><strong>📌 Pozycja na mapie:</strong> <em style="color:#6b7280">(zmieniona)</em></div>');
+            }
+          }
+          if ((mei.prev_website || '') !== (mei.new_website || '') && mei.new_website !== undefined) {
+            myChangesList.push('<div style="margin:4px 0"><strong>🌐 Strona:</strong> <span style="color:#991b1b">' + esc(mei.prev_website || '(brak)') + '</span> → <span style="color:#166534">' + esc(mei.new_website || '(brak)') + '</span></div>');
+          }
+          if ((mei.prev_phone || '') !== (mei.new_phone || '') && mei.new_phone !== undefined) {
+            myChangesList.push('<div style="margin:4px 0"><strong>📞 Telefon:</strong> <span style="color:#991b1b">' + esc(mei.prev_phone || '(brak)') + '</span> → <span style="color:#166534">' + esc(mei.new_phone || '(brak)') + '</span></div>');
+          }
+          if (mei.new_images && mei.new_images.length > 0) {
+            myChangesList.push('<div style="margin:4px 0"><strong>🖼️ Nowe zdjęcia:</strong> +' + mei.new_images.length + '</div>');
+          }
+
+          var myChangesHtml = myChangesList.length > 0
+            ? '<div style="font-size:13px;margin-top:10px;padding-top:10px;border-top:1px solid #e9d5ff">' +
+              '<div style="font-weight:600;color:#6b21a8;margin-bottom:6px">Twoje zmiany:</div>' +
+              myChangesList.join('') +
+              '</div>'
+            : '';
+
           editInfo = '<div style="background:#faf5ff;border:2px solid #9333ea;border-radius:8px;padding:12px;margin:16px 0">' +
             '<div style="font-weight:700;margin-bottom:8px;color:#6b21a8">📝 Twoja propozycja zmian oczekuje na zatwierdzenie</div>' +
             '<div style="font-size:12px;color:#7c3aed;margin-bottom:12px">Zgłoszone ' + esc(p.edit_info.edited_at) + '</div>' +
             '<div style="background:#f3e8ff;padding:12px;border-radius:8px;display:flex;flex-direction:column;gap:8px">' +
             ownerStatus +
             adminStatus +
+            '</div>' +
+            myChangesHtml +
+            '<div style="margin-top:12px">' +
+            '<button class="jg-btn" id="btn-user-revert-edit" style="background:#6b7280;padding:8px 16px;font-size:13px" data-history-id="' + p.edit_info.history_id + '">↩ Cofnij moje zmiany</button>' +
+            '</div>' +
+            '</div>';
+        }
+
+        // Show pending edit status to the owner who edited their own place (not admin)
+        if (!CFG.isAdmin && p.is_own_place && p.is_edit && p.edit_info && p.edit_info.is_my_edit && !p.edit_info.is_external_edit) {
+          var ownEditChangesList = [];
+          var oei = p.edit_info;
+          if (oei.prev_title !== oei.new_title) {
+            ownEditChangesList.push('<div style="margin:4px 0"><strong>Tytuł:</strong> <span style="color:#991b1b;text-decoration:line-through">' + esc(oei.prev_title || '(brak)') + '</span> → <span style="color:#166534">' + esc(oei.new_title || '(brak)') + '</span></div>');
+          }
+          if (oei.prev_type !== oei.new_type) {
+            var ownTypeLabels = { zgloszenie: 'Zgłoszenie', ciekawostka: 'Ciekawostka', miejsce: 'Miejsce' };
+            ownEditChangesList.push('<div style="margin:4px 0"><strong>Typ:</strong> <span style="color:#991b1b">' + (ownTypeLabels[oei.prev_type] || esc(oei.prev_type || '(brak)')) + '</span> → <span style="color:#166534">' + (ownTypeLabels[oei.new_type] || esc(oei.new_type || '(brak)')) + '</span></div>');
+          }
+          if (oei.prev_category !== oei.new_category) {
+            ownEditChangesList.push('<div style="margin:4px 0"><strong>Kategoria:</strong> <span style="color:#991b1b">' + esc(oei.prev_category || '(brak)') + '</span> → <span style="color:#166534">' + esc(oei.new_category || '(brak)') + '</span></div>');
+          }
+          if (oei.prev_content !== oei.new_content) {
+            ownEditChangesList.push('<div style="margin:4px 0"><strong>Opis:</strong> <em style="color:#6b7280">(zmieniony)</em></div>');
+          }
+          if ((oei.prev_address || '') !== (oei.new_address || '') && (oei.prev_address || oei.new_address)) {
+            ownEditChangesList.push('<div style="margin:4px 0"><strong>📍 Adres:</strong> <span style="color:#991b1b">' + esc(oei.prev_address || '(brak)') + '</span> → <span style="color:#166534">' + esc(oei.new_address || '(brak)') + '</span></div>');
+          }
+          if (oei.prev_lat !== undefined && oei.new_lat !== undefined) {
+            var ownLatDiff = Math.abs((parseFloat(oei.new_lat) || 0) - (parseFloat(oei.prev_lat) || 0));
+            var ownLngDiff = Math.abs((parseFloat(oei.new_lng) || 0) - (parseFloat(oei.prev_lng) || 0));
+            if (ownLatDiff > 0.00001 || ownLngDiff > 0.00001) {
+              ownEditChangesList.push('<div style="margin:4px 0"><strong>📌 Pozycja na mapie:</strong> <em style="color:#6b7280">(zmieniona)</em></div>');
+            }
+          }
+          if ((oei.prev_website || '') !== (oei.new_website || '') && oei.new_website !== undefined) {
+            ownEditChangesList.push('<div style="margin:4px 0"><strong>🌐 Strona:</strong> <span style="color:#991b1b">' + esc(oei.prev_website || '(brak)') + '</span> → <span style="color:#166534">' + esc(oei.new_website || '(brak)') + '</span></div>');
+          }
+          if ((oei.prev_phone || '') !== (oei.new_phone || '') && oei.new_phone !== undefined) {
+            ownEditChangesList.push('<div style="margin:4px 0"><strong>📞 Telefon:</strong> <span style="color:#991b1b">' + esc(oei.prev_phone || '(brak)') + '</span> → <span style="color:#166534">' + esc(oei.new_phone || '(brak)') + '</span></div>');
+          }
+          if (oei.new_images && oei.new_images.length > 0) {
+            ownEditChangesList.push('<div style="margin:4px 0"><strong>🖼️ Nowe zdjęcia:</strong> +' + oei.new_images.length + '</div>');
+          }
+
+          var ownChangesHtml = ownEditChangesList.length > 0
+            ? '<div style="font-size:13px;margin-top:10px;padding-top:10px;border-top:1px solid #e9d5ff">' +
+              '<div style="font-weight:600;color:#6b21a8;margin-bottom:6px">Twoje zmiany:</div>' +
+              ownEditChangesList.join('') +
+              '</div>'
+            : '';
+
+          editInfo = '<div style="background:#faf5ff;border:2px solid #9333ea;border-radius:8px;padding:12px;margin:16px 0">' +
+            '<div style="font-weight:700;margin-bottom:8px;color:#6b21a8">📝 Twoja edycja oczekuje na zatwierdzenie przez moderatora</div>' +
+            '<div style="font-size:12px;color:#7c3aed;margin-bottom:8px">Zgłoszone ' + esc(p.edit_info.edited_at) + '</div>' +
+            ownChangesHtml +
+            '<div style="margin-top:12px">' +
+            '<button class="jg-btn" id="btn-user-revert-edit" style="background:#6b7280;padding:8px 16px;font-size:13px" data-history-id="' + p.edit_info.history_id + '">↩ Cofnij moje zmiany</button>' +
             '</div>' +
             '</div>';
         }
@@ -9820,6 +9921,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               ? '<div style="font-size:12px;color:#4c1d95;margin-top:8px;padding-top:8px;border-top:1px solid #e9d5ff">' + changesList.join('') + '</div>'
               : '';
 
+            var ownerOverrideBtn = (ei.requires_owner_approval && ei.owner_approval_status !== 'approved')
+              ? '<button class="jg-btn" id="btn-override-owner-approval" style="background:#7c3aed;padding:8px 12px;font-size:13px;white-space:nowrap" title="Zatwierdź edycję bez czekania na akceptację właściciela">⚡ Obejdź akceptację właściciela</button>'
+              : '';
+
             pendingChanges.push(
               '<div style="background:#faf5ff;border-left:4px solid #9333ea;padding:12px;border-radius:6px;margin-bottom:8px">' +
               '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px">' +
@@ -9828,9 +9933,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<div style="font-size:13px;color:#7e22ce">Edytowano: <strong>' + esc(editedAt) + '</strong></div>' +
               changesHtml +
               '</div>' +
-              '<div style="display:flex;gap:6px;flex-shrink:0">' +
+              '<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">' +
               '<button class="jg-btn" id="btn-approve-edit" style="background:#15803d;padding:8px 12px;font-size:13px;white-space:nowrap">✓ Akceptuj edycję</button>' +
               '<button class="jg-btn" id="btn-reject-edit" style="background:#b91c1c;padding:8px 12px;font-size:13px;white-space:nowrap">✗ Odrzuć edycję</button>' +
+              ownerOverrideBtn +
               '</div></div></div>'
             );
           }
@@ -11009,6 +11115,42 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             };
           }
 
+          // Override owner approval handler (admin/mod only)
+          var btnOverrideOwnerApproval = qs('#btn-override-owner-approval', modalView);
+          if (btnOverrideOwnerApproval) {
+            btnOverrideOwnerApproval.onclick = function() {
+              showConfirm('Zatwierdź edycję bez akceptacji właściciela?\n\nWłaściciel miejsca nie zostanie zapytany o zgodę — edycja zostanie natychmiast zatwierdzona.').then(function(confirmed) {
+                if (!confirmed) return;
+
+                btnOverrideOwnerApproval.disabled = true;
+                btnOverrideOwnerApproval.textContent = 'Zatwierdzanie...';
+
+                api('jg_admin_approve_edit', { history_id: p.edit_info.history_id, override_owner: 1 })
+                  .then(function(result) {
+                    cachedAllTags = null;
+                    cachedAllTagsTime = 0;
+                    shootMapMarkerConfetti(p.lat, p.lng,
+                      ['#7c3aed', '#a78bfa', '#c4b5fd', '#fbbf24', '#ffffff', '#f5f3ff'], 40);
+                    return refreshAll();
+                  })
+                  .then(function() {
+                    close(modalView);
+                    var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                    if (updatedPoint) {
+                      setTimeout(function() {
+                        openDetails(updatedPoint);
+                      }, 200);
+                    }
+                  })
+                  .catch(function(err) {
+                    showAlert('Błąd: ' + (err.message || '?'));
+                    btnOverrideOwnerApproval.disabled = false;
+                    btnOverrideOwnerApproval.textContent = '⚡ Obejdź akceptację właściciela';
+                  });
+              });
+            };
+          }
+
           // Deletion request handlers
           var btnApproveDeletion = qs('#btn-approve-deletion', modalView);
           var btnRejectDeletion = qs('#btn-reject-deletion', modalView);
@@ -11169,6 +11311,40 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                     btnOwnerRejectEdit.textContent = '✗ Odrzuć';
                   });
               });
+          };
+        }
+
+        // User revert own pending edit handler
+        var btnUserRevertEdit = qs('#btn-user-revert-edit', modalView);
+        if (btnUserRevertEdit) {
+          btnUserRevertEdit.onclick = function() {
+            var historyId = this.getAttribute('data-history-id');
+            showConfirm('Cofnąć swoje zmiany?\n\nEdycja zostanie anulowana i zniknie z listy oczekujących powiadomień moderatorów.').then(function(confirmed) {
+              if (!confirmed) return;
+
+              btnUserRevertEdit.disabled = true;
+              btnUserRevertEdit.textContent = 'Cofanie...';
+
+              api('jg_user_revert_edit', { history_id: historyId })
+                .then(function(result) {
+                  return refreshAll();
+                })
+                .then(function() {
+                  close(modalView);
+                  showAlert('Twoje zmiany zostały cofnięte.');
+                  var updatedPoint = ALL.find(function(x) { return x.id === p.id; });
+                  if (updatedPoint) {
+                    setTimeout(function() {
+                      openDetails(updatedPoint);
+                    }, 200);
+                  }
+                })
+                .catch(function(err) {
+                  showAlert('Błąd: ' + (err.message || '?'));
+                  btnUserRevertEdit.disabled = false;
+                  btnUserRevertEdit.textContent = '↩ Cofnij moje zmiany';
+                });
+            });
           };
         }
 
