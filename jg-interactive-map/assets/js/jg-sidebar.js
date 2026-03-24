@@ -466,6 +466,9 @@
             // Render first batch
             appendNextBatch();
         }
+
+        // Update timestamps immediately after render (fixes stale "1 sekunda temu" from cache)
+        refreshTimestamps();
     }
 
     /**
@@ -625,7 +628,7 @@
                 </div>
                 <div class="jg-sidebar-item__footer">
                     ${votesHtml}
-                    <div class="jg-sidebar-item__date">${point.date.human}</div>
+                    <div class="jg-sidebar-item__date" data-jg-timestamp="${escapeHtml(point.date.raw)}">${escapeHtml(point.date.human)}</div>
                 </div>
                 ${infoBadgesHtml}
             </div>
@@ -804,6 +807,75 @@
     }
 
     /**
+     * Polish plural helper: n=1 → one, 2-4 (not 12-14) → few, else → many
+     */
+    function pluralPl(n, one, few, many) {
+        if (n === 1) return one;
+        var mod10 = n % 10;
+        var mod100 = n % 100;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+        return many;
+    }
+
+    /**
+     * Convert a UTC datetime string (from date.raw) to a Polish relative time string.
+     * Mirrors WordPress human_time_diff() output format.
+     */
+    function humanTimeDiffPl(dateStr) {
+        if (!dateStr) return '';
+        // date.raw is "YYYY-MM-DD HH:MM:SS" in UTC
+        var date = new Date(dateStr.replace(' ', 'T') + 'Z');
+        if (isNaN(date.getTime())) return '';
+        var diff = Math.floor((Date.now() - date.getTime()) / 1000);
+        if (diff < 0) diff = 0;
+
+        if (diff < 60) {
+            return diff + ' ' + pluralPl(diff, 'sekunda', 'sekundy', 'sekund') + ' temu';
+        }
+        if (diff < 3600) {
+            var mins = Math.floor(diff / 60);
+            return mins + ' ' + pluralPl(mins, 'minuta', 'minuty', 'minut') + ' temu';
+        }
+        if (diff < 86400) {
+            var hours = Math.floor(diff / 3600);
+            return hours + ' ' + pluralPl(hours, 'godzina', 'godziny', 'godzin') + ' temu';
+        }
+        if (diff < 2592000) {
+            var days = Math.floor(diff / 86400);
+            return days + ' ' + pluralPl(days, 'dzień', 'dni', 'dni') + ' temu';
+        }
+        if (diff < 31536000) {
+            var months = Math.floor(diff / 2592000);
+            return months + ' ' + pluralPl(months, 'miesiąc', 'miesiące', 'miesięcy') + ' temu';
+        }
+        var years = Math.floor(diff / 31536000);
+        return years + ' ' + pluralPl(years, 'rok', 'lata', 'lat') + ' temu';
+    }
+
+    /**
+     * Update all visible timestamp labels in the sidebar.
+     * Called once after render and then every 60 seconds.
+     */
+    function refreshTimestamps() {
+        $('#jg-sidebar-list [data-jg-timestamp]').each(function() {
+            var raw = $(this).attr('data-jg-timestamp');
+            var label = humanTimeDiffPl(raw);
+            if (label) {
+                $(this).text(label);
+            }
+        });
+    }
+
+    /**
+     * Setup interval to keep relative timestamps current.
+     */
+    function setupTimestampRefresh() {
+        // Immediate pass so cached items show correct time right away
+        refreshTimestamps();
+        setInterval(refreshTimestamps, 60000);
+    }
+
+    /**
      * Setup synchronization with WordPress Heartbeat API
      * This integrates with the main synchronization manager
      * to automatically refresh sidebar when changes are detected
@@ -865,6 +937,7 @@
     $(document).ready(function() {
         init();
         setupSync();
+        setupTimestampRefresh();
     });
 
     // Expose refresh function for external use
