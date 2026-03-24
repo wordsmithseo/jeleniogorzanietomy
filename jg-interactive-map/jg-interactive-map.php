@@ -1464,7 +1464,6 @@ class JG_Interactive_Map {
                     }
                 }
                 ?>
-                ,"openingHours": <?php echo json_encode(array_filter(array_map('trim', explode("\n", $point['opening_hours'])))); ?>
                 <?php if (!empty($fb_oh_spec)): ?>
                 ,"openingHoursSpecification": <?php echo json_encode($fb_oh_spec, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
                 <?php endif; ?>
@@ -1850,7 +1849,6 @@ class JG_Interactive_Map {
                         }
                     }
                     ?>
-                    ,"openingHours": <?php echo json_encode(array_filter(array_map('trim', explode("\n", $point['opening_hours'])))); ?>
                     <?php if (!empty($schema_oh_spec)): ?>
                     ,"openingHoursSpecification": <?php echo json_encode($schema_oh_spec, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
                     <?php endif; ?>
