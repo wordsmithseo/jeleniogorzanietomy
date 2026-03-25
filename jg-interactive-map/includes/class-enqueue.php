@@ -684,6 +684,22 @@ class JG_Map_Enqueue {
                 });
             });
 
+            /* ── Force white color on nav links (beats Elementor inline JS styles) ── */
+            function jgForceNavColors() {
+                document.querySelectorAll(
+                    '#jg-nav-menu .jg-nav-menu-link, #jg-nav-menu a'
+                ).forEach(function (el) {
+                    el.style.setProperty('color', '#ffffff', 'important');
+                });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', jgForceNavColors);
+            } else {
+                jgForceNavColors();
+            }
+            /* Drugi pass po załadowaniu wszystkich skryptów Elementora */
+            window.addEventListener('load', jgForceNavColors);
+
             /* ── Mobile viewport fitting ──────────────────────────────────────
                Root cause: CSS had `height: 100% !important` on #jg-map-wrap
                which beats regular inline styles.  Fix: use

@@ -8184,7 +8184,7 @@ button.jg-mobile-map-filter-btn {
   background-image: none !important;
   text-decoration: none !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
-  font-size: calc(15 * var(--jg)) !important;
+  font-size: calc(17 * var(--jg)) !important;
   font-weight: 500 !important;
   line-height: 1.5 !important;
   letter-spacing: normal !important;
