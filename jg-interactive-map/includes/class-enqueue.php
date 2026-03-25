@@ -882,8 +882,14 @@ class JG_Map_Enqueue {
                         <span class="jg-top-bar-level-num">Poz. <?php echo $user_level; ?></span>
                         <span class="jg-top-bar-xp-bar"><span class="jg-top-bar-xp-fill" style="width:<?php echo $xp_progress; ?>%"></span></span>
                     </span>
-                    <button id="jg-ranking-btn" class="jg-top-bar-btn">Ranking</button>
-                    <button id="jg-edit-profile-btn" class="jg-top-bar-btn">Edytuj profil</button>
+                    <button id="jg-ranking-btn" class="jg-top-bar-btn" title="Ranking">
+                        <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+                        <span class="jg-btn-text">Ranking</span>
+                    </button>
+                    <button id="jg-edit-profile-btn" class="jg-top-bar-btn" title="Edytuj profil">
+                        <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <span class="jg-btn-text">Edytuj profil</span>
+                    </button>
 
                     <!-- Notifications container for real-time updates -->
                     <div id="jg-top-bar-notifications"<?php echo empty($mod_notifications) ? ' class="jg-notifications-empty"' : ''; ?>>
@@ -896,9 +902,15 @@ class JG_Map_Enqueue {
                     </div>
 
                     <?php if ($is_admin || $is_moderator) : ?>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=jg-map-dashboard')); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin">Panel administratora</a>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=jg-map-dashboard')); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin" title="Panel administratora">
+                            <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                            <span class="jg-btn-text">Panel administratora</span>
+                        </a>
                     <?php endif; ?>
-                    <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn">Wyloguj</a>
+                    <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn" title="Wyloguj">
+                        <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        <span class="jg-btn-text">Wyloguj</span>
+                    </a>
                 <?php else : ?>
                     <button id="jg-auth-btn" class="jg-top-bar-btn">Zarejestruj / Zaloguj</button>
                 <?php endif; ?>

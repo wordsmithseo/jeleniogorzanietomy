@@ -210,6 +210,16 @@
   transition: all 0.2s;
   font-family: inherit;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jg-btn-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: block;
 }
 
 .jg-top-bar-btn:hover {
@@ -2125,6 +2135,33 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   .jg-top-bar-btn {
     padding: 7px 14px;
     font-size: calc(14 * var(--jg));
+  }
+
+  /* Icon-only buttons on narrow screens (laptop) */
+  #jg-ranking-btn .jg-btn-text,
+  #jg-edit-profile-btn .jg-btn-text,
+  .jg-top-bar-btn-admin .jg-btn-text,
+  a.jg-top-bar-btn[title="Wyloguj"] .jg-btn-text {
+    display: none;
+  }
+
+  #jg-ranking-btn,
+  #jg-edit-profile-btn,
+  .jg-top-bar-btn-admin,
+  a.jg-top-bar-btn[title="Wyloguj"] {
+    padding: 7px;
+    width: 34px;
+    height: 34px;
+    justify-content: center;
+    border-radius: 8px;
+  }
+
+  #jg-ranking-btn .jg-btn-icon,
+  #jg-edit-profile-btn .jg-btn-icon,
+  .jg-top-bar-btn-admin .jg-btn-icon,
+  a.jg-top-bar-btn[title="Wyloguj"] .jg-btn-icon {
+    width: 18px;
+    height: 18px;
   }
 }
 
