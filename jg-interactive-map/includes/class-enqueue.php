@@ -806,6 +806,10 @@ class JG_Map_Enqueue {
                 <?php
                 $top_bar_menu_items_left = get_option('jg_map_nav_menu', array());
                 ?>
+                <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-top-bar-logo-link" aria-label="Strona główna">
+                    <img src="https://jeleniogorzanietomy.pl/wp-content/uploads/2025/10/jg-logo-1.svg" alt="Jelenia Góra to my" class="jg-top-bar-logo-img">
+                    <span class="jg-top-bar-site-title">Jeleniogórzanie to my - Interaktywna mapa Jeleniej Góry</span>
+                </a>
                 <div class="jg-top-bar-menu-wrap">
                     <button class="jg-top-bar-menu-btn" id="jg-top-bar-menu-btn" aria-haspopup="true" aria-expanded="false" type="button">
                         Menu <span class="jg-top-bar-menu-chevron">&#9660;</span>
@@ -830,10 +834,6 @@ class JG_Map_Enqueue {
                         <?php endif; ?>
                     </div>
                 </div>
-                <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-top-bar-logo-link" aria-label="Strona główna">
-                    <img src="https://jeleniogorzanietomy.pl/wp-content/uploads/2025/10/jg-logo-1.svg" alt="Jelenia Góra to my" class="jg-top-bar-logo-img">
-                    <span class="jg-top-bar-site-title">Jeleniogórzanie to my - Interaktywna mapa Jeleniej Góry</span>
-                </a>
             </div>
             <div class="jg-top-bar-right">
                 <?php if (is_user_logged_in()) : ?>
