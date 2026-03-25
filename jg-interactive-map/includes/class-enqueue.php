@@ -549,6 +549,16 @@ class JG_Map_Enqueue {
         $home_url   = home_url('/');
         $menu_items = get_option('jg_map_nav_menu', array());
         ?>
+        <!-- JG nav color override: injected in <body> so it loads after Elementor's <head> CSS -->
+        <style id="jg-nav-color-fix">
+        html body #jg-nav-menu .jg-nav-menu-link { color: #ffffff !important; }
+        html body #jg-nav-menu a.jg-nav-menu-link { color: #ffffff !important; }
+        html body #jg-nav-menu .jg-nav-menu-link:hover,
+        html body #jg-nav-menu .jg-nav-menu-link:focus { color: #ffffff !important; }
+        html body .jg-nav-sub-toggle { color: rgba(255,255,255,0.7) !important; }
+        html body .jg-nav-sub-toggle:hover,
+        html body .jg-nav-sub-toggle:focus { color: #ffffff !important; }
+        </style>
         <!-- JG Mobile Nav Bar -->
         <div id="jg-nav-bar" class="jg-nav-bar">
             <a href="<?php echo esc_url($home_url); ?>" class="jg-nav-logo-link" aria-label="Strona główna">
