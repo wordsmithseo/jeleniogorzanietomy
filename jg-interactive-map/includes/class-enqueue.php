@@ -551,13 +551,11 @@ class JG_Map_Enqueue {
         ?>
         <!-- JG nav color override: injected in <body> so it loads after Elementor's <head> CSS -->
         <style id="jg-nav-color-fix">
-        html body #jg-nav-menu .jg-nav-menu-link { color: #ffffff !important; }
-        html body #jg-nav-menu a.jg-nav-menu-link { color: #ffffff !important; }
+        html body #jg-nav-menu .jg-nav-menu-link { color: #8d2324 !important; }
+        html body #jg-nav-menu a.jg-nav-menu-link { color: #8d2324 !important; }
         html body #jg-nav-menu .jg-nav-menu-link:hover,
-        html body #jg-nav-menu .jg-nav-menu-link:focus { color: #ffffff !important; }
-        html body .jg-nav-sub-toggle { color: rgba(255,255,255,0.7) !important; }
-        html body .jg-nav-sub-toggle:hover,
-        html body .jg-nav-sub-toggle:focus { color: #ffffff !important; }
+        html body #jg-nav-menu .jg-nav-menu-link:focus { color: #8d2324 !important; }
+        html body .jg-nav-sub-toggle { color: #8d2324 !important; }
         html body a.jg-top-bar-menu-item { color: #ffffff !important; }
         html body a.jg-top-bar-menu-item:hover,
         html body a.jg-top-bar-menu-item:focus { color: #ffffff !important; }
@@ -687,11 +685,12 @@ class JG_Map_Enqueue {
                 });
             });
 
-            /* ── Force white color on nav/top-bar links (beats Elementor inline JS styles) ── */
+            /* ── Force brand colors on nav/top-bar links (beats Elementor inline JS styles) ── */
             function jgForceNavColors() {
-                document.querySelectorAll(
-                    '#jg-nav-menu .jg-nav-menu-link, #jg-nav-menu a, .jg-top-bar-menu-item'
-                ).forEach(function (el) {
+                document.querySelectorAll('#jg-nav-menu .jg-nav-menu-link, #jg-nav-menu a').forEach(function (el) {
+                    el.style.setProperty('color', '#8d2324', 'important');
+                });
+                document.querySelectorAll('.jg-top-bar-menu-item').forEach(function (el) {
                     el.style.setProperty('color', '#ffffff', 'important');
                 });
             }
