@@ -1085,7 +1085,7 @@ class JG_Interactive_Map {
                         <td class="jg-sp-oh-day"><?php echo esc_html($sp_oh_labels[$sp_oh_key]); ?></td>
                         <td class="jg-sp-oh-time">
                             <?php if (isset($sp_oh_parsed[$sp_oh_key])): ?>
-                                <?php echo esc_html($sp_oh_parsed[$sp_oh_key]['open'] . ' – ' . $sp_oh_parsed[$sp_oh_key]['close']); ?>
+                                <?php echo esc_html($sp_oh_parsed[$sp_oh_key]['open'] . ' – ' . ($sp_oh_parsed[$sp_oh_key]['close'] === '24:00' ? '00:00' : $sp_oh_parsed[$sp_oh_key]['close'])); ?>
                             <?php else: ?>
                                 <span class="jg-sp-oh-closed">Nieczynne</span>
                             <?php endif; ?>
