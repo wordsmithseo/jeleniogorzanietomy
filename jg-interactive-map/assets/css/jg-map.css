@@ -9050,9 +9050,13 @@ footer.site-footer .site-branding {
   margin: 12px 0;
 }
 .jg-kontakt-solo-dir .jg-kontakt-dir-btn {
-  width: 90px;
-  height: 90px;
+  flex-direction: row;
+  width: auto;
+  height: auto;
   min-height: unset;
+  white-space: nowrap;
+  padding: 10px 20px;
+  gap: 8px;
 }
 @media (max-width: 768px) {
   .jg-kontakt-wrapper {
