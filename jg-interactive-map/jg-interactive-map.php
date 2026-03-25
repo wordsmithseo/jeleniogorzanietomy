@@ -861,6 +861,20 @@ class JG_Interactive_Map {
             height: 100%; background: #fff; width: 100%;
             transition: width linear;
         }
+        /* Address row with directions button */
+        .jg-sp-address-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .jg-sp-address-wrap .jg-sp-address { margin-bottom: 0; flex: 1; min-width: 0; }
+        .jg-sp-dir-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 9px 18px; background: #eff6ff; color: #1d4ed8;
+            border: 1.5px solid #bfdbfe; border-radius: 10px;
+            font-size: calc(14 * var(--jg)); font-weight: 700;
+            text-decoration: none; white-space: nowrap; flex-shrink: 0;
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .jg-sp-dir-btn:hover { background: #dbeafe; box-shadow: 0 2px 10px rgba(37,99,235,0.18); color: #1d4ed8; }
+        .jg-sp-dir-btn svg { width: 20px; height: 20px; fill: #1d4ed8; flex-shrink: 0; }
+
         /* offset body so redirect banner doesn't overlap header — set dynamically by JS */
         body { padding-top: 0; }
         @media (max-width: 480px) {
@@ -1057,9 +1071,19 @@ class JG_Interactive_Map {
                 </div>
             <?php endif; ?>
 
-            <!-- Address -->
-            <?php if (!empty($point['address'])): ?>
-                <div class="jg-sp-address">&#128205; <?php echo esc_html($point['address']); ?></div>
+            <!-- Address + Directions button -->
+            <?php if (!empty($point['address']) || (!empty($point['lat']) && !empty($point['lng']))): ?>
+                <div class="jg-sp-address-wrap">
+                    <?php if (!empty($point['address'])): ?>
+                        <div class="jg-sp-address">&#128205; <?php echo esc_html($point['address']); ?></div>
+                    <?php endif; ?>
+                    <?php if (!empty($point['lat']) && !empty($point['lng'])): ?>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=<?php echo urlencode($point['lat'] . ',' . $point['lng']); ?>" target="_blank" rel="noopener" class="jg-sp-dir-btn">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg>
+                            <span>Dojazd</span>
+                        </a>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
 
             <!-- Opening hours -->
