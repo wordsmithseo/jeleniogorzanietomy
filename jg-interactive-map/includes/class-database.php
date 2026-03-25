@@ -840,7 +840,7 @@ class JG_Map_Database {
 
         $sql = "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                        resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, edit_locked, is_deletion_requested, deletion_reason,
-                       deletion_requested_at, is_promo, promo_until, website, phone,
+                       deletion_requested_at, is_promo, promo_until, website, phone, email,
                        cta_enabled, cta_type, admin_note, images, featured_image_index,
                        facebook_url, instagram_url, linkedin_url, tiktok_url,
                        stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
@@ -926,7 +926,7 @@ class JG_Map_Database {
         $sql = $wpdb->prepare(
             "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                     resolved_delete_at, rejected_reason, rejected_delete_at, author_id, author_hidden, edit_locked, is_deletion_requested, deletion_reason,
-                    deletion_requested_at, is_promo, promo_until, website, phone,
+                    deletion_requested_at, is_promo, promo_until, website, phone, email,
                     cta_enabled, cta_type, admin_note, images, featured_image_index,
                     facebook_url, instagram_url, linkedin_url, tiktok_url,
                     stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
@@ -962,7 +962,7 @@ class JG_Map_Database {
             $wpdb->prepare(
                 "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
                         resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, edit_locked, is_deletion_requested, deletion_reason,
-                        deletion_requested_at, is_promo, promo_until, website, phone,
+                        deletion_requested_at, is_promo, promo_until, website, phone, email,
                         cta_enabled, cta_type, admin_note, images, featured_image_index,
                         facebook_url, instagram_url, linkedin_url, tiktok_url,
                         stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
