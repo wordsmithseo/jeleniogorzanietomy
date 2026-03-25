@@ -369,8 +369,8 @@
 .jg-top-bar-menu-item {
   display: block;
   padding: 10px 16px;
-  color: #fff;
-  text-decoration: none;
+  color: #fff !important;
+  text-decoration: none !important;
   font-size: calc(14 * var(--jg));
   font-weight: 500;
   white-space: nowrap;
@@ -379,7 +379,7 @@
 
 .jg-top-bar-menu-item:hover {
   background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  color: #fff !important;
 }
 
 .jg-top-bar-menu-empty {

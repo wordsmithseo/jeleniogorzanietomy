@@ -558,6 +558,9 @@ class JG_Map_Enqueue {
         html body .jg-nav-sub-toggle { color: rgba(255,255,255,0.7) !important; }
         html body .jg-nav-sub-toggle:hover,
         html body .jg-nav-sub-toggle:focus { color: #ffffff !important; }
+        html body a.jg-top-bar-menu-item { color: #ffffff !important; }
+        html body a.jg-top-bar-menu-item:hover,
+        html body a.jg-top-bar-menu-item:focus { color: #ffffff !important; }
         </style>
         <!-- JG Mobile Nav Bar -->
         <div id="jg-nav-bar" class="jg-nav-bar">
@@ -684,10 +687,10 @@ class JG_Map_Enqueue {
                 });
             });
 
-            /* ── Force white color on nav links (beats Elementor inline JS styles) ── */
+            /* ── Force white color on nav/top-bar links (beats Elementor inline JS styles) ── */
             function jgForceNavColors() {
                 document.querySelectorAll(
-                    '#jg-nav-menu .jg-nav-menu-link, #jg-nav-menu a'
+                    '#jg-nav-menu .jg-nav-menu-link, #jg-nav-menu a, .jg-top-bar-menu-item'
                 ).forEach(function (el) {
                     el.style.setProperty('color', '#ffffff', 'important');
                 });

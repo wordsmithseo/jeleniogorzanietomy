@@ -779,6 +779,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         // Fade out and hide the full-screen loader
         if (loadingEl) {
           loadingEl.style.opacity = '0';
+          // Restore page scroll that was locked during loading
+          document.documentElement.style.removeProperty('overflow');
           setTimeout(function() {
             if (loadingEl) loadingEl.style.display = 'none';
           }, 300);

@@ -291,6 +291,8 @@ class JG_Map_Shortcode {
             (function(){
               var e=document.getElementById('jg-map-loading');
               if(e)document.body.appendChild(e);
+              // Block page scroll while loader is visible (prevents scrollbar showing behind fixed overlay)
+              document.documentElement.style.setProperty('overflow','hidden','important');
               // If coming from a pin page, show a more relevant loading message
               try {
                 if(new URLSearchParams(window.location.search).get('from')==='point'){
