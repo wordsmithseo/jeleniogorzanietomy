@@ -494,6 +494,57 @@
     }
 
     /**
+     * Build today's opening hours HTML for a point.
+     * Extracted so it can be called both on initial render and on periodic refresh.
+     */
+    function buildTodayHoursHtml(point) {
+        if (!point.opening_hours || (point.type !== 'miejsce' && point.type !== 'ciekawostka')) {
+            return '';
+        }
+        var sbDayKeys = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+        var sbTodayKey = sbDayKeys[(new Date().getDay() + 6) % 7];
+        var sbParsed = {};
+        point.opening_hours.trim().split('\n').forEach(function(line) {
+            var m = line.trim().match(/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+            if (m) sbParsed[m[1]] = { open: m[2], close: m[3] };
+        });
+        if (Object.keys(sbParsed).length === 0) return '';
+        var sbToday = sbParsed[sbTodayKey] || null;
+        if (!sbToday) {
+            return '<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Nieczynne</div>';
+        }
+        var sbNow = new Date();
+        var sbNowMins = sbNow.getHours() * 60 + sbNow.getMinutes();
+        var sbOpenMins = parseInt(sbToday.open.split(':')[0]) * 60 + parseInt(sbToday.open.split(':')[1]);
+        var sbCloseMins = parseInt(sbToday.close.split(':')[0]) * 60 + parseInt(sbToday.close.split(':')[1]);
+        var sbIsOpen = sbNowMins >= sbOpenMins && sbNowMins < sbCloseMins;
+        if (!sbIsOpen) {
+            var sbDayLabels = { Mo: 'Pon', Tu: 'Wt', We: 'Śr', Th: 'Czw', Fr: 'Pt', Sa: 'Sob', Su: 'Niedz' };
+            var sbNextOpen = '';
+            var sbTodayIdx = sbDayKeys.indexOf(sbTodayKey);
+            if (sbNowMins < sbOpenMins) {
+                sbNextOpen = 'Otwiera o ' + sbToday.open;
+            } else {
+                for (var sbDi = 1; sbDi <= 7; sbDi++) {
+                    var sbNextKey = sbDayKeys[(sbTodayIdx + sbDi) % 7];
+                    if (sbParsed[sbNextKey]) {
+                        var sbNextLabel = sbDi === 1 ? 'Jutro' : (sbDayLabels[sbNextKey] || sbNextKey);
+                        sbNextOpen = sbNextLabel + ' o ' + sbParsed[sbNextKey].open;
+                        break;
+                    }
+                }
+            }
+            return '<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Zamknięte' + (sbNextOpen ? ' · ' + escapeHtml(sbNextOpen) : '') + '</div>';
+        } else {
+            var sbMinsLeft = sbCloseMins - sbNowMins;
+            var sbWarning = (sbMinsLeft > 0 && sbMinsLeft < 60)
+                ? '<br><span class="jg-sidebar-item__hours-warning">⚠️ Zamknięcie za ' + sbMinsLeft + ' min</span>'
+                : '';
+            return '<div class="jg-sidebar-item__hours">🕐 ' + escapeHtml(sbToday.open) + ' – ' + escapeHtml(sbToday.close === '24:00' ? '00:00' : sbToday.close) + sbWarning + '</div>';
+        }
+    }
+
+    /**
      * Create HTML for single point item
      */
     function createPointItem(point) {
@@ -569,52 +620,7 @@
         }
 
         // Build today's opening hours line for sidebar (miejsce only)
-        var todayHoursHtml = '';
-        if (point.opening_hours && (point.type === 'miejsce' || point.type === 'ciekawostka')) {
-            var sbDayKeys = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-            var sbTodayKey = sbDayKeys[(new Date().getDay() + 6) % 7];
-            var sbParsed = {};
-            point.opening_hours.trim().split('\n').forEach(function(line) {
-                var m = line.trim().match(/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
-                if (m) sbParsed[m[1]] = { open: m[2], close: m[3] };
-            });
-            var sbToday = sbParsed[sbTodayKey] || null;
-            if (Object.keys(sbParsed).length > 0) {
-                if (sbToday) {
-                    var sbNow = new Date();
-                    var sbNowMins = sbNow.getHours() * 60 + sbNow.getMinutes();
-                    var sbOpenMins = parseInt(sbToday.open.split(':')[0]) * 60 + parseInt(sbToday.open.split(':')[1]);
-                    var sbCloseMins = parseInt(sbToday.close.split(':')[0]) * 60 + parseInt(sbToday.close.split(':')[1]);
-                    var sbIsOpen = sbNowMins >= sbOpenMins && sbNowMins < sbCloseMins;
-                    if (!sbIsOpen) {
-                        var sbDayLabels = { Mo: 'Pon', Tu: 'Wt', We: 'Śr', Th: 'Czw', Fr: 'Pt', Sa: 'Sob', Su: 'Niedz' };
-                        var sbNextOpen = '';
-                        var sbTodayIdx = sbDayKeys.indexOf(sbTodayKey);
-                        if (sbNowMins < sbOpenMins) {
-                            sbNextOpen = 'Otwiera o ' + sbToday.open;
-                        } else {
-                            for (var sbDi = 1; sbDi <= 7; sbDi++) {
-                                var sbNextKey = sbDayKeys[(sbTodayIdx + sbDi) % 7];
-                                if (sbParsed[sbNextKey]) {
-                                    var sbNextLabel = sbDi === 1 ? 'Jutro' : (sbDayLabels[sbNextKey] || sbNextKey);
-                                    sbNextOpen = sbNextLabel + ' o ' + sbParsed[sbNextKey].open;
-                                    break;
-                                }
-                            }
-                        }
-                        todayHoursHtml = `<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Zamknięte${sbNextOpen ? ' · ' + escapeHtml(sbNextOpen) : ''}</div>`;
-                    } else {
-                        var sbMinsLeft = sbCloseMins - sbNowMins;
-                        var sbWarning = (sbMinsLeft > 0 && sbMinsLeft < 60)
-                            ? `<br><span class="jg-sidebar-item__hours-warning">⚠️ Zamknięcie za ${sbMinsLeft} min</span>`
-                            : '';
-                        todayHoursHtml = `<div class="jg-sidebar-item__hours">🕐 ${escapeHtml(sbToday.open)} – ${escapeHtml(sbToday.close === '24:00' ? '00:00' : sbToday.close)}${sbWarning}</div>`;
-                    }
-                } else {
-                    todayHoursHtml = `<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Nieczynne</div>`;
-                }
-            }
-        }
+        var todayHoursHtml = buildTodayHoursHtml(point);
 
         // Build item HTML
         var infoBadgesHtml = buildInfoBadges(point);
@@ -867,12 +873,42 @@
     }
 
     /**
+     * Re-render only the opening-hours badges for all currently visible sidebar items.
+     * Called every 60 seconds so a point that has just closed stops showing
+     * "Zamknięcie za N min" without requiring a full data re-render.
+     */
+    function refreshOpeningHours() {
+        if (!sidebarPoints || sidebarPoints.length === 0) return;
+        $('#jg-sidebar-list .jg-sidebar-item[data-point-id]').each(function() {
+            var pointId = parseInt($(this).attr('data-point-id'), 10);
+            var point = null;
+            for (var i = 0; i < sidebarPoints.length; i++) {
+                if (sidebarPoints[i].id === pointId) { point = sidebarPoints[i]; break; }
+            }
+            if (!point) return;
+            var newHtml = buildTodayHoursHtml(point);
+            var $header = $(this).find('.jg-sidebar-item__header');
+            var $existing = $header.find('.jg-sidebar-item__hours');
+            if (newHtml) {
+                if ($existing.length) {
+                    $existing.replaceWith(newHtml);
+                } else {
+                    $header.find('.jg-sidebar-item__title').after(newHtml);
+                }
+            } else {
+                $existing.remove();
+            }
+        });
+    }
+
+    /**
      * Setup interval to keep relative timestamps current.
      */
     function setupTimestampRefresh() {
         // Immediate pass so cached items show correct time right away
         refreshTimestamps();
         setInterval(refreshTimestamps, 60000);
+        setInterval(refreshOpeningHours, 60000);
     }
 
     /**
