@@ -1548,7 +1548,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         { key: 'Su', label: 'Niedz' }
       ];
 
-      // Build time <select> options in 15-min steps 00:00–23:45, plus 24:00
+      // Build time <select> options in 15-min steps 00:00–23:45, plus 00:00
       var _timeOptionsBase = null;
       function buildTimeOptions(selected) {
         if (!_timeOptionsBase) {
@@ -1560,7 +1560,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               parts.push('<option value="' + t + '">' + t + '</option>');
             }
           }
-          parts.push('<option value="24:00">24:00</option>');
+          parts.push('<option value="00:00">00:00</option>');
           _timeOptionsBase = parts.join('');
         }
         if (!selected) return _timeOptionsBase;
