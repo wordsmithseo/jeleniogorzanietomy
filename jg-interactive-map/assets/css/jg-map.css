@@ -9035,11 +9035,11 @@ footer.site-footer .site-branding {
   border: 1.5px solid #bfdbfe;
   border-radius: 12px;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   text-align: center;
   box-sizing: border-box;
-  padding: 8px;
+  padding: 10px;
   transition: background 0.2s, box-shadow 0.2s;
 }
 .jg-kontakt-dir-btn:hover {

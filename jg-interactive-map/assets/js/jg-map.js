@@ -10117,7 +10117,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         if (p.lat && p.lng) {
           var dirUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(p.lat + ',' + p.lng);
           kontaktDirectionsBtn = '<a href="' + dirUrl + '" target="_blank" rel="noopener" class="jg-kontakt-dir-btn">' +
-            '<svg width="22" height="22" viewBox="0 0 24 24" fill="#1d4ed8"><path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg>' +
+            '<svg width="30" height="30" viewBox="0 0 24 24" fill="#1d4ed8"><path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg>' +
             'Wyznacz trasę</a>';
         }
 
