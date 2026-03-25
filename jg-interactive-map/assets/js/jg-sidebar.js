@@ -29,6 +29,51 @@
     var SIDEBAR_CACHE_KEY      = 'jg_sidebar_cache_v2';
     var SIDEBAR_CACHE_META_KEY = 'jg_sidebar_cache_meta_v2';
 
+    // Filter/sort preferences key
+    var FILTER_PREFS_KEY = 'jg_filter_prefs_v1';
+
+    function saveFilterPrefs() {
+        try {
+            localStorage.setItem(FILTER_PREFS_KEY, JSON.stringify(currentFilters));
+        } catch (e) {}
+    }
+
+    function loadFilterPrefs() {
+        try {
+            var saved = localStorage.getItem(FILTER_PREFS_KEY);
+            if (!saved) return;
+            var prefs = JSON.parse(saved);
+            if (Array.isArray(prefs.types))                    currentFilters.types = prefs.types;
+            if (typeof prefs.myPlaces === 'boolean')           currentFilters.myPlaces = prefs.myPlaces;
+            if (typeof prefs.sortBy === 'string' && prefs.sortBy) currentFilters.sortBy = prefs.sortBy;
+            if (Array.isArray(prefs.placeCategories))          currentFilters.placeCategories = prefs.placeCategories;
+            if (Array.isArray(prefs.curiosityCategories))      currentFilters.curiosityCategories = prefs.curiosityCategories;
+        } catch (e) {}
+    }
+
+    function restoreFilterUI() {
+        // Type checkboxes
+        $('[data-sidebar-type]').each(function() {
+            $(this).prop('checked', currentFilters.types.indexOf($(this).attr('data-sidebar-type')) !== -1);
+        });
+        // My places
+        $('[data-sidebar-my-places]').prop('checked', currentFilters.myPlaces);
+        // Sort select
+        $('#jg-sidebar-sort-select').val(currentFilters.sortBy);
+        // Place category checkboxes (empty array = all checked = default)
+        if (currentFilters.placeCategories.length > 0) {
+            $('[data-sidebar-place-category]').each(function() {
+                $(this).prop('checked', currentFilters.placeCategories.indexOf($(this).attr('data-sidebar-place-category')) !== -1);
+            });
+        }
+        // Curiosity category checkboxes
+        if (currentFilters.curiosityCategories.length > 0) {
+            $('[data-sidebar-curiosity-category]').each(function() {
+                $(this).prop('checked', currentFilters.curiosityCategories.indexOf($(this).attr('data-sidebar-curiosity-category')) !== -1);
+            });
+        }
+    }
+
     function getSidebarUserId() {
         return (window.JG_MAP_CFG && JG_MAP_CFG.currentUserId)
             ? JG_MAP_CFG.currentUserId.toString()
@@ -62,8 +107,14 @@
      * Initialize sidebar
      */
     function init() {
+        // Load saved filter preferences before building UI
+        loadFilterPrefs();
+
         // Generate category filter checkboxes
         initCategoryFilters();
+
+        // Restore checkbox/select state from saved preferences
+        restoreFilterUI();
 
         // Setup event listeners
         setupEventListeners();
@@ -206,30 +257,35 @@
         // Type filters
         $('[data-sidebar-type]').on('change', function() {
             updateTypeFilters();
+            saveFilterPrefs();
             loadPoints();
         });
 
         // My places filter
         $('[data-sidebar-my-places]').on('change', function() {
             currentFilters.myPlaces = $(this).is(':checked');
+            saveFilterPrefs();
             loadPoints();
         });
 
         // Place category filters
         $(document).on('change', '[data-sidebar-place-category]', function() {
             updatePlaceCategoryFilters();
+            saveFilterPrefs();
             loadPoints();
         });
 
         // Curiosity category filters
         $(document).on('change', '[data-sidebar-curiosity-category]', function() {
             updateCuriosityCategoryFilters();
+            saveFilterPrefs();
             loadPoints();
         });
 
         // Sort dropdown
         $('#jg-sidebar-sort-select').on('change', function() {
             currentFilters.sortBy = $(this).val();
+            saveFilterPrefs();
             loadPoints();
         });
 

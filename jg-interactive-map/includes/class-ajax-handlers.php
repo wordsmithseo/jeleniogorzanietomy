@@ -8187,6 +8187,14 @@ class JG_Map_Ajax_Handlers {
                     return $a['votes_count'] - $b['votes_count'];
                 });
                 break;
+
+            case 'modified_desc':
+                usort($regular_points, function($a, $b) {
+                    $ta = isset($a['updated_at']) ? strtotime($a['updated_at']) : strtotime($a['created_at']);
+                    $tb = isset($b['updated_at']) ? strtotime($b['updated_at']) : strtotime($b['created_at']);
+                    return $tb - $ta;
+                });
+                break;
         }
 
         // Merge sponsored at the top
@@ -8206,6 +8214,7 @@ class JG_Map_Ajax_Handlers {
                 'is_promo' => (bool)$point['is_promo'],
                 'votes_count' => $point['votes_count'],
                 'created_at' => $point['created_at'],
+                'updated_at' => $point['updated_at'],
                 'date' => array(
                     'raw' => $point['created_at'],
                     'human' => human_time_diff(strtotime($point['created_at'] . ' UTC'), time()) . ' temu',

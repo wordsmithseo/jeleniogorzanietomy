@@ -4688,7 +4688,29 @@ img.emoji {
 }
 
 .jg-sidebar-sort-section {
-  margin-bottom: 0;
+  margin-bottom: 16px;
+}
+
+/* Category sub-collapsible headers */
+.jg-sidebar-category-header {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  padding: 6px 10px !important;
+  font-size: calc(11 * var(--jg)) !important;
+  font-weight: 600 !important;
+  border-radius: 4px !important;
+}
+
+.jg-sidebar-category-header:hover {
+  background: #e5e7eb !important;
+}
+
+.jg-sidebar-category-header .jg-sidebar-toggle-icon {
+  color: #374151 !important;
+}
+
+.jg-sidebar-category-header + .jg-sidebar-collapsible-content {
+  margin-top: 8px;
 }
 
 .jg-sidebar-filter-group {

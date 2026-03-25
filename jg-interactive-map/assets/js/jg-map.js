@@ -3530,8 +3530,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               sidebar.style.setProperty('height', 'calc(100% - 24px)', 'important');
               elMap.appendChild(sidebar);
               sidebar.classList.add('jg-sidebar-fullscreen-overlay');
-              // Prevent scroll wheel on sidebar from zooming the map
+              // Prevent scroll wheel and clicks on sidebar from affecting the map
               L.DomEvent.disableScrollPropagation(sidebar);
+              L.DomEvent.disableClickPropagation(sidebar);
             }
 
             // Move map/satellite toggle to topleft (under fullscreen button)
@@ -4138,6 +4139,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               elMap.appendChild(sidebar);
               sidebar.classList.add('jg-sidebar-desktop-wide-overlay');
               L.DomEvent.disableScrollPropagation(sidebar);
+              L.DomEvent.disableClickPropagation(sidebar);
             }
 
             // Show the banner after a short delay. The banner data (origImg.src)

@@ -717,6 +717,23 @@ class JG_Map_Shortcode {
                     <span class="jg-sidebar-toggle-icon">▼</span>
                 </div>
                 <div class="jg-sidebar-collapsible-content" style="display:none;">
+                    <!-- Sorting (above filters) -->
+                    <div class="jg-sidebar-sort-section">
+                        <h4>Sortowanie</h4>
+                        <div class="jg-sidebar-sort-controls">
+                            <label for="jg-sidebar-sort-select">Sortuj:</label>
+                            <select id="jg-sidebar-sort-select">
+                                <option value="date_desc">Najnowsze</option>
+                                <option value="date_asc">Najstarsze</option>
+                                <option value="modified_desc">Ostatnio edytowane</option>
+                                <option value="alpha_asc">Alfabetycznie A-Z</option>
+                                <option value="alpha_desc">Alfabetycznie Z-A</option>
+                                <option value="votes_desc">Najlepiej oceniane</option>
+                                <option value="votes_asc">Najgorzej oceniane</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <!-- Filters -->
                     <div class="jg-sidebar-filter-section">
                         <h4>Filtry typów</h4>
@@ -728,35 +745,29 @@ class JG_Map_Shortcode {
                         </div>
                     </div>
 
-                    <!-- Category Filters - Place categories -->
+                    <!-- Category Filters - Place categories (collapsible, default collapsed) -->
                     <div class="jg-sidebar-filter-section" id="jg-sidebar-place-categories" style="display:none;">
-                        <h4>Kategorie miejsc</h4>
-                        <div class="jg-sidebar-filter-group jg-sidebar-category-filters" data-category-type="miejsce">
-                            <!-- Will be populated by JavaScript -->
+                        <div class="jg-sidebar-collapsible-header jg-sidebar-category-header">
+                            <span>Kategorie miejsc</span>
+                            <span class="jg-sidebar-toggle-icon">▼</span>
+                        </div>
+                        <div class="jg-sidebar-collapsible-content" style="display:none;">
+                            <div class="jg-sidebar-filter-group jg-sidebar-category-filters" data-category-type="miejsce">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Category Filters - Curiosity categories -->
+                    <!-- Category Filters - Curiosity categories (collapsible, default collapsed) -->
                     <div class="jg-sidebar-filter-section" id="jg-sidebar-curiosity-categories" style="display:none;">
-                        <h4>Kategorie ciekawostek</h4>
-                        <div class="jg-sidebar-filter-group jg-sidebar-category-filters" data-category-type="ciekawostka">
-                            <!-- Will be populated by JavaScript -->
+                        <div class="jg-sidebar-collapsible-header jg-sidebar-category-header">
+                            <span>Kategorie ciekawostek</span>
+                            <span class="jg-sidebar-toggle-icon">▼</span>
                         </div>
-                    </div>
-
-                    <!-- Sorting -->
-                    <div class="jg-sidebar-sort-section">
-                        <h4>Sortowanie</h4>
-                        <div class="jg-sidebar-sort-controls">
-                            <label for="jg-sidebar-sort-select">Sortuj:</label>
-                            <select id="jg-sidebar-sort-select">
-                                <option value="date_desc">Najnowsze</option>
-                                <option value="date_asc">Najstarsze</option>
-                                <option value="alpha_asc">Alfabetycznie A-Z</option>
-                                <option value="alpha_desc">Alfabetycznie Z-A</option>
-                                <option value="votes_desc">Najlepiej oceniane</option>
-                                <option value="votes_asc">Najgorzej oceniane</option>
-                            </select>
+                        <div class="jg-sidebar-collapsible-content" style="display:none;">
+                            <div class="jg-sidebar-filter-group jg-sidebar-category-filters" data-category-type="ciekawostka">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
                         </div>
                     </div>
                 </div>
