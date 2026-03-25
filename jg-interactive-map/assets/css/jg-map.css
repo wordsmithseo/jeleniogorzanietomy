@@ -2137,31 +2137,35 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     font-size: calc(14 * var(--jg));
   }
 
-  /* Icon-only buttons on narrow screens (laptop) */
+}
+
+/* Icon-only buttons on laptop screens */
+@media (max-width: 1440px) {
   #jg-ranking-btn .jg-btn-text,
   #jg-edit-profile-btn .jg-btn-text,
   .jg-top-bar-btn-admin .jg-btn-text,
   a.jg-top-bar-btn[title="Wyloguj"] .jg-btn-text {
-    display: none;
+    display: none !important;
   }
 
   #jg-ranking-btn,
   #jg-edit-profile-btn,
   .jg-top-bar-btn-admin,
   a.jg-top-bar-btn[title="Wyloguj"] {
-    padding: 7px;
-    width: 34px;
-    height: 34px;
-    justify-content: center;
-    border-radius: 8px;
+    padding: 7px !important;
+    width: 34px !important;
+    height: 34px !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
   }
 
   #jg-ranking-btn .jg-btn-icon,
   #jg-edit-profile-btn .jg-btn-icon,
   .jg-top-bar-btn-admin .jg-btn-icon,
   a.jg-top-bar-btn[title="Wyloguj"] .jg-btn-icon {
-    width: 18px;
-    height: 18px;
+    width: 18px !important;
+    height: 18px !important;
   }
 }
 
