@@ -68,7 +68,12 @@
   box-sizing: border-box;
 }
 
-.jg-top-bar-left,
+.jg-top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+}
+
 .jg-top-bar-right {
   display: flex;
   align-items: center;
@@ -290,7 +295,7 @@
   align-items: center;
   text-decoration: none;
   line-height: normal;
-  margin-left: 3vw;
+  margin-left: 0;
 }
 
 .jg-top-bar-logo-img {
