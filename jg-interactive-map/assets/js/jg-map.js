@@ -10457,7 +10457,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             } else {
               todayRowHtml = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
                   '<span style="font-weight:600">' + esc(ohDayLabels[todayKey] || todayKey) + '</span>' +
-                  '<span>' + esc(todayData.open) + ' – ' + esc(todayData.close) + '</span>' +
+                  '<span>' + esc(todayData.open) + ' – ' + esc(todayData.close === '24:00' ? '00:00' : todayData.close) + '</span>' +
                   (closingWarning ? '<span id="jg-oh-warning" style="color:#d97706;font-size:0.8rem;font-weight:700">' + esc(closingWarning) + '</span>' : '') +
                 '</div>';
             }
@@ -10468,7 +10468,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               var isToday = dk === todayKey;
               return '<div style="display:flex;justify-content:space-between;gap:16px' + (isToday ? ';font-weight:700' : '') + '">' +
                 '<span style="min-width:36px">' + esc(ohDayLabels[dk] || dk) + '</span>' +
-                (dd ? '<span>' + esc(dd.open) + ' – ' + esc(dd.close) + '</span>' : '<span style="color:#dc2626">Nieczynne</span>') +
+                (dd ? '<span>' + esc(dd.open) + ' – ' + esc(dd.close === '24:00' ? '00:00' : dd.close) + '</span>' : '<span style="color:#dc2626">Nieczynne</span>') +
                 '</div>';
             }).join('');
 

@@ -608,7 +608,7 @@
                         var sbWarning = (sbMinsLeft > 0 && sbMinsLeft < 60)
                             ? `<br><span class="jg-sidebar-item__hours-warning">⚠️ Zamknięcie za ${sbMinsLeft} min</span>`
                             : '';
-                        todayHoursHtml = `<div class="jg-sidebar-item__hours">🕐 ${escapeHtml(sbToday.open)} – ${escapeHtml(sbToday.close)}${sbWarning}</div>`;
+                        todayHoursHtml = `<div class="jg-sidebar-item__hours">🕐 ${escapeHtml(sbToday.open)} – ${escapeHtml(sbToday.close === '24:00' ? '00:00' : sbToday.close)}${sbWarning}</div>`;
                     }
                 } else {
                     todayHoursHtml = `<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Nieczynne</div>`;
