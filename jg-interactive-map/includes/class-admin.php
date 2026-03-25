@@ -7534,19 +7534,37 @@ JAVASCRIPT;
 
         /* ── Handle form save ── */
         if (isset($_POST['jg_nav_menu_save']) && check_admin_referer('jg_nav_menu_nonce')) {
-            $raw_labels   = isset($_POST['jg_nav_label'])   ? (array) $_POST['jg_nav_label']   : array();
-            $raw_urls     = isset($_POST['jg_nav_url'])     ? (array) $_POST['jg_nav_url']     : array();
-            $raw_new_tabs = isset($_POST['jg_nav_new_tab']) ? (array) $_POST['jg_nav_new_tab'] : array();
+            $json = isset($_POST['jg_nav_menu_json']) ? wp_unslash($_POST['jg_nav_menu_json']) : '[]';
+            $raw  = json_decode($json, true);
+            if (!is_array($raw)) $raw = array();
 
             $items = array();
-            foreach ($raw_labels as $i => $label) {
-                $label = sanitize_text_field($label);
-                $url   = esc_url_raw(isset($raw_urls[$i]) ? $raw_urls[$i] : '');
+            foreach ($raw as $item) {
+                if (!is_array($item)) continue;
+                $label = sanitize_text_field(isset($item['label']) ? $item['label'] : '');
+                $url   = esc_url_raw(isset($item['url']) ? $item['url'] : '');
                 if ($label === '' || $url === '') continue;
+
+                $children = array();
+                if (!empty($item['children']) && is_array($item['children'])) {
+                    foreach ($item['children'] as $child) {
+                        if (!is_array($child)) continue;
+                        $clabel = sanitize_text_field(isset($child['label']) ? $child['label'] : '');
+                        $curl   = esc_url_raw(isset($child['url']) ? $child['url'] : '');
+                        if ($clabel === '' || $curl === '') continue;
+                        $children[] = array(
+                            'label'   => $clabel,
+                            'url'     => $curl,
+                            'new_tab' => !empty($child['new_tab']),
+                        );
+                    }
+                }
+
                 $items[] = array(
-                    'label'   => $label,
-                    'url'     => $url,
-                    'new_tab' => !empty($raw_new_tabs[$i]),
+                    'label'    => $label,
+                    'url'      => $url,
+                    'new_tab'  => !empty($item['new_tab']),
+                    'children' => $children,
                 );
             }
 
@@ -7560,55 +7578,86 @@ JAVASCRIPT;
             <?php $this->render_page_header('Menu nawigacyjne (mobilny pasek)'); ?>
             <p class="description" style="margin-bottom:16px;color:#6b7280">
                 Pozycje wyświetlane w rozwijanym menu hamburgerowym na pasku z logo portalu (widocznym na urządzeniach mobilnych).
+                Przeciągaj wiersze za uchwyt <strong>⠿</strong> aby zmieniać kolejność.
             </p>
+
+            <style>
+            .jg-nav-row.jg-drag-over { outline: 2px dashed #2271b1 !important; background: #f0f7ff !important; }
+            .jg-nav-row .jg-drag-handle { cursor: grab !important; }
+            .jg-nav-row .jg-drag-handle:active { cursor: grabbing !important; }
+            .jg-nav-subrow td { background: #fafafa; }
+            .jg-nav-subrow td:first-child { border-left: 3px solid #e5e7eb; }
+            </style>
 
             <form method="post" action="" id="jg-nav-menu-form">
                 <?php wp_nonce_field('jg_nav_menu_nonce'); ?>
+                <input type="hidden" name="jg_nav_menu_json" id="jg-nav-menu-json" value="<?php echo esc_attr(wp_json_encode($items)); ?>">
 
-                <div class="jg-card jg-card-body" style="max-width:760px">
+                <div class="jg-card jg-card-body" style="max-width:900px">
                     <h2>Pozycje menu</h2>
 
                     <div class="jg-admin-table-wrap"><div class="jg-table-scroll">
                     <table class="jg-admin-table" id="jg-nav-menu-table">
                         <thead>
                             <tr>
+                                <th style="width:30px"></th>
                                 <th style="width:36px">#</th>
                                 <th>Etykieta</th>
                                 <th>URL</th>
                                 <th style="width:110px;text-align:center">Nowa karta</th>
-                                <th style="width:80px"></th>
+                                <th style="width:190px"></th>
                             </tr>
                         </thead>
                         <tbody id="jg-nav-menu-body">
                             <?php foreach ($items as $idx => $item) : ?>
-                            <tr class="jg-nav-row">
-                                <td style="color:#9ca3af;font-size:calc(13 * var(--jg))"><?php echo $idx + 1; ?></td>
+                            <tr class="jg-nav-row" data-idx="<?php echo esc_attr($idx); ?>" draggable="true">
+                                <td class="jg-drag-handle" title="Przeciągnij aby zmienić kolejność" style="text-align:center;color:#9ca3af;font-size:18px;user-select:none;padding:4px 8px">⠿</td>
+                                <td class="jg-row-num" style="color:#9ca3af;font-size:calc(13 * var(--jg))"><?php echo $idx + 1; ?></td>
                                 <td>
-                                    <input type="text"
-                                           name="jg_nav_label[]"
+                                    <input type="text" class="jg-nav-label regular-text"
                                            value="<?php echo esc_attr($item['label']); ?>"
-                                           placeholder="np. Aktualności"
-                                           class="regular-text"
-                                           required>
+                                           placeholder="np. Aktualności">
                                 </td>
                                 <td>
-                                    <input type="url"
-                                           name="jg_nav_url[]"
+                                    <input type="url" class="jg-nav-url regular-text"
                                            value="<?php echo esc_attr($item['url']); ?>"
-                                           placeholder="https://..."
-                                           class="regular-text"
-                                           required>
+                                           placeholder="https://...">
                                 </td>
                                 <td style="text-align:center">
-                                    <input type="checkbox"
-                                           name="jg_nav_new_tab[<?php echo $idx; ?>]"
-                                           value="1"
+                                    <input type="checkbox" class="jg-nav-new-tab" value="1"
                                            <?php checked(!empty($item['new_tab'])); ?>>
                                 </td>
                                 <td>
+                                    <button type="button" class="button jg-nav-add-sub" style="margin-right:4px">+ Podmenu</button>
                                     <button type="button" class="button jg-nav-remove-row" style="color:#dc2626;border-color:#dc2626">Usuń</button>
                                 </td>
                             </tr>
+                            <?php if (!empty($item['children'])) : ?>
+                                <?php foreach ($item['children'] as $child) : ?>
+                                <tr class="jg-nav-subrow" data-parent="<?php echo esc_attr($idx); ?>">
+                                    <td></td>
+                                    <td style="color:#9ca3af;font-size:12px;text-align:center">↳</td>
+                                    <td>
+                                        <input type="text" class="jg-nav-sub-label regular-text"
+                                               value="<?php echo esc_attr($child['label']); ?>"
+                                               placeholder="np. Podstrona"
+                                               style="margin-left:8px">
+                                    </td>
+                                    <td>
+                                        <input type="url" class="jg-nav-sub-url regular-text"
+                                               value="<?php echo esc_attr($child['url']); ?>"
+                                               placeholder="https://...">
+                                    </td>
+                                    <td style="text-align:center">
+                                        <input type="checkbox" class="jg-nav-sub-new-tab" value="1"
+                                               <?php checked(!empty($child['new_tab'])); ?>>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="button jg-nav-remove-subrow" style="color:#dc2626;border-color:#dc2626">Usuń</button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -7626,44 +7675,180 @@ JAVASCRIPT;
 
             <script>
             (function () {
-                var tbody  = document.getElementById('jg-nav-menu-body');
-                var addBtn = document.getElementById('jg-nav-add-row');
+                var tbody   = document.getElementById('jg-nav-menu-body');
+                var addBtn  = document.getElementById('jg-nav-add-row');
+                var form    = document.getElementById('jg-nav-menu-form');
+                var jsonFld = document.getElementById('jg-nav-menu-json');
 
-                if (!tbody || !addBtn) return;
+                if (!tbody || !addBtn || !form) return;
 
+                /* ── Refresh row numbers for parent rows ── */
                 function refreshNumbers() {
-                    var rows = tbody.querySelectorAll('.jg-nav-row');
-                    rows.forEach(function (row, i) {
-                        row.cells[0].textContent = i + 1;
-                        /* Re-index the new_tab checkbox name so the PHP array key matches position */
-                        var cb = row.querySelector('input[type=checkbox]');
-                        if (cb) cb.name = 'jg_nav_new_tab[' + i + ']';
+                    var n = 0;
+                    tbody.querySelectorAll('.jg-nav-row').forEach(function (row) {
+                        row.querySelector('.jg-row-num').textContent = ++n;
                     });
                 }
 
+                /* ── Get subrows belonging to a parent row ── */
+                function getSubrows(parentRow) {
+                    var idx  = parentRow.dataset.idx;
+                    var subs = [];
+                    var next = parentRow.nextElementSibling;
+                    while (next && next.classList.contains('jg-nav-subrow') && next.dataset.parent === idx) {
+                        subs.push(next);
+                        next = next.nextElementSibling;
+                    }
+                    return subs;
+                }
+
+                /* ── Build JSON from current DOM state ── */
+                function collectJSON() {
+                    var items = [];
+                    tbody.querySelectorAll('.jg-nav-row').forEach(function (row) {
+                        var label  = row.querySelector('.jg-nav-label').value.trim();
+                        var url    = row.querySelector('.jg-nav-url').value.trim();
+                        var newTab = row.querySelector('.jg-nav-new-tab').checked;
+                        var children = [];
+                        getSubrows(row).forEach(function (sr) {
+                            var sl = sr.querySelector('.jg-nav-sub-label').value.trim();
+                            var su = sr.querySelector('.jg-nav-sub-url').value.trim();
+                            var sn = sr.querySelector('.jg-nav-sub-new-tab').checked;
+                            if (sl && su) children.push({ label: sl, url: su, new_tab: sn });
+                        });
+                        if (label && url) items.push({ label: label, url: url, new_tab: newTab, children: children });
+                    });
+                    return JSON.stringify(items);
+                }
+
+                /* ── Add parent row ── */
                 addBtn.addEventListener('click', function () {
-                    var count = tbody.querySelectorAll('.jg-nav-row').length;
-                    var tr    = document.createElement('tr');
-                    tr.className = 'jg-nav-row';
+                    var uid = String(Date.now());
+                    var tr  = document.createElement('tr');
+                    tr.className   = 'jg-nav-row';
+                    tr.dataset.idx = uid;
+                    tr.draggable   = true;
                     tr.innerHTML =
-                        '<td style="color:#9ca3af;font-size:calc(13 * var(--jg))">' + (count + 1) + '</td>' +
-                        '<td><input type="text" name="jg_nav_label[]" placeholder="np. Aktualności" class="regular-text" required></td>' +
-                        '<td><input type="url"  name="jg_nav_url[]"   placeholder="https://..."    class="regular-text" required></td>' +
-                        '<td style="text-align:center"><input type="checkbox" name="jg_nav_new_tab[' + count + ']" value="1"></td>' +
-                        '<td><button type="button" class="button jg-nav-remove-row" style="color:#dc2626;border-color:#dc2626">Usuń</button></td>';
+                        '<td class="jg-drag-handle" title="Przeciągnij aby zmienić kolejność" style="text-align:center;color:#9ca3af;font-size:18px;user-select:none;padding:4px 8px">⠿</td>' +
+                        '<td class="jg-row-num" style="color:#9ca3af;font-size:calc(13 * var(--jg))"></td>' +
+                        '<td><input type="text" class="jg-nav-label regular-text" placeholder="np. Aktualności"></td>' +
+                        '<td><input type="url"  class="jg-nav-url regular-text"   placeholder="https://..."></td>' +
+                        '<td style="text-align:center"><input type="checkbox" class="jg-nav-new-tab" value="1"></td>' +
+                        '<td>' +
+                            '<button type="button" class="button jg-nav-add-sub" style="margin-right:4px">+ Podmenu</button>' +
+                            '<button type="button" class="button jg-nav-remove-row" style="color:#dc2626;border-color:#dc2626">Usuń</button>' +
+                        '</td>';
                     tbody.appendChild(tr);
-                    tr.querySelector('input[type=text]').focus();
+                    bindDrag(tr);
                     bindRemove(tr.querySelector('.jg-nav-remove-row'));
+                    bindAddSub(tr.querySelector('.jg-nav-add-sub'));
+                    tr.querySelector('.jg-nav-label').focus();
+                    refreshNumbers();
                 });
+
+                /* ── Add subrow under a parent ── */
+                function addSubrow(parentRow) {
+                    var idx    = parentRow.dataset.idx;
+                    var subs   = getSubrows(parentRow);
+                    var anchor = subs.length ? subs[subs.length - 1] : parentRow;
+                    var tr     = document.createElement('tr');
+                    tr.className      = 'jg-nav-subrow';
+                    tr.dataset.parent = idx;
+                    tr.innerHTML =
+                        '<td></td>' +
+                        '<td style="color:#9ca3af;font-size:12px;text-align:center">↳</td>' +
+                        '<td><input type="text" class="jg-nav-sub-label regular-text" placeholder="np. Podstrona" style="margin-left:8px"></td>' +
+                        '<td><input type="url"  class="jg-nav-sub-url regular-text"   placeholder="https://..."></td>' +
+                        '<td style="text-align:center"><input type="checkbox" class="jg-nav-sub-new-tab" value="1"></td>' +
+                        '<td><button type="button" class="button jg-nav-remove-subrow" style="color:#dc2626;border-color:#dc2626">Usuń</button></td>';
+                    anchor.insertAdjacentElement('afterend', tr);
+                    bindRemoveSub(tr.querySelector('.jg-nav-remove-subrow'));
+                    tr.querySelector('.jg-nav-sub-label').focus();
+                }
+
+                function bindAddSub(btn) {
+                    btn.addEventListener('click', function () {
+                        addSubrow(btn.closest('.jg-nav-row'));
+                    });
+                }
+
+                function bindRemoveSub(btn) {
+                    btn.addEventListener('click', function () {
+                        btn.closest('.jg-nav-subrow').remove();
+                    });
+                }
 
                 function bindRemove(btn) {
                     btn.addEventListener('click', function () {
-                        btn.closest('tr').remove();
+                        var row = btn.closest('.jg-nav-row');
+                        getSubrows(row).forEach(function (sr) { sr.remove(); });
+                        row.remove();
                         refreshNumbers();
                     });
                 }
 
+                /* ── Drag & drop reorder ── */
+                var dragSrc = null;
+
+                function bindDrag(row) {
+                    row.addEventListener('dragstart', function (e) {
+                        dragSrc = row;
+                        e.dataTransfer.effectAllowed = 'move';
+                        setTimeout(function () { row.style.opacity = '0.5'; }, 0);
+                    });
+                    row.addEventListener('dragend', function () {
+                        row.style.opacity = '';
+                        dragSrc = null;
+                        tbody.querySelectorAll('.jg-nav-row').forEach(function (r) {
+                            r.classList.remove('jg-drag-over');
+                        });
+                    });
+                    row.addEventListener('dragover', function (e) {
+                        if (!dragSrc || dragSrc === row) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        tbody.querySelectorAll('.jg-nav-row').forEach(function (r) {
+                            r.classList.remove('jg-drag-over');
+                        });
+                        row.classList.add('jg-drag-over');
+                    });
+                    row.addEventListener('drop', function (e) {
+                        e.preventDefault();
+                        if (!dragSrc || dragSrc === row) return;
+
+                        var srcSubs    = getSubrows(dragSrc);
+                        var targetSubs = getSubrows(row);
+                        var rect       = row.getBoundingClientRect();
+                        var before     = e.clientY < rect.top + rect.height / 2;
+
+                        if (before) {
+                            tbody.insertBefore(dragSrc, row);
+                        } else {
+                            var anchor = targetSubs.length ? targetSubs[targetSubs.length - 1] : row;
+                            anchor.insertAdjacentElement('afterend', dragSrc);
+                        }
+
+                        /* Re-attach dragSrc's subrows immediately after it */
+                        var after = dragSrc;
+                        srcSubs.forEach(function (sr) {
+                            after.insertAdjacentElement('afterend', sr);
+                            after = sr;
+                        });
+
+                        row.classList.remove('jg-drag-over');
+                        refreshNumbers();
+                    });
+                }
+
+                tbody.querySelectorAll('.jg-nav-row').forEach(bindDrag);
                 tbody.querySelectorAll('.jg-nav-remove-row').forEach(bindRemove);
+                tbody.querySelectorAll('.jg-nav-add-sub').forEach(bindAddSub);
+                tbody.querySelectorAll('.jg-nav-remove-subrow').forEach(bindRemoveSub);
+
+                /* ── Serialize to JSON before submit ── */
+                form.addEventListener('submit', function () {
+                    jsonFld.value = collectJSON();
+                });
             })();
             </script>
         </div>

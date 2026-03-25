@@ -8178,7 +8178,7 @@ button.jg-mobile-map-filter-btn {
   width: 100% !important;
   padding: 13px 20px !important;
   margin: 0 !important;
-  color: #1f2937 !important;
+  color: #ffffff !important;
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
@@ -8204,9 +8204,84 @@ button.jg-mobile-map-filter-btn {
 
 #jg-nav-menu .jg-nav-menu-link:hover,
 #jg-nav-menu .jg-nav-menu-link:focus {
-  background-color: rgba(141, 35, 36, 0.06) !important;
-  color: #8d2324 !important;
+  background-color: rgba(141, 35, 36, 0.12) !important;
+  color: #ffffff !important;
   outline: none !important;
+}
+
+/* ── Nav items with submenu ── */
+.jg-nav-menu-item {
+  all: unset !important;
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.jg-nav-menu-item:last-child {
+  border-bottom: none !important;
+}
+
+.jg-nav-menu-link-wrap {
+  all: unset !important;
+  display: flex !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.jg-nav-menu-link-wrap .jg-nav-menu-link {
+  flex: 1 !important;
+  border-bottom: none !important;
+}
+
+.jg-nav-sub-toggle {
+  all: unset !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 42px !important;
+  cursor: pointer !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 12px !important;
+  transition: background-color 0.15s, color 0.15s !important;
+  box-sizing: border-box !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.jg-nav-sub-toggle:hover,
+.jg-nav-sub-toggle:focus {
+  background-color: rgba(141, 35, 36, 0.12) !important;
+  color: #ffffff !important;
+  outline: none !important;
+}
+
+.jg-nav-sub-toggle .jg-nav-arrow {
+  display: inline-block !important;
+  transition: transform 0.2s ease !important;
+}
+
+.jg-nav-sub-toggle.jg-sub-open .jg-nav-arrow {
+  transform: rotate(180deg) !important;
+}
+
+.jg-nav-submenu {
+  display: none !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+.jg-nav-submenu.jg-sub-open {
+  display: block !important;
+}
+
+#jg-nav-menu .jg-nav-sub-link {
+  padding-left: 36px !important;
+  font-size: calc(14 * var(--jg)) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+#jg-nav-menu .jg-nav-sub-link:last-child {
+  border-bottom: none !important;
 }
 
 /* ── Overlay przyciemniający ekran – płynna animacja ── */

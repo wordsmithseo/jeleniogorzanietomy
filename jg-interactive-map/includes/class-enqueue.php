@@ -566,17 +566,50 @@ class JG_Map_Enqueue {
             <?php if (!empty($menu_items)) : ?>
                 <?php foreach ($menu_items as $item) : ?>
                     <?php
-                    $label  = isset($item['label']) ? $item['label'] : '';
-                    $url    = isset($item['url'])   ? $item['url']   : '#';
-                    $target = !empty($item['new_tab']) ? '_blank' : '_self';
-                    $rel    = $target === '_blank' ? 'noopener noreferrer' : '';
+                    $label    = isset($item['label'])    ? $item['label']    : '';
+                    $url      = isset($item['url'])      ? $item['url']      : '#';
+                    $target   = !empty($item['new_tab']) ? '_blank'          : '_self';
+                    $rel      = $target === '_blank'     ? 'noopener noreferrer' : '';
+                    $children = !empty($item['children']) && is_array($item['children']) ? $item['children'] : array();
                     ?>
+                    <?php if (!empty($children)) : ?>
+                    <div class="jg-nav-menu-item jg-has-sub">
+                        <div class="jg-nav-menu-link-wrap">
+                            <a href="<?php echo esc_url($url); ?>"
+                               class="jg-nav-menu-link"
+                               target="<?php echo esc_attr($target); ?>"
+                               <?php echo $rel ? 'rel="' . esc_attr($rel) . '"' : ''; ?>>
+                                <?php echo esc_html($label); ?>
+                            </a>
+                            <button type="button" class="jg-nav-sub-toggle" aria-label="Rozwiń podmenu">
+                                <span class="jg-nav-arrow">&#9660;</span>
+                            </button>
+                        </div>
+                        <div class="jg-nav-submenu" aria-hidden="true">
+                            <?php foreach ($children as $child) : ?>
+                                <?php
+                                $clabel  = isset($child['label'])    ? $child['label']    : '';
+                                $curl    = isset($child['url'])      ? $child['url']      : '#';
+                                $ctarget = !empty($child['new_tab']) ? '_blank'           : '_self';
+                                $crel    = $ctarget === '_blank'     ? 'noopener noreferrer' : '';
+                                ?>
+                                <a href="<?php echo esc_url($curl); ?>"
+                                   class="jg-nav-menu-link jg-nav-sub-link"
+                                   target="<?php echo esc_attr($ctarget); ?>"
+                                   <?php echo $crel ? 'rel="' . esc_attr($crel) . '"' : ''; ?>>
+                                    <?php echo esc_html($clabel); ?>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php else : ?>
                     <a href="<?php echo esc_url($url); ?>"
                        class="jg-nav-menu-link"
                        target="<?php echo esc_attr($target); ?>"
                        <?php echo $rel ? 'rel="' . esc_attr($rel) . '"' : ''; ?>>
                         <?php echo esc_html($label); ?>
                     </a>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             <?php else : ?>
                 <span class="jg-nav-menu-link" style="color:#9ca3af;cursor:default">Brak pozycji menu — skonfiguruj w panelu JG Map → Menu nawigacyjne</span>
@@ -626,6 +659,19 @@ class JG_Map_Enqueue {
 
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') closeMenu();
+            });
+
+            /* ── Submenu toggles ── */
+            document.querySelectorAll('.jg-nav-sub-toggle').forEach(function (toggleBtn) {
+                toggleBtn.addEventListener('click', function () {
+                    var item    = toggleBtn.closest('.jg-has-sub');
+                    var submenu = item ? item.querySelector('.jg-nav-submenu') : null;
+                    if (!submenu) return;
+                    var isOpen = submenu.classList.contains('jg-sub-open');
+                    submenu.classList.toggle('jg-sub-open', !isOpen);
+                    toggleBtn.classList.toggle('jg-sub-open', !isOpen);
+                    submenu.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
+                });
             });
 
             /* ── Mobile viewport fitting ──────────────────────────────────────
