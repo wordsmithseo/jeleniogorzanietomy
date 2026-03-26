@@ -510,6 +510,13 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_get_tags', array($this, 'get_tags'));
         add_action('wp_ajax_nopriv_jg_get_tags', array($this, 'get_tags'));
 
+        // Menu actions (public read, auth write)
+        add_action('wp_ajax_jg_get_menu', array($this, 'get_menu'));
+        add_action('wp_ajax_nopriv_jg_get_menu', array($this, 'get_menu'));
+        add_action('wp_ajax_jg_save_menu', array($this, 'save_menu'));
+        add_action('wp_ajax_jg_upload_menu_photo', array($this, 'upload_menu_photo'));
+        add_action('wp_ajax_jg_delete_menu_photo', array($this, 'delete_menu_photo'));
+
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
         add_action('wp_ajax_jg_update_point', array($this, 'update_point'));
@@ -9552,5 +9559,199 @@ class JG_Map_Ajax_Handlers {
 
         $tags = JG_Map_Database::get_all_tag_names();
         wp_send_json_success($tags);
+    }
+
+    // -----------------------------------------------------------------------
+    // Menu AJAX handlers
+    // -----------------------------------------------------------------------
+
+    /**
+     * Public: return menu (sections + items + photos) for a gastronomic place.
+     */
+    public function get_menu() {
+        $point_id = intval($_POST['point_id'] ?? 0);
+        if ($point_id <= 0) {
+            wp_send_json_error(array('message' => 'Brak point_id'));
+            exit;
+        }
+
+        $sections = JG_Map_Database::get_menu($point_id);
+        $photos   = JG_Map_Database::get_menu_photos($point_id);
+
+        wp_send_json_success(array(
+            'sections' => $sections,
+            'photos'   => $photos,
+        ));
+    }
+
+    /**
+     * Save full menu (sections + items) for a place.
+     * Allowed: owner or admin/moderator.
+     */
+    public function save_menu() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $point_id = intval($_POST['point_id'] ?? 0);
+        if ($point_id <= 0) {
+            wp_send_json_error(array('message' => 'Brak point_id'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        $user_id  = get_current_user_id();
+        $is_owner = intval($point['author_id']) === $user_id;
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        if (!$is_owner && !$is_admin) {
+            wp_send_json_error(array('message' => 'Brak uprawnień'));
+            exit;
+        }
+
+        $raw_sections = isset($_POST['sections']) ? $_POST['sections'] : array();
+        if (!is_array($raw_sections)) {
+            $decoded = json_decode(wp_unslash($_POST['sections'] ?? '[]'), true);
+            $raw_sections = is_array($decoded) ? $decoded : array();
+        }
+
+        JG_Map_Database::save_menu($point_id, $raw_sections);
+
+        wp_send_json_success(array('message' => 'Menu zapisano'));
+    }
+
+    /**
+     * Upload a menu card photo (Type A).
+     */
+    public function upload_menu_photo() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $point_id = intval($_POST['point_id'] ?? 0);
+        if ($point_id <= 0) {
+            wp_send_json_error(array('message' => 'Brak point_id'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        $user_id  = get_current_user_id();
+        $is_owner = intval($point['author_id']) === $user_id;
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        if (!$is_owner && !$is_admin) {
+            wp_send_json_error(array('message' => 'Brak uprawnień'));
+            exit;
+        }
+
+        // Max 4 menu card photos per place
+        $existing_photos = JG_Map_Database::get_menu_photos($point_id);
+        if (count($existing_photos) >= 4) {
+            wp_send_json_error(array('message' => 'Osiągnięto limit 4 zdjęć karty menu'));
+            exit;
+        }
+
+        if (empty($_FILES['menu_photo']) || $_FILES['menu_photo']['error'] !== UPLOAD_ERR_OK) {
+            wp_send_json_error(array('message' => 'Brak pliku lub błąd uploadu'));
+            exit;
+        }
+
+        $MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+        if ($_FILES['menu_photo']['size'] > $MAX_FILE_SIZE) {
+            wp_send_json_error(array('message' => 'Plik jest za duży. Maksymalny rozmiar to 2MB'));
+            exit;
+        }
+
+        if (!function_exists('wp_handle_upload')) {
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+        }
+        if (!function_exists('wp_get_image_editor')) {
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+        }
+
+        $movefile = wp_handle_upload($_FILES['menu_photo'], array('test_form' => false));
+
+        if (!$movefile || isset($movefile['error'])) {
+            wp_send_json_error(array('message' => 'Błąd uploadu: ' . ($movefile['error'] ?? 'Nieznany błąd')));
+            exit;
+        }
+
+        $mime_check = $this->verify_image_mime_type($movefile['file']);
+        if (!$mime_check['valid']) {
+            @unlink($movefile['file']);
+            wp_send_json_error(array('message' => $mime_check['error']));
+            exit;
+        }
+
+        // Resize to 1200px max (wider than dish photos for readability)
+        $resized = $this->resize_image_if_needed($movefile['file'], 1200);
+        $thumb   = $this->create_thumbnail($resized, $movefile['url']);
+
+        $photo_id = JG_Map_Database::add_menu_photo($point_id, $movefile['url'], $thumb ?: $movefile['url']);
+
+        wp_send_json_success(array(
+            'id'        => $photo_id,
+            'url'       => $movefile['url'],
+            'thumb_url' => $thumb ?: $movefile['url'],
+        ));
+    }
+
+    /**
+     * Delete a menu card photo.
+     */
+    public function delete_menu_photo() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $point_id = intval($_POST['point_id'] ?? 0);
+        $photo_id = intval($_POST['photo_id'] ?? 0);
+
+        if ($point_id <= 0 || $photo_id <= 0) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe parametry'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        $user_id  = get_current_user_id();
+        $is_owner = intval($point['author_id']) === $user_id;
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        if (!$is_owner && !$is_admin) {
+            wp_send_json_error(array('message' => 'Brak uprawnień'));
+            exit;
+        }
+
+        $deleted = JG_Map_Database::delete_menu_photo($photo_id, $point_id);
+
+        if ($deleted) {
+            wp_send_json_success(array('message' => 'Zdjęcie usunięte'));
+        } else {
+            wp_send_json_error(array('message' => 'Nie znaleziono zdjęcia'));
+        }
     }
 }
