@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.25.3
+ * Version: 3.25.4
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.25.3');
+define('JG_MAP_VERSION', '3.25.4');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -803,7 +803,10 @@ class JG_Interactive_Map {
                         <?php endforeach; ?>
                     </div>
                     <?php else: ?>
-                    <div class="jg-menu-item__price"><?php echo number_format(floatval($variants[0]['price']), 2, ',', ' ') . ' zł'; ?></div>
+                    <div class="jg-menu-item__price"><?php
+                        if (!empty($variants[0]['label'])) echo esc_html($variants[0]['label']) . ': ';
+                        echo number_format(floatval($variants[0]['price']), 2, ',', ' ') . ' zł';
+                    ?></div>
                     <?php endif; ?>
                 </div>
                 <?php elseif ($item['price'] !== null && $item['price'] !== ''): ?>
@@ -1067,6 +1070,17 @@ class JG_Interactive_Map {
         .jg-sp-oh-day { padding: 5px 16px 5px 0; font-weight: 500; width: 55%; }
         .jg-sp-oh-time { padding: 5px 0; }
         .jg-sp-oh-closed { color: #dc2626; }
+
+        /* Menu preview */
+        .jg-sp-menu-preview { margin-bottom: 24px; padding: 14px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; }
+        .jg-sp-menu-preview__title { font-size: calc(13 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #065f46; margin-bottom: 10px; }
+        .jg-sp-menu-preview__sec { font-size: calc(11 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin: 8px 0 4px 0; }
+        .jg-sp-menu-preview__row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px solid #d1fae5; font-size: calc(14 * var(--jg)); }
+        .jg-sp-menu-preview__row:last-of-type { border-bottom: none; }
+        .jg-sp-menu-preview__name { color: #111; flex: 1; min-width: 0; }
+        .jg-sp-menu-preview__price { color: #065f46; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+        .jg-sp-menu-preview__link { display: inline-block; margin-top: 10px; font-size: calc(13 * var(--jg)); color: #059669; font-weight: 600; }
+        .jg-sp-menu-preview__link:hover { text-decoration: underline; }
 
         /* Gallery grid */
         .jg-sp-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 28px; }
@@ -1406,6 +1420,54 @@ class JG_Interactive_Map {
                 </table>
             </div>
             <?php endif; ?>
+
+            <!-- Menu preview (gastronomy places only) -->
+            <?php
+            if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])):
+                $sp_menu_sections = JG_Map_Database::get_menu($point['id']);
+                $sp_menu_url = home_url('/miejsce/' . $point['slug'] . '/menu/');
+                if (!empty($sp_menu_sections)):
+                    $sp_items_shown = 0;
+                    $sp_max_items = 5;
+            ?>
+            <div class="jg-sp-menu-preview">
+                <div class="jg-sp-menu-preview__title">🍽️ Menu</div>
+                <?php foreach ($sp_menu_sections as $sp_sec): ?>
+                    <?php if ($sp_items_shown >= $sp_max_items) break; ?>
+                    <?php if (!empty($sp_sec['items'])): ?>
+                    <div class="jg-sp-menu-preview__sec"><?php echo esc_html($sp_sec['name']); ?></div>
+                    <?php foreach ($sp_sec['items'] as $sp_item): ?>
+                        <?php if ($sp_items_shown >= $sp_max_items) break; $sp_items_shown++; ?>
+                        <?php
+                        $sp_variants = array();
+                        if (!empty($sp_item['variants'])) {
+                            $sp_dec = json_decode($sp_item['variants'], true);
+                            if (is_array($sp_dec)) $sp_variants = $sp_dec;
+                        }
+                        $sp_price_str = '';
+                        if (!empty($sp_variants)) {
+                            if (count($sp_variants) > 1) {
+                                $sp_min = null;
+                                foreach ($sp_variants as $sv) { $svp = floatval($sv['price']); if ($sp_min === null || $svp < $sp_min) $sp_min = $svp; }
+                                if ($sp_min !== null) $sp_price_str = 'od ' . number_format($sp_min, 2, ',', '') . '&nbsp;zł';
+                            } else {
+                                $sv = $sp_variants[0];
+                                $sp_price_str = (!empty($sv['label']) ? esc_html($sv['label']) . ': ' : '') . number_format(floatval($sv['price']), 2, ',', '') . '&nbsp;zł';
+                            }
+                        } elseif ($sp_item['price'] !== null && $sp_item['price'] !== '') {
+                            $sp_price_str = number_format(floatval($sp_item['price']), 2, ',', '') . '&nbsp;zł';
+                        }
+                        ?>
+                        <div class="jg-sp-menu-preview__row">
+                            <span class="jg-sp-menu-preview__name"><?php echo esc_html($sp_item['name']); ?></span>
+                            <?php if ($sp_price_str): ?><span class="jg-sp-menu-preview__price"><?php echo $sp_price_str; ?></span><?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+                <a href="<?php echo esc_url($sp_menu_url); ?>" class="jg-sp-menu-preview__link">Zobacz pełne menu →</a>
+            </div>
+            <?php endif; endif; ?>
 
             <!-- Image: hero if 1 image, gallery grid if multiple -->
             <?php if (count($all_images) === 1): ?>
@@ -1763,6 +1825,9 @@ class JG_Interactive_Map {
                 <?php endif; ?>
                 <?php if (!empty($point['email'])): ?>
                 ,"email": <?php echo json_encode($point['email']); ?>
+                <?php endif; ?>
+                <?php if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])): ?>
+                ,"hasMenu": <?php echo json_encode(home_url('/miejsce/' . $point['slug'] . '/menu/')); ?>
                 <?php endif; ?>
                 <?php if (!empty($point['opening_hours'])): ?>
                 <?php
@@ -2149,7 +2214,7 @@ class JG_Interactive_Map {
                     <?php if (!empty($point['email'])): ?>
                     ,"email": <?php echo json_encode($point['email']); ?>
                     <?php endif; ?>
-                    <?php if ($point['type'] === 'miejsce' && ($point['category'] ?? '') === 'gastronomia' && JG_Map_Database::point_has_menu($point['id'])): ?>
+                    <?php if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])): ?>
                     ,"hasMenu": <?php echo json_encode(home_url('/miejsce/' . $point['slug'] . '/menu/')); ?>
                     <?php endif; ?>
                     <?php if (!empty($point['opening_hours'])): ?>
@@ -2365,8 +2430,10 @@ class JG_Interactive_Map {
         }
 
         // Add menu subpages for gastronomic places that have menu data
-        $gastronomic_points = $wpdb->get_results(
-            "SELECT id, slug, updated_at FROM $table WHERE type = 'miejsce' AND category = 'gastronomia' AND status = 'publish' AND slug IS NOT NULL ORDER BY id ASC",
+        $sitemap_menu_cats = JG_Map_Ajax_Handlers::get_menu_categories();
+        $sitemap_menu_cats_sql = implode(',', array_map(function($c) use ($wpdb) { return $wpdb->prepare('%s', $c); }, $sitemap_menu_cats));
+        $gastronomic_points = empty($sitemap_menu_cats) ? array() : $wpdb->get_results(
+            "SELECT id, slug, updated_at FROM $table WHERE type = 'miejsce' AND category IN ($sitemap_menu_cats_sql) AND status = 'publish' AND slug IS NOT NULL ORDER BY id ASC",
             ARRAY_A
         );
         foreach ($gastronomic_points as $gp) {
@@ -2520,8 +2587,10 @@ class JG_Interactive_Map {
         }
 
         // Add menu subpages for gastronomic places
-        $gastronomic_points2 = $wpdb->get_results(
-            "SELECT id, slug, updated_at FROM $table WHERE type = 'miejsce' AND category = 'gastronomia' AND status = 'publish' AND slug IS NOT NULL ORDER BY id ASC",
+        $sitemap_menu_cats2 = JG_Map_Ajax_Handlers::get_menu_categories();
+        $sitemap_menu_cats_sql2 = implode(',', array_map(function($c) use ($wpdb) { return $wpdb->prepare('%s', $c); }, $sitemap_menu_cats2));
+        $gastronomic_points2 = empty($sitemap_menu_cats2) ? array() : $wpdb->get_results(
+            "SELECT id, slug, updated_at FROM $table WHERE type = 'miejsce' AND category IN ($sitemap_menu_cats_sql2) AND status = 'publish' AND slug IS NOT NULL ORDER BY id ASC",
             ARRAY_A
         );
         foreach ($gastronomic_points2 as $gp) {

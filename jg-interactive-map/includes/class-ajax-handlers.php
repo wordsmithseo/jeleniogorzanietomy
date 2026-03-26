@@ -48,7 +48,7 @@ class JG_Map_Ajax_Handlers {
      */
     private static function get_default_place_categories() {
         return array(
-            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️', 'schema_type' => 'FoodEstablishment'),
+            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️', 'schema_type' => 'FoodEstablishment', 'has_menu' => true),
             'kultura' => array('label' => 'Kultura', 'icon' => '🏛️', 'schema_type' => 'Museum'),
             'uslugi' => array('label' => 'Usługi', 'icon' => '🏢', 'schema_type' => 'LocalBusiness'),
             'sport' => array('label' => 'Sport i rekreacja', 'icon' => '⚽', 'schema_type' => 'SportsActivityLocation'),
@@ -67,6 +67,20 @@ class JG_Map_Ajax_Handlers {
             'architektoniczne' => array('label' => 'Architektoniczne', 'icon' => '🏰', 'schema_type' => 'LandmarksOrHistoricalBuildings'),
             'legendy' => array('label' => 'Legendy i historie', 'icon' => '📖', 'schema_type' => 'TouristAttraction')
         );
+    }
+
+    /**
+     * Get keys of categories that support menu (has_menu => true)
+     */
+    public static function get_menu_categories() {
+        $cats = self::get_place_categories();
+        $keys = array();
+        foreach ($cats as $key => $cat) {
+            if (!empty($cat['has_menu'])) {
+                $keys[] = $key;
+            }
+        }
+        return $keys;
     }
 
     /**

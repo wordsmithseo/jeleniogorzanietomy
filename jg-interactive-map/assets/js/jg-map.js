@@ -205,6 +205,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
   }
 
   // Helper function to get category label by key (all types)
+  function isMenuCategory(cat) {
+    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.menuCategories) || ['gastronomia'];
+    return cats.indexOf(cat) !== -1;
+  }
+
   function getCategoryLabel(key, type) {
     var reasons = (window.JG_MAP_CFG && JG_MAP_CFG.reportReasons) || {};
     var placeCategories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
@@ -7489,7 +7494,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   priceStr = minP !== null ? 'od ' + minP.toFixed(2).replace('.', ',') + '\u00a0z\u0142' : '';
                 } else if (variants && variants.length === 1) {
                   var vp = parseFloat(variants[0].price);
-                  priceStr = !isNaN(vp) ? vp.toFixed(2).replace('.', ',') + '\u00a0z\u0142' : '';
+                  var vlabel = (variants[0].label || '').trim();
+                  if (!isNaN(vp)) priceStr = (vlabel ? vlabel + ': ' : '') + vp.toFixed(2).replace('.', ',') + '\u00a0z\u0142';
                 } else if (item.price) {
                   var p2 = parseFloat(item.price);
                   priceStr = !isNaN(p2) ? p2.toFixed(2).replace('.', ',') + '\u00a0z\u0142' : '';
@@ -7687,8 +7693,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           '<span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.85em;margin-left:6px;color:#9ca3af">(np. Mała, Duża)</span></div>' +
           '<div class="jg-menu-ed-size-tags" id="jg-menu-ed-size-tags">';
         size_labels.forEach(function(lbl) {
-          sizesHtml += '<span class="jg-menu-ed-size-tag">' + esc(lbl) +
-            '<button type="button" class="jg-menu-ed-size-tag-del" data-label="' + esc(lbl) + '" title="Usuń">&times;</button></span>';
+          sizesHtml += '<span class="jg-menu-ed-size-tag" data-label="' + esc(lbl) + '">' + esc(lbl) +
+            '<button type="button" class="jg-menu-ed-size-tag-del" title="Usuń">&times;</button></span>';
         });
         sizesHtml += '</div>' +
           '<div class="jg-menu-ed-size-add">' +
@@ -11178,7 +11184,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         // Build menu section placeholder (async-loaded after modal opens)
         var menuSectionHtml = '';
-        if (p.type === 'miejsce' && p.category === 'gastronomia') {
+        if (p.type === 'miejsce' && isMenuCategory(p.category)) {
           menuSectionHtml = '<div id="jg-menu-section" class="jg-menu-modal-section" style="margin:0 0 12px 0">' +
             '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#92400e;margin-bottom:6px;opacity:0.7">Aktualne menu</div>' +
             '<div id="jg-menu-loading" style="font-size:0.85rem;color:#9ca3af">Ładowanie menu\u2026</div>' +
@@ -11205,7 +11211,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           tagsHtml += '</div>';
         }
 
-        var menuBtn = (canEdit && p.type === 'miejsce' && p.category === 'gastronomia')
+        var menuBtn = (canEdit && p.type === 'miejsce' && isMenuCategory(p.category))
           ? '<button id="btn-manage-menu" class="jg-btn jg-btn--ghost">🍽️ Menu</button>'
           : '';
 
@@ -11265,7 +11271,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         // Load and display menu for gastronomic places
         var menuSection = qs('#jg-menu-section', modalView);
-        if (menuSection && p.type === 'miejsce' && p.category === 'gastronomia') {
+        if (menuSection && p.type === 'miejsce' && isMenuCategory(p.category)) {
           loadMenuSection(p, menuSection);
         }
 
