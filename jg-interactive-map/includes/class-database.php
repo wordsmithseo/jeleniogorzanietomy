@@ -285,7 +285,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.25.0'; // Add variants column to menu items
+        $current_schema_version = '3.25.1'; // Add menu_size_labels column to points
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -631,6 +631,11 @@ class JG_Map_Database {
         $col_check = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `$safe_items_table` LIKE %s", 'variants'));
         if (empty($col_check)) {
             $wpdb->query("ALTER TABLE `$safe_items_table` ADD COLUMN variants text DEFAULT NULL AFTER price");
+        }
+
+        // Add menu_size_labels column to points table (predefined size labels per place)
+        if (!$column_exists('menu_size_labels')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN menu_size_labels text DEFAULT NULL");
         }
 
         $table_menu_photos = $wpdb->prefix . 'jg_map_menu_photos';
@@ -2475,6 +2480,45 @@ class JG_Map_Database {
             array('%d', '%d')
         );
         return $deleted !== false && $deleted > 0;
+    }
+
+    /**
+     * Get predefined size labels for a point's menu.
+     * Returns array of strings, e.g. ['Mała', 'Duża'].
+     */
+    public static function get_menu_size_labels($point_id) {
+        global $wpdb;
+        $table = self::get_points_table();
+        $raw = $wpdb->get_var($wpdb->prepare(
+            "SELECT menu_size_labels FROM $table WHERE id = %d",
+            intval($point_id)
+        ));
+        if (!$raw) return array();
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) ? array_values(array_filter(array_map('strval', $decoded))) : array();
+    }
+
+    /**
+     * Save predefined size labels for a point's menu.
+     * $labels = ['Mała', 'Duża', ...]
+     */
+    public static function save_menu_size_labels($point_id, $labels) {
+        global $wpdb;
+        $table = self::get_points_table();
+        $clean = array();
+        if (is_array($labels)) {
+            foreach ($labels as $l) {
+                $s = sanitize_text_field(substr((string)$l, 0, 50));
+                if ($s !== '') $clean[] = $s;
+            }
+        }
+        $wpdb->update(
+            $table,
+            array('menu_size_labels' => !empty($clean) ? wp_json_encode($clean) : null),
+            array('id' => intval($point_id)),
+            array('%s'),
+            array('%d')
+        );
     }
 
     /**
