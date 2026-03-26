@@ -89,7 +89,15 @@ class JG_Map_Ajax_Handlers {
     public static function get_place_categories() {
         $custom_categories = get_option('jg_map_place_categories', null);
         if ($custom_categories !== null && is_array($custom_categories)) {
-            $categories = $custom_categories;
+            // Merge default metadata (e.g. has_menu, schema_type) into custom categories
+            // so flags added after initial setup are not lost.
+            $defaults = self::get_default_place_categories();
+            $categories = array();
+            foreach ($custom_categories as $key => $cat) {
+                $categories[$key] = isset($defaults[$key])
+                    ? array_merge($defaults[$key], $cat)
+                    : $cat;
+            }
         } else {
             $categories = self::get_default_place_categories();
         }

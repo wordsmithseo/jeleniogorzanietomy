@@ -206,7 +206,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
   // Helper function to get category label by key (all types)
   function isMenuCategory(cat) {
-    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.menuCategories) || ['gastronomia'];
+    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.menuCategories && JG_MAP_CFG.menuCategories.length)
+      ? JG_MAP_CFG.menuCategories : ['gastronomia'];
     return cats.indexOf(cat) !== -1;
   }
 
