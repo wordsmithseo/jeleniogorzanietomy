@@ -9277,6 +9277,86 @@ footer.site-footer .site-branding {
 }
 
 /* ==========================================================================
+   Menu editor – Elementor isolation (inputs, textareas, labels, buttons)
+   ========================================================================== */
+
+.jg-modal-bg .jg-menu-ed-sec-name,
+.jg-modal-bg .jg-menu-ed-item-name,
+.jg-modal-bg .jg-menu-ed-item-price,
+.jg-modal-bg .jg-menu-ed-item-desc,
+.jg-modal-bg .jg-menu-ed-variant-label,
+.jg-modal-bg .jg-menu-ed-variant-price,
+.jg-modal-bg .jg-menu-ed-size-input {
+  box-sizing: border-box !important;
+  background: #fff !important;
+  color: #1f2937 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  outline: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.jg-modal-bg .jg-menu-ed-sec-name:focus,
+.jg-modal-bg .jg-menu-ed-item-name:focus,
+.jg-modal-bg .jg-menu-ed-item-price:focus,
+.jg-modal-bg .jg-menu-ed-item-desc:focus,
+.jg-modal-bg .jg-menu-ed-variant-label:focus,
+.jg-modal-bg .jg-menu-ed-variant-price:focus,
+.jg-modal-bg .jg-menu-ed-size-input:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.35) !important;
+}
+
+.jg-modal-bg .jg-menu-ed-dtag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: calc(11 * var(--jg)) !important;
+  font-weight: 400 !important;
+  color: #374151 !important;
+  cursor: pointer !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.jg-modal-bg .jg-menu-ed-dtag input[type="checkbox"] {
+  width: 13px !important;
+  height: 13px !important;
+  accent-color: #8d2324 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  appearance: checkbox !important;
+  -webkit-appearance: checkbox !important;
+}
+
+.jg-modal-bg .jg-menu-ed-sec-del,
+.jg-modal-bg .jg-menu-ed-item-del,
+.jg-modal-bg .jg-menu-ed-variants-toggle,
+.jg-modal-bg .jg-menu-ed-add-item,
+.jg-modal-bg .jg-menu-ed-add-variant,
+.jg-modal-bg .jg-menu-ed-variant-del,
+.jg-modal-bg .jg-menu-ed-size-tag-del {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  box-shadow: none !important;
+  outline: none !important;
+  line-height: 1.4 !important;
+  vertical-align: middle !important;
+}
+
+/* ==========================================================================
    Menu editor panel (inside modalEdit)
    ========================================================================== */
 
@@ -9561,3 +9641,58 @@ footer.site-footer .site-branding {
   margin-top: 2px;
 }
 .jg-menu-ed-add-variant:hover { background: #e0f2fe; }
+
+/* Size labels manager (predefined sizes per place) */
+.jg-menu-ed-sizes-area {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+.jg-menu-ed-size-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  min-height: 8px;
+}
+.jg-menu-ed-size-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #e0f2fe;
+  border: 1px solid #7dd3fc;
+  border-radius: 20px;
+  padding: 3px 8px 3px 10px;
+  font-size: calc(12 * var(--jg));
+  color: #0369a1;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.jg-menu-ed-size-tag-del {
+  background: none;
+  border: none;
+  color: #0369a1;
+  opacity: 0.6;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.jg-menu-ed-size-tag-del:hover { opacity: 1; }
+.jg-menu-ed-size-add {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.jg-menu-ed-size-input {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(12 * var(--jg)) !important;
+  padding: 5px 8px !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
+  max-width: 160px;
+}

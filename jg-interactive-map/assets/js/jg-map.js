@@ -7605,9 +7605,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
           .then(function(r) { return r.json(); })
           .then(function(j) {
-            var sections = (j && j.success && j.data.sections) ? j.data.sections : [];
-            var photos   = (j && j.success && j.data.photos)   ? j.data.photos   : [];
-            renderMenuEditor(p, sections, photos, dietary_options);
+            var sections    = (j && j.success && j.data.sections)    ? j.data.sections    : [];
+            var photos      = (j && j.success && j.data.photos)      ? j.data.photos      : [];
+            var size_labels = (j && j.success && j.data.size_labels) ? j.data.size_labels : [];
+            renderMenuEditor(p, sections, photos, dietary_options, size_labels);
           })
           .catch(function() {
             var loadEl = qs('#menu-ed-loading', modalEdit);
@@ -7615,7 +7616,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           });
       }
 
-      function renderMenuEditor(p, sections, photos, dietary_options) {
+      function renderMenuEditor(p, sections, photos, dietary_options, size_labels) {
+        size_labels = size_labels || [];
         var container = qs('.jg-grid', modalEdit);
         if (!container) return;
 
@@ -7678,6 +7680,21 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '</div>';
         }
 
+        // Build predefined size labels UI
+        var sizesHtml = '<div class="jg-menu-ed-sizes-area" id="jg-menu-ed-sizes-area">' +
+          '<div class="jg-menu-ed-photos-title">Rozmiary dań dla tego miejsca' +
+          '<span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.85em;margin-left:6px;color:#9ca3af">(np. Mała, Duża)</span></div>' +
+          '<div class="jg-menu-ed-size-tags" id="jg-menu-ed-size-tags">';
+        size_labels.forEach(function(lbl) {
+          sizesHtml += '<span class="jg-menu-ed-size-tag">' + esc(lbl) +
+            '<button type="button" class="jg-menu-ed-size-tag-del" data-label="' + esc(lbl) + '" title="Usuń">&times;</button></span>';
+        });
+        sizesHtml += '</div>' +
+          '<div class="jg-menu-ed-size-add">' +
+          '<input type="text" id="jg-menu-ed-size-input" class="jg-menu-ed-size-input" placeholder="np. Mała" maxlength="50">' +
+          '<button type="button" id="jg-menu-ed-size-btn" class="jg-btn jg-btn--ghost" style="padding:5px 10px">Dodaj</button>' +
+          '</div></div>';
+
         // Build photos area
         var photosHtml = '<div class="jg-menu-ed-photos-area">' +
           '<div class="jg-menu-ed-photos-title">Karta menu (zdjęcia, max 4)</div>' +
@@ -7704,6 +7721,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         sectionsHtml += '</div>';
 
         container.innerHTML =
+          sizesHtml +
           photosHtml +
           sectionsHtml +
           '<button type="button" id="jg-menu-ed-add-sec" class="jg-btn jg-btn--ghost" style="width:100%;margin-top:8px">+ Dodaj sekcję</button>' +
@@ -7714,6 +7732,45 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           '<div id="menu-ed-msg" style="font-size:0.85rem;margin-top:8px;text-align:right"></div>';
 
         qs('#menu-ed-cancel', modalEdit).onclick = function() { close(modalEdit); };
+
+        // Size labels management
+        (function() {
+          var tagsEl = qs('#jg-menu-ed-size-tags', modalEdit);
+          var sizeInput = qs('#jg-menu-ed-size-input', modalEdit);
+          var sizeBtn = qs('#jg-menu-ed-size-btn', modalEdit);
+          if (!tagsEl || !sizeInput || !sizeBtn) return;
+
+          function addSizeTag(label) {
+            label = label.trim();
+            if (!label) return;
+            // Prevent duplicates
+            var existing = tagsEl.querySelectorAll('.jg-menu-ed-size-tag');
+            for (var i = 0; i < existing.length; i++) {
+              if (existing[i].getAttribute('data-label') === label) return;
+            }
+            var span = document.createElement('span');
+            span.className = 'jg-menu-ed-size-tag';
+            span.setAttribute('data-label', label);
+            span.innerHTML = esc(label) + '<button type="button" class="jg-menu-ed-size-tag-del" title="Usuń">&times;</button>';
+            span.querySelector('.jg-menu-ed-size-tag-del').onclick = function() { tagsEl.removeChild(span); };
+            tagsEl.appendChild(span);
+          }
+
+          // Bind existing tag delete buttons
+          tagsEl.querySelectorAll('.jg-menu-ed-size-tag-del').forEach(function(btn) {
+            var span = btn.parentNode;
+            btn.onclick = function() { tagsEl.removeChild(span); };
+          });
+
+          sizeBtn.onclick = function() {
+            addSizeTag(sizeInput.value);
+            sizeInput.value = '';
+            sizeInput.focus();
+          };
+          sizeInput.onkeydown = function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); addSizeTag(sizeInput.value); sizeInput.value = ''; }
+          };
+        })();
 
         // Add section
         qs('#jg-menu-ed-add-sec', modalEdit).onclick = function() {
@@ -7790,11 +7847,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           msgEl.style.color = '#9ca3af';
 
           var collectedSections = collectMenuData();
+          var collectedSizes = collectSizeLabels();
           var saveFd = new FormData();
           saveFd.append('action', 'jg_save_menu');
           saveFd.append('_ajax_nonce', CFG.nonce);
           saveFd.append('point_id', p.id);
           saveFd.append('sections', JSON.stringify(collectedSections));
+          saveFd.append('size_labels', JSON.stringify(collectedSizes));
 
           fetch(CFG.ajax, { method: 'POST', body: saveFd, credentials: 'same-origin' })
             .then(function(r) { return r.json(); })
@@ -7923,8 +7982,21 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var willShow = variantsDiv.style.display === 'none';
           variantsDiv.style.display = willShow ? '' : 'none';
           if (willShow && !variantsDiv.querySelector('.jg-menu-ed-variant-row')) {
-            // Add a first empty row automatically
-            addVariantRow('', '').querySelector('.jg-menu-ed-variant-label').focus();
+            // Auto-populate from predefined sizes if available
+            var predefined = [];
+            var tagsEl = qs('#jg-menu-ed-size-tags', modalEdit);
+            if (tagsEl) {
+              tagsEl.querySelectorAll('.jg-menu-ed-size-tag').forEach(function(span) {
+                var lbl = span.getAttribute('data-label') || '';
+                if (lbl) predefined.push(lbl);
+              });
+            }
+            if (predefined.length > 0) {
+              predefined.forEach(function(lbl) { addVariantRow(lbl, ''); });
+              variantsDiv.querySelector('.jg-menu-ed-variant-price').focus();
+            } else {
+              addVariantRow('', '').querySelector('.jg-menu-ed-variant-label').focus();
+            }
           }
           syncToggleState();
         };
@@ -7986,6 +8058,18 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           sections.push({ name: secName.trim(), items: items });
         });
         return sections;
+      }
+
+      function collectSizeLabels() {
+        var labels = [];
+        var tagsEl = qs('#jg-menu-ed-size-tags', modalEdit);
+        if (tagsEl) {
+          tagsEl.querySelectorAll('.jg-menu-ed-size-tag').forEach(function(span) {
+            var lbl = span.getAttribute('data-label') || '';
+            if (lbl) labels.push(lbl);
+          });
+        }
+        return labels;
       }
 
       /**

@@ -9575,12 +9575,14 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        $sections = JG_Map_Database::get_menu($point_id);
-        $photos   = JG_Map_Database::get_menu_photos($point_id);
+        $sections    = JG_Map_Database::get_menu($point_id);
+        $photos      = JG_Map_Database::get_menu_photos($point_id);
+        $size_labels = JG_Map_Database::get_menu_size_labels($point_id);
 
         wp_send_json_success(array(
-            'sections' => $sections,
-            'photos'   => $photos,
+            'sections'    => $sections,
+            'photos'      => $photos,
+            'size_labels' => $size_labels,
         ));
     }
 
@@ -9623,7 +9625,14 @@ class JG_Map_Ajax_Handlers {
             $raw_sections = is_array($decoded) ? $decoded : array();
         }
 
+        $raw_size_labels = isset($_POST['size_labels']) ? $_POST['size_labels'] : array();
+        if (!is_array($raw_size_labels)) {
+            $decoded_labels = json_decode(wp_unslash($_POST['size_labels'] ?? '[]'), true);
+            $raw_size_labels = is_array($decoded_labels) ? $decoded_labels : array();
+        }
+
         JG_Map_Database::save_menu($point_id, $raw_sections);
+        JG_Map_Database::save_menu_size_labels($point_id, $raw_size_labels);
 
         wp_send_json_success(array('message' => 'Menu zapisano'));
     }
