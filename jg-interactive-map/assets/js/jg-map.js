@@ -7428,6 +7428,154 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       }
 
       // -----------------------------------------------------------------------
+      // Menu section (modal preview)
+      // -----------------------------------------------------------------------
+
+      function loadMenuSection(p, menuSection) {
+        if (!menuSection) return;
+        menuSection.innerHTML = '<div style="color:#9ca3af;padding:8px 0">Ładowanie menu\u2026</div>';
+
+        var fd = new FormData();
+        fd.append('action', 'jg_get_menu');
+        fd.append('_ajax_nonce', CFG.nonce);
+        fd.append('point_id', p.id);
+
+        fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(j) {
+            var sections = (j && j.success && j.data && j.data.sections) ? j.data.sections : [];
+            var photos   = (j && j.success && j.data && j.data.photos)   ? j.data.photos   : [];
+
+            if (!sections.length && !photos.length) {
+              menuSection.innerHTML = '';
+              menuSection.style.display = 'none';
+              return;
+            }
+            menuSection.style.display = '';
+
+            var html = '';
+
+            // Photos row (thumbnails → lightbox)
+            if (photos.length) {
+              html += '<div class="jg-menu-modal-photos">';
+              photos.forEach(function(ph, idx) {
+                html += '<div class="jg-menu-modal-photo" data-idx="' + idx + '" data-full="' + esc(ph.url) + '">' +
+                  '<img src="' + esc(ph.thumb_url || ph.url) + '" alt="Zdjęcie menu" loading="lazy">' +
+                  '</div>';
+              });
+              html += '</div>';
+            }
+
+            // Sections + items preview (up to 6 items total)
+            var shownItems = 0;
+            var maxItems = 6;
+            sections.forEach(function(sec) {
+              if (!sec.items || !sec.items.length) return;
+              if (shownItems >= maxItems) return;
+              html += '<div class="jg-menu-modal-sec-name">' + esc(sec.name) + '</div>';
+              sec.items.forEach(function(item) {
+                if (shownItems >= maxItems) return;
+                shownItems++;
+                // Variants-aware price
+                var priceStr = '';
+                var variants = [];
+                try { variants = item.variants ? JSON.parse(item.variants) : []; } catch(e) {}
+                if (variants && variants.length > 1) {
+                  var minP = null;
+                  variants.forEach(function(v) {
+                    var vp = parseFloat(v.price);
+                    if (!isNaN(vp) && (minP === null || vp < minP)) minP = vp;
+                  });
+                  priceStr = minP !== null ? 'od ' + minP.toFixed(2).replace('.', ',') + '\u00a0z\u0142' : '';
+                } else if (variants && variants.length === 1) {
+                  var vp = parseFloat(variants[0].price);
+                  priceStr = !isNaN(vp) ? vp.toFixed(2).replace('.', ',') + '\u00a0z\u0142' : '';
+                } else if (item.price) {
+                  var p2 = parseFloat(item.price);
+                  priceStr = !isNaN(p2) ? p2.toFixed(2).replace('.', ',') + '\u00a0z\u0142' : '';
+                }
+                html += '<div class="jg-menu-modal-row">' +
+                  '<span class="jg-menu-modal-name">' + esc(item.name) + '</span>' +
+                  (priceStr ? '<span class="jg-menu-modal-price">' + priceStr + '</span>' : '') +
+                  '</div>';
+              });
+            });
+
+            // Link to full menu page
+            var menuUrl = (CFG.homeUrl || '/') + 'miejsce/' + encodeURIComponent(p.slug) + '/menu/';
+            html += '<div style="margin-top:10px">' +
+              '<a href="' + menuUrl + '" target="_blank" class="jg-menu-modal-link">Zobacz pełne menu \u2192</a>' +
+              '</div>';
+
+            menuSection.innerHTML = html;
+
+            // Bind lightbox to photo thumbnails
+            var photoEls = menuSection.querySelectorAll('.jg-menu-modal-photo');
+            var photoList = photos.map(function(ph) { return ph.url; });
+
+            function openLightbox(startIdx) {
+              var current = startIdx;
+
+              var overlay = document.createElement('div');
+              overlay.id = 'jg-menu-lb';
+              overlay.style.cssText = 'position:fixed;inset:0;z-index:200000;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;';
+
+              var img = document.createElement('img');
+              img.style.cssText = 'max-width:90vw;max-height:88vh;border-radius:6px;box-shadow:0 4px 32px rgba(0,0,0,0.6);display:block;';
+
+              var closeBtn = document.createElement('button');
+              closeBtn.innerHTML = '&times;';
+              closeBtn.setAttribute('aria-label', 'Zamknij');
+              closeBtn.style.cssText = 'position:absolute;top:16px;right:20px;background:none;border:none;color:#fff;font-size:2.4rem;cursor:pointer;line-height:1;z-index:1;';
+
+              var prevBtn = document.createElement('button');
+              prevBtn.innerHTML = '&#8249;';
+              prevBtn.style.cssText = 'position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:2rem;cursor:pointer;border-radius:4px;padding:8px 14px;z-index:1;';
+
+              var nextBtn = document.createElement('button');
+              nextBtn.innerHTML = '&#8250;';
+              nextBtn.style.cssText = 'position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:2rem;cursor:pointer;border-radius:4px;padding:8px 14px;z-index:1;';
+
+              function setImg(idx) {
+                img.src = photoList[idx];
+                prevBtn.style.display = photoList.length > 1 ? '' : 'none';
+                nextBtn.style.display = photoList.length > 1 ? '' : 'none';
+              }
+
+              function closeLb() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+
+              closeBtn.onclick = closeLb;
+              overlay.onclick = function(e) { if (e.target === overlay) closeLb(); };
+              prevBtn.onclick = function(e) { e.stopPropagation(); current = (current - 1 + photoList.length) % photoList.length; setImg(current); };
+              nextBtn.onclick = function(e) { e.stopPropagation(); current = (current + 1) % photoList.length; setImg(current); };
+
+              document.addEventListener('keydown', function kh(e) {
+                if (e.key === 'Escape') { closeLb(); document.removeEventListener('keydown', kh); }
+                if (e.key === 'ArrowLeft') { current = (current - 1 + photoList.length) % photoList.length; setImg(current); }
+                if (e.key === 'ArrowRight') { current = (current + 1) % photoList.length; setImg(current); }
+              });
+
+              overlay.appendChild(closeBtn);
+              if (photoList.length > 1) { overlay.appendChild(prevBtn); overlay.appendChild(nextBtn); }
+              overlay.appendChild(img);
+              document.body.appendChild(overlay);
+              setImg(current);
+            }
+
+            photoEls.forEach(function(el) {
+              el.style.cursor = 'pointer';
+              el.onclick = function(e) {
+                e.stopPropagation();
+                openLightbox(parseInt(this.getAttribute('data-idx')) || 0);
+              };
+            });
+          })
+          .catch(function() {
+            menuSection.innerHTML = '<div style="color:#ef4444;padding:8px 0">Błąd ładowania menu.</div>';
+          });
+      }
+
+      // -----------------------------------------------------------------------
       // Menu editor
       // -----------------------------------------------------------------------
 
@@ -7483,18 +7631,38 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           return html;
         }
 
+        // Build variants rows HTML helper
+        function buildVariantsHtml(variants) {
+          var html = '<div class="jg-menu-ed-variants"' + (variants && variants.length ? '' : ' style="display:none"') + '>';
+          (variants || []).forEach(function(v) {
+            var vp = (v.price !== null && v.price !== undefined && v.price !== '') ? parseFloat(v.price).toFixed(2) : '';
+            html += '<div class="jg-menu-ed-variant-row">' +
+              '<input class="jg-menu-ed-variant-label" type="text" placeholder="np. Mała" value="' + esc(v.label || '') + '">' +
+              '<input class="jg-menu-ed-variant-price" type="number" min="0" step="0.01" placeholder="Cena" value="' + esc(vp) + '" style="width:80px">' +
+              '<button type="button" class="jg-menu-ed-variant-del" title="Usuń rozmiar">&times;</button>' +
+              '</div>';
+          });
+          html += '<button type="button" class="jg-menu-ed-add-variant">+ Rozmiar</button></div>';
+          return html;
+        }
+
         // Build section HTML
         function buildSectionHtml(sec, secIdx) {
           var itemsHtml = '';
           (sec.items || []).forEach(function(item, iIdx) {
+            var variants = [];
+            try { variants = item.variants ? JSON.parse(item.variants) : []; } catch(e) {}
+            var hasVariants = variants && variants.length > 0;
             var priceVal = (item.price !== null && item.price !== undefined && item.price !== '') ? parseFloat(item.price).toFixed(2) : '';
             itemsHtml += '<div class="jg-menu-ed-item" data-sec="' + secIdx + '" data-item="' + iIdx + '">' +
               '<div class="jg-menu-ed-item-top">' +
               '<input class="jg-menu-ed-item-name" type="text" placeholder="Nazwa pozycji*" value="' + esc(item.name || '') + '">' +
-              '<input class="jg-menu-ed-item-price" type="number" min="0" step="0.01" placeholder="Cena (zł)" value="' + esc(priceVal) + '" style="width:90px">' +
+              '<input class="jg-menu-ed-item-price" type="number" min="0" step="0.01" placeholder="Cena (zł)" value="' + esc(priceVal) + '" style="width:90px' + (hasVariants ? ';display:none' : '') + '">' +
+              '<button type="button" class="jg-menu-ed-variants-toggle" title="Warianty/rozmiary dania" style="' + (hasVariants ? 'background:#e0f2fe;border-color:#0284c7' : '') + '">Rozmiary</button>' +
               '<button type="button" class="jg-menu-ed-item-del" title="Usuń pozycję">\uD83D\uDDD1</button>' +
               '</div>' +
               '<textarea class="jg-menu-ed-item-desc" rows="2" placeholder="Opis (opcjonalnie)">' + esc(item.description || '') + '</textarea>' +
+              buildVariantsHtml(variants) +
               dietaryCheckboxes(item.dietary_tags || '', 's' + secIdx + 'i' + iIdx) +
               '</div>';
           });
@@ -7634,6 +7802,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (resp && resp.success) {
                 msgEl.textContent = 'Menu zapisano.';
                 msgEl.style.color = '#15803d';
+                // Live-refresh the menu section in the place modal (still open behind)
+                var menuSec = qs('#jg-menu-section', modalView);
+                if (menuSec) loadMenuSection(p, menuSec);
                 setTimeout(function() { close(modalEdit); }, 900);
               } else {
                 msgEl.textContent = (resp && resp.data && resp.data.message) ? resp.data.message : 'Błąd zapisu.';
@@ -7682,20 +7853,24 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<div class="jg-menu-ed-item-top">' +
               '<input class="jg-menu-ed-item-name" type="text" placeholder="Nazwa pozycji*" value="">' +
               '<input class="jg-menu-ed-item-price" type="number" min="0" step="0.01" placeholder="Cena (zł)" style="width:90px">' +
+              '<button type="button" class="jg-menu-ed-variants-toggle" title="Warianty/rozmiary dania">Rozmiary</button>' +
               '<button type="button" class="jg-menu-ed-item-del" title="Usuń">\uD83D\uDDD1</button>' +
               '</div>' +
               '<textarea class="jg-menu-ed-item-desc" rows="2" placeholder="Opis (opcjonalnie)"></textarea>' +
+              '<div class="jg-menu-ed-variants" style="display:none"><button type="button" class="jg-menu-ed-add-variant">+ Rozmiar</button></div>' +
               dietHtml +
               '</div>';
             var newItem = div.firstElementChild;
             itemsContainer.appendChild(newItem);
             bindItemDelBtn(newItem);
+            bindVariantEvents(newItem);
             newItem.querySelector('.jg-menu-ed-item-name').focus();
           };
         }
-        // Bind existing item delete buttons
+        // Bind existing item delete + variant buttons
         secEl.querySelectorAll('.jg-menu-ed-item').forEach(function(itemEl) {
           bindItemDelBtn(itemEl);
+          bindVariantEvents(itemEl);
         });
       }
 
@@ -7706,6 +7881,55 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             itemEl.parentNode.removeChild(itemEl);
           };
         }
+      }
+
+      function bindVariantEvents(itemEl) {
+        var toggleBtn = itemEl.querySelector('.jg-menu-ed-variants-toggle');
+        var variantsDiv = itemEl.querySelector('.jg-menu-ed-variants');
+        var priceInput = itemEl.querySelector('.jg-menu-ed-item-price');
+        if (!toggleBtn || !variantsDiv) return;
+
+        function addVariantRow(label, price) {
+          var row = document.createElement('div');
+          row.className = 'jg-menu-ed-variant-row';
+          row.innerHTML = '<input class="jg-menu-ed-variant-label" type="text" placeholder="np. Mała" value="' + esc(label || '') + '">' +
+            '<input class="jg-menu-ed-variant-price" type="number" min="0" step="0.01" placeholder="Cena" value="' + esc(price || '') + '" style="width:80px">' +
+            '<button type="button" class="jg-menu-ed-variant-del" title="Usuń">&times;</button>';
+          var addBtn = variantsDiv.querySelector('.jg-menu-ed-add-variant');
+          variantsDiv.insertBefore(row, addBtn);
+          row.querySelector('.jg-menu-ed-variant-del').onclick = function() { variantsDiv.removeChild(row); };
+          return row;
+        }
+
+        // Bind existing del buttons in already-rendered rows
+        variantsDiv.querySelectorAll('.jg-menu-ed-variant-row').forEach(function(row) {
+          var del = row.querySelector('.jg-menu-ed-variant-del');
+          if (del) del.onclick = function() { variantsDiv.removeChild(row); };
+        });
+
+        // Add variant row button
+        var addBtn = variantsDiv.querySelector('.jg-menu-ed-add-variant');
+        if (addBtn) addBtn.onclick = function() { addVariantRow('', '').querySelector('.jg-menu-ed-variant-label').focus(); };
+
+        // Toggle show/hide
+        function syncToggleState() {
+          var visible = variantsDiv.style.display !== 'none';
+          if (priceInput) priceInput.style.display = visible ? 'none' : '';
+          toggleBtn.style.background = visible ? '#e0f2fe' : '';
+          toggleBtn.style.borderColor = visible ? '#0284c7' : '';
+        }
+
+        toggleBtn.onclick = function() {
+          var willShow = variantsDiv.style.display === 'none';
+          variantsDiv.style.display = willShow ? '' : 'none';
+          if (willShow && !variantsDiv.querySelector('.jg-menu-ed-variant-row')) {
+            // Add a first empty row automatically
+            addVariantRow('', '').querySelector('.jg-menu-ed-variant-label').focus();
+          }
+          syncToggleState();
+        };
+
+        syncToggleState();
       }
 
       function bindPhotoDelBtn(btn, photoEl, pointId) {
@@ -7744,7 +7968,20 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             if (!name.trim()) return;
             var dtags = [];
             itemEl.querySelectorAll('.jg-menu-ed-dietary input:checked').forEach(function(cb) { dtags.push(cb.value); });
-            items.push({ name: name.trim(), price: price !== '' ? parseFloat(price) : null, description: desc.trim(), dietary_tags: dtags.join(','), is_available: 1 });
+            // Collect variants
+            var variants = [];
+            var varDiv = itemEl.querySelector('.jg-menu-ed-variants');
+            if (varDiv && varDiv.style.display !== 'none') {
+              varDiv.querySelectorAll('.jg-menu-ed-variant-row').forEach(function(row) {
+                var lbl = (row.querySelector('.jg-menu-ed-variant-label') || {}).value || '';
+                var vp  = (row.querySelector('.jg-menu-ed-variant-price') || {}).value || '';
+                if (lbl.trim()) {
+                  variants.push({ label: lbl.trim(), price: vp !== '' ? parseFloat(vp) : null });
+                }
+              });
+            }
+            var effectivePrice = (variants.length === 0 && price !== '') ? parseFloat(price) : null;
+            items.push({ name: name.trim(), price: effectivePrice, variants: variants, description: desc.trim(), dietary_tags: dtags.join(','), is_available: 1 });
           });
           sections.push({ name: secName.trim(), items: items });
         });
@@ -10899,89 +11136,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         // Load and display menu for gastronomic places
         var menuSection = qs('#jg-menu-section', modalView);
         if (menuSection && p.type === 'miejsce' && p.category === 'gastronomia') {
-          var homeBase = (CFG.homeUrl || '').replace(/\/$/, '');
-          var menuUrl = homeBase + '/miejsce/' + (p.slug || '') + '/menu/';
-          var fd2 = new FormData();
-          fd2.append('action', 'jg_get_menu');
-          fd2.append('_ajax_nonce', CFG.nonce);
-          fd2.append('point_id', p.id);
-          fetch(CFG.ajax, { method: 'POST', body: fd2, credentials: 'same-origin' })
-            .then(function(r) { return r.json(); })
-            .then(function(j) {
-              var menuLoadEl = qs('#jg-menu-loading', modalView);
-              if (!j || !j.success || (!j.data.sections.length && !j.data.photos.length)) {
-                if (menuSection) menuSection.style.display = 'none';
-                return;
-              }
-              var sections = j.data.sections || [];
-              var photos   = j.data.photos   || [];
-              var menuHtml = '';
-
-              // Photos
-              if (photos.length) {
-                menuHtml += '<div class="jg-menu-modal-photos">';
-                photos.forEach(function(ph) {
-                  menuHtml += '<img src="' + esc(ph.thumb_url || ph.url) + '" alt="Karta menu" class="jg-menu-modal-photo" data-full="' + esc(ph.url) + '">';
-                });
-                menuHtml += '</div>';
-              }
-
-              // Sections preview (max 6 items total, no descriptions)
-              var itemCount = 0;
-              var previewItems = '';
-              sections.forEach(function(sec) {
-                if (!sec.items || !sec.items.length) return;
-                var secItems = '';
-                sec.items.forEach(function(it) {
-                  if (itemCount >= 6) return;
-                  itemCount++;
-                  var priceStr = (it.price !== null && it.price !== '') ? (parseFloat(it.price).toFixed(2).replace('.', ',') + '\u00a0z\u0142') : '';
-                  secItems += '<div class="jg-menu-modal-row">' +
-                    '<span class="jg-menu-modal-name">' + esc(it.name) + '</span>' +
-                    (priceStr ? '<span class="jg-menu-modal-price">' + priceStr + '</span>' : '') +
-                    '</div>';
-                });
-                if (secItems) {
-                  previewItems += '<div class="jg-menu-modal-sec-name">' + esc(sec.name) + '</div>' + secItems;
-                }
-              });
-
-              var totalItems = sections.reduce(function(acc, s) { return acc + (s.items ? s.items.length : 0); }, 0);
-              if (previewItems) {
-                menuHtml += '<div class="jg-menu-modal-items">' + previewItems + '</div>';
-                if (totalItems > 6) {
-                  menuHtml += '<div style="font-size:0.8rem;color:#9ca3af;margin-top:4px">+ ' + (totalItems - 6) + ' więcej pozycji</div>';
-                }
-                menuHtml += '<a href="' + esc(menuUrl) + '" class="jg-menu-modal-link" target="_blank">Zobacz pełne menu \u2192</a>';
-              } else if (photos.length) {
-                menuHtml += '<a href="' + esc(menuUrl) + '" class="jg-menu-modal-link" target="_blank">Zobacz pełne menu \u2192</a>';
-              }
-
-              if (menuLoadEl) menuLoadEl.parentNode.removeChild(menuLoadEl);
-              menuSection.insertAdjacentHTML('beforeend', menuHtml);
-
-              // Photo lightbox in modal
-              menuSection.querySelectorAll('.jg-menu-modal-photo').forEach(function(img) {
-                img.addEventListener('click', function() {
-                  var lb = qs('#jg-modal-photo-lb', modalView);
-                  if (!lb) {
-                    var lbEl = document.createElement('div');
-                    lbEl.id = 'jg-modal-photo-lb';
-                    lbEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer';
-                    lbEl.innerHTML = '<img src="" style="max-width:95vw;max-height:90vh;object-fit:contain;border-radius:4px">';
-                    lbEl.addEventListener('click', function() { document.body.removeChild(lbEl); });
-                    document.body.appendChild(lbEl);
-                  }
-                  var lbImg = qs('#jg-modal-photo-lb img', document.body);
-                  if (lbImg) lbImg.src = img.dataset.full || img.src;
-                  var lbDiv = qs('#jg-modal-photo-lb', document.body);
-                  if (lbDiv) lbDiv.style.display = 'flex';
-                });
-              });
-            })
-            .catch(function() {
-              if (menuSection) menuSection.style.display = 'none';
-            });
+          loadMenuSection(p, menuSection);
         }
 
         // "Zarządzaj menu" button — open menu editor panel

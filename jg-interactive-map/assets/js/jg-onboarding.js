@@ -82,7 +82,7 @@
   // ====================================
 
   var currentStep = 0;
-  var totalSteps = 3;
+  var totalSteps = 4;
 
   var steps = [
     {
@@ -129,6 +129,24 @@
           '<div class="jg-onboarding-type-item">' +
             '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#8d2324,#a02829)">&#x1F6A9;</span>' +
             '<div><strong>Zg\u0142aszaj problemy</strong><p>Widzisz nieodpowiedni\u0105 tre\u015b\u0107? Zg\u0142o\u015b j\u0105, a moderacja sprawdzi to.</p></div>' +
+          '</div>' +
+        '</div>'
+    },
+    {
+      title: 'Menu restauracji',
+      content:
+        '<div class="jg-onboarding-type-list">' +
+          '<div class="jg-onboarding-type-item">' +
+            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#15803d,#22c55e)">\uD83C\uDF7D\uFE0F</span>' +
+            '<div><strong>Aktualne menu</strong><p>Restauracje i caf\u00e9 mog\u0105 publikowa\u0107 pe\u0142ne menu \u2014 sekcje, dania, ceny i warianty wielko\u015bci.</p></div>' +
+          '</div>' +
+          '<div class="jg-onboarding-type-item">' +
+            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#15803d,#22c55e)">\uD83D\uDCF7</span>' +
+            '<div><strong>Zdj\u0119cia karty menu</strong><p>W\u0142a\u015bciciel miejsca mo\u017ce doda\u0107 zdj\u0119cia fizycznej karty menu \u2014 do 4 skan\u00f3w.</p></div>' +
+          '</div>' +
+          '<div class="jg-onboarding-type-item">' +
+            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#15803d,#22c55e)">\uD83D\uDD17</span>' +
+            '<div><strong>Indeksowane przez Google</strong><p>Ka\u017cde menu ma dedykowan\u0105 stron\u0119 /menu/ ze schema.org, widoczn\u0105 w wynikach wyszukiwania.</p></div>' +
           '</div>' +
         '</div>'
     }
@@ -351,6 +369,11 @@
       id: 'use_search',
       text: 'Wpisz nazw\u0119 w pole wyszukiwania, aby szybko znale\u017a\u0107 punkt na mapie.',
       delay: 16000
+    },
+    {
+      id: 'restaurant_menu',
+      text: '\uD83C\uDF7D\uFE0F Restauracje maj\u0105 menu! Kliknij zielony pin gastronomiczny i sprawd\u017a aktualne dania oraz ceny.',
+      delay: 25000
     }
   ];
 

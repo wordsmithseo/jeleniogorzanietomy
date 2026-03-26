@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.24.55
+ * Version: 3.25.0
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.24.55');
+define('JG_MAP_VERSION', '3.25.0');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -722,10 +722,13 @@ class JG_Interactive_Map {
         .jg-menu-item__unavailable .jg-menu-item__price { color: #9ca3af; }
 
         /* Lightbox */
-        .jg-lightbox-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; }
+        .jg-lightbox-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200000; align-items: center; justify-content: center; }
         .jg-lightbox-overlay.active { display: flex; }
-        .jg-lightbox-overlay img { max-width: 95vw; max-height: 90vh; object-fit: contain; border-radius: 4px; }
-        .jg-lightbox-close { position: absolute; top: 16px; right: 20px; color: #fff; font-size: 32px; cursor: pointer; line-height: 1; }
+        .jg-lightbox-overlay img { max-width: 95vw; max-height: 88vh; object-fit: contain; border-radius: 4px; cursor: default; }
+        .jg-lightbox-close { position: absolute; top: 16px; right: 20px; background: none; border: none; color: #fff; font-size: 2.4rem; cursor: pointer; line-height: 1; z-index: 1; }
+        .jg-menu-item__variants { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .jg-menu-item__variant { font-size: calc(12 * var(--jg)); color: #374151; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 8px; white-space: nowrap; }
+        .jg-menu-item__variant strong { color: <?php echo esc_attr($type_color); ?>; }
 
         .jg-sp-site-footer { text-align: center; padding: 24px 20px; font-size: calc(12 * var(--jg)); color: #9ca3af; border-top: 1px solid #e5e7eb; }
         .jg-menu-empty { color: #9ca3af; font-size: calc(14 * var(--jg)); padding: 24px 0; }
@@ -740,7 +743,7 @@ class JG_Interactive_Map {
         <?php if ($logo_url): ?><img src="<?php echo esc_url($logo_url); ?>" alt="<?php echo esc_attr($site_name); ?>"><?php else: echo esc_html($site_name); endif; ?>
     </a>
     <nav class="jg-sp-site-nav">
-        <a href="<?php echo esc_url(home_url('/mapa/')); ?>">Otwórz mapę</a>
+        <a href="<?php echo esc_url(home_url('/')); ?>">Otwórz mapę</a>
     </nav>
 </header>
 
@@ -784,7 +787,26 @@ class JG_Interactive_Map {
                     </div>
                     <?php endif; ?>
                 </div>
-                <?php if ($item['price'] !== null && $item['price'] !== ''): ?>
+                <?php
+                $variants = array();
+                if (!empty($item['variants'])) {
+                    $decoded = json_decode($item['variants'], true);
+                    if (is_array($decoded)) $variants = $decoded;
+                }
+                if (!empty($variants)):
+                ?>
+                <div style="align-self:flex-start;flex-shrink:0">
+                    <?php if (count($variants) > 1): ?>
+                    <div class="jg-menu-item__variants">
+                        <?php foreach ($variants as $v): ?>
+                        <span class="jg-menu-item__variant"><?php echo esc_html($v['label']); ?> <strong><?php echo number_format(floatval($v['price']), 2, ',', ' ') . ' zł'; ?></strong></span>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <div class="jg-menu-item__price"><?php echo number_format(floatval($variants[0]['price']), 2, ',', ' ') . ' zł'; ?></div>
+                    <?php endif; ?>
+                </div>
+                <?php elseif ($item['price'] !== null && $item['price'] !== ''): ?>
                 <div class="jg-menu-item__price"><?php echo number_format(floatval($item['price']), 2, ',', ' ') . ' zł'; ?></div>
                 <?php endif; ?>
             </div>
