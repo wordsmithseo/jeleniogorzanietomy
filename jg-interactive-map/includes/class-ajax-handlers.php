@@ -48,7 +48,7 @@ class JG_Map_Ajax_Handlers {
      */
     private static function get_default_place_categories() {
         return array(
-            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️', 'schema_type' => 'FoodEstablishment'),
+            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️', 'schema_type' => 'FoodEstablishment', 'has_menu' => true),
             'kultura' => array('label' => 'Kultura', 'icon' => '🏛️', 'schema_type' => 'Museum'),
             'uslugi' => array('label' => 'Usługi', 'icon' => '🏢', 'schema_type' => 'LocalBusiness'),
             'sport' => array('label' => 'Sport i rekreacja', 'icon' => '⚽', 'schema_type' => 'SportsActivityLocation'),
@@ -67,6 +67,20 @@ class JG_Map_Ajax_Handlers {
             'architektoniczne' => array('label' => 'Architektoniczne', 'icon' => '🏰', 'schema_type' => 'LandmarksOrHistoricalBuildings'),
             'legendy' => array('label' => 'Legendy i historie', 'icon' => '📖', 'schema_type' => 'TouristAttraction')
         );
+    }
+
+    /**
+     * Get keys of categories that support menu (has_menu => true)
+     */
+    public static function get_menu_categories() {
+        $cats = self::get_place_categories();
+        $keys = array();
+        foreach ($cats as $key => $cat) {
+            if (!empty($cat['has_menu'])) {
+                $keys[] = $key;
+            }
+        }
+        return $keys;
     }
 
     /**
@@ -699,7 +713,7 @@ class JG_Map_Ajax_Handlers {
         if ($is_admin) {
             $pending_points = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table WHERE status = %s", 'pending'));
             // ONLY count edits, not deletion requests
-            $pending_edits = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $history_table WHERE status = %s AND action_type = %s", 'pending', 'edit'));
+            $pending_edits = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $history_table WHERE status = %s AND action_type IN ('edit', 'edit_menu')", 'pending'));
             $pending_reports = $wpdb->get_var(
                 $wpdb->prepare(
                     "SELECT COUNT(DISTINCT r.point_id)
@@ -894,7 +908,7 @@ class JG_Map_Ajax_Handlers {
             $user_pending_edit = null;
             if ($current_user_id > 0 && !empty($pending_histories)) {
                 foreach ($pending_histories as $ph) {
-                    if ($ph['action_type'] === 'edit' && intval($ph['user_id']) === $current_user_id) {
+                    if (in_array($ph['action_type'], array('edit', 'edit_menu'), true) && intval($ph['user_id']) === $current_user_id) {
                         $user_pending_edit = $ph;
                         break;
                     }
@@ -983,6 +997,19 @@ class JG_Map_Ajax_Handlers {
                                 'new_opening_hours' => $new_values['opening_hours'] ?? null,
                                 'new_images' => $new_images,
                                 'edited_at' => human_time_diff(strtotime($pending_history['created_at'] . ' UTC'), time()) . ' temu'
+                            );
+                        } else if ($pending_history['action_type'] === 'edit_menu') {
+                            $editor_id   = intval($pending_history['user_id']);
+                            $editor      = get_userdata($editor_id);
+                            $editor_name = $editor ? $editor->display_name : 'Nieznany użytkownik';
+                            $is_my_edit  = ($editor_id === $current_user_id);
+                            $edit_info   = array(
+                                'history_id'  => intval($pending_history['id']),
+                                'editor_id'   => $editor_id,
+                                'editor_name' => $editor_name,
+                                'is_my_edit'  => $is_my_edit,
+                                'is_menu_edit' => true,
+                                'edited_at'   => human_time_diff(strtotime($pending_history['created_at'] . ' UTC'), time()) . ' temu'
                             );
                         } else if ($pending_history['action_type'] === 'delete_request') {
                             $deletion_info = array(
@@ -4328,6 +4355,8 @@ class JG_Map_Ajax_Handlers {
                 'tiktok_url' => 'TikTok',
                 'cta_enabled' => 'CTA',
                 'cta_type' => 'Typ CTA',
+                'menu_sections' => 'Menu',
+                'menu_size_labels' => 'Rozmiary dań',
             );
 
             foreach ($fields_to_compare as $field => $label) {
@@ -4635,6 +4664,24 @@ class JG_Map_Ajax_Handlers {
 
         $new_values = json_decode($history['new_values'], true);
 
+        // Handle menu edit approval separately
+        if ($history['action_type'] === 'edit_menu') {
+            $menu_sections    = $new_values['menu_sections']    ?? array();
+            $menu_size_labels = $new_values['menu_size_labels'] ?? array();
+            JG_Map_Database::save_menu($history['point_id'], $menu_sections);
+            JG_Map_Database::save_menu_size_labels($history['point_id'], $menu_size_labels);
+            JG_Map_Database::approve_history($history_id, $current_user_id);
+            $history_table_local = JG_Map_Database::get_history_table();
+            $remaining = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $history_table_local WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu')",
+                $history['point_id']
+            ));
+            if (!$remaining) {
+                JG_Map_Database::update_point($history['point_id'], array('pending_edit' => 0));
+            }
+            wp_send_json_success(array('message' => 'Menu zatwierdzone'));
+            exit;
+        }
 
         if (!$new_values || !isset($new_values['title'])) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane edycji'));
@@ -4829,7 +4876,7 @@ class JG_Map_Ajax_Handlers {
         global $wpdb;
         $history_table = JG_Map_Database::get_history_table();
         $remaining_pending = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $history_table WHERE point_id = %d AND status = 'pending' AND action_type = 'edit'",
+            "SELECT COUNT(*) FROM $history_table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu')",
             $history['point_id']
         ));
         if (!$remaining_pending) {
@@ -4919,7 +4966,7 @@ class JG_Map_Ajax_Handlers {
 
         // Clear pending_edit flag if no other pending edits remain for this point
         $remaining_pending = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type = 'edit'",
+            "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu')",
             $history['point_id']
         ));
         if (!$remaining_pending) {
@@ -6571,15 +6618,15 @@ class JG_Map_Ajax_Handlers {
             $user_id
         ));
 
-        // Count edits submitted
+        // Count edits submitted (including menu edits)
         $edits_count = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table_history WHERE user_id = %d AND action_type = 'edit'",
+            "SELECT COUNT(*) FROM $table_history WHERE user_id = %d AND action_type IN ('edit','edit_menu')",
             $user_id
         ));
 
-        // Count approved edits
+        // Count approved edits (including menu edits)
         $approved_edits_count = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table_history WHERE user_id = %d AND action_type = 'edit' AND status = 'approved'",
+            "SELECT COUNT(*) FROM $table_history WHERE user_id = %d AND action_type IN ('edit','edit_menu') AND status = 'approved'",
             $user_id
         ));
 
@@ -9631,10 +9678,47 @@ class JG_Map_Ajax_Handlers {
             $raw_size_labels = is_array($decoded_labels) ? $decoded_labels : array();
         }
 
+        // Capture old menu state for before/after diff
+        $old_sections   = JG_Map_Database::get_menu($point_id);
+        $old_size_labels = JG_Map_Database::get_menu_size_labels($point_id);
+
         JG_Map_Database::save_menu($point_id, $raw_sections);
         JG_Map_Database::save_menu_size_labels($point_id, $raw_size_labels);
 
-        wp_send_json_success(array('message' => 'Menu zapisano'));
+        // Build old/new value summaries for history diff
+        $old_values = array(
+            'menu_sections'   => $old_sections,
+            'menu_size_labels' => $old_size_labels,
+        );
+        $new_values = array(
+            'menu_sections'   => $raw_sections,
+            'menu_size_labels' => $raw_size_labels,
+        );
+
+        // History + moderation + activity log (mirrors update_point logic)
+        if ($is_admin) {
+            // Admin/mod: auto-approved, no moderation needed
+            JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
+            JG_Map_Activity_Log::log_user_action(
+                'edit_menu',
+                'point',
+                $point_id,
+                sprintf('Zaktualizowano menu miejsca: %s', $point['title'])
+            );
+        } else {
+            // Regular user (owner): pending moderation
+            $point_owner_id = ($is_owner) ? null : intval($point['author_id']);
+            JG_Map_Database::add_history($point_id, $user_id, 'edit_menu', $old_values, $new_values, $point_owner_id);
+            JG_Map_Database::update_point($point_id, array('pending_edit' => 1));
+            JG_Map_Activity_Log::log_user_action(
+                'suggest_menu_edit',
+                'point',
+                $point_id,
+                sprintf('Zaproponowano zmiany menu: %s', $point['title'])
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Menu zapisano', 'pending' => !$is_admin));
     }
 
     /**
