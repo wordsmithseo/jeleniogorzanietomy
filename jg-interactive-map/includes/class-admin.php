@@ -6045,7 +6045,10 @@ JAVASCRIPT;
                         <li class="jg-category-item" data-key="<?php echo esc_attr($key); ?>">
                             <span class="cat-icon"><?php echo esc_html($category['icon'] ?? '📍'); ?></span>
                             <span class="cat-name"><?php echo esc_html($category['label']); ?></span>
-                            <button class="jg-action-btn" onclick="jgEditPlaceCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📍'); ?>')" title="Edytuj">✏️</button>
+                            <?php if (!empty($category['has_menu'])): ?>
+                            <span title="Posiada menu" style="font-size:14px;opacity:0.7">🍽️</span>
+                            <?php endif; ?>
+                            <button class="jg-action-btn" onclick="jgEditPlaceCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📍'); ?>', <?php echo !empty($category['has_menu']) ? 'true' : 'false'; ?>)" title="Edytuj">✏️</button>
                             <button class="jg-action-btn delete" onclick="jgDeletePlaceCategory('<?php echo esc_js($key); ?>')" title="Usuń">🗑️</button>
                         </li>
                         <?php endforeach; ?>
@@ -6078,6 +6081,11 @@ JAVASCRIPT;
                         </div>
                         <input type="hidden" id="new-place-cat-icon" value="📍">
 
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer">
+                            <input type="checkbox" id="new-place-cat-has-menu" value="1">
+                            🍽️ Kategoria posiada menu (włącz opcję dodawania menu dla miejsc)
+                        </label>
+
                         <div class="jg-btn-row">
                             <button class="button button-primary" onclick="jgSavePlaceCategory()">Zapisz</button>
                             <button class="button" onclick="jgToggleAddPlaceCategory()">Anuluj</button>
@@ -6109,6 +6117,11 @@ JAVASCRIPT;
                             <?php endforeach; ?>
                         </div>
                         <input type="hidden" id="edit-place-cat-icon" value="">
+
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer">
+                            <input type="checkbox" id="edit-place-cat-has-menu" value="1">
+                            🍽️ Kategoria posiada menu
+                        </label>
 
                         <div class="jg-btn-row">
                             <button class="button button-primary" onclick="jgUpdatePlaceCategory()">Zapisz zmiany</button>
@@ -6181,6 +6194,7 @@ JAVASCRIPT;
                     const key = document.getElementById('new-place-cat-key').value.trim().toLowerCase().replace(/\s+/g, '_');
                     const label = document.getElementById('new-place-cat-label').value.trim();
                     let icon = document.getElementById('new-place-cat-icon').value || '📍';
+                    const hasMenu = document.getElementById('new-place-cat-has-menu').checked ? '1' : '0';
                     if (!jgIsValidEmoji(icon)) {
                         icon = jgGetFirstPlaceEmoji();
                     }
@@ -6203,7 +6217,8 @@ JAVASCRIPT;
                             nonce: nonce,
                             key: key,
                             label: label,
-                            icon: icon
+                            icon: icon,
+                            has_menu: hasMenu
                         })
                     })
                     .then(r => r.json())
@@ -6217,7 +6232,7 @@ JAVASCRIPT;
                 };
 
                 // Edit category
-                window.jgEditPlaceCategory = function(key, label, icon) {
+                window.jgEditPlaceCategory = function(key, label, icon, hasMenu) {
                     document.getElementById('jg-add-place-category-form').classList.remove('visible');
                     const form = document.getElementById('jg-edit-place-category-form');
                     form.classList.add('visible');
@@ -6227,6 +6242,7 @@ JAVASCRIPT;
                     document.getElementById('edit-place-icon-preview').textContent = icon;
                     document.getElementById('edit-place-cat-icon-manual').value = icon;
                     document.getElementById('edit-place-cat-icon-manual').classList.remove('invalid');
+                    document.getElementById('edit-place-cat-has-menu').checked = !!hasMenu;
 
                     // Highlight current emoji
                     document.querySelectorAll('#edit-place-emoji-picker .jg-emoji-btn').forEach(btn => {
@@ -6276,6 +6292,7 @@ JAVASCRIPT;
                     const key = document.getElementById('edit-place-cat-key').value;
                     const label = document.getElementById('edit-place-cat-label').value.trim();
                     let icon = document.getElementById('edit-place-cat-icon').value || '📍';
+                    const hasMenu = document.getElementById('edit-place-cat-has-menu').checked ? '1' : '0';
                     if (!jgIsValidEmoji(icon)) {
                         icon = jgGetFirstPlaceEmoji();
                     }
@@ -6293,7 +6310,8 @@ JAVASCRIPT;
                             nonce: nonce,
                             key: key,
                             label: label,
-                            icon: icon
+                            icon: icon,
+                            has_menu: hasMenu
                         })
                     })
                     .then(r => r.json())

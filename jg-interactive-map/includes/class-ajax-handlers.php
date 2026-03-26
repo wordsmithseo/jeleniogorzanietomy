@@ -9111,9 +9111,10 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        $key = sanitize_key($_POST['key'] ?? '');
-        $label = sanitize_text_field($_POST['label'] ?? '');
-        $icon = sanitize_text_field($_POST['icon'] ?? '📍');
+        $key      = sanitize_key($_POST['key'] ?? '');
+        $label    = sanitize_text_field($_POST['label'] ?? '');
+        $icon     = sanitize_text_field($_POST['icon'] ?? '📍');
+        $has_menu = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
 
         if (empty($key) || empty($label)) {
             wp_send_json_error('Klucz i nazwa są wymagane');
@@ -9128,8 +9129,9 @@ class JG_Map_Ajax_Handlers {
         }
 
         $categories[$key] = array(
-            'label' => $label,
-            'icon' => $icon
+            'label'    => $label,
+            'icon'     => $icon,
+            'has_menu' => $has_menu,
         );
         update_option('jg_map_place_categories', $categories);
 
@@ -9162,9 +9164,10 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        $key = sanitize_key($_POST['key'] ?? '');
-        $label = sanitize_text_field($_POST['label'] ?? '');
-        $icon = sanitize_text_field($_POST['icon'] ?? '📍');
+        $key      = sanitize_key($_POST['key'] ?? '');
+        $label    = sanitize_text_field($_POST['label'] ?? '');
+        $icon     = sanitize_text_field($_POST['icon'] ?? '📍');
+        $has_menu = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
 
         if (empty($key) || empty($label)) {
             wp_send_json_error('Klucz i nazwa są wymagane');
@@ -9179,10 +9182,12 @@ class JG_Map_Ajax_Handlers {
         }
 
         $old_label = $categories[$key]['label'];
-        $categories[$key] = array(
-            'label' => $label,
-            'icon' => $icon
-        );
+        // Preserve existing fields (e.g. schema_type), only update editable ones
+        $categories[$key] = array_merge($categories[$key], array(
+            'label'    => $label,
+            'icon'     => $icon,
+            'has_menu' => $has_menu,
+        ));
         update_option('jg_map_place_categories', $categories);
 
         // Log activity
