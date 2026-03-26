@@ -9714,6 +9714,8 @@ footer.site-footer .site-branding {
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   padding: 5px 8px;
+  width: 90px !important;
+  flex-shrink: 0 !important;
 }
 
 .jg-menu-ed-item-del {
@@ -9844,6 +9846,58 @@ footer.site-footer .site-branding {
   margin-top: 2px;
 }
 .jg-menu-ed-add-variant:hover { background: #e0f2fe; }
+
+/* Preset size pills inside variants panel */
+.jg-menu-ed-variant-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+.jg-menu-ed-preset-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: calc(11 * var(--jg));
+  background: #f0f9ff;
+  border: 1px solid #7dd3fc;
+  border-radius: 20px;
+  padding: 3px 10px;
+  color: #0284c7;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.jg-menu-ed-preset-pill:hover {
+  background: #bae6fd;
+  color: #0369a1;
+}
+
+/* Elementor reset for preset pills */
+.jg-modal-bg .jg-menu-ed-preset-pill {
+  font-size: calc(11 * var(--jg)) !important;
+  background: #f0f9ff !important;
+  background-color: #f0f9ff !important;
+  border: 1px solid #7dd3fc !important;
+  border-radius: 20px !important;
+  padding: 3px 10px !important;
+  color: #0284c7 !important;
+  cursor: pointer !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: auto !important;
+  min-width: auto !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-family: inherit !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+}
+.jg-modal-bg .jg-menu-ed-preset-pill:hover {
+  background: #bae6fd !important;
+  background-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
 
 /* Size labels manager (predefined sizes per place) */
 .jg-menu-ed-sizes-area {

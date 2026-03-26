@@ -7636,6 +7636,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         // Build variants rows HTML helper
         function buildVariantsHtml(variants) {
           var html = '<div class="jg-menu-ed-variants"' + (variants && variants.length ? '' : ' style="display:none"') + '>';
+          html += '<div class="jg-menu-ed-variant-presets" style="display:none"></div>'; // populated dynamically on open
           (variants || []).forEach(function(v) {
             var vp = (v.price !== null && v.price !== undefined && v.price !== '') ? parseFloat(v.price).toFixed(2) : '';
             html += '<div class="jg-menu-ed-variant-row">' +
@@ -7644,7 +7645,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<button type="button" class="jg-menu-ed-variant-del" title="Usuń rozmiar">&times;</button>' +
               '</div>';
           });
-          html += '<button type="button" class="jg-menu-ed-add-variant">+ Rozmiar</button></div>';
+          html += '<button type="button" class="jg-menu-ed-add-variant">+ Rozmiar własny</button></div>';
           return html;
         }
 
@@ -7916,7 +7917,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<button type="button" class="jg-menu-ed-item-del" title="Usuń">\uD83D\uDDD1</button>' +
               '</div>' +
               '<textarea class="jg-menu-ed-item-desc" rows="2" placeholder="Opis (opcjonalnie)"></textarea>' +
-              '<div class="jg-menu-ed-variants" style="display:none"><button type="button" class="jg-menu-ed-add-variant">+ Rozmiar</button></div>' +
+              '<div class="jg-menu-ed-variants" style="display:none"><div class="jg-menu-ed-variant-presets" style="display:none"></div><button type="button" class="jg-menu-ed-add-variant">+ Rozmiar własny</button></div>' +
               dietHtml +
               '</div>';
             var newItem = div.firstElementChild;
@@ -7956,19 +7957,72 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '<button type="button" class="jg-menu-ed-variant-del" title="Usuń">&times;</button>';
           var addBtn = variantsDiv.querySelector('.jg-menu-ed-add-variant');
           variantsDiv.insertBefore(row, addBtn);
-          row.querySelector('.jg-menu-ed-variant-del').onclick = function() { variantsDiv.removeChild(row); };
+          row.querySelector('.jg-menu-ed-variant-del').onclick = function() {
+            variantsDiv.removeChild(row);
+            refreshPresetPills(); // restore pill when row deleted
+          };
           return row;
+        }
+
+        // Refresh preset pills based on current predefined sizes and existing rows
+        function refreshPresetPills() {
+          var presetsEl = variantsDiv.querySelector('.jg-menu-ed-variant-presets');
+          if (!presetsEl) return;
+
+          var tagsEl = qs('#jg-menu-ed-size-tags', modalEdit);
+          var predefined = [];
+          if (tagsEl) {
+            tagsEl.querySelectorAll('.jg-menu-ed-size-tag').forEach(function(span) {
+              var lbl = span.getAttribute('data-label') || '';
+              if (lbl) predefined.push(lbl);
+            });
+          }
+
+          if (!predefined.length) {
+            presetsEl.style.display = 'none';
+            presetsEl.innerHTML = '';
+            return;
+          }
+
+          // Labels already in use by existing rows
+          var usedLabels = {};
+          variantsDiv.querySelectorAll('.jg-menu-ed-variant-row').forEach(function(row) {
+            var inp = row.querySelector('.jg-menu-ed-variant-label');
+            if (inp && inp.value.trim()) usedLabels[inp.value.trim()] = true;
+          });
+
+          presetsEl.innerHTML = '';
+          predefined.forEach(function(lbl) {
+            if (usedLabels[lbl]) return; // already added, skip pill
+            var pill = document.createElement('button');
+            pill.type = 'button';
+            pill.className = 'jg-menu-ed-preset-pill';
+            pill.textContent = '+ ' + lbl;
+            pill.onclick = function() {
+              var row = addVariantRow(lbl, '');
+              row.querySelector('.jg-menu-ed-variant-price').focus();
+              refreshPresetPills();
+            };
+            presetsEl.appendChild(pill);
+          });
+
+          presetsEl.style.display = presetsEl.children.length ? '' : 'none';
         }
 
         // Bind existing del buttons in already-rendered rows
         variantsDiv.querySelectorAll('.jg-menu-ed-variant-row').forEach(function(row) {
           var del = row.querySelector('.jg-menu-ed-variant-del');
-          if (del) del.onclick = function() { variantsDiv.removeChild(row); };
+          if (del) del.onclick = function() {
+            variantsDiv.removeChild(row);
+            refreshPresetPills();
+          };
         });
 
-        // Add variant row button
+        // "+ Rozmiar własny" always adds empty free-text row
         var addBtn = variantsDiv.querySelector('.jg-menu-ed-add-variant');
-        if (addBtn) addBtn.onclick = function() { addVariantRow('', '').querySelector('.jg-menu-ed-variant-label').focus(); };
+        if (addBtn) addBtn.onclick = function() {
+          addVariantRow('', '').querySelector('.jg-menu-ed-variant-label').focus();
+        };
 
         // Toggle show/hide
         function syncToggleState() {
@@ -7981,20 +8035,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         toggleBtn.onclick = function() {
           var willShow = variantsDiv.style.display === 'none';
           variantsDiv.style.display = willShow ? '' : 'none';
-          if (willShow && !variantsDiv.querySelector('.jg-menu-ed-variant-row')) {
-            // Auto-populate from predefined sizes if available
-            var predefined = [];
-            var tagsEl = qs('#jg-menu-ed-size-tags', modalEdit);
-            if (tagsEl) {
-              tagsEl.querySelectorAll('.jg-menu-ed-size-tag').forEach(function(span) {
-                var lbl = span.getAttribute('data-label') || '';
-                if (lbl) predefined.push(lbl);
-              });
-            }
-            if (predefined.length > 0) {
-              predefined.forEach(function(lbl) { addVariantRow(lbl, ''); });
-              variantsDiv.querySelector('.jg-menu-ed-variant-price').focus();
-            } else {
+          if (willShow) {
+            refreshPresetPills();
+            // If no presets and no existing rows, open with one empty row
+            var presetsEl = variantsDiv.querySelector('.jg-menu-ed-variant-presets');
+            var hasPills = presetsEl && presetsEl.style.display !== 'none' && presetsEl.children.length > 0;
+            if (!hasPills && !variantsDiv.querySelector('.jg-menu-ed-variant-row')) {
               addVariantRow('', '').querySelector('.jg-menu-ed-variant-label').focus();
             }
           }
