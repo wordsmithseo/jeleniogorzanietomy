@@ -9356,6 +9356,209 @@ footer.site-footer .site-branding {
   vertical-align: middle !important;
 }
 
+/* ── Hard-reset every custom button in the menu editor ── */
+
+/* "Usuń" section delete */
+.jg-modal-bg .jg-menu-ed-sec-del {
+  font-size: calc(12 * var(--jg)) !important;
+  color: #dc2626 !important;
+  background: none !important;
+  background-color: transparent !important;
+  border: 1px solid #dc2626 !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: auto !important;
+  min-width: auto !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-family: inherit !important;
+  transition: background 0.15s !important;
+}
+.jg-modal-bg .jg-menu-ed-sec-del:hover {
+  background: #fee2e2 !important;
+  background-color: #fee2e2 !important;
+  color: #dc2626 !important;
+}
+
+/* 🗑 item delete */
+.jg-modal-bg .jg-menu-ed-item-del {
+  background: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-width: 0 !important;
+  color: #9ca3af !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  padding: 2px 4px !important;
+  flex-shrink: 0 !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: auto !important;
+  min-width: auto !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-family: inherit !important;
+  border-radius: 0 !important;
+  line-height: 1 !important;
+}
+.jg-modal-bg .jg-menu-ed-item-del:hover {
+  color: #dc2626 !important;
+  background: none !important;
+  background-color: transparent !important;
+}
+
+/* "Rozmiary" variants toggle */
+.jg-modal-bg .jg-menu-ed-variants-toggle {
+  font-size: calc(11 * var(--jg)) !important;
+  background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 4px !important;
+  padding: 3px 7px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  color: #374151 !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: auto !important;
+  min-width: auto !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-family: inherit !important;
+  line-height: 1.4 !important;
+}
+.jg-modal-bg .jg-menu-ed-variants-toggle:hover {
+  background: #e0f2fe !important;
+  background-color: #e0f2fe !important;
+  border-color: #7dd3fc !important;
+  color: #374151 !important;
+}
+
+/* "+ Dodaj pozycję" */
+.jg-modal-bg .jg-menu-ed-add-item {
+  font-size: calc(12 * var(--jg)) !important;
+  color: #8d2324 !important;
+  background: none !important;
+  background-color: transparent !important;
+  border: 1px dashed #8d2324 !important;
+  border-radius: 6px !important;
+  padding: 5px 12px !important;
+  cursor: pointer !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: auto !important;
+  min-width: auto !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-family: inherit !important;
+  line-height: 1.4 !important;
+  margin-top: 4px !important;
+  display: inline-block !important;
+}
+.jg-modal-bg .jg-menu-ed-add-item:hover {
+  background: #fff5f5 !important;
+  background-color: #fff5f5 !important;
+  color: #8d2324 !important;
+}
+
+/* "× " variant row delete */
+.jg-modal-bg .jg-menu-ed-variant-del {
+  background: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-width: 0 !important;
+  color: #9ca3af !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  padding: 2px 4px !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: auto !important;
+  min-width: auto !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  text-transform: none !important;
+  font-family: inherit !important;
+}
+.jg-modal-bg .jg-menu-ed-variant-del:hover {
+  color: #dc2626 !important;
+  background: none !important;
+  background-color: transparent !important;
+}
+
+/* "+ Rozmiar" */
+.jg-modal-bg .jg-menu-ed-add-variant {
+  font-size: calc(11 * var(--jg)) !important;
+  color: #0284c7 !important;
+  background: none !important;
+  background-color: transparent !important;
+  border: 1px dashed #7dd3fc !important;
+  border-radius: 4px !important;
+  padding: 3px 8px !important;
+  cursor: pointer !important;
+  align-self: flex-start !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: auto !important;
+  min-width: auto !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-family: inherit !important;
+  line-height: 1.4 !important;
+  margin-top: 2px !important;
+}
+.jg-modal-bg .jg-menu-ed-add-variant:hover {
+  background: #e0f2fe !important;
+  background-color: #e0f2fe !important;
+  color: #0284c7 !important;
+}
+
+/* "× " size tag delete */
+.jg-modal-bg .jg-menu-ed-size-tag-del {
+  background: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-width: 0 !important;
+  color: #0369a1 !important;
+  opacity: 0.6;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: auto !important;
+  min-width: auto !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  font-family: inherit !important;
+}
+.jg-modal-bg .jg-menu-ed-size-tag-del:hover {
+  opacity: 1;
+  background: none !important;
+  background-color: transparent !important;
+}
+
+/* "Dodaj" size label add button */
+.jg-modal-bg #jg-menu-ed-size-btn {
+  font-size: calc(12 * var(--jg)) !important;
+  padding: 5px 10px !important;
+  height: auto !important;
+  min-height: auto !important;
+}
+
 /* ==========================================================================
    Menu editor panel (inside modalEdit)
    ========================================================================== */
