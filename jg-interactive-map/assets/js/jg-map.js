@@ -7969,7 +7969,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var presetsEl = variantsDiv.querySelector('.jg-menu-ed-variant-presets');
           if (!presetsEl) return;
 
-          var tagsEl = qs('#jg-menu-ed-size-tags', modalEdit);
+          var tagsEl = document.getElementById('jg-menu-ed-size-tags');
           var predefined = [];
           if (tagsEl) {
             tagsEl.querySelectorAll('.jg-menu-ed-size-tag').forEach(function(span) {
