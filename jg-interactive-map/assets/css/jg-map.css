@@ -9185,3 +9185,310 @@ footer.site-footer .site-branding {
     min-height: 48px;
   }
 }
+
+/* ==========================================================================
+   Menu – modal display section
+   ========================================================================== */
+
+.jg-menu-modal-section {
+  padding: 10px 14px;
+  background: #fef9f0;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  font-size: calc(13 * var(--jg));
+  color: #92400e;
+}
+
+.jg-menu-modal-photos {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+
+.jg-menu-modal-photo {
+  width: 64px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.jg-menu-modal-photo:hover {
+  transform: scale(1.05);
+}
+
+.jg-menu-modal-sec-name {
+  font-size: calc(10 * var(--jg));
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #92400e;
+  margin: 8px 0 4px;
+  opacity: 0.7;
+}
+
+.jg-menu-modal-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.jg-menu-modal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px dotted #fde68a;
+}
+
+.jg-menu-modal-row:last-child {
+  border-bottom: none;
+}
+
+.jg-menu-modal-name {
+  font-size: calc(13 * var(--jg));
+  color: #1f2937;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jg-menu-modal-price {
+  font-size: calc(13 * var(--jg));
+  font-weight: 700;
+  color: #8d2324;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.jg-menu-modal-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: calc(12 * var(--jg));
+  font-weight: 600;
+  color: #8d2324;
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   Menu editor panel (inside modalEdit)
+   ========================================================================== */
+
+.jg-menu-ed-photos-area {
+  margin-bottom: 16px;
+}
+
+.jg-menu-ed-photos-title {
+  font-size: calc(11 * var(--jg));
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.jg-menu-ed-photos {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.jg-menu-ed-photo {
+  position: relative;
+  width: 80px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.jg-menu-ed-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.jg-menu-ed-photo-del {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(220,38,38,0.85);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.jg-menu-ed-photo-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 100px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 28px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.jg-menu-ed-photo-add:hover {
+  border-color: #8d2324;
+  color: #8d2324;
+}
+
+.jg-menu-ed-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.jg-menu-ed-sec-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.jg-menu-ed-drag {
+  color: #d1d5db;
+  font-size: 18px;
+  cursor: grab;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.jg-menu-ed-sec-name {
+  flex: 1;
+  font-size: calc(14 * var(--jg));
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #1f2937;
+}
+
+.jg-menu-ed-sec-del {
+  font-size: calc(12 * var(--jg));
+  color: #dc2626;
+  background: none;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.jg-menu-ed-sec-del:hover {
+  background: #fee2e2;
+}
+
+.jg-menu-ed-item {
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+
+.jg-menu-ed-item-top {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.jg-menu-ed-item-name {
+  flex: 1;
+  font-size: calc(13 * var(--jg));
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+.jg-menu-ed-item-price {
+  font-size: calc(13 * var(--jg));
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+.jg-menu-ed-item-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #9ca3af;
+  flex-shrink: 0;
+  padding: 2px 4px;
+  transition: color 0.15s;
+}
+
+.jg-menu-ed-item-del:hover {
+  color: #dc2626;
+}
+
+.jg-menu-ed-item-desc {
+  width: 100%;
+  font-size: calc(12 * var(--jg));
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 5px 8px;
+  resize: vertical;
+  font-family: inherit;
+  color: #374151;
+  margin-bottom: 6px;
+  box-sizing: border-box;
+}
+
+.jg-menu-ed-dietary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.jg-menu-ed-dtag {
+  font-size: calc(11 * var(--jg));
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.jg-menu-ed-add-item {
+  font-size: calc(12 * var(--jg));
+  color: #8d2324;
+  background: none;
+  border: 1px dashed #8d2324;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background 0.15s;
+}
+
+.jg-menu-ed-add-item:hover {
+  background: #fff5f5;
+}

@@ -279,6 +279,11 @@ class JG_Interactive_Map {
     public function add_rewrite_rules() {
         // Rewrite rules for all point types
         add_rewrite_rule(
+            '^miejsce/([^/]+)/menu/?$',
+            'index.php?jg_map_point=$matches[1]&jg_map_type=miejsce&jg_map_menu=1',
+            'top'
+        );
+        add_rewrite_rule(
             '^miejsce/([^/]+)/?$',
             'index.php?jg_map_point=$matches[1]&jg_map_type=miejsce',
             'top'
@@ -326,6 +331,7 @@ class JG_Interactive_Map {
         $vars[] = 'jg_map_sitemap';
         $vars[] = 'jg_catalog_tag';
         $vars[] = 'jg_tile_sw';
+        $vars[] = 'jg_map_menu';
         return $vars;
     }
 
@@ -347,6 +353,13 @@ class JG_Interactive_Map {
         if ($flush_count_v3 < 3) {
             flush_rewrite_rules(false);
             update_option('jg_map_flush_count_v3', $flush_count_v3 + 1);
+        }
+
+        // v4: flush to register /miejsce/{slug}/menu/ rewrite rule
+        $flush_count_v4 = get_option('jg_map_flush_count_v4', 0);
+        if ($flush_count_v4 < 3) {
+            flush_rewrite_rules(false);
+            update_option('jg_map_flush_count_v4', $flush_count_v4 + 1);
         }
 
         // Legacy flush check
@@ -444,7 +457,13 @@ class JG_Interactive_Map {
         // point pages remain accessible even when rewrite rules are flushed/broken
         if (empty($point_slug) && isset($_SERVER['REQUEST_URI'])) {
             $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-            if (preg_match('#^/(miejsce|ciekawostka|zgloszenie)/([^/]+)/?$#', $request_uri, $matches)) {
+            if (preg_match('#^/(miejsce|ciekawostka|zgloszenie)/([^/]+)/menu/?$#', $request_uri, $matches)) {
+                $point_slug = sanitize_title($matches[2]);
+                // Override query var so we know it's the menu subpage
+                if (!get_query_var('jg_map_menu')) {
+                    set_query_var('jg_map_menu', '1');
+                }
+            } elseif (preg_match('#^/(miejsce|ciekawostka|zgloszenie)/([^/]+)/?$#', $request_uri, $matches)) {
                 $point_slug = sanitize_title($matches[2]);
             }
         }
@@ -551,8 +570,14 @@ class JG_Interactive_Map {
         // No Yoast filter overrides needed since we don't call wp_head()
         ob_start();
 
+        $is_menu_page = (get_query_var('jg_map_menu') == '1');
+
         try {
-            $this->render_point_page($point, $request_id, $user_agent_short);
+            if ($is_menu_page) {
+                $this->render_menu_page($point, $request_id);
+            } else {
+                $this->render_point_page($point, $request_id, $user_agent_short);
+            }
             $html_output = ob_get_clean();
             echo $html_output;
         } catch (Exception $e) {
@@ -561,6 +586,246 @@ class JG_Interactive_Map {
             $this->render_fallback_page($point, $request_id, $user_agent_short);
         }
         exit;
+    }
+
+    /**
+     * Render the menu subpage for a gastronomic place (/miejsce/{slug}/menu/)
+     */
+    private function render_menu_page($point, $request_id = 'unknown') {
+        $point_url  = home_url('/miejsce/' . $point['slug'] . '/');
+        $menu_url   = home_url('/miejsce/' . $point['slug'] . '/menu/');
+        $type_color = '#8d2324';
+
+        $site_name  = get_bloginfo('name');
+        $logo_url   = '';
+        $custom_logo_id = get_theme_mod('custom_logo');
+        if ($custom_logo_id) {
+            $logo_url = wp_get_attachment_image_url($custom_logo_id, 'full');
+        }
+
+        $site_icon_32  = get_site_icon_url(32);
+        $site_icon_192 = get_site_icon_url(192);
+        $site_icon_180 = get_site_icon_url(180);
+
+        $sections = JG_Map_Database::get_menu($point['id']);
+        $photos   = JG_Map_Database::get_menu_photos($point['id']);
+
+        $page_title = 'Menu – ' . esc_html($point['title']) . ' | ' . esc_html($site_name);
+        $description = 'Sprawdź aktualne menu restauracji ' . $point['title'] . ' w Jeleniej Górze.';
+
+        $canonical = esc_url($menu_url);
+
+        $dietary_labels = array(
+            'wegetarianskie' => '🌿 wegetariańskie',
+            'weganskie'      => '🌱 wegańskie',
+            'bezglutenowe'   => '🌾 bezglutenowe',
+            'ostre'          => '🌶️ ostre',
+            'bez_laktozy'    => '🥛 bez laktozy',
+        );
+
+        ?><!doctype html>
+<html lang="pl-PL">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title><?php echo $page_title; ?></title>
+    <meta name="description" content="<?php echo esc_attr($description); ?>">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="<?php echo $canonical; ?>">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="<?php echo esc_attr('Menu – ' . $point['title']); ?>">
+    <meta property="og:description" content="<?php echo esc_attr($description); ?>">
+    <meta property="og:url" content="<?php echo $canonical; ?>">
+    <meta property="og:locale" content="pl_PL">
+    <?php if ($site_icon_32): ?>
+    <link rel="icon" href="<?php echo esc_url($site_icon_32); ?>" sizes="32x32">
+    <link rel="icon" href="<?php echo esc_url($site_icon_192); ?>" sizes="192x192">
+    <link rel="apple-touch-icon" href="<?php echo esc_url($site_icon_180); ?>">
+    <?php endif; ?>
+    <?php
+    // Schema.org Menu structured data
+    if (!empty($sections)):
+        $menu_schema = array(
+            '@context' => 'https://schema.org',
+            '@type'    => 'Menu',
+            '@id'      => $menu_url . '#menu',
+            'name'     => 'Menu – ' . $point['title'],
+            'url'      => $menu_url,
+        );
+        $menu_sections_schema = array();
+        foreach ($sections as $sec) {
+            $items_schema = array();
+            foreach ($sec['items'] as $item) {
+                $item_schema = array(
+                    '@type' => 'MenuItem',
+                    'name'  => $item['name'],
+                );
+                if (!empty($item['description'])) {
+                    $item_schema['description'] = $item['description'];
+                }
+                if ($item['price'] !== null && $item['price'] !== '') {
+                    $item_schema['offers'] = array(
+                        '@type'         => 'Offer',
+                        'price'         => number_format(floatval($item['price']), 2, '.', ''),
+                        'priceCurrency' => 'PLN',
+                    );
+                }
+                $items_schema[] = $item_schema;
+            }
+            if (!empty($items_schema)) {
+                $menu_sections_schema[] = array(
+                    '@type'       => 'MenuSection',
+                    'name'        => $sec['name'],
+                    'hasMenuItem' => $items_schema,
+                );
+            }
+        }
+        if (!empty($menu_sections_schema)) {
+            $menu_schema['hasMenuSection'] = $menu_sections_schema;
+        }
+        echo '<script type="application/ld+json">' . json_encode($menu_schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>' . "\n";
+    endif;
+    ?>
+    <style>
+        :root { --jg: clamp(1px, 0.065vw, 1.1px); }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f9fafb; color: #111; }
+        a { color: inherit; text-decoration: none; }
+        .jg-sp-site-header { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid #e5e7eb; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .jg-sp-site-header a { font-weight: 700; font-size: calc(16 * var(--jg)); color: <?php echo esc_attr($type_color); ?>; display: flex; align-items: center; gap: 8px; }
+        .jg-sp-site-header img { height: 32px; width: auto; }
+        .jg-sp-site-nav a { font-size: calc(13 * var(--jg)); color: #6b7280; border: 1px solid #e5e7eb; padding: 6px 12px; border-radius: 20px; }
+        .jg-sp { max-width: 800px; margin: 0 auto; padding: 28px 20px 60px; }
+        .jg-menu-back { display: inline-flex; align-items: center; gap: 6px; font-size: calc(13 * var(--jg)); color: #6b7280; margin-bottom: 16px; }
+        .jg-menu-back:hover { color: <?php echo esc_attr($type_color); ?>; }
+        .jg-sp-title { font-size: calc(28 * var(--jg)); font-weight: 800; margin: 0 0 4px 0; color: #111; }
+        .jg-sp-date { font-size: calc(12 * var(--jg)); color: #9ca3af; margin-bottom: 24px; }
+
+        /* Menu card photos */
+        .jg-menu-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 28px; }
+        .jg-menu-photo-item { border-radius: 8px; overflow: hidden; aspect-ratio: 3/4; cursor: pointer; }
+        .jg-menu-photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.2s; }
+        .jg-menu-photo-item:hover img { transform: scale(1.03); }
+        .jg-menu-photos-title { font-size: calc(11 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 10px; }
+
+        /* Menu sections */
+        .jg-menu-section { margin-bottom: 28px; }
+        .jg-menu-section-name { font-size: calc(13 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: <?php echo esc_attr($type_color); ?>; padding-bottom: 8px; border-bottom: 2px solid <?php echo esc_attr($type_color); ?>; margin-bottom: 12px; }
+        .jg-menu-item { display: flex; align-items: baseline; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f3f4f6; }
+        .jg-menu-item:last-child { border-bottom: none; }
+        .jg-menu-item__name { font-size: calc(15 * var(--jg)); font-weight: 600; color: #1f2937; flex: 1; min-width: 0; }
+        .jg-menu-item__desc { font-size: calc(12 * var(--jg)); color: #6b7280; margin-top: 2px; }
+        .jg-menu-item__tags { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
+        .jg-menu-item__tag { font-size: calc(10 * var(--jg)); color: #374151; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; }
+        .jg-menu-item__price { font-size: calc(15 * var(--jg)); font-weight: 700; color: <?php echo esc_attr($type_color); ?>; white-space: nowrap; flex-shrink: 0; }
+        .jg-menu-item__unavailable .jg-menu-item__name { color: #9ca3af; text-decoration: line-through; }
+        .jg-menu-item__unavailable .jg-menu-item__price { color: #9ca3af; }
+
+        /* Lightbox */
+        .jg-lightbox-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; }
+        .jg-lightbox-overlay.active { display: flex; }
+        .jg-lightbox-overlay img { max-width: 95vw; max-height: 90vh; object-fit: contain; border-radius: 4px; }
+        .jg-lightbox-close { position: absolute; top: 16px; right: 20px; color: #fff; font-size: 32px; cursor: pointer; line-height: 1; }
+
+        .jg-sp-site-footer { text-align: center; padding: 24px 20px; font-size: calc(12 * var(--jg)); color: #9ca3af; border-top: 1px solid #e5e7eb; }
+        .jg-menu-empty { color: #9ca3af; font-size: calc(14 * var(--jg)); padding: 24px 0; }
+        @media (max-width: 480px) {
+            .jg-menu-photos { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+<header class="jg-sp-site-header">
+    <a href="<?php echo esc_url(home_url('/')); ?>">
+        <?php if ($logo_url): ?><img src="<?php echo esc_url($logo_url); ?>" alt="<?php echo esc_attr($site_name); ?>"><?php else: echo esc_html($site_name); endif; ?>
+    </a>
+    <nav class="jg-sp-site-nav">
+        <a href="<?php echo esc_url(home_url('/mapa/')); ?>">Otwórz mapę</a>
+    </nav>
+</header>
+
+<div class="jg-sp">
+    <a href="<?php echo esc_url($point_url); ?>" class="jg-menu-back">← Wróć do: <?php echo esc_html($point['title']); ?></a>
+    <h1 class="jg-sp-title">Menu – <?php echo esc_html($point['title']); ?></h1>
+
+    <?php if (!empty($photos)): ?>
+    <div class="jg-menu-photos-title">Karta menu</div>
+    <div class="jg-menu-photos">
+        <?php foreach ($photos as $photo): ?>
+        <div class="jg-menu-photo-item" data-full="<?php echo esc_attr($photo['url']); ?>">
+            <img src="<?php echo esc_url($photo['thumb_url'] ?: $photo['url']); ?>" alt="Karta menu – <?php echo esc_attr($point['title']); ?>" loading="lazy">
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!empty($sections)): ?>
+        <?php foreach ($sections as $section): ?>
+        <div class="jg-menu-section">
+            <div class="jg-menu-section-name"><?php echo esc_html($section['name']); ?></div>
+            <?php foreach ($section['items'] as $item): ?>
+            <div class="jg-menu-item<?php echo (!$item['is_available']) ? ' jg-menu-item__unavailable' : ''; ?>">
+                <div style="flex:1;min-width:0">
+                    <div class="jg-menu-item__name"><?php echo esc_html($item['name']); ?></div>
+                    <?php if (!empty($item['description'])): ?>
+                    <div class="jg-menu-item__desc"><?php echo esc_html($item['description']); ?></div>
+                    <?php endif; ?>
+                    <?php if (!empty($item['dietary_tags'])): ?>
+                    <div class="jg-menu-item__tags">
+                        <?php
+                        foreach (explode(',', $item['dietary_tags']) as $dtag) {
+                            $dtag = trim($dtag);
+                            if ($dtag !== '') {
+                                $label = isset($dietary_labels[$dtag]) ? $dietary_labels[$dtag] : esc_html($dtag);
+                                echo '<span class="jg-menu-item__tag">' . $label . '</span>';
+                            }
+                        }
+                        ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php if ($item['price'] !== null && $item['price'] !== ''): ?>
+                <div class="jg-menu-item__price"><?php echo number_format(floatval($item['price']), 2, ',', ' ') . ' zł'; ?></div>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endforeach; ?>
+    <?php elseif (empty($photos)): ?>
+        <p class="jg-menu-empty">Menu nie zostało jeszcze dodane.</p>
+    <?php endif; ?>
+</div>
+
+<div class="jg-lightbox-overlay" id="jg-lightbox">
+    <span class="jg-lightbox-close" id="jg-lightbox-close">&times;</span>
+    <img id="jg-lightbox-img" src="" alt="">
+</div>
+
+<footer class="jg-sp-site-footer">
+    <a href="<?php echo esc_url(home_url('/')); ?>"><?php echo esc_html($site_name); ?></a> &middot;
+    <a href="<?php echo esc_url($point_url); ?>"><?php echo esc_html($point['title']); ?></a>
+</footer>
+
+<script>
+(function() {
+    var overlay = document.getElementById('jg-lightbox');
+    var img     = document.getElementById('jg-lightbox-img');
+    var closeBtn = document.getElementById('jg-lightbox-close');
+
+    document.querySelectorAll('.jg-menu-photo-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+            img.src = el.dataset.full || el.querySelector('img').src;
+            overlay.classList.add('active');
+        });
+    });
+    closeBtn.addEventListener('click', function() { overlay.classList.remove('active'); });
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.classList.remove('active'); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') overlay.classList.remove('active'); });
+})();
+</script>
+</body>
+</html>
+<?php
     }
 
     /**
@@ -1862,6 +2127,9 @@ class JG_Interactive_Map {
                     <?php if (!empty($point['email'])): ?>
                     ,"email": <?php echo json_encode($point['email']); ?>
                     <?php endif; ?>
+                    <?php if ($point['type'] === 'miejsce' && ($point['category'] ?? '') === 'gastronomia' && JG_Map_Database::point_has_menu($point['id'])): ?>
+                    ,"hasMenu": <?php echo json_encode(home_url('/miejsce/' . $point['slug'] . '/menu/')); ?>
+                    <?php endif; ?>
                     <?php if (!empty($point['opening_hours'])): ?>
                     <?php
                     $schema_oh_days = ['Mo'=>'https://schema.org/Monday','Tu'=>'https://schema.org/Tuesday','We'=>'https://schema.org/Wednesday','Th'=>'https://schema.org/Thursday','Fr'=>'https://schema.org/Friday','Sa'=>'https://schema.org/Saturday','Su'=>'https://schema.org/Sunday'];
@@ -2074,6 +2342,24 @@ class JG_Interactive_Map {
             $xml .= '    </url>' . "\n";
         }
 
+        // Add menu subpages for gastronomic places that have menu data
+        $gastronomic_points = $wpdb->get_results(
+            "SELECT id, slug, updated_at FROM $table WHERE type = 'miejsce' AND category = 'gastronomia' AND status = 'publish' AND slug IS NOT NULL ORDER BY id ASC",
+            ARRAY_A
+        );
+        foreach ($gastronomic_points as $gp) {
+            if (JG_Map_Database::point_has_menu($gp['id'])) {
+                $menu_url     = home_url('/miejsce/' . $gp['slug'] . '/menu/');
+                $menu_lastmod = get_date_from_gmt($gp['updated_at'], 'c');
+                $xml .= '    <url>' . "\n";
+                $xml .= '        <loc>' . esc_url($menu_url) . '</loc>' . "\n";
+                $xml .= '        <lastmod>' . $menu_lastmod . '</lastmod>' . "\n";
+                $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+                $xml .= '        <priority>0.7</priority>' . "\n";
+                $xml .= '    </url>' . "\n";
+            }
+        }
+
         // Add tag filter pages to sitemap with clean URLs
         $all_tags = JG_Map_Database::get_all_tags();
         foreach ($all_tags as $tag) {
@@ -2209,6 +2495,24 @@ class JG_Interactive_Map {
             }
 
             $xml .= '    </url>' . "\n";
+        }
+
+        // Add menu subpages for gastronomic places
+        $gastronomic_points2 = $wpdb->get_results(
+            "SELECT id, slug, updated_at FROM $table WHERE type = 'miejsce' AND category = 'gastronomia' AND status = 'publish' AND slug IS NOT NULL ORDER BY id ASC",
+            ARRAY_A
+        );
+        foreach ($gastronomic_points2 as $gp) {
+            if (JG_Map_Database::point_has_menu($gp['id'])) {
+                $menu_url     = home_url('/miejsce/' . $gp['slug'] . '/menu/');
+                $menu_lastmod = get_date_from_gmt($gp['updated_at'], 'c');
+                $xml .= '    <url>' . "\n";
+                $xml .= '        <loc>' . esc_url($menu_url) . '</loc>' . "\n";
+                $xml .= '        <lastmod>' . $menu_lastmod . '</lastmod>' . "\n";
+                $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+                $xml .= '        <priority>0.7</priority>' . "\n";
+                $xml .= '    </url>' . "\n";
+            }
         }
 
         // Add tag filter pages to sitemap with clean URLs

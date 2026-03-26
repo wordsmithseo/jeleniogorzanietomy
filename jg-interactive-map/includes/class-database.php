@@ -188,6 +188,47 @@ class JG_Map_Database {
             KEY point_id (point_id)
         ) $charset_collate;";
 
+        // Table for menu sections
+        $table_menu_sections = $wpdb->prefix . 'jg_map_menu_sections';
+        $sql_menu_sections = "CREATE TABLE IF NOT EXISTS $table_menu_sections (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            name varchar(255) NOT NULL,
+            sort_order int(11) DEFAULT 0,
+            PRIMARY KEY (id),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+
+        // Table for menu items
+        $table_menu_items = $wpdb->prefix . 'jg_map_menu_items';
+        $sql_menu_items = "CREATE TABLE IF NOT EXISTS $table_menu_items (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            section_id bigint(20) UNSIGNED NOT NULL,
+            name varchar(255) NOT NULL,
+            description text DEFAULT NULL,
+            price decimal(8,2) DEFAULT NULL,
+            dietary_tags varchar(255) DEFAULT NULL,
+            sort_order int(11) DEFAULT 0,
+            is_available tinyint(1) DEFAULT 1,
+            PRIMARY KEY (id),
+            KEY point_id (point_id),
+            KEY section_id (section_id)
+        ) $charset_collate;";
+
+        // Table for menu card photos (Type A - scans of physical menu)
+        $table_menu_photos = $wpdb->prefix . 'jg_map_menu_photos';
+        $sql_menu_photos = "CREATE TABLE IF NOT EXISTS $table_menu_photos (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            url varchar(500) NOT NULL,
+            thumb_url varchar(500) DEFAULT NULL,
+            sort_order int(11) DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_points);
         dbDelta($sql_votes);
@@ -196,6 +237,9 @@ class JG_Map_Database {
         dbDelta($sql_relevance_votes);
         dbDelta($sql_point_visits);
         dbDelta($sql_slug_redirects);
+        dbDelta($sql_menu_sections);
+        dbDelta($sql_menu_items);
+        dbDelta($sql_menu_photos);
 
         // Set plugin version
         update_option('jg_map_db_version', JG_MAP_VERSION);
@@ -240,7 +284,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.24.53'; // Add email column for all points
+        $current_schema_version = '3.24.56'; // Add menu sections, items and photos tables
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -550,6 +594,48 @@ class JG_Map_Database {
             KEY point_id (point_id)
         ) $charset_collate;";
         dbDelta($sql_slug_redirects);
+
+        // Ensure menu tables exist
+        $table_menu_sections = $wpdb->prefix . 'jg_map_menu_sections';
+        $sql_menu_sections = "CREATE TABLE IF NOT EXISTS $table_menu_sections (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            name varchar(255) NOT NULL,
+            sort_order int(11) DEFAULT 0,
+            PRIMARY KEY (id),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+        dbDelta($sql_menu_sections);
+
+        $table_menu_items = $wpdb->prefix . 'jg_map_menu_items';
+        $sql_menu_items = "CREATE TABLE IF NOT EXISTS $table_menu_items (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            section_id bigint(20) UNSIGNED NOT NULL,
+            name varchar(255) NOT NULL,
+            description text DEFAULT NULL,
+            price decimal(8,2) DEFAULT NULL,
+            dietary_tags varchar(255) DEFAULT NULL,
+            sort_order int(11) DEFAULT 0,
+            is_available tinyint(1) DEFAULT 1,
+            PRIMARY KEY (id),
+            KEY point_id (point_id),
+            KEY section_id (section_id)
+        ) $charset_collate;";
+        dbDelta($sql_menu_items);
+
+        $table_menu_photos = $wpdb->prefix . 'jg_map_menu_photos';
+        $sql_menu_photos = "CREATE TABLE IF NOT EXISTS $table_menu_photos (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            url varchar(500) NOT NULL,
+            thumb_url varchar(500) DEFAULT NULL,
+            sort_order int(11) DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+        dbDelta($sql_menu_photos);
 
         // Cache the schema version to avoid running these checks on every page load
         update_option('jg_map_schema_version', $current_schema_version);
@@ -2183,5 +2269,197 @@ class JG_Map_Database {
             'Ą' => 'A', 'Ć' => 'C', 'Ę' => 'E', 'Ł' => 'L', 'Ń' => 'N',
             'Ó' => 'O', 'Ś' => 'S', 'Ź' => 'Z', 'Ż' => 'Z',
         ));
+    }
+
+    // -----------------------------------------------------------------------
+    // Menu helpers
+    // -----------------------------------------------------------------------
+
+    public static function get_menu_sections_table() {
+        global $wpdb;
+        return $wpdb->prefix . 'jg_map_menu_sections';
+    }
+
+    public static function get_menu_items_table() {
+        global $wpdb;
+        return $wpdb->prefix . 'jg_map_menu_items';
+    }
+
+    public static function get_menu_photos_table() {
+        global $wpdb;
+        return $wpdb->prefix . 'jg_map_menu_photos';
+    }
+
+    /**
+     * Return full menu for a point: array of sections each with ->items array.
+     */
+    public static function get_menu($point_id) {
+        global $wpdb;
+        $point_id = intval($point_id);
+
+        $st = self::get_menu_sections_table();
+        $it = self::get_menu_items_table();
+
+        $sections = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, name, sort_order FROM $st WHERE point_id = %d ORDER BY sort_order ASC, id ASC",
+                $point_id
+            ),
+            ARRAY_A
+        );
+
+        if (empty($sections)) {
+            return array();
+        }
+
+        $section_ids = array_map('intval', array_column($sections, 'id'));
+        $placeholders = implode(',', array_fill(0, count($section_ids), '%d'));
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $items = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, section_id, name, description, price, dietary_tags, sort_order, is_available
+                 FROM $it
+                 WHERE section_id IN ($placeholders)
+                 ORDER BY sort_order ASC, id ASC",
+                ...$section_ids
+            ),
+            ARRAY_A
+        );
+
+        // Group items by section
+        $items_by_section = array();
+        foreach ($items as $item) {
+            $items_by_section[intval($item['section_id'])][] = $item;
+        }
+
+        foreach ($sections as &$section) {
+            $sid = intval($section['id']);
+            $section['items'] = isset($items_by_section[$sid]) ? $items_by_section[$sid] : array();
+        }
+        unset($section);
+
+        return $sections;
+    }
+
+    /**
+     * Replace all sections and items for a point.
+     * $sections = [['name'=>'...', 'items'=>[['name'=>'...','price'=>0.0,'description'=>'...','dietary_tags'=>'...'],...]],...]
+     */
+    public static function save_menu($point_id, $sections) {
+        global $wpdb;
+        $point_id = intval($point_id);
+
+        $st = self::get_menu_sections_table();
+        $it = self::get_menu_items_table();
+
+        // Delete existing data
+        $section_ids = $wpdb->get_col(
+            $wpdb->prepare("SELECT id FROM $st WHERE point_id = %d", $point_id)
+        );
+        if (!empty($section_ids)) {
+            $placeholders = implode(',', array_fill(0, count($section_ids), '%d'));
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+            $wpdb->query($wpdb->prepare("DELETE FROM $it WHERE section_id IN ($placeholders)", ...$section_ids));
+        }
+        $wpdb->delete($st, array('point_id' => $point_id), array('%d'));
+
+        // Insert new data
+        foreach ($sections as $sort_s => $sec) {
+            $sec_name = sanitize_text_field(substr($sec['name'] ?? '', 0, 255));
+            if ($sec_name === '') continue;
+
+            $wpdb->insert(
+                $st,
+                array('point_id' => $point_id, 'name' => $sec_name, 'sort_order' => $sort_s),
+                array('%d', '%s', '%d')
+            );
+            $section_id = $wpdb->insert_id;
+
+            foreach (($sec['items'] ?? array()) as $sort_i => $item) {
+                $item_name = sanitize_text_field(substr($item['name'] ?? '', 0, 255));
+                if ($item_name === '') continue;
+
+                $price = isset($item['price']) && $item['price'] !== '' ? round(floatval($item['price']), 2) : null;
+                $desc  = sanitize_textarea_field($item['description'] ?? '');
+                $dtags = sanitize_text_field(substr($item['dietary_tags'] ?? '', 0, 255));
+                $avail = isset($item['is_available']) ? (intval($item['is_available']) ? 1 : 0) : 1;
+
+                $wpdb->insert(
+                    $it,
+                    array(
+                        'point_id'     => $point_id,
+                        'section_id'   => $section_id,
+                        'name'         => $item_name,
+                        'description'  => $desc,
+                        'price'        => $price,
+                        'dietary_tags' => $dtags,
+                        'sort_order'   => $sort_i,
+                        'is_available' => $avail,
+                    ),
+                    array('%d', '%d', '%s', '%s', $price !== null ? '%f' : 'null', '%s', '%d', '%d')
+                );
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Return menu card photos for a point.
+     */
+    public static function get_menu_photos($point_id) {
+        global $wpdb;
+        $pt = self::get_menu_photos_table();
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, url, thumb_url, sort_order FROM $pt WHERE point_id = %d ORDER BY sort_order ASC, id ASC",
+                intval($point_id)
+            ),
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Add a menu card photo.
+     */
+    public static function add_menu_photo($point_id, $url, $thumb_url) {
+        global $wpdb;
+        $pt = self::get_menu_photos_table();
+        $next_order = (int)$wpdb->get_var(
+            $wpdb->prepare("SELECT COALESCE(MAX(sort_order),0)+1 FROM $pt WHERE point_id = %d", intval($point_id))
+        );
+        $wpdb->insert(
+            $pt,
+            array('point_id' => intval($point_id), 'url' => esc_url_raw($url), 'thumb_url' => esc_url_raw($thumb_url), 'sort_order' => $next_order),
+            array('%d', '%s', '%s', '%d')
+        );
+        return $wpdb->insert_id;
+    }
+
+    /**
+     * Delete a menu card photo. Returns true if deleted.
+     */
+    public static function delete_menu_photo($photo_id, $point_id) {
+        global $wpdb;
+        $pt = self::get_menu_photos_table();
+        $deleted = $wpdb->delete(
+            $pt,
+            array('id' => intval($photo_id), 'point_id' => intval($point_id)),
+            array('%d', '%d')
+        );
+        return $deleted !== false && $deleted > 0;
+    }
+
+    /**
+     * Check if a point has any menu data (sections or photos).
+     */
+    public static function point_has_menu($point_id) {
+        global $wpdb;
+        $st = self::get_menu_sections_table();
+        $pt = self::get_menu_photos_table();
+        $sections = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $st WHERE point_id = %d", intval($point_id)));
+        $photos   = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $pt WHERE point_id = %d", intval($point_id)));
+        return ($sections + $photos) > 0;
     }
 }
