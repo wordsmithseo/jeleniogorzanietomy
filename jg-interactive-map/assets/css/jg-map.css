@@ -5146,6 +5146,28 @@ img.emoji {
   background: #e0e7ff;
   border-color: #a5b4fc;
 }
+/* Menu badges */
+.jg-map-sidebar .jg-info-badge--has-menu {
+  border-color: #6ee7b7;
+  background: #d1fae5;
+  color: #065f46;
+}
+.jg-map-sidebar .jg-info-badge--has-menu:hover {
+  background: #a7f3d0;
+  border-color: #34d399;
+}
+.jg-map-sidebar .jg-info-badge--no-menu {
+  border-color: #fca5a5;
+  background: #fee2e2;
+  color: #991b1b;
+  opacity: 0.75;
+}
+.jg-map-sidebar .jg-info-badge--no-menu:hover {
+  background: #fecaca;
+  border-color: #f87171;
+  opacity: 1;
+}
+
 /* Tooltip is rendered as a fixed <div> by JS (jg-sidebar.js) to avoid
    clipping by overflow:hidden parents. See #jg-badge-tooltip below. */
 

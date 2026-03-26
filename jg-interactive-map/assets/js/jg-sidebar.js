@@ -732,6 +732,13 @@
             var photoLabel = n === 1 ? '1 zdjęcie' : (n < 5 ? n + ' zdjęcia' : n + ' zdjęć');
             badges.push({ icon: '📷', tip: photoLabel });
         }
+        if (point.can_have_menu) {
+            if (point.has_menu) {
+                badges.push({ icon: '🍽️', tip: 'Posiada menu', cls: 'jg-info-badge--has-menu' });
+            } else {
+                badges.push({ icon: '🍽️', tip: 'Brak menu', cls: 'jg-info-badge--no-menu' });
+            }
+        }
 
         // Admin/moderator-only badges
         var adminBadges = [];
@@ -750,7 +757,8 @@
 
         var html = '<div class="jg-sidebar-item__info-badges">';
         for (var i = 0; i < badges.length; i++) {
-            html += '<span class="jg-info-badge" data-jg-tip="' + escapeHtml(badges[i].tip) + '">' + badges[i].icon + '</span>';
+            var bCls = badges[i].cls ? ' ' + badges[i].cls : '';
+            html += '<span class="jg-info-badge' + bCls + '" data-jg-tip="' + escapeHtml(badges[i].tip) + '">' + badges[i].icon + '</span>';
         }
         for (var j = 0; j < adminBadges.length; j++) {
             var cls = adminBadges[j].cls || 'jg-info-badge--admin';

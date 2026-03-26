@@ -2532,4 +2532,23 @@ class JG_Map_Database {
         $photos   = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $pt WHERE point_id = %d", intval($point_id)));
         return ($sections + $photos) > 0;
     }
+
+    /**
+     * Batch-check which of the given point IDs have menu content.
+     * Returns a flat array of point IDs that have at least one section or photo.
+     */
+    public static function get_menu_point_ids_batch(array $point_ids) {
+        if (empty($point_ids)) return array();
+        global $wpdb;
+        $st   = self::get_menu_sections_table();
+        $pt   = self::get_menu_photos_table();
+        $ids  = implode(',', array_map('intval', $point_ids));
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $rows = $wpdb->get_col(
+            "SELECT DISTINCT point_id FROM $st WHERE point_id IN ($ids)
+             UNION
+             SELECT DISTINCT point_id FROM $pt WHERE point_id IN ($ids)"
+        );
+        return array_map('intval', $rows ?: array());
+    }
 }
