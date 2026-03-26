@@ -208,6 +208,7 @@ class JG_Map_Database {
             name varchar(255) NOT NULL,
             description text DEFAULT NULL,
             price decimal(8,2) DEFAULT NULL,
+            variants text DEFAULT NULL,
             dietary_tags varchar(255) DEFAULT NULL,
             sort_order int(11) DEFAULT 0,
             is_available tinyint(1) DEFAULT 1,
@@ -284,7 +285,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.24.56'; // Add menu sections, items and photos tables
+        $current_schema_version = '3.25.0'; // Add variants column to menu items
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -615,6 +616,7 @@ class JG_Map_Database {
             name varchar(255) NOT NULL,
             description text DEFAULT NULL,
             price decimal(8,2) DEFAULT NULL,
+            variants text DEFAULT NULL,
             dietary_tags varchar(255) DEFAULT NULL,
             sort_order int(11) DEFAULT 0,
             is_available tinyint(1) DEFAULT 1,
@@ -623,6 +625,13 @@ class JG_Map_Database {
             KEY section_id (section_id)
         ) $charset_collate;";
         dbDelta($sql_menu_items);
+
+        // Add variants column to existing installations
+        $safe_items_table = esc_sql($table_menu_items);
+        $col_check = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `$safe_items_table` LIKE %s", 'variants'));
+        if (empty($col_check)) {
+            $wpdb->query("ALTER TABLE `$safe_items_table` ADD COLUMN variants text DEFAULT NULL AFTER price");
+        }
 
         $table_menu_photos = $wpdb->prefix . 'jg_map_menu_photos';
         $sql_menu_photos = "CREATE TABLE IF NOT EXISTS $table_menu_photos (
@@ -2318,7 +2327,7 @@ class JG_Map_Database {
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         $items = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT id, section_id, name, description, price, dietary_tags, sort_order, is_available
+                "SELECT id, section_id, name, description, price, variants, dietary_tags, sort_order, is_available
                  FROM $it
                  WHERE section_id IN ($placeholders)
                  ORDER BY sort_order ASC, id ASC",
@@ -2385,6 +2394,22 @@ class JG_Map_Database {
                 $dtags = sanitize_text_field(substr($item['dietary_tags'] ?? '', 0, 255));
                 $avail = isset($item['is_available']) ? (intval($item['is_available']) ? 1 : 0) : 1;
 
+                // Sanitize variants (array of {label, price})
+                $variants_json = null;
+                if (!empty($item['variants']) && is_array($item['variants'])) {
+                    $clean_variants = array();
+                    foreach ($item['variants'] as $v) {
+                        $vlabel = sanitize_text_field(substr($v['label'] ?? '', 0, 100));
+                        $vprice = isset($v['price']) && $v['price'] !== '' ? round(floatval($v['price']), 2) : null;
+                        if ($vlabel !== '') {
+                            $clean_variants[] = array('label' => $vlabel, 'price' => $vprice);
+                        }
+                    }
+                    if (!empty($clean_variants)) {
+                        $variants_json = wp_json_encode($clean_variants);
+                    }
+                }
+
                 $wpdb->insert(
                     $it,
                     array(
@@ -2393,11 +2418,12 @@ class JG_Map_Database {
                         'name'         => $item_name,
                         'description'  => $desc,
                         'price'        => $price,
+                        'variants'     => $variants_json,
                         'dietary_tags' => $dtags,
                         'sort_order'   => $sort_i,
                         'is_available' => $avail,
                     ),
-                    array('%d', '%d', '%s', '%s', $price !== null ? '%f' : 'null', '%s', '%d', '%d')
+                    array('%d', '%d', '%s', '%s', $price !== null ? '%f' : 'null', $variants_json !== null ? '%s' : 'null', '%s', '%d', '%d')
                 );
             }
         }
