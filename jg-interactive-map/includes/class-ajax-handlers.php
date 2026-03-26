@@ -8264,6 +8264,20 @@ class JG_Map_Ajax_Handlers {
 
         // Build simplified result for sidebar
         $is_admin_or_mod = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        // Batch-load menu presence for menu-capable places (avoids N+1 queries)
+        $menu_categories   = self::get_menu_categories();
+        $menu_capable_ids  = array();
+        foreach ($sorted_points as $point) {
+            if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', $menu_categories, true)) {
+                $menu_capable_ids[] = intval($point['id']);
+            }
+        }
+        $has_menu_ids = !empty($menu_capable_ids)
+            ? JG_Map_Database::get_menu_point_ids_batch($menu_capable_ids)
+            : array();
+        $has_menu_set = array_flip($has_menu_ids);
+
         $result = array();
         foreach ($sorted_points as $point) {
             $item = array(
@@ -8288,7 +8302,9 @@ class JG_Map_Ajax_Handlers {
                 'has_tags'         => $this->point_has_tags($point),
                 'category'         => !empty($point['category']) ? sanitize_text_field($point['category']) : '',
                 'images_count'     => $this->get_images_count($point),
-                'opening_hours'    => ($point['type'] === 'miejsce') ? ($point['opening_hours'] ?? null) : null
+                'opening_hours'    => ($point['type'] === 'miejsce') ? ($point['opening_hours'] ?? null) : null,
+                'can_have_menu'    => in_array(intval($point['id']), $menu_capable_ids, true),
+                'has_menu'         => isset($has_menu_set[intval($point['id'])])
             );
 
             // Admin/moderator-only fields
