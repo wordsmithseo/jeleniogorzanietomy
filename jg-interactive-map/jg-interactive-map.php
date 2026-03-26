@@ -1387,40 +1387,6 @@ class JG_Interactive_Map {
                 </div>
             <?php endif; ?>
 
-            <!-- Opening hours -->
-            <?php
-            $sp_oh_days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-            $sp_oh_labels = ['Mo' => 'Poniedziałek', 'Tu' => 'Wtorek', 'We' => 'Środa', 'Th' => 'Czwartek', 'Fr' => 'Piątek', 'Sa' => 'Sobota', 'Su' => 'Niedziela'];
-            $sp_oh_parsed = [];
-            if (!empty($point['opening_hours'])) {
-                foreach (explode("\n", $point['opening_hours']) as $sp_oh_line) {
-                    $sp_oh_line = trim($sp_oh_line);
-                    if (preg_match('/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/', $sp_oh_line, $sp_oh_m)) {
-                        $sp_oh_parsed[$sp_oh_m[1]] = ['open' => $sp_oh_m[2], 'close' => $sp_oh_m[3]];
-                    }
-                }
-            }
-            if (!empty($sp_oh_parsed)):
-            ?>
-            <div class="jg-sp-oh">
-                <h2 class="jg-sp-oh-title">Godziny otwarcia</h2>
-                <table class="jg-sp-oh-table">
-                    <?php foreach ($sp_oh_days as $sp_oh_key): ?>
-                    <tr>
-                        <td class="jg-sp-oh-day"><?php echo esc_html($sp_oh_labels[$sp_oh_key]); ?></td>
-                        <td class="jg-sp-oh-time">
-                            <?php if (isset($sp_oh_parsed[$sp_oh_key])): ?>
-                                <?php echo esc_html($sp_oh_parsed[$sp_oh_key]['open'] . ' – ' . ($sp_oh_parsed[$sp_oh_key]['close'] === '24:00' ? '00:00' : $sp_oh_parsed[$sp_oh_key]['close'])); ?>
-                            <?php else: ?>
-                                <span class="jg-sp-oh-closed">Nieczynne</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </table>
-            </div>
-            <?php endif; ?>
-
             <!-- Menu preview (gastronomy places only) -->
             <?php
             if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])):
@@ -1468,6 +1434,40 @@ class JG_Interactive_Map {
                 <a href="<?php echo esc_url($sp_menu_url); ?>" class="jg-sp-menu-preview__link">Zobacz pełne menu →</a>
             </div>
             <?php endif; endif; ?>
+
+            <!-- Opening hours -->
+            <?php
+            $sp_oh_days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+            $sp_oh_labels = ['Mo' => 'Poniedziałek', 'Tu' => 'Wtorek', 'We' => 'Środa', 'Th' => 'Czwartek', 'Fr' => 'Piątek', 'Sa' => 'Sobota', 'Su' => 'Niedziela'];
+            $sp_oh_parsed = [];
+            if (!empty($point['opening_hours'])) {
+                foreach (explode("\n", $point['opening_hours']) as $sp_oh_line) {
+                    $sp_oh_line = trim($sp_oh_line);
+                    if (preg_match('/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/', $sp_oh_line, $sp_oh_m)) {
+                        $sp_oh_parsed[$sp_oh_m[1]] = ['open' => $sp_oh_m[2], 'close' => $sp_oh_m[3]];
+                    }
+                }
+            }
+            if (!empty($sp_oh_parsed)):
+            ?>
+            <div class="jg-sp-oh">
+                <h2 class="jg-sp-oh-title">Godziny otwarcia</h2>
+                <table class="jg-sp-oh-table">
+                    <?php foreach ($sp_oh_days as $sp_oh_key): ?>
+                    <tr>
+                        <td class="jg-sp-oh-day"><?php echo esc_html($sp_oh_labels[$sp_oh_key]); ?></td>
+                        <td class="jg-sp-oh-time">
+                            <?php if (isset($sp_oh_parsed[$sp_oh_key])): ?>
+                                <?php echo esc_html($sp_oh_parsed[$sp_oh_key]['open'] . ' – ' . ($sp_oh_parsed[$sp_oh_key]['close'] === '24:00' ? '00:00' : $sp_oh_parsed[$sp_oh_key]['close'])); ?>
+                            <?php else: ?>
+                                <span class="jg-sp-oh-closed">Nieczynne</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+            </div>
+            <?php endif; ?>
 
             <!-- Image: hero if 1 image, gallery grid if multiple -->
             <?php if (count($all_images) === 1): ?>
@@ -2215,7 +2215,50 @@ class JG_Interactive_Map {
                     ,"email": <?php echo json_encode($point['email']); ?>
                     <?php endif; ?>
                     <?php if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])): ?>
-                    ,"hasMenu": <?php echo json_encode(home_url('/miejsce/' . $point['slug'] . '/menu/')); ?>
+                    <?php
+                    $ld_menu_url      = home_url('/miejsce/' . $point['slug'] . '/menu/');
+                    $ld_menu_sections = JG_Map_Database::get_menu($point['id']);
+                    $ld_menu_obj      = array(
+                        '@type' => 'Menu',
+                        '@id'   => $ld_menu_url . '#menu',
+                        'name'  => 'Menu – ' . $point['title'],
+                        'url'   => $ld_menu_url,
+                    );
+                    $ld_sections_out = array();
+                    foreach ($ld_menu_sections as $ld_sec) {
+                        $ld_items_out = array();
+                        foreach ($ld_sec['items'] as $ld_item) {
+                            $ld_item_schema = array('@type' => 'MenuItem', 'name' => $ld_item['name']);
+                            if (!empty($ld_item['description'])) {
+                                $ld_item_schema['description'] = $ld_item['description'];
+                            }
+                            $ld_variants = array();
+                            if (!empty($ld_item['variants'])) {
+                                $ld_dec = json_decode($ld_item['variants'], true);
+                                if (is_array($ld_dec)) $ld_variants = $ld_dec;
+                            }
+                            $ld_price = null;
+                            if (!empty($ld_variants)) {
+                                $ld_min = null;
+                                foreach ($ld_variants as $lv) { $lvp = floatval($lv['price']); if ($ld_min === null || $lvp < $ld_min) $ld_min = $lvp; }
+                                $ld_price = $ld_min;
+                            } elseif ($ld_item['price'] !== null && $ld_item['price'] !== '') {
+                                $ld_price = floatval($ld_item['price']);
+                            }
+                            if ($ld_price !== null) {
+                                $ld_item_schema['offers'] = array('@type' => 'Offer', 'price' => number_format($ld_price, 2, '.', ''), 'priceCurrency' => 'PLN');
+                            }
+                            $ld_items_out[] = $ld_item_schema;
+                        }
+                        if (!empty($ld_items_out)) {
+                            $ld_sections_out[] = array('@type' => 'MenuSection', 'name' => $ld_sec['name'], 'hasMenuItem' => $ld_items_out);
+                        }
+                    }
+                    if (!empty($ld_sections_out)) {
+                        $ld_menu_obj['hasMenuSection'] = $ld_sections_out;
+                    }
+                    ?>
+                    ,"hasMenu": <?php echo json_encode($ld_menu_obj, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
                     <?php endif; ?>
                     <?php if (!empty($point['opening_hours'])): ?>
                     <?php
