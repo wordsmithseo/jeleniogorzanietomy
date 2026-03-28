@@ -1336,6 +1336,7 @@ class JG_Map_Ajax_Handlers {
      * Get user information (for user profile modal)
      */
     public function get_user_info() {
+        $this->verify_nonce();
         global $wpdb;
         $table_points = $wpdb->prefix . 'jg_map_points';
 
@@ -1560,6 +1561,7 @@ class JG_Map_Ajax_Handlers {
      * Get last 10 pin-related actions for a user
      */
     public function get_user_activity() {
+        $this->verify_nonce();
         global $wpdb;
 
         $user_id = intval($_POST['user_id'] ?? 0);
@@ -1668,6 +1670,7 @@ class JG_Map_Ajax_Handlers {
      * Get top 10 users ranking by number of published places
      */
     public function get_ranking() {
+        $this->verify_nonce();
         global $wpdb;
         $table_points = $wpdb->prefix . 'jg_map_points';
         $table_xp = $wpdb->prefix . 'jg_map_user_xp';
@@ -6742,6 +6745,7 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_error('Musisz być zalogowany');
             exit;
         }
+        $this->verify_nonce();
 
         $user_id = get_current_user_id();
         $password = isset($_POST['password']) ? $_POST['password'] : '';
@@ -6775,6 +6779,7 @@ class JG_Map_Ajax_Handlers {
             wp_send_json_error('Musisz być zalogowany');
             exit;
         }
+        $this->verify_nonce();
 
         $user_id = get_current_user_id();
         $password = isset($_POST['password']) ? $_POST['password'] : '';
@@ -7610,6 +7615,7 @@ class JG_Map_Ajax_Handlers {
      * Returns multiple results for autocomplete suggestions
      */
     public function search_address() {
+        $this->verify_nonce();
         // Rate limiting: max 30 requests per IP per minute
         $ip = sanitize_text_field($_SERVER['REMOTE_ADDR'] ?? '');
         $rate_key = 'jg_geocode_rate_' . md5($ip);
@@ -8123,6 +8129,7 @@ class JG_Map_Ajax_Handlers {
      * Get points for sidebar widget with sorting and filtering
      */
     public function get_sidebar_points() {
+        $this->verify_nonce();
         $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
         $current_user_id = get_current_user_id();
 
