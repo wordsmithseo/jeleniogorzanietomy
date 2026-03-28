@@ -122,6 +122,9 @@ class JG_Interactive_Map {
         add_action('wp_head', array($this, 'add_point_meta_tags'));
         add_action('wp_head', array($this, 'add_tag_page_meta_tags'));
 
+        // Suppress Yoast/RankMath meta description on catalog tag pages (plugin outputs its own)
+        add_action('wp', array($this, 'suppress_seo_plugin_description_on_tag_pages'));
+
         // Override document title for tag pages
         add_filter('document_title_parts', array($this, 'filter_tag_page_title'));
         add_filter('wpseo_title', array($this, 'filter_tag_page_yoast_title'));
@@ -2742,6 +2745,22 @@ class JG_Interactive_Map {
 
         wp_redirect($clean_url, 301);
         exit;
+    }
+
+    /**
+     * Suppress Yoast SEO / RankMath meta description on catalog tag pages.
+     * Called on 'wp' action (after query vars are parsed, before wp_head fires).
+     * The plugin outputs its own <meta name="description"> via add_tag_page_meta_tags(),
+     * so the SEO plugin must not output a second one.
+     */
+    public function suppress_seo_plugin_description_on_tag_pages() {
+        if (self::resolve_catalog_tag() === '') {
+            return;
+        }
+        // Yoast SEO: returning empty string prevents the tag from being output
+        add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
+        // RankMath equivalent
+        add_filter('rank_math/frontend/description', '__return_empty_string', PHP_INT_MAX);
     }
 
     /**
