@@ -467,6 +467,7 @@ class JG_Map_Shortcode {
             $catalog_base = home_url('/katalog/');
             ob_start();
             echo '<div class="jg-directory">';
+            echo '<h1 class="jg-dir-h1">#' . esc_html($active_tag) . ' – Miejsca w Jeleniej Górze</h1>';
             $this->render_tag_cloud($table, $catalog_base, $active_tag);
             echo '<p style="color:#6b7280;margin-top:16px">Brak miejsc z tagiem <strong>#' . esc_html($active_tag) . '</strong>.</p>';
             echo '<p><a href="' . esc_url($catalog_base) . '" style="color:#2563eb">Pokaż wszystkie miejsca</a></p>';
@@ -521,8 +522,14 @@ class JG_Map_Shortcode {
         ob_start();
         ?>
         <div class="jg-directory">
+            <?php if ($active_tag !== ''): ?>
+                <h1 class="jg-dir-h1">#<?php echo esc_html($active_tag); ?> – Miejsca w Jeleniej Górze</h1>
+            <?php else: ?>
+                <h1 class="jg-dir-h1">Katalog miejsc w Jeleniej Górze</h1>
+            <?php endif; ?>
             <style>
                 .jg-directory { padding: 4px 0; }
+                .jg-dir-h1 { font-size: calc(22 * var(--jg)); font-weight: 700; color: #111827; margin: 0 0 16px; line-height: 1.3; }
                 .jg-dir-section { margin-bottom: 24px; }
                 .jg-dir-section h3 { font-size: calc(12.8 * var(--jg)); font-weight: 600; color: #6b7280; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
                 .jg-dir-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0; }
