@@ -14,8 +14,20 @@
     beStrictAboutOutputDuringTests="true">
 
     <testsuites>
-        <testsuite name="JG Interactive Map Test Suite">
-            <directory>tests</directory>
+        <testsuite name="Smoke">
+            <file>tests/SmokeTest.php</file>
+        </testsuite>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Functional">
+            <directory>tests/Functional</directory>
+        </testsuite>
+        <testsuite name="Acceptance">
+            <directory>tests/Acceptance</directory>
+        </testsuite>
+        <testsuite name="Performance">
+            <directory>tests/Performance</directory>
         </testsuite>
     </testsuites>
 
