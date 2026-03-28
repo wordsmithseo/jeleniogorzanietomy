@@ -2748,19 +2748,33 @@ class JG_Interactive_Map {
     }
 
     /**
-     * Suppress Yoast SEO / RankMath meta description on catalog tag pages.
+     * Suppress ALL Yoast SEO / RankMath head output on catalog tag pages.
      * Called on 'wp' action (after query vars are parsed, before wp_head fires).
-     * The plugin outputs its own <meta name="description"> via add_tag_page_meta_tags(),
-     * so the SEO plugin must not output a second one.
+     * The plugin outputs its own complete set of meta tags via add_tag_page_meta_tags()
+     * (description, canonical, OG, Twitter, JSON-LD), so the SEO plugin must not
+     * output a second set.
      */
     public function suppress_seo_plugin_description_on_tag_pages() {
         if (self::resolve_catalog_tag() === '') {
             return;
         }
-        // Yoast SEO: returning empty string prevents the tag from being output
-        add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
-        // RankMath equivalent
-        add_filter('rank_math/frontend/description', '__return_empty_string', PHP_INT_MAX);
+
+        // Yoast SEO: remove entire wp_head output (covers description, OG, Twitter,
+        // canonical, JSON-LD schema) — same pattern as handle_point_page().
+        if (class_exists('WPSEO_Frontend')) {
+            remove_action('wp_head', array(WPSEO_Frontend::get_instance(), 'head'), 1);
+        }
+        if (class_exists('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration')) {
+            $yoast_front = YoastSEO()->classes->get('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration');
+            if ($yoast_front) {
+                remove_action('wp_head', array($yoast_front, 'call_wpseo_head'), 1);
+            }
+        }
+
+        // RankMath: remove its wp_head output
+        if (class_exists('RankMath\\Frontend\\Frontend')) {
+            remove_action('wp_head', array(\RankMath\Frontend\Frontend::get(), 'head'), 1);
+        }
     }
 
     /**
