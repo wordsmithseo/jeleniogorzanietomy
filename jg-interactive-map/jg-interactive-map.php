@@ -121,13 +121,17 @@ class JG_Interactive_Map {
         add_action('template_redirect', array($this, 'handle_tile_sw'), 1);
         add_action('wp_head', array($this, 'add_point_meta_tags'));
         add_action('wp_head', array($this, 'add_tag_page_meta_tags'));
+        add_action('wp_head', array($this, 'add_category_page_meta_tags'));
 
-        // Suppress Yoast/RankMath meta description on catalog tag pages (plugin outputs its own)
+        // Suppress Yoast/RankMath meta description on catalog tag/category pages (plugin outputs its own)
         add_action('wp', array($this, 'suppress_seo_plugin_description_on_tag_pages'));
+        add_action('wp', array($this, 'suppress_seo_plugin_description_on_category_pages'));
 
-        // Override document title for tag pages
+        // Override document title for tag and category pages
         add_filter('document_title_parts', array($this, 'filter_tag_page_title'));
         add_filter('wpseo_title', array($this, 'filter_tag_page_yoast_title'));
+        add_filter('document_title_parts', array($this, 'filter_category_page_title'));
+        add_filter('wpseo_title', array($this, 'filter_category_page_yoast_title'));
 
         // Register map sitemap in Yoast sitemap index for better discoverability
         add_filter('wpseo_sitemap_index', array($this, 'add_map_sitemap_to_yoast_index'));
@@ -309,6 +313,13 @@ class JG_Interactive_Map {
             'top'
         );
 
+        // Clean URL for catalog category pages: /katalog/kategoria/{slug}/
+        add_rewrite_rule(
+            '^katalog/kategoria/([^/]+)/?$',
+            'index.php?pagename=katalog&jg_catalog_category=$matches[1]',
+            'top'
+        );
+
         // Sitemap for places
         add_rewrite_rule(
             '^jg-map-sitemap\.xml$',
@@ -333,6 +344,7 @@ class JG_Interactive_Map {
         $vars[] = 'jg_map_type';
         $vars[] = 'jg_map_sitemap';
         $vars[] = 'jg_catalog_tag';
+        $vars[] = 'jg_catalog_category';
         $vars[] = 'jg_tile_sw';
         $vars[] = 'jg_map_menu';
         return $vars;
@@ -363,6 +375,13 @@ class JG_Interactive_Map {
         if ($flush_count_v4 < 3) {
             flush_rewrite_rules(false);
             update_option('jg_map_flush_count_v4', $flush_count_v4 + 1);
+        }
+
+        // v5: flush to register /katalog/kategoria/{slug}/ rewrite rule
+        $flush_count_v5 = get_option('jg_map_flush_count_v5', 0);
+        if ($flush_count_v5 < 3) {
+            flush_rewrite_rules(false);
+            update_option('jg_map_flush_count_v5', $flush_count_v5 + 1);
         }
 
         // Legacy flush check
@@ -2495,6 +2514,17 @@ class JG_Interactive_Map {
             }
         }
 
+        // Add category pages to sitemap (higher priority - SEO landing pages)
+        $all_place_cats = JG_Map_Database::get_all_place_categories();
+        foreach ($all_place_cats as $cat) {
+            $cat_url = self::get_category_url($cat);
+            $xml .= '    <url>' . "\n";
+            $xml .= '        <loc>' . esc_url($cat_url) . '</loc>' . "\n";
+            $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+            $xml .= '        <priority>0.7</priority>' . "\n";
+            $xml .= '    </url>' . "\n";
+        }
+
         // Add tag filter pages to sitemap with clean URLs
         $all_tags = JG_Map_Database::get_all_tags();
         foreach ($all_tags as $tag) {
@@ -2652,6 +2682,17 @@ class JG_Interactive_Map {
             }
         }
 
+        // Add category pages to sitemap (higher priority - SEO landing pages)
+        $all_place_cats2 = JG_Map_Database::get_all_place_categories();
+        foreach ($all_place_cats2 as $cat) {
+            $cat_url = self::get_category_url($cat);
+            $xml .= '    <url>' . "\n";
+            $xml .= '        <loc>' . esc_url($cat_url) . '</loc>' . "\n";
+            $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+            $xml .= '        <priority>0.7</priority>' . "\n";
+            $xml .= '    </url>' . "\n";
+        }
+
         // Add tag filter pages to sitemap with clean URLs
         $all_tags = JG_Map_Database::get_all_tags();
         foreach ($all_tags as $tag) {
@@ -2666,6 +2707,198 @@ class JG_Interactive_Map {
         $xml .= '</urlset>' . "\n";
 
         return $xml;
+    }
+
+    /**
+     * Filter document title parts for category pages (WordPress native title)
+     */
+    public function filter_category_page_title($title_parts) {
+        $category = self::resolve_catalog_category();
+        if ($category !== '') {
+            $title_parts['title'] = $this->get_category_seo_title($category);
+        }
+        return $title_parts;
+    }
+
+    /**
+     * Filter Yoast SEO title for category pages
+     */
+    public function filter_category_page_yoast_title($title) {
+        $category = self::resolve_catalog_category();
+        if ($category !== '') {
+            return $this->get_category_seo_title($category) . ' | ' . get_bloginfo('name');
+        }
+        return $title;
+    }
+
+    /**
+     * Suppress Yoast SEO / RankMath meta description on catalog category pages.
+     */
+    public function suppress_seo_plugin_description_on_category_pages() {
+        if (self::resolve_catalog_category() === '') {
+            return;
+        }
+        add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
+        add_filter('rank_math/frontend/description', '__return_empty_string', PHP_INT_MAX);
+    }
+
+    /**
+     * Public wrapper for shortcode access.
+     */
+    public function get_category_seo_title_public($category) {
+        return $this->get_category_seo_title($category);
+    }
+
+    /**
+     * Return SEO-optimised H1/title string for a given category name.
+     */
+    private function get_category_seo_title($category) {
+        $map = array(
+            'Gastronomia'                       => 'Restauracje i gastronomia w Jeleniej Górze',
+            'Atrakcja turystyczna'               => 'Atrakcje turystyczne Jelenia Góra',
+            'Hotele i schroniska'                => 'Hotele i noclegi w Jeleniej Górze',
+            'Historia i zabytki'                 => 'Zabytki i historia Jelenia Góra',
+            'Sport i rekreacja'                  => 'Sport i rekreacja w Jeleniej Górze',
+            'Kawiarnia'                          => 'Kawiarnie w Jeleniej Górze',
+            'Zakupy'                             => 'Sklepy i zakupy w Jeleniej Górze',
+            'Zdrowie'                            => 'Zdrowie i medycyna w Jeleniej Górze',
+            'Kultura'                            => 'Kultura i sztuka w Jeleniej Górze',
+            'Beauty i uroda'                     => 'Salony urody i beauty w Jeleniej Górze',
+            'Cukiernia'                          => 'Cukiernie w Jeleniej Górze',
+            'Fryzjer'                            => 'Fryzjerzy i barberzy w Jeleniej Górze',
+            'Masaż i SPA'                        => 'Masaż i SPA w Jeleniej Górze',
+            'Edukacja'                           => 'Edukacja i szkoły w Jeleniej Górze',
+            'Apteka'                             => 'Apteki w Jeleniej Górze',
+            'Transport publiczny'                => 'Transport publiczny w Jeleniej Górze',
+            'Miejsce kultu'                      => 'Kościoły i miejsca kultu w Jeleniej Górze',
+            'Parking bezpłatny'                  => 'Darmowe parkingi w Jeleniej Górze',
+            'Parking płatny'                     => 'Parkingi płatne w Jeleniej Górze',
+            'Zieleń'                             => 'Parki i tereny zielone w Jeleniej Górze',
+            'Usługi'                             => 'Usługi w Jeleniej Górze',
+            'Media'                              => 'Media i prasa w Jeleniej Górze',
+            'Branża IT'                          => 'Firmy IT w Jeleniej Górze',
+            'Produkcja'                          => 'Firmy produkcyjne w Jeleniej Górze',
+            'Służby publiczne oraz administracja' => 'Urzędy i administracja w Jeleniej Górze',
+            'Infrastruktura energetyczno-komunalna' => 'Infrastruktura komunalna Jelenia Góra',
+        );
+        return isset($map[$category]) ? $map[$category] : ($category . ' – Miejsca w Jeleniej Górze');
+    }
+
+    /**
+     * Return SEO meta description for a given category name and place count.
+     */
+    private function get_category_seo_description($category, $count) {
+        $map = array(
+            'Gastronomia'          => 'Odkryj restauracje, bary i lokale gastronomiczne w Jeleniej Górze. ' . $count . ' miejsc z adresami, godzinami otwarcia i ocenami.',
+            'Atrakcja turystyczna'  => 'Najlepsze atrakcje turystyczne w Jeleniej Górze i Sudetach. ' . $count . ' miejsc wartych odwiedzenia – zabytki, punkty widokowe, muzea.',
+            'Hotele i schroniska'   => 'Hotele, pensjonaty i schroniska w Jeleniej Górze. ' . $count . ' miejsc noclegowych w sercu Sudetów.',
+            'Historia i zabytki'    => 'Historyczne miejsca i zabytki w Jeleniej Górze. Poznaj ' . $count . ' miejsc z bogatą historią Kotliny Jeleniogórskiej.',
+            'Sport i rekreacja'     => 'Obiekty sportowe i miejsca rekreacji w Jeleniej Górze. ' . $count . ' miejsc – siłownie, baseny, boiska i aktywności na świeżym powietrzu.',
+            'Kawiarnia'             => 'Kawiarnie i herbaciarnie w Jeleniej Górze. ' . $count . ' miejsc na dobrą kawę i spotkanie ze znajomymi.',
+            'Zakupy'                => 'Sklepy, galerie handlowe i targowiska w Jeleniej Górze. ' . $count . ' miejsc zakupów w mieście i okolicach.',
+            'Zdrowie'               => 'Przychodnie, gabinety lekarskie i placówki zdrowia w Jeleniej Górze. ' . $count . ' miejsc.',
+            'Kultura'               => 'Teatry, galerie, kina i miejsca kulturalne w Jeleniej Górze. ' . $count . ' miejsc kultury i rozrywki.',
+            'Beauty i uroda'        => 'Salony fryzjerskie, kosmetyczne i SPA w Jeleniej Górze. ' . $count . ' miejsc beauty i urody.',
+            'Cukiernia'             => 'Cukiernie i lodziarnie w Jeleniej Górze. ' . $count . ' miejsc na słodką chwilę.',
+            'Masaż i SPA'           => 'Salony masażu i SPA w Jeleniej Górze. ' . $count . ' miejsc relaksu i odnowy.',
+        );
+        if (isset($map[$category])) {
+            return $map[$category];
+        }
+        return 'Przeglądaj ' . $count . ' miejsc w kategorii ' . $category . ' na interaktywnej mapie Jeleniej Góry. Odkryj lokalne miejsca z adresami i zdjęciami.';
+    }
+
+    /**
+     * Add SEO meta tags for catalog category pages
+     */
+    public function add_category_page_meta_tags() {
+        $category = self::resolve_catalog_category();
+        if ($category === '') {
+            return;
+        }
+
+        $category_url = self::get_category_url($category);
+
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+        $count = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table WHERE status = 'publish' AND slug IS NOT NULL AND slug != '' AND category = %s",
+            $category
+        ));
+
+        $h1_title    = $this->get_category_seo_title($category);
+        $description = $this->get_category_seo_description($category, $count);
+        $site_name   = get_bloginfo('name');
+
+        $robots = 'index, follow';
+        if (get_option('blog_public') == '0') {
+            $robots = 'noindex, nofollow';
+        }
+        $maintenance_mode = get_option('elementor_maintenance_mode_mode');
+        if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
+            $robots = 'noindex, nofollow';
+        }
+        ?>
+        <meta name="robots" content="<?php echo esc_attr($robots); ?>">
+        <link rel="canonical" href="<?php echo esc_url($category_url); ?>">
+        <meta name="description" content="<?php echo esc_attr($description); ?>">
+
+        <!-- Open Graph -->
+        <meta property="og:title" content="<?php echo esc_attr($h1_title); ?>">
+        <meta property="og:description" content="<?php echo esc_attr($description); ?>">
+        <meta property="og:url" content="<?php echo esc_url($category_url); ?>">
+        <meta property="og:type" content="website">
+        <meta property="og:locale" content="pl_PL">
+        <meta property="og:site_name" content="<?php echo esc_attr($site_name); ?>">
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" content="<?php echo esc_attr($h1_title); ?>">
+        <meta name="twitter:description" content="<?php echo esc_attr($description); ?>">
+
+        <!-- JSON-LD: CollectionPage -->
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "CollectionPage",
+                    "@id": <?php echo json_encode($category_url . '#webpage'); ?>,
+                    "url": <?php echo json_encode($category_url); ?>,
+                    "name": <?php echo json_encode($h1_title); ?>,
+                    "description": <?php echo json_encode($description); ?>,
+                    "isPartOf": {"@id": <?php echo json_encode(home_url('/#website')); ?>},
+                    "inLanguage": "pl-PL",
+                    "breadcrumb": {"@id": <?php echo json_encode($category_url . '#breadcrumb'); ?>},
+                    "numberOfItems": <?php echo $count; ?>
+                },
+                {
+                    "@type": "BreadcrumbList",
+                    "@id": <?php echo json_encode($category_url . '#breadcrumb'); ?>,
+                    "itemListElement": [
+                        {
+                            "@type": "ListItem",
+                            "position": 1,
+                            "name": "Strona główna",
+                            "item": <?php echo json_encode(home_url('/')); ?>
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "name": "Katalog",
+                            "item": <?php echo json_encode(home_url('/katalog/')); ?>
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 3,
+                            "name": <?php echo json_encode($category); ?>
+                        }
+                    ]
+                }
+            ]
+        }
+        </script>
+        <?php
     }
 
     /**
@@ -2696,6 +2929,36 @@ class JG_Interactive_Map {
     public static function get_tag_url($tag) {
         $slug = sanitize_title($tag);
         return home_url('/katalog/tag/' . $slug . '/');
+    }
+
+    /**
+     * Generate a clean category URL: /katalog/kategoria/{slug}/
+     */
+    public static function get_category_url($category) {
+        $slug = sanitize_title($category);
+        return home_url('/katalog/kategoria/' . $slug . '/');
+    }
+
+    /**
+     * Resolve the active category from the clean URL query var.
+     * The URL slug is matched against known categories to restore the original label.
+     */
+    public static function resolve_catalog_category() {
+        $slug = get_query_var('jg_catalog_category', '');
+        if ($slug === '') {
+            return '';
+        }
+
+        $slug = sanitize_title($slug);
+        $all_categories = JG_Map_Database::get_all_place_categories();
+
+        foreach ($all_categories as $cat) {
+            if (sanitize_title($cat) === $slug) {
+                return $cat;
+            }
+        }
+
+        return '';
     }
 
     /**
