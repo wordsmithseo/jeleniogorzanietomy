@@ -2763,6 +2763,66 @@ class JG_Interactive_Map {
     }
 
     /**
+     * Public wrapper for shortcode access.
+     */
+    public function get_category_intro_public($category, $count) {
+        return $this->get_category_intro($category, $count);
+    }
+
+    /**
+     * Return a short SEO intro paragraph for a category page.
+     * Shown below the H1. Targets the main keyword for each category.
+     */
+    private function get_category_intro($category, $count) {
+        $map = array(
+            'Gastronomia' =>
+                'Szukasz dobrego miejsca na obiad, kolację lub szybki lunch w Jeleniej Górze? Zebraliśmy ' . $count . ' lokali gastronomicznych – restauracje, bary, burgerownie i kuchnie świata. Każde miejsce znajdziesz na interaktywnej mapie z adresem i godzinami otwarcia.',
+            'Atrakcja turystyczna' =>
+                'Jelenia Góra i okolice oferują wyjątkowe atrakcje turystyczne – od ruin zamku Chojnik po Park Zdrojowy w Cieplicach. Odkryj ' . $count . ' miejsc wartych odwiedzenia: zabytki, punkty widokowe, muzea i obiekty rekreacyjne w Kotlinie Jeleniogórskiej.',
+            'Hotele i schroniska' =>
+                'Planujesz nocleg w Jeleniej Górze lub Sudetach? Na mapie znajdziesz ' . $count . ' obiektów noclegowych – hotele, pensjonaty i schroniska z adresami i lokalizacją.',
+            'Historia i zabytki' =>
+                'Jelenia Góra to miasto z bogatą historią sięgającą średniowiecza. Odkryj ' . $count . ' historycznych miejsc i zabytków – zamki, kościoły, kamienice i ślady dawnej świetności Kotliny Jeleniogórskiej.',
+            'Sport i rekreacja' =>
+                'Aktywny wypoczynek w Jeleniej Górze? Mamy dla Ciebie ' . $count . ' obiektów sportowych i rekreacyjnych – siłownie, baseny, parki trampolin, tory rowerowe i wiele więcej.',
+            'Kawiarnia' =>
+                'Najlepsze kawiarnie w Jeleniej Górze zebrane w jednym miejscu. ' . $count . ' klimatycznych miejsc na kawę, herbatę i domowe ciasto – w centrum miasta i dzielnicach.',
+            'Zakupy' =>
+                'Sklepy, galerie handlowe i rynki w Jeleniej Górze. ' . $count . ' miejsc zakupów – od galerii Sudeckiej po lokalne sklepy i targowiska.',
+            'Zdrowie' =>
+                'Przychodnie, gabinety specjalistyczne i apteki w Jeleniej Górze. ' . $count . ' placówek zdrowotnych z adresami i lokalizacją na mapie.',
+            'Kultura' =>
+                'Teatry, kina, galerie i miejsca kulturalne w Jeleniej Górze. Odkryj ' . $count . ' miejsc kultury i rozrywki w mieście i okolicach.',
+            'Beauty i uroda' =>
+                'Salony fryzjerskie, kosmetyczne, barberzy i SPA w Jeleniej Górze. ' . $count . ' miejsc, w których zadbasz o siebie.',
+            'Cukiernia' =>
+                'Cukiernie, lodziarnie i pączkarnie w Jeleniej Górze. ' . $count . ' słodkich miejsc na deserowy przystanek.',
+            'Masaż i SPA' =>
+                'Salony masażu, spa i miejsca relaksu w Jeleniej Górze i Cieplicach. ' . $count . ' obiektów dla tych, którzy szukają chwili wytchnienia.',
+            'Fryzjer' =>
+                'Fryzjerzy i barberzy w Jeleniej Górze. ' . $count . ' salonów fryzjerskich z adresami na mapie.',
+            'Apteka' =>
+                'Apteki w Jeleniej Górze. ' . $count . ' aptek – znajdź najbliższą na interaktywnej mapie.',
+            'Edukacja' =>
+                'Szkoły, przedszkola i placówki edukacyjne w Jeleniej Górze. ' . $count . ' miejsc nauki i wychowania z adresami.',
+            'Transport publiczny' =>
+                'Dworce, przystanki i punkty transportu publicznego w Jeleniej Górze. ' . $count . ' miejsc na mapie komunikacji miejskiej.',
+            'Miejsce kultu' =>
+                'Kościoły, kaplice i inne miejsca kultu w Jeleniej Górze. ' . $count . ' obiektów sakralnych na mapie.',
+            'Parking bezpłatny' =>
+                'Darmowe parkingi w Jeleniej Górze. ' . $count . ' bezpłatnych miejsc parkingowych zaznaczonych na mapie.',
+            'Parking płatny' =>
+                'Parkingi płatne w centrum Jeleniej Góry i okolicach. ' . $count . ' obiektów z lokalizacją na mapie.',
+            'Zieleń' =>
+                'Parki, skwery i tereny zielone w Jeleniej Górze. ' . $count . ' miejsc do spacerów i odpoczynku na świeżym powietrzu.',
+            'Usługi' =>
+                'Usługi dla mieszkańców Jeleniej Góry. ' . $count . ' firm i punktów usługowych z adresami na mapie.',
+        );
+
+        return isset($map[$category]) ? $map[$category] : '';
+    }
+
+    /**
      * Return SEO-optimised H1/title string for a given category name.
      */
     private function get_category_seo_title($category) {

@@ -551,6 +551,12 @@ class JG_Map_Shortcode {
         <div class="jg-directory">
             <?php if ($active_category !== ''): ?>
                 <h1 class="jg-dir-h1"><?php echo esc_html(JG_Interactive_Map::get_instance()->get_category_seo_title_public($active_category)); ?></h1>
+                <?php
+                $cat_intro = JG_Interactive_Map::get_instance()->get_category_intro_public($active_category, $total);
+                if ($cat_intro !== ''):
+                ?>
+                <p class="jg-dir-intro"><?php echo wp_kses_post($cat_intro); ?></p>
+                <?php endif; ?>
             <?php elseif ($active_tag !== ''): ?>
                 <h1 class="jg-dir-h1">#<?php echo esc_html($active_tag); ?> – Miejsca w Jeleniej Górze</h1>
             <?php else: ?>
@@ -558,7 +564,8 @@ class JG_Map_Shortcode {
             <?php endif; ?>
             <style>
                 .jg-directory { padding: 4px 0; }
-                .jg-dir-h1 { font-size: calc(22 * var(--jg)); font-weight: 700; color: #111827; margin: 0 0 16px; line-height: 1.3; }
+                .jg-dir-h1 { font-size: calc(22 * var(--jg)); font-weight: 700; color: #111827; margin: 0 0 12px; line-height: 1.3; }
+                .jg-dir-intro { font-size: calc(14.5 * var(--jg)); color: #374151; line-height: 1.65; margin: 0 0 20px; max-width: 680px; }
                 .jg-dir-section { margin-bottom: 24px; }
                 .jg-dir-section h3 { font-size: calc(12.8 * var(--jg)); font-weight: 600; color: #6b7280; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
                 .jg-dir-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0; }
