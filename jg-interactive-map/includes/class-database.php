@@ -998,12 +998,36 @@ class JG_Map_Database {
     }
 
     /**
+     * Get all distinct place categories (from the `category` column), sorted alphabetically.
+     * Returns an array of category name strings.
+     */
+    public static function get_all_place_categories() {
+        global $wpdb;
+        $table = self::get_points_table();
+
+        $cached = get_transient('jg_map_all_place_categories');
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        $rows = $wpdb->get_col(
+            "SELECT DISTINCT category FROM $table WHERE status = 'publish' AND type = 'miejsce' AND category IS NOT NULL AND category != '' ORDER BY category ASC"
+        );
+
+        $result = array_values(array_filter(array_map('trim', $rows)));
+        set_transient('jg_map_all_place_categories', $result, 300);
+
+        return $result;
+    }
+
+    /**
      * Invalidate points cache - call this whenever point data changes
      */
     public static function invalidate_points_cache() {
         delete_transient('jg_map_points_published');
         delete_transient('jg_map_points_with_pending');
         delete_transient('jg_map_all_tags');
+        delete_transient('jg_map_all_place_categories');
 
         // Regenerate sitemap cache so Google always gets a fresh static file
         $plugin = JG_Interactive_Map::get_instance();

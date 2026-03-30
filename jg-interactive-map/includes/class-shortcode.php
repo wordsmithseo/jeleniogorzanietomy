@@ -435,6 +435,9 @@ class JG_Map_Shortcode {
             $active_tag = sanitize_text_field(wp_unslash($_GET['tag']));
         }
 
+        // Category filter from clean URL query var
+        $active_category = JG_Interactive_Map::resolve_catalog_category();
+
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
 
@@ -450,6 +453,11 @@ class JG_Map_Shortcode {
             $where_args[] = $like_pattern;
         }
 
+        if ($active_category !== '') {
+            $where .= " AND category = %s";
+            $where_args[] = $active_category;
+        }
+
         // Get total count
         if (!empty($where_args)) {
             $total = (int) $wpdb->get_var($wpdb->prepare(
@@ -460,6 +468,19 @@ class JG_Map_Shortcode {
             $total = (int) $wpdb->get_var(
                 "SELECT COUNT(*) FROM $table WHERE $where"
             );
+        }
+
+        if ($total === 0 && $active_category !== '') {
+            $catalog_base = home_url('/katalog/');
+            ob_start();
+            echo '<div class="jg-directory">';
+            $cat_title = JG_Interactive_Map::get_instance()->get_category_seo_title_public($active_category);
+            echo '<h1 class="jg-dir-h1">' . esc_html($cat_title) . '</h1>';
+            $this->render_category_cloud($table, $catalog_base, $active_category);
+            echo '<p style="color:#6b7280;margin-top:16px">Brak miejsc w kategorii <strong>' . esc_html($active_category) . '</strong>.</p>';
+            echo '<p><a href="' . esc_url($catalog_base) . '" style="color:#2563eb">Pokaż wszystkie miejsca</a></p>';
+            echo '</div>';
+            return ob_get_clean();
         }
 
         if ($total === 0 && $active_tag !== '') {
@@ -514,15 +535,23 @@ class JG_Map_Shortcode {
             $grouped[$p['type']][] = $p;
         }
 
-        // Base URL for pagination: clean tag URL (if filtered) or plain catalog page
-        $base_url = ($active_tag !== '') ? JG_Interactive_Map::get_tag_url($active_tag) : home_url('/katalog/');
-        // Base URL without tag (for tag cloud links and "remove filter")
+        // Base URL for pagination: category > tag > plain catalog
+        if ($active_category !== '') {
+            $base_url = JG_Interactive_Map::get_category_url($active_category);
+        } elseif ($active_tag !== '') {
+            $base_url = JG_Interactive_Map::get_tag_url($active_tag);
+        } else {
+            $base_url = home_url('/katalog/');
+        }
+        // Base URL without tag/category (for cloud links and "remove filter")
         $base_url_no_tag = home_url('/katalog/');
 
         ob_start();
         ?>
         <div class="jg-directory">
-            <?php if ($active_tag !== ''): ?>
+            <?php if ($active_category !== ''): ?>
+                <h1 class="jg-dir-h1"><?php echo esc_html(JG_Interactive_Map::get_instance()->get_category_seo_title_public($active_category)); ?></h1>
+            <?php elseif ($active_tag !== ''): ?>
                 <h1 class="jg-dir-h1">#<?php echo esc_html($active_tag); ?> – Miejsca w Jeleniej Górze</h1>
             <?php else: ?>
                 <h1 class="jg-dir-h1">Katalog miejsc w Jeleniej Górze</h1>
@@ -567,9 +596,16 @@ class JG_Map_Shortcode {
                 .jg-dir-info { font-size: calc(13 * var(--jg)); color: #9ca3af; margin-top: 8px; }
             </style>
 
+            <?php $this->render_category_cloud($table, $base_url_no_tag, $active_category); ?>
             <?php $this->render_tag_cloud($table, $base_url_no_tag, $active_tag); ?>
 
-            <?php if ($active_tag !== ''): ?>
+            <?php if ($active_category !== ''): ?>
+                <div class="jg-dir-active-filter">
+                    Kategoria: <strong><?php echo esc_html($active_category); ?></strong>
+                    <a href="<?php echo esc_url($base_url_no_tag); ?>">Usuń filtr &times;</a>
+                    <span style="color:#9ca3af;margin-left:auto;font-size:calc(12 * var(--jg))"><?php echo $total; ?> <?php echo $total === 1 ? 'wynik' : ($total < 5 ? 'wyniki' : 'wyników'); ?></span>
+                </div>
+            <?php elseif ($active_tag !== ''): ?>
                 <div class="jg-dir-active-filter">
                     Filtrowanie po tagu: <strong>#<?php echo esc_html($active_tag); ?></strong>
                     <a href="<?php echo esc_url($base_url_no_tag); ?>">Usuń filtr &times;</a>
@@ -671,6 +707,39 @@ class JG_Map_Shortcode {
                 ?>
                     <li class="jg-dir-tag-item">
                         <a href="<?php echo esc_url($tag_url); ?>" rel="tag"<?php echo $is_active ? ' class="jg-dir-tag-active"' : ''; ?>>#<?php echo esc_html($tag_data['label']); ?><span class="jg-dir-tag-count">(<?php echo intval($tag_data['count']); ?>)</span></a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </nav>
+        <?php
+    }
+
+    /**
+     * Render category cloud for the directory.
+     */
+    private function render_category_cloud($table, $base_url, $active_category = '') {
+        global $wpdb;
+
+        $rows = $wpdb->get_results(
+            "SELECT category, COUNT(*) as cnt FROM $table WHERE status = 'publish' AND type = 'miejsce' AND category IS NOT NULL AND category != '' GROUP BY category ORDER BY cnt DESC, category ASC",
+            ARRAY_A
+        );
+
+        if (empty($rows)) {
+            return;
+        }
+        ?>
+        <nav class="jg-dir-tag-cloud" aria-label="Kategorie miejsc">
+            <h3>Kategorie</h3>
+            <ul class="jg-dir-tag-list">
+                <?php foreach ($rows as $row):
+                    $cat   = $row['category'];
+                    $cnt   = (int) $row['cnt'];
+                    $is_active = ($active_category !== '' && $active_category === $cat);
+                    $cat_url   = $is_active ? $base_url : JG_Interactive_Map::get_category_url($cat);
+                ?>
+                    <li class="jg-dir-tag-item">
+                        <a href="<?php echo esc_url($cat_url); ?>"<?php echo $is_active ? ' class="jg-dir-tag-active"' : ''; ?>><?php echo esc_html($cat); ?><span class="jg-dir-tag-count">(<?php echo $cnt; ?>)</span></a>
                     </li>
                 <?php endforeach; ?>
             </ul>
