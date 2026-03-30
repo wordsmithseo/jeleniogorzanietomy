@@ -2584,9 +2584,22 @@ class JG_Interactive_Map {
             exit;
         }
 
+        $last_modified = file_exists($cache_path) ? filemtime($cache_path) : time();
+        $last_modified_str = gmdate('D, d M Y H:i:s', $last_modified) . ' GMT';
+
+        // Support conditional GET - return 304 if client already has current version
+        $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])
+            ? strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE'])
+            : false;
+        if ($if_modified_since !== false && $if_modified_since >= $last_modified) {
+            status_header(304);
+            exit;
+        }
+
         status_header(200);
         header('Content-Type: application/xml; charset=UTF-8');
         header('X-Robots-Tag: noindex');
+        header('Last-Modified: ' . $last_modified_str);
         header('Cache-Control: public, max-age=3600, s-maxage=3600');
         header('Pragma: public');
         header('Content-Length: ' . strlen($xml_content));
