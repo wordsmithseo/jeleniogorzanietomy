@@ -2514,6 +2514,17 @@ class JG_Interactive_Map {
             }
         }
 
+        // Add category pages to sitemap (higher priority - SEO landing pages)
+        $all_place_cats = JG_Map_Database::get_all_place_categories();
+        foreach ($all_place_cats as $cat) {
+            $cat_url = self::get_category_url($cat);
+            $xml .= '    <url>' . "\n";
+            $xml .= '        <loc>' . esc_url($cat_url) . '</loc>' . "\n";
+            $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+            $xml .= '        <priority>0.7</priority>' . "\n";
+            $xml .= '    </url>' . "\n";
+        }
+
         // Add tag filter pages to sitemap with clean URLs
         $all_tags = JG_Map_Database::get_all_tags();
         foreach ($all_tags as $tag) {
@@ -2669,6 +2680,17 @@ class JG_Interactive_Map {
                 $xml .= '        <priority>0.7</priority>' . "\n";
                 $xml .= '    </url>' . "\n";
             }
+        }
+
+        // Add category pages to sitemap (higher priority - SEO landing pages)
+        $all_place_cats2 = JG_Map_Database::get_all_place_categories();
+        foreach ($all_place_cats2 as $cat) {
+            $cat_url = self::get_category_url($cat);
+            $xml .= '    <url>' . "\n";
+            $xml .= '        <loc>' . esc_url($cat_url) . '</loc>' . "\n";
+            $xml .= '        <changefreq>weekly</changefreq>' . "\n";
+            $xml .= '        <priority>0.7</priority>' . "\n";
+            $xml .= '    </url>' . "\n";
         }
 
         // Add tag filter pages to sitemap with clean URLs
