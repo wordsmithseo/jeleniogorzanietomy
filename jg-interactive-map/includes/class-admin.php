@@ -803,7 +803,23 @@ class JG_Map_Admin {
 
         // Get places with status
         $places = JG_Map_Database::get_all_places_with_status($search, $status_filter, $current_user_id);
-        $counts = JG_Map_Database::get_places_count_by_status($current_user_id);
+
+        // Compute counts — when no search/filter is active the $places array already contains all
+        // records, so we can count in-memory and avoid a second heavy DB query.
+        if (empty($search) && empty($status_filter)) {
+            $counts = array(
+                'reported' => 0, 'new_pending' => 0, 'edit_pending' => 0,
+                'deletion_pending' => 0, 'published' => 0, 'trash' => 0, 'total' => 0
+            );
+            foreach ($places as $_p) {
+                $counts['total']++;
+                if (isset($counts[$_p['display_status']])) {
+                    $counts[$_p['display_status']]++;
+                }
+            }
+        } else {
+            $counts = JG_Map_Database::get_places_count_by_status($current_user_id);
+        }
 
         // Group places by display status
         $grouped_places = array(
@@ -969,13 +985,14 @@ class JG_Map_Admin {
                                         <th style="width:<?php echo $status === 'reported' ? '14%' : '22%'; ?>">Akcje</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="jg-paginated-tbody" data-section="<?php echo esc_attr($status); ?>" data-total="<?php echo $section_count; ?>">
                                     <?php foreach ($section_places as $place):
                                         $this->render_place_row($place, $config['actions'], $is_admin, $status);
                                     endforeach; ?>
                                 </tbody>
                             </table>
                             </div>
+                            <div class="jg-pagination-bar" data-section="<?php echo esc_attr($status); ?>" style="padding:10px 18px;align-items:center;gap:10px;border-top:1px solid #e5e7eb;background:#f9fafb;display:none"></div>
                         <?php else: ?>
                             <p class="jg-places-empty">Brak miejsc w tej kategorii</p>
                         <?php endif; ?>
@@ -1164,9 +1181,9 @@ class JG_Map_Admin {
                 });
             });
 
-            // Delete point (basic)
+            // Delete point (basic) — moves to trash, not permanent
             $('.jg-delete-point').on('click', function() {
-                if (!confirm('Czy na pewno chcesz PERMANENTNIE usunąć to miejsce? Tej operacji nie można cofnąć!')) return;
+                if (!confirm('Czy na pewno chcesz przenieść to miejsce do kosza?')) return;
 
                 var pointId = $(this).data('point-id');
 
@@ -1180,7 +1197,7 @@ class JG_Map_Admin {
                     },
                     success: function(response) {
                         if (response.success) {
-                            alert('Miejsce zostało usunięte!');
+                            alert('Miejsce zostało przeniesione do kosza!');
                             location.reload();
                         } else {
                             alert('Błąd: ' + (response.data?.message || 'Nieznany błąd'));
@@ -1222,7 +1239,7 @@ class JG_Map_Admin {
 
             // Delete point permanently from trash
             $('.jg-delete-permanent').on('click', function() {
-                if (!confirm('Czy na pewno chcesz TRWALE usunąć to miejsce? Tej operacji nie można cofnąć!')) return;
+                if (!confirm('Czy na pewno chcesz TRWALE usunąć to miejsce z kosza? Tej operacji nie można cofnąć!')) return;
 
                 var pointId = $(this).data('point-id');
 
@@ -1230,7 +1247,7 @@ class JG_Map_Admin {
                     url: ajaxurl,
                     method: 'POST',
                     data: {
-                        action: 'jg_admin_delete_point',
+                        action: 'jg_admin_delete_permanent',
                         _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>',
                         post_id: pointId
                     },
@@ -1282,6 +1299,67 @@ class JG_Map_Admin {
                     }, 500);
                 }
             }
+
+            // ── Pagination (50 per page per section) ──────────────────────────
+            var PER_PAGE = 50;
+            var sectionPages = {};
+
+            function initPagination() {
+                $('.jg-paginated-tbody').each(function() {
+                    var section = $(this).data('section');
+                    var $rows = $(this).children('tr');
+                    var total = $rows.length;
+
+                    if (total <= PER_PAGE) return; // no pagination needed
+
+                    sectionPages[section] = 1;
+                    renderPage(section);
+                });
+            }
+
+            function renderPage(section) {
+                var page = sectionPages[section] || 1;
+                var $tbody = $('.jg-paginated-tbody[data-section="' + section + '"]');
+                var $rows = $tbody.children('tr');
+                var total = $rows.length;
+                var totalPages = Math.ceil(total / PER_PAGE);
+                var start = (page - 1) * PER_PAGE;
+                var end = start + PER_PAGE;
+
+                $rows.each(function(i) {
+                    $(this).toggle(i >= start && i < end);
+                });
+
+                var $bar = $('.jg-pagination-bar[data-section="' + section + '"]');
+                $bar.css('display', 'flex').html(
+                    '<button class="button jg-pg-prev" data-section="' + section + '" ' + (page <= 1 ? 'disabled' : '') + '>&#8592; Poprzednia</button>' +
+                    '<span style="font-size:13px;color:#374151">Strona <strong>' + page + '</strong> z <strong>' + totalPages + '</strong> (' + total + ' pozycji)</span>' +
+                    '<button class="button jg-pg-next" data-section="' + section + '" ' + (page >= totalPages ? 'disabled' : '') + '>Następna &#8594;</button>'
+                );
+            }
+
+            $(document).on('click', '.jg-pg-prev', function() {
+                var section = $(this).data('section');
+                if (sectionPages[section] > 1) {
+                    sectionPages[section]--;
+                    renderPage(section);
+                    $('html, body').animate({ scrollTop: $('#section-' + section).offset().top - 80 }, 200);
+                }
+            });
+
+            $(document).on('click', '.jg-pg-next', function() {
+                var section = $(this).data('section');
+                var total = $('.jg-paginated-tbody[data-section="' + section + '"]').children('tr').length;
+                var totalPages = Math.ceil(total / PER_PAGE);
+                if (sectionPages[section] < totalPages) {
+                    sectionPages[section]++;
+                    renderPage(section);
+                    $('html, body').animate({ scrollTop: $('#section-' + section).offset().top - 80 }, 200);
+                }
+            });
+
+            initPagination();
+            // ─────────────────────────────────────────────────────────────────
         });
         </script>
         <?php
