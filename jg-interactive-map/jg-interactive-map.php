@@ -944,8 +944,21 @@ class JG_Interactive_Map {
         $type_path = ($point['type'] === 'ciekawostka') ? 'ciekawostka' : (($point['type'] === 'zgloszenie') ? 'zgloszenie' : 'miejsce');
         $share_url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
 
-        // Page title
-        $page_title = esc_html($point['title']) . ' - ' . esc_html($type_label) . ' w Jeleniej Górze';
+        // Page title – category-aware suffix for better search CTR
+        $point_cat_key = $point['category'] ?? '';
+        $category_title_suffixes = array(
+            'gastronomia' => 'gastronomia w Jeleniej Górze',
+            'kultura'     => 'kultura w Jeleniej Górze',
+            'uslugi'      => 'usługi w Jeleniej Górze',
+            'sport'       => 'sport i rekreacja | Jelenia Góra',
+            'historia'    => 'historia | Jelenia Góra',
+            'zielen'      => 'zieleń | Jelenia Góra',
+        );
+        if ($point['type'] === 'miejsce' && isset($category_title_suffixes[$point_cat_key])) {
+            $page_title = esc_html($point['title']) . ' – ' . $category_title_suffixes[$point_cat_key];
+        } else {
+            $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze';
+        }
 
         // Site logo URL
         $logo_url = '';
@@ -1729,7 +1742,16 @@ class JG_Interactive_Map {
         } elseif (!empty($point['content'])) {
             $description = wp_trim_words(strip_tags($point['content']), 25);
         } else {
-            $description = 'Interaktywna mapa miasta Jelenia Góra. Dodaj miejsca, ciekawostki, zgłoś sprawę.';
+            // Category-aware fallback description for better CTR when no excerpt/content
+            $desc_cat_key   = $point['category'] ?? '';
+            $desc_type_key  = $point['type'] ?? 'miejsce';
+            if ($desc_type_key === 'miejsce' && $desc_cat_key === 'gastronomia') {
+                $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, menu, adres i mapa dojazdu na JeleniogorzaNieTomy.pl';
+            } elseif ($desc_type_key === 'ciekawostka') {
+                $description = 'Ciekawostka: ' . $point['title'] . ' – odkryj historię i szczegóły na JeleniogorzaNieTomy.pl, interaktywna mapa Jeleniej Góry.';
+            } else {
+                $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na JeleniogorzaNieTomy.pl';
+            }
         }
 
         $type_path = ($point['type'] === 'ciekawostka') ? 'ciekawostka' : (($point['type'] === 'zgloszenie') ? 'zgloszenie' : 'miejsce');
@@ -1759,7 +1781,7 @@ class JG_Interactive_Map {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo esc_html($point['title']); ?> - Jelenia Góra</title>
+    <title><?php echo esc_html($point['title']); ?> – Jelenia Góra | JeleniogorzaNieTomy</title>
     <meta name="description" content="<?php echo esc_attr($description); ?>">
     <meta name="robots" content="<?php echo esc_attr($robots_content); ?>">
     <link rel="canonical" href="<?php echo esc_url($url); ?>">
@@ -2104,7 +2126,16 @@ class JG_Interactive_Map {
         } elseif (!empty($point['content'])) {
             $description = wp_trim_words(strip_tags($point['content']), 25);
         } else {
-            $description = 'Interaktywna mapa miasta Jelenia Góra. Dodaj miejsca, ciekawostki, zgłoś sprawę.';
+            // Category-aware fallback description for better CTR when no excerpt/content
+            $desc_cat_key   = $point['category'] ?? '';
+            $desc_type_key  = $point['type'] ?? 'miejsce';
+            if ($desc_type_key === 'miejsce' && $desc_cat_key === 'gastronomia') {
+                $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, menu, adres i mapa dojazdu na JeleniogorzaNieTomy.pl';
+            } elseif ($desc_type_key === 'ciekawostka') {
+                $description = 'Ciekawostka: ' . $point['title'] . ' – odkryj historię i szczegóły na JeleniogorzaNieTomy.pl, interaktywna mapa Jeleniej Góry.';
+            } else {
+                $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na JeleniogorzaNieTomy.pl';
+            }
         }
 
         // Determine URL path based on point type
@@ -2131,7 +2162,7 @@ class JG_Interactive_Map {
 
         <!-- Open Graph / Facebook -->
         <meta property="og:type" content="article">
-        <meta property="og:title" content="<?php echo esc_attr($point['title']); ?>">
+        <meta property="og:title" content="<?php echo esc_attr($point['title'] . ' – Jelenia Góra'); ?>">
         <meta property="og:description" content="<?php echo esc_attr($description); ?>">
         <meta property="og:url" content="<?php echo esc_url($url); ?>">
         <meta property="og:site_name" content="<?php bloginfo('name'); ?>">
@@ -2166,7 +2197,7 @@ class JG_Interactive_Map {
 
         <!-- Twitter Card -->
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="<?php echo esc_attr($point['title']); ?>">
+        <meta name="twitter:title" content="<?php echo esc_attr($point['title'] . ' – Jelenia Góra'); ?>">
         <meta name="twitter:description" content="<?php echo esc_attr($description); ?>">
         <meta name="twitter:image" content="<?php echo esc_url($first_image); ?>">
         <meta name="twitter:image:alt" content="<?php echo esc_attr($point['title']); ?>">
