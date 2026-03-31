@@ -177,7 +177,7 @@ class JG_Map_Shortcode {
                                 'type'  => 'points',
                                 'title' => 'Nowe miejsca (' . $mup_pending_points . ')',
                                 'count' => $mup_pending_points,
-                                'url'   => admin_url('admin.php?page=jg-map-places&status=new_pending'),
+                                'url'   => admin_url('admin.php?page=jg-map-places#section-new_pending'),
                                 'icon'  => '<path d="M12 5v14M5 12h14"/>',
                             );
                         }
@@ -186,7 +186,7 @@ class JG_Map_Shortcode {
                                 'type'  => 'edits',
                                 'title' => 'Edycje (' . $mup_pending_edits . ')',
                                 'count' => $mup_pending_edits,
-                                'url'   => admin_url('admin.php?page=jg-map-places&status=edit_pending'),
+                                'url'   => admin_url('admin.php?page=jg-map-places#section-edit_pending'),
                                 'icon'  => '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
                             );
                         }
@@ -195,7 +195,7 @@ class JG_Map_Shortcode {
                                 'type'  => 'reports',
                                 'title' => 'Zgłoszenia (' . $mup_pending_reports . ')',
                                 'count' => $mup_pending_reports,
-                                'url'   => admin_url('admin.php?page=jg-map-places&status=reported'),
+                                'url'   => admin_url('admin.php?page=jg-map-places#section-reported'),
                                 'icon'  => '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
                             );
                         }
@@ -204,7 +204,7 @@ class JG_Map_Shortcode {
                                 'type'  => 'deletions',
                                 'title' => 'Usunięcia (' . $mup_pending_deletions . ')',
                                 'count' => $mup_pending_deletions,
-                                'url'   => admin_url('admin.php?page=jg-map-places&status=deletion_pending'),
+                                'url'   => admin_url('admin.php?page=jg-map-places#section-deletion_pending'),
                                 'icon'  => '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>',
                             );
                         }
