@@ -1962,6 +1962,9 @@ class JG_Map_Database {
         $reports_table = self::get_reports_table();
         $history_table = self::get_history_table();
 
+        // Ensure history table exists before querying it
+        self::ensure_history_table();
+
         // Base query - get all places (including trash)
         $where_conditions = array("1=1");
 
@@ -1981,38 +1984,80 @@ class JG_Map_Database {
 
         $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
 
+        // Rewritten with pre-aggregated derived-table JOINs instead of 7 correlated
+        // subqueries per row (which caused timeouts for larger datasets).
         $query = "
             SELECT
                 p.*,
-                u.display_name as author_name,
-                u.user_email as author_email,
-                (SELECT COUNT(*) FROM $reports_table r
-                 WHERE r.point_id = p.id AND r.status = 'pending') as pending_reports_count,
-                (SELECT COUNT(*) FROM $history_table h
-                 WHERE h.point_id = p.id AND h.status = 'pending' AND h.action_type = 'edit') as pending_edits_count,
-                (SELECT created_at FROM $history_table h
-                 WHERE h.point_id = p.id AND h.status = 'pending' AND h.action_type = 'edit'
-                 ORDER BY created_at DESC LIMIT 1) as latest_edit_date,
-                (SELECT u2.display_name FROM $reports_table r2
-                 LEFT JOIN {$wpdb->users} u2 ON r2.user_id = u2.ID
-                 WHERE r2.point_id = p.id AND r2.status = 'pending'
-                 ORDER BY r2.created_at DESC LIMIT 1) as reporter_name,
-                (SELECT r2.user_id FROM $reports_table r2
-                 WHERE r2.point_id = p.id AND r2.status = 'pending'
-                 ORDER BY r2.created_at DESC LIMIT 1) as reporter_id,
-                (SELECT u3.display_name FROM $history_table h3
-                 LEFT JOIN {$wpdb->users} u3 ON h3.user_id = u3.ID
-                 WHERE h3.point_id = p.id AND h3.status = 'approved' AND h3.action_type = 'edit'
-                 ORDER BY h3.resolved_at DESC LIMIT 1) as last_modifier_name,
-                (SELECT h3.resolved_at FROM $history_table h3
-                 WHERE h3.point_id = p.id AND h3.status = 'approved' AND h3.action_type = 'edit'
-                 ORDER BY h3.resolved_at DESC LIMIT 1) as last_modified_at
+                u.display_name  AS author_name,
+                u.user_email    AS author_email,
+                COALESCE(r_cnt.pending_count, 0)      AS pending_reports_count,
+                COALESCE(h_cnt.pending_edit_count, 0) AS pending_edits_count,
+                h_cnt.latest_edit_date,
+                u_reporter.display_name               AS reporter_name,
+                r_latest.user_id                      AS reporter_id,
+                u_modifier.display_name               AS last_modifier_name,
+                h_approved.resolved_at                AS last_modified_at
             FROM $points_table p
-            LEFT JOIN {$wpdb->users} u ON p.author_id = u.ID
+            LEFT JOIN {$wpdb->users} u ON u.ID = p.author_id
+
+            /* ── pre-aggregated pending-reports count ─────────────────────── */
+            LEFT JOIN (
+                SELECT point_id, COUNT(*) AS pending_count
+                FROM $reports_table
+                WHERE status = 'pending'
+                GROUP BY point_id
+            ) r_cnt ON r_cnt.point_id = p.id
+
+            /* ── pre-aggregated pending-edits count + latest edit date ──────── */
+            LEFT JOIN (
+                SELECT point_id,
+                       COUNT(*)     AS pending_edit_count,
+                       MAX(created_at) AS latest_edit_date
+                FROM $history_table
+                WHERE status = 'pending' AND action_type = 'edit'
+                GROUP BY point_id
+            ) h_cnt ON h_cnt.point_id = p.id
+
+            /* ── latest pending reporter per point ───────────────────────── */
+            LEFT JOIN (
+                SELECT r.point_id, r.user_id
+                FROM $reports_table r
+                INNER JOIN (
+                    SELECT point_id, MAX(created_at) AS max_ts
+                    FROM $reports_table
+                    WHERE status = 'pending'
+                    GROUP BY point_id
+                ) r_max ON r.point_id = r_max.point_id
+                         AND r.created_at = r_max.max_ts
+                WHERE r.status = 'pending'
+            ) r_latest ON r_latest.point_id = p.id
+            LEFT JOIN {$wpdb->users} u_reporter ON u_reporter.ID = r_latest.user_id
+
+            /* ── latest approved editor per point ────────────────────────── */
+            LEFT JOIN (
+                SELECT h.point_id, h.user_id, h.resolved_at
+                FROM $history_table h
+                INNER JOIN (
+                    SELECT point_id, MAX(resolved_at) AS max_ts
+                    FROM $history_table
+                    WHERE status = 'approved' AND action_type = 'edit'
+                    GROUP BY point_id
+                ) h_max ON h.point_id = h_max.point_id
+                         AND h.resolved_at = h_max.max_ts
+                WHERE h.status = 'approved' AND h.action_type = 'edit'
+            ) h_approved ON h_approved.point_id = p.id
+            LEFT JOIN {$wpdb->users} u_modifier ON u_modifier.ID = h_approved.user_id
+
             $where_clause
         ";
 
         $places = $wpdb->get_results($query, ARRAY_A);
+
+        // Guard against DB errors (e.g. connection reset) returning null
+        if (!is_array($places)) {
+            $places = array();
+        }
 
         // Process each place to determine its display status and priority
         $processed_places = array();
