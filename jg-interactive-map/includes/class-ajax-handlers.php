@@ -8259,9 +8259,39 @@ class JG_Map_Ajax_Handlers {
                 break;
 
             case 'modified_desc':
-                usort($regular_points, function($a, $b) {
-                    $ta = isset($a['updated_at']) ? strtotime($a['updated_at']) : strtotime($a['created_at']);
-                    $tb = isset($b['updated_at']) ? strtotime($b['updated_at']) : strtotime($b['created_at']);
+                // Use last APPROVED edit timestamp from history table so that
+                // rejected edits (which bump updated_at via ON UPDATE CURRENT_TIMESTAMP)
+                // do not cause places to appear at the top of "last edited" sort.
+                $approved_edit_map = array();
+                if (!empty($regular_points)) {
+                    global $wpdb;
+                    $history_table = $wpdb->prefix . 'jg_map_history';
+                    $reg_ids = array_map('intval', array_column($regular_points, 'id'));
+                    $id_placeholders = implode(',', array_fill(0, count($reg_ids), '%d'));
+                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                    $approved_rows = $wpdb->get_results(
+                        $wpdb->prepare(
+                            "SELECT point_id, MAX(resolved_at) AS last_approved FROM {$history_table} WHERE status = 'approved' AND action_type IN ('edit', 'edit_menu') AND point_id IN ($id_placeholders) GROUP BY point_id",
+                            $reg_ids
+                        ),
+                        ARRAY_A
+                    );
+                    if (is_array($approved_rows)) {
+                        foreach ($approved_rows as $row) {
+                            $approved_edit_map[intval($row['point_id'])] = $row['last_approved'];
+                        }
+                    }
+                }
+                usort($regular_points, function($a, $b) use ($approved_edit_map) {
+                    $pid_a = intval($a['id']);
+                    $pid_b = intval($b['id']);
+                    // Prefer last approved edit timestamp; fall back to created_at
+                    $ta = isset($approved_edit_map[$pid_a]) && $approved_edit_map[$pid_a]
+                        ? strtotime($approved_edit_map[$pid_a])
+                        : strtotime($a['created_at']);
+                    $tb = isset($approved_edit_map[$pid_b]) && $approved_edit_map[$pid_b]
+                        ? strtotime($approved_edit_map[$pid_b])
+                        : strtotime($b['created_at']);
                     return $tb - $ta;
                 });
                 break;
