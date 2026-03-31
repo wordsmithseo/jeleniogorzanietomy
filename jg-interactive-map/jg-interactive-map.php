@@ -572,7 +572,7 @@ class JG_Interactive_Map {
                    . '<meta name="viewport" content="width=device-width, initial-scale=1">'
                    . '<meta name="robots" content="noindex, follow">'
                    . '<title>404 – Nie znaleziono | JeleniogorzaNieTomy.pl</title>'
-                   . '<style>body{font-family:system-ui,sans-serif;background:#f9fafb;color:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}'
+                   . '<style>body{font-family:system-ui,sans-serif;background:#fff;color:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}'
                    . '.box{text-align:center;padding:40px 24px;max-width:520px}'
                    . 'h1{font-size:28px;font-weight:800;color:#111;margin:0 0 24px;line-height:1.3}'
                    . 'img{max-width:100%;height:auto;margin:0 0 28px;border-radius:12px}'
