@@ -793,6 +793,9 @@ class JG_Map_Admin {
         // Check if user is admin
         $is_admin = current_user_can('manage_options');
 
+        // Ensure history table exists before querying (safe no-op if already up to date)
+        JG_Map_Database::ensure_history_table();
+
         // Handle search and filters
         $search = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
         $status_filter = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
