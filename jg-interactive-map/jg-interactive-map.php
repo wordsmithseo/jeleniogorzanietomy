@@ -573,15 +573,16 @@ class JG_Interactive_Map {
                    . '<meta name="robots" content="noindex, follow">'
                    . '<title>404 – Nie znaleziono | JeleniogorzaNieTomy.pl</title>'
                    . '<style>body{font-family:system-ui,sans-serif;background:#f9fafb;color:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}'
-                   . '.box{text-align:center;padding:40px 24px;max-width:480px}'
-                   . 'h1{font-size:48px;font-weight:800;color:#c2410c;margin:0 0 8px}'
-                   . 'p{font-size:16px;color:#6b7280;margin:0 0 28px}'
-                   . 'a{display:inline-block;background:#c2410c;color:#fff;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none}'
+                   . '.box{text-align:center;padding:40px 24px;max-width:520px}'
+                   . 'h1{font-size:28px;font-weight:800;color:#111;margin:0 0 24px;line-height:1.3}'
+                   . 'img{max-width:100%;height:auto;margin:0 0 28px;border-radius:12px}'
+                   . 'a{display:inline-block;background:#c2410c;color:#fff;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:16px}'
+                   . 'a:hover{background:#9a3412}'
                    . '</style></head><body>'
                    . '<div class="box">'
-                   . '<h1>404</h1>'
-                   . '<p>Tej strony nie ma na mapie.<br>Może pinezka została usunięta lub przeniesiona.</p>'
-                   . '<a href="' . $home_url . '">Wróć na stronę główną</a>'
+                   . '<h1>Ups! Chyba się zgubiliśmy!</h1>'
+                   . '<img src="https://jeleniogorzanietomy.pl/wp-content/uploads/2026/03/404.png" alt="404 – strona nie istnieje">'
+                   . '<br><a href="' . $home_url . '">Wróć do mapy</a>'
                    . '</div></body></html>';
             }
             exit;
