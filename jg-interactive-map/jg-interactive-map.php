@@ -561,7 +561,29 @@ class JG_Interactive_Map {
             global $wp_query;
             $wp_query->set_404();
             status_header(404);
-            get_template_part(404);
+            header('Content-Type: text/html; charset=UTF-8');
+            $template_404 = get_404_template();
+            if ($template_404 && file_exists($template_404)) {
+                include($template_404);
+            } else {
+                $home_url = esc_url(home_url('/'));
+                echo '<!doctype html><html lang="pl-PL"><head>'
+                   . '<meta charset="UTF-8">'
+                   . '<meta name="viewport" content="width=device-width, initial-scale=1">'
+                   . '<meta name="robots" content="noindex, follow">'
+                   . '<title>404 – Nie znaleziono | JeleniogorzaNieTomy.pl</title>'
+                   . '<style>body{font-family:system-ui,sans-serif;background:#f9fafb;color:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}'
+                   . '.box{text-align:center;padding:40px 24px;max-width:480px}'
+                   . 'h1{font-size:48px;font-weight:800;color:#c2410c;margin:0 0 8px}'
+                   . 'p{font-size:16px;color:#6b7280;margin:0 0 28px}'
+                   . 'a{display:inline-block;background:#c2410c;color:#fff;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none}'
+                   . '</style></head><body>'
+                   . '<div class="box">'
+                   . '<h1>404</h1>'
+                   . '<p>Tej strony nie ma na mapie.<br>Może pinezka została usunięta lub przeniesiona.</p>'
+                   . '<a href="' . $home_url . '">Wróć na stronę główną</a>'
+                   . '</div></body></html>';
+            }
             exit;
         }
 
