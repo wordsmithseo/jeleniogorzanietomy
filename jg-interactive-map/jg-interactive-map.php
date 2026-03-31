@@ -1774,7 +1774,7 @@ class JG_Interactive_Map {
                 $desc_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
                 if (isset($desc_place_cats[$desc_cat_key]['label'])) {
                     $desc_cat_label = mb_strtolower($desc_place_cats[$desc_cat_key]['label']);
-                    $description = $point['title'] . ' w Jeleniej Górze – ' . $desc_cat_label . '. Zdjęcia, mapa dojazdu i szczegółowe informacje na JeleniogorzaNieTomy.pl';
+                    $description = $point['title'] . ' w Jeleniej Górze – ' . $desc_cat_label . '. Zdjęcia, mapa dojazdu i szczegółowe informacje na jeleniogorzanietomy.pl';
                 } else {
                     $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na JeleniogorzaNieTomy.pl';
                 }
@@ -2167,7 +2167,7 @@ class JG_Interactive_Map {
                 $desc_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
                 if (isset($desc_place_cats[$desc_cat_key]['label'])) {
                     $desc_cat_label = mb_strtolower($desc_place_cats[$desc_cat_key]['label']);
-                    $description = $point['title'] . ' w Jeleniej Górze – ' . $desc_cat_label . '. Zdjęcia, mapa dojazdu i szczegółowe informacje na JeleniogorzaNieTomy.pl';
+                    $description = $point['title'] . ' w Jeleniej Górze – ' . $desc_cat_label . '. Zdjęcia, mapa dojazdu i szczegółowe informacje na jeleniogorzanietomy.pl';
                 } else {
                     $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na JeleniogorzaNieTomy.pl';
                 }
