@@ -957,16 +957,14 @@ class JG_Interactive_Map {
 
         // Page title – category-aware suffix for better search CTR
         $point_cat_key = $point['category'] ?? '';
-        $category_title_suffixes = array(
-            'gastronomia' => 'gastronomia w Jeleniej Górze',
-            'kultura'     => 'kultura w Jeleniej Górze',
-            'uslugi'      => 'usługi w Jeleniej Górze',
-            'sport'       => 'sport i rekreacja | Jelenia Góra',
-            'historia'    => 'historia | Jelenia Góra',
-            'zielen'      => 'zieleń | Jelenia Góra',
-        );
-        if ($point['type'] === 'miejsce' && isset($category_title_suffixes[$point_cat_key])) {
-            $page_title = esc_html($point['title']) . ' – ' . $category_title_suffixes[$point_cat_key];
+        if ($point['type'] === 'miejsce' && !empty($point_cat_key)) {
+            $all_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
+            if (isset($all_place_cats[$point_cat_key]['label'])) {
+                $cat_label_lower = mb_strtolower($all_place_cats[$point_cat_key]['label']);
+                $page_title = esc_html($point['title']) . ' – ' . $cat_label_lower . ' w Jeleniej Górze';
+            } else {
+                $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze';
+            }
         } else {
             $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze';
         }
@@ -1754,14 +1752,22 @@ class JG_Interactive_Map {
             $description = wp_trim_words(strip_tags($point['content']), 30);
         } else {
             // Category-aware fallback description for better CTR when no excerpt/content
-            $desc_cat_key   = $point['category'] ?? '';
-            $desc_type_key  = $point['type'] ?? 'miejsce';
-            if ($desc_type_key === 'miejsce' && $desc_cat_key === 'gastronomia') {
-                $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, menu, adres i mapa dojazdu na JeleniogorzaNieTomy.pl';
-            } elseif ($desc_type_key === 'ciekawostka') {
-                $description = 'Ciekawostka: ' . $point['title'] . ' – odkryj historię i szczegóły na JeleniogorzaNieTomy.pl, interaktywna mapa Jeleniej Góry.';
+            $desc_cat_key  = $point['category'] ?? '';
+            $desc_type_key = $point['type'] ?? 'miejsce';
+            if ($desc_type_key === 'ciekawostka') {
+                $description = 'Ciekawostka: ' . $point['title'] . ' – odkryj historię i szczegóły na jeleniogorzanietomy.pl, interaktywna mapa Jeleniej Góry.';
+            } elseif ($desc_type_key === 'miejsce' && !empty($desc_cat_key)) {
+                $desc_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
+                if (!empty($desc_place_cats[$desc_cat_key]['has_menu'])) {
+                    $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, menu, adres i mapa dojazdu na jeleniogorzanietomy.pl';
+                } elseif (isset($desc_place_cats[$desc_cat_key]['label'])) {
+                    $desc_cat_label = mb_strtolower($desc_place_cats[$desc_cat_key]['label']);
+                    $description = $point['title'] . ' w Jeleniej Górze – ' . $desc_cat_label . '. Zdjęcia, mapa dojazdu i szczegółowe informacje na jeleniogorzanietomy.pl';
+                } else {
+                    $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na jeleniogorzanietomy.pl';
+                }
             } else {
-                $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na JeleniogorzaNieTomy.pl';
+                $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na jeleniogorzanietomy.pl';
             }
         }
 
@@ -2138,14 +2144,22 @@ class JG_Interactive_Map {
             $description = wp_trim_words(strip_tags($point['content']), 30);
         } else {
             // Category-aware fallback description for better CTR when no excerpt/content
-            $desc_cat_key   = $point['category'] ?? '';
-            $desc_type_key  = $point['type'] ?? 'miejsce';
-            if ($desc_type_key === 'miejsce' && $desc_cat_key === 'gastronomia') {
-                $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, menu, adres i mapa dojazdu na JeleniogorzaNieTomy.pl';
-            } elseif ($desc_type_key === 'ciekawostka') {
-                $description = 'Ciekawostka: ' . $point['title'] . ' – odkryj historię i szczegóły na JeleniogorzaNieTomy.pl, interaktywna mapa Jeleniej Góry.';
+            $desc_cat_key  = $point['category'] ?? '';
+            $desc_type_key = $point['type'] ?? 'miejsce';
+            if ($desc_type_key === 'ciekawostka') {
+                $description = 'Ciekawostka: ' . $point['title'] . ' – odkryj historię i szczegóły na jeleniogorzanietomy.pl, interaktywna mapa Jeleniej Góry.';
+            } elseif ($desc_type_key === 'miejsce' && !empty($desc_cat_key)) {
+                $desc_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
+                if (!empty($desc_place_cats[$desc_cat_key]['has_menu'])) {
+                    $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, menu, adres i mapa dojazdu na jeleniogorzanietomy.pl';
+                } elseif (isset($desc_place_cats[$desc_cat_key]['label'])) {
+                    $desc_cat_label = mb_strtolower($desc_place_cats[$desc_cat_key]['label']);
+                    $description = $point['title'] . ' w Jeleniej Górze – ' . $desc_cat_label . '. Zdjęcia, mapa dojazdu i szczegółowe informacje na jeleniogorzanietomy.pl';
+                } else {
+                    $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na jeleniogorzanietomy.pl';
+                }
             } else {
-                $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na JeleniogorzaNieTomy.pl';
+                $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na jeleniogorzanietomy.pl';
             }
         }
 
