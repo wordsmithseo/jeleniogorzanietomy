@@ -494,6 +494,17 @@ class JG_Interactive_Map {
             return;
         }
 
+        // 301 redirect to trailing-slash canonical URL to prevent GSC duplicate indexing.
+        // Without this, /miejsce/slug and /miejsce/slug/ are treated as separate pages by Google,
+        // splitting impressions and link equity across two URLs.
+        if (isset($_SERVER['REQUEST_URI'])) {
+            $req_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            if ($req_path !== null && substr($req_path, -1) !== '/') {
+                wp_redirect(home_url($req_path . '/'), 301);
+                exit;
+            }
+        }
+
         // Generate unique request ID for logging
         $request_id = substr(md5(uniqid(mt_rand(), true)), 0, 8);
         $start_time = microtime(true);
@@ -1738,9 +1749,9 @@ class JG_Interactive_Map {
 
         // Meta description for Google search results (max 160 chars recommended)
         if (!empty($point['excerpt'])) {
-            $description = wp_trim_words(strip_tags($point['excerpt']), 25);
+            $description = wp_trim_words(strip_tags($point['excerpt']), 30);
         } elseif (!empty($point['content'])) {
-            $description = wp_trim_words(strip_tags($point['content']), 25);
+            $description = wp_trim_words(strip_tags($point['content']), 30);
         } else {
             // Category-aware fallback description for better CTR when no excerpt/content
             $desc_cat_key   = $point['category'] ?? '';
@@ -2122,9 +2133,9 @@ class JG_Interactive_Map {
 
         // Meta description for Google search results (max 160 chars recommended)
         if (!empty($point['excerpt'])) {
-            $description = wp_trim_words(strip_tags($point['excerpt']), 25);
+            $description = wp_trim_words(strip_tags($point['excerpt']), 30);
         } elseif (!empty($point['content'])) {
-            $description = wp_trim_words(strip_tags($point['content']), 25);
+            $description = wp_trim_words(strip_tags($point['content']), 30);
         } else {
             // Category-aware fallback description for better CTR when no excerpt/content
             $desc_cat_key   = $point['category'] ?? '';
