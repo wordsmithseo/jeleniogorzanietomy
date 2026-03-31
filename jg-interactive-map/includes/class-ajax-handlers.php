@@ -593,6 +593,7 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_keep_reported_place', array($this, 'keep_reported_place'), 1);
         add_action('wp_ajax_jg_admin_delete_user', array($this, 'admin_delete_user'), 1);
         add_action('wp_ajax_jg_admin_restore_point', array($this, 'admin_restore_point'), 1);
+        add_action('wp_ajax_jg_admin_delete_permanent', array($this, 'admin_delete_permanent'), 1);
         add_action('wp_ajax_jg_admin_empty_trash', array($this, 'admin_empty_trash'), 1);
         add_action('wp_ajax_jg_admin_toggle_edit_lock', array($this, 'admin_toggle_edit_lock'), 1);
         add_action('wp_ajax_jg_admin_change_owner', array($this, 'admin_change_owner'), 1);
@@ -8527,6 +8528,56 @@ class JG_Map_Ajax_Handlers {
         );
 
         wp_send_json_success(array('message' => 'Miejsce przywrócone z kosza'));
+    }
+
+    /**
+     * Permanently delete a single point that is already in trash (admin only)
+     */
+    public function admin_delete_permanent() {
+        $this->verify_nonce();
+        $this->check_admin();
+
+        $point_id = intval($_POST['post_id'] ?? 0);
+
+        if (!$point_id) {
+            wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        if ($point['status'] !== 'trash') {
+            wp_send_json_error(array('message' => 'Miejsce nie znajduje się w koszu'));
+            exit;
+        }
+
+        $deleted = JG_Map_Database::delete_point($point_id);
+
+        if ($deleted === false) {
+            wp_send_json_error(array('message' => 'Błąd usuwania'));
+            exit;
+        }
+
+        // Queue sync event
+        JG_Map_Sync_Manager::get_instance()->queue_point_deleted($point_id, array(
+            'admin_deleted' => true,
+            'point_title' => $point['title'],
+            'from_trash' => true
+        ));
+
+        // Log action
+        JG_Map_Activity_Log::log(
+            'delete_point',
+            'point',
+            $point_id,
+            sprintf('Trwale usunięto miejsce z kosza: %s', $point['title'])
+        );
+
+        wp_send_json_success(array('message' => 'Miejsce zostało trwale usunięte'));
     }
 
     /**
