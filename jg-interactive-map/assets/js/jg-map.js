@@ -11611,6 +11611,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   p.ratings_count = +(d.ratings_count || 0);
                   p.my_rating     = d.my_rating || '';
                   refreshStars(p.rating, p.ratings_count, p.my_rating);
+                  // Live-update sidebar item without full reload
+                  if (typeof window.jgUpdatePointRating === 'function') {
+                    window.jgUpdatePointRating(p.id, p.rating, p.ratings_count);
+                  }
                   if (p.my_rating) {
                     var pressedBtn = qs('#v-star-' + star, starsContainer);
                     var starColors = ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fffbeb'];
