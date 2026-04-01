@@ -2312,7 +2312,9 @@ class JG_Interactive_Map {
             $cur_cats = JG_Map_Ajax_Handlers::get_curiosity_categories();
             $schema_type = isset($cur_cats[$point_category]['schema_type']) ? $cur_cats[$point_category]['schema_type'] : 'TouristAttraction';
         }
-        // $rating_data_schema / $avg_rating_schema / $total_votes are set early in this function
+        $rating_data_schema  = JG_Map_Database::get_rating_data($point['id']);
+        $avg_rating_schema   = $rating_data_schema['avg'];
+        $total_votes         = $rating_data_schema['count'];
         $date_created_schema = !empty($point['created_at']) ? get_date_from_gmt($point['created_at'], 'c') : null;
         $date_modified_schema = !empty($point['updated_at']) ? get_date_from_gmt($point['updated_at'], 'c') : null;
         ?>
