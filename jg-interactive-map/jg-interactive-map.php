@@ -1002,6 +1002,11 @@ class JG_Interactive_Map {
             $logo_url = wp_get_attachment_image_url($custom_logo_id, 'full');
         }
 
+        // Star rating data — fetched once, used for both HTML display and JSON-LD schema
+        $rating_data_schema = JG_Map_Database::get_rating_data($point['id']);
+        $avg_rating_schema  = $rating_data_schema['avg'];
+        $total_votes        = $rating_data_schema['count'];
+
         ?><!doctype html>
 <html lang="pl-PL">
 <head>
@@ -2307,10 +2312,7 @@ class JG_Interactive_Map {
             $cur_cats = JG_Map_Ajax_Handlers::get_curiosity_categories();
             $schema_type = isset($cur_cats[$point_category]['schema_type']) ? $cur_cats[$point_category]['schema_type'] : 'TouristAttraction';
         }
-        // Get star rating data for aggregateRating
-        $rating_data_schema = JG_Map_Database::get_rating_data($point['id']);
-        $avg_rating_schema  = $rating_data_schema['avg'];
-        $total_votes        = $rating_data_schema['count'];
+        // $rating_data_schema / $avg_rating_schema / $total_votes are set early in this function
         $date_created_schema = !empty($point['created_at']) ? get_date_from_gmt($point['created_at'], 'c') : null;
         $date_modified_schema = !empty($point['updated_at']) ? get_date_from_gmt($point['updated_at'], 'c') : null;
         ?>

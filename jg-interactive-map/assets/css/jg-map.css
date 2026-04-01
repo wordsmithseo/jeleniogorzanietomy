@@ -3496,58 +3496,69 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 }
 
 /* Voting */
-/* Star rating widget */
+/* Star rating widget — !important guards against Elementor/theme overrides */
 .jg-vote {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  padding: 0.6rem 1rem;
-  border-radius: 1.25rem;
-  border: 1px solid #fde68a;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  margin-top: 0.625rem;
-  min-width: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.35rem !important;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  padding: 0.6rem 1rem !important;
+  border-radius: 1.25rem !important;
+  border: 1px solid #fde68a !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  margin-top: 0.625rem !important;
+  min-width: 0 !important;
+  width: fit-content !important;
 }
 
 .jg-vote-stars {
-  display: flex;
-  gap: 2px;
-  align-items: center;
+  display: flex !important;
+  gap: 2px !important;
+  align-items: center !important;
+  line-height: 1 !important;
 }
 
 .jg-star-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: calc(22 * var(--jg));
-  color: #d1d5db;
-  padding: 2px 1px;
-  line-height: 1;
-  transition: color 0.15s, transform 0.1s;
+  all: revert !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  font-size: calc(22 * var(--jg)) !important;
+  color: #d1d5db !important;
+  padding: 2px 1px !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  font-family: inherit !important;
+  transition: color 0.15s, transform 0.1s !important;
+  outline: none !important;
 }
 
 .jg-star-btn:hover,
 .jg-star-btn.active {
-  color: #f59e0b;
-  transform: scale(1.15);
+  color: #f59e0b !important;
+  transform: scale(1.15) !important;
+  background: none !important;
+  border: none !important;
 }
 
 .jg-star-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
 }
 
 .jg-vote-avg {
-  font-size: calc(13 * var(--jg));
-  font-weight: 600;
-  line-height: 1;
+  font-size: calc(13 * var(--jg)) !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  margin: 0 !important;
 }
 
 .jg-vote-hint {
-  font-size: calc(11.5 * var(--jg));
-  color: #92400e;
-  line-height: 1;
+  font-size: calc(11.5 * var(--jg)) !important;
+  color: #92400e !important;
+  line-height: 1 !important;
+  margin: 0 !important;
 }
 
 /* Own point rating display (no buttons) */

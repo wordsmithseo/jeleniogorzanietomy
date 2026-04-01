@@ -1048,4 +1048,37 @@
     // Expose refresh function for external use
     window.jgSidebarRefresh = loadPoints;
 
+    /**
+     * Live-update a sidebar item's star rating without a full reload.
+     * Called from jg-map.js after a successful vote.
+     */
+    window.jgUpdatePointRating = function(pointId, avg, count) {
+        // Update sidebarPoints array
+        for (var i = 0; i < sidebarPoints.length; i++) {
+            if (String(sidebarPoints[i].id) === String(pointId)) {
+                sidebarPoints[i].votes_count   = avg;
+                sidebarPoints[i].ratings_count = count;
+                break;
+            }
+        }
+        // Update the DOM element directly
+        var $item = $('[data-point-id="' + pointId + '"]');
+        if (!$item.length) return;
+        var $votes = $item.find('.jg-sidebar-item__votes');
+        if (count > 0) {
+            var stars = '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
+            var cls = 'jg-sidebar-item__votes ';
+            if (avg >= 4.0) cls += 'jg-sidebar-item__votes--positive';
+            else if (avg < 2.5) cls += 'jg-sidebar-item__votes--negative';
+            else cls += 'jg-sidebar-item__votes--neutral';
+            if ($votes.length) {
+                $votes.attr('class', cls).attr('title', avg.toFixed(1) + '/5 (' + count + ' ocen)').html(stars + ' ' + avg.toFixed(1));
+            } else {
+                $item.find('.jg-sidebar-item__footer').prepend('<div class="' + cls + '" title="' + avg.toFixed(1) + '/5 (' + count + ' ocen)">' + stars + ' ' + avg.toFixed(1) + '</div>');
+            }
+        } else {
+            $votes.remove();
+        }
+    };
+
 })(jQuery);
