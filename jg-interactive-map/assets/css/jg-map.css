@@ -4027,6 +4027,8 @@ img.emoji {
   margin-top: 0 !important;
   padding: 0.3rem 0 !important;
   flex-shrink: 0 !important;
+  width: fit-content !important;
+  align-items: flex-end !important;
 }
 
 .jg-meta-row .jg-star-btn {
