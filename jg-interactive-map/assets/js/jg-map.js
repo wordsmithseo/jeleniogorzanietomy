@@ -10793,16 +10793,23 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var rc = +(p.ratings_count || 0);
           var avgTxt = rc > 0 ? (ra.toFixed(1) + ' (' + rc + ' ' + ratingCountLabel(rc) + ')') : 'Brak ocen';
           voteHtml = '<div class="jg-vote">' +
+            '<div class="jg-vote-row">' +
             '<div class="jg-vote-stars" id="v-stars">' + starsHtml(ra, myRating) + '</div>' +
             '<div class="jg-vote-avg" id="v-avg" style="' + colorForRating(ra) + '">' + avgTxt + '</div>' +
+            '</div>' +
             (CFG.isLoggedIn ? '' : '<div class="jg-vote-hint">Zaloguj się, aby ocenić</div>') +
             '</div>';
         } else if (!p.sponsored && isOwnPoint) {
-          // Show read-only average for own points
+          // Show read-only average for own points (same star display, no interaction)
           var ra = +(p.rating || 0);
           var rc = +(p.ratings_count || 0);
           var avgTxt = rc > 0 ? (ra.toFixed(1) + ' (' + rc + ' ' + ratingCountLabel(rc) + ')') : 'Brak ocen';
-          voteHtml = '<div class="jg-vote jg-vote--own"><span class="jg-vote-own-icon">⭐</span><span class="cnt" id="v-cnt" style="' + colorForRating(ra) + '">' + avgTxt + '</span></div>';
+          voteHtml = '<div class="jg-vote jg-vote--own">' +
+            '<div class="jg-vote-row">' +
+            '<div class="jg-vote-stars">' + starsHtml(ra, '') + '</div>' +
+            '<div class="jg-vote-avg" id="v-cnt" style="' + colorForRating(ra) + '">' + avgTxt + '</div>' +
+            '</div>' +
+            '</div>';
         }
 
         // Combine dateInfo and voteHtml into a single row
