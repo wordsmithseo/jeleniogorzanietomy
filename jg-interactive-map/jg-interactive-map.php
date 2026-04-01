@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.26.2
+ * Version: 3.26.3
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.26.2');
+define('JG_MAP_VERSION', '3.26.3');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1405,23 +1405,23 @@ class JG_Interactive_Map {
             <div class="jg-sp-date"><?php echo get_date_from_gmt($point['created_at'], 'd.m.Y'); ?></div>
 
             <!-- Star rating (read-only; voting requires map + login) -->
-            <?php if ($total_votes > 0):
-                $sp_stars_full  = floor($avg_rating_schema);
+            <?php
+                $sp_stars_full  = $total_votes > 0 ? floor($avg_rating_schema) : 0;
                 $sp_stars_empty = 5 - $sp_stars_full;
+                $sp_stars_color = $total_votes > 0 ? '#f59e0b' : '#d1d5db';
             ?>
             <div class="jg-sp-rating" style="display:flex;align-items:center;gap:8px;margin:10px 0 16px;flex-wrap:wrap">
-                <span class="jg-sp-rating-stars" style="font-size:22px;color:#f59e0b;letter-spacing:1px" aria-label="Ocena <?php echo esc_attr(number_format($avg_rating_schema, 1)); ?> na 5 gwiazdek">
+                <span class="jg-sp-rating-stars" style="font-size:22px;color:<?php echo esc_attr($sp_stars_color); ?>;letter-spacing:1px" aria-label="<?php echo $total_votes > 0 ? esc_attr('Ocena ' . number_format($avg_rating_schema, 1) . ' na 5 gwiazdek') : 'Brak ocen'; ?>">
                     <?php echo str_repeat('★', $sp_stars_full) . str_repeat('☆', $sp_stars_empty); ?>
                 </span>
+                <?php if ($total_votes > 0): ?>
                 <strong style="font-size:16px"><?php echo esc_html(number_format($avg_rating_schema, 1)); ?></strong>
                 <span style="color:#6b7280;font-size:13px">(<?php echo esc_html($total_votes); ?> <?php echo esc_html($total_votes === 1 ? 'ocena' : ($total_votes >= 2 && $total_votes <= 4 ? 'oceny' : 'ocen')); ?>)</span>
                 <span style="font-size:12px;color:#92400e">— <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#b45309">oceń na mapie</a> (wymagane logowanie)</span>
+                <?php else: ?>
+                <span style="font-size:13px;color:#9ca3af">Brak ocen &mdash; <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#2563eb">przejdź na mapę i zaloguj się</a>, aby ocenić.</span>
+                <?php endif; ?>
             </div>
-            <?php else: ?>
-            <div style="font-size:13px;color:#9ca3af;margin:8px 0 16px">
-                Brak ocen &mdash; <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#2563eb">przejdź na mapę i zaloguj się</a>, aby ocenić.
-            </div>
-            <?php endif; ?>
 
             <!-- Content -->
             <div class="jg-sp-content">
@@ -2032,22 +2032,22 @@ class JG_Interactive_Map {
     <?php if ($first_image): ?>
     <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" data-pin-description="<?php echo esc_attr($point['title'] . ' - ' . $type_label_singular . ' w Jeleniej Górze'); ?>">
     <?php endif; ?>
-    <?php if ($fb_total_votes > 0):
-        $fb_stars_full  = floor($fb_avg_rating);
+    <?php
+        $fb_stars_full  = $fb_total_votes > 0 ? floor($fb_avg_rating) : 0;
         $fb_stars_empty = 5 - $fb_stars_full;
         $fb_stars_html  = str_repeat('★', $fb_stars_full) . str_repeat('☆', $fb_stars_empty);
+        $fb_stars_color = $fb_total_votes > 0 ? '#f59e0b' : '#d1d5db';
     ?>
-    <div style="margin:12px 0;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;display:inline-block">
-        <span style="font-size:20px;color:#f59e0b;letter-spacing:2px"><?php echo esc_html($fb_stars_html); ?></span>
-        <strong style="margin-left:8px;font-size:16px"><?php echo esc_html(number_format($fb_avg_rating, 1)); ?></strong>
-        <span style="color:#6b7280;font-size:13px;margin-left:4px">(<?php echo esc_html($fb_total_votes); ?> <?php echo esc_html($fb_total_votes === 1 ? 'ocena' : ($fb_total_votes >= 2 && $fb_total_votes <= 4 ? 'oceny' : 'ocen')); ?>)</span>
-        <div style="font-size:12px;color:#92400e;margin-top:4px">Aby ocenić to miejsce, <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#b45309">przejdź na mapę i zaloguj się</a>.</div>
+    <div style="margin:12px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:20px;color:<?php echo esc_attr($fb_stars_color); ?>;letter-spacing:2px"><?php echo esc_html($fb_stars_html); ?></span>
+        <?php if ($fb_total_votes > 0): ?>
+        <strong style="font-size:16px"><?php echo esc_html(number_format($fb_avg_rating, 1)); ?></strong>
+        <span style="color:#6b7280;font-size:13px">(<?php echo esc_html($fb_total_votes); ?> <?php echo esc_html($fb_total_votes === 1 ? 'ocena' : ($fb_total_votes >= 2 && $fb_total_votes <= 4 ? 'oceny' : 'ocen')); ?>)</span>
+        <span style="font-size:12px;color:#92400e">— <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#b45309">oceń na mapie</a></span>
+        <?php else: ?>
+        <span style="font-size:13px;color:#9ca3af">Brak ocen — <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#2563eb">przejdź na mapę i zaloguj się</a>, aby ocenić.</span>
+        <?php endif; ?>
     </div>
-    <?php else: ?>
-    <div style="margin:12px 0;padding:10px 14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;display:inline-block;font-size:13px;color:#6b7280">
-        Brak ocen. Aby ocenić to miejsce, <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#2563eb">przejdź na mapę i zaloguj się</a>.
-    </div>
-    <?php endif; ?>
     <div><?php echo wp_kses_post($point['content']); ?></div>
     <?php
     $fb_tags = !empty($point['tags']) ? json_decode($point['tags'], true) : array();
