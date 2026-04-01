@@ -827,15 +827,11 @@ class JG_Map_Ajax_Handlers {
                 $author_email = $author->user_email;
             }
 
-            // Get votes from batch-loaded data
-            $votes_count = isset($votes_counts_map[$point_id]) ? $votes_counts_map[$point_id] : 0;
-            $my_vote = isset($user_votes_map[$point_id]) ? $user_votes_map[$point_id] : '';
-
-            // Get relevance votes (not yet implemented)
-            $relevance_votes_count = 0;
-            $my_relevance_vote = '';
-            if ($current_user_id > 0) {
-            }
+            // Get star rating from batch-loaded data
+            $rating_batch = isset($votes_counts_map[$point_id]) ? $votes_counts_map[$point_id] : array('avg' => 0.0, 'count' => 0);
+            $rating       = $rating_batch['avg'];
+            $ratings_count = $rating_batch['count'];
+            $my_rating    = isset($user_votes_map[$point_id]) ? $user_votes_map[$point_id] : '';
 
             // Get reports count from batch-loaded data - for admins or place owner
             $reports_count = 0;
@@ -1097,10 +1093,9 @@ class JG_Map_Ajax_Handlers {
                 'author_hidden' => (bool)$point['author_hidden'],
                 'images' => $images,
                 'featured_image_index' => intval($point['featured_image_index'] ?? 0),
-                'votes' => $votes_count,
-                'my_vote' => $my_vote,
-                'relevance_votes' => $relevance_votes_count,
-                'my_relevance_vote' => $my_relevance_vote,
+                'rating'        => $rating,
+                'ratings_count' => $ratings_count,
+                'my_rating'     => $my_rating,
                 'date' => array(
                     'raw' => $point['created_at'],
                     'human' => human_time_diff(strtotime($point['created_at'] . ' UTC'), time()) . ' temu',
@@ -2723,114 +2718,53 @@ class JG_Map_Ajax_Handlers {
         $point_id = intval($_POST['post_id'] ?? 0);
         $direction = sanitize_text_field($_POST['dir'] ?? '');
 
-        if (!$point_id || !in_array($direction, array('up', 'down'))) {
+        if (!$point_id || !in_array($direction, array('1', '2', '3', '4', '5'))) {
             wp_send_json_error(array('message' => 'Nieprawidłowe dane'));
             exit;
         }
 
-        // Check if user is the author of the point - can't vote on own places
+        // Check if user is the author of the point - can't rate own places
         $point = JG_Map_Database::get_point($point_id);
         if (!$point) {
             wp_send_json_error(array('message' => 'Punkt nie istnieje'));
             exit;
         }
         if (intval($point['author_id']) === $user_id) {
-            wp_send_json_error(array('message' => 'Nie możesz głosować na własne miejsca'));
+            wp_send_json_error(array('message' => 'Nie możesz oceniać własnych miejsc'));
             exit;
         }
 
-        // Get current vote
+        // Get current rating
         $current_vote = JG_Map_Database::get_user_vote($point_id, $user_id);
 
-        // Toggle vote
-        $new_vote = '';
-        if ($current_vote === $direction) {
-            $new_vote = ''; // Remove vote
-        } else {
-            $new_vote = $direction;
-        }
+        // Toggle: clicking the same star value removes the rating
+        $new_vote = ($current_vote === $direction) ? '' : $direction;
 
         JG_Map_Database::set_vote($point_id, $user_id, $new_vote);
 
-        // XP logic — covers all six vote-state transitions:
-        //   '' → 'up'/'down'  : new vote       → award voter; if up, award author
-        //   'up'/'down' → ''  : vote removed   → revoke voter; if was up, revoke author
-        //   'up' → 'down'     : vote flipped   → revoke author's upvote XP
-        //   'down' → 'up'     : vote flipped   → award author's upvote XP
-        $xp_result  = null;
-        $author_id  = intval($point['author_id']);
-        $valid_author = $author_id && $author_id !== $user_id;
-
-        if (!empty($new_vote) && empty($current_vote)) {
-            // New vote cast
-            $xp_result = JG_Map_Levels_Achievements::award_xp($user_id, 'vote_on_point', $point_id);
-            if ($new_vote === 'up' && $valid_author) {
-                JG_Map_Levels_Achievements::award_xp($author_id, 'receive_upvote', $point_id);
-            }
-        } elseif (empty($new_vote) && !empty($current_vote)) {
-            // Vote retracted — revoke XP
-            $xp_result = JG_Map_Levels_Achievements::revoke_xp($user_id, 'vote_on_point', $point_id);
-            if ($current_vote === 'up' && $valid_author) {
-                JG_Map_Levels_Achievements::revoke_xp($author_id, 'receive_upvote', $point_id);
-            }
-        } elseif ($new_vote === 'down' && $current_vote === 'up' && $valid_author) {
-            // Switched up → down: author loses their upvote XP
-            JG_Map_Levels_Achievements::revoke_xp($author_id, 'receive_upvote', $point_id);
-        } elseif ($new_vote === 'up' && $current_vote === 'down' && $valid_author) {
-            // Switched down → up: author gains upvote XP
-            JG_Map_Levels_Achievements::award_xp($author_id, 'receive_upvote', $point_id);
-        }
-
-        $votes_count = JG_Map_Database::get_votes_count($point_id);
-
-        // Check if votes dropped to -100 or below - auto-report to moderation
-        if ($votes_count <= -100) {
-            // Check if already reported for this reason
-            $user_email = wp_get_current_user()->user_email;
-            $reason_text = 'Zgłoszenie z dużą dezaprobatą społeczności (automatyczne zgłoszenie: głosowanie wynosi ' . $votes_count . ')';
-
-            // Check if not already reported with this reason
-            global $wpdb;
-            $reports_table = JG_Map_Database::get_reports_table();
-            $existing_auto_report = $wpdb->get_var(
-                $wpdb->prepare(
-                    "SELECT COUNT(*) FROM $reports_table WHERE point_id = %d AND reason LIKE %s AND status = 'pending'",
-                    $point_id,
-                    '%Zgłoszenie z dużą dezaprobatą społeczności%'
-                )
-            );
-
-            if ($existing_auto_report == 0) {
-                // Auto-report to moderation
-                JG_Map_Database::add_report($point_id, $user_id, $user_email, $reason_text);
-
-                // Notify admin
-                $this->notify_admin_auto_negative_report($point_id, $votes_count);
-            }
-        }
+        $rating_data = JG_Map_Database::get_rating_data($point_id);
 
         // Log user action
         if (!empty($new_vote)) {
-            $vote_label = $new_vote === 'up' ? 'za' : 'przeciw';
             JG_Map_Activity_Log::log_user_action(
                 'vote',
                 'point',
                 $point_id,
-                sprintf('Zagłosowano %s: %s', $vote_label, $point['title'])
+                sprintf('Oceniono %s gwiazdkami: %s', $new_vote, $point['title'])
             );
         } else {
             JG_Map_Activity_Log::log_user_action(
                 'vote_removed',
                 'point',
                 $point_id,
-                sprintf('Wycofano głos: %s', $point['title'])
+                sprintf('Wycofano ocenę: %s', $point['title'])
             );
         }
 
         wp_send_json_success(array(
-            'votes'      => $votes_count,
-            'my_vote'    => $new_vote,
-            'xp_result'  => $xp_result,
+            'rating'        => $rating_data['avg'],
+            'ratings_count' => $rating_data['count'],
+            'my_rating'     => $new_vote,
         ));
     }
 
@@ -4092,37 +4026,6 @@ class JG_Map_Ajax_Handlers {
         wp_mail($admin_email, $subject, $message);
     }
 
-    /**
-     * Notify admin about auto-report due to low relevance votes
-     */
-    private function notify_admin_auto_report($point_id, $relevance_votes_count) {
-        $admin_email = get_option('admin_email');
-        $point = JG_Map_Database::get_point($point_id);
-
-        $subject = 'Portal Jeleniogórzanie to my - Automatyczne zgłoszenie miejsca (nieaktualne)';
-        $message = "Miejsce zostało automatycznie zgłoszone do moderacji z powodu niskich głosów na aktualność:\n\n";
-        $message .= "Tytuł: {$point['title']}\n";
-        $message .= "Głosy \"Nadal aktualne?\": {$relevance_votes_count}\n";
-        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-places') . "\n";
-
-        wp_mail($admin_email, $subject, $message);
-    }
-
-    /**
-     * Notify admin about auto-report due to negative votes
-     */
-    private function notify_admin_auto_negative_report($point_id, $votes_count) {
-        $admin_email = get_option('admin_email');
-        $point = JG_Map_Database::get_point($point_id);
-
-        $subject = 'Portal Jeleniogórzanie to my - Automatyczne zgłoszenie miejsca (duża dezaprobata)';
-        $message = "Miejsce zostało automatycznie zgłoszone do moderacji z powodu dużej dezaprobaty społeczności:\n\n";
-        $message .= "Tytuł: {$point['title']}\n";
-        $message .= "Liczba głosów: {$votes_count}\n";
-        $message .= "Link do panelu: " . admin_url('admin.php?page=jg-map-places') . "\n";
-
-        wp_mail($admin_email, $subject, $message);
-    }
 
     /**
      * Notify reporter about confirmation of report
@@ -6658,15 +6561,9 @@ class JG_Map_Ajax_Handlers {
             }
         }
 
-        // Count upvotes given
-        $upvotes_given = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table_votes WHERE user_id = %d AND vote_type = 'up'",
-            $user_id
-        ));
-
-        // Count downvotes given
-        $downvotes_given = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table_votes WHERE user_id = %d AND vote_type = 'down'",
+        // Count star ratings given by user
+        $ratings_given = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_votes WHERE user_id = %d",
             $user_id
         ));
 
@@ -6682,20 +6579,16 @@ class JG_Map_Ajax_Handlers {
             $user_id
         ));
 
-        // Get votes received on user's places
-        $upvotes_received = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table_votes v
+        // Average star rating received on user's places
+        $ratings_received_row = $wpdb->get_row($wpdb->prepare(
+            "SELECT COUNT(*) as cnt, AVG(CAST(v.vote_type AS DECIMAL(3,1))) as avg_rating
+             FROM $table_votes v
              INNER JOIN $table_points p ON v.point_id = p.id
-             WHERE p.author_id = %d AND v.vote_type = 'up'",
+             WHERE p.author_id = %d",
             $user_id
-        ));
-
-        $downvotes_received = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table_votes v
-             INNER JOIN $table_points p ON v.point_id = p.id
-             WHERE p.author_id = %d AND v.vote_type = 'down'",
-            $user_id
-        ));
+        ), ARRAY_A);
+        $ratings_received = $ratings_received_row ? intval($ratings_received_row['cnt']) : 0;
+        $avg_rating_received = ($ratings_received > 0) ? round(floatval($ratings_received_row['avg_rating']), 1) : 0.0;
 
         // User metadata
         $is_admin = current_user_can('manage_options');
@@ -6728,10 +6621,9 @@ class JG_Map_Ajax_Handlers {
                 'edits_submitted' => intval($edits_count),
                 'edits_approved' => intval($approved_edits_count),
                 'photos_added' => intval($photos_count),
-                'upvotes_given' => intval($upvotes_given),
-                'downvotes_given' => intval($downvotes_given),
-                'upvotes_received' => intval($upvotes_received),
-                'downvotes_received' => intval($downvotes_received),
+                'ratings_given' => intval($ratings_given),
+                'ratings_received' => $ratings_received,
+                'avg_rating_received' => $avg_rating_received,
                 'reports_submitted' => intval($reports_submitted),
                 'places_visited' => intval($places_visited)
             )
@@ -8155,8 +8047,9 @@ class JG_Map_Ajax_Handlers {
         $points_with_votes = array();
         foreach ($points as $point) {
             $point_id = intval($point['id']);
-            $votes_count = isset($votes_counts_map[$point_id]) ? $votes_counts_map[$point_id] : 0;
-            $point['votes_count'] = $votes_count;
+            $rating_batch = isset($votes_counts_map[$point_id]) ? $votes_counts_map[$point_id] : array('avg' => 0.0, 'count' => 0);
+            $point['votes_count']    = $rating_batch['avg'];
+            $point['ratings_count']  = $rating_batch['count'];
             $points_with_votes[] = $point;
         }
 
@@ -8248,13 +8141,13 @@ class JG_Map_Ajax_Handlers {
 
             case 'votes_desc':
                 usort($regular_points, function($a, $b) {
-                    return $b['votes_count'] - $a['votes_count'];
+                    return $b['votes_count'] <=> $a['votes_count'];
                 });
                 break;
 
             case 'votes_asc':
                 usort($regular_points, function($a, $b) {
-                    return $a['votes_count'] - $b['votes_count'];
+                    return $a['votes_count'] <=> $b['votes_count'];
                 });
                 break;
 
@@ -8327,6 +8220,7 @@ class JG_Map_Ajax_Handlers {
                 'lng' => $point['lng'],
                 'is_promo' => (bool)$point['is_promo'],
                 'votes_count' => $point['votes_count'],
+                'ratings_count' => $point['ratings_count'],
                 'created_at' => $point['created_at'],
                 'updated_at' => $point['updated_at'],
                 'date' => array(

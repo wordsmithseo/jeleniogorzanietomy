@@ -903,6 +903,21 @@ class JG_Map_Database {
     }
 
     /**
+     * One-time migration: convert legacy 'up'/'down' vote_type values to star ratings (5/1).
+     * Runs once per site, tracked by option 'jg_map_votes_migrated_to_stars'.
+     */
+    public static function maybe_migrate_votes_to_stars() {
+        if (get_option('jg_map_votes_migrated_to_stars')) {
+            return;
+        }
+        global $wpdb;
+        $table = self::get_votes_table();
+        $wpdb->query("UPDATE $table SET vote_type = '5' WHERE vote_type = 'up'");
+        $wpdb->query("UPDATE $table SET vote_type = '1' WHERE vote_type = 'down'");
+        update_option('jg_map_votes_migrated_to_stars', 1);
+    }
+
+    /**
      * Get slug redirects table name
      */
     public static function get_slug_redirects_table() {
@@ -1338,27 +1353,39 @@ class JG_Map_Database {
     }
 
     /**
-     * Get votes count for a point
+     * Get star rating data for a point.
+     * Returns ['avg' => float 0-5, 'count' => int].
      */
-    public static function get_votes_count($point_id) {
+    public static function get_rating_data($point_id) {
         global $wpdb;
         $table = self::get_votes_table();
 
-        $up = $wpdb->get_var(
+        $row = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT COUNT(*) FROM $table WHERE point_id = %d AND vote_type = 'up'",
+                "SELECT AVG(CAST(vote_type AS DECIMAL(3,1))) as avg_rating, COUNT(*) as total_count
+                 FROM $table WHERE point_id = %d",
                 $point_id
-            )
+            ),
+            ARRAY_A
         );
 
-        $down = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*) FROM $table WHERE point_id = %d AND vote_type = 'down'",
-                $point_id
-            )
-        );
+        if (!$row || $row['total_count'] == 0) {
+            return array('avg' => 0.0, 'count' => 0);
+        }
 
-        return intval($up) - intval($down);
+        return array(
+            'avg'   => round(floatval($row['avg_rating']), 1),
+            'count' => intval($row['total_count']),
+        );
+    }
+
+    /**
+     * @deprecated Use get_rating_data() instead.
+     * Kept for backward compatibility - returns net score (no longer meaningful).
+     */
+    public static function get_votes_count($point_id) {
+        $data = self::get_rating_data($point_id);
+        return $data['count'];
     }
 
     /**
@@ -1411,10 +1438,10 @@ class JG_Map_Database {
      */
 
     /**
-     * Get votes counts for multiple points at once (batch loading)
+     * Get star rating data for multiple points at once (batch loading).
      *
      * @param array $point_ids Array of point IDs
-     * @return array Associative array [point_id => vote_count]
+     * @return array Associative array [point_id => ['avg' => float, 'count' => int]]
      */
     public static function get_votes_counts_batch($point_ids) {
         if (empty($point_ids)) {
@@ -1424,30 +1451,30 @@ class JG_Map_Database {
         global $wpdb;
         $table = self::get_votes_table();
 
-        // Sanitize point IDs
         $point_ids = array_map('intval', $point_ids);
         $ids_placeholder = implode(',', array_fill(0, count($point_ids), '%d'));
 
         $results = $wpdb->get_results($wpdb->prepare(
             "SELECT point_id,
-                    SUM(CASE WHEN vote_type = 'up' THEN 1 ELSE 0 END) as up_votes,
-                    SUM(CASE WHEN vote_type = 'down' THEN 1 ELSE 0 END) as down_votes
+                    AVG(CAST(vote_type AS DECIMAL(3,1))) as avg_rating,
+                    COUNT(*) as total_count
              FROM $table
              WHERE point_id IN ($ids_placeholder)
              GROUP BY point_id",
             ...$point_ids
         ), ARRAY_A);
 
-        // Return as associative array indexed by point_id
         $votes_map = array();
         foreach ($results as $row) {
-            $votes_map[intval($row['point_id'])] = intval($row['up_votes']) - intval($row['down_votes']);
+            $votes_map[intval($row['point_id'])] = array(
+                'avg'   => round(floatval($row['avg_rating']), 1),
+                'count' => intval($row['total_count']),
+            );
         }
 
-        // Fill in zeros for points with no votes
         foreach ($point_ids as $point_id) {
             if (!isset($votes_map[$point_id])) {
-                $votes_map[$point_id] = 0;
+                $votes_map[$point_id] = array('avg' => 0.0, 'count' => 0);
             }
         }
 

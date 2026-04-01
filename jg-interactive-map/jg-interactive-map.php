@@ -93,6 +93,9 @@ class JG_Interactive_Map {
         // to avoid double-parsing and the extra ~10KB wp-emoji-release.min.js request.
         add_action('init', array($this, 'disable_wp_emoji'));
 
+        // One-time migration: convert legacy up/down votes to star ratings
+        add_action('init', array('JG_Map_Database', 'maybe_migrate_votes_to_stars'));
+
         // Initialize maintenance cron
         add_action('init', array('JG_Map_Maintenance', 'init'));
 
@@ -1396,6 +1399,25 @@ class JG_Interactive_Map {
             <!-- Date -->
             <div class="jg-sp-date"><?php echo get_date_from_gmt($point['created_at'], 'd.m.Y'); ?></div>
 
+            <!-- Star rating (read-only; voting requires map + login) -->
+            <?php if ($total_votes > 0):
+                $sp_stars_full  = floor($avg_rating_schema);
+                $sp_stars_empty = 5 - $sp_stars_full;
+            ?>
+            <div class="jg-sp-rating" style="display:flex;align-items:center;gap:8px;margin:10px 0 16px;flex-wrap:wrap">
+                <span class="jg-sp-rating-stars" style="font-size:22px;color:#f59e0b;letter-spacing:1px" aria-label="Ocena <?php echo esc_attr(number_format($avg_rating_schema, 1)); ?> na 5 gwiazdek">
+                    <?php echo str_repeat('★', $sp_stars_full) . str_repeat('☆', $sp_stars_empty); ?>
+                </span>
+                <strong style="font-size:16px"><?php echo esc_html(number_format($avg_rating_schema, 1)); ?></strong>
+                <span style="color:#6b7280;font-size:13px">(<?php echo esc_html($total_votes); ?> <?php echo esc_html($total_votes === 1 ? 'ocena' : ($total_votes >= 2 && $total_votes <= 4 ? 'oceny' : 'ocen')); ?>)</span>
+                <span style="font-size:12px;color:#92400e">— <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#b45309">oceń na mapie</a> (wymagane logowanie)</span>
+            </div>
+            <?php else: ?>
+            <div style="font-size:13px;color:#9ca3af;margin:8px 0 16px">
+                Brak ocen &mdash; <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#2563eb">przejdź na mapę i zaloguj się</a>, aby ocenić.
+            </div>
+            <?php endif; ?>
+
             <!-- Content -->
             <div class="jg-sp-content">
                 <?php echo wp_kses_post($point['content']); ?>
@@ -1868,10 +1890,9 @@ class JG_Interactive_Map {
         $fb_schema_type = isset($fb_cur_cats[$fb_point_category]['schema_type']) ? $fb_cur_cats[$fb_point_category]['schema_type'] : 'TouristAttraction';
     }
     global $wpdb;
-    $fb_votes_table = JG_Map_Database::get_votes_table();
-    $fb_votes_up = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $fb_votes_table WHERE point_id = %d AND vote_type = 'up'", $point['id']));
-    $fb_votes_down = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $fb_votes_table WHERE point_id = %d AND vote_type = 'down'", $point['id']));
-    $fb_total_votes = $fb_votes_up + $fb_votes_down;
+    $fb_rating_data = JG_Map_Database::get_rating_data($point['id']);
+    $fb_avg_rating  = $fb_rating_data['avg'];
+    $fb_total_votes = $fb_rating_data['count'];
     $fb_date_created = !empty($point['created_at']) ? get_date_from_gmt($point['created_at'], 'c') : null;
     $fb_date_modified = !empty($point['updated_at']) ? get_date_from_gmt($point['updated_at'], 'c') : null;
     ?>
@@ -1931,8 +1952,9 @@ class JG_Interactive_Map {
                 <?php if ($fb_total_votes > 0): ?>
                 ,"aggregateRating": {
                     "@type": "AggregateRating",
-                    "ratingValue": <?php echo json_encode(round(($fb_votes_up / $fb_total_votes) * 5, 1)); ?>,
+                    "ratingValue": <?php echo json_encode($fb_avg_rating); ?>,
                     "ratingCount": <?php echo json_encode($fb_total_votes); ?>,
+                    "reviewCount": <?php echo json_encode($fb_total_votes); ?>,
                     "bestRating": "5",
                     "worstRating": "1"
                 }
@@ -2004,6 +2026,22 @@ class JG_Interactive_Map {
     <h1><?php echo esc_html($point['title']); ?></h1>
     <?php if ($first_image): ?>
     <img src="<?php echo esc_url($first_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" data-pin-description="<?php echo esc_attr($point['title'] . ' - ' . $type_label_singular . ' w Jeleniej Górze'); ?>">
+    <?php endif; ?>
+    <?php if ($fb_total_votes > 0):
+        $fb_stars_full  = floor($fb_avg_rating);
+        $fb_stars_empty = 5 - $fb_stars_full;
+        $fb_stars_html  = str_repeat('★', $fb_stars_full) . str_repeat('☆', $fb_stars_empty);
+    ?>
+    <div style="margin:12px 0;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;display:inline-block">
+        <span style="font-size:20px;color:#f59e0b;letter-spacing:2px"><?php echo esc_html($fb_stars_html); ?></span>
+        <strong style="margin-left:8px;font-size:16px"><?php echo esc_html(number_format($fb_avg_rating, 1)); ?></strong>
+        <span style="color:#6b7280;font-size:13px;margin-left:4px">(<?php echo esc_html($fb_total_votes); ?> <?php echo esc_html($fb_total_votes === 1 ? 'ocena' : ($fb_total_votes >= 2 && $fb_total_votes <= 4 ? 'oceny' : 'ocen')); ?>)</span>
+        <div style="font-size:12px;color:#92400e;margin-top:4px">Aby ocenić to miejsce, <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#b45309">przejdź na mapę i zaloguj się</a>.</div>
+    </div>
+    <?php else: ?>
+    <div style="margin:12px 0;padding:10px 14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;display:inline-block;font-size:13px;color:#6b7280">
+        Brak ocen. Aby ocenić to miejsce, <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#2563eb">przejdź na mapę i zaloguj się</a>.
+    </div>
     <?php endif; ?>
     <div><?php echo wp_kses_post($point['content']); ?></div>
     <?php
@@ -2269,12 +2307,10 @@ class JG_Interactive_Map {
             $cur_cats = JG_Map_Ajax_Handlers::get_curiosity_categories();
             $schema_type = isset($cur_cats[$point_category]['schema_type']) ? $cur_cats[$point_category]['schema_type'] : 'TouristAttraction';
         }
-        // Get votes count for aggregateRating
-        global $wpdb;
-        $votes_table = JG_Map_Database::get_votes_table();
-        $votes_up = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $votes_table WHERE point_id = %d AND vote_type = 'up'", $point['id']));
-        $votes_down = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $votes_table WHERE point_id = %d AND vote_type = 'down'", $point['id']));
-        $total_votes = $votes_up + $votes_down;
+        // Get star rating data for aggregateRating
+        $rating_data_schema = JG_Map_Database::get_rating_data($point['id']);
+        $avg_rating_schema  = $rating_data_schema['avg'];
+        $total_votes        = $rating_data_schema['count'];
         $date_created_schema = !empty($point['created_at']) ? get_date_from_gmt($point['created_at'], 'c') : null;
         $date_modified_schema = !empty($point['updated_at']) ? get_date_from_gmt($point['updated_at'], 'c') : null;
         ?>
@@ -2379,8 +2415,9 @@ class JG_Interactive_Map {
                     <?php if ($total_votes > 0): ?>
                     ,"aggregateRating": {
                         "@type": "AggregateRating",
-                        "ratingValue": <?php echo json_encode(round(($votes_up / $total_votes) * 5, 1)); ?>,
+                        "ratingValue": <?php echo json_encode($avg_rating_schema); ?>,
                         "ratingCount": <?php echo json_encode($total_votes); ?>,
+                        "reviewCount": <?php echo json_encode($total_votes); ?>,
                         "bestRating": "5",
                         "worstRating": "1"
                     }

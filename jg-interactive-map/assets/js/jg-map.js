@@ -6029,8 +6029,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               author_hidden: !!r.author_hidden,
               images: (r.images || []),
               featured_image_index: +(r.featured_image_index || 0),
-              votes: +(r.votes || 0),
-              my_vote: (r.my_vote || ''),
+              rating: +(r.rating || 0),
+              ratings_count: +(r.ratings_count || 0),
+              my_rating: (r.my_rating || ''),
               date: r.date || null,
               admin: r.admin || null,
               last_modifier: r.last_modifier || null,
@@ -6258,20 +6259,35 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         return h;
       }
 
-      function colorForVotes(n) {
-        if (n > 100) return 'color:#b58900;font-weight:800';
-        if (n > 0) return 'color:#15803d;font-weight:700';
-        if (n < 0) return 'color:#b91c1c;font-weight:700';
-        return 'color:#111';
+      function colorForRating(r) {
+        if (!r || r === 0) return 'color:#9ca3af';
+        if (r >= 4.5) return 'color:#b45309;font-weight:800';
+        if (r >= 3.5) return 'color:#15803d;font-weight:700';
+        if (r >= 2.5) return 'color:#374151;font-weight:600';
+        return 'color:#b91c1c;font-weight:600';
       }
 
-      function pluralVotes(n) {
-        var abs = Math.abs(n);
-        if (abs === 1) return 'głos';
-        var mod10 = abs % 10;
-        var mod100 = abs % 100;
-        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'głosy';
-        return 'głosów';
+      // Keep legacy alias used by sidebar sort
+      function colorForVotes(n) { return colorForRating(n); }
+
+      function ratingCountLabel(count) {
+        if (count === 1) return 'ocena';
+        var mod10 = count % 10;
+        var mod100 = count % 100;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'oceny';
+        return 'ocen';
+      }
+
+      function pluralVotes(n) { return ratingCountLabel(n); }
+
+      function starsHtml(avg, myRating) {
+        var html = '';
+        for (var s = 1; s <= 5; s++) {
+          var isFilled = s <= Math.round(avg);
+          var isMine   = String(s) === String(myRating);
+          html += '<button class="jg-star-btn' + (isMine ? ' active' : '') + '" id="v-star-' + s + '" data-star="' + s + '" title="' + s + ' ' + (s === 1 ? 'gwiazdka' : (s <= 4 ? 'gwiazdki' : 'gwiazdek')) + '">' + (isFilled || isMine ? '★' : '☆') + '</button>';
+        }
+        return html;
       }
 
       function openLightbox(src) {
@@ -10766,17 +10782,25 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         // Sponsored places can only be edited by owner or admin
         // Edit-locked places can only be edited by admins
         var canEdit = CFG.isAdmin || (isOwnPoint && !p.edit_locked) || (+CFG.currentUserId > 0 && !p.sponsored && !p.edit_locked);
-        var myVote = p.my_vote || '';
+        var myRating = p.my_rating || '';
 
-        // Don't show voting for promo points or own points
+        // Don't show voting for promo points
         var voteHtml = '';
         if (!p.sponsored && !isOwnPoint) {
-          var vc = +p.votes || 0;
-          voteHtml = '<div class="jg-vote"><button id="v-up" ' + (myVote === 'up' ? 'class="active"' : '') + '>⬆️</button><span class="cnt" id="v-cnt" style="' + colorForVotes(vc) + '">' + vc + '</span><span class="jg-vote-label">' + pluralVotes(vc) + '</span><button id="v-down" ' + (myVote === 'down' ? 'class="active"' : '') + '>⬇️</button></div>';
+          var ra = +(p.rating || 0);
+          var rc = +(p.ratings_count || 0);
+          var avgTxt = rc > 0 ? (ra.toFixed(1) + ' (' + rc + ' ' + ratingCountLabel(rc) + ')') : 'Brak ocen';
+          voteHtml = '<div class="jg-vote">' +
+            '<div class="jg-vote-stars" id="v-stars">' + starsHtml(ra, myRating) + '</div>' +
+            '<div class="jg-vote-avg" id="v-avg" style="' + colorForRating(ra) + '">' + avgTxt + '</div>' +
+            (CFG.isLoggedIn ? '' : '<div class="jg-vote-hint">Zaloguj się, aby ocenić</div>') +
+            '</div>';
         } else if (!p.sponsored && isOwnPoint) {
-          // Show compact vote count for own points (no voting buttons)
-          var vc = +p.votes || 0;
-          voteHtml = '<div class="jg-vote jg-vote--own"><span class="jg-vote-own-icon">🗳️</span><span class="cnt" id="v-cnt" style="' + colorForVotes(vc) + '">' + vc + '</span><span class="jg-vote-own-label">' + pluralVotes(vc) + '</span></div>';
+          // Show read-only average for own points
+          var ra = +(p.rating || 0);
+          var rc = +(p.ratings_count || 0);
+          var avgTxt = rc > 0 ? (ra.toFixed(1) + ' (' + rc + ' ' + ratingCountLabel(rc) + ')') : 'Brak ocen';
+          voteHtml = '<div class="jg-vote jg-vote--own"><span class="jg-vote-own-icon">⭐</span><span class="cnt" id="v-cnt" style="' + colorForRating(ra) + '">' + avgTxt + '</span></div>';
         }
 
         // Combine dateInfo and voteHtml into a single row
@@ -10785,13 +10809,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           metaRow = '<div class="jg-meta-row">' + dateInfo + voteHtml + '</div>';
         }
 
-        // Community verification badge (based on votes)
+        // Community verification badge (based on star rating)
         var verificationBadge = '';
-        if (p.votes && !p.sponsored) {
-          if (+p.votes >= 50) {
-            verificationBadge = '<div style="padding:10px;background:#d1fae5;border:2px solid #10b981;border-radius:8px;margin:10px 0;text-align:center"><strong style="color:#065f46">✅ Zweryfikowane pozytywnie przez społeczność Jeleniej Góry</strong><div style="font-size:12px;color:#047857;margin-top:4px">To zgłoszenie otrzymało ponad 50 pozytywnych głosów od społeczności</div></div>';
-          } else if (+p.votes <= -50) {
-            verificationBadge = '<div style="padding:10px;background:#fee2e2;border:2px solid #ef4444;border-radius:8px;margin:10px 0;text-align:center"><strong style="color:#991b1b">⚠️ Zweryfikowane negatywnie przez społeczność Jeleniej Góry</strong><div style="font-size:12px;color:#b91c1c;margin-top:4px">To zgłoszenie ma ponad 50 negatywnych głosów od społeczności</div></div>';
+        if (!p.sponsored && p.ratings_count >= 10) {
+          if (p.rating >= 4.5) {
+            verificationBadge = '<div style="padding:10px;background:#d1fae5;border:2px solid #10b981;border-radius:8px;margin:10px 0;text-align:center"><strong style="color:#065f46">✅ Wysoko oceniane przez społeczność Jeleniej Góry</strong><div style="font-size:12px;color:#047857;margin-top:4px">Średnia ocen: ' + p.rating.toFixed(1) + ' / 5 (' + p.ratings_count + ' ocen)</div></div>';
+          } else if (p.rating <= 2.0) {
+            verificationBadge = '<div style="padding:10px;background:#fee2e2;border:2px solid #ef4444;border-radius:8px;margin:10px 0;text-align:center"><strong style="color:#991b1b">⚠️ Nisko oceniane przez społeczność Jeleniej Góry</strong><div style="font-size:12px;color:#b91c1c;margin-top:4px">Średnia ocen: ' + p.rating.toFixed(1) + ' / 5 (' + p.ratings_count + ' ocen)</div></div>';
           }
         }
 
@@ -11544,69 +11568,86 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           });
         }
 
-        // Setup voting handlers only if not promo
-        if (!p.sponsored) {
-          var cnt = qs('#v-cnt', modalView);
-          var up = qs('#v-up', modalView);
-          var down = qs('#v-down', modalView);
+        // Setup star rating handlers only if not promo and not own point
+        if (!p.sponsored && !isOwnPoint) {
+          var starsContainer = qs('#v-stars', modalView);
+          var avgDisplay     = qs('#v-avg', modalView);
 
-          if (cnt && up && down) {
-            function refresh(n, my) {
-              cnt.textContent = n;
-              cnt.setAttribute('style', colorForVotes(+n || 0));
-              up.classList.toggle('active', my === 'up');
-              down.classList.toggle('active', my === 'down');
-              var lbl = qs('.jg-vote-label', modalView);
-              if (lbl) lbl.textContent = pluralVotes(+n || 0);
+          if (starsContainer) {
+            function refreshStars(avg, count, myR) {
+              starsContainer.innerHTML = starsHtml(avg, myR);
+              if (avgDisplay) {
+                var avgTxt = count > 0 ? (avg.toFixed(1) + ' (' + count + ' ' + ratingCountLabel(count) + ')') : 'Brak ocen';
+                avgDisplay.textContent = avgTxt;
+                avgDisplay.setAttribute('style', colorForRating(avg));
+              }
+              // Rebind star button events after innerHTML update
+              bindStarButtons();
             }
 
-            function doVote(dir) {
+            function doVote(star) {
               if (!CFG.isLoggedIn) {
-                showAlert('Zaloguj się.');
+                showAlert('Zaloguj się, aby ocenić to miejsce.');
                 return;
               }
 
-              // Check if user is banned or has voting restriction
               if (window.JG_USER_RESTRICTIONS) {
                 if (window.JG_USER_RESTRICTIONS.is_banned) {
-                  showAlert('Nie możesz głosować - Twoje konto jest zbanowane.');
+                  showAlert('Nie możesz oceniać - Twoje konto jest zbanowane.');
                   return;
                 }
                 if (window.JG_USER_RESTRICTIONS.restrictions && window.JG_USER_RESTRICTIONS.restrictions.indexOf('voting') !== -1) {
-                  showAlert('Nie możesz głosować - masz aktywną blokadę głosowania.');
+                  showAlert('Nie możesz oceniać - masz aktywną blokadę głosowania.');
                   return;
                 }
               }
 
-              up.disabled = down.disabled = true;
-              voteReq({ post_id: p.id, dir: dir })
+              var starBtns = starsContainer.querySelectorAll('.jg-star-btn');
+              starBtns.forEach(function(b) { b.disabled = true; });
+
+              voteReq({ post_id: p.id, dir: String(star) })
                 .then(function(d) {
-                  p.votes = +d.votes || 0;
-                  p.my_vote = d.my_vote || '';
-                  refresh(p.votes, p.my_vote);
-                  if (d.xp_result) { updateLevelDisplay(d.xp_result); }
-                  // Confetti burst from the pressed vote button
-                  var voteBtn = dir === 'up' ? up : down;
-                  var voteColors = dir === 'up'
-                    ? ['#10b981', '#34d399', '#6ee7b7', '#bbf7d0', '#ffffff', '#d1fae5']
-                    : ['#ef4444', '#f87171', '#fca5a5', '#fee2e2', '#ffffff', '#fff1f2'];
-                  shootButtonConfetti(voteBtn, voteColors, 30);
+                  p.rating        = +(d.rating || 0);
+                  p.ratings_count = +(d.ratings_count || 0);
+                  p.my_rating     = d.my_rating || '';
+                  refreshStars(p.rating, p.ratings_count, p.my_rating);
+                  if (p.my_rating) {
+                    var pressedBtn = qs('#v-star-' + star, starsContainer);
+                    var starColors = ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fffbeb'];
+                    if (pressedBtn) shootButtonConfetti(pressedBtn, starColors, 25);
+                  }
                 })
                 .catch(function(e) {
                   showAlert((e && e.message) || 'Błąd');
-                })
-                .finally(function() {
-                  up.disabled = down.disabled = false;
+                  var starBtnsAfter = starsContainer.querySelectorAll('.jg-star-btn');
+                  starBtnsAfter.forEach(function(b) { b.disabled = false; });
                 });
             }
 
-            up.onclick = function() {
-              doVote('up');
-            };
+            function bindStarButtons() {
+              var btns = starsContainer.querySelectorAll('.jg-star-btn');
+              btns.forEach(function(btn) {
+                btn.onclick = function() {
+                  doVote(parseInt(btn.getAttribute('data-star'), 10));
+                };
+                // Hover preview
+                btn.onmouseenter = function() {
+                  var hoverStar = parseInt(btn.getAttribute('data-star'), 10);
+                  btns.forEach(function(b) {
+                    b.textContent = parseInt(b.getAttribute('data-star'), 10) <= hoverStar ? '★' : '☆';
+                  });
+                };
+                btn.onmouseleave = function() {
+                  btns.forEach(function(b) {
+                    var s = parseInt(b.getAttribute('data-star'), 10);
+                    var filled = s <= Math.round(p.rating) || String(s) === String(p.my_rating);
+                    b.textContent = filled ? '★' : '☆';
+                  });
+                };
+              });
+            }
 
-            down.onclick = function() {
-              doVote('down');
-            };
+            bindStarButtons();
           }
         }
 
