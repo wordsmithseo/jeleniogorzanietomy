@@ -389,7 +389,7 @@
         }
 
         // Build fingerprint from all visible/editable fields so any change triggers re-render
-        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}:${p.has_internal_links ? 1 : 0}:${p.has_external_links ? 1 : 0}:${p.has_incomplete_sections ? 1 : 0}:${p.opening_hours || ''}`).join(',');
+        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.ratings_count || 0}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}:${p.has_internal_links ? 1 : 0}:${p.has_external_links ? 1 : 0}:${p.has_incomplete_sections ? 1 : 0}:${p.opening_hours || ''}`).join(',');
         const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
         return pointsData + statsData;
     }
@@ -660,19 +660,24 @@
             badgeHtml = `<span class="jg-sidebar-item__badge jg-sidebar-item__badge--${point.type}">${typeIcon} ${typeLabel}</span>`;
         }
 
-        // Votes display (only for non-sponsored items)
+        // Star rating display (only for non-sponsored items)
         let votesHtml = '';
         if (!point.is_promo) {
+            const avg = parseFloat(point.votes_count) || 0;
+            const cnt = parseInt(point.ratings_count) || 0;
             let votesClass = 'jg-sidebar-item__votes--neutral';
-            if (point.votes_count > 0) {
+            if (avg >= 4.0 && cnt > 0) {
                 votesClass = 'jg-sidebar-item__votes--positive';
-            } else if (point.votes_count < 0) {
+            } else if (avg > 0 && avg < 2.5 && cnt > 0) {
                 votesClass = 'jg-sidebar-item__votes--negative';
             }
 
-            votesHtml = `<div class="jg-sidebar-item__votes ${votesClass}">
-                ${point.votes_count > 0 ? '+' : ''}${point.votes_count} głosów
-            </div>`;
+            if (cnt > 0) {
+                const stars = '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
+                votesHtml = `<div class="jg-sidebar-item__votes ${votesClass}" title="${avg.toFixed(1)}/5 (${cnt} ocen)">
+                    ${stars} ${avg.toFixed(1)}
+                </div>`;
+            }
         }
 
         // Build today's opening hours line for sidebar (miejsce only)
