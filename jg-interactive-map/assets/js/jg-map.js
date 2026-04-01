@@ -6286,7 +6286,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var html = '';
         for (var s = 1; s <= 5; s++) {
           var isFilled = s <= fillUpTo;
-          var isActive = myR > 0 && s <= myR;
+          var isActive = s <= fillUpTo;
           html += '<button class="jg-star-btn' + (isActive ? ' active' : '') + '" id="v-star-' + s + '" data-star="' + s + '" title="' + s + ' ' + (s === 1 ? 'gwiazdka' : (s <= 4 ? 'gwiazdki' : 'gwiazdek')) + '">' + (isFilled ? '★' : '☆') + '</button>';
         }
         return html;
@@ -11655,7 +11655,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   btns.forEach(function(b) {
                     var s = parseInt(b.getAttribute('data-star'), 10);
                     b.textContent = s <= fillUpTo ? '★' : '☆';
-                    if (myR > 0 && s <= myR) {
+                    if (s <= fillUpTo) {
                       b.classList.add('active');
                     } else {
                       b.classList.remove('active');
