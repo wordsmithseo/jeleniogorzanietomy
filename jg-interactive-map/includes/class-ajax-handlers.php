@@ -1637,8 +1637,10 @@ class JG_Map_Ajax_Handlers {
                     $icon   = '✏️';
                     break;
                 case 'vote':
-                    $label = $a['detail'] === 'up' ? 'Zagłosowano za' : 'Zagłosowano przeciw';
-                    $icon  = $a['detail'] === 'up' ? '👍' : '👎';
+                    $stars = intval($a['detail']);
+                    $star_str = str_repeat('★', $stars) . str_repeat('☆', 5 - $stars);
+                    $label = 'Oceniono: ' . $star_str . ' (' . $stars . '/5)';
+                    $icon  = '⭐';
                     break;
                 case 'report':
                     $label = 'Zgłoszono miejsce';
@@ -8141,12 +8143,24 @@ class JG_Map_Ajax_Handlers {
 
             case 'votes_desc':
                 usort($regular_points, function($a, $b) {
+                    $a_cnt = isset($a['ratings_count']) ? (int)$a['ratings_count'] : 0;
+                    $b_cnt = isset($b['ratings_count']) ? (int)$b['ratings_count'] : 0;
+                    // Unrated items (no votes) always go to end
+                    if (($a_cnt > 0) !== ($b_cnt > 0)) {
+                        return ($b_cnt > 0) <=> ($a_cnt > 0);
+                    }
                     return $b['votes_count'] <=> $a['votes_count'];
                 });
                 break;
 
             case 'votes_asc':
                 usort($regular_points, function($a, $b) {
+                    $a_cnt = isset($a['ratings_count']) ? (int)$a['ratings_count'] : 0;
+                    $b_cnt = isset($b['ratings_count']) ? (int)$b['ratings_count'] : 0;
+                    // Unrated items (no votes) always go to end
+                    if (($a_cnt > 0) !== ($b_cnt > 0)) {
+                        return ($b_cnt > 0) <=> ($a_cnt > 0);
+                    }
                     return $a['votes_count'] <=> $b['votes_count'];
                 });
                 break;

@@ -6281,11 +6281,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       function pluralVotes(n) { return ratingCountLabel(n); }
 
       function starsHtml(avg, myRating) {
+        var myR      = parseInt(myRating, 10) || 0;
+        var fillUpTo = myR > 0 ? myR : Math.round(avg);
         var html = '';
         for (var s = 1; s <= 5; s++) {
-          var isFilled = s <= Math.round(avg);
-          var isMine   = String(s) === String(myRating);
-          html += '<button class="jg-star-btn' + (isMine ? ' active' : '') + '" id="v-star-' + s + '" data-star="' + s + '" title="' + s + ' ' + (s === 1 ? 'gwiazdka' : (s <= 4 ? 'gwiazdki' : 'gwiazdek')) + '">' + (isFilled || isMine ? '★' : '☆') + '</button>';
+          var isFilled = s <= fillUpTo;
+          var isActive = myR > 0 && s <= myR;
+          html += '<button class="jg-star-btn' + (isActive ? ' active' : '') + '" id="v-star-' + s + '" data-star="' + s + '" title="' + s + ' ' + (s === 1 ? 'gwiazdka' : (s <= 4 ? 'gwiazdki' : 'gwiazdek')) + '">' + (isFilled ? '★' : '☆') + '</button>';
         }
         return html;
       }
@@ -11638,14 +11640,26 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 btn.onmouseenter = function() {
                   var hoverStar = parseInt(btn.getAttribute('data-star'), 10);
                   btns.forEach(function(b) {
-                    b.textContent = parseInt(b.getAttribute('data-star'), 10) <= hoverStar ? '★' : '☆';
+                    var bs = parseInt(b.getAttribute('data-star'), 10);
+                    b.textContent = bs <= hoverStar ? '★' : '☆';
+                    if (bs <= hoverStar) {
+                      b.classList.add('active');
+                    } else {
+                      b.classList.remove('active');
+                    }
                   });
                 };
                 btn.onmouseleave = function() {
+                  var myR = parseInt(p.my_rating, 10) || 0;
+                  var fillUpTo = myR > 0 ? myR : Math.round(p.rating);
                   btns.forEach(function(b) {
                     var s = parseInt(b.getAttribute('data-star'), 10);
-                    var filled = s <= Math.round(p.rating) || String(s) === String(p.my_rating);
-                    b.textContent = filled ? '★' : '☆';
+                    b.textContent = s <= fillUpTo ? '★' : '☆';
+                    if (myR > 0 && s <= myR) {
+                      b.classList.add('active');
+                    } else {
+                      b.classList.remove('active');
+                    }
                   });
                 };
               });
