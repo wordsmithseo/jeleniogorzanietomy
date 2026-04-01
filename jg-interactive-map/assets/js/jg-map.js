@@ -11272,9 +11272,24 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         } else if (typeof gtag === 'function' && p.slug && p.type) {
           var gaTypePath = p.type === 'ciekawostka' ? 'ciekawostka' : (p.type === 'zgloszenie' ? 'zgloszenie' : 'miejsce');
           var gaPinPath = '/' + gaTypePath + '/' + p.slug + '/';
+          // Build page_title matching the PHP <title> tag to avoid GA4 reporting
+          // the same pin under two different titles (modal vs standalone page).
+          // PHP appends " – {category_label} w Jeleniej Górze" (miejsce with category)
+          // or " – {type_label} w Jeleniej Górze" (all other cases).
+          var gaPageTitle = p.title || '';
+          if (gaPageTitle) {
+            var gaPlaceCats = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
+            var gaTypeLbls = { miejsce: 'Miejsce', ciekawostka: 'Ciekawostka', zgloszenie: 'Zgłoszenie' };
+            var gaTypeLabel = gaTypeLbls[p.type] || 'Punkt';
+            if (p.type === 'miejsce' && p.category && gaPlaceCats[p.category] && gaPlaceCats[p.category].label) {
+              gaPageTitle = p.title + ' \u2013 ' + gaPlaceCats[p.category].label.toLowerCase() + ' w Jeleniej G\u00f3rze';
+            } else {
+              gaPageTitle = p.title + ' \u2013 ' + gaTypeLabel + ' w Jeleniej G\u00f3rze';
+            }
+          }
           gtag('event', 'page_view', {
             page_location: window.location.origin + gaPinPath,
-            page_title: p.title || ''
+            page_title: gaPageTitle
           });
         }
 
