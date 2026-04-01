@@ -3500,20 +3500,20 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 .jg-vote {
   display: flex !important;
   flex-direction: column !important;
-  gap: 0.35rem !important;
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
-  padding: 0.6rem 1rem !important;
-  border-radius: 1.25rem !important;
-  border: 1px solid #fde68a !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  gap: 0.5rem !important;
+  background: none !important;
+  padding: 0.75rem 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
   margin-top: 0.625rem !important;
   min-width: 0 !important;
-  width: fit-content !important;
+  width: 100% !important;
 }
 
 .jg-vote-stars {
   display: flex !important;
-  gap: 2px !important;
+  gap: 4px !important;
   align-items: center !important;
   line-height: 1 !important;
 }
@@ -3524,9 +3524,9 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   border: none !important;
   box-shadow: none !important;
   cursor: pointer !important;
-  font-size: calc(22 * var(--jg)) !important;
+  font-size: calc(30 * var(--jg)) !important;
   color: #d1d5db !important;
-  padding: 2px 1px !important;
+  padding: 2px 2px !important;
   margin: 0 !important;
   line-height: 1 !important;
   font-family: inherit !important;
@@ -3548,15 +3548,15 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 }
 
 .jg-vote-avg {
-  font-size: calc(13 * var(--jg)) !important;
+  font-size: calc(14 * var(--jg)) !important;
   font-weight: 600 !important;
   line-height: 1 !important;
   margin: 0 !important;
 }
 
 .jg-vote-hint {
-  font-size: calc(11.5 * var(--jg)) !important;
-  color: #92400e !important;
+  font-size: calc(12 * var(--jg)) !important;
+  color: #6b7280 !important;
   line-height: 1 !important;
   margin: 0 !important;
 }
@@ -4025,12 +4025,12 @@ img.emoji {
 .jg-meta-row .jg-vote,
 .jg-meta-row .jg-vote--own {
   margin-top: 0 !important;
-  padding: 0.3rem 0.7rem !important;
+  padding: 0.3rem 0 !important;
   flex-shrink: 0 !important;
 }
 
 .jg-meta-row .jg-star-btn {
-  font-size: calc(18 * var(--jg)) !important;
+  font-size: calc(22 * var(--jg)) !important;
 }
 
 .jg-meta-row .jg-vote-avg {
