@@ -140,8 +140,31 @@ class JG_Map_Info_Bar {
                 });
             }
 
+            // ── Tap-to-pause (touch devices) ─────────────────────────────────
+            // Click/tap on the bar pauses scrolling for 3 s then resumes.
+            // setProperty(..., 'important') beats animation-play-state:running !important
+            // in the stylesheet because inline !important has higher specificity.
+            var tapTimer = null;
+            bar.addEventListener('click', function (e) {
+                // Don't interfere with the close button
+                if (closeBtn && closeBtn.contains(e.target)) return;
+                if (!bar.classList.contains('jg-info-bar--scroll')) return;
+
+                text.style.setProperty('animation-play-state', 'paused', 'important');
+                clearTimeout(tapTimer);
+                tapTimer = setTimeout(function () {
+                    text.style.removeProperty('animation-play-state');
+                    tapTimer = null;
+                }, 3000);
+            });
+
             // ── Ticker / scroll ───────────────────────────────────────────────
             function applyScroll() {
+                // Cancel any pending tap-pause so measurement is clean
+                clearTimeout(tapTimer);
+                tapTimer = null;
+                text.style.removeProperty('animation-play-state');
+
                 bar.classList.remove('jg-info-bar--scroll');
                 bar.style.removeProperty('--jg-info-bar-dur');
 
