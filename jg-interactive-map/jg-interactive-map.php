@@ -2918,6 +2918,33 @@ class JG_Interactive_Map {
         add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
         // RankMath equivalent
         add_filter('rank_math/frontend/description', '__return_empty_string', PHP_INT_MAX);
+
+        // Last-resort: buffer the entire wp_head output and strip any duplicate
+        // <meta name="description"> tags, keeping only the first one (from this
+        // plugin). This catches descriptions output by Elementor Pro, theme
+        // functions, or any other source that bypasses the filters above.
+        add_action('wp_head', 'ob_start', 1);
+        add_action('wp_head', array($this, 'dedupe_meta_description_in_head'), PHP_INT_MAX);
+    }
+
+    /**
+     * Remove all but the first <meta name="description"> from buffered wp_head output.
+     */
+    public function dedupe_meta_description_in_head() {
+        $html  = ob_get_clean();
+        $found = false;
+        $html  = preg_replace_callback(
+            '/<meta\s[^>]*name=["\']description["\'][^>]*\/?>/i',
+            function ( $match ) use ( &$found ) {
+                if ( $found ) {
+                    return '';
+                }
+                $found = true;
+                return $match[0];
+            },
+            $html
+        );
+        echo $html;
     }
 
     /**
