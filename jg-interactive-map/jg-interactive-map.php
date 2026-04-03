@@ -2870,10 +2870,24 @@ class JG_Interactive_Map {
      * Suppress Yoast SEO / RankMath meta description on catalog category pages.
      */
     public function suppress_seo_plugin_description_on_category_pages() {
-        if (self::resolve_catalog_category() === '') {
+        if (get_query_var('jg_catalog_category', '') === '') {
             return;
         }
+        // Remove Yoast SEO head output entirely — the plugin outputs its own full
+        // set of meta tags (description, canonical, og:*, twitter:*, JSON-LD) for
+        // these pages, so Yoast must not add a duplicate meta description.
+        if (class_exists('WPSEO_Frontend')) {
+            remove_action('wp_head', array(WPSEO_Frontend::get_instance(), 'head'), 1);
+        }
+        if (class_exists('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration')) {
+            $yoast_front = YoastSEO()->classes->get('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration');
+            if ($yoast_front) {
+                remove_action('wp_head', array($yoast_front, 'call_wpseo_head'), 1);
+            }
+        }
+        // Fallback filter approach for older Yoast versions
         add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
+        // RankMath equivalent
         add_filter('rank_math/frontend/description', '__return_empty_string', PHP_INT_MAX);
     }
 
@@ -3212,10 +3226,22 @@ class JG_Interactive_Map {
      * so the SEO plugin must not output a second one.
      */
     public function suppress_seo_plugin_description_on_tag_pages() {
-        if (self::resolve_catalog_tag() === '') {
+        if (get_query_var('jg_catalog_tag', '') === '') {
             return;
         }
-        // Yoast SEO: returning empty string prevents the tag from being output
+        // Remove Yoast SEO head output entirely — the plugin outputs its own full
+        // set of meta tags (description, canonical, og:*, twitter:*, JSON-LD) for
+        // these pages, so Yoast must not add a duplicate meta description.
+        if (class_exists('WPSEO_Frontend')) {
+            remove_action('wp_head', array(WPSEO_Frontend::get_instance(), 'head'), 1);
+        }
+        if (class_exists('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration')) {
+            $yoast_front = YoastSEO()->classes->get('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration');
+            if ($yoast_front) {
+                remove_action('wp_head', array($yoast_front, 'call_wpseo_head'), 1);
+            }
+        }
+        // Fallback filter approach for older Yoast versions
         add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
         // RankMath equivalent
         add_filter('rank_math/frontend/description', '__return_empty_string', PHP_INT_MAX);
