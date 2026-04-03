@@ -2402,16 +2402,22 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
   /* Top bar mobile responsive */
   .jg-custom-top-bar {
-    padding: 8px 12px;
+    padding: 6px 12px;
     font-size: calc(14 * var(--jg));
-    flex-wrap: wrap;
+    flex-wrap: nowrap !important;
     gap: 8px;
+    top: 52px; /* stick below the white hamburger nav bar (#jg-nav-bar) */
+  }
+
+  /* Hide duplicate logo — hamburger nav bar already shows the site logo */
+  .jg-custom-top-bar .jg-top-bar-logo-link {
+    display: none !important;
   }
 
   .jg-top-bar-left,
   .jg-top-bar-right {
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap !important;
   }
 
   .jg-top-bar-site-title {
@@ -2625,44 +2631,47 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 /* Stack top bar on very small screens */
 @media (max-width: 640px) {
   .jg-custom-top-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    padding: 12px;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px;
+    padding: 6px 12px;
   }
 
-  /* Hide left section (datetime only) */
+  /* Hide left section — hamburger nav covers navigation on mobile */
   .jg-top-bar-left {
-    display: none;
+    display: none !important;
   }
 
-  /* Right section becomes 3 rows */
+  /* Right section stays as a single compact row */
   .jg-top-bar-right {
-    width: 100%;
+    width: auto;
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-wrap: nowrap !important;
+    gap: 8px;
     align-items: center;
+    overflow: hidden;
   }
 
-  /* First row: User info + level indicator side by side */
+  /* Remove column-layout separators from user info row */
   .jg-top-bar-user {
-    font-size: calc(15.2 * var(--jg));
-    text-align: left;
+    font-size: calc(13 * var(--jg));
     order: 1;
     margin: 0;
     min-width: 0;
     flex: 1 1 auto;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
   }
 
   .jg-top-bar-level {
-    order: 1;
+    order: 2;
     flex-shrink: 0;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
   }
 
   /* Second row: Notifications section - full width, align left */
