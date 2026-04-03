@@ -410,7 +410,7 @@ class JG_Map_Info_Bar {
                 </p>
             </form>
 
-            <?php if ($closable && !empty($content)) : ?>
+            <?php if (!empty($content)) : ?>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:4px">
                 <?php wp_nonce_field('jg_reset_info_bar_nonce', 'jg_reset_info_bar_nonce_field'); ?>
                 <input type="hidden" name="action" value="jg_reset_info_bar">
