@@ -88,15 +88,27 @@ class JG_Map_Info_Bar {
             if (!track || !text) return;
 
             function applyScroll() {
-                // Reset so we can measure correctly
+                // Reset to static state first so scrollWidth is measured without transform offset
                 bar.classList.remove('jg-info-bar--scroll');
-                text.style.animationDuration = '';
+                bar.style.removeProperty('--jg-info-bar-dur');
 
-                var overflow = text.scrollWidth - track.clientWidth;
-                if (overflow > 0) {
-                    // Duration scales with the length: ~80px per second, minimum 6s
-                    var duration = Math.max(6, Math.round((text.scrollWidth + track.clientWidth) / 80));
-                    text.style.animationDuration = duration + 's';
+                // Force reflow so the browser recalculates layout after class removal
+                void bar.offsetWidth;
+
+                // Total pixels the text must travel: enter from right + cross full track + exit left
+                var textW  = text.scrollWidth;
+                var trackW = track.clientWidth;
+
+                if (textW > trackW) {
+                    // Speed: 120 px/s — smooth enough to read, fast enough not to feel stuck
+                    // Total travel = 100vw (enter) + textW (exit)
+                    var travel   = window.innerWidth + textW;
+                    var duration = Math.max(6, Math.round(travel / 120));
+
+                    // Pass duration via CSS custom property — the only way to override
+                    // a value that is set with !important in the stylesheet, because
+                    // CSS custom properties are NOT affected by !important cascading.
+                    bar.style.setProperty('--jg-info-bar-dur', duration + 's');
                     bar.classList.add('jg-info-bar--scroll');
                 }
             }
@@ -107,7 +119,13 @@ class JG_Map_Info_Bar {
             } else {
                 applyScroll();
             }
-            window.addEventListener('resize', applyScroll);
+
+            // Re-evaluate on resize (orientation change on mobile, window resize on desktop)
+            var resizeTimer;
+            window.addEventListener('resize', function () {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(applyScroll, 150);
+            });
         }());
         </script>
         <?php

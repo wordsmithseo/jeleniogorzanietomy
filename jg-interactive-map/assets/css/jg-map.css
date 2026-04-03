@@ -144,12 +144,24 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
 }
 
 #jg-info-bar.jg-info-bar--scroll .jg-info-bar-text {
-  /* animationDuration is set by JS based on text length */
-  animation: jg-info-bar-ticker linear infinite !important;
+  /*
+   * Duration is passed via CSS custom property set on #jg-info-bar by JS.
+   * Using a custom property is the only way to pass a dynamic value when the
+   * CSS rule carries !important — inline style cannot override !important,
+   * but custom properties on a parent ARE inherited and readable here.
+   * Default 15s is a safe fallback if JS hasn't run yet.
+   */
+  animation-name: jg-info-bar-ticker !important;
+  animation-duration: var(--jg-info-bar-dur, 15s) !important;
+  animation-timing-function: linear !important;
+  animation-iteration-count: infinite !important;
+  animation-fill-mode: none !important;
+  animation-direction: normal !important;
+  animation-play-state: running !important;
   will-change: transform !important;
 }
 
-/* Pause ticker on hover */
+/* Pause ticker on hover (mouse) and touch-hold */
 #jg-info-bar.jg-info-bar--scroll:hover .jg-info-bar-text {
   animation-play-state: paused !important;
 }
