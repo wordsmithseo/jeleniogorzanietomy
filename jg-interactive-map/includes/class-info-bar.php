@@ -22,7 +22,10 @@ class JG_Map_Info_Bar {
         add_action('admin_menu', array(__CLASS__, 'add_admin_menu'));
 
         // Handle form save
-        add_action('admin_post_jg_save_info_bar', array(__CLASS__, 'handle_save'));
+        add_action('admin_post_jg_save_info_bar',  array(__CLASS__, 'handle_save'));
+
+        // Handle "show to everyone again" reset
+        add_action('admin_post_jg_reset_info_bar', array(__CLASS__, 'handle_reset'));
     }
 
     /**
@@ -74,9 +77,11 @@ class JG_Map_Info_Bar {
         );
         $safe_content = wp_kses($content, $allowed_html);
 
-        // Short hash of content — used as localStorage key so that dismissal
-        // is automatically invalidated when the message changes.
-        $content_hash = substr(md5($safe_content), 0, 10);
+        // Hash = content + reset_count.
+        // Changing either (new message OR admin clicking "show to everyone again")
+        // invalidates all existing localStorage dismissal keys.
+        $reset_count  = (int) get_option('jg_info_bar_reset_count', 0);
+        $content_hash = substr(md5($safe_content . '|' . $reset_count), 0, 10);
 
         $bar_classes = 'jg-info-bar' . ($closable ? ' jg-info-bar--closable' : '');
         ?>
@@ -84,7 +89,8 @@ class JG_Map_Info_Bar {
              class="<?php echo esc_attr($bar_classes); ?>"
              role="status"
              aria-live="polite"
-             data-hash="<?php echo esc_attr($content_hash); ?>">
+             data-hash="<?php echo esc_attr($content_hash); ?>"
+             data-closable="<?php echo $closable ? '1' : '0'; ?>">
             <div class="jg-info-bar-track">
                 <span class="jg-info-bar-text"><?php echo $safe_content; ?></span>
             </div>
@@ -103,14 +109,19 @@ class JG_Map_Info_Bar {
             if (!track || !text) return;
 
             // ── Dismissal check (localStorage) ───────────────────────────────
+            // Only active when the bar is currently marked as closable.
+            // If admin unchecks "closable", any previous dismissal is ignored
+            // and the bar is shown to everyone regardless.
+            var closable   = bar.dataset.closable === '1';
             var storageKey = 'jg_info_bar_dismissed_' + (bar.dataset.hash || '');
-            try {
-                if (localStorage.getItem(storageKey) === '1') {
-                    // User already dismissed this exact message — hide immediately
-                    bar.style.setProperty('display', 'none', 'important');
-                    return;
-                }
-            } catch (e) { /* localStorage unavailable — show bar normally */ }
+            if (closable) {
+                try {
+                    if (localStorage.getItem(storageKey) === '1') {
+                        bar.style.setProperty('display', 'none', 'important');
+                        return;
+                    }
+                } catch (e) { /* localStorage unavailable — show bar normally */ }
+            }
 
             // ── Close button ─────────────────────────────────────────────────
             var closeBtn = bar.querySelector('.jg-info-bar-close');
@@ -227,6 +238,26 @@ class JG_Map_Info_Bar {
     }
 
     /**
+     * Handle "show to everyone again" — increments reset counter which changes
+     * the content hash → all existing localStorage dismissal keys are invalidated.
+     */
+    public static function handle_reset() {
+        if (!current_user_can('jg_map_manage')) {
+            wp_die('Brak uprawnień.', 403);
+        }
+        check_admin_referer('jg_reset_info_bar_nonce', 'jg_reset_info_bar_nonce_field');
+
+        $count = (int) get_option('jg_info_bar_reset_count', 0);
+        update_option('jg_info_bar_reset_count', $count + 1);
+
+        wp_redirect(add_query_arg(
+            array('page' => 'jg-info-bar', 'jg_info_bar_reset' => '1'),
+            admin_url('admin.php')
+        ));
+        exit;
+    }
+
+    /**
      * Handle form submission (admin-post.php action)
      */
     public static function handle_save() {
@@ -283,6 +314,9 @@ class JG_Map_Info_Bar {
 
             <?php if ($saved) : ?>
                 <div class="notice notice-success is-dismissible"><p>Ustawienia paska informacyjnego zostały zapisane.</p></div>
+            <?php endif; ?>
+            <?php if (isset($_GET['jg_info_bar_reset']) && $_GET['jg_info_bar_reset'] === '1') : ?>
+                <div class="notice notice-success is-dismissible"><p>Pasek zostanie wyświetlony ponownie u wszystkich użytkowników.</p></div>
             <?php endif; ?>
 
             <!-- Status indicator -->
@@ -366,15 +400,30 @@ class JG_Map_Info_Bar {
                     </tbody>
                 </table>
 
-                <p class="submit">
+                <p class="submit" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
                     <button type="submit" class="button button-primary">Zapisz pasek informacyjny</button>
                     <?php if (!empty($content)) : ?>
-                        <button type="button" class="button button-secondary" id="jg-info-bar-clear-btn" style="margin-left:8px">
+                        <button type="button" class="button button-secondary" id="jg-info-bar-clear-btn">
                             Wyczyść i ukryj pasek
                         </button>
                     <?php endif; ?>
                 </p>
             </form>
+
+            <?php if ($closable && !empty($content)) : ?>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:4px">
+                <?php wp_nonce_field('jg_reset_info_bar_nonce', 'jg_reset_info_bar_nonce_field'); ?>
+                <input type="hidden" name="action" value="jg_reset_info_bar">
+                <button type="submit" class="button button-secondary"
+                        onclick="return confirm('Czy na pewno? Pasek pojawi się ponownie u wszystkich użytkowników, którzy go zamknęli.')">
+                    &#x21BA; Wyświetl u wszystkich ponownie
+                </button>
+                <p class="description" style="margin-top:6px">
+                    Resetuje preferencje zamknięcia u wszystkich odwiedzających &mdash; pasek pojawi się ponownie
+                    nawet u tych, którzy kliknęli&nbsp;&#x2715;. Zmiana treści robi to samo automatycznie.
+                </p>
+            </form>
+            <?php endif; ?>
 
             <!-- Preview -->
             <?php if (!empty($content)) :
