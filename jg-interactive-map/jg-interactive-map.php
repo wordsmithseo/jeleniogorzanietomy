@@ -68,6 +68,7 @@ class JG_Interactive_Map {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-slot-keys.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-manager.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-banner-admin.php';
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-info-bar.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-levels-achievements.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-enqueue.php';
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-shortcode.php';
@@ -183,6 +184,7 @@ class JG_Interactive_Map {
         JG_Map_Ajax_Handlers::get_instance();
         JG_Map_Admin::get_instance();
         JG_Map_Banner_Admin::init();
+        JG_Map_Info_Bar::init();
         JG_Map_Levels_Achievements::get_instance();
     }
 

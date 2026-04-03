@@ -48,7 +48,84 @@
 }
 
 
-/* Custom Top Bar - Fixed at top of page */
+/* ── Info Bar (pasek informacyjny) ──────────────────────────────────────────
+   Rendered above .jg-nav-bar and .jg-custom-top-bar.
+   Static (non-sticky) — scrolls away when user scrolls the page.
+   When text overflows the viewport width, JS adds .jg-info-bar--scroll and
+   animates the text as a continuous left-scrolling ticker. Pauses on hover.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.jg-info-bar {
+  width: 100%;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e2e4e7;
+  overflow: hidden;
+  /* sit below the sticky nav bars in z-order but above theme content */
+  position: relative;
+  z-index: 9997;
+  /* prevent height collapse from breaking sticky nav positioning */
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.jg-info-bar-track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 20px;
+  overflow: hidden;
+  white-space: nowrap;
+  /* track height is fixed so layout shift is zero */
+  min-height: 34px;
+  box-sizing: border-box;
+}
+
+.jg-info-bar-text {
+  display: inline-block;
+  color: #8d2324;
+  font-size: 13.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.jg-info-bar-text a,
+.jg-info-bar-text a:visited {
+  color: #8d2324;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.jg-info-bar-text a:hover,
+.jg-info-bar-text a:focus {
+  color: #6b1a1b;
+  text-decoration: underline;
+}
+
+/* ── Ticker / scrolling state ─────────────────────────────────────────────── */
+
+.jg-info-bar--scroll .jg-info-bar-track {
+  justify-content: flex-start;
+}
+
+.jg-info-bar--scroll .jg-info-bar-text {
+  /* animationDuration is set by JS based on text length */
+  animation: jg-info-bar-ticker linear infinite;
+  /* start from the right edge of the track, scroll to fully off-screen left */
+  will-change: transform;
+}
+
+/* Pause ticker on hover */
+.jg-info-bar--scroll:hover .jg-info-bar-text {
+  animation-play-state: paused;
+}
+
+@keyframes jg-info-bar-ticker {
+  0%   { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ── Custom Top Bar - Fixed at top of page */
 .jg-custom-top-bar {
   position: sticky;
   top: 0;
