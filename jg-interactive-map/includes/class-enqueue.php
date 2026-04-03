@@ -649,6 +649,14 @@ class JG_Map_Enqueue {
             if (!btn || !menu) return;
 
             function openMenu() {
+                /* Position dropdown flush below the nav bar's actual bottom edge,
+                   accounting for the info bar height when it is visible. */
+                var navBar = document.getElementById('jg-nav-bar');
+                if (navBar) {
+                    var navBottom = Math.round(navBar.getBoundingClientRect().bottom);
+                    menu.style.setProperty('top', navBottom + 'px', 'important');
+                    menu.style.setProperty('max-height', 'calc(100dvh - ' + navBottom + 'px)', 'important');
+                }
                 btn.classList.add('jg-nav-open');
                 menu.classList.add('jg-nav-open');
                 overlay.classList.add('jg-nav-open');
