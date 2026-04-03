@@ -2885,6 +2885,12 @@ class JG_Interactive_Map {
                 remove_action('wp_head', array($yoast_front, 'call_wpseo_head'), 1);
             }
         }
+        // Yoast removes _wp_render_title_tag from wp_head and replaces it with its
+        // own output. Since we just removed Yoast, restore the native title tag so
+        // the page still gets a <title> element (content is set via document_title_parts).
+        if (!has_action('wp_head', '_wp_render_title_tag')) {
+            add_action('wp_head', '_wp_render_title_tag', 1);
+        }
         // Fallback filter approach for older Yoast versions
         add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
         // RankMath equivalent
@@ -3240,6 +3246,12 @@ class JG_Interactive_Map {
             if ($yoast_front) {
                 remove_action('wp_head', array($yoast_front, 'call_wpseo_head'), 1);
             }
+        }
+        // Yoast removes _wp_render_title_tag from wp_head and replaces it with its
+        // own output. Since we just removed Yoast, restore the native title tag so
+        // the page still gets a <title> element (content is set via document_title_parts).
+        if (!has_action('wp_head', '_wp_render_title_tag')) {
+            add_action('wp_head', '_wp_render_title_tag', 1);
         }
         // Fallback filter approach for older Yoast versions
         add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
