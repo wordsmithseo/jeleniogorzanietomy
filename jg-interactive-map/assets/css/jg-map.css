@@ -57,10 +57,14 @@
    !important author rules, so the transform would be locked and invisible.
    ─────────────────────────────────────────────────────────────────────────── */
 
-/* ── Container ── */
+/* ── Container — flex so track and close button are true siblings.
+   The track gets flex:1 and its own overflow:hidden, which means text is
+   clipped exactly at the track's right edge — BEFORE the close button.
+   There is no longer any risk of scrolling text sliding under the X. ── */
 #jg-info-bar {
   all: unset !important;
-  display: block !important;
+  display: flex !important;         /* row; track + button side-by-side */
+  align-items: stretch !important;  /* both children fill the bar height */
   position: relative !important;
   width: 100% !important;
   background: #f3f4f6 !important;
@@ -71,16 +75,17 @@
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
 }
 
-/* ── Scrolling track ── */
+/* ── Scrolling track — takes all remaining width ── */
 #jg-info-bar .jg-info-bar-track {
   all: unset !important;
   display: flex !important;
+  flex: 1 1 0 !important;    /* fills available space; shrinks if button is present */
+  min-width: 0 !important;   /* allow flex to shrink below content size */
   flex-wrap: nowrap !important;
   align-items: center !important;
   justify-content: center !important;
-  overflow: hidden !important;
+  overflow: hidden !important;   /* clips text exactly at this element's right edge */
   box-sizing: border-box !important;
-  /* Mobile: compact */
   padding: 6px 14px !important;
   min-height: 30px !important;
 }
@@ -125,55 +130,43 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
   color: #6b1a1b !important;
 }
 
-/* ── Close button ── */
+/* ── Close button — flex item next to the track, never overlaps text ── */
 #jg-info-bar .jg-info-bar-close {
   all: unset !important;
-  position: absolute !important;
-  top: 50% !important;
-  right: 8px !important;
-  transform: translateY(-50%) !important;
+  /* Static flex item — text is clipped at track's right edge before reaching button */
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 24px !important;
-  height: 24px !important;
-  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+  width: 32px !important;          /* fixed width = clickable zone */
   cursor: pointer !important;
   color: #8d2324 !important;
   font-size: 15px !important;
   line-height: 1 !important;
-  opacity: 0.65 !important;
+  opacity: 0.6 !important;
   background: transparent !important;
   border: none !important;
-  padding: 0 !important;
-  flex-shrink: 0 !important;
+  padding: 0 6px 0 0 !important;   /* 6px gap from bar right edge */
+  margin: 0 !important;
 }
 #jg-info-bar .jg-info-bar-close:hover,
 #jg-info-bar .jg-info-bar-close:focus {
   opacity: 1 !important;
 }
 
-/* When closable: extra right padding so text never slides under the X */
-#jg-info-bar.jg-info-bar--closable .jg-info-bar-track {
-  padding-right: 36px !important;
-}
-
 /* ── Responsive font / padding ───────────────────────────────────────────── */
 
 @media (min-width: 640px) {
-  #jg-info-bar .jg-info-bar-track             { padding: 7px 20px !important; min-height: 34px !important; }
-  #jg-info-bar.jg-info-bar--closable .jg-info-bar-track { padding-right: 42px !important; }
-  #jg-info-bar .jg-info-bar-text              { font-size: 13px !important; }
+  #jg-info-bar .jg-info-bar-track { padding: 7px 20px !important; min-height: 34px !important; }
+  #jg-info-bar .jg-info-bar-text  { font-size: 13px !important; }
 }
 @media (min-width: 1024px) {
-  #jg-info-bar .jg-info-bar-track             { padding: 9px 24px !important; min-height: 38px !important; }
-  #jg-info-bar.jg-info-bar--closable .jg-info-bar-track { padding-right: 46px !important; }
-  #jg-info-bar .jg-info-bar-text              { font-size: 14px !important; }
+  #jg-info-bar .jg-info-bar-track { padding: 9px 24px !important; min-height: 38px !important; }
+  #jg-info-bar .jg-info-bar-text  { font-size: 14px !important; }
 }
 @media (min-width: 1440px) {
-  #jg-info-bar .jg-info-bar-track             { padding: 10px 32px !important; min-height: 42px !important; }
-  #jg-info-bar.jg-info-bar--closable .jg-info-bar-track { padding-right: 54px !important; }
-  #jg-info-bar .jg-info-bar-text              { font-size: 15px !important; }
+  #jg-info-bar .jg-info-bar-track { padding: 10px 32px !important; min-height: 42px !important; }
+  #jg-info-bar .jg-info-bar-text  { font-size: 15px !important; }
 }
 
 /* ── Ticker / scrolling state ─────────────────────────────────────────────── */

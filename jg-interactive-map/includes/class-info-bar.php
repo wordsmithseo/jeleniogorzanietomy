@@ -365,10 +365,12 @@ class JG_Map_Info_Bar {
             <hr>
             <h2 style="margin-top:20px">Podgląd</h2>
             <div style="border:1px solid #ddd;border-radius:6px;overflow:hidden;max-width:900px">
-                <div style="position:relative;background:#f3f4f6;padding:8px 16px;overflow:hidden;white-space:nowrap;text-align:center;color:#8d2324;font-size:14px;font-family:system-ui,sans-serif">
-                    <?php echo $preview; ?>
+                <div style="display:flex;align-items:stretch;background:#f3f4f6;font-family:system-ui,sans-serif">
+                    <div style="flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-align:center;color:#8d2324;font-size:14px;padding:8px 16px">
+                        <?php echo $preview; ?>
+                    </div>
                     <?php if ($closable) : ?>
-                        <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);opacity:.65;font-size:15px;color:#8d2324;cursor:default">&#x2715;</span>
+                        <span style="display:flex;align-items:center;justify-content:center;flex-shrink:0;width:32px;padding:0 6px 0 0;opacity:.6;font-size:15px;color:#8d2324;cursor:default">&#x2715;</span>
                     <?php endif; ?>
                 </div>
                 <div style="background:#8d2324;height:6px"></div>
