@@ -51,90 +51,129 @@
 /* ── Info Bar (pasek informacyjny) ──────────────────────────────────────────
    Rendered above .jg-nav-bar and .jg-custom-top-bar (wp_body_open priority 1).
    Uses ID + !important selectors to defeat Elementor overrides on mobile.
+
+   CRITICAL: Do NOT add all:unset or transform:none !important to
+   .jg-info-bar-text — CSS animations have lower cascade priority than
+   !important author rules, so the transform would be locked and invisible.
    ─────────────────────────────────────────────────────────────────────────── */
 
+/* ── Container ── */
 #jg-info-bar {
   all: unset !important;
   display: block !important;
+  position: relative !important;
   width: 100% !important;
   background: #f3f4f6 !important;
   border-bottom: 1px solid #e2e4e7 !important;
   overflow: hidden !important;
-  position: relative !important;
   z-index: 9997 !important;
   box-sizing: border-box !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
 }
 
+/* ── Scrolling track ── */
 #jg-info-bar .jg-info-bar-track {
   all: unset !important;
   display: flex !important;
+  flex-wrap: nowrap !important;
   align-items: center !important;
   justify-content: center !important;
   overflow: hidden !important;
-  white-space: nowrap !important;
   box-sizing: border-box !important;
   /* Mobile: compact */
   padding: 6px 14px !important;
   min-height: 30px !important;
 }
 
+/* ── Text span ──
+   NO all:unset here! It would set transform:none !important which prevents
+   CSS animation from changing transform (animations < !important in cascade).
+   Instead we use targeted resets for properties Elementor commonly overrides. */
 #jg-info-bar .jg-info-bar-text {
-  all: unset !important;
   display: inline-block !important;
+  flex-shrink: 0 !important;       /* keep full natural width so JS can measure it */
   color: #8d2324 !important;
-  /* Mobile-first font size */
   font-size: 12px !important;
   font-weight: 500 !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
   line-height: 1.45 !important;
   white-space: nowrap !important;
   text-align: center !important;
+  /* Targeted Elementor resets */
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  text-decoration: none !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  vertical-align: middle !important;
+  max-width: none !important;
+  width: auto !important;
+  /* Do NOT set transform or animation here */
 }
 
-/* Links inside the bar */
+/* Links inside bar */
 html body #jg-info-bar .jg-info-bar-text a,
 html body #jg-info-bar .jg-info-bar-text a:visited {
   color: #8d2324 !important;
   text-decoration: underline !important;
   text-underline-offset: 2px !important;
 }
-
 html body #jg-info-bar .jg-info-bar-text a:hover,
 html body #jg-info-bar .jg-info-bar-text a:focus {
   color: #6b1a1b !important;
 }
 
-/* ── Tablet (≥ 640 px) */
+/* ── Close button ── */
+#jg-info-bar .jg-info-bar-close {
+  all: unset !important;
+  position: absolute !important;
+  top: 50% !important;
+  right: 8px !important;
+  transform: translateY(-50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  color: #8d2324 !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  opacity: 0.65 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+}
+#jg-info-bar .jg-info-bar-close:hover,
+#jg-info-bar .jg-info-bar-close:focus {
+  opacity: 1 !important;
+}
+
+/* When closable: extra right padding so text never slides under the X */
+#jg-info-bar.jg-info-bar--closable .jg-info-bar-track {
+  padding-right: 36px !important;
+}
+
+/* ── Responsive font / padding ───────────────────────────────────────────── */
+
 @media (min-width: 640px) {
-  #jg-info-bar .jg-info-bar-track {
-    padding: 7px 20px !important;
-    min-height: 34px !important;
-  }
-  #jg-info-bar .jg-info-bar-text {
-    font-size: 13px !important;
-  }
+  #jg-info-bar .jg-info-bar-track             { padding: 7px 20px !important; min-height: 34px !important; }
+  #jg-info-bar.jg-info-bar--closable .jg-info-bar-track { padding-right: 42px !important; }
+  #jg-info-bar .jg-info-bar-text              { font-size: 13px !important; }
 }
-
-/* ── Desktop (≥ 1024 px) */
 @media (min-width: 1024px) {
-  #jg-info-bar .jg-info-bar-track {
-    padding: 9px 24px !important;
-    min-height: 38px !important;
-  }
-  #jg-info-bar .jg-info-bar-text {
-    font-size: 14px !important;
-  }
+  #jg-info-bar .jg-info-bar-track             { padding: 9px 24px !important; min-height: 38px !important; }
+  #jg-info-bar.jg-info-bar--closable .jg-info-bar-track { padding-right: 46px !important; }
+  #jg-info-bar .jg-info-bar-text              { font-size: 14px !important; }
 }
-
-/* ── Large desktop (≥ 1440 px) */
 @media (min-width: 1440px) {
-  #jg-info-bar .jg-info-bar-track {
-    padding: 10px 32px !important;
-    min-height: 42px !important;
-  }
-  #jg-info-bar .jg-info-bar-text {
-    font-size: 15px !important;
-  }
+  #jg-info-bar .jg-info-bar-track             { padding: 10px 32px !important; min-height: 42px !important; }
+  #jg-info-bar.jg-info-bar--closable .jg-info-bar-track { padding-right: 54px !important; }
+  #jg-info-bar .jg-info-bar-text              { font-size: 15px !important; }
 }
 
 /* ── Ticker / scrolling state ─────────────────────────────────────────────── */
@@ -143,26 +182,23 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
   justify-content: flex-start !important;
 }
 
+/* Duration set via --jg-info-bar-dur CSS custom property by JS.
+   Custom properties are inherited and NOT blocked by !important — the correct
+   channel to pass a dynamic value from JS into a !important CSS rule. */
 #jg-info-bar.jg-info-bar--scroll .jg-info-bar-text {
-  /*
-   * Duration is passed via CSS custom property set on #jg-info-bar by JS.
-   * Using a custom property is the only way to pass a dynamic value when the
-   * CSS rule carries !important — inline style cannot override !important,
-   * but custom properties on a parent ARE inherited and readable here.
-   * Default 15s is a safe fallback if JS hasn't run yet.
-   */
-  animation-name: jg-info-bar-ticker !important;
-  animation-duration: var(--jg-info-bar-dur, 15s) !important;
+  animation-name:            jg-info-bar-ticker !important;
+  animation-duration:        var(--jg-info-bar-dur, 15s) !important;
   animation-timing-function: linear !important;
   animation-iteration-count: infinite !important;
-  animation-fill-mode: none !important;
-  animation-direction: normal !important;
-  animation-play-state: running !important;
-  will-change: transform !important;
+  animation-fill-mode:       none !important;
+  animation-direction:       normal !important;
+  animation-play-state:      running !important;
+  will-change:               transform !important;
 }
 
-/* Pause ticker on hover (mouse) and touch-hold */
-#jg-info-bar.jg-info-bar--scroll:hover .jg-info-bar-text {
+/* Pause on hover (desktop) and focus-within (keyboard/touch) */
+#jg-info-bar.jg-info-bar--scroll:hover       .jg-info-bar-text,
+#jg-info-bar.jg-info-bar--scroll:focus-within .jg-info-bar-text {
   animation-play-state: paused !important;
 }
 
