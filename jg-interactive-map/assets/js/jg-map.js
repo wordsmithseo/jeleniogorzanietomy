@@ -4629,7 +4629,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               );
 
               var gpHtml =
-                '<div style="opacity:0.62;position:relative;cursor:pointer;width:' + gpW + 'px;height:' + gpH + 'px;">' +
+                '<div style="opacity:1;position:relative;cursor:pointer;width:' + gpW + 'px;height:' + gpH + 'px;">' +
                   gpInnerHtml +
                   '<div style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;' +
                     'background:#f59e0b;border-radius:50%;border:1.5px solid #fff;' +
