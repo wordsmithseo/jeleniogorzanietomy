@@ -2873,25 +2873,48 @@ class JG_Interactive_Map {
         if (get_query_var('jg_catalog_category', '') === '') {
             return;
         }
-        // Remove Yoast SEO head output entirely — the plugin outputs its own full
-        // set of meta tags (description, canonical, og:*, twitter:*, JSON-LD) for
-        // these pages, so Yoast must not add a duplicate meta description.
-        if (class_exists('WPSEO_Frontend')) {
-            remove_action('wp_head', array(WPSEO_Frontend::get_instance(), 'head'), 1);
-        }
-        if (class_exists('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration')) {
-            $yoast_front = YoastSEO()->classes->get('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration');
-            if ($yoast_front) {
-                remove_action('wp_head', array($yoast_front, 'call_wpseo_head'), 1);
+        $this->remove_yoast_head_from_wp_head();
+    }
+
+    /**
+     * Remove Yoast SEO head output from wp_head, regardless of hook priority or
+     * object instance. Scans $wp_filter directly so it works across all Yoast
+     * versions. Also restores _wp_render_title_tag (which Yoast removes) and adds
+     * a wpseo_metadesc fallback filter for older Yoast builds.
+     */
+    private function remove_yoast_head_from_wp_head() {
+        global $wp_filter;
+
+        // Scan all wp_head callbacks and remove anything belonging to Yoast's
+        // front-end integration, regardless of priority or object instance.
+        if (isset($wp_filter['wp_head'])) {
+            foreach ($wp_filter['wp_head']->callbacks as $priority => $callbacks) {
+                foreach ($callbacks as $callback) {
+                    if (!is_array($callback['function']) || !is_object($callback['function'][0])) {
+                        continue;
+                    }
+                    $obj = $callback['function'][0];
+                    $method = $callback['function'][1];
+                    if (
+                        ($obj instanceof \WPSEO_Frontend && $method === 'head') ||
+                        (class_exists('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration') &&
+                         $obj instanceof \Yoast\WP\SEO\Integrations\Front_End_Integration &&
+                         $method === 'call_wpseo_head')
+                    ) {
+                        remove_action('wp_head', $callback['function'], $priority);
+                    }
+                }
             }
         }
+
         // Yoast removes _wp_render_title_tag from wp_head and replaces it with its
         // own output. Since we just removed Yoast, restore the native title tag so
         // the page still gets a <title> element (content is set via document_title_parts).
         if (!has_action('wp_head', '_wp_render_title_tag')) {
             add_action('wp_head', '_wp_render_title_tag', 1);
         }
-        // Fallback filter approach for older Yoast versions
+
+        // Fallback filter for older Yoast versions that use wpseo_metadesc
         add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
         // RankMath equivalent
         add_filter('rank_math/frontend/description', '__return_empty_string', PHP_INT_MAX);
@@ -3235,28 +3258,7 @@ class JG_Interactive_Map {
         if (get_query_var('jg_catalog_tag', '') === '') {
             return;
         }
-        // Remove Yoast SEO head output entirely — the plugin outputs its own full
-        // set of meta tags (description, canonical, og:*, twitter:*, JSON-LD) for
-        // these pages, so Yoast must not add a duplicate meta description.
-        if (class_exists('WPSEO_Frontend')) {
-            remove_action('wp_head', array(WPSEO_Frontend::get_instance(), 'head'), 1);
-        }
-        if (class_exists('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration')) {
-            $yoast_front = YoastSEO()->classes->get('Yoast\\WP\\SEO\\Integrations\\Front_End_Integration');
-            if ($yoast_front) {
-                remove_action('wp_head', array($yoast_front, 'call_wpseo_head'), 1);
-            }
-        }
-        // Yoast removes _wp_render_title_tag from wp_head and replaces it with its
-        // own output. Since we just removed Yoast, restore the native title tag so
-        // the page still gets a <title> element (content is set via document_title_parts).
-        if (!has_action('wp_head', '_wp_render_title_tag')) {
-            add_action('wp_head', '_wp_render_title_tag', 1);
-        }
-        // Fallback filter approach for older Yoast versions
-        add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
-        // RankMath equivalent
-        add_filter('rank_math/frontend/description', '__return_empty_string', PHP_INT_MAX);
+        $this->remove_yoast_head_from_wp_head();
     }
 
     /**
