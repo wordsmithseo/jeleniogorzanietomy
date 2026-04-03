@@ -769,6 +769,9 @@ class JG_Map_Admin {
                     <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-banners'); ?>">
                         <span class="jg-nav-icon">📢</span> Banery reklamowe
                     </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-info-bar'); ?>">
+                        <span class="jg-nav-icon">📣</span> Pasek informacyjny
+                    </a>
                 </div>
             </div>
 
