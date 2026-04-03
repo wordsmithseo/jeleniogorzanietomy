@@ -49,75 +49,109 @@
 
 
 /* ── Info Bar (pasek informacyjny) ──────────────────────────────────────────
-   Rendered above .jg-nav-bar and .jg-custom-top-bar.
-   Static (non-sticky) — scrolls away when user scrolls the page.
-   When text overflows the viewport width, JS adds .jg-info-bar--scroll and
-   animates the text as a continuous left-scrolling ticker. Pauses on hover.
+   Rendered above .jg-nav-bar and .jg-custom-top-bar (wp_body_open priority 1).
+   Uses ID + !important selectors to defeat Elementor overrides on mobile.
    ─────────────────────────────────────────────────────────────────────────── */
 
-.jg-info-bar {
-  width: 100%;
-  background: #f3f4f6;
-  border-bottom: 1px solid #e2e4e7;
-  overflow: hidden;
-  /* sit below the sticky nav bars in z-order but above theme content */
-  position: relative;
-  z-index: 9997;
-  /* prevent height collapse from breaking sticky nav positioning */
-  min-height: 0;
-  box-sizing: border-box;
+#jg-info-bar {
+  all: unset !important;
+  display: block !important;
+  width: 100% !important;
+  background: #f3f4f6 !important;
+  border-bottom: 1px solid #e2e4e7 !important;
+  overflow: hidden !important;
+  position: relative !important;
+  z-index: 9997 !important;
+  box-sizing: border-box !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
 }
 
-.jg-info-bar-track {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 7px 20px;
-  overflow: hidden;
-  white-space: nowrap;
-  /* track height is fixed so layout shift is zero */
-  min-height: 34px;
-  box-sizing: border-box;
+#jg-info-bar .jg-info-bar-track {
+  all: unset !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  /* Mobile: compact */
+  padding: 6px 14px !important;
+  min-height: 30px !important;
 }
 
-.jg-info-bar-text {
-  display: inline-block;
-  color: #8d2324;
-  font-size: 13.5px;
-  line-height: 1.4;
-  white-space: nowrap;
-  text-align: center;
+#jg-info-bar .jg-info-bar-text {
+  all: unset !important;
+  display: inline-block !important;
+  color: #8d2324 !important;
+  /* Mobile-first font size */
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1.45 !important;
+  white-space: nowrap !important;
+  text-align: center !important;
 }
 
-.jg-info-bar-text a,
-.jg-info-bar-text a:visited {
-  color: #8d2324;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+/* Links inside the bar */
+html body #jg-info-bar .jg-info-bar-text a,
+html body #jg-info-bar .jg-info-bar-text a:visited {
+  color: #8d2324 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
 }
 
-.jg-info-bar-text a:hover,
-.jg-info-bar-text a:focus {
-  color: #6b1a1b;
-  text-decoration: underline;
+html body #jg-info-bar .jg-info-bar-text a:hover,
+html body #jg-info-bar .jg-info-bar-text a:focus {
+  color: #6b1a1b !important;
+}
+
+/* ── Tablet (≥ 640 px) */
+@media (min-width: 640px) {
+  #jg-info-bar .jg-info-bar-track {
+    padding: 7px 20px !important;
+    min-height: 34px !important;
+  }
+  #jg-info-bar .jg-info-bar-text {
+    font-size: 13px !important;
+  }
+}
+
+/* ── Desktop (≥ 1024 px) */
+@media (min-width: 1024px) {
+  #jg-info-bar .jg-info-bar-track {
+    padding: 9px 24px !important;
+    min-height: 38px !important;
+  }
+  #jg-info-bar .jg-info-bar-text {
+    font-size: 14px !important;
+  }
+}
+
+/* ── Large desktop (≥ 1440 px) */
+@media (min-width: 1440px) {
+  #jg-info-bar .jg-info-bar-track {
+    padding: 10px 32px !important;
+    min-height: 42px !important;
+  }
+  #jg-info-bar .jg-info-bar-text {
+    font-size: 15px !important;
+  }
 }
 
 /* ── Ticker / scrolling state ─────────────────────────────────────────────── */
 
-.jg-info-bar--scroll .jg-info-bar-track {
-  justify-content: flex-start;
+#jg-info-bar.jg-info-bar--scroll .jg-info-bar-track {
+  justify-content: flex-start !important;
 }
 
-.jg-info-bar--scroll .jg-info-bar-text {
+#jg-info-bar.jg-info-bar--scroll .jg-info-bar-text {
   /* animationDuration is set by JS based on text length */
-  animation: jg-info-bar-ticker linear infinite;
-  /* start from the right edge of the track, scroll to fully off-screen left */
-  will-change: transform;
+  animation: jg-info-bar-ticker linear infinite !important;
+  will-change: transform !important;
 }
 
 /* Pause ticker on hover */
-.jg-info-bar--scroll:hover .jg-info-bar-text {
-  animation-play-state: paused;
+#jg-info-bar.jg-info-bar--scroll:hover .jg-info-bar-text {
+  animation-play-state: paused !important;
 }
 
 @keyframes jg-info-bar-ticker {
