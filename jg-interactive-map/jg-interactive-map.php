@@ -2925,7 +2925,7 @@ class JG_Interactive_Map {
         // <meta name="description"> tags, keeping only the first one (from this
         // plugin). This catches descriptions output by Elementor Pro, theme
         // functions, or any other source that bypasses the filters above.
-        add_action('wp_head', 'ob_start', 1);
+        add_action('wp_head', static function() { ob_start(); }, 1);
         add_action('wp_head', array($this, 'dedupe_meta_description_in_head'), PHP_INT_MAX);
     }
 
