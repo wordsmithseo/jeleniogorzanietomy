@@ -1961,7 +1961,6 @@ class JG_Interactive_Map {
                     "@type": "AggregateRating",
                     "ratingValue": <?php echo json_encode($fb_avg_rating); ?>,
                     "ratingCount": <?php echo json_encode($fb_total_votes); ?>,
-                    "reviewCount": <?php echo json_encode($fb_total_votes); ?>,
                     "bestRating": 5,
                     "worstRating": 1
                 }
@@ -2423,7 +2422,6 @@ class JG_Interactive_Map {
                         "@type": "AggregateRating",
                         "ratingValue": <?php echo json_encode($avg_rating_schema); ?>,
                         "ratingCount": <?php echo json_encode($total_votes); ?>,
-                        "reviewCount": <?php echo json_encode($total_votes); ?>,
                         "bestRating": 5,
                         "worstRating": 1
                     }
