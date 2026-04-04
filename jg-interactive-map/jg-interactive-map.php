@@ -1956,7 +1956,9 @@ class JG_Interactive_Map {
                 ,"openingHoursSpecification": <?php echo json_encode($fb_oh_spec, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
                 <?php endif; ?>
                 <?php endif; ?>
-                <?php if ($fb_total_votes > 0): ?>
+                <?php
+                $fb_rating_supported_types = ['LocalBusiness','FoodEstablishment','Museum','SportsActivityLocation','Hotel','Restaurant','Store','HealthAndBeautyBusiness','EntertainmentBusiness','LodgingBusiness','AutoDealer','FinancialService','ProfessionalService'];
+                if ($fb_total_votes > 0 && in_array($fb_schema_type, $fb_rating_supported_types, true)): ?>
                 ,"aggregateRating": {
                     "@type": "AggregateRating",
                     "ratingValue": <?php echo json_encode($fb_avg_rating); ?>,
@@ -2417,7 +2419,9 @@ class JG_Interactive_Map {
                     ,"openingHoursSpecification": <?php echo json_encode($schema_oh_spec, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
                     <?php endif; ?>
                     <?php endif; ?>
-                    <?php if ($total_votes > 0): ?>
+                    <?php
+                    $rating_supported_types = ['LocalBusiness','FoodEstablishment','Museum','SportsActivityLocation','Hotel','Restaurant','Store','HealthAndBeautyBusiness','EntertainmentBusiness','LodgingBusiness','AutoDealer','FinancialService','ProfessionalService'];
+                    if ($total_votes > 0 && in_array($schema_type, $rating_supported_types, true)): ?>
                     ,"aggregateRating": {
                         "@type": "AggregateRating",
                         "ratingValue": <?php echo json_encode($avg_rating_schema); ?>,
