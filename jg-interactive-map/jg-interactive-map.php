@@ -3074,6 +3074,66 @@ class JG_Interactive_Map {
     }
 
     /**
+     * Get the OG image URL for a catalog page (tag or category).
+     *
+     * For sponsored points (is_promo = 1) uses the image at featured_image_index.
+     * For regular points uses the first image (index 0).
+     * Returns empty string if no image is found.
+     *
+     * @param string $where      SQL WHERE clause (without leading AND)
+     * @param array  $where_args Values for $wpdb->prepare placeholders in $where
+     * @return string Full image URL or ''
+     */
+    private function get_og_image_for_points( $where, $where_args ) {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT images, is_promo, featured_image_index
+                 FROM $table
+                 WHERE $where
+                 ORDER BY type ASC, title ASC
+                 LIMIT 1",
+                ...$where_args
+            ),
+            ARRAY_A
+        );
+
+        if ( ! $row || empty( $row['images'] ) ) {
+            return '';
+        }
+
+        $images         = json_decode( $row['images'], true );
+        if ( ! is_array( $images ) || empty( $images ) ) {
+            return '';
+        }
+
+        $featured_index = (int) ( $row['featured_image_index'] ?? 0 );
+        $is_promo       = (bool) $row['is_promo'];
+
+        // Sponsored pins: use featured_image_index; regular pins: use index 0.
+        $img_index = ( $is_promo && isset( $images[ $featured_index ] ) )
+            ? $featured_index
+            : 0;
+
+        if ( ! isset( $images[ $img_index ] ) ) {
+            return '';
+        }
+
+        $img = $images[ $img_index ];
+        $url = is_array( $img )
+            ? ( $img['full'] ?? $img['thumb'] ?? '' )
+            : (string) $img;
+
+        if ( $url && strpos( $url, 'http' ) !== 0 ) {
+            $url = home_url( $url );
+        }
+
+        return $url;
+    }
+
+    /**
      * Add SEO meta tags for catalog category pages
      */
     public function add_category_page_meta_tags() {
@@ -3094,6 +3154,10 @@ class JG_Interactive_Map {
         $h1_title    = $this->get_category_seo_title($category);
         $description = $this->get_category_seo_description($category, $count);
         $site_name   = get_bloginfo('name');
+        $og_image    = $this->get_og_image_for_points(
+            "status = 'publish' AND slug IS NOT NULL AND slug != '' AND category = %s",
+            array( $category )
+        );
 
         $robots = 'index, follow';
         if (get_option('blog_public') == '0') {
@@ -3115,11 +3179,17 @@ class JG_Interactive_Map {
         <meta property="og:type" content="website">
         <meta property="og:locale" content="pl_PL">
         <meta property="og:site_name" content="<?php echo esc_attr($site_name); ?>">
+        <?php if ($og_image): ?>
+        <meta property="og:image" content="<?php echo esc_url($og_image); ?>">
+        <?php endif; ?>
 
         <!-- Twitter Card -->
-        <meta name="twitter:card" content="summary">
+        <meta name="twitter:card" content="<?php echo $og_image ? 'summary_large_image' : 'summary'; ?>">
         <meta name="twitter:title" content="<?php echo esc_attr($h1_title); ?>">
         <meta name="twitter:description" content="<?php echo esc_attr($description); ?>">
+        <?php if ($og_image): ?>
+        <meta name="twitter:image" content="<?php echo esc_url($og_image); ?>">
+        <?php endif; ?>
 
         <!-- JSON-LD: CollectionPage -->
         <script type="application/ld+json">
@@ -3311,6 +3381,10 @@ class JG_Interactive_Map {
         $title = '#' . $tag . ' - Miejsca w Jeleniej Górze | Jeleniogórzanie to my';
         $description = 'Przeglądaj ' . $count . ' miejsc oznaczonych tagiem #' . $tag . ' na interaktywnej mapie Jeleniej Góry. Odkryj lokalne miejsca, ciekawostki i atrakcje.';
         $site_name = get_bloginfo('name');
+        $og_image  = $this->get_og_image_for_points(
+            "status = 'publish' AND slug IS NOT NULL AND slug != '' AND tags LIKE %s",
+            array( $like_pattern )
+        );
 
         // Robots
         $robots = 'index, follow';
@@ -3334,11 +3408,17 @@ class JG_Interactive_Map {
         <meta property="og:type" content="website">
         <meta property="og:locale" content="pl_PL">
         <meta property="og:site_name" content="<?php echo esc_attr($site_name); ?>">
+        <?php if ($og_image): ?>
+        <meta property="og:image" content="<?php echo esc_url($og_image); ?>">
+        <?php endif; ?>
 
         <!-- Twitter Card -->
-        <meta name="twitter:card" content="summary">
+        <meta name="twitter:card" content="<?php echo $og_image ? 'summary_large_image' : 'summary'; ?>">
         <meta name="twitter:title" content="<?php echo esc_attr('#' . $tag . ' - Miejsca w Jeleniej Górze'); ?>">
         <meta name="twitter:description" content="<?php echo esc_attr($description); ?>">
+        <?php if ($og_image): ?>
+        <meta name="twitter:image" content="<?php echo esc_url($og_image); ?>">
+        <?php endif; ?>
 
         <!-- JSON-LD: CollectionPage -->
         <script type="application/ld+json">
