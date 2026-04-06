@@ -2408,13 +2408,12 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     gap: 8px;
     top: 52px; /* stick below the white hamburger nav bar (#jg-nav-bar) */
     border-radius: 12px !important;
-    margin: 0 10px !important;
     box-shadow: 0 2px 14px rgba(0,0,0,0.28) !important;
-    /* width must account for the 10px margin on each side */
-    width: calc(100% - 20px) !important;
+    width: 100% !important;
     box-sizing: border-box !important;
-    left: auto !important;
-    right: auto !important;
+    margin: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
   }
 
   /* Hide entire left side (logo + Menu button) — hamburger nav already handles navigation */
