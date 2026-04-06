@@ -678,6 +678,38 @@ class JG_Map_Enqueue {
 
             overlay.addEventListener('click', closeMenu);
 
+            /* ── Keep --jg-nav-bottom CSS variable in sync ───────────────────────
+               Used by .jg-modal-bg top offset so modals always start flush below
+               the nav bar regardless of whether the info bar is visible.
+               Updates on: load, scroll (throttled), resize, visualViewport resize.
+            ────────────────────────────────────────────────────────────────────── */
+            var navBarEl = document.getElementById('jg-nav-bar');
+            function jgUpdateNavBottom() {
+                if (!navBarEl || window.innerWidth > 768) return;
+                var bottom = Math.round(navBarEl.getBoundingClientRect().bottom);
+                document.documentElement.style.setProperty('--jg-nav-bottom', bottom + 'px');
+            }
+            /* Throttled scroll handler — fires at most once per animation frame */
+            var jgNavBottomTicking = false;
+            window.addEventListener('scroll', function () {
+                if (jgNavBottomTicking) return;
+                jgNavBottomTicking = true;
+                requestAnimationFrame(function () {
+                    jgUpdateNavBottom();
+                    jgNavBottomTicking = false;
+                });
+            }, { passive: true });
+            window.addEventListener('resize', jgUpdateNavBottom);
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', jgUpdateNavBottom);
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', jgUpdateNavBottom);
+            } else {
+                jgUpdateNavBottom();
+            }
+            window.addEventListener('load', jgUpdateNavBottom);
+
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') closeMenu();
             });

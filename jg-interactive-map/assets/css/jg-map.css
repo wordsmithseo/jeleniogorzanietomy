@@ -2400,24 +2400,32 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     margin-bottom: 0 !important;
   }
 
-  /* Top bar mobile responsive */
+  /* Top bar mobile responsive — styled to match .jg-mobile-user-panel on the map page */
   .jg-custom-top-bar {
-    padding: 6px 12px;
+    padding: 8px 12px;
     font-size: calc(14 * var(--jg));
     flex-wrap: nowrap !important;
     gap: 8px;
     top: 52px; /* stick below the white hamburger nav bar (#jg-nav-bar) */
+    border-radius: 12px !important;
+    margin: 0 10px !important;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.28) !important;
+    /* width must account for the 10px margin on each side */
+    width: calc(100% - 20px) !important;
+    box-sizing: border-box !important;
+    left: auto !important;
+    right: auto !important;
   }
 
-  /* Hide duplicate logo — hamburger nav bar already shows the site logo */
-  .jg-custom-top-bar .jg-top-bar-logo-link {
+  /* Hide entire left side (logo + Menu button) — hamburger nav already handles navigation */
+  .jg-custom-top-bar .jg-top-bar-left {
     display: none !important;
   }
 
-  .jg-top-bar-left,
   .jg-top-bar-right {
-    gap: 8px;
+    gap: 6px;
     flex-wrap: nowrap !important;
+    overflow: hidden;
   }
 
   .jg-top-bar-site-title {
@@ -2558,15 +2566,19 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     max-width: none;
   }
 
-  /* Modal adjustments for mobile */
+  /* Modal adjustments for mobile.
+     --jg-nav-bottom is set by JS (jgUpdateNavBottom) and equals the actual
+     bottom edge of #jg-nav-bar in viewport coords.  When the info bar is
+     visible the nav bar is pushed down, so the variable is > 52px and the
+     modal starts below it.  Falls back to 52px if JS hasn't run yet. */
   .jg-modal-bg {
-    top: 52px !important; /* base inset:0 rule is later in file, needs !important to win */
+    top: var(--jg-nav-bottom, 52px) !important;
   }
 
   .jg-modal {
     position: relative;
-    max-height: calc(100vh - 88px);   /* nav(52px) + 2×padding(18px) = 88px */
-    max-height: calc(100dvh - 88px);  /* preferred: dynamic viewport height */
+    max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 36px);
+    max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 36px); /* fallback */
   }
 
   /* Modal header - allow wrapping for badges but hide X from flex */
