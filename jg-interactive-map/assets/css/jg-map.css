@@ -2469,21 +2469,45 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     max-width: 45vw;
   }
 
-  /* Make buttons smaller on mobile */
-  .jg-top-bar-btn {
-    padding: 6px 12px;
-    font-size: calc(13 * var(--jg));
-    white-space: nowrap;
+  /* ── Action buttons: match .jg-mup-btn exactly ── */
+  .jg-custom-top-bar .jg-top-bar-btn {
+    all: unset !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    border-radius: 8px !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+    transition: background 0.15s !important;
   }
-
-  /* Compact level indicator on mobile */
-  .jg-top-bar-xp-bar {
-    width: 3.5rem;
-    height: 0.4rem;
+  .jg-custom-top-bar .jg-top-bar-btn:active {
+    background: rgba(255,255,255,0.18) !important;
   }
-
-  .jg-top-bar-level-num {
-    font-size: calc(13.6 * var(--jg));
+  /* Admin button: transparent bg (no gold), icon stays gold */
+  .jg-custom-top-bar .jg-top-bar-btn-admin {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #fbbf24 !important;
+  }
+  /* Remove legacy ::before pseudo-elements — replaced by SVG icons */
+  .jg-custom-top-bar .jg-top-bar-btn::before,
+  .jg-custom-top-bar .jg-top-bar-btn::after {
+    content: none !important;
+    display: none !important;
+  }
+  /* Hide inline notification badges — too noisy on mobile */
+  .jg-custom-top-bar #jg-top-bar-notifications {
+    display: none !important;
+  }
+  /* Username: ellipsis truncation */
+  .jg-top-bar-user {
+    max-width: 28vw !important;
   }
 
   .jg-search-panel {
@@ -2839,30 +2863,6 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   .jg-top-bar-btn:not(.jg-top-bar-notif):hover {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
-  }
-
-  /* Edit Profile button icon - white Unicode symbol */
-  #jg-edit-profile-btn::before {
-    content: "◉";
-    font-size: calc(16 * var(--jg));
-    display: inline-block;
-    color: #ffffff;
-  }
-
-  /* Admin Panel button icon - white Unicode gear */
-  .jg-top-bar-btn-admin::before {
-    content: "⚙";
-    font-size: calc(16 * var(--jg));
-    display: inline-block;
-    color: #ffffff;
-  }
-
-  /* Logout button icon - white Unicode arrow */
-  .jg-top-bar-btn[href*="logout"]::before {
-    content: "→";
-    font-size: calc(16 * var(--jg));
-    display: inline-block;
-    color: #ffffff;
   }
 
   /* Login/Register buttons on mobile - white icon + text with bullet separator */
