@@ -2415,18 +2415,19 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   /* Top bar mobile responsive — styled to match .jg-mobile-user-panel on the map page */
   .jg-custom-top-bar {
     padding: 8px 12px;
-    font-size: calc(13 * var(--jg));  /* matches .jg-mobile-user-panel font-size */
+    font-size: calc(13 * var(--jg));
     flex-wrap: nowrap !important;
     gap: 8px;
     /* stick below info bar + nav bar; --jg-info-bar-h updated by JS */
     top: calc(var(--jg-info-bar-h, 0px) + 52px) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 2px 14px rgba(0,0,0,0.28) !important;
+    border-radius: 0 !important;  /* full-width bar needs no rounded corners */
+    box-shadow: none !important;
     width: 100% !important;
     box-sizing: border-box !important;
     margin: 0 !important;
     left: 0 !important;
     right: 0 !important;
+    justify-content: flex-start !important;
   }
 
   /* Hide entire left side (logo + Menu button) — hamburger nav already handles navigation */
@@ -2434,22 +2435,35 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     display: none !important;
   }
 
-  .jg-top-bar-right {
-    gap: 6px;
+  .jg-custom-top-bar .jg-top-bar-right {
+    gap: 4px;
     flex-wrap: nowrap !important;
     overflow: hidden;
+    align-items: center;
+    flex: 1 1 auto;
   }
 
-  /* Username: same size as .jg-mup-username */
+  /* ── Element order matching .jg-mobile-user-panel: info (left) → actions (right) ── */
   .jg-top-bar-user {
+    order: 1 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: 28vw !important;
     font-size: calc(13 * var(--jg)) !important;
     font-weight: 700 !important;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex-shrink: 1;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
+  .jg-top-bar-level {
+    order: 2 !important;
+    flex-shrink: 0 !important;
+  }
+  #jg-ranking-btn    { order: 3 !important; }
+  #jg-edit-profile-btn { order: 4 !important; margin-left: 0 !important; }
+  .jg-top-bar-btn-admin { order: 5 !important; }
+  a.jg-top-bar-btn[title="Wyloguj"] { order: 6 !important; }
+  #jg-auth-btn       { order: 3 !important; }
 
   /* Level num: same size as .jg-mup-level-num */
   .jg-top-bar-level-num {
@@ -2504,10 +2518,6 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   /* Hide inline notification badges — too noisy on mobile */
   .jg-custom-top-bar #jg-top-bar-notifications {
     display: none !important;
-  }
-  /* Username: ellipsis truncation */
-  .jg-top-bar-user {
-    max-width: 28vw !important;
   }
 
   .jg-search-panel {
@@ -2723,60 +2733,15 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     overflow: hidden;
   }
 
-  /* Remove column-layout separators from user info row */
+  /* Remove column-layout separators — layout and order are handled by the 768px block */
   .jg-top-bar-user {
-    font-size: calc(13 * var(--jg));
-    order: 1;
-    margin: 0;
-    min-width: 0;
-    flex: 1 1 auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     padding-bottom: 0 !important;
     border-bottom: none !important;
   }
 
   .jg-top-bar-level {
-    order: 2;
-    flex-shrink: 0;
     padding-bottom: 0 !important;
     border-bottom: none !important;
-  }
-
-  /* Second row: Notifications section - full width, align left */
-  #jg-top-bar-notifications {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 8px;
-    width: 100%;
-    order: 2;
-    margin: 0 0 4px 0;
-  }
-
-  /* Third row: Action buttons - full width, align right */
-  #jg-edit-profile-btn {
-    order: 3;
-    margin-left: auto;
-  }
-
-  .jg-top-bar-btn-admin {
-    order: 4;
-  }
-
-  .jg-top-bar-btn[href*="logout"] {
-    order: 5;
-  }
-
-  /* Login and Register buttons */
-  #jg-login-btn {
-    order: 3;
-    margin-left: auto;
-  }
-
-  #jg-register-btn {
-    order: 4;
   }
 
   .jg-top-bar-notif {
