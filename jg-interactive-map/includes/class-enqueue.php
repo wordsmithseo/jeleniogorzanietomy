@@ -683,12 +683,25 @@ class JG_Map_Enqueue {
                the nav bar regardless of whether the info bar is visible.
                Updates on: load, scroll (throttled), resize, visualViewport resize.
             ────────────────────────────────────────────────────────────────────── */
-            var navBarEl = document.getElementById('jg-nav-bar');
+            var navBarEl  = document.getElementById('jg-nav-bar');
+            var infoBarEl = document.getElementById('jg-info-bar');
             function jgUpdateNavBottom() {
-                if (!navBarEl || window.innerWidth > 768) return;
-                var bottom = Math.round(navBarEl.getBoundingClientRect().bottom);
-                document.documentElement.style.setProperty('--jg-nav-bottom', bottom + 'px');
+                if (window.innerWidth > 768) return;
+                /* --jg-info-bar-h: height of the info bar (0 when hidden/dismissed) */
+                var infoBarH = 0;
+                if (infoBarEl) {
+                    var ibStyle = window.getComputedStyle(infoBarEl);
+                    infoBarH = ibStyle.display === 'none' ? 0 : Math.round(infoBarEl.offsetHeight);
+                }
+                document.documentElement.style.setProperty('--jg-info-bar-h', infoBarH + 'px');
+                /* --jg-nav-bottom: actual viewport bottom-edge of the nav bar */
+                if (navBarEl) {
+                    var bottom = Math.round(navBarEl.getBoundingClientRect().bottom);
+                    document.documentElement.style.setProperty('--jg-nav-bottom', bottom + 'px');
+                }
             }
+            /* Also re-run when the info bar is dismissed */
+            window.addEventListener('jg-info-bar-changed', jgUpdateNavBottom);
             /* Throttled scroll handler — fires at most once per animation frame */
             var jgNavBottomTicking = false;
             window.addEventListener('scroll', function () {
@@ -1003,7 +1016,7 @@ class JG_Map_Enqueue {
                         <span class="jg-btn-text">Ranking</span>
                     </button>
                     <button id="jg-edit-profile-btn" class="jg-top-bar-btn" title="Edytuj profil">
-                        <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         <span class="jg-btn-text">Edytuj profil</span>
                     </button>
 
@@ -1019,7 +1032,7 @@ class JG_Map_Enqueue {
 
                     <?php if ($is_admin || $is_moderator) : ?>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=jg-map-dashboard')); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin" title="Panel administratora">
-                            <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                            <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                             <span class="jg-btn-text">Panel administratora</span>
                         </a>
                     <?php endif; ?>

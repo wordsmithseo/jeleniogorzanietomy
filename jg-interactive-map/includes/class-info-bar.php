@@ -145,6 +145,8 @@ class JG_Map_Info_Bar {
                             bar.style.setProperty('opacity',    '0',   'important');
                             setTimeout(function () {
                                 bar.style.setProperty('display', 'none', 'important');
+                                /* Notify nav/modal offset JS to recalculate positions */
+                                window.dispatchEvent(new Event('jg-info-bar-changed'));
                             }, 420);
                         });
                     });

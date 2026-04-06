@@ -2400,13 +2400,26 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     margin-bottom: 0 !important;
   }
 
+  /* ── Info bar: sticky on mobile so it never scrolls away ── */
+  #jg-info-bar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100000 !important;
+  }
+
+  /* ── White nav bar: sticks just below the info bar ── */
+  #jg-nav-bar {
+    top: var(--jg-info-bar-h, 0px) !important;
+  }
+
   /* Top bar mobile responsive — styled to match .jg-mobile-user-panel on the map page */
   .jg-custom-top-bar {
     padding: 8px 12px;
-    font-size: calc(14 * var(--jg));
+    font-size: calc(13 * var(--jg));  /* matches .jg-mobile-user-panel font-size */
     flex-wrap: nowrap !important;
     gap: 8px;
-    top: 52px; /* stick below the white hamburger nav bar (#jg-nav-bar) */
+    /* stick below info bar + nav bar; --jg-info-bar-h updated by JS */
+    top: calc(var(--jg-info-bar-h, 0px) + 52px) !important;
     border-radius: 12px !important;
     box-shadow: 0 2px 14px rgba(0,0,0,0.28) !important;
     width: 100% !important;
@@ -2425,6 +2438,28 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     gap: 6px;
     flex-wrap: nowrap !important;
     overflow: hidden;
+  }
+
+  /* Username: same size as .jg-mup-username */
+  .jg-top-bar-user {
+    font-size: calc(13 * var(--jg)) !important;
+    font-weight: 700 !important;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+  }
+
+  /* Level num: same size as .jg-mup-level-num */
+  .jg-top-bar-level-num {
+    font-size: calc(12 * var(--jg)) !important;
+  }
+
+  /* XP bar: same dimensions as .jg-mup-xp-bar */
+  .jg-top-bar-xp-bar {
+    width: 3rem !important;
+    height: 5px !important;
   }
 
   .jg-top-bar-site-title {
