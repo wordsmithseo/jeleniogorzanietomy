@@ -1843,6 +1843,10 @@ class JG_Interactive_Map {
         if ($maintenance_mode === 'maintenance' || $maintenance_mode === 'coming_soon') {
             $robots_content = 'noindex, nofollow';
         }
+        // Admin-set noindex override
+        if (!empty($point['seo_noindex'])) {
+            $robots_content = 'noindex, follow';
+        }
 
         ?><!DOCTYPE html>
 <html lang="pl">
@@ -1852,7 +1856,7 @@ class JG_Interactive_Map {
     <title><?php echo esc_html($point['title']); ?> – Jelenia Góra | JeleniogorzaNieTomy</title>
     <meta name="description" content="<?php echo esc_attr($description); ?>">
     <meta name="robots" content="<?php echo esc_attr($robots_content); ?>">
-    <link rel="canonical" href="<?php echo esc_url($url); ?>">
+    <link rel="canonical" href="<?php echo esc_url(!empty($point['seo_canonical']) ? $point['seo_canonical'] : $url); ?>">
     <meta property="og:type" content="article">
     <meta property="og:title" content="<?php echo esc_attr($point['title']); ?>">
     <meta property="og:description" content="<?php echo esc_attr($description); ?>">
