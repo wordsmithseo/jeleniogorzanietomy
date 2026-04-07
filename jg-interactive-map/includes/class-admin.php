@@ -525,6 +525,15 @@ class JG_Map_Admin {
             array($this, 'render_maintenance_page')
         );
 
+        add_submenu_page(
+            'jg-map-dashboard',
+            'SEO Pinezek',
+            'SEO Pinezek',
+            'manage_options',
+            'jg-map-seo',
+            array($this, 'render_seo_page')
+        );
+
     }
 
     /**
@@ -7956,4 +7965,138 @@ JAVASCRIPT;
         </div>
         <?php
     }
+
+    /**
+     * SEO Pinezek — admin page for setting canonical URL and noindex on map pins
+     */
+    public function render_seo_page() {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        // Handle save via POST (non-JS fallback)
+        if (isset($_POST['jg_seo_save']) && check_admin_referer('jg_seo_save', 'jg_seo_nonce')) {
+            $point_id = intval($_POST['point_id'] ?? 0);
+            if ($point_id) {
+                JG_Map_Database::update_point($point_id, array(
+                    'seo_canonical' => esc_url_raw(trim($_POST['seo_canonical'] ?? '')),
+                    'seo_noindex'   => isset($_POST['seo_noindex']) ? 1 : 0,
+                ));
+                echo '<div class="notice notice-success is-dismissible"><p>Zapisano ustawienia SEO.</p></div>';
+            }
+        }
+
+        $points = $wpdb->get_results(
+            "SELECT id, title, slug, type, seo_canonical, seo_noindex FROM $table WHERE status = 'publish' AND type IN ('miejsce','ciekawostka') ORDER BY title ASC",
+            ARRAY_A
+        );
+
+        $type_labels = array('miejsce' => 'Miejsce', 'ciekawostka' => 'Ciekawostka');
+        ?>
+        <div class="wrap">
+            <h1>SEO Pinezek</h1>
+            <p>Ustaw niestandardowy canonical URL lub flagę noindex dla pinezek mapy. Zmiany działają natychmiast po zapisaniu.</p>
+
+            <style>
+            #jg-seo-table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}
+            #jg-seo-table th{background:#f8fafc;padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;text-transform:uppercase}
+            #jg-seo-table td{padding:8px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+            #jg-seo-table tbody tr:last-child td{border-bottom:none}
+            #jg-seo-table tbody tr:hover{background:#f8fafc}
+            #jg-seo-table input[type=text]{width:100%;max-width:380px;padding:5px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px}
+            #jg-seo-table input[type=text].has-value{border-color:#2563eb;background:#eff6ff}
+            .jg-seo-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase}
+            .jg-seo-badge-noindex{background:#fee2e2;color:#b91c1c}
+            .jg-seo-badge-canonical{background:#dbeafe;color:#1e40af}
+            .jg-seo-save-btn{padding:4px 12px;font-size:12px;cursor:pointer}
+            .jg-seo-saved{color:#16a34a;font-weight:700;font-size:11px;display:none}
+            </style>
+
+            <table id="jg-seo-table">
+                <thead>
+                    <tr>
+                        <th>Nazwa</th>
+                        <th>Typ</th>
+                        <th>Status</th>
+                        <th>Canonical URL (zostaw puste = auto)</th>
+                        <th>Noindex</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($points as $p):
+                    $url = home_url('/' . ($p['type'] === 'ciekawostka' ? 'ciekawostka' : 'miejsce') . '/' . $p['slug'] . '/');
+                    $has_canonical = !empty($p['seo_canonical']);
+                    $has_noindex   = !empty($p['seo_noindex']);
+                ?>
+                    <tr data-id="<?php echo intval($p['id']); ?>">
+                        <td>
+                            <a href="<?php echo esc_url($url); ?>" target="_blank"><?php echo esc_html($p['title']); ?></a>
+                        </td>
+                        <td><?php echo esc_html($type_labels[$p['type']] ?? $p['type']); ?></td>
+                        <td>
+                            <?php if ($has_noindex): ?>
+                                <span class="jg-seo-badge jg-seo-badge-noindex">noindex</span>
+                            <?php elseif ($has_canonical): ?>
+                                <span class="jg-seo-badge jg-seo-badge-canonical">canonical</span>
+                            <?php else: ?>
+                                <span style="color:#9ca3af;font-size:11px">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <input type="text" class="jg-seo-canonical <?php echo $has_canonical ? 'has-value' : ''; ?>"
+                                value="<?php echo esc_attr($p['seo_canonical'] ?? ''); ?>"
+                                placeholder="<?php echo esc_attr($url); ?>">
+                        </td>
+                        <td style="text-align:center">
+                            <input type="checkbox" class="jg-seo-noindex" <?php checked($has_noindex); ?>>
+                        </td>
+                        <td>
+                            <button class="button jg-seo-save-btn">Zapisz</button>
+                            <span class="jg-seo-saved">✓ Zapisano</span>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <script>
+            (function(){
+                document.querySelectorAll('.jg-seo-save-btn').forEach(function(btn){
+                    btn.addEventListener('click', function(){
+                        var row = btn.closest('tr');
+                        var id  = row.dataset.id;
+                        var canonical = row.querySelector('.jg-seo-canonical').value.trim();
+                        var noindex   = row.querySelector('.jg-seo-noindex').checked ? 1 : 0;
+                        btn.disabled = true;
+                        fetch(ajaxurl, {
+                            method: 'POST',
+                            headers: {'Content-Type':'application/x-www-form-urlencoded'},
+                            body: new URLSearchParams({
+                                action: 'jg_admin_save_seo',
+                                nonce:  '<?php echo wp_create_nonce('jg_admin_save_seo'); ?>',
+                                point_id: id,
+                                seo_canonical: canonical,
+                                seo_noindex: noindex
+                            })
+                        })
+                        .then(function(r){ return r.json(); })
+                        .then(function(res){
+                            btn.disabled = false;
+                            if (res.success) {
+                                var saved = row.querySelector('.jg-seo-saved');
+                                saved.style.display = 'inline';
+                                setTimeout(function(){ saved.style.display = 'none'; }, 2000);
+                                // Update canonical input style
+                                var canonicalInput = row.querySelector('.jg-seo-canonical');
+                                canonicalInput.classList.toggle('has-value', canonical !== '');
+                            }
+                        });
+                    });
+                });
+            })();
+            </script>
+        </div>
+        <?php
+    }
+
 }

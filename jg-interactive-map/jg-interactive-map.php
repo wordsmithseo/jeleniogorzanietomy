@@ -531,7 +531,8 @@ class JG_Interactive_Map {
             $wpdb->prepare(
                 "SELECT id, title, slug, content, excerpt, lat, lng, address, type, category, status,
                         author_id, is_promo, website, phone, images, featured_image_index,
-                        facebook_url, instagram_url, linkedin_url, tiktok_url, tags, opening_hours, created_at, updated_at
+                        facebook_url, instagram_url, linkedin_url, tiktok_url, tags, opening_hours, created_at, updated_at,
+                        seo_canonical, seo_noindex
                  FROM $table
                  WHERE slug = %s AND status = 'publish'
                  LIMIT 1",
@@ -2151,6 +2152,11 @@ class JG_Interactive_Map {
             $robots_content = 'noindex, nofollow';
         }
 
+        // Admin-set noindex override (e.g. for cannibalizing pins)
+        if (!empty($point['seo_noindex'])) {
+            $robots_content = 'noindex, follow';
+        }
+
         $images = json_decode($point['images'], true) ?: array();
 
         // Get featured image (or first image as fallback) - ensure it's a full URL
@@ -2301,7 +2307,7 @@ class JG_Interactive_Map {
         <meta name="ICBM" content="<?php echo esc_attr($point['lat'] . ', ' . $point['lng']); ?>">
 
         <!-- Canonical URL -->
-        <link rel="canonical" href="<?php echo esc_url($url); ?>">
+        <link rel="canonical" href="<?php echo esc_url(!empty($point['seo_canonical']) ? $point['seo_canonical'] : $url); ?>">
 
         <!-- Schema.org JSON-LD structured data -->
         <?php

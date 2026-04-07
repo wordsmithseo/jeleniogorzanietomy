@@ -633,6 +633,9 @@ class JG_Map_Ajax_Handlers {
         // Page search for admin autocomplete
         add_action('wp_ajax_jg_map_search_pages', array($this, 'search_pages'));
 
+        // SEO settings for pins (admin only)
+        add_action('wp_ajax_jg_admin_save_seo', array($this, 'admin_save_seo'), 1);
+
         // Track last login time
         add_action('wp_login', array($this, 'track_last_login'), 10, 2);
     }
@@ -9871,5 +9874,31 @@ class JG_Map_Ajax_Handlers {
         } else {
             wp_send_json_error(array('message' => 'Nie znaleziono zdjęcia'));
         }
+    }
+
+    /**
+     * Save SEO settings (canonical URL + noindex) for a map pin — admin only
+     */
+    public function admin_save_seo() {
+        check_ajax_referer('jg_admin_save_seo', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Brak uprawnień');
+        }
+
+        $point_id = intval($_POST['point_id'] ?? 0);
+        if (!$point_id) {
+            wp_send_json_error('Brak ID');
+        }
+
+        $canonical = esc_url_raw(trim($_POST['seo_canonical'] ?? ''));
+        $noindex   = intval($_POST['seo_noindex'] ?? 0) ? 1 : 0;
+
+        JG_Map_Database::update_point($point_id, array(
+            'seo_canonical' => $canonical ?: null,
+            'seo_noindex'   => $noindex,
+        ));
+
+        wp_send_json_success();
     }
 }

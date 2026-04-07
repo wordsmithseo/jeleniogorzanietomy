@@ -285,7 +285,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.25.1'; // Add menu_size_labels column to points
+        $current_schema_version = '3.26.0'; // Add seo_canonical and seo_noindex columns to points
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -636,6 +636,14 @@ class JG_Map_Database {
         // Add menu_size_labels column to points table (predefined size labels per place)
         if (!$column_exists('menu_size_labels')) {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN menu_size_labels text DEFAULT NULL");
+        }
+
+        // Add SEO columns: custom canonical URL and noindex flag (admin-only, not editable by users)
+        if (!$column_exists('seo_canonical')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN seo_canonical varchar(500) DEFAULT NULL");
+        }
+        if (!$column_exists('seo_noindex')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN seo_noindex tinyint(1) DEFAULT 0");
         }
 
         $table_menu_photos = $wpdb->prefix . 'jg_map_menu_photos';
