@@ -2635,15 +2635,20 @@ body.jg-fullscreen-active .jg-fs-top-controls {
      --jg-nav-bottom is set by JS (jgUpdateNavBottom) and equals the actual
      bottom edge of #jg-nav-bar in viewport coords.  When the info bar is
      visible the nav bar is pushed down, so the variable is > 52px and the
-     modal starts below it.  Falls back to 52px if JS hasn't run yet. */
+     modal starts below it.  Falls back to 52px if JS hasn't run yet.
+     padding-top creates a visible gap between the nav bar and the modal top.
+     padding-bottom uses env(safe-area-inset-bottom) so the modal won't hide
+     behind a browser address bar pinned to the bottom of the screen. */
   .jg-modal-bg {
     top: var(--jg-nav-bottom, 52px) !important;
+    padding: 12px 10px !important;
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 12px), 52px) !important;
   }
 
   .jg-modal {
     position: relative;
-    max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 36px);
-    max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 36px); /* fallback */
+    max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 12px - max(calc(env(safe-area-inset-bottom, 0px) + 12px), 52px));
+    max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 100px); /* fallback – generous bottom margin for browsers that report full vh */
   }
 
   /* Modal header - allow wrapping for badges but hide X from flex */
@@ -3410,6 +3415,96 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 .jg-modal--promo header {
   background: linear-gradient(90deg, #fff7e6, #fef3c7);
   border-bottom-color: #f7d899;
+}
+
+/* =====================================================================
+   Pokemon card style for place modals on mobile
+   The modal feels like a card held in the hand — narrow, distinctive
+   border frame, and a soft gradient background.
+   ===================================================================== */
+@media (max-width: 768px) {
+  #jg-map-modal-view .jg-modal--miejsce {
+    width: min(420px, 88vw);
+    border-radius: 20px;
+    /* Double-ring frame: outer silver + inner accent, like a TCG card */
+    box-shadow:
+      0 0 0 3px #a8c8d8,
+      0 0 0 6px rgba(255, 255, 255, 0.85),
+      0 0 0 9px #6aafcc,
+      0 16px 48px rgba(0, 0, 0, 0.45);
+    /* Soft card-paper gradient — light blue like a Water/Ice type */
+    background: linear-gradient(170deg, #f0fbff 0%, #ddf2fc 55%, #c9eaf8 100%);
+    /* Subtle texture shimmer on the card body */
+    background-image:
+      linear-gradient(170deg, #f0fbff 0%, #ddf2fc 55%, #c9eaf8 100%),
+      repeating-linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.0) 0px,
+        rgba(255, 255, 255, 0.0) 4px,
+        rgba(255, 255, 255, 0.06) 4px,
+        rgba(255, 255, 255, 0.06) 5px
+      );
+  }
+
+  /* Card header — the coloured banner at the top of the card */
+  #jg-map-modal-view .jg-modal--miejsce header {
+    background: linear-gradient(100deg, #16a34a 0%, #22c55e 100%);
+    border-bottom: 2px solid #15803d;
+    border-radius: 16px 16px 0 0;
+    padding: 10px 46px 10px 12px !important;
+  }
+
+  /* Badge colours on the green header need lighter tones */
+  #jg-map-modal-view .jg-modal--miejsce header .jg-badge {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+
+  /* Close button on card header */
+  #jg-map-modal-view .jg-modal--miejsce header .jg-close {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  #jg-map-modal-view .jg-modal--miejsce header .jg-close:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  /* Place title — the Pokémon name equivalent */
+  #jg-map-modal-view .jg-modal--miejsce .jg-place-title {
+    font-size: calc(24 * var(--jg)) !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+    color: #0f172a !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* Card body — slightly tighter padding */
+  #jg-map-modal-view .jg-modal--miejsce .jg-grid {
+    padding: 14px !important;
+  }
+
+  /* Gallery photos act as the card illustration area */
+  #jg-map-modal-view .jg-modal--miejsce .jg-gallery {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid rgba(106, 175, 204, 0.45);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Description text — the "move flavour text" */
+  #jg-map-modal-view .jg-modal--miejsce .jg-place-content,
+  #jg-map-modal-view .jg-modal--miejsce .jg-place-excerpt {
+    font-size: calc(14 * var(--jg)) !important;
+    line-height: 1.6 !important;
+    color: #1e3a4a !important;
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 10px;
+    padding: 10px 12px !important;
+    margin: 8px 0 !important;
+    border: 1px solid rgba(106, 175, 204, 0.3);
+  }
 }
 
 /* Buttons - base styles */
