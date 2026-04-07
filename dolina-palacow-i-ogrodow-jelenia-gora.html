@@ -1,0 +1,416 @@
+<!-- ============================================================
+     ARTYKUŁ SEO – Dolina Pałaców i Ogrodów
+     JeleniogorzaNieTomy.pl
+     Wklej całą zawartość do widgetu "HTML" w Elementorze
+     URL strony: /jelenia-gora-oraz-dolina-palacow-i-ogrodow-dlaczego-nasze-miasto-zachwyca/
+
+     ╔══════════════════════════════════════════════════════════════╗
+     ║  META DANE – wklej w Yoast SEO / RankMath dla tej strony   ║
+     ╚══════════════════════════════════════════════════════════════╝
+
+     ── TYTUŁ STRONY (Yoast → "SEO Title") ──────────────────────
+     Dolina Pałaców i Ogrodów – atrakcje, pałace i zamki w okolicach Jeleniej Góry
+
+     ── META DESCRIPTION (max 160 znaków) ────────────────────────
+     Dolina Pałaców i Ogrodów w Kotlinie Jeleniogórskiej – odkryj
+     najpiękniejsze pałace, zamki i parki. Wojanów, Łomnica,
+     Karpniki i więcej. Przewodnik i mapa atrakcji.
+
+     ── TYTUŁ WPISU (WordPress) ──────────────────────────────────
+     Dolina Pałaców i Ogrodów – przewodnik po atrakcjach w okolicach Jeleniej Góry
+
+     ── CANONICAL URL ────────────────────────────────────────────
+     https://jeleniogorzanietomy.pl/jelenia-gora-oraz-dolina-palacow-i-ogrodow-dlaczego-nasze-miasto-zachwyca/
+
+     ── TARGET KEYWORDS ──────────────────────────────────────────
+     • dolina pałaców i ogrodów jelenia góra
+     • dolina pałaców i ogrodów atrakcje
+     • pałace w okolicach jeleniej góry
+     • co zwiedzać okolice jeleniej góry
+     • atrakcje turystyczne okolice jeleniej góry
+     • jelenia góra co zobaczyć okolice
+     ============================================================ -->
+
+<style>
+  #jgdol-wrap {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: #111827;
+    line-height: 1.7;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  #jgdol-wrap * { box-sizing: border-box; }
+  #jgdol-wrap a { color: #8d2324; }
+  #jgdol-wrap a:hover { color: #6b1a1a; }
+
+  #jgdol-wrap .hero {
+    background: linear-gradient(135deg, #14532d 0%, #166534 60%, #15803d 100%);
+    border-radius: 16px;
+    padding: 52px 40px;
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  #jgdol-wrap .hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 18px;
+  }
+  #jgdol-wrap .hero h1 {
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 14px;
+    line-height: 1.2;
+  }
+  #jgdol-wrap .hero p {
+    font-size: 16px;
+    color: rgba(255,255,255,0.88);
+    max-width: 600px;
+    margin: 0 auto 28px;
+  }
+  #jgdol-wrap .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    color: #14532d;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 13px 26px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+  }
+  #jgdol-wrap .hero-cta:hover {
+    color: #14532d;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  }
+
+  #jgdol-wrap .qi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+  #jgdol-wrap .qi-card {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+  #jgdol-wrap .qi-icon { font-size: 26px; margin-bottom: 6px; }
+  #jgdol-wrap .qi-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #9ca3af; margin-bottom: 3px; }
+  #jgdol-wrap .qi-val { font-size: 13px; font-weight: 700; color: #111827; }
+
+  #jgdol-wrap .section { margin-bottom: 44px; }
+  #jgdol-wrap .section h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #16a34a;
+  }
+  #jgdol-wrap .section h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #14532d;
+    margin: 28px 0 10px;
+  }
+  #jgdol-wrap .section p {
+    font-size: 15px;
+    color: #374151;
+    margin: 0 0 14px;
+    line-height: 1.8;
+  }
+
+  #jgdol-wrap .palace-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  #jgdol-wrap .palace-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 22px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  #jgdol-wrap .palace-card:hover {
+    border-color: #16a34a;
+    box-shadow: 0 4px 16px rgba(22,163,74,.1);
+  }
+  #jgdol-wrap .palace-icon { font-size: 28px; margin-bottom: 10px; }
+  #jgdol-wrap .palace-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 6px;
+  }
+  #jgdol-wrap .palace-loc {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #16a34a;
+    margin-bottom: 8px;
+  }
+  #jgdol-wrap .palace-desc {
+    font-size: 13.5px;
+    color: #6b7280;
+    line-height: 1.6;
+  }
+
+  #jgdol-wrap .highlight {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    border-radius: 0 12px 12px 0;
+    padding: 18px 22px;
+    margin: 20px 0;
+  }
+  #jgdol-wrap .highlight p { margin: 0; font-size: 14.5px; color: #14532d; font-style: italic; }
+
+  #jgdol-wrap .video-wrap {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 14px;
+    margin: 24px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  }
+  #jgdol-wrap .video-wrap iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: 0;
+    border-radius: 14px;
+  }
+  #jgdol-wrap .video-caption {
+    font-size: 12.5px;
+    color: #9ca3af;
+    text-align: center;
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  #jgdol-wrap .tip-box {
+    background: #fefce8;
+    border: 1px solid #fde047;
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 20px 0;
+  }
+  #jgdol-wrap .tip-box p { margin: 0; font-size: 14px; color: #713f12; }
+  #jgdol-wrap .tip-box strong { color: #92400e; }
+
+  #jgdol-wrap .tags { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0; }
+  #jgdol-wrap .tag {
+    background: #dcfce7;
+    color: #14532d;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 11px;
+    border-radius: 20px;
+  }
+
+  #jgdol-wrap .cta {
+    background: linear-gradient(135deg, #8d2324 0%, #6b1a1a 100%);
+    border-radius: 14px;
+    padding: 44px 36px;
+    text-align: center;
+    margin-top: 40px;
+  }
+  #jgdol-wrap .cta h2 { font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 10px; }
+  #jgdol-wrap .cta p { font-size: 15px; color: rgba(255,255,255,0.88); margin: 0 auto 24px; max-width: 480px; }
+  #jgdol-wrap .cta-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #fff; color: #8d2324;
+    font-size: 14px; font-weight: 800;
+    padding: 14px 28px; border-radius: 10px;
+    text-decoration: none; transition: transform .15s, box-shadow .15s;
+  }
+  #jgdol-wrap .cta-btn:hover { color: #6b1a1a; transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+
+  @media (max-width: 640px) {
+    #jgdol-wrap .hero { padding: 36px 20px; }
+    #jgdol-wrap .cta { padding: 32px 20px; }
+  }
+</style>
+
+<div id="jgdol-wrap">
+
+  <!-- ═══ HERO ═══ -->
+  <div class="hero">
+    <div class="hero-badge">🏰 Atrakcje · Jelenia Góra i okolice</div>
+    <h1>Dolina Pałaców i Ogrodów</h1>
+    <p>Jeden z najpiękniejszych szlaków krajobrazowo-kulturowych w Polsce — dziesiątki pałaców, zamków i parków w Kotlinie Jeleniogórskiej. Sprawdź co warto zobaczyć.</p>
+    <a href="https://jeleniogorzanietomy.pl/" class="hero-cta">
+      📍 Odkryj atrakcje na mapie Jeleniej Góry
+    </a>
+  </div>
+
+  <!-- ═══ QUICK INFO ═══ -->
+  <div class="qi-grid">
+    <div class="qi-card">
+      <div class="qi-icon">🏰</div>
+      <div class="qi-label">Obiekty</div>
+      <div class="qi-val">Ponad 30 pałaców</div>
+    </div>
+    <div class="qi-card">
+      <div class="qi-icon">📍</div>
+      <div class="qi-label">Region</div>
+      <div class="qi-val">Kotlina Jeleniogórska</div>
+    </div>
+    <div class="qi-card">
+      <div class="qi-icon">🥾</div>
+      <div class="qi-label">Szlak</div>
+      <div class="qi-val">~80 km trasy</div>
+    </div>
+    <div class="qi-card">
+      <div class="qi-icon">📅</div>
+      <div class="qi-label">Najlepiej</div>
+      <div class="qi-val">Wiosna–jesień</div>
+    </div>
+  </div>
+
+  <!-- ═══ WSTĘP ═══ -->
+  <div class="section">
+    <h2>Czym jest Dolina Pałaców i Ogrodów?</h2>
+    <p>
+      <strong>Dolina Pałaców i Ogrodów</strong> to wyjątkowy szlak kulturowy i krajobrazowy rozciągający się w Kotlinie Jeleniogórskiej u podnóża Karkonoszy i Gór Izerskich. To jeden z największych i najlepiej zachowanych zespołów pałacowo-parkowych w Europie Środkowej, będący spuścizną pruskiej arystokracji i królewskich rodów, które w XIX wieku chętnie osiedlały się w malowniczej dolinie Bobru.
+    </p>
+    <p>
+      Dolina obejmuje ponad 30 pałaców, zamków, dworów i towarzyszących im ogrodów oraz parków krajobrazowych. Wiele obiektów jest dziś dostępnych dla zwiedzających — jako hotele, muzea, centra konferencyjne lub obiekty kultury. Dla miłośników historii, architektury i przyrody to cel sam w sobie.
+    </p>
+    <div class="highlight">
+      <p>Dolina Pałaców i Ogrodów jest częścią transgranicznego obszaru chronionego i stara się o wpis na Listę Światowego Dziedzictwa UNESCO — co najlepiej świadczy o jej wyjątkowości na skalę europejską.</p>
+    </div>
+  </div>
+
+  <!-- ═══ FILM ═══ -->
+  <div class="section">
+    <h2>Jelenia Góra i Dolina Pałaców — zobacz z lotu ptaka</h2>
+    <p>Film kanału <em>Polskie Szlaki – Inspirujące Pierniki</em> zabiera w podróż po Jeleniej Górze i najciekawszych zakątkach Doliny Pałaców i Ogrodów. Dobry punkt wyjścia przed planowaniem własnej wycieczki.</p>
+    <div class="video-wrap">
+      <iframe
+        src="https://www.youtube.com/embed/xpDyO1QqZLs"
+        title="JELENIA GÓRA pełna niespodzianek – Dolina Pałaców i Ogrodów"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        loading="lazy">
+      </iframe>
+    </div>
+    <p class="video-caption">Źródło: Polskie Szlaki – Inspirujące Pierniki (YouTube)</p>
+  </div>
+
+  <!-- ═══ PAŁACE ═══ -->
+  <div class="section">
+    <h2>Najważniejsze pałace i zamki w okolicach Jeleniej Góry</h2>
+    <p>Poniżej znajdziesz wybór najchętniej odwiedzanych i najbardziej spektakularnych obiektów w Dolinie Pałaców i Ogrodów.</p>
+
+    <div class="palace-grid">
+      <div class="palace-card">
+        <div class="palace-icon">🏰</div>
+        <div class="palace-name">Pałac Wojanów</div>
+        <div class="palace-loc">Wojanów, gm. Mysłakowice</div>
+        <div class="palace-desc">Jeden z najpiękniejszych pałaców w Dolinie — dziś luksusowy hotel i centrum konferencyjne. Romantyczne wnętrza, park krajobrazowy nad Bobrem, dostępny dla gości hotelowych i turystów.</div>
+      </div>
+      <div class="palace-card">
+        <div class="palace-icon">🏛️</div>
+        <div class="palace-name">Pałac Łomnica</div>
+        <div class="palace-loc">Łomnica, gm. Mysłakowice</div>
+        <div class="palace-desc">Zrewitalizowany pałac z browarem, restauracją i hotelem. Wyjątkowe miejsce łączące historię z nowoczesną gastronomią — lokalne piwo warzone na miejscu i muzeum pałacowe.</div>
+      </div>
+      <div class="palace-card">
+        <div class="palace-icon">🌿</div>
+        <div class="palace-name">Pałac Karpniki</div>
+        <div class="palace-loc">Karpniki, gm. Mysłakowice</div>
+        <div class="palace-desc">Neogotycki zamek zbudowany dla pruskiego następcy tronu Fryderyka Wilhelma. Dziś hotel w historycznych murach, otoczony rozległym parkiem krajobrazowym.</div>
+      </div>
+      <div class="palace-card">
+        <div class="palace-icon">🏯</div>
+        <div class="palace-name">Zamek Chojnik</div>
+        <div class="palace-loc">Sobieszów, Jelenia Góra</div>
+        <div class="palace-desc">Ruiny gotyckiego zamku na szczycie bazaltowego wzgórza z panoramicznym widokiem na Karkonosze i Kotlinę Jeleniogórską. Jeden z najpopularniejszych punktów widokowych w regionie.</div>
+      </div>
+      <div class="palace-card">
+        <div class="palace-icon">🌸</div>
+        <div class="palace-name">Pałac Mysłakowice</div>
+        <div class="palace-loc">Mysłakowice</div>
+        <div class="palace-desc">Dawna letnia rezydencja królów pruskich — Fryderyka Wilhelma III i IV. Pałac otoczony rozległym parkiem, częściowo dostępny. W pobliżu domki tyrolskie — osobliwość architektoniczna regionu.</div>
+      </div>
+      <div class="palace-card">
+        <div class="palace-icon">🌲</div>
+        <div class="palace-name">Pałac Staniszów</div>
+        <div class="palace-loc">Staniszów, gm. Jelenia Góra</div>
+        <div class="palace-desc">Klasycystyczny pałac z rozległym parkiem krajobrazowym. Jeden ze spokojniejszych obiektów Doliny — idealny na spacer z dala od turystycznych tłumów.</div>
+      </div>
+    </div>
+
+    <h3>Inne warte uwagi obiekty</h3>
+    <p>
+      Dolina skrywa znacznie więcej — <strong>Pałac Bobrów</strong> (dziś ośrodek wypoczynkowy nad Bobrem), <strong>Pałac Miłków</strong>, <strong>Zamek Wleń</strong> nieco dalej na północ, czy <strong>Pałac Paulinum w Sobieszowie</strong>. Każdy zakątek Kotliny Jeleniogórskiej kryje co najmniej kilka historycznych budowli.
+    </p>
+  </div>
+
+  <!-- ═══ PRAKTYCZNE INFO ═══ -->
+  <div class="section">
+    <h2>Jak zwiedzać Dolinę Pałaców i Ogrodów?</h2>
+
+    <h3>Samochodem</h3>
+    <p>
+      Najwygodniejszy sposób — pałace rozrzucone są na przestrzeni kilkudziesięciu kilometrów. Z Jeleniej Góry do Wojanowa jest ok. 15 km, do Łomnicy ok. 12 km. Drogi są dobrze oznakowane, a przy większości obiektów dostępne są miejsca parkingowe.
+    </p>
+
+    <h3>Na rowerze</h3>
+    <p>
+      Przez Dolinę przebiega szlak rowerowy wzdłuż Bobru. Trasa jest stosunkowo płaska i dostępna dla większości rowerzystów. Możliwość wypożyczenia roweru w Jeleniej Górze lub pobliskich miejscowościach.
+    </p>
+
+    <h3>Pieszo i komunikacją publiczną</h3>
+    <p>
+      Autobusy linii regionalnych łączą Jelenią Górę z Mysłakowicami, Wojanowem i innymi miejscowościami w dolinie. Rozkład jazdy warto sprawdzić w PKS lub na stronach gminy. Część tras pieszych można łączyć z powrotem kolejką lub autobusem.
+    </p>
+
+    <div class="tip-box">
+      <p><strong>💡 Wskazówka:</strong> Dolina Pałaców organizuje cykliczne wydarzenia — Święto Kwitnącej Magnolii, otwarte dni pałaców, koncerty plenerowe. Warto sprawdzić kalendarz wydarzeń przed wizytą — często można wejść do obiektów normalnie zamkniętych dla zwiedzających.</p>
+    </div>
+  </div>
+
+  <!-- ═══ TAGI ═══ -->
+  <div class="tags">
+    <span class="tag">Dolina Pałaców i Ogrodów</span>
+    <span class="tag">pałace Kotlina Jeleniogórska</span>
+    <span class="tag">Pałac Wojanów</span>
+    <span class="tag">Pałac Łomnica</span>
+    <span class="tag">Pałac Karpniki</span>
+    <span class="tag">Zamek Chojnik</span>
+    <span class="tag">atrakcje turystyczne Jelenia Góra</span>
+    <span class="tag">co zobaczyć Jelenia Góra</span>
+    <span class="tag">Karkonosze zabytki</span>
+    <span class="tag">wycieczka Jelenia Góra okolice</span>
+  </div>
+
+  <!-- ═══ CTA ═══ -->
+  <div class="cta">
+    <h2>Planuj wizytę z mapą Jeleniej Góry</h2>
+    <p>Restauracje, atrakcje, zamki i miejsca warte odwiedzenia — wszystko w jednym miejscu na interaktywnej mapie.</p>
+    <a href="https://jeleniogorzanietomy.pl/" class="cta-btn">
+      🗺️ Otwórz mapę Jeleniej Góry
+    </a>
+  </div>
+
+</div>
