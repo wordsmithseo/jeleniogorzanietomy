@@ -2632,22 +2632,19 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 
   /* Modal adjustments for mobile.
-     top is handled universally in the base .jg-modal-bg rule above.
-     padding-top creates a visible gap between the nav bar and the modal top.
-     padding-bottom uses env(safe-area-inset-bottom) so the modal won't hide
-     behind a browser address bar pinned to the bottom of the screen.
-     On mobile the modal scrolls as a single block (overflow: auto) — the
-     flex/overflow:hidden desktop rule is overridden here. */
+     Symmetric padding on the backdrop gives equal gap above (from nav bar)
+     and below (to viewport bottom). position:fixed + bottom:0 always aligns
+     to the visual viewport so no env(safe-area-inset-bottom) hacks needed.
+     On mobile the modal scrolls as a single block — the flex/overflow:hidden
+     desktop rule is overridden here. */
   .jg-modal-bg {
-    padding: 12px 10px !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 12px), 52px) !important;
+    padding: 14px !important;
   }
 
   .jg-modal {
     overflow: auto !important; /* override the flex/hidden desktop rule */
     display: block !important;
-    max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 12px - max(calc(env(safe-area-inset-bottom, 0px) + 12px), 52px));
-    max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 100px); /* fallback – generous bottom margin for browsers that report full vh */
+    max-height: 100% !important; /* same equal-gap logic as desktop */
   }
 
   /* Modal header - allow wrapping for badges but hide X from flex */
@@ -2977,8 +2974,10 @@ body.jg-modal-open {
   display: none;
   position: fixed;
   inset: 0;
-  /* Always start below the nav bar — variable is set for all screen widths by JS.
-     Falls back to 52px (nav bar height) until JS sets the real value. */
+  /* Always start below the nav bar. Variable is set for all screen widths by JS.
+     Falls back to 52px until JS sets the real value.
+     With padding equal on all sides the modal is always centred with
+     identical gap above (from nav bar) and below (to viewport bottom). */
   top: var(--jg-nav-bottom, 52px);
   background: rgba(0, 0, 0, 0.45);
   align-items: center;
@@ -2991,14 +2990,15 @@ body.jg-modal-open {
   background: #fff;
   color: #111;
   width: min(900px, 96vw);
-  /* Max-height respects the space below the nav bar */
-  max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 36px);
-  max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 36px); /* fallback */
+  /* 100% of the backdrop's content-box height (total height minus padding).
+     Because padding is equal top/bottom this produces identical visual gaps
+     above and below the modal no matter what the content height is. */
+  max-height: 100%;
   border-radius: 12px;
   padding: 14px;
-  /* overflow: hidden keeps the scrollbar inside the rounded corners on desktop;
-     the inner content div (.jg-grid / form) carries overflow-y: auto via the
-     flex rule below. On mobile the more specific rule in the media query overrides. */
+  /* overflow: hidden keeps the scrollbar inside rounded corners on desktop;
+     inner content div carries overflow-y: auto via the flex rule below.
+     On mobile the media query overrides back to auto + block. */
   overflow: hidden;
   display: flex;
   flex-direction: column;
