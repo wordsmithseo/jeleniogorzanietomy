@@ -2632,21 +2632,20 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 
   /* Modal adjustments for mobile.
-     --jg-nav-bottom is set by JS (jgUpdateNavBottom) and equals the actual
-     bottom edge of #jg-nav-bar in viewport coords.  When the info bar is
-     visible the nav bar is pushed down, so the variable is > 52px and the
-     modal starts below it.  Falls back to 52px if JS hasn't run yet.
+     top is handled universally in the base .jg-modal-bg rule above.
      padding-top creates a visible gap between the nav bar and the modal top.
      padding-bottom uses env(safe-area-inset-bottom) so the modal won't hide
-     behind a browser address bar pinned to the bottom of the screen. */
+     behind a browser address bar pinned to the bottom of the screen.
+     On mobile the modal scrolls as a single block (overflow: auto) — the
+     flex/overflow:hidden desktop rule is overridden here. */
   .jg-modal-bg {
-    top: var(--jg-nav-bottom, 52px) !important;
     padding: 12px 10px !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 12px), 52px) !important;
   }
 
   .jg-modal {
-    position: relative;
+    overflow: auto !important; /* override the flex/hidden desktop rule */
+    display: block !important;
     max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 12px - max(calc(env(safe-area-inset-bottom, 0px) + 12px), 52px));
     max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 100px); /* fallback – generous bottom margin for browsers that report full vh */
   }
@@ -2978,6 +2977,9 @@ body.jg-modal-open {
   display: none;
   position: fixed;
   inset: 0;
+  /* Always start below the nav bar — variable is set for all screen widths by JS.
+     Falls back to 52px (nav bar height) until JS sets the real value. */
+  top: var(--jg-nav-bottom, 52px);
   background: rgba(0, 0, 0, 0.45);
   align-items: center;
   justify-content: center;
@@ -2989,10 +2991,33 @@ body.jg-modal-open {
   background: #fff;
   color: #111;
   width: min(900px, 96vw);
-  max-height: 85vh;
+  /* Max-height respects the space below the nav bar */
+  max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 36px);
+  max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 36px); /* fallback */
   border-radius: 12px;
   padding: 14px;
-  overflow: auto;
+  /* overflow: hidden keeps the scrollbar inside the rounded corners on desktop;
+     the inner content div (.jg-grid / form) carries overflow-y: auto via the
+     flex rule below. On mobile the more specific rule in the media query overrides. */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Desktop: header is pinned via flex (no scroll needed), content scrolls inside */
+@media (min-width: 769px) {
+  .jg-modal header {
+    flex-shrink: 0;
+    /* Keep sticky as a safety net but flex already keeps it at the top */
+  }
+
+  /* Every direct child of .jg-modal that is not a header becomes the scrollable body.
+     min-height: 0 is required so a flex child can shrink below its content size. */
+  .jg-modal > *:not(header):not(.jg-ranking-header) {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
 }
 
 .jg-modal header {
