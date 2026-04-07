@@ -65,12 +65,13 @@
   all: unset !important;
   display: flex !important;         /* row; track + button side-by-side */
   align-items: stretch !important;  /* both children fill the bar height */
-  position: relative !important;
+  position: sticky !important;
+  top: 0 !important;
   width: 100% !important;
   background: #f3f4f6 !important;
   border-bottom: 1px solid #e2e4e7 !important;
   overflow: hidden !important;
-  z-index: 9997 !important;
+  z-index: 100000 !important;
   box-sizing: border-box !important;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
 }
@@ -203,7 +204,7 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
 /* ── Custom Top Bar - Fixed at top of page */
 .jg-custom-top-bar {
   position: sticky;
-  top: 0;
+  top: var(--jg-info-bar-h, 0px);
   left: 0;
   right: 0;
   background: #8d2324;
