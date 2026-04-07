@@ -228,16 +228,21 @@ class JG_Map_Banner_Manager {
             return false; // Not a unique impression
         }
 
-        // Insert new unique impression record
-        $wpdb->insert(
-            $impressions_table,
-            array(
-                'banner_id' => $banner_id,
-                'user_fingerprint' => $fingerprint,
-                'viewed_at' => $now
-            ),
-            array('%d', '%s', '%s')
+        // Insert new unique impression record (IGNORE prevents duplicate key errors
+        // if cron hasn't yet cleaned up the previous record older than 24h)
+        $inserted = $wpdb->query(
+            $wpdb->prepare(
+                "INSERT IGNORE INTO $impressions_table (banner_id, user_fingerprint, viewed_at) VALUES (%d, %s, %s)",
+                $banner_id,
+                $fingerprint,
+                $now
+            )
         );
+
+        // Only increment counter if a new row was actually inserted
+        if (!$inserted) {
+            return false;
+        }
 
         // Increment counter in main table
         $result = $wpdb->query(
