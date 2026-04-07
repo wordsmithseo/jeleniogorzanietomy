@@ -3004,11 +3004,18 @@ body.jg-modal-open {
   flex-direction: column;
 }
 
-/* Desktop: header is pinned via flex (no scroll needed), content scrolls inside */
+/* Desktop: header is pinned via flex (no scroll needed), content scrolls inside.
+   max-height: 100% does not resolve reliably when the element is simultaneously
+   a flex item AND a flex container (nested flex), so an explicit calc() is used.
+   The backdrop has padding: 18px on all sides → gap = 18px top AND bottom. */
 @media (min-width: 769px) {
+  .jg-modal {
+    max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 36px);
+    max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 36px); /* fallback */
+  }
+
   .jg-modal header {
     flex-shrink: 0;
-    /* Keep sticky as a safety net but flex already keeps it at the top */
   }
 
   /* Every direct child of .jg-modal that is not a header becomes the scrollable body.
