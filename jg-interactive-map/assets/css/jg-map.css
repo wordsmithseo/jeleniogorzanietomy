@@ -2635,15 +2635,20 @@ body.jg-fullscreen-active .jg-fs-top-controls {
      --jg-nav-bottom is set by JS (jgUpdateNavBottom) and equals the actual
      bottom edge of #jg-nav-bar in viewport coords.  When the info bar is
      visible the nav bar is pushed down, so the variable is > 52px and the
-     modal starts below it.  Falls back to 52px if JS hasn't run yet. */
+     modal starts below it.  Falls back to 52px if JS hasn't run yet.
+     padding-top creates a visible gap between the nav bar and the modal top.
+     padding-bottom uses env(safe-area-inset-bottom) so the modal won't hide
+     behind a browser address bar pinned to the bottom of the screen. */
   .jg-modal-bg {
     top: var(--jg-nav-bottom, 52px) !important;
+    padding: 12px 10px !important;
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 12px), 52px) !important;
   }
 
   .jg-modal {
     position: relative;
-    max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 36px);
-    max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 36px); /* fallback */
+    max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 12px - max(calc(env(safe-area-inset-bottom, 0px) + 12px), 52px));
+    max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 100px); /* fallback – generous bottom margin for browsers that report full vh */
   }
 
   /* Modal header - allow wrapping for badges but hide X from flex */
@@ -3411,6 +3416,7 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   background: linear-gradient(90deg, #fff7e6, #fef3c7);
   border-bottom-color: #f7d899;
 }
+
 
 /* Buttons - base styles */
 .jg-btn {
