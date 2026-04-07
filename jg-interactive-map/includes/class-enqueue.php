@@ -725,8 +725,8 @@ class JG_Map_Enqueue {
                     infoBarH = ibStyle.display === 'none' ? 0 : Math.round(infoBarEl.offsetHeight);
                 }
                 document.documentElement.style.setProperty('--jg-info-bar-h', infoBarH + 'px');
-                /* --jg-nav-bottom: actual viewport bottom-edge of the nav bar — mobile only */
-                if (window.innerWidth <= 768 && navBarEl) {
+                /* --jg-nav-bottom: actual viewport bottom-edge of the nav bar — all widths */
+                if (navBarEl) {
                     var bottom = Math.round(navBarEl.getBoundingClientRect().bottom);
                     document.documentElement.style.setProperty('--jg-nav-bottom', bottom + 'px');
                 }
