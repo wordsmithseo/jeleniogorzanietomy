@@ -2277,6 +2277,23 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         return text.charAt(0).toUpperCase() + text.slice(1);
       }
 
+      // Measure nav bar position and apply backdrop top + modal max-height
+      // as inline styles so they are guaranteed to override any CSS rules.
+      // Equal gap (gap px) above and below the modal.
+      function jgFitModal(bg, c) {
+        if (!bg || !c) return;
+        var navBar = document.getElementById('jg-nav-bar');
+        var navBottom = navBar ? Math.round(navBar.getBoundingClientRect().bottom) : 52;
+        var isMobile = window.innerWidth <= 768;
+        var gap = isMobile ? 14 : 18;
+        bg.style.top = navBottom + 'px';
+        // Lightbox has its own size constraints; skip max-height for it
+        if (!c.classList.contains('jg-lightbox')) {
+          var available = window.innerHeight - navBottom - gap * 2;
+          c.style.maxHeight = Math.max(available, 100) + 'px';
+        }
+      }
+
       function open(bg, html, opts) {
         if (!bg) return;
         var c = qs('.jg-modal, .jg-lightbox', bg);
@@ -2289,6 +2306,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         }
         c.innerHTML = html;
         bg.style.display = 'flex';
+        jgFitModal(bg, c);
         lockBodyScroll();
 
         // Update URL in browser address bar if opening point detail modal
@@ -2337,7 +2355,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           if (!c.classList.contains('jg-modal') && !c.classList.contains('jg-lightbox')) {
             c.className = 'jg-modal';
           }
+          c.style.maxHeight = ''; // clear inline max-height set by jgFitModal
         }
+        bg.style.top = '';        // clear inline top set by jgFitModal
         bg.style.display = 'none';
 
         // Reset URL to homepage when closing point detail modal
