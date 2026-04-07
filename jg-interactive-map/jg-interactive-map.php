@@ -529,7 +529,8 @@ class JG_Interactive_Map {
             $wpdb->prepare(
                 "SELECT id, title, slug, content, excerpt, lat, lng, address, type, category, status,
                         author_id, is_promo, website, phone, images, featured_image_index,
-                        facebook_url, instagram_url, linkedin_url, tiktok_url, tags, opening_hours, created_at, updated_at
+                        facebook_url, instagram_url, linkedin_url, tiktok_url, tags, opening_hours, created_at, updated_at,
+                        seo_canonical, seo_noindex
                  FROM $table
                  WHERE slug = %s AND status = 'publish'
                  LIMIT 1",
