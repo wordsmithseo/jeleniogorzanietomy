@@ -2148,6 +2148,11 @@ class JG_Interactive_Map {
             $robots_content = 'noindex, nofollow';
         }
 
+        // Admin-set noindex override (e.g. for cannibalizing pins)
+        if (!empty($point['seo_noindex'])) {
+            $robots_content = 'noindex, follow';
+        }
+
         $images = json_decode($point['images'], true) ?: array();
 
         // Get featured image (or first image as fallback) - ensure it's a full URL
@@ -2298,7 +2303,7 @@ class JG_Interactive_Map {
         <meta name="ICBM" content="<?php echo esc_attr($point['lat'] . ', ' . $point['lng']); ?>">
 
         <!-- Canonical URL -->
-        <link rel="canonical" href="<?php echo esc_url($url); ?>">
+        <link rel="canonical" href="<?php echo esc_url(!empty($point['seo_canonical']) ? $point['seo_canonical'] : $url); ?>">
 
         <!-- Schema.org JSON-LD structured data -->
         <?php
