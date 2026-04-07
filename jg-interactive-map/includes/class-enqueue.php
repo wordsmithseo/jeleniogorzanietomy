@@ -61,6 +61,11 @@ class JG_Map_Enqueue {
         add_action('template_redirect', array($this, 'handle_email_activation'));
         add_action('template_redirect', array($this, 'handle_password_reset'));
 
+        // Redirect unauthenticated users away from /wp-admin/ before WordPress
+        // tries to show a login form or 404 — fires early on init so it catches
+        // non-logged-in requests before auth_redirect() or admin_init run.
+        add_action('init', array($this, 'redirect_unauthenticated_wp_admin'), 1);
+
         // Block non-admin users from accessing /wp-admin/
         add_action('admin_init', array($this, 'block_non_admin_access'));
 
@@ -89,6 +94,33 @@ class JG_Map_Enqueue {
      */
     public function hide_admin_bar_for_users() {
         show_admin_bar(false);
+    }
+
+    /**
+     * Redirect unauthenticated visitors away from /wp-admin/ to the home page.
+     * Fires at init (priority 1) so it catches the request before WordPress
+     * issues its own wp-login.php redirect or any 404 handling kicks in.
+     * AJAX and Cron requests are excluded so they can proceed normally.
+     */
+    public function redirect_unauthenticated_wp_admin() {
+        if (!is_admin()) {
+            return;
+        }
+
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            return;
+        }
+
+        if (defined('DOING_CRON') && DOING_CRON) {
+            return;
+        }
+
+        if (is_user_logged_in()) {
+            return;
+        }
+
+        wp_safe_redirect(home_url('/'));
+        exit;
     }
 
     /**
