@@ -2407,11 +2407,6 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     z-index: 100000 !important;
   }
 
-  /* ── White nav bar: sticks just below the info bar ── */
-  #jg-nav-bar {
-    top: var(--jg-info-bar-h, 0px) !important;
-  }
-
   /* Top bar mobile responsive — styled to match .jg-mobile-user-panel on the map page */
   .jg-custom-top-bar {
     padding: 8px 12px;
@@ -2461,7 +2456,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
   #jg-ranking-btn    { order: 3 !important; }
   #jg-edit-profile-btn { order: 4 !important; margin-left: 0 !important; }
-  .jg-top-bar-btn-admin { order: 5 !important; }
+  /* .jg-top-bar-btn-admin order is set in the higher-specificity rule below */
   a.jg-top-bar-btn[title="Wyloguj"] { order: 6 !important; }
   #jg-auth-btn       { order: 3 !important; }
 
@@ -2502,12 +2497,13 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   .jg-custom-top-bar .jg-top-bar-btn:active {
     background: rgba(255,255,255,0.18) !important;
   }
-  /* Admin button: transparent bg (no gold), icon stays gold */
+  /* Admin button: transparent bg (no gold), icon stays gold, correct order */
   .jg-custom-top-bar .jg-top-bar-btn-admin {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     color: #fbbf24 !important;
+    order: 5 !important; /* (0,2,0) beats all:unset on .jg-top-bar-btn (0,2,0) by source order */
   }
   /* Remove legacy ::before pseudo-elements — replaced by SVG icons */
   .jg-custom-top-bar .jg-top-bar-btn::before,
@@ -8527,6 +8523,15 @@ button.jg-mobile-map-filter-btn {
   }
   #jg-nav-overlay {
     display: none !important;
+  }
+}
+
+/* ── Mobile: #jg-nav-bar sticks just below the info bar.
+   Must appear AFTER the base #jg-nav-bar { top: 0 !important } rule above
+   so that this later declaration wins the !important + equal-specificity tie. ── */
+@media (max-width: 768px) {
+  #jg-nav-bar {
+    top: var(--jg-info-bar-h, 0px) !important;
   }
 }
 
