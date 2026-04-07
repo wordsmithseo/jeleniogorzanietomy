@@ -1,0 +1,473 @@
+<!-- ============================================================
+     STRONA PROJEKTU – JeleniogorzaNieTomy.pl
+     WordsmithSEO.pl
+     Wklej całą zawartość do widgetu "HTML" w Elementorze
+
+     ╔══════════════════════════════════════════════════════════════╗
+     ║  META DANE – wklej w Yoast SEO / RankMath dla tej strony   ║
+     ╚══════════════════════════════════════════════════════════════╝
+
+     ── TYTUŁ STRONY (Yoast → "SEO Title") ──────────────────────
+     Interaktywna mapa Jeleniej Góry – restauracje, atrakcje, miejsca
+
+     ── META DESCRIPTION (max 160 znaków) ────────────────────────
+     JeleniogorzaNieTomy.pl to interaktywna mapa Jeleniej Góry –
+     restauracje, atrakcje turystyczne, galerie i miejsca warte
+     odwiedzenia. Odkryj miasto z mapą.
+
+     ── CANONICAL URL ────────────────────────────────────────────
+     https://wordsmithseo.pl/projekty/jeleniogorzanietomy/
+     (dostosuj do faktycznego URL na wordsmithseo.pl)
+
+     ── OPEN GRAPH (Yoast → "Social") ────────────────────────────
+     og:title       Interaktywna mapa Jeleniej Góry – JeleniogorzaNieTomy.pl
+     og:description Mapa restauracji, atrakcji i miejsc w Jeleniej Górze.
+                    Projekt SEO i development: Wordsmith SEO.
+     og:type        article
+     og:locale      pl_PL
+
+     ── TARGET KEYWORDS ──────────────────────────────────────────
+     • interaktywna mapa jelenia góra
+     • mapa restauracji jelenia góra
+     • mapa atrakcji jelenia góra
+     • mapa gastronomii jelenia góra
+     • jelenia góra co zobaczyć mapa
+     • jelenia góra przewodnik miejsca
+     • jeleniagorzanietomy
+     ============================================================ -->
+
+<style>
+  #jgproj-wrap {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: #111827;
+    line-height: 1.7;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  #jgproj-wrap * { box-sizing: border-box; }
+  #jgproj-wrap a { color: #1d4ed8; }
+  #jgproj-wrap a:hover { color: #1e3a8a; }
+
+  /* ── Hero ── */
+  #jgproj-wrap .hero {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%);
+    border-radius: 16px;
+    padding: 56px 40px;
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  #jgproj-wrap .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  #jgproj-wrap .hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 5px 16px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  #jgproj-wrap .hero h1 {
+    font-size: clamp(24px, 4.5vw, 40px);
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 16px;
+    line-height: 1.2;
+    position: relative;
+  }
+  #jgproj-wrap .hero p {
+    font-size: 17px;
+    color: rgba(255,255,255,0.88);
+    max-width: 600px;
+    margin: 0 auto 32px;
+    position: relative;
+  }
+  #jgproj-wrap .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    color: #1d4ed8;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px 28px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+    position: relative;
+  }
+  #jgproj-wrap .hero-cta:hover {
+    color: #1e3a8a;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+
+  /* ── Stats grid ── */
+  #jgproj-wrap .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin-bottom: 44px;
+  }
+  #jgproj-wrap .stat-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  #jgproj-wrap .stat-num {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1d4ed8;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  #jgproj-wrap .stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #9ca3af;
+  }
+
+  /* ── Sections ── */
+  #jgproj-wrap .section { margin-bottom: 44px; }
+  #jgproj-wrap .section h2 {
+    font-size: 23px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #1d4ed8;
+  }
+  #jgproj-wrap .section h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin: 24px 0 10px;
+  }
+  #jgproj-wrap .section p {
+    font-size: 15px;
+    color: #374151;
+    margin: 0 0 14px;
+    line-height: 1.8;
+  }
+
+  /* ── Category cards ── */
+  #jgproj-wrap .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin: 20px 0 8px;
+  }
+  #jgproj-wrap .cat-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px 18px;
+    background: #f8fafc;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  #jgproj-wrap .cat-card:hover {
+    border-color: #1d4ed8;
+    box-shadow: 0 4px 14px rgba(29,78,216,.1);
+  }
+  #jgproj-wrap .cat-icon { font-size: 28px; margin-bottom: 8px; }
+  #jgproj-wrap .cat-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 5px;
+  }
+  #jgproj-wrap .cat-desc {
+    font-size: 12.5px;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+
+  /* ── Feature list ── */
+  #jgproj-wrap .feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 10px;
+  }
+  #jgproj-wrap .feature-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14.5px;
+    color: #374151;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+  #jgproj-wrap .feature-list li span { flex-shrink: 0; font-size: 18px; }
+
+  /* ── Highlight box ── */
+  #jgproj-wrap .highlight {
+    background: #eff6ff;
+    border-left: 4px solid #1d4ed8;
+    border-radius: 0 12px 12px 0;
+    padding: 18px 22px;
+    margin: 24px 0;
+  }
+  #jgproj-wrap .highlight p {
+    margin: 0;
+    font-size: 14.5px;
+    color: #1e40af;
+    font-style: italic;
+  }
+
+  /* ── Tags ── */
+  #jgproj-wrap .tags { display: flex; flex-wrap: wrap; gap: 7px; margin: 16px 0; }
+  #jgproj-wrap .tag {
+    background: #e0e7ff;
+    color: #3730a3;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  /* ── Result bar ── */
+  #jgproj-wrap .result-bar {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin: 14px 0;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+  #jgproj-wrap .result-bar-icon { font-size: 26px; flex-shrink: 0; }
+  #jgproj-wrap .result-bar-label { font-size: 13px; font-weight: 700; color: #111827; margin-bottom: 2px; }
+  #jgproj-wrap .result-bar-sub { font-size: 12px; color: #6b7280; }
+
+  /* ── CTA ── */
+  #jgproj-wrap .cta {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+    border-radius: 16px;
+    padding: 52px 40px;
+    text-align: center;
+    margin-top: 44px;
+  }
+  #jgproj-wrap .cta h2 { font-size: 24px; font-weight: 800; color: #fff; margin: 0 0 12px; }
+  #jgproj-wrap .cta p {
+    font-size: 16px;
+    color: rgba(255,255,255,.88);
+    margin: 0 auto 28px;
+    max-width: 520px;
+  }
+  #jgproj-wrap .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  #jgproj-wrap .cta-btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #fff; color: #1d4ed8;
+    font-size: 14px; font-weight: 800;
+    padding: 14px 28px; border-radius: 10px;
+    text-decoration: none; transition: transform .15s, box-shadow .15s;
+  }
+  #jgproj-wrap .cta-btn-primary:hover { color: #1e3a8a; transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+  #jgproj-wrap .cta-btn-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.15); color: #fff;
+    font-size: 14px; font-weight: 700;
+    padding: 14px 28px; border-radius: 10px;
+    text-decoration: none; border: 2px solid rgba(255,255,255,.4);
+    transition: background .15s;
+  }
+  #jgproj-wrap .cta-btn-secondary:hover { background: rgba(255,255,255,.25); color: #fff; }
+
+  @media (max-width: 640px) {
+    #jgproj-wrap .hero { padding: 40px 20px; }
+    #jgproj-wrap .cta { padding: 36px 20px; }
+    #jgproj-wrap .result-bar { flex-direction: column; gap: 10px; text-align: center; }
+  }
+</style>
+
+<div id="jgproj-wrap">
+
+  <!-- ═══ HERO ═══ -->
+  <div class="hero">
+    <div class="hero-badge">📍 Projekt Wordsmith SEO</div>
+    <h1>Interaktywna mapa<br>Jeleniej Góry</h1>
+    <p>JeleniogorzaNieTomy.pl — kompletny przewodnik po Jeleniej Górze. Restauracje, atrakcje turystyczne, galerie handlowe i dziesiątki miejsc wartych odwiedzenia — wszystko na jednej mapie.</p>
+    <a href="https://jeleniogorzanietomy.pl/" class="hero-cta" target="_blank" rel="noopener">
+      🗺️ Otwórz mapę Jeleniej Góry
+    </a>
+  </div>
+
+  <!-- ═══ STATSY ═══ -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-num">45+</div>
+      <div class="stat-label">fraz w TOP 10</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">300+</div>
+      <div class="stat-label">kliknięć miesięcznie</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">150+</div>
+      <div class="stat-label">miejsc na mapie</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">3 mies.</div>
+      <div class="stat-label">od 0 do widoczności</div>
+    </div>
+  </div>
+
+  <!-- ═══ O PROJEKCIE ═══ -->
+  <div class="section">
+    <h2>Czym jest JeleniogorzaNieTomy.pl?</h2>
+    <p>
+      <strong>JeleniogorzaNieTomy.pl</strong> to interaktywna mapa Jeleniej Góry tworzona z myślą o mieszkańcach i turystach szukających rzetelnych informacji o mieście. Projekt łączy w sobie funkcję lokalnego przewodnika, mapy gastronomii i katalogu atrakcji — wszystko dostępne online, bez zbędnych aplikacji.
+    </p>
+    <p>
+      Każde miejsce na mapie to pinezka z pełnymi informacjami: adres, godziny otwarcia, menu (w przypadku restauracji), galeria zdjęć i opcja oceniania przez użytkowników. Mapa Jeleniej Góry jest stale rozbudowywana — nowe miejsca pojawiają się regularnie.
+    </p>
+    <div class="highlight">
+      <p>Projekt ruszył w początku 2026 roku. W ciągu 10 tygodni serwis trafił do TOP 10 dla 45 fraz lokalnych — bez żadnych linków zewnętrznych, wyłącznie dzięki strukturze treści i optymalizacji technicznej.</p>
+    </div>
+  </div>
+
+  <!-- ═══ KATEGORIE ═══ -->
+  <div class="section">
+    <h2>Co znajdziesz na mapie Jeleniej Góry?</h2>
+    <p>Mapa Jeleniej Góry obejmuje wszystkie kluczowe kategorie miejsc w mieście i okolicach — od gastronomii po atrakcje turystyczne i usługi codzienne.</p>
+
+    <div class="cat-grid">
+      <div class="cat-card">
+        <div class="cat-icon">🍕</div>
+        <div class="cat-title">Restauracje i gastronomia</div>
+        <div class="cat-desc">Mapa restauracji Jeleniej Góry — pizzerie, kuchnia azjatycka, polska, włoska i wiele innych. Menu online, godziny, dojazd.</div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon">🏰</div>
+        <div class="cat-title">Atrakcje turystyczne</div>
+        <div class="cat-desc">Zamek Chojnik, wieże widokowe, parki, zabytki i miejsca warte zobaczenia w Jeleniej Górze i Karkonoszach.</div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon">🛍️</div>
+        <div class="cat-title">Galerie i sklepy</div>
+        <div class="cat-desc">Pasaż Górski, Galeria Goduszyn, Galeria Sudecka — lista sklepów, godziny otwarcia i dojazd.</div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon">☕</div>
+        <div class="cat-title">Kawiarnie i bary</div>
+        <div class="cat-desc">Najlepsze kawiarnie w Jeleniej Górze — miejsca na spokojną kawę, spotkania biznesowe i weekendowy wypad.</div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon">🏥</div>
+        <div class="cat-title">Zdrowie i usługi</div>
+        <div class="cat-desc">Przychodnie, apteki całodobowe, gabinety lekarskie i inne punkty usługowe w Jeleniej Górze.</div>
+      </div>
+      <div class="cat-card">
+        <div class="cat-icon">💡</div>
+        <div class="cat-title">Ciekawostki lokalne</div>
+        <div class="cat-desc">Mniej znane miejsca, historia dzielnicy, nieoczywiste punkty na mapie — dla tych, którzy chcą poznać miasto głębiej.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FUNKCJE MAPY ═══ -->
+  <div class="section">
+    <h2>Jak działa interaktywna mapa?</h2>
+    <p>Mapa Jeleniej Góry to nie statyczna strona — to żywy serwis z funkcjami społecznościowymi i regularnie aktualizowanymi danymi.</p>
+
+    <ul class="feature-list">
+      <li><span>📍</span> Pinezki z pełnymi informacjami o każdym miejscu</li>
+      <li><span>🕐</span> Aktualne godziny otwarcia restauracji i sklepów</li>
+      <li><span>🍽️</span> Menu online dla lokali gastronomicznych</li>
+      <li><span>📸</span> Galerie zdjęć dodawane przez społeczność</li>
+      <li><span>⭐</span> System ocen i głosowania użytkowników</li>
+      <li><span>🔍</span> Wyszukiwanie według kategorii i lokalizacji</li>
+      <li><span>📱</span> W pełni responsywna — działa na każdym urządzeniu</li>
+      <li><span>🗺️</span> Integracja z OpenStreetMap — dokładna nawigacja</li>
+    </ul>
+  </div>
+
+  <!-- ═══ WYNIKI SEO ═══ -->
+  <div class="section">
+    <h2>Wyniki organiczne — od zera do widoczności</h2>
+    <p>
+      JeleniogorzaNieTomy.pl to projekt budowany od podstaw przez Wordsmith SEO — zarówno od strony technicznej (własna wtyczka WordPress z interaktywną mapą), jak i contentowej. Poniżej wybrane wyniki organiczne z Google Search Console.
+    </p>
+
+    <div class="result-bar">
+      <div class="result-bar-icon">🔍</div>
+      <div>
+        <div class="result-bar-label">Pasaż Górski Jelenia Góra — pozycja 3</div>
+        <div class="result-bar-sub">CTR 15,7% · 102 wyświetlenia miesięcznie · TOP 3 organicznie</div>
+      </div>
+    </div>
+    <div class="result-bar">
+      <div class="result-bar-icon">🔍</div>
+      <div>
+        <div class="result-bar-label">Galeria Goduszyn — pozycja 5</div>
+        <div class="result-bar-sub">CTR 8,8% · 125 wyświetleń miesięcznie</div>
+      </div>
+    </div>
+    <div class="result-bar">
+      <div class="result-bar-icon">🔍</div>
+      <div>
+        <div class="result-bar-label">Just Cowork Jelenia Góra — pozycja 4</div>
+        <div class="result-bar-sub">CTR 14,4% · 208 wyświetleń miesięcznie</div>
+      </div>
+    </div>
+    <div class="result-bar">
+      <div class="result-bar-icon">📈</div>
+      <div>
+        <div class="result-bar-label">45+ fraz w TOP 10 po 10 tygodniach</div>
+        <div class="result-bar-sub">Wzrost z 0 do 45 fraz w TOP 10 bez linków zewnętrznych</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAGI ═══ -->
+  <div class="tags">
+    <span class="tag">interaktywna mapa Jelenia Góra</span>
+    <span class="tag">mapa restauracji Jelenia Góra</span>
+    <span class="tag">atrakcje Jelenia Góra</span>
+    <span class="tag">gdzie zjeść Jelenia Góra</span>
+    <span class="tag">mapa gastronomii</span>
+    <span class="tag">Pasaż Górski</span>
+    <span class="tag">Galeria Goduszyn</span>
+    <span class="tag">Zamek Chojnik</span>
+    <span class="tag">co zobaczyć Jelenia Góra</span>
+    <span class="tag">przewodnik Jelenia Góra</span>
+    <span class="tag">local SEO</span>
+    <span class="tag">Wordsmith SEO</span>
+  </div>
+
+  <!-- ═══ CTA ═══ -->
+  <div class="cta">
+    <h2>Odkryj Jelenią Górę na mapie</h2>
+    <p>Ponad 150 miejsc — restauracje, atrakcje, galerie handlowe, usługi i ciekawostki. Wszystko na jednej interaktywnej mapie.</p>
+    <div class="cta-btns">
+      <a href="https://jeleniogorzanietomy.pl/" class="cta-btn-primary" target="_blank" rel="noopener">
+        🗺️ Otwórz mapę Jeleniej Góry
+      </a>
+      <a href="https://wordsmithseo.pl/kontakt/" class="cta-btn-secondary">
+        ✉️ Zapytaj o podobny projekt
+      </a>
+    </div>
+  </div>
+
+</div>
