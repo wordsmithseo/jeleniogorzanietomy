@@ -2633,18 +2633,10 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 
   /* Modal adjustments for mobile.
      Symmetric padding on the backdrop gives equal gap above (from nav bar)
-     and below (to viewport bottom). position:fixed + bottom:0 always aligns
-     to the visual viewport so no env(safe-area-inset-bottom) hacks needed.
-     On mobile the modal scrolls as a single block — the flex/overflow:hidden
-     desktop rule is overridden here. */
+     and below (to viewport bottom). max-height is set via inline style by
+     jgFitModal() so the CSS value is just a fallback. */
   .jg-modal-bg {
     padding: 14px !important;
-  }
-
-  .jg-modal {
-    overflow: auto !important; /* override the flex/hidden desktop rule */
-    display: block !important;
-    max-height: 100% !important; /* same equal-gap logic as desktop */
   }
 
   /* Modal header - allow wrapping for badges but hide X from flex */
@@ -2990,41 +2982,12 @@ body.jg-modal-open {
   background: #fff;
   color: #111;
   width: min(900px, 96vw);
-  /* 100% of the backdrop's content-box height (total height minus padding).
-     Because padding is equal top/bottom this produces identical visual gaps
-     above and below the modal no matter what the content height is. */
-  max-height: 100%;
+  /* max-height is set as an inline style by jgFitModal() in jg-map.js at
+     open-time, so the CSS value here is just a safe fallback. */
+  max-height: 85vh;
   border-radius: 12px;
   padding: 14px;
-  /* overflow: hidden keeps the scrollbar inside rounded corners on desktop;
-     inner content div carries overflow-y: auto via the flex rule below.
-     On mobile the media query overrides back to auto + block. */
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Desktop: header is pinned via flex (no scroll needed), content scrolls inside.
-   max-height: 100% does not resolve reliably when the element is simultaneously
-   a flex item AND a flex container (nested flex), so an explicit calc() is used.
-   The backdrop has padding: 18px on all sides → gap = 18px top AND bottom. */
-@media (min-width: 769px) {
-  .jg-modal {
-    max-height: calc(100dvh - var(--jg-nav-bottom, 52px) - 36px);
-    max-height: calc(100vh  - var(--jg-nav-bottom, 52px) - 36px); /* fallback */
-  }
-
-  .jg-modal header {
-    flex-shrink: 0;
-  }
-
-  /* Every direct child of .jg-modal that is not a header becomes the scrollable body.
-     min-height: 0 is required so a flex child can shrink below its content size. */
-  .jg-modal > *:not(header):not(.jg-ranking-header) {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-  }
+  overflow: auto;
 }
 
 .jg-modal header {
