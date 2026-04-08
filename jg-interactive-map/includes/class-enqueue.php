@@ -1118,12 +1118,18 @@ class JG_Map_Enqueue {
             ───────────────────────────────────────────────────────────────────── */
             (function () {
                 function jgPositionModalBg(bgEl) {
-                    var navBar   = document.getElementById('jg-nav-bar');
+                    var navBar    = document.getElementById('jg-nav-bar');
                     var navBottom = navBar
                         ? Math.round(navBar.getBoundingClientRect().bottom)
                         : 52;
                     var gap = window.innerWidth <= 768 ? 14 : 18;
-                    bgEl.style.top = navBottom + 'px';
+                    /* Push the modal below the nav bar using padding-top on the
+                       backdrop. padding-bottom = gap keeps equal spacing.
+                       The backdrop itself stays inset:0 (full-viewport overlay). */
+                    bgEl.style.paddingTop    = (navBottom + gap) + 'px';
+                    bgEl.style.paddingBottom = gap + 'px';
+                    bgEl.style.paddingLeft   = '10px';
+                    bgEl.style.paddingRight  = '10px';
                     /* size the .jg-modal inner element — skip the lightbox */
                     var c = bgEl.querySelector('.jg-modal');
                     if (c) {

@@ -2966,15 +2966,13 @@ body.jg-modal-open {
   display: none;
   position: fixed;
   inset: 0;
-  /* Always start below the nav bar. Variable is set for all screen widths by JS.
-     Falls back to 52px until JS sets the real value.
-     With padding equal on all sides the modal is always centred with
-     identical gap above (from nav bar) and below (to viewport bottom). */
-  top: var(--jg-nav-bottom, 52px);
   background: rgba(0, 0, 0, 0.45);
   align-items: center;
   justify-content: center;
   z-index: 10001;
+  /* padding-top is overridden by JS (jgPositionModalBg) to navBottom+gap;
+     padding-bottom is set to gap — keeping them equal centres the modal
+     in the available space below the nav bar. */
   padding: 18px;
 }
 
