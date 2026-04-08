@@ -2641,6 +2641,9 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
   .jg-modal {
     max-height: calc(100dvh - var(--jg-nav-bottom, 60px) - 28px);
+    /* On mobile scroll the whole modal as a single block */
+    overflow: auto !important;
+    display: block !important;
   }
 
   /* Modal header - allow wrapping for badges but hide X from flex */
@@ -2996,7 +2999,27 @@ body.jg-modal-open {
   max-height: calc(100dvh - var(--jg-nav-bottom, 90px) - 36px);
   border-radius: 12px;
   padding: 14px;
-  overflow: auto;
+  /* overflow:hidden keeps scrollbar inside the rounded corners on desktop.
+     Inner non-header children carry overflow-y:auto via the flex rule below.
+     On mobile the more specific rule in the media query overrides to block+auto. */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Desktop: header stays pinned, non-header children scroll inside the frame */
+@media (min-width: 769px) {
+  .jg-modal header {
+    flex-shrink: 0;
+  }
+
+  /* Every direct child that is not a header becomes the scrollable body.
+     min-height: 0 is required so a flex child can shrink below its content size. */
+  .jg-modal > *:not(header):not(.jg-ranking-header) {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
 }
 
 .jg-modal header {
