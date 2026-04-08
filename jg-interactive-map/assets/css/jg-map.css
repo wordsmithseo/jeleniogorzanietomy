@@ -2632,12 +2632,14 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 
   /* Modal adjustments for mobile.
-     Override desktop padding-top (which accounts for the larger nav bar)
-     with equal 14px on all sides; JS (jgPositionModalBg) sets the correct
-     runtime values on top of this. max-height fallback uses the CSS variable
-     set by jgUpdateNavBottom() in the inline PHP script. */
+     padding: 14px sets all sides; padding-top overrides the shorthand to
+     place the modal below the nav bar. align-items:flex-start means the
+     modal starts exactly at padding-top, so this MUST account for nav height.
+     Both rules need !important to beat the desktop base rule AND to prevent
+     accidental JS override via inline style (which cannot beat !important). */
   .jg-modal-bg {
     padding: 14px !important;
+    padding-top: calc(var(--jg-nav-bottom, 60px) + 14px) !important;
   }
   .jg-modal {
     max-height: calc(100dvh - var(--jg-nav-bottom, 60px) - 28px);
