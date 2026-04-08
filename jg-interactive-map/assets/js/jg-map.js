@@ -2284,10 +2284,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         if (!bg || !c) return;
         var navBar = document.getElementById('jg-nav-bar');
         var navBottom = navBar ? Math.round(navBar.getBoundingClientRect().bottom) : 52;
-        var isMobile = window.innerWidth <= 768;
-        var gap = isMobile ? 14 : 18;
-        bg.style.top = navBottom + 'px';
-        // Lightbox has its own size constraints; skip max-height for it
+        var gap = window.innerWidth <= 768 ? 14 : 18;
+        bg.style.paddingTop    = (navBottom + gap) + 'px';
+        bg.style.paddingBottom = gap + 'px';
+        bg.style.paddingLeft   = '10px';
+        bg.style.paddingRight  = '10px';
         if (!c.classList.contains('jg-lightbox')) {
           var available = window.innerHeight - navBottom - gap * 2;
           c.style.maxHeight = Math.max(available, 100) + 'px';
@@ -2355,9 +2356,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           if (!c.classList.contains('jg-modal') && !c.classList.contains('jg-lightbox')) {
             c.className = 'jg-modal';
           }
-          c.style.maxHeight = ''; // clear inline max-height set by jgFitModal
+          c.style.maxHeight = '';
         }
-        bg.style.top = '';        // clear inline top set by jgFitModal
+        bg.style.paddingTop = bg.style.paddingBottom = bg.style.paddingLeft = bg.style.paddingRight = '';
         bg.style.display = 'none';
 
         // Reset URL to homepage when closing point detail modal
