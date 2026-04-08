@@ -124,8 +124,15 @@ class JG_Interactive_Map {
         add_action('template_redirect', array($this, 'redirect_legacy_tag_urls'), 1);
         add_action('template_redirect', array($this, 'handle_tile_sw'), 1);
         add_action('wp_head', array($this, 'add_point_meta_tags'));
-        add_action('wp_head', array($this, 'add_tag_page_meta_tags'));
-        add_action('wp_head', array($this, 'add_category_page_meta_tags'));
+        // Priority 2 (was: default 10).
+        // When suppress_seo_plugin_description_on_*_pages() removes Yoast from
+        // wp_head and adds ob_start at priority 1, these callbacks fire at priority 2
+        // and land inside the output buffer — their canonical/description become the
+        // first (and only) correct tags echoed by dedupe_meta_description_in_head().
+        // Running earlier (closer to priority 1) also slightly reduces the window in
+        // which other plugins could inject duplicate tags before this plugin's output.
+        add_action('wp_head', array($this, 'add_tag_page_meta_tags'), 2);
+        add_action('wp_head', array($this, 'add_category_page_meta_tags'), 2);
 
         // Suppress Yoast/RankMath meta description on catalog tag/category pages (plugin outputs its own)
         add_action('wp', array($this, 'suppress_seo_plugin_description_on_tag_pages'));
@@ -136,6 +143,19 @@ class JG_Interactive_Map {
         add_filter('wpseo_title', array($this, 'filter_tag_page_yoast_title'));
         add_filter('document_title_parts', array($this, 'filter_category_page_title'));
         add_filter('wpseo_title', array($this, 'filter_category_page_yoast_title'));
+
+        // Ensure Yoast SEO outputs the correct canonical URL for catalog category/tag pages.
+        // Without this, Yoast emits the base /katalog/ canonical on every category/tag variant.
+        add_filter('wpseo_canonical', array($this, 'filter_yoast_canonical_for_catalog'));
+
+        // Ensure RankMath outputs the correct canonical for catalog pages
+        add_filter('rank_math/frontend/canonical', array($this, 'filter_yoast_canonical_for_catalog'));
+
+        // Ensure H1 is present on category/tag pages even when the shortcode is bypassed
+        // (e.g. full-canvas Elementor templates that don't call the_content).
+        // Priority 20: AFTER WordPress core's do_shortcode (priority 11), so the rendered
+        // shortcode HTML (which already contains an H1) is visible to the duplicate check.
+        add_filter('the_content', array($this, 'inject_catalog_h1_if_missing'), 20);
 
         // Register map sitemap in Yoast sitemap index for better discoverability
         add_filter('wpseo_sitemap_index', array($this, 'add_map_sitemap_to_yoast_index'));
@@ -2926,10 +2946,12 @@ class JG_Interactive_Map {
             add_action('wp_head', '_wp_render_title_tag', 1);
         }
 
-        // Fallback filter for older Yoast versions that use wpseo_metadesc
-        add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
+        // Fallback filter for older Yoast versions that expose wpseo_metadesc.
+        // Return the correct description rather than an empty string so that if
+        // Yoast's head block was not fully removed it still outputs useful content.
+        add_filter('wpseo_metadesc', array($this, 'filter_yoast_metadesc_for_catalog'), PHP_INT_MAX);
         // RankMath equivalent
-        add_filter('rank_math/frontend/description', '__return_empty_string', PHP_INT_MAX);
+        add_filter('rank_math/frontend/description', array($this, 'filter_yoast_metadesc_for_catalog'), PHP_INT_MAX);
 
         // Last-resort: buffer the entire wp_head output and strip any duplicate
         // <meta name="description"> tags, keeping only the first one (from this
@@ -3268,6 +3290,108 @@ class JG_Interactive_Map {
             return '#' . $tag . ' - Miejsca w Jeleniej Górze | ' . get_bloginfo('name');
         }
         return $title;
+    }
+
+    /**
+     * Override the Yoast SEO (and RankMath) canonical URL for catalog category/tag pages.
+     *
+     * Yoast has no knowledge of these virtual sub-pages and defaults to the base /katalog/
+     * URL. We intercept the filter and return the correct sub-page URL so that Yoast
+     * itself emits the right <link rel="canonical"> — this is safer than trying to
+     * remove Yoast's entire <head> block and avoids duplicate-canonical race conditions.
+     *
+     * The method intentionally derives the canonical directly from the query var (no DB
+     * round-trip needed) so it works even when the category/tag lookup fails.
+     */
+    public function filter_yoast_canonical_for_catalog($canonical) {
+        // Category pages: /katalog/kategoria/{slug}/
+        $cat_slug = get_query_var('jg_catalog_category', '');
+        if ($cat_slug !== '') {
+            return home_url('/katalog/kategoria/' . sanitize_title($cat_slug) . '/');
+        }
+
+        // Tag pages: /katalog/tag/{slug}/
+        $tag_slug = get_query_var('jg_catalog_tag', '');
+        if ($tag_slug !== '') {
+            return home_url('/katalog/tag/' . sanitize_title($tag_slug) . '/');
+        }
+
+        return $canonical; // not a catalog sub-page — leave Yoast's value untouched
+    }
+
+    /**
+     * Override the Yoast SEO / RankMath meta description for catalog pages.
+     *
+     * Called via wpseo_metadesc and rank_math/frontend/description filters.
+     * Returning the correct description here ensures a meaningful description is
+     * present even when Yoast's head block could not be fully removed.
+     */
+    public function filter_yoast_metadesc_for_catalog($desc) {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        $category = self::resolve_catalog_category();
+        if ($category !== '') {
+            $count = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE status = 'publish' AND slug IS NOT NULL AND slug != '' AND category = %s",
+                $category
+            ));
+            return $this->get_category_seo_description($category, $count);
+        }
+
+        $tag = self::resolve_catalog_tag();
+        if ($tag !== '') {
+            $like  = '%' . $wpdb->esc_like('"' . $tag . '"') . '%';
+            $count = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE status = 'publish' AND slug IS NOT NULL AND slug != '' AND tags LIKE %s",
+                $like
+            ));
+            return 'Przeglądaj ' . $count . ' miejsc oznaczonych tagiem #' . $tag
+                . ' na interaktywnej mapie Jeleniej Góry. Odkryj lokalne miejsca, ciekawostki i atrakcje.';
+        }
+
+        return $desc; // not a catalog sub-page — leave unchanged
+    }
+
+    /**
+     * Ensure H1 is present on catalog category/tag pages.
+     *
+     * The [jg_map_directory] shortcode normally renders the H1 as part of its output.
+     * This filter fires on the_content (after shortcodes have been processed) and
+     * prepends an H1 only when none exists — so there is never a duplicate.
+     * It is a safety net for full-canvas page-builder layouts that replace
+     * the_content() with their own rendering pipeline.
+     */
+    public function inject_catalog_h1_if_missing($content) {
+        if (is_admin()) {
+            return $content;
+        }
+
+        // Only act on catalog sub-pages
+        $cat_slug = get_query_var('jg_catalog_category', '');
+        $tag_slug = get_query_var('jg_catalog_tag', '');
+
+        if ($cat_slug === '' && $tag_slug === '') {
+            return $content;
+        }
+
+        // Do nothing if the shortcode already rendered an H1
+        if (stripos($content, '<h1') !== false) {
+            return $content;
+        }
+
+        // Build H1 text — prefer the pretty label from DB, fall back to the raw slug
+        if ($cat_slug !== '') {
+            $category = self::resolve_catalog_category();
+            $h1_text  = ($category !== '')
+                ? $this->get_category_seo_title($category)
+                : ucwords(str_replace('-', ' ', $cat_slug)) . ' w Jeleniej Górze';
+            return '<h1 class="jg-dir-h1">' . esc_html($h1_text) . '</h1>' . $content;
+        }
+
+        $tag     = self::resolve_catalog_tag();
+        $h1_text = ($tag !== '') ? '#' . $tag : '#' . $tag_slug;
+        return '<h1 class="jg-dir-h1">' . esc_html($h1_text) . ' – Miejsca w Jeleniej Górze</h1>' . $content;
     }
 
     /**
