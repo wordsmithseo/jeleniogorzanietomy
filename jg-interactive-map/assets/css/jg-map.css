@@ -2632,11 +2632,15 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 
   /* Modal adjustments for mobile.
-     Symmetric padding on the backdrop gives equal gap above (from nav bar)
-     and below (to viewport bottom). max-height is set via inline style by
-     jgFitModal() so the CSS value is just a fallback. */
+     Override desktop padding-top (which accounts for the larger nav bar)
+     with equal 14px on all sides; JS (jgPositionModalBg) sets the correct
+     runtime values on top of this. max-height fallback uses the CSS variable
+     set by jgUpdateNavBottom() in the inline PHP script. */
   .jg-modal-bg {
     padding: 14px !important;
+  }
+  .jg-modal {
+    max-height: calc(100dvh - var(--jg-nav-bottom, 60px) - 28px);
   }
 
   /* Modal header - allow wrapping for badges but hide X from flex */
@@ -2967,22 +2971,29 @@ body.jg-modal-open {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
-  align-items: center;
+  /* flex-start: modal top is pinned to padding-top edge — it can never
+     drift above the nav bar the way align-items:center can when modal
+     height approaches the padded content area height. */
+  align-items: flex-start;
   justify-content: center;
   z-index: 10001;
-  /* padding-top is overridden by JS (jgPositionModalBg) to navBottom+gap;
-     padding-bottom is set to gap — keeping them equal centres the modal
-     in the available space below the nav bar. */
+  /* CSS-level positioning using --jg-nav-bottom (set by jgUpdateNavBottom()
+     in the inline PHP script, never affected by JS file caching).
+     JS (jgPositionModalBg / jgFitModal) overwrites these at open-time with
+     exact measured values, but this CSS already produces a correct layout
+     even without JS. */
   padding: 18px;
+  padding-top: calc(var(--jg-nav-bottom, 90px) + 18px);
 }
 
 .jg-modal {
   background: #fff;
   color: #111;
   width: min(900px, 96vw);
-  /* max-height is set as an inline style by jgFitModal() in jg-map.js at
-     open-time, so the CSS value here is just a safe fallback. */
-  max-height: 85vh;
+  /* CSS-level max-height keeps the modal inside the available area below
+     the nav bar. JS (jgFitModal) overwrites this with a precisely measured
+     value, but the CSS fallback is already correct. */
+  max-height: calc(100dvh - var(--jg-nav-bottom, 90px) - 36px);
   border-radius: 12px;
   padding: 14px;
   overflow: auto;
