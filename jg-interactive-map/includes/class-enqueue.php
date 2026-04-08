@@ -1108,6 +1108,52 @@ class JG_Map_Enqueue {
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') closeTopMenu();
             });
+
+            /* ── Modal positioning ─────────────────────────────────────────────
+               Applies backdrop top-offset and modal max-height every time any
+               .jg-modal-bg becomes visible (display:flex). This runs from the
+               inline script so it is never affected by JS file caching.
+               The MutationObserver watches style attribute changes on every
+               .jg-modal-bg in the document.
+            ───────────────────────────────────────────────────────────────────── */
+            (function () {
+                function jgPositionModalBg(bgEl) {
+                    var navBar   = document.getElementById('jg-nav-bar');
+                    var navBottom = navBar
+                        ? Math.round(navBar.getBoundingClientRect().bottom)
+                        : 52;
+                    var gap = window.innerWidth <= 768 ? 14 : 18;
+                    bgEl.style.top = navBottom + 'px';
+                    /* size the .jg-modal inner element — skip the lightbox */
+                    var c = bgEl.querySelector('.jg-modal');
+                    if (c) {
+                        var available = window.innerHeight - navBottom - gap * 2;
+                        c.style.maxHeight = Math.max(available, 100) + 'px';
+                    }
+                }
+
+                var modalObs = new MutationObserver(function (mutations) {
+                    mutations.forEach(function (m) {
+                        var el = m.target;
+                        if (el.classList && el.classList.contains('jg-modal-bg') &&
+                            el.style.display === 'flex') {
+                            jgPositionModalBg(el);
+                        }
+                    });
+                });
+
+                function jgObserveModalBgs() {
+                    document.querySelectorAll('.jg-modal-bg').forEach(function (el) {
+                        modalObs.observe(el, { attributes: true, attributeFilter: ['style'] });
+                    });
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', jgObserveModalBgs);
+                } else {
+                    jgObserveModalBgs();
+                }
+            })();
         })();
         </script>
         <?php
