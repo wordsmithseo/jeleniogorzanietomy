@@ -714,9 +714,27 @@ class JG_Map_Enqueue {
                Used by .jg-modal-bg top offset so modals always start flush below
                the nav bar regardless of whether the info bar is visible.
                Updates on: load, scroll (throttled), resize, visualViewport resize.
+
+               IMPORTANT: #jg-nav-bar is mobile-only (display:none on desktop).
+               On desktop the visible navigation is #jg-custom-top-bar.
+               jgGetNavBottom() takes the max bottom among all VISIBLE nav
+               elements so it works correctly on every viewport width.
             ────────────────────────────────────────────────────────────────────── */
             var navBarEl  = document.getElementById('jg-nav-bar');
             var infoBarEl = document.getElementById('jg-info-bar');
+            /* Shared helper — exposed globally so jg-map.js can reuse it */
+            function jgGetNavBottom() {
+                var bottom = 0;
+                ['jg-nav-bar', 'jg-info-bar', 'jg-custom-top-bar'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (!el) return;
+                    if (window.getComputedStyle(el).display === 'none') return;
+                    var b = Math.round(el.getBoundingClientRect().bottom);
+                    if (b > bottom) bottom = b;
+                });
+                return bottom || 52;
+            }
+            window.jgGetNavBottom = jgGetNavBottom;
             function jgUpdateNavBottom() {
                 /* --jg-info-bar-h: height of the info bar (0 when hidden/dismissed) — all widths */
                 var infoBarH = 0;
@@ -725,11 +743,8 @@ class JG_Map_Enqueue {
                     infoBarH = ibStyle.display === 'none' ? 0 : Math.round(infoBarEl.offsetHeight);
                 }
                 document.documentElement.style.setProperty('--jg-info-bar-h', infoBarH + 'px');
-                /* --jg-nav-bottom: actual viewport bottom-edge of the nav bar — all widths */
-                if (navBarEl) {
-                    var bottom = Math.round(navBarEl.getBoundingClientRect().bottom);
-                    document.documentElement.style.setProperty('--jg-nav-bottom', bottom + 'px');
-                }
+                /* --jg-nav-bottom: max bottom-edge among all visible nav elements */
+                document.documentElement.style.setProperty('--jg-nav-bottom', jgGetNavBottom() + 'px');
             }
             /* Also re-run when the info bar is dismissed */
             window.addEventListener('jg-info-bar-changed', jgUpdateNavBottom);
@@ -1118,10 +1133,10 @@ class JG_Map_Enqueue {
             ───────────────────────────────────────────────────────────────────── */
             (function () {
                 function jgPositionModalBg(bgEl) {
-                    var navBar    = document.getElementById('jg-nav-bar');
-                    var navBottom = navBar
-                        ? Math.round(navBar.getBoundingClientRect().bottom)
-                        : 52;
+                    /* Use global helper that picks the correct nav element per
+                       viewport (#jg-nav-bar on mobile, #jg-custom-top-bar on
+                       desktop — #jg-nav-bar is display:none on desktop!). */
+                    var navBottom = window.jgGetNavBottom ? window.jgGetNavBottom() : 52;
                     var gap = window.innerWidth <= 768 ? 14 : 18;
                     /* Push the modal below the nav bar using padding-top on the
                        backdrop. padding-bottom = gap keeps equal spacing.

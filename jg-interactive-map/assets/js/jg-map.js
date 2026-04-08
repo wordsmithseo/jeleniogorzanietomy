@@ -2282,8 +2282,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // Equal gap (gap px) above and below the modal.
       function jgFitModal(bg, c) {
         if (!bg || !c) return;
-        var navBar = document.getElementById('jg-nav-bar');
-        var navBottom = navBar ? Math.round(navBar.getBoundingClientRect().bottom) : 52;
+        /* jgGetNavBottom() is defined in the inline PHP script (render_nav_bar).
+           It returns max getBoundingClientRect().bottom across all VISIBLE nav
+           elements. This is necessary because #jg-nav-bar is display:none on
+           desktop — the correct element on desktop is #jg-custom-top-bar. */
+        var navBottom = window.jgGetNavBottom ? window.jgGetNavBottom() : 52;
         var gap = window.innerWidth <= 768 ? 14 : 18;
         bg.style.paddingTop    = (navBottom + gap) + 'px';
         bg.style.paddingBottom = gap + 'px';
