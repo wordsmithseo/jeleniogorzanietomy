@@ -4703,6 +4703,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
               var gpCurrentPeriod = Math.floor(Date.now() / 300000);
 
+              // Natychmiast ustaw pozycję według aktualnego okresu czasu.
+              // PHP mógł podać cache'owaną pozycję — JS musi ją nadpisać bez animacji.
+              var gpInitialIdx = gpCurrentPeriod % gpCandidates.length;
+              gpMarker.setLatLng([gpCandidates[gpInitialIdx][0], gpCandidates[gpInitialIdx][1]]);
+
               function gpMoveTo(newPos) {
                 var el = gpMarker.getElement();
                 if (!el) return;
