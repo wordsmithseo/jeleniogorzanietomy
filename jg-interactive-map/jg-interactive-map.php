@@ -161,6 +161,18 @@ class JG_Interactive_Map {
         add_filter('wpseo_sitemap_index', array($this, 'add_map_sitemap_to_yoast_index'));
         // Add map sitemap to robots.txt
         add_filter('robots_txt', array($this, 'add_map_sitemap_to_robots'), 10, 2);
+
+        // Meta description + SEO for native WP tag/category archive pages
+        // (separate from /katalog/tag/ and /katalog/kategoria/ which are handled above)
+        add_action('wp', array($this, 'suppress_seo_on_wp_tag_category_pages'));
+        add_action('wp_head', array($this, 'add_wp_archive_meta_tags'), 2);
+
+        // H1 deduplication on native WP archive pages (theme loop renders multiple H1s)
+        add_action('wp_body_open', array($this, 'start_archive_h1_buffer'), PHP_INT_MAX);
+        add_action('wp_footer', array($this, 'end_archive_h1_buffer'), 0);
+
+        // Serve IndexNow key verification file at /{key}.txt
+        add_action('template_redirect', array($this, 'handle_indexnow_key_file'), 1);
     }
 
     /**
@@ -3599,6 +3611,183 @@ class JG_Interactive_Map {
         }
         </script>
         <?php
+    }
+
+    // ─── Native WP tag / category archive: SEO & H1 ────────────────────────
+
+    /**
+     * Suppress Yoast SEO / RankMath head on native WordPress tag and
+     * category archive pages (/tag/..., /category/...).
+     * The plugin outputs its own complete meta tags via add_wp_archive_meta_tags().
+     * Called on 'wp' action (after query vars are parsed, before wp_head fires).
+     */
+    public function suppress_seo_on_wp_tag_category_pages() {
+        if ( ! is_tag() && ! is_category() ) {
+            return;
+        }
+        $this->remove_yoast_head_from_wp_head();
+    }
+
+    /**
+     * Inject meta description, canonical URL and Open Graph tags for native
+     * WordPress tag and category archive pages.
+     * Fires at wp_head priority 2 — same as catalog tag/category handlers,
+     * after the ob_start buffer added by suppress_seo_on_wp_tag_category_pages().
+     */
+    public function add_wp_archive_meta_tags() {
+        if ( ! is_tag() && ! is_category() ) {
+            return;
+        }
+
+        $term = get_queried_object();
+        if ( ! ( $term instanceof WP_Term ) ) {
+            return;
+        }
+
+        $term_name  = $term->name;
+        $term_desc  = wp_strip_all_tags( $term->description );
+        $post_count = (int) $term->count;
+        $page_url   = get_term_link( $term );
+        if ( is_wp_error( $page_url ) ) {
+            return;
+        }
+
+        if ( $term->taxonomy === 'post_tag' ) {
+            $description = $term_desc !== ''
+                ? $term_desc
+                : 'Artykuły oznaczone tagiem "' . $term_name . '" na Jeleniogórzanie to my – poznaj lokalne miejsca, restauracje i atrakcje turystyczne Jeleniej Góry.';
+        } else {
+            $description = $term_desc !== ''
+                ? $term_desc
+                : 'Artykuły w kategorii "' . $term_name . '" na Jeleniogórzanie to my – sprawdź teksty o lokalnych miejscach, restauracjach i atrakcjach Jeleniej Góry.';
+        }
+
+        $title     = $term_name . ' \u2013 ' . get_bloginfo( 'name' );
+        $site_name = get_bloginfo( 'name' );
+
+        // Noindex empty archives (no posts = thin content)
+        $robots = ( $post_count === 0 ) ? 'noindex, follow' : 'index, follow';
+        if ( get_option( 'blog_public' ) == '0' ) {
+            $robots = 'noindex, nofollow';
+        }
+        $maintenance = get_option( 'elementor_maintenance_mode_mode' );
+        if ( $maintenance === 'maintenance' || $maintenance === 'coming_soon' ) {
+            $robots = 'noindex, nofollow';
+        }
+        ?>
+        <meta name="robots" content="<?php echo esc_attr( $robots ); ?>">
+        <link rel="canonical" href="<?php echo esc_url( $page_url ); ?>">
+        <meta name="description" content="<?php echo esc_attr( $description ); ?>">
+
+        <!-- Open Graph -->
+        <meta property="og:title" content="<?php echo esc_attr( $title ); ?>">
+        <meta property="og:description" content="<?php echo esc_attr( $description ); ?>">
+        <meta property="og:url" content="<?php echo esc_url( $page_url ); ?>">
+        <meta property="og:type" content="website">
+        <meta property="og:locale" content="pl_PL">
+        <meta property="og:site_name" content="<?php echo esc_attr( $site_name ); ?>">
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" content="<?php echo esc_attr( $title ); ?>">
+        <meta name="twitter:description" content="<?php echo esc_attr( $description ); ?>">
+        <?php
+    }
+
+    /**
+     * Start output buffering on native WP tag/category archive pages.
+     * Fires at wp_body_open PHP_INT_MAX — after the plugin's topbar/navbar
+     * (priorities 5 and 10) have already been echoed and are NOT in the buffer.
+     * Everything rendered after this point (the theme loop, pagination, etc.) is captured.
+     */
+    public function start_archive_h1_buffer() {
+        if ( ! is_tag() && ! is_category() ) {
+            return;
+        }
+        ob_start();
+    }
+
+    /**
+     * End the output buffer opened by start_archive_h1_buffer(), convert every
+     * <h1> except the first one into <h2> (preserving all attributes), then echo.
+     * Fires at wp_footer priority 0, before any footer scripts.
+     *
+     * Strategy: keep the first H1 (archive page title if present) and demote
+     * all subsequent H1s — those are post entry titles rendered by the theme loop.
+     */
+    public function end_archive_h1_buffer() {
+        if ( ! is_tag() && ! is_category() ) {
+            return;
+        }
+        if ( ob_get_level() < 1 ) {
+            return;
+        }
+        $html = ob_get_clean();
+        if ( $html === false || $html === '' ) {
+            return;
+        }
+
+        $first_found = false;
+        $html = preg_replace_callback(
+            '/<h1(\b[^>]*)>(.*?)<\/h1>/is',
+            function ( $m ) use ( &$first_found ) {
+                if ( ! $first_found ) {
+                    $first_found = true;
+                    return $m[0]; // preserve first H1 (archive title)
+                }
+                return '<h2' . $m[1] . '>' . $m[2] . '</h2>';
+            },
+            $html
+        );
+        echo $html;
+    }
+
+    // ─── IndexNow ────────────────────────────────────────────────────────────
+
+    /**
+     * Ping IndexNow to notify search engines of a new or updated URL.
+     * Does nothing if option 'jg_map_indexnow_key' is not set.
+     * Non-blocking HTTP request — does not add latency to the admin action.
+     *
+     * @param string $url Absolute URL of the page to submit.
+     */
+    public static function ping_indexnow_url( $url ) {
+        $key = get_option( 'jg_map_indexnow_key', '' );
+        if ( $key === '' ) {
+            return;
+        }
+
+        $api_url = 'https://api.indexnow.org/indexnow?url=' . rawurlencode( $url ) . '&key=' . rawurlencode( $key );
+
+        wp_remote_get( $api_url, array(
+            'timeout'  => 5,
+            'blocking' => false,
+            'headers'  => array( 'User-Agent' => 'JG-Interactive-Map/' . JG_MAP_VERSION ),
+        ) );
+    }
+
+    /**
+     * Serve the IndexNow key verification file at /{key}.txt so that
+     * indexnow.org can confirm this site owns the key.
+     * Called via template_redirect priority 1.
+     */
+    public function handle_indexnow_key_file() {
+        $key = get_option( 'jg_map_indexnow_key', '' );
+        if ( $key === '' ) {
+            return;
+        }
+
+        $request_path = isset( $_SERVER['REQUEST_URI'] )
+            ? strtok( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), '?' )
+            : '';
+
+        if ( $request_path !== '/' . $key . '.txt' ) {
+            return;
+        }
+
+        header( 'Content-Type: text/plain; charset=utf-8', true, 200 );
+        echo esc_html( $key );
+        exit;
     }
 
 }
