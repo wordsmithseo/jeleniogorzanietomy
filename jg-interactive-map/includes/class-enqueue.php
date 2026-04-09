@@ -490,9 +490,9 @@ class JG_Map_Enqueue {
                     array(50.9102, 15.7368), // ul. Nowowiejska
                 );
 
-                // Deterministyczny wybór pozycji na podstawie godziny — JS używa tej samej formuły
-                $current_hour = (int) floor(time() / HOUR_IN_SECONDS);
-                $idx = $current_hour % count($ghost_candidates);
+                // Deterministyczny wybór pozycji co 5 minut — JS używa tej samej formuły
+                $current_period = (int) floor(time() / 300);
+                $idx = $current_period % count($ghost_candidates);
 
                 $chosen = $ghost_candidates[$idx];
 
