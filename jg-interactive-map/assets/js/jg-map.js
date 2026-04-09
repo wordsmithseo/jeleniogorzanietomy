@@ -4701,7 +4701,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 [50.9089,15.7410],[50.9077,15.7448],[50.9047,15.7465],[50.9102,15.7368]
               ];
 
-              var gpCurrentHour = Math.floor(Date.now() / 3600000);
+              var gpCurrentPeriod = Math.floor(Date.now() / 300000);
+
+              // Natychmiast ustaw pozycję według aktualnego okresu czasu.
+              // PHP mógł podać cache'owaną pozycję — JS musi ją nadpisać bez animacji.
+              var gpInitialIdx = gpCurrentPeriod % gpCandidates.length;
+              gpMarker.setLatLng([gpCandidates[gpInitialIdx][0], gpCandidates[gpInitialIdx][1]]);
 
               function gpMoveTo(newPos) {
                 var el = gpMarker.getElement();
@@ -4718,16 +4723,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 }, 460);
               }
 
-              // Sprawdzaj co minutę czy godzina się zmieniła
+              // Sprawdzaj co 30 sekund czy minął 5-minutowy okres
               var gpRotateTimer = setInterval(function() {
                 if (!map || !gpMarker) { clearInterval(gpRotateTimer); return; }
-                var nowHour = Math.floor(Date.now() / 3600000);
-                if (nowHour !== gpCurrentHour) {
-                  gpCurrentHour = nowHour;
-                  var newIdx = nowHour % gpCandidates.length;
+                var nowPeriod = Math.floor(Date.now() / 300000);
+                if (nowPeriod !== gpCurrentPeriod) {
+                  gpCurrentPeriod = nowPeriod;
+                  var newIdx = nowPeriod % gpCandidates.length;
                   gpMoveTo(gpCandidates[newIdx]);
                 }
-              }, 60000);
+              }, 30000);
             }
 
             // Clean up any old markers
