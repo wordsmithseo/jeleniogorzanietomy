@@ -3433,6 +3433,11 @@ class JG_Map_Ajax_Handlers {
             JG_Map_Levels_Achievements::award_xp($author_id, 'point_approved', $point_id);
         }
 
+        // Notify IndexNow: new point is now publicly visible
+        if (!empty($point['slug']) && !empty($point['type'])) {
+            JG_Interactive_Map::ping_indexnow_url(home_url('/' . $point['type'] . '/' . $point['slug'] . '/'));
+        }
+
         wp_send_json_success(array('message' => 'Punkt zaakceptowany'));
     }
 
@@ -4761,6 +4766,11 @@ class JG_Map_Ajax_Handlers {
             sprintf('Zaakceptowano edycję miejsca: %s', $point['title'])
         );
 
+        // Notify IndexNow: point content has been updated
+        if (!empty($point['slug']) && !empty($point['type'])) {
+            JG_Interactive_Map::ping_indexnow_url(home_url('/' . $point['type'] . '/' . $point['slug'] . '/'));
+        }
+
         wp_send_json_success(array('message' => 'Edycja zaakceptowana'));
     }
 
@@ -5082,6 +5092,11 @@ class JG_Map_Ajax_Handlers {
                 $history_id,
                 sprintf('Właściciel (admin/mod) zaakceptował i zatwierdził edycję miejsca: %s', $point['title'])
             );
+
+            // Notify IndexNow: point content has been updated (owner+mod fast-path)
+            if (!empty($point['slug']) && !empty($point['type'])) {
+                JG_Interactive_Map::ping_indexnow_url(home_url('/' . $point['type'] . '/' . $point['slug'] . '/'));
+            }
 
             wp_send_json_success(array('message' => 'Edycja zaakceptowana i zatwierdzona. Zmiany są już widoczne.'));
         } else {
