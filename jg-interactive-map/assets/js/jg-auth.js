@@ -1019,24 +1019,19 @@
             '<div style="font-weight:700;font-size:24px;color:#4f46e5">' + stats.places_visited + '</div>' +
             '</div>' +
             '</div>' +
-            // Votes section
-            '<h3 style="margin:20px 0 16px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">👍 Głosowanie</h3>' +
+            // Ratings section
+            '<h3 style="margin:20px 0 16px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">⭐ Oceny</h3>' +
             '<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:12px">' +
-            // Votes given
+            // Ratings given
             '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
-            '<div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">Oddane głosy</div>' +
-            '<div style="display:flex;gap:16px">' +
-            '<div><span style="color:#10b981;font-weight:600">👍 ' + stats.upvotes_given + '</span></div>' +
-            '<div><span style="color:#ef4444;font-weight:600">👎 ' + stats.downvotes_given + '</span></div>' +
+            '<div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">Wystawione oceny</div>' +
+            '<div><span style="color:#f59e0b;font-weight:700;font-size:18px">⭐ ' + (stats.ratings_given || 0) + '</span></div>' +
             '</div>' +
-            '</div>' +
-            // Votes received
+            // Ratings received
             '<div style="padding:16px;background:#f9fafb;border-radius:8px">' +
-            '<div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">Otrzymane głosy</div>' +
-            '<div style="display:flex;gap:16px">' +
-            '<div><span style="color:#10b981;font-weight:600">👍 ' + stats.upvotes_received + '</span></div>' +
-            '<div><span style="color:#ef4444;font-weight:600">👎 ' + stats.downvotes_received + '</span></div>' +
-            '</div>' +
+            '<div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">Otrzymane oceny</div>' +
+            '<div><span style="color:#f59e0b;font-weight:700;font-size:18px">⭐ ' + (stats.ratings_received || 0) + '</span></div>' +
+            (stats.avg_rating_received > 0 ? '<div style="font-size:11px;color:#9ca3af;margin-top:4px">śr. ' + stats.avg_rating_received + '/5</div>' : '') +
             '</div>' +
             '</div>' +
             // Other activity section
@@ -1074,6 +1069,64 @@
     });
   }
 
+  // Open ranking modal on pages without map (jg-map.js handles it on map pages)
+  function openRankingModal() {
+    ensureModalsExist();
+    var CFG = window.JG_AUTH_CFG || {};
+    var modalEdit = document.getElementById('jg-map-modal-edit');
+    if (!modalEdit) return;
+
+    var headerHtml = '<div class="jg-modal-header" style="background:linear-gradient(135deg, #b8860b 0%, #ffd700 100%);color:#fff;padding:20px 24px;border-radius:8px 8px 0 0;position:relative">' +
+      '<h2 style="margin:0;font-size:20px;font-weight:600">🏆 Ranking użytkowników</h2>' +
+      '<button id="jg-ranking-modal-close" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#fff;font-size:24px;cursor:pointer;opacity:0.8;line-height:1">&times;</button>' +
+      '</div>';
+
+    open(modalEdit, headerHtml + '<div style="padding:40px;text-align:center;color:#6b7280">Ładowanie rankingu...</div>');
+    document.getElementById('jg-ranking-modal-close').addEventListener('click', function() { close(modalEdit); });
+
+    $.ajax({
+      url: CFG.ajax,
+      type: 'POST',
+      data: { action: 'jg_get_ranking', nonce: CFG.nonce },
+      success: function(response) {
+        if (!response.success || !response.data || !response.data.length) {
+          open(modalEdit, headerHtml + '<div style="padding:40px;text-align:center;color:#6b7280">Brak danych rankingu.</div>');
+          document.getElementById('jg-ranking-modal-close').addEventListener('click', function() { close(modalEdit); });
+          return;
+        }
+        var ranking = response.data;
+        var rowsHtml = '';
+        for (var i = 0; i < ranking.length; i++) {
+          var r = ranking[i];
+          var pos = i + 1;
+          var medal = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos + '.';
+          rowsHtml += '<div style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #f3f4f6">' +
+            '<div style="width:36px;font-size:' + (pos <= 3 ? '20px' : '14px') + ';font-weight:700;color:#6b7280;text-align:center">' + medal + '</div>' +
+            '<div style="flex:1;min-width:0;padding:0 12px">' +
+            '<div style="font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(r.display_name) + '</div>' +
+            '<div style="font-size:12px;color:#9ca3af">Poz. ' + r.level + '</div>' +
+            '</div>' +
+            '<div style="font-weight:700;color:#059669;font-size:16px">📍 ' + r.places_count + '</div>' +
+            '</div>';
+        }
+        var html = headerHtml +
+          '<div style="padding:16px 24px 8px">' +
+          '<div style="font-size:13px;color:#9ca3af;margin-bottom:4px">Top 10 najbardziej aktywnych użytkowników</div>' +
+          '</div>' +
+          '<div style="padding:0 24px 16px;max-height:60vh;overflow-y:auto">' + rowsHtml + '</div>' +
+          '<div style="padding:12px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:right;border-radius:0 0 8px 8px">' +
+          '<button id="jg-ranking-modal-close-btn" style="padding:8px 20px;background:#b8860b;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">Zamknij</button>' +
+          '</div>';
+        open(modalEdit, html);
+        document.getElementById('jg-ranking-modal-close').addEventListener('click', function() { close(modalEdit); });
+        document.getElementById('jg-ranking-modal-close-btn').addEventListener('click', function() { close(modalEdit); });
+      },
+      error: function() {
+        showAlert('Błąd pobierania rankingu');
+      }
+    });
+  }
+
   // Initialize buttons when DOM is ready
   function initAuthButtons() {
     var authBtn = document.getElementById('jg-auth-btn');
@@ -1102,6 +1155,13 @@
         }
       });
       myProfileLink.jgHandlerAttached = true;
+    }
+
+    // Ranking button – only handle here when jg-map.js is NOT loaded (non-map pages)
+    var rankingBtn = document.getElementById('jg-ranking-btn');
+    if (rankingBtn && !rankingBtn.jgHandlerAttached) {
+      rankingBtn.addEventListener('click', openRankingModal);
+      rankingBtn.jgHandlerAttached = true;
     }
   }
 
