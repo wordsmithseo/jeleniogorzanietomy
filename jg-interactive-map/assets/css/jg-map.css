@@ -13,9 +13,16 @@
  *   < 1538px viewport  → skaluje się liniowo z vw
  *   ≥ 1538px viewport  → 1.1px (+10%, max — duże monitory)
  *
- * Duże wyświetlacze (dodatkowe zmniejszenie przez media query):
+ * Duże wyświetlacze (progresywne skalowanie przez media query):
  *   ≥ 1600px  → --jg: 1.05px (+5%)
- *   ≥ 1920px  → --jg: 1px    (bazowa wielkość, brak skalowania)
+ *   ≥ 1920px  → --jg: 1.1px  (+10%, duże monitory 24-26")
+ *   ≥ 2560px  → --jg: 1.2px  (+20%, monitory 27"+)
+ *
+ * --jg-sidebar-w: responsywna szerokość sidebara:
+ *   clamp(280px, 19vw, 400px)
+ *   ~280px na 15" (1366px viewport) — mniej zajętej mapy
+ *   ~361px na 19" (1900px viewport) — bez zmiany
+ *   ~400px na 27" (2560px viewport) — lepsze wykorzystanie przestrzeni
  *
  * NIE zmienia html/body font-size → bezpieczne dla Leaflet, motywu i Elementora.
  * Elementor ustawia własne font-size w px — nie reaguje na --jg.
@@ -23,6 +30,7 @@
  */
 :root {
   --jg: clamp(1px, 0.065vw, 1.1px);
+  --jg-sidebar-w: clamp(280px, 19vw, 400px);
 }
 
 @media (min-width: 1600px) {
@@ -33,7 +41,13 @@
 
 @media (min-width: 1920px) {
   :root {
-    --jg: 1px;
+    --jg: 1.1px;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --jg: 1.2px;
   }
 }
 
@@ -1525,8 +1539,7 @@ body.jg-fullscreen-active #jg-search-panel {
     right: 12px !important;
     bottom: auto !important;
     left: auto !important;
-    width: 361px !important;
-    max-width: 28.5vw !important;
+    width: var(--jg-sidebar-w) !important;
     height: calc(100% - 24px) !important;
     max-height: calc(100% - 24px) !important;
     min-height: 0 !important;
@@ -1545,12 +1558,12 @@ body.jg-fullscreen-active #jg-search-panel {
   /* Desktop filter panel: floating to the left of the sidebar */
   .jg-fs-filter-panel {
     top: 12px;
-    right: calc(min(361px, 28.5vw) + 24px);
+    right: calc(var(--jg-sidebar-w) + 24px);
     bottom: auto;
     left: auto;
     width: auto;
     min-width: 260px;
-    max-width: calc(100% - min(361px, 28.5vw) - 120px);
+    max-width: calc(100% - var(--jg-sidebar-w) - 120px);
     max-height: calc(100% - 24px);
     border-radius: 16px;
     padding: 0;
@@ -1698,10 +1711,10 @@ body.jg-fullscreen-active #jg-search-panel {
     position: absolute;
     z-index: 1002;
     top: auto;
-    right: calc(min(361px, 28.5vw) + 24px);
+    right: calc(var(--jg-sidebar-w) + 24px);
     bottom: 12px;
     width: 340px;
-    max-width: calc(100% - min(361px, 28.5vw) - 120px);
+    max-width: calc(100% - var(--jg-sidebar-w) - 120px);
     max-height: 50%;
     background: rgba(255, 255, 255, 0.97);
     backdrop-filter: blur(12px);
@@ -1737,14 +1750,8 @@ body.jg-fullscreen-active #jg-search-panel {
 
   /* Move FAB to the left of the sidebar panel in fullscreen */
   body.jg-fullscreen-active #jg-fab-container {
-    right: calc(28.5vw + 40px) !important;
+    right: calc(var(--jg-sidebar-w) + 40px) !important;
     transition: right 0.3s ease !important;
-  }
-
-  @supports (width: min(361px, 28.5vw)) {
-    body.jg-fullscreen-active #jg-fab-container {
-      right: calc(min(361px, 28.5vw) + 40px) !important;
-    }
   }
 
 }
@@ -1960,7 +1967,7 @@ body.jg-fullscreen-active #jg-search-panel {
     position: absolute !important;
     top: 10px !important;
     left: 55px !important;
-    right: calc(min(361px, 28.5vw) + 24px) !important;
+    right: calc(var(--jg-sidebar-w) + 24px) !important;
     bottom: auto !important;
     z-index: 1001 !important;
     max-width: none !important;
@@ -1992,8 +1999,7 @@ body.jg-fullscreen-active #jg-search-panel {
     right: 12px !important;
     bottom: auto !important;
     left: auto !important;
-    width: 361px !important;
-    max-width: 28.5vw !important;
+    width: var(--jg-sidebar-w) !important;
     height: calc(100% - 24px) !important;
     max-height: calc(100% - 24px) !important;
     min-height: 0 !important;
@@ -2011,19 +2017,13 @@ body.jg-fullscreen-active #jg-search-panel {
 
   /* Search results panel: shifted left to avoid the floating sidebar */
   body.jg-desktop-wide-active #jg-search-panel {
-    right: calc(min(361px, 28.5vw) + 12px) !important;
+    right: calc(var(--jg-sidebar-w) + 12px) !important;
   }
 
   /* FAB: shifted left to stay clear of the floating sidebar */
   body.jg-desktop-wide-active #jg-fab-container {
-    right: calc(28.5vw + 40px) !important;
+    right: calc(var(--jg-sidebar-w) + 40px) !important;
     transition: right 0.3s ease !important;
-  }
-
-  @supports (width: min(361px, 28.5vw)) {
-    body.jg-desktop-wide-active #jg-fab-container {
-      right: calc(min(361px, 28.5vw) + 40px) !important;
-    }
   }
 }
 
@@ -2045,7 +2045,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 @media (min-width: 769px) {
   body.jg-fullscreen-active .jg-fs-top-controls {
     top: 10px;
-    right: calc(min(361px, 28.5vw) + 24px);
+    right: calc(var(--jg-sidebar-w) + 24px);
   }
 }
 
