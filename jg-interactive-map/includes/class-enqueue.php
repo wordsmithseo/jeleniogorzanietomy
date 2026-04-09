@@ -228,6 +228,7 @@ class JG_Map_Enqueue {
         wp_localize_script('jg-map-auth', 'JG_AUTH_CFG', array(
             'ajax' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('jg_map_nonce'),
+            'isAdmin' => (bool) (current_user_can('manage_options') || current_user_can('jg_map_moderate')),
             'registrationEnabled' => (bool) get_option('jg_map_registration_enabled', 1),
             'registrationDisabledMessage' => get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.'),
             'termsUrl' => get_option('jg_map_terms_url', ''),

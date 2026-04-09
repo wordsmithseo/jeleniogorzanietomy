@@ -44,6 +44,39 @@
         }
       });
     }
+
+    // User profile modal (mirrors jg-map-modal-report from map shortcode)
+    if (!document.getElementById('jg-map-modal-report')) {
+      var modalReport = document.createElement('div');
+      modalReport.id = 'jg-map-modal-report';
+      modalReport.className = 'jg-modal-bg';
+      modalReport.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999999;align-items:center;justify-content:center;';
+      modalReport.innerHTML = '<div class="jg-modal" style="background:#fff;border-radius:12px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;position:relative;"></div>';
+      document.body.appendChild(modalReport);
+      modalReport.addEventListener('click', function(e) { if (e.target === modalReport) modalReport.style.display = 'none'; });
+    }
+
+    // Ranking modal (mirrors jg-map-modal-ranking from map shortcode)
+    if (!document.getElementById('jg-map-modal-ranking')) {
+      var modalRanking = document.createElement('div');
+      modalRanking.id = 'jg-map-modal-ranking';
+      modalRanking.className = 'jg-modal-bg';
+      modalRanking.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999999;align-items:center;justify-content:center;';
+      modalRanking.innerHTML = '<div class="jg-modal" style="background:#fff;border-radius:12px;max-width:480px;width:90%;max-height:90vh;overflow-y:auto;position:relative;"></div>';
+      document.body.appendChild(modalRanking);
+      modalRanking.addEventListener('click', function(e) { if (e.target === modalRanking) modalRanking.style.display = 'none'; });
+    }
+
+    // Achievements modal (mirrors jg-map-modal-reports-list from map shortcode)
+    if (!document.getElementById('jg-map-modal-reports-list')) {
+      var modalReportsList = document.createElement('div');
+      modalReportsList.id = 'jg-map-modal-reports-list';
+      modalReportsList.className = 'jg-modal-bg';
+      modalReportsList.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000000;align-items:center;justify-content:center;';
+      modalReportsList.innerHTML = '<div class="jg-modal" style="background:#fff;border-radius:12px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;position:relative;"></div>';
+      document.body.appendChild(modalReportsList);
+      modalReportsList.addEventListener('click', function(e) { if (e.target === modalReportsList) modalReportsList.style.display = 'none'; });
+    }
   }
 
   // Helper functions
@@ -1069,62 +1102,356 @@
     });
   }
 
-  // Open ranking modal on pages without map (jg-map.js handles it on map pages)
-  function openRankingModal() {
-    ensureModalsExist();
+  // AJAX helper – uses _ajax_nonce key as required by verify_nonce() in PHP
+  function apiAjax(action, data) {
     var CFG = window.JG_AUTH_CFG || {};
+    var params = { action: action, _ajax_nonce: CFG.nonce };
+    if (data) {
+      for (var k in data) { if (data.hasOwnProperty(k)) params[k] = data[k]; }
+    }
+    return new Promise(function(resolve, reject) {
+      $.ajax({
+        url: CFG.ajax,
+        type: 'POST',
+        data: params,
+        success: function(r) { (r && r.success) ? resolve(r.data) : reject(r && r.data); },
+        error: function() { reject(null); }
+      });
+    });
+  }
+
+  // Open user activity modal (admin only, called from openUserModal)
+  function openUserActivityModal(userId) {
     var modalEdit = document.getElementById('jg-map-modal-edit');
     if (!modalEdit) return;
+    var html = '<header style="background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;padding:16px 20px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">' +
+      '<h3 style="margin:0;font-size:16px">⏱️ Ostatnia aktywność</h3>' +
+      '<button id="jg-activity-close" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;opacity:0.8;line-height:1">&times;</button>' +
+      '</header>' +
+      '<div style="padding:20px"><p style="color:#6b7280;text-align:center">Ładowanie...</p></div>';
+    open(modalEdit, html);
+    document.getElementById('jg-activity-close').onclick = function() { close(modalEdit); };
+    apiAjax('jg_get_user_activity', { user_id: userId }).then(function(items) {
+      var container = modalEdit.querySelector('.jg-modal');
+      if (!items || !items.length) {
+        container.querySelector('div[style*="padding:20px"]').innerHTML = '<p style="color:#6b7280;text-align:center">Brak zarejestrowanych aktywności.</p>';
+        return;
+      }
+      var listHtml = '<ul style="list-style:none;margin:0;padding:0">';
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var date = it.ts ? new Date(it.ts).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+        listHtml += '<li style="display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #f1f5f9">' +
+          '<span style="font-size:20px;flex-shrink:0;margin-top:1px">' + it.icon + '</span>' +
+          '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;color:#1f2937">' + esc(it.label) + '</div>' +
+          '<div style="font-size:12px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(it.point_title) + '</div></div>' +
+          '<div style="font-size:11px;color:#9ca3af;white-space:nowrap;flex-shrink:0">' + date + '</div></li>';
+      }
+      listHtml += '</ul>';
+      container.querySelector('div[style*="padding:20px"]').innerHTML = listHtml;
+    }).catch(function() {});
+  }
 
-    var headerHtml = '<div class="jg-modal-header" style="background:linear-gradient(135deg, #b8860b 0%, #ffd700 100%);color:#fff;padding:20px 24px;border-radius:8px 8px 0 0;position:relative">' +
-      '<h2 style="margin:0;font-size:20px;font-weight:600">🏆 Ranking użytkowników</h2>' +
-      '<button id="jg-ranking-modal-close" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#fff;font-size:24px;cursor:pointer;opacity:0.8;line-height:1">&times;</button>' +
-      '</div>';
-
-    open(modalEdit, headerHtml + '<div style="padding:40px;text-align:center;color:#6b7280">Ładowanie rankingu...</div>');
-    document.getElementById('jg-ranking-modal-close').addEventListener('click', function() { close(modalEdit); });
-
+  // Open all achievements modal for a user
+  function openAllAchievementsModal(userId) {
+    var modalList = document.getElementById('jg-map-modal-reports-list');
+    if (!modalList) return;
+    var rarityLabels = { common: 'Zwykłe', uncommon: 'Niepospolite', rare: 'Rzadkie', epic: 'Epickie', legendary: 'Legendarne' };
+    var rarityColors = { common: '#d1d5db', uncommon: '#10b981', rare: '#3b82f6', epic: '#8b5cf6', legendary: '#f59e0b' };
+    var CFG = window.JG_AUTH_CFG || {};
     $.ajax({
-      url: CFG.ajax,
-      type: 'POST',
-      data: { action: 'jg_get_ranking', nonce: CFG.nonce },
+      url: CFG.ajax, type: 'POST',
+      data: { action: 'jg_get_user_achievements', user_id: userId },
       success: function(response) {
-        if (!response.success || !response.data || !response.data.length) {
-          open(modalEdit, headerHtml + '<div style="padding:40px;text-align:center;color:#6b7280">Brak danych rankingu.</div>');
-          document.getElementById('jg-ranking-modal-close').addEventListener('click', function() { close(modalEdit); });
-          return;
+        if (!response || !response.success || !Array.isArray(response.data)) return;
+        var achievements = response.data;
+        var html = '<header style="background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);padding:20px;border-radius:12px 12px 0 0">' +
+          '<h3 style="margin:0;color:#fff;font-size:20px">🏆 Osiągnięcia</h3>' +
+          '<button class="jg-close" id="ach-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
+          '</header>' +
+          '<div style="padding:20px;max-height:70vh;overflow-y:auto"><div class="jg-achievements-grid">';
+        for (var i = 0; i < achievements.length; i++) {
+          var a = achievements[i];
+          var color = rarityColors[a.rarity] || rarityColors.common;
+          var label = rarityLabels[a.rarity] || 'Zwykłe';
+          var earned = a.earned;
+          var earnedDate = a.earned_at ? new Date(a.earned_at).toLocaleDateString('pl-PL') : '';
+          html += '<div class="jg-achievement-card' + (earned ? '' : ' jg-achievement-locked') + '" style="border-color:' + color + '">' +
+            '<div class="jg-achievement-card-icon" style="box-shadow:' + (earned ? '0 0 12px ' + color : 'none') + ';border-color:' + color + '">' +
+            '<span style="font-size:28px">' + (earned ? esc(a.icon) : '🔒') + '</span></div>' +
+            '<div class="jg-achievement-card-info"><div class="jg-achievement-card-name">' + esc(a.name) + '</div>' +
+            '<div class="jg-achievement-card-desc">' + esc(a.description) + '</div>' +
+            '<div class="jg-achievement-card-rarity" style="color:' + color + '">' + label + '</div>' +
+            (earnedDate ? '<div class="jg-achievement-card-date">Zdobyto: ' + earnedDate + '</div>' : '') +
+            '</div></div>';
         }
-        var ranking = response.data;
-        var rowsHtml = '';
-        for (var i = 0; i < ranking.length; i++) {
-          var r = ranking[i];
-          var pos = i + 1;
-          var medal = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos + '.';
-          rowsHtml += '<div style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #f3f4f6">' +
-            '<div style="width:36px;font-size:' + (pos <= 3 ? '20px' : '14px') + ';font-weight:700;color:#6b7280;text-align:center">' + medal + '</div>' +
-            '<div style="flex:1;min-width:0;padding:0 12px">' +
-            '<div style="font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(r.display_name) + '</div>' +
-            '<div style="font-size:12px;color:#9ca3af">Poz. ' + r.level + '</div>' +
-            '</div>' +
-            '<div style="font-weight:700;color:#059669;font-size:16px">📍 ' + r.places_count + '</div>' +
-            '</div>';
-        }
-        var html = headerHtml +
-          '<div style="padding:16px 24px 8px">' +
-          '<div style="font-size:13px;color:#9ca3af;margin-bottom:4px">Top 10 najbardziej aktywnych użytkowników</div>' +
-          '</div>' +
-          '<div style="padding:0 24px 16px;max-height:60vh;overflow-y:auto">' + rowsHtml + '</div>' +
-          '<div style="padding:12px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:right;border-radius:0 0 8px 8px">' +
-          '<button id="jg-ranking-modal-close-btn" style="padding:8px 20px;background:#b8860b;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">Zamknij</button>' +
-          '</div>';
-        open(modalEdit, html);
-        document.getElementById('jg-ranking-modal-close').addEventListener('click', function() { close(modalEdit); });
-        document.getElementById('jg-ranking-modal-close-btn').addEventListener('click', function() { close(modalEdit); });
-      },
-      error: function() {
-        showAlert('Błąd pobierania rankingu');
+        html += '</div></div>';
+        open(modalList, html);
+        document.getElementById('ach-modal-close').onclick = function() { close(modalList); };
       }
     });
+  }
+
+  // Open user profile modal – identical to jg-map.js openUserModal, uses same CSS classes.
+  // Exported as window.openUserModal so it works on all pages.
+  // On map pages jg-map.js overrides this with its own version after loading.
+  function openUserModal(userId, pointsPage, photosPage, editedPointsPage) {
+    ensureModalsExist();
+    pointsPage = pointsPage || 1;
+    photosPage = photosPage || 1;
+    editedPointsPage = editedPointsPage || 1;
+    var CFG = window.JG_AUTH_CFG || {};
+    var isAdmin = !!(CFG.isAdmin);
+    var modalReport = document.getElementById('jg-map-modal-report');
+    if (!modalReport) return;
+
+    open(modalReport, '<div style="padding:40px;text-align:center"><div style="display:inline-block;width:40px;height:40px;border:3px solid #e5e7eb;border-top-color:#8d2324;border-radius:50%;animation:jg-spin 1s linear infinite"></div>' +
+      '<style>@keyframes jg-spin{to{transform:rotate(360deg)}}</style></div>');
+
+    apiAjax('jg_get_user_info', { user_id: userId, points_page: pointsPage, photos_page: photosPage, edited_points_page: editedPointsPage })
+      .then(function(user) {
+        if (!user) { showAlert('Błąd pobierania informacji o użytkowniku'); return; }
+        var memberSince = user.member_since ? new Date(user.member_since).toLocaleDateString('pl-PL') : '-';
+        var lastActivity = user.last_activity ? new Date(user.last_activity).toLocaleDateString('pl-PL') : 'Brak aktywności';
+        var lastActivityType = user.last_activity_type || '';
+        var tc = user.type_counts || {};
+
+        var typeStatsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));gap:12px;margin-bottom:20px">' +
+          '<div style="padding:14px;background:#ecfdf5;border-radius:8px;text-align:center;border-left:4px solid #10b981"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">📍 Miejsca</div><div style="font-weight:700;font-size:22px;color:#059669">' + (tc.miejsce || 0) + '</div></div>' +
+          '<div style="padding:14px;background:#fef3c7;border-radius:8px;text-align:center;border-left:4px solid #f59e0b"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">💡 Ciekawostki</div><div style="font-weight:700;font-size:22px;color:#d97706">' + (tc.ciekawostka || 0) + '</div></div>' +
+          '<div style="padding:14px;background:#fce7f3;border-radius:8px;text-align:center;border-left:4px solid #ec4899"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">📢 Zgłoszenia</div><div style="font-weight:700;font-size:22px;color:#db2777">' + (tc.zgloszenie || 0) + '</div></div>' +
+          '<div style="padding:14px;background:#eff6ff;border-radius:8px;text-align:center;border-left:4px solid #3b82f6"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">👍 Głosowania</div><div style="font-weight:700;font-size:22px;color:#2563eb">' + (tc.votes || 0) + '</div></div>' +
+          '<div style="padding:14px;background:#f5f3ff;border-radius:8px;text-align:center;border-left:4px solid #8b5cf6"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">✏️ Edycje</div><div style="font-weight:700;font-size:22px;color:#7c3aed">' + (tc.edits || 0) + '</div></div>' +
+          '</div>';
+
+        var pointsHtml = '';
+        if (user.points && user.points.length > 0) {
+          pointsHtml = '<div style="margin-top:12px">';
+          for (var i = 0; i < user.points.length; i++) {
+            var point = user.points[i];
+            var typeLabels = { miejsce: '📍 Miejsce', ciekawostka: '💡 Ciekawostka', zgloszenie: '📢 Zgłoszenie' };
+            var createdAt = point.created_at ? new Date(point.created_at).toLocaleDateString('pl-PL') : '-';
+            pointsHtml += '<div style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px">' +
+              '<div style="font-weight:600;margin-bottom:4px">' + esc(point.title) + '</div>' +
+              '<div style="font-size:12px;color:#6b7280"><span style="margin-right:12px">' + (typeLabels[point.type] || point.type) + '</span><span>Dodano: ' + createdAt + '</span></div></div>';
+          }
+          pointsHtml += '</div>';
+          if (user.points_pages > 1) {
+            pointsHtml += '<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px">' +
+              '<button class="jg-user-modal-points-prev" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (pointsPage <= 1 ? ';opacity:0.4;pointer-events:none' : '') + '">&laquo; Poprzednie</button>' +
+              '<span style="font-size:13px;color:#6b7280">Strona ' + user.points_page + ' z ' + user.points_pages + '</span>' +
+              '<button class="jg-user-modal-points-next" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (pointsPage >= user.points_pages ? ';opacity:0.4;pointer-events:none' : '') + '">Następne &raquo;</button></div>';
+          }
+        } else {
+          pointsHtml = '<div style="padding:20px;text-align:center;color:#9ca3af">Brak dodanych miejsc</div>';
+        }
+
+        var editedPointsHtml = '';
+        if (user.edited_points && user.edited_points.length > 0) {
+          editedPointsHtml = '<div style="margin-top:20px"><h4 style="margin:0 0 8px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">✏️ Edytowane pinezki (' + user.edited_points_total + ')</h4><div style="margin-top:12px">';
+          for (var ei = 0; ei < user.edited_points.length; ei++) {
+            var ep = user.edited_points[ei];
+            var epTypeLabels = { miejsce: '📍 Miejsce', ciekawostka: '💡 Ciekawostka', zgloszenie: '📢 Zgłoszenie' };
+            var epEditedAt = ep.last_edited_at ? new Date(ep.last_edited_at).toLocaleDateString('pl-PL') : '-';
+            editedPointsHtml += '<div style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:8px">' +
+              '<div style="font-weight:600;margin-bottom:4px">' + esc(ep.title) + '</div>' +
+              '<div style="font-size:12px;color:#6b7280"><span style="margin-right:12px">' + (epTypeLabels[ep.type] || ep.type) + '</span><span>Ostatnia edycja: ' + epEditedAt + '</span></div></div>';
+          }
+          editedPointsHtml += '</div>';
+          if (user.edited_points_pages > 1) {
+            editedPointsHtml += '<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px">' +
+              '<button class="jg-user-modal-edited-points-prev" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (editedPointsPage <= 1 ? ';opacity:0.4;pointer-events:none' : '') + '">&laquo; Poprzednie</button>' +
+              '<span style="font-size:13px;color:#6b7280">Strona ' + user.edited_points_page + ' z ' + user.edited_points_pages + '</span>' +
+              '<button class="jg-user-modal-edited-points-next" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (editedPointsPage >= user.edited_points_pages ? ';opacity:0.4;pointer-events:none' : '') + '">Następne &raquo;</button></div>';
+          }
+          editedPointsHtml += '</div>';
+        } else if (user.edited_points_total === 0) {
+          editedPointsHtml = '<div style="margin-top:20px"><h4 style="margin:0 0 8px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">✏️ Edytowane pinezki</h4>' +
+            '<div style="padding:20px;text-align:center;color:#9ca3af">Brak edytowanych pinezek</div></div>';
+        }
+
+        var photosHtml = '';
+        if (user.photos_total > 0) {
+          photosHtml = '<div><h4 style="margin:20px 0 12px 0;color:#374151">📷 Galeria zdjęć (' + user.photos_total + ')</h4>' +
+            '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));gap:12px">';
+          for (var j = 0; j < user.photos.length; j++) {
+            var photo = user.photos[j];
+            var photoUrl = typeof photo === 'string' ? photo : (photo.url || photo.full || '');
+            var thumbUrl = typeof photo === 'string' ? photo : (photo.thumbnail || photo.thumb || photo.url || photo.full || '');
+            if (photoUrl && thumbUrl) {
+              photosHtml += '<div class="user-photo-item" data-photo-url="' + esc(photoUrl) + '" style="position:relative;padding-bottom:100%;border-radius:8px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s">' +
+                '<img src="' + esc(thumbUrl) + '" alt="User photo" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover"></div>';
+            }
+          }
+          photosHtml += '</div>';
+          if (user.photos_pages > 1) {
+            photosHtml += '<div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px">' +
+              '<button class="jg-user-modal-photos-prev" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (photosPage <= 1 ? ';opacity:0.4;pointer-events:none' : '') + '">&laquo; Poprzednie</button>' +
+              '<span style="font-size:13px;color:#6b7280">Strona ' + user.photos_page + ' z ' + user.photos_pages + '</span>' +
+              '<button class="jg-user-modal-photos-next" style="padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:13px' + (photosPage >= user.photos_pages ? ';opacity:0.4;pointer-events:none' : '') + '">Następne &raquo;</button></div>';
+          }
+          photosHtml += '</div>';
+        }
+
+        var modalHtml = '<header style="background:linear-gradient(135deg, #8d2324 0%, #6b1a1b 100%);padding:20px;border-radius:12px 12px 0 0">' +
+          '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+          '<h3 style="margin:0;color:#fff;font-size:20px;flex-shrink:0">👤 ' + esc(user.username) + '</h3>' +
+          '<span id="jg-user-level-badge" class="jg-level-badge" style="display:none"></span>' +
+          '<div id="jg-user-xp-bar-wrap" class="jg-xp-bar-wrap" style="display:none;flex:1;min-width:120px">' +
+          '<div class="jg-xp-bar"><div class="jg-xp-bar-fill" id="jg-user-xp-fill" style="width:0%"></div></div>' +
+          '<div class="jg-xp-bar-text" id="jg-user-xp-text"></div></div>' +
+          '<div id="jg-user-achievements-panel" class="jg-achievements-panel" style="display:none;cursor:pointer" title="Kliknij aby zobaczyć wszystkie osiągnięcia"></div>' +
+          '</div>' +
+          '<button class="jg-close" id="user-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
+          '</header>' +
+          '<div style="padding:20px;max-height:70vh;overflow-y:auto">' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:20px">' +
+          '<div style="padding:16px;background:#f9fafb;border-radius:8px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">📅 Członek od</div><div style="font-weight:600">' + memberSince + '</div></div>' +
+          (isAdmin ?
+            '<div style="padding:16px;background:#f9fafb;border-radius:8px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">⏱️ Ostatnia aktywność</div>' +
+            '<div style="font-weight:600">' + lastActivity + '</div>' +
+            (lastActivityType ? '<div style="font-size:11px;color:#9ca3af;margin-top:3px">' + lastActivityType + '</div>' : '') +
+            (user.last_activity ? '<div style="font-size:11px;color:#6366f1;margin-top:5px;cursor:pointer;text-decoration:underline" id="jg-view-activity-link">Zobacz historię aktywności →</div>' : '') +
+            '</div>'
+          : '') +
+          '<div style="padding:16px;background:#f9fafb;border-radius:8px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">📍 Dodane miejsca</div><div style="font-weight:600;font-size:24px">' + user.points_count + '</div></div>' +
+          '</div>' +
+          '<h4 style="margin:0 0 12px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">📊 Statystyki pinezek</h4>' +
+          typeStatsHtml +
+          '<div><h4 style="margin:0 0 8px 0;color:#374151;font-size:16px;border-bottom:1px solid #e5e7eb;padding-bottom:8px">📍 Dodane miejsca (' + user.points_count + ')</h4>' +
+          pointsHtml + '</div>' +
+          editedPointsHtml + photosHtml +
+          '</div>';
+
+        open(modalReport, modalHtml);
+        document.getElementById('user-modal-close').onclick = function() { close(modalReport); };
+        var actLink = document.getElementById('jg-view-activity-link');
+        if (actLink) actLink.onclick = function() { openUserActivityModal(userId); };
+
+        // Load level/XP/achievements asynchronously
+        $.ajax({
+          url: CFG.ajax, type: 'POST',
+          data: { action: 'jg_get_user_level_info', user_id: userId },
+          success: function(r) {
+            if (!r || !r.success || !r.data) return;
+            var ld = r.data;
+            var badge = document.getElementById('jg-user-level-badge');
+            if (badge) {
+              badge.textContent = 'Poz. ' + ld.level;
+              badge.style.display = 'inline-block';
+              var lvl = ld.level;
+              var tier = lvl >= 50 ? 'legend' : lvl >= 40 ? 'ruby' : lvl >= 30 ? 'diamond' : lvl >= 20 ? 'purple' : lvl >= 15 ? 'emerald' : lvl >= 10 ? 'gold' : lvl >= 5 ? 'silver' : 'bronze';
+              badge.className = 'jg-level-badge jg-badge-' + tier;
+            }
+            var barWrap = document.getElementById('jg-user-xp-bar-wrap');
+            var barFill = document.getElementById('jg-user-xp-fill');
+            var barText = document.getElementById('jg-user-xp-text');
+            if (barWrap && barFill && barText) {
+              barWrap.style.display = 'block';
+              barFill.style.width = ld.progress + '%';
+              barText.textContent = ld.xp_in_level + ' / ' + ld.xp_needed + ' XP';
+            }
+            var achPanel = document.getElementById('jg-user-achievements-panel');
+            if (achPanel && ld.recent_achievements && ld.recent_achievements.length > 0) {
+              var rarityGlows = { common: '0 0 8px rgba(209,213,219,0.8)', uncommon: '0 0 8px rgba(16,185,129,0.8)', rare: '0 0 8px rgba(59,130,246,0.8)', epic: '0 0 8px rgba(139,92,246,0.8)', legendary: '0 0 10px rgba(245,158,11,0.9), 0 0 20px rgba(245,158,11,0.4)' };
+              var rarityBorders = { common: '#d1d5db', uncommon: '#10b981', rare: '#3b82f6', epic: '#8b5cf6', legendary: '#f59e0b' };
+              var achHtml = '';
+              for (var a = 0; a < ld.recent_achievements.length; a++) {
+                var ach = ld.recent_achievements[a];
+                achHtml += '<div class="jg-achievement-icon" title="' + esc(ach.name) + ': ' + esc(ach.description) + '" style="border-color:' + (rarityBorders[ach.rarity] || rarityBorders.common) + ';box-shadow:' + (rarityGlows[ach.rarity] || rarityGlows.common) + '"><span>' + esc(ach.icon) + '</span></div>';
+              }
+              if (ld.total_achievements > 4) achHtml += '<div class="jg-achievement-more">+' + (ld.total_achievements - 4) + '</div>';
+              achPanel.innerHTML = achHtml;
+              achPanel.style.display = 'flex';
+              achPanel.onclick = function() { openAllAchievementsModal(userId); };
+            }
+          }
+        });
+
+        // Pagination handlers
+        var pPrev = modalReport.querySelector('.jg-user-modal-points-prev');
+        var pNext = modalReport.querySelector('.jg-user-modal-points-next');
+        if (pPrev && pointsPage > 1) pPrev.onclick = function() { window.openUserModal(userId, pointsPage - 1, photosPage, editedPointsPage); };
+        if (pNext && pointsPage < user.points_pages) pNext.onclick = function() { window.openUserModal(userId, pointsPage + 1, photosPage, editedPointsPage); };
+        var ePrev = modalReport.querySelector('.jg-user-modal-edited-points-prev');
+        var eNext = modalReport.querySelector('.jg-user-modal-edited-points-next');
+        if (ePrev && editedPointsPage > 1) ePrev.onclick = function() { window.openUserModal(userId, pointsPage, photosPage, editedPointsPage - 1); };
+        if (eNext && editedPointsPage < user.edited_points_pages) eNext.onclick = function() { window.openUserModal(userId, pointsPage, photosPage, editedPointsPage + 1); };
+        var phPrev = modalReport.querySelector('.jg-user-modal-photos-prev');
+        var phNext = modalReport.querySelector('.jg-user-modal-photos-next');
+        if (phPrev && photosPage > 1) phPrev.onclick = function() { window.openUserModal(userId, pointsPage, photosPage - 1, editedPointsPage); };
+        if (phNext && photosPage < user.photos_pages) phNext.onclick = function() { window.openUserModal(userId, pointsPage, photosPage + 1, editedPointsPage); };
+
+        // Photo clicks – open in new tab (lightbox not available outside map page)
+        var photoItems = modalReport.querySelectorAll('.user-photo-item');
+        for (var pk = 0; pk < photoItems.length; pk++) {
+          photoItems[pk].onmouseover = function() { this.style.transform = 'scale(1.05)'; this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; };
+          photoItems[pk].onmouseout = function() { this.style.transform = 'scale(1)'; this.style.boxShadow = 'none'; };
+          photoItems[pk].onclick = function() { var u = this.getAttribute('data-photo-url'); if (u) window.open(u, '_blank'); };
+        }
+      })
+      .catch(function(err) { showAlert((err && err.message) || 'Błąd pobierania informacji o użytkowniku'); });
+  }
+
+  // Export so it can be called from top-bar profile link on any page
+  window.openUserModal = openUserModal;
+
+  // Ranking modal – matches jg-map.js styling (uses jg-ranking-* CSS classes from jg-map.css)
+  function openRankingModal() {
+    ensureModalsExist();
+    var modalRanking = document.getElementById('jg-map-modal-ranking');
+    if (!modalRanking) return;
+
+    var loadingHtml = '<header class="jg-ranking-header"><div class="jg-ranking-header-inner"><h3 class="jg-ranking-title">🏆 Ranking użytkowników</h3></div>' +
+      '<button class="jg-close" id="ranking-modal-close" style="color:#fff;opacity:0.9">&times;</button></header>' +
+      '<div style="padding:40px;text-align:center;color:#6b7280">Ładowanie rankingu...</div>';
+    open(modalRanking, loadingHtml);
+    document.getElementById('ranking-modal-close').onclick = function() { close(modalRanking); };
+
+    apiAjax('jg_get_ranking', {}).then(function(ranking) {
+      if (!ranking || !ranking.length) {
+        var emptyHtml = '<header class="jg-ranking-header"><div class="jg-ranking-header-inner"><h3 class="jg-ranking-title">🏆 Ranking użytkowników</h3></div>' +
+          '<button class="jg-close" id="ranking-modal-close" style="color:#fff;opacity:0.9">&times;</button></header>' +
+          '<div style="padding:40px;text-align:center;color:#6b7280">Brak danych rankingu.</div>';
+        open(modalRanking, emptyHtml);
+        document.getElementById('ranking-modal-close').onclick = function() { close(modalRanking); };
+        return;
+      }
+      var rowsHtml = '';
+      for (var i = 0; i < ranking.length; i++) {
+        var r = ranking[i];
+        var pos = i + 1;
+        var rowClass = 'jg-ranking-row' + (pos === 1 ? ' jg-ranking-gold' : pos === 2 ? ' jg-ranking-silver' : pos === 3 ? ' jg-ranking-bronze' : '');
+        var starHtml = pos === 1 ? '<span class="jg-ranking-star">⭐</span> ' : '';
+        rowsHtml += '<div class="' + rowClass + '" data-user-id="' + r.user_id + '">' +
+          '<div class="jg-ranking-pos">' + pos + '</div>' +
+          '<div class="jg-ranking-info"><div class="jg-ranking-name">' + starHtml + '<a href="#" class="jg-ranking-user-link" data-user-id="' + r.user_id + '">' + esc(r.display_name) + '</a></div>' +
+          '<div class="jg-ranking-meta"><span class="jg-ranking-level">Poz. ' + r.level + '</span><span class="jg-ranking-places">📍 ' + r.places_count + ' miejsc</span></div></div>' +
+          '<div class="jg-ranking-count">' + r.places_count + '</div></div>';
+      }
+      for (var k = ranking.length; k < 10; k++) {
+        rowsHtml += '<div class="jg-ranking-row jg-ranking-empty"><div class="jg-ranking-pos">' + (k + 1) + '</div>' +
+          '<div class="jg-ranking-info"><div class="jg-ranking-empty-bar"></div><div class="jg-ranking-empty-bar jg-ranking-empty-bar--short"></div></div>' +
+          '<div class="jg-ranking-count jg-ranking-empty-count"></div></div>';
+      }
+      var html = '<header class="jg-ranking-header"><div class="jg-ranking-header-inner"><div class="jg-ranking-trophy">🏆</div>' +
+        '<div><h3 class="jg-ranking-title">Ranking użytkowników</h3><p class="jg-ranking-subtitle">Top 10 najbardziej aktywnych użytkowników</p></div></div>' +
+        '<button class="jg-close" id="ranking-modal-close" style="color:#fff;opacity:0.9">&times;</button></header>' +
+        '<div class="jg-ranking-body"><div class="jg-ranking-list">' + rowsHtml + '</div></div>';
+      open(modalRanking, html);
+      document.getElementById('ranking-modal-close').onclick = function() { close(modalRanking); };
+      var userLinks = modalRanking.querySelectorAll('.jg-ranking-user-link');
+      for (var j = 0; j < userLinks.length; j++) {
+        (function(link) {
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
+            close(modalRanking);
+            var uid = parseInt(link.getAttribute('data-user-id'), 10);
+            if (uid) window.openUserModal(uid);
+          });
+        })(userLinks[j]);
+      }
+    }).catch(function() { showAlert('Błąd pobierania rankingu'); });
   }
 
   // Initialize buttons when DOM is ready
@@ -1168,13 +1495,10 @@
   // Add Escape key handler to close modals
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-      var modalEdit = document.getElementById('jg-map-modal-edit');
-      var modalAlert = document.getElementById('jg-modal-alert');
-      if (modalEdit && modalEdit.style.display === 'flex') {
-        modalEdit.style.display = 'none';
-      }
-      if (modalAlert && modalAlert.style.display === 'flex') {
-        modalAlert.style.display = 'none';
+      var ids = ['jg-map-modal-edit', 'jg-map-modal-report', 'jg-map-modal-ranking', 'jg-map-modal-reports-list', 'jg-modal-alert'];
+      for (var i = 0; i < ids.length; i++) {
+        var m = document.getElementById(ids[i]);
+        if (m && m.style.display === 'flex') { m.style.display = 'none'; break; }
       }
     }
   });
