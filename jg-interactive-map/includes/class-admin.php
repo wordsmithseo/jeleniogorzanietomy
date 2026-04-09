@@ -4591,7 +4591,19 @@ class JG_Map_Admin {
                 update_option('jg_map_privacy_content', wp_kses_post($_POST['jg_map_privacy_content'] ?? ''));
             }
 
+            // IndexNow: regenerate key if requested
+            if (!empty($_POST['jg_map_indexnow_regenerate'])) {
+                update_option('jg_map_indexnow_key', wp_generate_uuid4());
+            }
+
             echo '<div class="notice notice-success is-dismissible"><p>Ustawienia zostały zapisane.</p></div>';
+        }
+
+        // Auto-generate IndexNow key on first use (no manual setup needed)
+        $indexnow_key = get_option('jg_map_indexnow_key', '');
+        if ($indexnow_key === '') {
+            $indexnow_key = wp_generate_uuid4();
+            update_option('jg_map_indexnow_key', $indexnow_key);
         }
 
         $registration_enabled = get_option('jg_map_registration_enabled', 1); // Enabled by default
@@ -4753,6 +4765,34 @@ class JG_Map_Admin {
                                           class="large-text"
                                           placeholder="Wpisz treść polityki prywatności..."><?php echo esc_textarea($privacy_content); ?></textarea>
                                 <p class="description">Treść polityki prywatności zostanie wyświetlona użytkownikom w okienku modalnym. Dozwolony HTML.</p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="jg-card jg-card-body" style="max-width:800px">
+                    <h2>IndexNow – automatyczne powiadamianie wyszukiwarek</h2>
+                    <p class="description" style="margin-bottom:16px">
+                        IndexNow to protokół obsługiwany przez Bing i Yandex. Plugin automatycznie pinguje wyszukiwarki
+                        za każdym razem gdy zatwierdzisz nowe miejsce lub edycję. Klucz poniżej jest generowany
+                        automatycznie i hostowany przez plugin pod adresem
+                        <code><?php echo esc_html(home_url('/' . $indexnow_key . '.txt')); ?></code> –
+                        <strong>nie musisz nic konfigurować ani rejestrować się nigdzie</strong>.
+                    </p>
+
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">Klucz IndexNow</th>
+                            <td>
+                                <code style="font-size:14px;background:#f6f7f7;padding:6px 10px;border-radius:4px;display:inline-block;letter-spacing:.5px"><?php echo esc_html($indexnow_key); ?></code>
+                                <p class="description" style="margin-top:8px">
+                                    Plik weryfikacyjny dostępny pod:
+                                    <a href="<?php echo esc_url(home_url('/' . $indexnow_key . '.txt')); ?>" target="_blank"><?php echo esc_html(home_url('/' . $indexnow_key . '.txt')); ?></a>
+                                </p>
+                                <label style="display:block;margin-top:12px">
+                                    <input type="checkbox" name="jg_map_indexnow_regenerate" value="1">
+                                    Wygeneruj nowy klucz (użyj tylko gdy coś nie działa)
+                                </label>
                             </td>
                         </tr>
                     </table>
