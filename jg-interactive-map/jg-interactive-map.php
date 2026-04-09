@@ -3694,6 +3694,9 @@ class JG_Interactive_Map {
         <?php
     }
 
+    /** Tracks whether start_archive_h1_buffer() successfully opened a buffer. */
+    private static $archive_h1_buffer_active = false;
+
     /**
      * Start output buffering on native WP tag/category archive pages.
      * Fires at wp_body_open PHP_INT_MAX — after the plugin's topbar/navbar
@@ -3705,6 +3708,7 @@ class JG_Interactive_Map {
             return;
         }
         ob_start();
+        self::$archive_h1_buffer_active = true;
     }
 
     /**
@@ -3719,6 +3723,13 @@ class JG_Interactive_Map {
         if ( ! is_tag() && ! is_category() ) {
             return;
         }
+        // Only close the buffer if WE opened it — prevents closing a foreign buffer
+        // (e.g. WP Rocket's own ob_start) in case this plugin's ob_start() was
+        // skipped or failed silently.
+        if ( ! self::$archive_h1_buffer_active ) {
+            return;
+        }
+        self::$archive_h1_buffer_active = false;
         if ( ob_get_level() < 1 ) {
             return;
         }
