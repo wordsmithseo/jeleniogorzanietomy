@@ -194,6 +194,11 @@ class JG_Interactive_Map {
      * Initialize plugin components
      */
     public function init_components() {
+        // Ensure MySQL session uses UTC so that CURRENT_TIMESTAMP values in plugin
+        // tables are stored in UTC and can be safely converted with get_date_from_gmt().
+        global $wpdb;
+        $wpdb->query("SET time_zone = '+00:00'");
+
         // Allow admins to force schema update via URL parameter (for debugging)
         if (isset($_GET['jg_force_schema_update']) && current_user_can('manage_options')) {
             delete_option('jg_map_schema_version');
