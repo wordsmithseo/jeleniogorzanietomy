@@ -6073,7 +6073,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         return fetchPoints().then(function(data) {
 
           ALL = (data || []).map(function(r) {
-            return {
+            var p = {
               id: r.id,
               title: r.title || '',
               slug: r.slug || '',
@@ -6132,6 +6132,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               price_range: r.price_range || null,
               serves_cuisine: r.serves_cuisine || null
             };
+            // Forward-compatible: copy any new server fields not yet explicitly mapped
+            for (var _k in r) {
+              if (Object.prototype.hasOwnProperty.call(r, _k) && !(_k in p)) {
+                p[_k] = r[_k];
+              }
+            }
+            return p;
           });
 
           // Always save to cache with current timestamp (in seconds to match server)
@@ -11209,8 +11216,22 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           '</div>';
         }
 
-        // Build opening hours display (shown under title for miejsca and ciekawostki)
+        // Build opening hours + price range display
         var openingHoursHtml = '';
+        var _ohBoxHtml = '';
+        var _priceRangeBoxHtml = '';
+
+        // Price range box (independent of opening hours)
+        if (p.type === 'miejsce' && p.price_range && isPriceRangeCategory(p.category || '')) {
+          var prPriceLabels = { '$': 'Bardzo tanie', '$$': 'Umiarkowane', '$$$': 'Droższe', '$$$$': 'Ekskluzywne' };
+          _priceRangeBoxHtml = '<div style="padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:0.875rem;color:#166534;flex:0 0 auto;min-width:140px">' +
+            '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Zakres cenowy</div>' +
+            '<div style="font-size:1.2rem;font-weight:800;letter-spacing:0.05em">' + esc(p.price_range) + '</div>' +
+            '<div style="font-size:0.8rem;opacity:0.85;margin-top:2px">' + esc(prPriceLabels[p.price_range] || '') + '</div>' +
+            '</div>';
+        }
+
+        // Opening hours box
         if (p.opening_hours && p.opening_hours.trim() && (p.type === 'miejsce' || p.type === 'ciekawostka')) {
           var ohDayLabels = { Mo: 'Pon', Tu: 'Wt', We: 'Śr', Th: 'Czw', Fr: 'Pt', Sa: 'Sob', Su: 'Niedz' };
           var ohAllDayKeys = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -11281,25 +11302,18 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 '</div>';
             }).join('');
 
-            var ohBoxHtml = '<div class="jg-opening-hours" style="padding:10px 14px;background:' + ohColors.bg + ';border-radius:8px;border:1px solid ' + ohColors.border + ';font-size:0.875rem;color:' + ohColors.text + ';flex:1;min-width:0">' +
+            _ohBoxHtml = '<div class="jg-opening-hours" style="padding:10px 14px;background:' + ohColors.bg + ';border-radius:8px;border:1px solid ' + ohColors.border + ';font-size:0.875rem;color:' + ohColors.text + ';flex:1;min-width:0">' +
               '<div id="jg-oh-title" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Dzisiejsze godziny otwarcia</div>' +
               '<div id="jg-oh-today">' + todayRowHtml + '</div>' +
               '<div id="jg-oh-all" style="display:none;margin-top:6px;line-height:2;color:' + ohColors.text + '">' + allDaysHtml + '</div>' +
               '<button id="btn-oh-expand" type="button" style="margin-top:6px;background:none;border:none;padding:0;color:' + ohColors.btn + ';font-size:0.8rem;cursor:pointer;text-decoration:underline;font-weight:600">Pokaż wszystkie dni</button>' +
               '</div>';
-
-            var priceRangeBoxHtml = '';
-            if (p.price_range) {
-              var prPriceLabels = { '$': 'Bardzo tanie', '$$': 'Umiarkowane', '$$$': 'Droższe', '$$$$': 'Ekskluzywne' };
-              priceRangeBoxHtml = '<div style="padding:10px 14px;background:#fef3c7;border-radius:8px;border:1px solid #fde68a;font-size:0.875rem;color:#92400e;flex:1;min-width:0">' +
-                '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Zakres cenowy</div>' +
-                '<div style="font-size:1.2rem;font-weight:800;letter-spacing:0.05em">' + esc(p.price_range) + '</div>' +
-                '<div style="font-size:0.8rem;opacity:0.85;margin-top:2px">' + esc(prPriceLabels[p.price_range] || '') + '</div>' +
-                '</div>';
-            }
-
-            openingHoursHtml = '<div style="display:flex;gap:8px;margin:0 0 12px 0;flex-wrap:wrap">' + ohBoxHtml + priceRangeBoxHtml + '</div>';
           }
+        }
+
+        // Show flex row if either section exists
+        if (_ohBoxHtml || _priceRangeBoxHtml) {
+          openingHoursHtml = '<div style="display:flex;gap:8px;margin:0 0 12px 0;flex-wrap:wrap">' + _ohBoxHtml + _priceRangeBoxHtml + '</div>';
         }
 
         // Build menu section placeholder (async-loaded after modal opens)

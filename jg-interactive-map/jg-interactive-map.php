@@ -849,8 +849,8 @@ class JG_Interactive_Map {
         .jg-menu-empty { color: #9ca3af; font-size: calc(14 * var(--jg)); padding: 24px 0; }
         .jg-menu-meta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
         .jg-menu-price-range, .jg-menu-cuisine { padding: 8px 14px; border-radius: 8px; font-size: calc(14 * var(--jg)); }
-        .jg-menu-price-range { background: #fef3c7; border: 1px solid #fde68a; color: #78350f; }
-        .jg-menu-cuisine { background: #f0fdf4; border: 1px solid #bbf7d0; color: #14532d; }
+        .jg-menu-price-range { color: #374151; }
+        .jg-menu-cuisine { color: #374151; }
         .jg-menu-price-range__label, .jg-menu-cuisine__label { font-weight: 600; margin-right: 4px; }
         .jg-menu-price-range__value { font-weight: 800; font-size: calc(16 * var(--jg)); margin-right: 4px; }
         .jg-menu-price-range__desc { opacity: 0.75; font-size: calc(12 * var(--jg)); }
@@ -1239,13 +1239,13 @@ class JG_Interactive_Map {
         .jg-sp-oh-time { padding: 5px 0; }
         .jg-sp-oh-closed { color: #dc2626; }
         .jg-sp-price-info { flex: 1 1 40%; min-width: 160px; display: flex; flex-direction: column; gap: 12px; }
-        .jg-sp-price-range { padding: 12px 14px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; }
-        .jg-sp-price-range__label { font-size: calc(11 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #92400e; margin-bottom: 4px; }
-        .jg-sp-price-range__value { font-size: calc(24 * var(--jg)); font-weight: 800; letter-spacing: 0.04em; color: #78350f; line-height: 1.1; }
-        .jg-sp-price-range__desc { font-size: calc(12 * var(--jg)); color: #92400e; margin-top: 2px; }
-        .jg-sp-cuisine { padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; }
-        .jg-sp-cuisine__label { font-size: calc(11 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #065f46; margin-bottom: 4px; }
-        .jg-sp-cuisine__value { font-size: calc(15 * var(--jg)); font-weight: 600; color: #14532d; }
+        .jg-sp-price-range { padding: 12px 14px; border-radius: 10px; }
+        .jg-sp-price-range__label { font-size: calc(11 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-bottom: 4px; }
+        .jg-sp-price-range__value { font-size: calc(24 * var(--jg)); font-weight: 800; letter-spacing: 0.04em; color: #111827; line-height: 1.1; }
+        .jg-sp-price-range__desc { font-size: calc(12 * var(--jg)); color: #6b7280; margin-top: 2px; }
+        .jg-sp-cuisine { padding: 12px 14px; border-radius: 10px; }
+        .jg-sp-cuisine__label { font-size: calc(11 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-bottom: 4px; }
+        .jg-sp-cuisine__value { font-size: calc(15 * var(--jg)); font-weight: 600; color: #111827; }
         @media (max-width: 480px) { .jg-sp-oh-wrap { flex-direction: column; } .jg-sp-oh, .jg-sp-price-info { flex: 1 1 100%; min-width: 0; } }
 
         /* Menu preview */

@@ -973,17 +973,7 @@ class JG_Map_Database {
             ? "status IN ('publish', 'pending', 'edit') AND status != 'trash'"
             : "status = 'publish' AND status != 'trash'";
 
-        $sql = "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                       resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, edit_locked, is_deletion_requested, deletion_reason,
-                       deletion_requested_at, is_promo, promo_until, website, phone, email,
-                       cta_enabled, cta_type, admin_note, images, featured_image_index,
-                       facebook_url, instagram_url, linkedin_url, tiktok_url,
-                       stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
-                       stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
-                       stats_unique_visitors, stats_avg_time_spent,
-                       address, created_at, updated_at, ip_address, tags, opening_hours, pending_edit,
-                       price_range, serves_cuisine
-                FROM $table WHERE $status_condition ORDER BY created_at DESC";
+        $sql = "SELECT * FROM $table WHERE $status_condition ORDER BY created_at DESC";
 
         $results = $wpdb->get_results($sql, ARRAY_A);
 
@@ -1120,17 +1110,7 @@ class JG_Map_Database {
 
         return $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                        resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, edit_locked, is_deletion_requested, deletion_reason,
-                        deletion_requested_at, is_promo, promo_until, website, phone, email,
-                        cta_enabled, cta_type, admin_note, images, featured_image_index,
-                        facebook_url, instagram_url, linkedin_url, tiktok_url,
-                        stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
-                        stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
-                        stats_unique_visitors, stats_avg_time_spent,
-                        address, created_at, updated_at, ip_address, tags, opening_hours, pending_edit,
-                        price_range, serves_cuisine
-                 FROM $table WHERE id = %d",
+                "SELECT * FROM $table WHERE id = %d",
                 $point_id
             ),
             ARRAY_A
