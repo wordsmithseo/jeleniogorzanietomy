@@ -1359,14 +1359,14 @@ class JG_Interactive_Map {
         .jg-sp-dir-btn svg { width: 20px; height: 20px; fill: #1d4ed8; flex-shrink: 0; }
         .jg-sp-menu-btn {
             display: inline-flex; align-items: center; gap: 8px;
-            padding: 9px 18px; background: #fff7ed; color: #92400e;
-            border: 1.5px solid #fed7aa; border-radius: 10px;
+            padding: 9px 18px; background: #f0fdf4; color: #166534;
+            border: 1.5px solid #bbf7d0; border-radius: 10px;
             font-size: calc(14 * var(--jg)); font-weight: 700;
             text-decoration: none; white-space: nowrap; flex-shrink: 0;
             transition: background 0.15s, box-shadow 0.15s;
         }
-        .jg-sp-menu-btn:hover { background: #ffedd5; box-shadow: 0 2px 10px rgba(146,64,14,0.15); color: #92400e; }
-        .jg-sp-menu-btn svg { width: 20px; height: 20px; fill: #92400e; flex-shrink: 0; }
+        .jg-sp-menu-btn:hover { background: #dcfce7; box-shadow: 0 2px 10px rgba(22,101,52,0.15); color: #166534; }
+        .jg-sp-menu-btn svg { width: 20px; height: 20px; fill: #166534; flex-shrink: 0; }
 
         /* offset body so redirect banner doesn't overlap header — set dynamically by JS */
         body { padding-top: 0; }
@@ -1618,7 +1618,7 @@ class JG_Interactive_Map {
                     <?php endif; ?>
                     <?php if ($sp_menu_btn_url): ?>
                         <a href="<?php echo esc_url($sp_menu_btn_url); ?>" class="jg-sp-menu-btn">
-                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
                             <span>Menu</span>
                         </a>
                     <?php endif; ?>

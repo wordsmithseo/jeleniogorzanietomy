@@ -11319,7 +11319,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         // Build menu section placeholder (async-loaded after modal opens)
         var menuSectionHtml = '';
         if (p.type === 'miejsce' && isMenuCategory(p.category)) {
-          menuSectionHtml = '<div id="jg-menu-section" class="jg-menu-modal-section" style="margin:0 0 12px 0;padding:10px 14px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa;font-size:0.875rem;color:#92400e">' +
+          menuSectionHtml = '<div id="jg-menu-section" class="jg-menu-modal-section" style="margin:0 0 12px 0;padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:0.875rem;color:#166534">' +
             '<div id="jg-menu-title" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Aktualne menu</div>' +
             '<div id="jg-menu-content"><div style="font-size:0.85rem;color:#9ca3af">Ładowanie menu\u2026</div></div>' +
             '</div>';
