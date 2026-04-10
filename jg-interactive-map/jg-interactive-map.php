@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.26.17
+ * Version: 3.26.18
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.26.17');
+define('JG_MAP_VERSION', '3.26.18');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1256,7 +1256,7 @@ class JG_Interactive_Map {
         .jg-sp-menu-preview__row:last-of-type { border-bottom: none; }
         .jg-sp-menu-preview__name { color: #111; flex: 1; min-width: 0; }
         .jg-sp-menu-preview__price { color: #065f46; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
-        .jg-sp-menu-preview__link { display: inline-block; margin-top: 10px; font-size: calc(13 * var(--jg)); color: #059669; font-weight: 600; }
+        .jg-sp-menu-preview__link { display: inline-block; margin-top: 10px; font-size: calc(13 * var(--jg)); color: #14532d; font-weight: 600; }
         .jg-sp-menu-preview__link:hover { text-decoration: underline; }
 
         /* Gallery grid */
@@ -1506,8 +1506,16 @@ class JG_Interactive_Map {
             <!-- Date -->
             <div class="jg-sp-date"><?php echo get_date_from_gmt($point['created_at'], 'd.m.Y'); ?></div>
 
-            <!-- Star rating (read-only; voting requires map + login) -->
-            <?php if ($total_votes > 0):
+            <!-- Star rating + price range inline -->
+            <?php
+            // Compute price range flag early so it can appear inline next to rating
+            $_sp_pr_cats    = JG_Map_Ajax_Handlers::get_place_categories();
+            $_sp_pr_cat_key = $point['category'] ?? '';
+            $_sp_pr_show    = $point['type'] === 'miejsce'
+                && !empty($_sp_pr_cats[$_sp_pr_cat_key]['has_price_range'])
+                && !empty($point['price_range']);
+            $_sp_pr_labels  = ['$' => 'Bardzo tanie', '$$' => 'Umiarkowane', '$$$' => 'Droższe', '$$$$' => 'Ekskluzywne'];
+            if ($total_votes > 0):
                 $sp_stars_full  = floor($avg_rating_schema);
                 $sp_stars_empty = 5 - $sp_stars_full;
             ?>
@@ -1518,10 +1526,22 @@ class JG_Interactive_Map {
                 <strong style="font-size:16px"><?php echo esc_html(number_format($avg_rating_schema, 1)); ?></strong>
                 <span style="color:#6b7280;font-size:13px">(<?php echo esc_html($total_votes); ?> <?php echo esc_html($total_votes === 1 ? 'ocena' : ($total_votes >= 2 && $total_votes <= 4 ? 'oceny' : 'ocen')); ?>)</span>
                 <span style="font-size:12px;color:#92400e">— <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#b45309">oceń na mapie</a> (wymagane logowanie)</span>
+                <?php if ($_sp_pr_show): ?>
+                <span style="display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:6px;font-size:13px;color:#374151;white-space:nowrap">
+                    <span style="font-weight:800;font-size:15px;letter-spacing:0.04em"><?php echo esc_html($point['price_range']); ?></span>
+                    <span style="color:#6b7280;font-size:12px"><?php echo esc_html($_sp_pr_labels[$point['price_range']] ?? ''); ?></span>
+                </span>
+                <?php endif; ?>
             </div>
             <?php else: ?>
-            <div style="font-size:13px;color:#9ca3af;margin:8px 0 16px">
-                Brak ocen &mdash; <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#2563eb">przejdź na mapę i zaloguj się</a>, aby ocenić.
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:#9ca3af;margin:8px 0 16px">
+                <span>Brak ocen &mdash; <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#2563eb">przejdź na mapę i zaloguj się</a>, aby ocenić.</span>
+                <?php if ($_sp_pr_show): ?>
+                <span style="display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:6px;font-size:13px;color:#374151;white-space:nowrap">
+                    <span style="font-weight:800;font-size:15px;letter-spacing:0.04em"><?php echo esc_html($point['price_range']); ?></span>
+                    <span style="color:#6b7280;font-size:12px"><?php echo esc_html($_sp_pr_labels[$point['price_range']] ?? ''); ?></span>
+                </span>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
 
@@ -1646,12 +1666,9 @@ class JG_Interactive_Map {
             }
             $sp_place_cats_tmp = JG_Map_Ajax_Handlers::get_place_categories();
             $sp_cat_key = $point['category'] ?? '';
-            $sp_cat_has_price_range = $point['type'] === 'miejsce' && !empty($sp_place_cats_tmp[$sp_cat_key]['has_price_range']);
             $sp_cat_serves_cuisine  = $point['type'] === 'miejsce' && !empty($sp_place_cats_tmp[$sp_cat_key]['serves_cuisine']);
-            $sp_price_range_labels  = ['$' => 'Bardzo tanie', '$$' => 'Umiarkowane', '$$$' => 'Droższe', '$$$$' => 'Ekskluzywne'];
-            $sp_show_price_range    = $sp_cat_has_price_range && !empty($point['price_range']);
             $sp_show_cuisine        = $sp_cat_serves_cuisine && !empty($point['serves_cuisine']);
-            $sp_show_oh_block       = !empty($sp_oh_parsed) || $sp_show_price_range;
+            $sp_show_oh_block       = !empty($sp_oh_parsed) || $sp_show_cuisine;
             if ($sp_show_oh_block):
             ?>
             <div class="jg-sp-oh-wrap">
@@ -1674,21 +1691,12 @@ class JG_Interactive_Map {
                     </table>
                 </div>
                 <?php endif; ?>
-                <?php if ($sp_show_price_range || $sp_show_cuisine): ?>
+                <?php if ($sp_show_cuisine): ?>
                 <div class="jg-sp-price-info">
-                    <?php if ($sp_show_price_range): ?>
-                    <div class="jg-sp-price-range">
-                        <div class="jg-sp-price-range__label">Zakres cenowy</div>
-                        <div class="jg-sp-price-range__value"><?php echo esc_html($point['price_range']); ?></div>
-                        <div class="jg-sp-price-range__desc"><?php echo esc_html($sp_price_range_labels[$point['price_range']] ?? ''); ?></div>
-                    </div>
-                    <?php endif; ?>
-                    <?php if ($sp_show_cuisine): ?>
                     <div class="jg-sp-cuisine">
                         <div class="jg-sp-cuisine__label">Rodzaj kuchni</div>
                         <div class="jg-sp-cuisine__value"><?php echo esc_html($point['serves_cuisine']); ?></div>
                     </div>
-                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
             </div>
