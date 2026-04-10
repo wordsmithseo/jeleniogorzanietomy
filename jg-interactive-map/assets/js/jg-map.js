@@ -7921,11 +7921,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   newDiv.innerHTML = '<img src="' + esc(resp.data.thumb_url || resp.data.url) + '" alt="">' +
                     '<button type="button" class="jg-menu-ed-photo-del" title="Usuń zdjęcie">&times;</button>';
                   photosContainer.insertBefore(newDiv, addLabel || null);
-                  bindPhotoDelBtn(newDiv.querySelector('.jg-menu-ed-photo-del'), newDiv, p.id);
+                  bindPhotoDelBtn(newDiv.querySelector('.jg-menu-ed-photo-del'), newDiv, p.id, modalEdit);
                   // Hide add button if 4 photos
                   if (photosContainer.querySelectorAll('.jg-menu-ed-photo').length >= 4 && addLabel) {
                     addLabel.style.display = 'none';
                   }
+                  // Update sidebar has_menu badge (photo alone counts as having a menu)
+                  if (typeof window.jgUpdatePointHasMenu === 'function') window.jgUpdatePointHasMenu(p.id);
                 } else {
                   photoMsg.textContent = (resp && resp.data && resp.data.message) ? resp.data.message : 'Błąd uploadu.';
                   photoMsg.style.color = '#b91c1c';
@@ -7942,7 +7944,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         // Bind photo delete buttons
         modalEdit.querySelectorAll('.jg-menu-ed-photo').forEach(function(photoEl) {
           var btn = photoEl.querySelector('.jg-menu-ed-photo-del');
-          if (btn) bindPhotoDelBtn(btn, photoEl, p.id);
+          if (btn) bindPhotoDelBtn(btn, photoEl, p.id, modalEdit);
         });
 
         // Save menu
@@ -7969,6 +7971,14 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 // Live-refresh the menu section in the place modal (still open behind)
                 var menuSec = qs('#jg-menu-section', modalView);
                 if (menuSec) loadMenuSection(p, menuSec);
+                // Update sidebar has_menu badge based on current editor state
+                var _hasSections = collectedSections && collectedSections.length > 0;
+                var _hasPhotos = modalEdit.querySelectorAll('.jg-menu-ed-photo').length > 0;
+                if (_hasSections || _hasPhotos) {
+                  if (typeof window.jgUpdatePointHasMenu === 'function') window.jgUpdatePointHasMenu(p.id);
+                } else {
+                  if (typeof window.jgUpdatePointNoMenu === 'function') window.jgUpdatePointNoMenu(p.id);
+                }
                 setTimeout(function() { close(modalEdit); }, 900);
               } else {
                 msgEl.textContent = (resp && resp.data && resp.data.message) ? resp.data.message : 'Błąd zapisu.';
@@ -8154,7 +8164,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         syncToggleState();
       }
 
-      function bindPhotoDelBtn(btn, photoEl, pointId) {
+      function bindPhotoDelBtn(btn, photoEl, pointId, menuEditorEl) {
         btn.onclick = function() {
           var photoId = photoEl.dataset.id;
           if (!photoId || !confirm('Usunąć to zdjęcie?')) return;
@@ -8172,6 +8182,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 // Show add button if now < 4
                 var addLabel = qs('.jg-menu-ed-photo-add', photosContainer);
                 if (addLabel) addLabel.style.display = '';
+                // Update sidebar badge: check if any photos or sections remain
+                var hasPhotosLeft = photosContainer.querySelectorAll('.jg-menu-ed-photo').length > 0;
+                var hasSectionsLeft = menuEditorEl ? menuEditorEl.querySelectorAll('.jg-menu-ed-section').length > 0 : false;
+                if (!hasPhotosLeft && !hasSectionsLeft) {
+                  if (typeof window.jgUpdatePointNoMenu === 'function') window.jgUpdatePointNoMenu(pointId);
+                }
               }
             });
         };
