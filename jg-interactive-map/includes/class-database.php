@@ -87,6 +87,8 @@ class JG_Map_Database {
             tags varchar(500) DEFAULT NULL,
             opening_hours text DEFAULT NULL,
             pending_edit tinyint(1) DEFAULT 0,
+            price_range varchar(10) DEFAULT NULL,
+            serves_cuisine varchar(255) DEFAULT NULL,
             ip_address varchar(100),
             PRIMARY KEY (id),
             UNIQUE KEY slug (slug),
@@ -575,6 +577,16 @@ class JG_Map_Database {
         // Check if pending_edit column exists (flags points with pending moderation edits)
         if (!$column_exists('pending_edit')) {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN pending_edit tinyint(1) DEFAULT 0 AFTER opening_hours");
+        }
+
+        // Check if price_range column exists (Google priceRange schema field)
+        if (!$column_exists('price_range')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN price_range varchar(10) DEFAULT NULL AFTER pending_edit");
+        }
+
+        // Check if serves_cuisine column exists (Google servesCuisine schema field)
+        if (!$column_exists('serves_cuisine')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN serves_cuisine varchar(255) DEFAULT NULL AFTER price_range");
         }
 
         // Fix tags stored with unicode escapes (e.g. "G\u00f3ry" -> "Góry")

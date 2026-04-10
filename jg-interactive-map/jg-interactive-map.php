@@ -777,7 +777,28 @@ class JG_Interactive_Map {
         if (!empty($menu_sections_schema)) {
             $menu_schema['hasMenuSection'] = $menu_sections_schema;
         }
+        // Add FoodEstablishment schema with priceRange and servesCuisine if available
+        $menu_schema_cats = JG_Map_Ajax_Handlers::get_place_categories();
+        $menu_schema_cat_key = $point['category'] ?? '';
+        $menu_schema_type = isset($menu_schema_cats[$menu_schema_cat_key]['schema_type']) ? $menu_schema_cats[$menu_schema_cat_key]['schema_type'] : 'FoodEstablishment';
+        $menu_schema_cat_has_price_range = !empty($menu_schema_cats[$menu_schema_cat_key]['has_price_range']);
+        $menu_schema_cat_serves_cuisine  = !empty($menu_schema_cats[$menu_schema_cat_key]['serves_cuisine']);
+        $place_schema = array(
+            '@context' => 'https://schema.org',
+            '@type'    => $menu_schema_type,
+            '@id'      => $point_url . '#place',
+            'name'     => $point['title'],
+            'url'      => $point_url,
+            'hasMenu'  => $menu_url,
+        );
+        if ($menu_schema_cat_has_price_range && !empty($point['price_range'])) {
+            $place_schema['priceRange'] = $point['price_range'];
+        }
+        if ($menu_schema_cat_serves_cuisine && !empty($point['serves_cuisine'])) {
+            $place_schema['servesCuisine'] = $point['serves_cuisine'];
+        }
         echo '<script type="application/ld+json">' . json_encode($menu_schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>' . "\n";
+        echo '<script type="application/ld+json">' . json_encode($place_schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>' . "\n";
     endif;
     ?>
     <style>
@@ -826,8 +847,17 @@ class JG_Interactive_Map {
 
         .jg-sp-site-footer { text-align: center; padding: 24px 20px; font-size: calc(12 * var(--jg)); color: #9ca3af; border-top: 1px solid #e5e7eb; }
         .jg-menu-empty { color: #9ca3af; font-size: calc(14 * var(--jg)); padding: 24px 0; }
+        .jg-menu-meta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .jg-menu-price-range, .jg-menu-cuisine { padding: 8px 14px; border-radius: 8px; font-size: calc(14 * var(--jg)); }
+        .jg-menu-price-range { background: #fef3c7; border: 1px solid #fde68a; color: #78350f; }
+        .jg-menu-cuisine { background: #f0fdf4; border: 1px solid #bbf7d0; color: #14532d; }
+        .jg-menu-price-range__label, .jg-menu-cuisine__label { font-weight: 600; margin-right: 4px; }
+        .jg-menu-price-range__value { font-weight: 800; font-size: calc(16 * var(--jg)); margin-right: 4px; }
+        .jg-menu-price-range__desc { opacity: 0.75; font-size: calc(12 * var(--jg)); }
+        .jg-menu-cuisine__value { font-weight: 600; }
         @media (max-width: 480px) {
             .jg-menu-photos { grid-template-columns: repeat(2, 1fr); }
+            .jg-menu-meta-row { flex-direction: column; }
         }
     </style>
 </head>
@@ -844,6 +874,33 @@ class JG_Interactive_Map {
 <div class="jg-sp">
     <a href="<?php echo esc_url($point_url); ?>" class="jg-menu-back">← Wróć do: <?php echo esc_html($point['title']); ?></a>
     <h1 class="jg-sp-title">Menu – <?php echo esc_html($point['title']); ?></h1>
+
+    <?php
+    $menu_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
+    $menu_cat_key = $point['category'] ?? '';
+    $menu_cat_has_price_range = !empty($menu_place_cats[$menu_cat_key]['has_price_range']);
+    $menu_cat_serves_cuisine  = !empty($menu_place_cats[$menu_cat_key]['serves_cuisine']);
+    $menu_price_range_labels  = ['$' => 'Bardzo tanie', '$$' => 'Umiarkowane', '$$$' => 'Droższe', '$$$$' => 'Ekskluzywne'];
+    $menu_show_price_range    = $menu_cat_has_price_range && !empty($point['price_range']);
+    $menu_show_cuisine        = $menu_cat_serves_cuisine && !empty($point['serves_cuisine']);
+    if ($menu_show_price_range || $menu_show_cuisine):
+    ?>
+    <div class="jg-menu-meta-row">
+        <?php if ($menu_show_price_range): ?>
+        <div class="jg-menu-price-range">
+            <span class="jg-menu-price-range__label">Zakres cenowy:</span>
+            <span class="jg-menu-price-range__value"><?php echo esc_html($point['price_range']); ?></span>
+            <span class="jg-menu-price-range__desc">(<?php echo esc_html($menu_price_range_labels[$point['price_range']] ?? ''); ?>)</span>
+        </div>
+        <?php endif; ?>
+        <?php if ($menu_show_cuisine): ?>
+        <div class="jg-menu-cuisine">
+            <span class="jg-menu-cuisine__label">Rodzaj kuchni:</span>
+            <span class="jg-menu-cuisine__value"><?php echo esc_html($point['serves_cuisine']); ?></span>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 
     <?php if (!empty($photos)): ?>
     <div class="jg-menu-photos-title">Karta menu</div>
@@ -1172,7 +1229,8 @@ class JG_Interactive_Map {
 
         /* Address */
         .jg-sp-address { font-size: calc(15 * var(--jg)); color: #6b7280; margin-bottom: 24px; }
-        .jg-sp-oh { margin-bottom: 24px; }
+        .jg-sp-oh-wrap { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: flex-start; }
+        .jg-sp-oh { flex: 1 1 50%; min-width: 220px; }
         .jg-sp-oh-title { font-size: calc(13 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin: 0 0 8px 0; }
         .jg-sp-oh-table { width: 100%; border-collapse: collapse; font-size: calc(14 * var(--jg)); color: #374151; }
         .jg-sp-oh-table tr { border-bottom: 1px solid #f3f4f6; }
@@ -1180,6 +1238,15 @@ class JG_Interactive_Map {
         .jg-sp-oh-day { padding: 5px 16px 5px 0; font-weight: 500; width: 55%; }
         .jg-sp-oh-time { padding: 5px 0; }
         .jg-sp-oh-closed { color: #dc2626; }
+        .jg-sp-price-info { flex: 1 1 40%; min-width: 160px; display: flex; flex-direction: column; gap: 12px; }
+        .jg-sp-price-range { padding: 12px 14px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; }
+        .jg-sp-price-range__label { font-size: calc(11 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #92400e; margin-bottom: 4px; }
+        .jg-sp-price-range__value { font-size: calc(24 * var(--jg)); font-weight: 800; letter-spacing: 0.04em; color: #78350f; line-height: 1.1; }
+        .jg-sp-price-range__desc { font-size: calc(12 * var(--jg)); color: #92400e; margin-top: 2px; }
+        .jg-sp-cuisine { padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; }
+        .jg-sp-cuisine__label { font-size: calc(11 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #065f46; margin-bottom: 4px; }
+        .jg-sp-cuisine__value { font-size: calc(15 * var(--jg)); font-weight: 600; color: #14532d; }
+        @media (max-width: 480px) { .jg-sp-oh-wrap { flex-direction: column; } .jg-sp-oh, .jg-sp-price-info { flex: 1 1 100%; min-width: 0; } }
 
         /* Menu preview */
         .jg-sp-menu-preview { margin-bottom: 24px; padding: 14px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; }
@@ -1564,7 +1631,7 @@ class JG_Interactive_Map {
             </div>
             <?php endif; endif; ?>
 
-            <!-- Opening hours -->
+            <!-- Opening hours + price range + cuisine -->
             <?php
             $sp_oh_days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
             $sp_oh_labels = ['Mo' => 'Poniedziałek', 'Tu' => 'Wtorek', 'We' => 'Środa', 'Th' => 'Czwartek', 'Fr' => 'Piątek', 'Sa' => 'Sobota', 'Su' => 'Niedziela'];
@@ -1577,24 +1644,53 @@ class JG_Interactive_Map {
                     }
                 }
             }
-            if (!empty($sp_oh_parsed)):
+            $sp_place_cats_tmp = JG_Map_Ajax_Handlers::get_place_categories();
+            $sp_cat_key = $point['category'] ?? '';
+            $sp_cat_has_price_range = $point['type'] === 'miejsce' && !empty($sp_place_cats_tmp[$sp_cat_key]['has_price_range']);
+            $sp_cat_serves_cuisine  = $point['type'] === 'miejsce' && !empty($sp_place_cats_tmp[$sp_cat_key]['serves_cuisine']);
+            $sp_price_range_labels  = ['$' => 'Bardzo tanie', '$$' => 'Umiarkowane', '$$$' => 'Droższe', '$$$$' => 'Ekskluzywne'];
+            $sp_show_price_range    = $sp_cat_has_price_range && !empty($point['price_range']);
+            $sp_show_cuisine        = $sp_cat_serves_cuisine && !empty($point['serves_cuisine']);
+            $sp_show_oh_block       = !empty($sp_oh_parsed) || $sp_show_price_range;
+            if ($sp_show_oh_block):
             ?>
-            <div class="jg-sp-oh">
-                <h2 class="jg-sp-oh-title">Godziny otwarcia</h2>
-                <table class="jg-sp-oh-table">
-                    <?php foreach ($sp_oh_days as $sp_oh_key): ?>
-                    <tr>
-                        <td class="jg-sp-oh-day"><?php echo esc_html($sp_oh_labels[$sp_oh_key]); ?></td>
-                        <td class="jg-sp-oh-time">
-                            <?php if (isset($sp_oh_parsed[$sp_oh_key])): ?>
-                                <?php echo esc_html($sp_oh_parsed[$sp_oh_key]['open'] . ' – ' . ($sp_oh_parsed[$sp_oh_key]['close'] === '24:00' ? '00:00' : $sp_oh_parsed[$sp_oh_key]['close'])); ?>
-                            <?php else: ?>
-                                <span class="jg-sp-oh-closed">Nieczynne</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </table>
+            <div class="jg-sp-oh-wrap">
+                <?php if (!empty($sp_oh_parsed)): ?>
+                <div class="jg-sp-oh">
+                    <h2 class="jg-sp-oh-title">Godziny otwarcia</h2>
+                    <table class="jg-sp-oh-table">
+                        <?php foreach ($sp_oh_days as $sp_oh_key): ?>
+                        <tr>
+                            <td class="jg-sp-oh-day"><?php echo esc_html($sp_oh_labels[$sp_oh_key]); ?></td>
+                            <td class="jg-sp-oh-time">
+                                <?php if (isset($sp_oh_parsed[$sp_oh_key])): ?>
+                                    <?php echo esc_html($sp_oh_parsed[$sp_oh_key]['open'] . ' – ' . ($sp_oh_parsed[$sp_oh_key]['close'] === '24:00' ? '00:00' : $sp_oh_parsed[$sp_oh_key]['close'])); ?>
+                                <?php else: ?>
+                                    <span class="jg-sp-oh-closed">Nieczynne</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </table>
+                </div>
+                <?php endif; ?>
+                <?php if ($sp_show_price_range || $sp_show_cuisine): ?>
+                <div class="jg-sp-price-info">
+                    <?php if ($sp_show_price_range): ?>
+                    <div class="jg-sp-price-range">
+                        <div class="jg-sp-price-range__label">Zakres cenowy</div>
+                        <div class="jg-sp-price-range__value"><?php echo esc_html($point['price_range']); ?></div>
+                        <div class="jg-sp-price-range__desc"><?php echo esc_html($sp_price_range_labels[$point['price_range']] ?? ''); ?></div>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($sp_show_cuisine): ?>
+                    <div class="jg-sp-cuisine">
+                        <div class="jg-sp-cuisine__label">Rodzaj kuchni</div>
+                        <div class="jg-sp-cuisine__value"><?php echo esc_html($point['serves_cuisine']); ?></div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
 
@@ -1929,7 +2025,13 @@ class JG_Interactive_Map {
     if ($point['type'] === 'miejsce') {
         $fb_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
         $fb_schema_type = isset($fb_place_cats[$fb_point_category]['schema_type']) ? $fb_place_cats[$fb_point_category]['schema_type'] : 'LocalBusiness';
-    } elseif ($point['type'] === 'ciekawostka') {
+        $fb_cat_has_price_range = !empty($fb_place_cats[$fb_point_category]['has_price_range']);
+        $fb_cat_serves_cuisine  = !empty($fb_place_cats[$fb_point_category]['serves_cuisine']);
+    } else {
+        $fb_cat_has_price_range = false;
+        $fb_cat_serves_cuisine  = false;
+    }
+    if ($point['type'] === 'ciekawostka') {
         $fb_cur_cats = JG_Map_Ajax_Handlers::get_curiosity_categories();
         $fb_schema_type = isset($fb_cur_cats[$fb_point_category]['schema_type']) ? $fb_cur_cats[$fb_point_category]['schema_type'] : 'TouristAttraction';
     }
@@ -1974,6 +2076,12 @@ class JG_Interactive_Map {
                 <?php endif; ?>
                 <?php if (!empty($point['email'])): ?>
                 ,"email": <?php echo json_encode($point['email']); ?>
+                <?php endif; ?>
+                <?php if ($fb_cat_has_price_range && !empty($point['price_range'])): ?>
+                ,"priceRange": <?php echo json_encode($point['price_range']); ?>
+                <?php endif; ?>
+                <?php if ($fb_cat_serves_cuisine && !empty($point['serves_cuisine'])): ?>
+                ,"servesCuisine": <?php echo json_encode($point['serves_cuisine']); ?>
                 <?php endif; ?>
                 <?php if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])): ?>
                 ,"hasMenu": <?php echo json_encode(home_url('/miejsce/' . $point['slug'] . '/menu/')); ?>

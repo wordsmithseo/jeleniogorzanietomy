@@ -561,6 +561,8 @@ class JG_Map_Enqueue {
                 'placeCategories' => JG_Map_Ajax_Handlers::get_place_categories(),
                 'curiosityCategories' => JG_Map_Ajax_Handlers::get_curiosity_categories(),
                 'menuCategories' => JG_Map_Ajax_Handlers::get_menu_categories(),
+                'priceRangeCategories' => JG_Map_Ajax_Handlers::get_price_range_categories(),
+                'servesCuisineCategories' => JG_Map_Ajax_Handlers::get_serves_cuisine_categories(),
                 'noPhotoSidebar' => home_url('/wp-content/uploads/2026/02/no_photo_sidebar.jpg'),
                 'termsUrl' => get_option('jg_map_terms_url', ''),
                 'termsContent' => get_option('jg_map_terms_content', ''),

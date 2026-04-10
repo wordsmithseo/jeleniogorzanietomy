@@ -48,7 +48,7 @@ class JG_Map_Ajax_Handlers {
      */
     private static function get_default_place_categories() {
         return array(
-            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️', 'schema_type' => 'FoodEstablishment', 'has_menu' => true),
+            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️', 'schema_type' => 'FoodEstablishment', 'has_menu' => true, 'has_price_range' => true, 'serves_cuisine' => true),
             'kultura' => array('label' => 'Kultura', 'icon' => '🏛️', 'schema_type' => 'Museum'),
             'uslugi' => array('label' => 'Usługi', 'icon' => '🏢', 'schema_type' => 'LocalBusiness'),
             'sport' => array('label' => 'Sport i rekreacja', 'icon' => '⚽', 'schema_type' => 'SportsActivityLocation'),
@@ -77,6 +77,34 @@ class JG_Map_Ajax_Handlers {
         $keys = array();
         foreach ($cats as $key => $cat) {
             if (!empty($cat['has_menu'])) {
+                $keys[] = $key;
+            }
+        }
+        return $keys;
+    }
+
+    /**
+     * Get keys of categories that support price range (has_price_range => true)
+     */
+    public static function get_price_range_categories() {
+        $cats = self::get_place_categories();
+        $keys = array();
+        foreach ($cats as $key => $cat) {
+            if (!empty($cat['has_price_range'])) {
+                $keys[] = $key;
+            }
+        }
+        return $keys;
+    }
+
+    /**
+     * Get keys of categories that serve cuisine (serves_cuisine => true)
+     */
+    public static function get_serves_cuisine_categories() {
+        $cats = self::get_place_categories();
+        $keys = array();
+        foreach ($cats as $key => $cat) {
+            if (!empty($cat['serves_cuisine'])) {
                 $keys[] = $key;
             }
         }
@@ -1113,6 +1141,8 @@ class JG_Map_Ajax_Handlers {
                 // SECURITY: For unauthenticated users, always hide moderation data
                 'admin_note' => ($current_user_id > 0) ? $point['admin_note'] : null,
                 'opening_hours' => $point['opening_hours'] ?? null,
+                'price_range'   => $point['price_range'] ?? null,
+                'serves_cuisine' => $point['serves_cuisine'] ?? null,
                 'pending_edit' => (bool)($point['pending_edit'] ?? 0),
                 'is_pending' => ($current_user_id > 0) ? $is_pending : false,
                 'is_edit' => ($current_user_id > 0) ? $is_edit : false,
@@ -1866,6 +1896,10 @@ class JG_Map_Ajax_Handlers {
         $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
         $email = !empty($_POST['contact_email']) ? sanitize_email($_POST['contact_email']) : '';
+        $price_range_raw = sanitize_text_field($_POST['price_range'] ?? '');
+        $valid_price_ranges = array('$', '$$', '$$$', '$$$$');
+        $price_range = in_array($price_range_raw, $valid_price_ranges, true) ? $price_range_raw : '';
+        $serves_cuisine = sanitize_text_field(wp_unslash($_POST['serves_cuisine'] ?? ''));
 
         // Process tags (max 5)
         $tags_raw = isset($_POST['tags']) ? wp_unslash($_POST['tags']) : '';
@@ -2023,6 +2057,8 @@ class JG_Map_Ajax_Handlers {
             'featured_image_index' => !empty($images) ? 0 : null, // Auto-set first image as featured
             'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : null,
             'opening_hours' => !empty($opening_hours) ? $opening_hours : null,
+            'price_range'   => !empty($price_range) ? $price_range : null,
+            'serves_cuisine' => !empty($serves_cuisine) ? $serves_cuisine : null,
             'website' => !empty($website) ? $website : null,
             'phone' => !empty($phone) ? $phone : null,
             'email' => !empty($email) ? $email : null,
@@ -2172,6 +2208,10 @@ class JG_Map_Ajax_Handlers {
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
         $email = !empty($_POST['contact_email']) ? sanitize_email($_POST['contact_email']) : '';
         $opening_hours = sanitize_textarea_field(wp_unslash($_POST['opening_hours'] ?? ''));
+        $price_range_raw = sanitize_text_field($_POST['price_range'] ?? '');
+        $valid_price_ranges = array('$', '$$', '$$$', '$$$$');
+        $price_range = in_array($price_range_raw, $valid_price_ranges, true) ? $price_range_raw : '';
+        $serves_cuisine = sanitize_text_field(wp_unslash($_POST['serves_cuisine'] ?? ''));
 
         // Normalize social media URLs - accept full URLs, domain URLs, or profile names
         $facebook_url = !empty($_POST['facebook_url']) ? $this->normalize_social_url($_POST['facebook_url'], 'facebook') : '';
@@ -2312,6 +2352,10 @@ class JG_Map_Ajax_Handlers {
             // Update opening_hours (admin can edit directly for all types)
             $update_data['opening_hours'] = !empty($opening_hours) ? $opening_hours : null;
 
+            // Update price_range and serves_cuisine
+            $update_data['price_range']   = !empty($price_range) ? $price_range : null;
+            $update_data['serves_cuisine'] = !empty($serves_cuisine) ? $serves_cuisine : null;
+
             // Update lat/lng if provided (from geocoding)
             if ($lat !== null && $lng !== null) {
                 $update_data['lat'] = $lat;
@@ -2446,6 +2490,8 @@ class JG_Map_Ajax_Handlers {
                 'address' => $point['address'] ?? '',
                 'images' => $point['images'] ?? '[]',
                 'opening_hours' => $point['opening_hours'] ?? '',
+                'price_range'   => $point['price_range'] ?? null,
+                'serves_cuisine' => $point['serves_cuisine'] ?? null,
                 'website' => $point['website'] ?? null,
                 'phone' => $point['phone'] ?? null,
                 'email' => $point['email'] ?? null
@@ -2458,6 +2504,8 @@ class JG_Map_Ajax_Handlers {
                 'content' => $content,
                 'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : '[]',
                 'opening_hours' => $opening_hours,
+                'price_range'   => !empty($price_range) ? $price_range : null,
+                'serves_cuisine' => !empty($serves_cuisine) ? $serves_cuisine : null,
                 'new_images' => json_encode($new_images), // Store new images separately for moderation
                 'website' => !empty($website) ? $website : null,
                 'phone' => !empty($phone) ? $phone : null,
@@ -4730,6 +4778,14 @@ class JG_Map_Ajax_Handlers {
             $update_data['opening_hours'] = !empty($new_values['opening_hours']) ? $new_values['opening_hours'] : null;
         }
 
+        // Apply price_range and serves_cuisine if present in approved edit
+        if (array_key_exists('price_range', $new_values)) {
+            $update_data['price_range'] = !empty($new_values['price_range']) ? $new_values['price_range'] : null;
+        }
+        if (array_key_exists('serves_cuisine', $new_values)) {
+            $update_data['serves_cuisine'] = !empty($new_values['serves_cuisine']) ? $new_values['serves_cuisine'] : null;
+        }
+
         // Clear pending_edit flag — edit has been approved
         $update_data['pending_edit'] = 0;
 
@@ -5033,6 +5089,14 @@ class JG_Map_Ajax_Handlers {
             // Apply opening_hours if present
             if (array_key_exists('opening_hours', $new_values)) {
                 $update_data['opening_hours'] = !empty($new_values['opening_hours']) ? $new_values['opening_hours'] : null;
+            }
+
+            // Apply price_range and serves_cuisine if present
+            if (array_key_exists('price_range', $new_values)) {
+                $update_data['price_range'] = !empty($new_values['price_range']) ? $new_values['price_range'] : null;
+            }
+            if (array_key_exists('serves_cuisine', $new_values)) {
+                $update_data['serves_cuisine'] = !empty($new_values['serves_cuisine']) ? $new_values['serves_cuisine'] : null;
             }
 
             // Handle new images if present
@@ -9141,10 +9205,12 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        $key      = sanitize_key($_POST['key'] ?? '');
-        $label    = sanitize_text_field($_POST['label'] ?? '');
-        $icon     = sanitize_text_field($_POST['icon'] ?? '📍');
-        $has_menu = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
+        $key             = sanitize_key($_POST['key'] ?? '');
+        $label           = sanitize_text_field($_POST['label'] ?? '');
+        $icon            = sanitize_text_field($_POST['icon'] ?? '📍');
+        $has_menu        = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
+        $has_price_range = !empty($_POST['has_price_range']) && $_POST['has_price_range'] === '1';
+        $serves_cuisine  = !empty($_POST['serves_cuisine']) && $_POST['serves_cuisine'] === '1';
 
         if (empty($key) || empty($label)) {
             wp_send_json_error('Klucz i nazwa są wymagane');
@@ -9159,9 +9225,11 @@ class JG_Map_Ajax_Handlers {
         }
 
         $categories[$key] = array(
-            'label'    => $label,
-            'icon'     => $icon,
-            'has_menu' => $has_menu,
+            'label'           => $label,
+            'icon'            => $icon,
+            'has_menu'        => $has_menu,
+            'has_price_range' => $has_price_range,
+            'serves_cuisine'  => $serves_cuisine,
         );
         update_option('jg_map_place_categories', $categories);
 
@@ -9194,10 +9262,12 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        $key      = sanitize_key($_POST['key'] ?? '');
-        $label    = sanitize_text_field($_POST['label'] ?? '');
-        $icon     = sanitize_text_field($_POST['icon'] ?? '📍');
-        $has_menu = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
+        $key             = sanitize_key($_POST['key'] ?? '');
+        $label           = sanitize_text_field($_POST['label'] ?? '');
+        $icon            = sanitize_text_field($_POST['icon'] ?? '📍');
+        $has_menu        = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
+        $has_price_range = !empty($_POST['has_price_range']) && $_POST['has_price_range'] === '1';
+        $serves_cuisine  = !empty($_POST['serves_cuisine']) && $_POST['serves_cuisine'] === '1';
 
         if (empty($key) || empty($label)) {
             wp_send_json_error('Klucz i nazwa są wymagane');
@@ -9214,9 +9284,11 @@ class JG_Map_Ajax_Handlers {
         $old_label = $categories[$key]['label'];
         // Preserve existing fields (e.g. schema_type), only update editable ones
         $categories[$key] = array_merge($categories[$key], array(
-            'label'    => $label,
-            'icon'     => $icon,
-            'has_menu' => $has_menu,
+            'label'           => $label,
+            'icon'            => $icon,
+            'has_menu'        => $has_menu,
+            'has_price_range' => $has_price_range,
+            'serves_cuisine'  => $serves_cuisine,
         ));
         update_option('jg_map_place_categories', $categories);
 
