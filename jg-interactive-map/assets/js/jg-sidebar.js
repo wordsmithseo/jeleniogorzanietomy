@@ -1101,4 +1101,24 @@
         }
     };
 
+    /**
+     * Live-update the has_menu badge back to 'Brak menu' when all menu content is removed.
+     * Called from jg-map.js after photo deletion or menu save with no content.
+     */
+    window.jgUpdatePointNoMenu = function(pointId) {
+        for (var i = 0; i < sidebarPoints.length; i++) {
+            if (String(sidebarPoints[i].id) === String(pointId)) {
+                sidebarPoints[i].has_menu = false;
+                break;
+            }
+        }
+        var $item = $('[data-point-id="' + pointId + '"]');
+        if (!$item.length) return;
+        var $badge = $item.find('.jg-info-badge--has-menu');
+        if ($badge.length) {
+            $badge.removeClass('jg-info-badge--has-menu').addClass('jg-info-badge--no-menu')
+                  .attr('data-jg-tip', 'Brak menu');
+        }
+    };
+
 })(jQuery);
