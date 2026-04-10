@@ -3650,12 +3650,17 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 /* Grid */
 .jg-grid {
   display: grid;
+  /* minmax(0,1fr): the single implicit column always fills available width and
+     can shrink to 0 — prevents auto-sizing to min-content which would make the
+     column narrower than the container and cause content to appear right-shifted
+     or to scroll horizontally. cols-2 overrides this with 1fr 1fr below. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 
 /* Prevent horizontal scroll in the view modal's content grid.
-   The inline style uses overflow:auto (both axes); we need to lock x.
-   !important is required to beat the inline style specificity. */
+   The inline style uses overflow-x:hidden (set in JS); !important is kept as
+   belt-and-suspenders in case any future inline style reverts to overflow:auto. */
 .jg-modal .jg-grid:not(.cols-2) {
   overflow-x: hidden !important;
 }
