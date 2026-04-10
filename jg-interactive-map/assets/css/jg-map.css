@@ -4241,6 +4241,14 @@ img.emoji {
   font-size: calc(12 * var(--jg)) !important;
 }
 
+@media (max-width: 520px) {
+  .jg-meta-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+}
+
 /* Status Badge */
 .jg-status-badge {
   display: inline-block;
@@ -9493,7 +9501,7 @@ footer.site-footer .site-branding {
   margin-top: 8px;
   font-size: calc(12 * var(--jg));
   font-weight: 600;
-  color: #14532d;
+  color: #14532d !important;
   text-decoration: underline;
 }
 

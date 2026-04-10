@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.26.18
+ * Version: 3.26.19
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.26.18');
+define('JG_MAP_VERSION', '3.26.19');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1256,7 +1256,7 @@ class JG_Interactive_Map {
         .jg-sp-menu-preview__row:last-of-type { border-bottom: none; }
         .jg-sp-menu-preview__name { color: #111; flex: 1; min-width: 0; }
         .jg-sp-menu-preview__price { color: #065f46; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
-        .jg-sp-menu-preview__link { display: inline-block; margin-top: 10px; font-size: calc(13 * var(--jg)); color: #14532d; font-weight: 600; }
+        .jg-sp-menu-preview__link { display: inline-block; margin-top: 10px; font-size: calc(13 * var(--jg)); color: #14532d !important; font-weight: 600; }
         .jg-sp-menu-preview__link:hover { text-decoration: underline; }
 
         /* Gallery grid */
@@ -2515,6 +2515,12 @@ class JG_Interactive_Map {
                     <?php endif; ?>
                     <?php if (!empty($point['email'])): ?>
                     ,"email": <?php echo json_encode($point['email']); ?>
+                    <?php endif; ?>
+                    <?php if ($point['type'] === 'miejsce' && isset($place_cats) && !empty($place_cats[$point_category]['has_price_range']) && !empty($point['price_range'])): ?>
+                    ,"priceRange": <?php echo json_encode($point['price_range']); ?>
+                    <?php endif; ?>
+                    <?php if ($point['type'] === 'miejsce' && isset($place_cats) && !empty($place_cats[$point_category]['serves_cuisine']) && !empty($point['serves_cuisine'])): ?>
+                    ,"servesCuisine": <?php echo json_encode($point['serves_cuisine']); ?>
                     <?php endif; ?>
                     <?php if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])): ?>
                     <?php
