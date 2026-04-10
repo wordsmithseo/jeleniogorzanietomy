@@ -7536,7 +7536,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
       function loadMenuSection(p, menuSection) {
         if (!menuSection) return;
-        menuSection.innerHTML = '<div style="color:#9ca3af;padding:8px 0">Ładowanie menu\u2026</div>';
+        var menuContent = menuSection.querySelector('#jg-menu-content') || menuSection;
+        menuContent.innerHTML = '<div style="color:#9ca3af;padding:8px 0">Ładowanie menu\u2026</div>';
 
         var fd = new FormData();
         fd.append('action', 'jg_get_menu');
@@ -7550,7 +7551,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var photos   = (j && j.success && j.data && j.data.photos)   ? j.data.photos   : [];
 
             if (!sections.length && !photos.length) {
-              menuSection.innerHTML = '';
               menuSection.style.display = 'none';
               return;
             }
@@ -7611,7 +7611,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<a href="' + menuUrl + '" target="_blank" class="jg-menu-modal-link">Zobacz pełne menu \u2192</a>' +
               '</div>';
 
-            menuSection.innerHTML = html;
+            menuContent.innerHTML = html;
 
             // Bind lightbox to photo thumbnails
             var photoEls = menuSection.querySelectorAll('.jg-menu-modal-photo');
@@ -11319,9 +11319,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         // Build menu section placeholder (async-loaded after modal opens)
         var menuSectionHtml = '';
         if (p.type === 'miejsce' && isMenuCategory(p.category)) {
-          menuSectionHtml = '<div id="jg-menu-section" class="jg-menu-modal-section" style="margin:0 0 12px 0">' +
-            '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#92400e;margin-bottom:6px;opacity:0.7">Aktualne menu</div>' +
-            '<div id="jg-menu-loading" style="font-size:0.85rem;color:#9ca3af">Ładowanie menu\u2026</div>' +
+          menuSectionHtml = '<div id="jg-menu-section" class="jg-menu-modal-section" style="margin:0 0 12px 0;padding:10px 14px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa;font-size:0.875rem;color:#92400e">' +
+            '<div id="jg-menu-title" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Aktualne menu</div>' +
+            '<div id="jg-menu-content"><div style="font-size:0.85rem;color:#9ca3af">Ładowanie menu\u2026</div></div>' +
             '</div>';
         }
 
