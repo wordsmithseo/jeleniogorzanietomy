@@ -2561,40 +2561,33 @@ class JG_Map_Ajax_Handlers {
                 $this->notify_admin_edit($point_id);
             }
 
-            // Award XP for editing — split by what actually changed
+            // Award XP for editing — single flat-rate award per meaningful edit
+            // Uses the unified 'edit_point' source key (consistent with admin UI and recalculation).
             $xp_results = array();
 
-            // --- Title change ---
-            $old_title_clean = trim($old_values['title']);
-            $new_title_clean = trim($title);
-            if ($old_title_clean !== $new_title_clean && $new_title_clean !== '') {
-                $valid_title_words = JG_Map_Levels_Achievements::count_valid_words($new_title_clean);
-                if ($valid_title_words > 0) {
-                    // Read per-word XP from config; default 3
-                    $title_per_word = 3;
-                    foreach (JG_Map_Levels_Achievements::get_xp_sources() as $s) {
-                        if ($s['key'] === 'edit_title') { $title_per_word = max(1, intval($s['xp'])); break; }
-                    }
-                    $title_xp = min($valid_title_words, 5) * $title_per_word; // cap: 5 words
-                    $r = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_title', $point_id, $title_xp);
-                    if ($r) $xp_results[] = $r;
-                }
-            }
-
-            // --- Description change ---
+            $old_title_clean   = trim($old_values['title']);
+            $new_title_clean   = trim($title);
             $old_content_plain = trim(wp_strip_all_tags($old_values['content']));
             $new_content_plain = trim(wp_strip_all_tags($content));
-            if ($old_content_plain !== $new_content_plain && $new_content_plain !== '') {
-                $old_word_count = JG_Map_Levels_Achievements::count_valid_words($old_content_plain);
-                $new_word_count = JG_Map_Levels_Achievements::count_valid_words($new_content_plain);
-                $added_words    = max(0, $new_word_count - $old_word_count);
-                if ($added_words > 0) {
-                    $desc_per_word = 2;
-                    foreach (JG_Map_Levels_Achievements::get_xp_sources() as $s) {
-                        if ($s['key'] === 'edit_description') { $desc_per_word = max(1, intval($s['xp'])); break; }
+
+            $title_changed   = ($old_title_clean !== $new_title_clean && $new_title_clean !== '');
+            $content_changed = ($old_content_plain !== $new_content_plain && $new_content_plain !== '');
+
+            // Award edit_point XP if title or description meaningfully changed
+            if ($title_changed || $content_changed) {
+                $has_meaningful_change = false;
+                if ($title_changed && JG_Map_Levels_Achievements::count_valid_words($new_title_clean) > 0) {
+                    $has_meaningful_change = true;
+                }
+                if (!$has_meaningful_change && $content_changed) {
+                    $new_word_count = JG_Map_Levels_Achievements::count_valid_words($new_content_plain);
+                    $old_word_count = JG_Map_Levels_Achievements::count_valid_words($old_content_plain);
+                    if ($new_word_count > $old_word_count) {
+                        $has_meaningful_change = true;
                     }
-                    $desc_xp = min($added_words, 10) * $desc_per_word; // cap: 10 new words
-                    $r = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_description', $point_id, $desc_xp);
+                }
+                if ($has_meaningful_change) {
+                    $r = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_point', $point_id);
                     if ($r) $xp_results[] = $r;
                 }
             }

@@ -143,12 +143,34 @@ class JG_Map_Levels_Achievements {
                 array('key' => 'receive_upvote', 'label' => 'Otrzymanie głosu w górę', 'xp' => 5),
                 array('key' => 'vote_on_point', 'label' => 'Zagłosowanie na punkt', 'xp' => 2),
                 array('key' => 'add_photo', 'label' => 'Dodanie zdjęcia', 'xp' => 10),
-                array('key' => 'edit_title', 'label' => 'Edycja tytułu (za słowo)', 'xp' => 3),
-                array('key' => 'edit_description', 'label' => 'Edycja opisu (za nowe słowo)', 'xp' => 2),
+                array('key' => 'edit_point', 'label' => 'Edycja miejsca', 'xp' => 15),
                 array('key' => 'daily_login', 'label' => 'Codzienny login', 'xp' => 5),
                 array('key' => 'report_point', 'label' => 'Zgłoszenie problemu', 'xp' => 10),
             );
             update_option('jg_map_xp_sources', json_encode($default_sources));
+        } else {
+            // Migration: replace legacy per-word keys (edit_title, edit_description) with
+            // the unified edit_point key used by both the admin UI and recalculation.
+            $stored = json_decode(get_option('jg_map_xp_sources', '[]'), true);
+            if (is_array($stored)) {
+                $has_edit_point       = false;
+                $has_legacy_edit_keys = false;
+                foreach ($stored as $s) {
+                    if ($s['key'] === 'edit_point')       $has_edit_point = true;
+                    if (in_array($s['key'], array('edit_title', 'edit_description'), true)) $has_legacy_edit_keys = true;
+                }
+                if ($has_legacy_edit_keys) {
+                    // Remove legacy keys
+                    $stored = array_values(array_filter($stored, function($s) {
+                        return !in_array($s['key'], array('edit_title', 'edit_description'), true);
+                    }));
+                    // Add edit_point if missing
+                    if (!$has_edit_point) {
+                        $stored[] = array('key' => 'edit_point', 'label' => 'Edycja miejsca', 'xp' => 15);
+                    }
+                    update_option('jg_map_xp_sources', json_encode(array_values($stored)));
+                }
+            }
         }
 
         // Seed default achievements if table is empty

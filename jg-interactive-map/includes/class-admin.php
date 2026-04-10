@@ -3409,10 +3409,10 @@ class JG_Map_Admin {
             // Get last action (most recent activity across tables)
             $last_actions = array();
 
-            // Last point added/modified
+            // Last point added by user (use created_at only — updated_at changes on every
+            // admin action such as approval and would incorrectly appear as user activity)
             $last_point = $wpdb->get_var($wpdb->prepare(
-                "SELECT GREATEST(COALESCE(created_at, '1970-01-01'), COALESCE(updated_at, '1970-01-01'))
-                 FROM $points_table WHERE author_id = %d ORDER BY GREATEST(COALESCE(created_at, '1970-01-01'), COALESCE(updated_at, '1970-01-01')) DESC LIMIT 1",
+                "SELECT created_at FROM $points_table WHERE author_id = %d ORDER BY created_at DESC LIMIT 1",
                 $user->ID
             ));
             if ($last_point && $last_point !== '1970-01-01') $last_actions[] = $last_point;
