@@ -287,7 +287,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.26.0'; // Add seo_canonical and seo_noindex columns to points
+        $current_schema_version = '3.27.0'; // Add price_range and serves_cuisine columns to points
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
