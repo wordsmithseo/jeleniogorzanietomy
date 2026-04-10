@@ -7926,6 +7926,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   if (photosContainer.querySelectorAll('.jg-menu-ed-photo').length >= 4 && addLabel) {
                     addLabel.style.display = 'none';
                   }
+                  // Update sidebar has_menu badge (photo alone counts as having a menu)
+                  if (typeof window.jgUpdatePointHasMenu === 'function') window.jgUpdatePointHasMenu(p.id);
                 } else {
                   photoMsg.textContent = (resp && resp.data && resp.data.message) ? resp.data.message : 'Błąd uploadu.';
                   photoMsg.style.color = '#b91c1c';
@@ -7969,6 +7971,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 // Live-refresh the menu section in the place modal (still open behind)
                 var menuSec = qs('#jg-menu-section', modalView);
                 if (menuSec) loadMenuSection(p, menuSec);
+                // Update sidebar has_menu badge if sections were added
+                if (collectedSections && collectedSections.length > 0) {
+                  if (typeof window.jgUpdatePointHasMenu === 'function') window.jgUpdatePointHasMenu(p.id);
+                }
                 setTimeout(function() { close(modalEdit); }, 900);
               } else {
                 msgEl.textContent = (resp && resp.data && resp.data.message) ? resp.data.message : 'Błąd zapisu.';
