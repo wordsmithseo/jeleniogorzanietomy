@@ -813,6 +813,7 @@ class JG_Interactive_Map {
         .jg-sp { max-width: 800px; margin: 0 auto; padding: 28px 20px 60px; }
         .jg-menu-back { display: inline-flex; align-items: center; gap: 6px; font-size: calc(13 * var(--jg)); color: #6b7280; margin-bottom: 16px; }
         .jg-menu-back:hover { color: <?php echo esc_attr($type_color); ?>; }
+        .jg-sp-site-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         .jg-sp-title { font-size: calc(28 * var(--jg)); font-weight: 800; margin: 0 0 4px 0; color: #111; }
         .jg-sp-date { font-size: calc(12 * var(--jg)); color: #9ca3af; margin-bottom: 24px; }
 
@@ -867,7 +868,8 @@ class JG_Interactive_Map {
         <?php if ($logo_url): ?><img src="<?php echo esc_url($logo_url); ?>" alt="<?php echo esc_attr($site_name); ?>"><?php else: echo esc_html($site_name); endif; ?>
     </a>
     <nav class="jg-sp-site-nav">
-        <a href="<?php echo esc_url(home_url('/')); ?>">Otwórz mapę</a>
+        <a href="<?php echo esc_url($point_url); ?>">← <?php echo esc_html($point['title']); ?></a>
+        <a href="<?php echo esc_url(home_url('/')); ?>">Mapa</a>
     </nav>
 </header>
 
@@ -1158,11 +1160,14 @@ class JG_Interactive_Map {
         .jg-sp-site-header a { display: flex; align-items: center; gap: 10px; }
         .jg-sp-site-logo { height: 40px; width: auto; }
         .jg-sp-site-name { font-size: calc(16 * var(--jg)); font-weight: 700; color: #111; }
+        .jg-sp-site-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         .jg-sp-site-nav a {
             font-size: calc(14 * var(--jg)); font-weight: 600; color: #fff; background: <?php echo $type_color; ?>;
             padding: 8px 16px; border-radius: 8px; transition: opacity 0.15s;
         }
         .jg-sp-site-nav a:hover { opacity: 0.85; }
+        .jg-sp-back { display: inline-flex; align-items: center; gap: 6px; font-size: calc(13 * var(--jg)); color: #6b7280; margin-bottom: 16px; }
+        .jg-sp-back:hover { color: <?php echo $type_color; ?>; }
 
         /* Main content container */
         .jg-sp { max-width: 800px; margin: 0 auto; padding: 28px 20px 48px; background: #fff; min-height: calc(100vh - 130px); }
@@ -1467,6 +1472,7 @@ class JG_Interactive_Map {
         </header>
 
         <div class="jg-sp">
+            <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" class="jg-sp-back">← Wróć do mapy i otwórz modal</a>
             <!-- Prominent "View on Map" CTA (manual click only, no auto-redirect) -->
             <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" class="jg-sp-map-cta">
                 <div>
