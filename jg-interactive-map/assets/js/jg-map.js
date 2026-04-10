@@ -11224,7 +11224,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         // Price range box (independent of opening hours)
         if (p.type === 'miejsce' && p.price_range && isPriceRangeCategory(p.category || '')) {
           var prPriceLabels = { '$': 'Bardzo tanie', '$$': 'Umiarkowane', '$$$': 'Droższe', '$$$$': 'Ekskluzywne' };
-          _priceRangeBoxHtml = '<div style="padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:0.875rem;color:#166534;flex:0 0 auto;min-width:140px">' +
+          _priceRangeBoxHtml = '<div style="padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:0.875rem;color:#166534;flex:0 0 auto;min-width:140px;max-width:100%;box-sizing:border-box">' +
             '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Zakres cenowy</div>' +
             '<div style="font-size:1.2rem;font-weight:800;letter-spacing:0.05em">' + esc(p.price_range) + '</div>' +
             '<div style="font-size:0.8rem;opacity:0.85;margin-top:2px">' + esc(prPriceLabels[p.price_range] || '') + '</div>' +
@@ -11313,7 +11313,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         // Show flex row if either section exists
         if (_ohBoxHtml || _priceRangeBoxHtml) {
-          openingHoursHtml = '<div style="display:flex;gap:8px;margin:0 0 12px 0;flex-wrap:wrap">' + _ohBoxHtml + _priceRangeBoxHtml + '</div>';
+          openingHoursHtml = '<div style="display:flex;gap:8px;margin:0 0 12px 0;flex-wrap:wrap;min-width:0;width:100%">' + _ohBoxHtml + _priceRangeBoxHtml + '</div>';
         }
 
         // Build menu section placeholder (async-loaded after modal opens)
