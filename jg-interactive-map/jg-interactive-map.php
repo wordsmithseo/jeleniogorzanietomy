@@ -1357,6 +1357,16 @@ class JG_Interactive_Map {
         }
         .jg-sp-dir-btn:hover { background: #dbeafe; box-shadow: 0 2px 10px rgba(37,99,235,0.18); color: #1d4ed8; }
         .jg-sp-dir-btn svg { width: 20px; height: 20px; fill: #1d4ed8; flex-shrink: 0; }
+        .jg-sp-menu-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 9px 18px; background: #fff7ed; color: #92400e;
+            border: 1.5px solid #fed7aa; border-radius: 10px;
+            font-size: calc(14 * var(--jg)); font-weight: 700;
+            text-decoration: none; white-space: nowrap; flex-shrink: 0;
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .jg-sp-menu-btn:hover { background: #ffedd5; box-shadow: 0 2px 10px rgba(146,64,14,0.15); color: #92400e; }
+        .jg-sp-menu-btn svg { width: 20px; height: 20px; fill: #92400e; flex-shrink: 0; }
 
         /* offset body so redirect banner doesn't overlap header — set dynamically by JS */
         body { padding-top: 0; }
@@ -1595,10 +1605,22 @@ class JG_Interactive_Map {
             <?php endif; ?>
 
             <!-- Address + Directions button -->
-            <?php if (!empty($point['address']) || (!empty($point['lat']) && !empty($point['lng']))): ?>
+            <?php
+            $sp_menu_btn_url = '';
+            if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])) {
+                $sp_menu_btn_url = home_url('/miejsce/' . $point['slug'] . '/menu/');
+            }
+            ?>
+            <?php if (!empty($point['address']) || (!empty($point['lat']) && !empty($point['lng'])) || $sp_menu_btn_url): ?>
                 <div class="jg-sp-address-wrap">
                     <?php if (!empty($point['address'])): ?>
                         <div class="jg-sp-address">&#128205; <?php echo esc_html($point['address']); ?></div>
+                    <?php endif; ?>
+                    <?php if ($sp_menu_btn_url): ?>
+                        <a href="<?php echo esc_url($sp_menu_btn_url); ?>" class="jg-sp-menu-btn">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                            <span>Menu</span>
+                        </a>
                     <?php endif; ?>
                     <?php if (!empty($point['lat']) && !empty($point['lng'])): ?>
                         <a href="https://www.google.com/maps/dir/?api=1&destination=<?php echo urlencode($point['lat'] . ',' . $point['lng']); ?>" target="_blank" rel="noopener" class="jg-sp-dir-btn">
