@@ -564,7 +564,7 @@ class JG_Interactive_Map {
                 "SELECT id, title, slug, content, excerpt, lat, lng, address, type, category, status,
                         author_id, is_promo, website, phone, images, featured_image_index,
                         facebook_url, instagram_url, linkedin_url, tiktok_url, tags, opening_hours, created_at, updated_at,
-                        seo_canonical, seo_noindex
+                        seo_canonical, seo_noindex, price_range, serves_cuisine
                  FROM $table
                  WHERE slug = %s AND status = 'publish'
                  LIMIT 1",
