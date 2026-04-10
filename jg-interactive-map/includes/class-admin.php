@@ -6181,7 +6181,13 @@ JAVASCRIPT;
                             <?php if (!empty($category['has_menu'])): ?>
                             <span title="Posiada menu" style="font-size:14px;opacity:0.7">🍽️</span>
                             <?php endif; ?>
-                            <button class="jg-action-btn" onclick="jgEditPlaceCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📍'); ?>', <?php echo !empty($category['has_menu']) ? 'true' : 'false'; ?>)" title="Edytuj">✏️</button>
+                            <?php if (!empty($category['serves_cuisine'])): ?>
+                            <span title="Miejsce serwujące jedzenie" style="font-size:14px;opacity:0.7">🥗</span>
+                            <?php endif; ?>
+                            <?php if (!empty($category['has_price_range'])): ?>
+                            <span title="Zakres cenowy" style="font-size:14px;opacity:0.7">💰</span>
+                            <?php endif; ?>
+                            <button class="jg-action-btn" onclick="jgEditPlaceCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📍'); ?>', <?php echo !empty($category['has_menu']) ? 'true' : 'false'; ?>, <?php echo !empty($category['serves_cuisine']) ? 'true' : 'false'; ?>, <?php echo !empty($category['has_price_range']) ? 'true' : 'false'; ?>)" title="Edytuj">✏️</button>
                             <button class="jg-action-btn delete" onclick="jgDeletePlaceCategory('<?php echo esc_js($key); ?>')" title="Usuń">🗑️</button>
                         </li>
                         <?php endforeach; ?>
@@ -6217,6 +6223,14 @@ JAVASCRIPT;
                         <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer">
                             <input type="checkbox" id="new-place-cat-has-menu" value="1">
                             🍽️ Kategoria posiada menu (włącz opcję dodawania menu dla miejsc)
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="new-place-cat-serves-cuisine" value="1">
+                            🥗 Miejsce serwujące jedzenie (dodaje pole rodzaju kuchni i servesCuisine do schematu)
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="new-place-cat-has-price-range" value="1">
+                            💰 Zakres cenowy (dodaje pole zakresu cenowego i priceRange do schematu)
                         </label>
 
                         <div class="jg-btn-row">
@@ -6254,6 +6268,14 @@ JAVASCRIPT;
                         <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer">
                             <input type="checkbox" id="edit-place-cat-has-menu" value="1">
                             🍽️ Kategoria posiada menu
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="edit-place-cat-serves-cuisine" value="1">
+                            🥗 Miejsce serwujące jedzenie
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="edit-place-cat-has-price-range" value="1">
+                            💰 Zakres cenowy
                         </label>
 
                         <div class="jg-btn-row">
@@ -6328,6 +6350,8 @@ JAVASCRIPT;
                     const label = document.getElementById('new-place-cat-label').value.trim();
                     let icon = document.getElementById('new-place-cat-icon').value || '📍';
                     const hasMenu = document.getElementById('new-place-cat-has-menu').checked ? '1' : '0';
+                    const servesCuisine = document.getElementById('new-place-cat-serves-cuisine').checked ? '1' : '0';
+                    const hasPriceRange = document.getElementById('new-place-cat-has-price-range').checked ? '1' : '0';
                     if (!jgIsValidEmoji(icon)) {
                         icon = jgGetFirstPlaceEmoji();
                     }
@@ -6351,7 +6375,9 @@ JAVASCRIPT;
                             key: key,
                             label: label,
                             icon: icon,
-                            has_menu: hasMenu
+                            has_menu: hasMenu,
+                            serves_cuisine: servesCuisine,
+                            has_price_range: hasPriceRange
                         })
                     })
                     .then(r => r.json())
@@ -6365,7 +6391,7 @@ JAVASCRIPT;
                 };
 
                 // Edit category
-                window.jgEditPlaceCategory = function(key, label, icon, hasMenu) {
+                window.jgEditPlaceCategory = function(key, label, icon, hasMenu, servesCuisine, hasPriceRange) {
                     document.getElementById('jg-add-place-category-form').classList.remove('visible');
                     const form = document.getElementById('jg-edit-place-category-form');
                     form.classList.add('visible');
@@ -6376,6 +6402,8 @@ JAVASCRIPT;
                     document.getElementById('edit-place-cat-icon-manual').value = icon;
                     document.getElementById('edit-place-cat-icon-manual').classList.remove('invalid');
                     document.getElementById('edit-place-cat-has-menu').checked = !!hasMenu;
+                    document.getElementById('edit-place-cat-serves-cuisine').checked = !!servesCuisine;
+                    document.getElementById('edit-place-cat-has-price-range').checked = !!hasPriceRange;
 
                     // Highlight current emoji
                     document.querySelectorAll('#edit-place-emoji-picker .jg-emoji-btn').forEach(btn => {
@@ -6426,6 +6454,8 @@ JAVASCRIPT;
                     const label = document.getElementById('edit-place-cat-label').value.trim();
                     let icon = document.getElementById('edit-place-cat-icon').value || '📍';
                     const hasMenu = document.getElementById('edit-place-cat-has-menu').checked ? '1' : '0';
+                    const servesCuisine = document.getElementById('edit-place-cat-serves-cuisine').checked ? '1' : '0';
+                    const hasPriceRange = document.getElementById('edit-place-cat-has-price-range').checked ? '1' : '0';
                     if (!jgIsValidEmoji(icon)) {
                         icon = jgGetFirstPlaceEmoji();
                     }
@@ -6444,7 +6474,9 @@ JAVASCRIPT;
                             key: key,
                             label: label,
                             icon: icon,
-                            has_menu: hasMenu
+                            has_menu: hasMenu,
+                            serves_cuisine: servesCuisine,
+                            has_price_range: hasPriceRange
                         })
                     })
                     .then(r => r.json())

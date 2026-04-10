@@ -210,6 +210,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
     return cats.indexOf(cat) !== -1;
   }
 
+  function isPriceRangeCategory(cat) {
+    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.priceRangeCategories) || [];
+    return cats.indexOf(cat) !== -1;
+  }
+
+  function isServesCuisineCategory(cat) {
+    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.servesCuisineCategories) || [];
+    return cats.indexOf(cat) !== -1;
+  }
+
   function getCategoryLabel(key, type) {
     var reasons = (window.JG_MAP_CFG && JG_MAP_CFG.reportReasons) || {};
     var placeCategories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
@@ -1583,6 +1593,23 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           if (m) parsed[m[1]] = { open: m[2], close: m[3] };
         });
         return parsed;
+      }
+
+      // Build price range SELECT HTML
+      function buildPriceRangeSelectHtml(prefix, currentValue) {
+        var options = [
+          { val: '', label: '— brak —' },
+          { val: '$', label: '$ – bardzo tanie' },
+          { val: '$$', label: '$$ – umiarkowane' },
+          { val: '$$$', label: '$$$ – droższe' },
+          { val: '$$$$', label: '$$$$ – ekskluzywne' }
+        ];
+        var html = '<select name="price_range" id="' + prefix + '-price-range-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">';
+        options.forEach(function(o) {
+          html += '<option value="' + o.val + '"' + (currentValue === o.val ? ' selected' : '') + '>' + o.label + '</option>';
+        });
+        html += '</select>';
+        return html;
       }
 
       // Build the picker HTML (hidden input + 7 day rows)
@@ -4953,6 +4980,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 '</select></label>' +
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('add-rte', 800, '', 4) + '</div>' +
                 '<div class="cols-2" id="add-opening-hours-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('add', '') + '</div>' +
+                '<div class="cols-2" id="add-price-range-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">💰 Zakres cenowy</label>' + buildPriceRangeSelectHtml('add', '') + '</div>' +
+                '<div class="cols-2" id="add-serves-cuisine-field" style="display:none"><label style="display:block;margin-bottom:4px;font-weight:500">🥗 Rodzaj kuchni <input type="text" name="serves_cuisine" id="add-serves-cuisine-input" placeholder="np. polska, włoska, pizza…" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label></div>' +
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('add-tags') + '</div>' +
                 '<div class="cols-2" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin:4px 0">' +
                 '<strong style="display:block;margin-bottom:10px;color:#0369a1">📋 Dane kontaktowe (opcjonalnie)</strong>' +
@@ -5050,6 +5079,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               var curiosityCategorySelect = qs('#add-curiosity-category-select', modalAdd);
 
               var addOpeningHoursField = qs('#add-opening-hours-field', modalAdd);
+              var addPriceRangeField = qs('#add-price-range-field', modalAdd);
+              var addServesCuisineField = qs('#add-serves-cuisine-field', modalAdd);
+
+              function updateAddExtraFields() {
+                var cat = placeCategorySelect ? placeCategorySelect.value : '';
+                var selectedType = typeSelect ? typeSelect.value : '';
+                if (addPriceRangeField) addPriceRangeField.style.display = (selectedType === 'miejsce' && isPriceRangeCategory(cat)) ? 'block' : 'none';
+                if (addServesCuisineField) addServesCuisineField.style.display = (selectedType === 'miejsce' && isServesCuisineCategory(cat)) ? 'block' : 'none';
+              }
+
+              if (placeCategorySelect) placeCategorySelect.addEventListener('change', updateAddExtraFields);
 
               if (typeSelect && categoryField && categorySelect) {
                 // Function to toggle category field visibility
@@ -5076,6 +5116,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   if (addOpeningHoursField) {
                     addOpeningHoursField.style.display = selectedType === 'miejsce' ? 'block' : 'none';
                   }
+
+                  updateAddExtraFields();
                 }
 
                 // Initial toggle on page load (default is zgloszenie)
@@ -8818,6 +8860,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '</div>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('edit-rte', maxDescLength, '', 6) + '</div>' +
               (p.type === 'miejsce' ? '<div class="cols-2"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('edit', p.opening_hours || '') + '</div>' : '') +
+              (p.type === 'miejsce' && isPriceRangeCategory(p.category || '') ? '<div class="cols-2" id="edit-price-range-field"><label style="display:block;margin-bottom:6px;font-weight:500">💰 Zakres cenowy</label>' + buildPriceRangeSelectHtml('edit', p.price_range || '') + '</div>' : '') +
+              (p.type === 'miejsce' && isServesCuisineCategory(p.category || '') ? '<div class="cols-2" id="edit-serves-cuisine-field"><label style="display:block;margin-bottom:4px;font-weight:500">🥗 Rodzaj kuchni <input type="text" name="serves_cuisine" id="edit-serves-cuisine-input" value="' + esc(p.serves_cuisine || '') + '" placeholder="np. polska, włoska, pizza…" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label></div>' : '') +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('edit-tags') + '</div>' +
               contactFieldsHtml +
               sponsoredContactHtml +
@@ -11235,12 +11279,24 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 '</div>';
             }).join('');
 
-            openingHoursHtml = '<div class="jg-opening-hours" style="margin:0 0 12px 0;padding:10px 14px;background:' + ohColors.bg + ';border-radius:8px;border:1px solid ' + ohColors.border + ';font-size:0.875rem;color:' + ohColors.text + '">' +
+            var ohBoxHtml = '<div class="jg-opening-hours" style="padding:10px 14px;background:' + ohColors.bg + ';border-radius:8px;border:1px solid ' + ohColors.border + ';font-size:0.875rem;color:' + ohColors.text + ';flex:1;min-width:0">' +
               '<div id="jg-oh-title" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Dzisiejsze godziny otwarcia</div>' +
               '<div id="jg-oh-today">' + todayRowHtml + '</div>' +
               '<div id="jg-oh-all" style="display:none;margin-top:6px;line-height:2;color:' + ohColors.text + '">' + allDaysHtml + '</div>' +
               '<button id="btn-oh-expand" type="button" style="margin-top:6px;background:none;border:none;padding:0;color:' + ohColors.btn + ';font-size:0.8rem;cursor:pointer;text-decoration:underline;font-weight:600">Pokaż wszystkie dni</button>' +
               '</div>';
+
+            var priceRangeBoxHtml = '';
+            if (p.price_range) {
+              var prPriceLabels = { '$': 'Bardzo tanie', '$$': 'Umiarkowane', '$$$': 'Droższe', '$$$$': 'Ekskluzywne' };
+              priceRangeBoxHtml = '<div style="padding:10px 14px;background:#fef3c7;border-radius:8px;border:1px solid #fde68a;font-size:0.875rem;color:#92400e;flex:1;min-width:0">' +
+                '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Zakres cenowy</div>' +
+                '<div style="font-size:1.2rem;font-weight:800;letter-spacing:0.05em">' + esc(p.price_range) + '</div>' +
+                '<div style="font-size:0.8rem;opacity:0.85;margin-top:2px">' + esc(prPriceLabels[p.price_range] || '') + '</div>' +
+                '</div>';
+            }
+
+            openingHoursHtml = '<div style="display:flex;gap:8px;margin:0 0 12px 0;flex-wrap:wrap">' + ohBoxHtml + priceRangeBoxHtml + '</div>';
           }
         }
 
@@ -14237,6 +14293,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '</select></label>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis* (max 800 znaków)</label>' + buildRichEditorHtml('fab-rte', 800, '', 4) + '</div>' +
               '<div class="cols-2" id="fab-opening-hours-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('fab', '') + '</div>' +
+              '<div class="cols-2" id="fab-price-range-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">💰 Zakres cenowy</label>' + buildPriceRangeSelectHtml('fab', '') + '</div>' +
+              '<div class="cols-2" id="fab-serves-cuisine-field" style="display:none"><label style="display:block;margin-bottom:4px;font-weight:500">🥗 Rodzaj kuchni <input type="text" name="serves_cuisine" id="fab-serves-cuisine-input" placeholder="np. polska, włoska, pizza…" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label></div>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('fab-tags') + '</div>' +
               '<div class="cols-2" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin:4px 0">' +
               '<strong style="display:block;margin-bottom:10px;color:#0369a1">📋 Dane kontaktowe (opcjonalnie)</strong>' +
@@ -14382,6 +14440,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var curiosityCategorySelect = qs('#add-curiosity-category-select', modalAdd);
 
             var fabOpeningHoursField = qs('#fab-opening-hours-field', modalAdd);
+            var fabPriceRangeField = qs('#fab-price-range-field', modalAdd);
+            var fabServesCuisineField = qs('#fab-serves-cuisine-field', modalAdd);
+
+            function updateFabExtraFields() {
+              var cat = placeCategorySelect ? placeCategorySelect.value : '';
+              var selectedType = typeSelect ? typeSelect.value : '';
+              if (fabPriceRangeField) fabPriceRangeField.style.display = (selectedType === 'miejsce' && isPriceRangeCategory(cat)) ? 'block' : 'none';
+              if (fabServesCuisineField) fabServesCuisineField.style.display = (selectedType === 'miejsce' && isServesCuisineCategory(cat)) ? 'block' : 'none';
+            }
+
+            if (placeCategorySelect) placeCategorySelect.addEventListener('change', updateFabExtraFields);
 
             if (typeSelect && categoryField && categorySelect) {
               // Function to toggle category field visibility
@@ -14408,6 +14477,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 if (fabOpeningHoursField) {
                   fabOpeningHoursField.style.display = selectedType === 'miejsce' ? 'block' : 'none';
                 }
+
+                updateFabExtraFields();
               }
 
               // Initial toggle on page load (default is zgloszenie)
