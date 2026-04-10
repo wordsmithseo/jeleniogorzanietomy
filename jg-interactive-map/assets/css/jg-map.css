@@ -3653,6 +3653,13 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   gap: 10px;
 }
 
+/* Prevent horizontal scroll in the view modal's content grid.
+   The inline style uses overflow:auto (both axes); we need to lock x.
+   !important is required to beat the inline style specificity. */
+.jg-modal .jg-grid:not(.cols-2) {
+  overflow-x: hidden !important;
+}
+
 .jg-grid.cols-2 {
   grid-template-columns: 1fr 1fr;
 }
