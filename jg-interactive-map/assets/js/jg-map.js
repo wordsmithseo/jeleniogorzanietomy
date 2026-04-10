@@ -6128,7 +6128,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               is_own_place: !!r.is_own_place,
               edit_locked: !!r.edit_locked,
               tags: r.tags || [],
-              opening_hours: r.opening_hours || null
+              opening_hours: r.opening_hours || null,
+              price_range: r.price_range || null,
+              serves_cuisine: r.serves_cuisine || null
             };
           });
 
