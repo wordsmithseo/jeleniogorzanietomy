@@ -1590,15 +1590,85 @@ class JG_Interactive_Map {
             <?php
             $sp_promo_cats = JG_Map_Ajax_Handlers::get_promo_categories();
             if ($point['type'] === 'miejsce' && empty($point['is_promo']) && in_array($point['category'] ?? '', $sp_promo_cats, true)):
+                $sp_promo_logged_in = is_user_logged_in();
+                $sp_promo_nonce     = $sp_promo_logged_in ? wp_create_nonce('jg_map_nonce') : '';
+                $sp_promo_ajax_url  = admin_url('admin-ajax.php');
+                $sp_promo_login_url = wp_login_url(get_permalink() ?: home_url('/miejsce/' . $point['slug'] . '/'));
             ?>
             <div class="jg-sp-biz-promo">
                 <div class="jg-sp-biz-promo__icon">💼</div>
                 <div class="jg-sp-biz-promo__body">
                     <div class="jg-sp-biz-promo__title">Jesteś właścicielem tego biznesu? Zwiększ jego widoczność na mapie już od 49 zł / miesiąc.</div>
                     <div class="jg-sp-biz-promo__desc">Promuj swoją firmę! Lepsza widoczność na mapie, możliwość dodania danych kontaktowych i priorytet w wyświetlaniu w naszym portalu.</div>
-                    <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" class="jg-sp-biz-promo__btn">Zapytaj o ofertę</a>
+                    <?php if ($sp_promo_logged_in): ?>
+                    <button
+                        id="jg-sp-promo-btn"
+                        class="jg-sp-biz-promo__btn"
+                        data-ajax="<?php echo esc_url($sp_promo_ajax_url); ?>"
+                        data-nonce="<?php echo esc_attr($sp_promo_nonce); ?>"
+                        data-point-id="<?php echo esc_attr($point['id']); ?>"
+                        data-point-title="<?php echo esc_attr($point['title']); ?>"
+                        data-point-category="<?php echo esc_attr($point['category'] ?? ''); ?>"
+                        data-point-address="<?php echo esc_attr($point['address'] ?? ''); ?>"
+                        data-point-lat="<?php echo esc_attr($point['lat'] ?? ''); ?>"
+                        data-point-lng="<?php echo esc_attr($point['lng'] ?? ''); ?>"
+                    >Zapytaj o ofertę</button>
+                    <div id="jg-sp-promo-msg" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:0.875rem;font-weight:600"></div>
+                    <?php else: ?>
+                    <a href="<?php echo esc_url($sp_promo_login_url); ?>" class="jg-sp-biz-promo__btn">Zaloguj się, aby zapytać o ofertę</a>
+                    <?php endif; ?>
                 </div>
             </div>
+            <script>
+            (function() {
+                var btn = document.getElementById('jg-sp-promo-btn');
+                if (!btn) return;
+                var msg = document.getElementById('jg-sp-promo-msg');
+                btn.addEventListener('click', function() {
+                    btn.disabled = true;
+                    btn.textContent = 'Wysyłanie...';
+                    var body = new URLSearchParams({
+                        action:         'jg_request_promotion',
+                        _ajax_nonce:    btn.dataset.nonce,
+                        point_id:       btn.dataset.pointId,
+                        point_title:    btn.dataset.pointTitle,
+                        point_category: btn.dataset.pointCategory,
+                        point_address:  btn.dataset.pointAddress,
+                        point_lat:      btn.dataset.pointLat,
+                        point_lng:      btn.dataset.pointLng
+                    });
+                    fetch(btn.dataset.ajax, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            if (data.success) {
+                                btn.textContent = 'Wysłano ✓';
+                                btn.style.background = '#d1fae5';
+                                btn.style.color = '#065f46';
+                                btn.style.borderColor = '#10b981';
+                                msg.style.display = 'block';
+                                msg.style.background = '#d1fae5';
+                                msg.style.color = '#065f46';
+                                msg.textContent = 'Prośba o ofertę została przesłana! Otrzymasz odpowiedź w ciągu 24 godzin roboczych na adres e-mail powiązany z Twoim kontem.';
+                            } else {
+                                btn.disabled = false;
+                                btn.textContent = 'Zapytaj o ofertę';
+                                msg.style.display = 'block';
+                                msg.style.background = '#fee2e2';
+                                msg.style.color = '#991b1b';
+                                msg.textContent = (data.data && data.data.message) ? data.data.message : 'Wystąpił błąd. Spróbuj ponownie.';
+                            }
+                        })
+                        .catch(function() {
+                            btn.disabled = false;
+                            btn.textContent = 'Zapytaj o ofertę';
+                            msg.style.display = 'block';
+                            msg.style.background = '#fee2e2';
+                            msg.style.color = '#991b1b';
+                            msg.textContent = 'Błąd połączenia. Spróbuj ponownie.';
+                        });
+                });
+            })();
+            </script>
             <?php endif; ?>
 
             <!-- Content -->
