@@ -1586,10 +1586,10 @@ class JG_Interactive_Map {
             </div>
             <?php endif; ?>
 
-            <!-- Business promo box (shown when category has show_promo enabled) -->
+            <!-- Business promo box (shown when category has show_promo enabled, hidden for already-sponsored places) -->
             <?php
             $sp_promo_cats = JG_Map_Ajax_Handlers::get_promo_categories();
-            if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', $sp_promo_cats, true)):
+            if ($point['type'] === 'miejsce' && empty($point['is_promo']) && in_array($point['category'] ?? '', $sp_promo_cats, true)):
             ?>
             <div class="jg-sp-biz-promo">
                 <div class="jg-sp-biz-promo__icon">💼</div>
