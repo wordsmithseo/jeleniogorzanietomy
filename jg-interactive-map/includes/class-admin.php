@@ -6187,7 +6187,10 @@ JAVASCRIPT;
                             <?php if (!empty($category['has_price_range'])): ?>
                             <span title="Zakres cenowy" style="font-size:14px;opacity:0.7">💰</span>
                             <?php endif; ?>
-                            <button class="jg-action-btn" onclick="jgEditPlaceCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📍'); ?>', <?php echo !empty($category['has_menu']) ? 'true' : 'false'; ?>, <?php echo !empty($category['serves_cuisine']) ? 'true' : 'false'; ?>, <?php echo !empty($category['has_price_range']) ? 'true' : 'false'; ?>)" title="Edytuj">✏️</button>
+                            <?php if (!empty($category['show_promo'])): ?>
+                            <span title="Ramka promocyjna" style="font-size:14px;opacity:0.7">💼</span>
+                            <?php endif; ?>
+                            <button class="jg-action-btn" onclick="jgEditPlaceCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📍'); ?>', <?php echo !empty($category['has_menu']) ? 'true' : 'false'; ?>, <?php echo !empty($category['serves_cuisine']) ? 'true' : 'false'; ?>, <?php echo !empty($category['has_price_range']) ? 'true' : 'false'; ?>, <?php echo !empty($category['show_promo']) ? 'true' : 'false'; ?>)" title="Edytuj">✏️</button>
                             <button class="jg-action-btn delete" onclick="jgDeletePlaceCategory('<?php echo esc_js($key); ?>')" title="Usuń">🗑️</button>
                         </li>
                         <?php endforeach; ?>
@@ -6231,6 +6234,10 @@ JAVASCRIPT;
                         <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
                             <input type="checkbox" id="new-place-cat-has-price-range" value="1">
                             💰 Zakres cenowy (dodaje pole zakresu cenowego i priceRange do schematu)
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="new-place-cat-show-promo" value="1">
+                            💼 Wyświetlaj ramkę promocyjną „Jesteś właścicielem?" (mapa i strona pineski)
                         </label>
 
                         <div class="jg-btn-row">
@@ -6276,6 +6283,10 @@ JAVASCRIPT;
                         <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
                             <input type="checkbox" id="edit-place-cat-has-price-range" value="1">
                             💰 Zakres cenowy
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="edit-place-cat-show-promo" value="1">
+                            💼 Wyświetlaj ramkę promocyjną „Jesteś właścicielem?"
                         </label>
 
                         <div class="jg-btn-row">
@@ -6352,6 +6363,7 @@ JAVASCRIPT;
                     const hasMenu = document.getElementById('new-place-cat-has-menu').checked ? '1' : '0';
                     const servesCuisine = document.getElementById('new-place-cat-serves-cuisine').checked ? '1' : '0';
                     const hasPriceRange = document.getElementById('new-place-cat-has-price-range').checked ? '1' : '0';
+                    const showPromo = document.getElementById('new-place-cat-show-promo').checked ? '1' : '0';
                     if (!jgIsValidEmoji(icon)) {
                         icon = jgGetFirstPlaceEmoji();
                     }
@@ -6377,7 +6389,8 @@ JAVASCRIPT;
                             icon: icon,
                             has_menu: hasMenu,
                             serves_cuisine: servesCuisine,
-                            has_price_range: hasPriceRange
+                            has_price_range: hasPriceRange,
+                            show_promo: showPromo
                         })
                     })
                     .then(r => r.json())
@@ -6391,7 +6404,7 @@ JAVASCRIPT;
                 };
 
                 // Edit category
-                window.jgEditPlaceCategory = function(key, label, icon, hasMenu, servesCuisine, hasPriceRange) {
+                window.jgEditPlaceCategory = function(key, label, icon, hasMenu, servesCuisine, hasPriceRange, showPromo) {
                     document.getElementById('jg-add-place-category-form').classList.remove('visible');
                     const form = document.getElementById('jg-edit-place-category-form');
                     form.classList.add('visible');
@@ -6404,6 +6417,7 @@ JAVASCRIPT;
                     document.getElementById('edit-place-cat-has-menu').checked = !!hasMenu;
                     document.getElementById('edit-place-cat-serves-cuisine').checked = !!servesCuisine;
                     document.getElementById('edit-place-cat-has-price-range').checked = !!hasPriceRange;
+                    document.getElementById('edit-place-cat-show-promo').checked = !!showPromo;
 
                     // Highlight current emoji
                     document.querySelectorAll('#edit-place-emoji-picker .jg-emoji-btn').forEach(btn => {
@@ -6456,6 +6470,7 @@ JAVASCRIPT;
                     const hasMenu = document.getElementById('edit-place-cat-has-menu').checked ? '1' : '0';
                     const servesCuisine = document.getElementById('edit-place-cat-serves-cuisine').checked ? '1' : '0';
                     const hasPriceRange = document.getElementById('edit-place-cat-has-price-range').checked ? '1' : '0';
+                    const showPromo = document.getElementById('edit-place-cat-show-promo').checked ? '1' : '0';
                     if (!jgIsValidEmoji(icon)) {
                         icon = jgGetFirstPlaceEmoji();
                     }
@@ -6476,7 +6491,8 @@ JAVASCRIPT;
                             icon: icon,
                             has_menu: hasMenu,
                             serves_cuisine: servesCuisine,
-                            has_price_range: hasPriceRange
+                            has_price_range: hasPriceRange,
+                            show_promo: showPromo
                         })
                     })
                     .then(r => r.json())

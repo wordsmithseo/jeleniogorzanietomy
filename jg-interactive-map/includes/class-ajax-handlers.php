@@ -112,6 +112,20 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Get keys of categories that show the business promo box (show_promo => true)
+     */
+    public static function get_promo_categories() {
+        $cats = self::get_place_categories();
+        $keys = array();
+        foreach ($cats as $key => $cat) {
+            if (!empty($cat['show_promo'])) {
+                $keys[] = $key;
+            }
+        }
+        return $keys;
+    }
+
+    /**
      * Get place categories (sorted alphabetically by label)
      */
     public static function get_place_categories() {
@@ -9204,6 +9218,7 @@ class JG_Map_Ajax_Handlers {
         $has_menu        = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
         $has_price_range = !empty($_POST['has_price_range']) && $_POST['has_price_range'] === '1';
         $serves_cuisine  = !empty($_POST['serves_cuisine']) && $_POST['serves_cuisine'] === '1';
+        $show_promo      = !empty($_POST['show_promo']) && $_POST['show_promo'] === '1';
 
         if (empty($key) || empty($label)) {
             wp_send_json_error('Klucz i nazwa są wymagane');
@@ -9223,6 +9238,7 @@ class JG_Map_Ajax_Handlers {
             'has_menu'        => $has_menu,
             'has_price_range' => $has_price_range,
             'serves_cuisine'  => $serves_cuisine,
+            'show_promo'      => $show_promo,
         );
         update_option('jg_map_place_categories', $categories);
 
@@ -9261,6 +9277,7 @@ class JG_Map_Ajax_Handlers {
         $has_menu        = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
         $has_price_range = !empty($_POST['has_price_range']) && $_POST['has_price_range'] === '1';
         $serves_cuisine  = !empty($_POST['serves_cuisine']) && $_POST['serves_cuisine'] === '1';
+        $show_promo      = !empty($_POST['show_promo']) && $_POST['show_promo'] === '1';
 
         if (empty($key) || empty($label)) {
             wp_send_json_error('Klucz i nazwa są wymagane');
@@ -9282,6 +9299,7 @@ class JG_Map_Ajax_Handlers {
             'has_menu'        => $has_menu,
             'has_price_range' => $has_price_range,
             'serves_cuisine'  => $serves_cuisine,
+            'show_promo'      => $show_promo,
         ));
         update_option('jg_map_place_categories', $categories);
 
