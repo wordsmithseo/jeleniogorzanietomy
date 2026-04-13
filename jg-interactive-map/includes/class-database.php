@@ -232,6 +232,20 @@ class JG_Map_Database {
             KEY point_id (point_id)
         ) $charset_collate;";
 
+        // Table for offerings (services / products list per place)
+        $table_offerings = $wpdb->prefix . 'jg_map_offerings';
+        $sql_offerings = "CREATE TABLE IF NOT EXISTS $table_offerings (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            name varchar(255) NOT NULL,
+            description text DEFAULT NULL,
+            price decimal(8,2) DEFAULT NULL,
+            sort_order int(11) DEFAULT 0,
+            is_available tinyint(1) DEFAULT 1,
+            PRIMARY KEY (id),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_points);
         dbDelta($sql_votes);
@@ -243,6 +257,7 @@ class JG_Map_Database {
         dbDelta($sql_menu_sections);
         dbDelta($sql_menu_items);
         dbDelta($sql_menu_photos);
+        dbDelta($sql_offerings);
 
         // Set plugin version
         update_option('jg_map_db_version', JG_MAP_VERSION);
@@ -287,7 +302,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.27.0'; // Add price_range and serves_cuisine columns to points
+        $current_schema_version = '3.28.0'; // Add offerings table for services/products per place
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -670,6 +685,21 @@ class JG_Map_Database {
             KEY point_id (point_id)
         ) $charset_collate;";
         dbDelta($sql_menu_photos);
+
+        // Ensure offerings table exists (for existing installations)
+        $table_offerings = $wpdb->prefix . 'jg_map_offerings';
+        $sql_offerings = "CREATE TABLE IF NOT EXISTS $table_offerings (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            name varchar(255) NOT NULL,
+            description text DEFAULT NULL,
+            price decimal(8,2) DEFAULT NULL,
+            sort_order int(11) DEFAULT 0,
+            is_available tinyint(1) DEFAULT 1,
+            PRIMARY KEY (id),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+        dbDelta($sql_offerings);
 
         // Cache the schema version to avoid running these checks on every page load
         update_option('jg_map_schema_version', $current_schema_version);
@@ -2688,6 +2718,89 @@ class JG_Map_Database {
              UNION
              SELECT DISTINCT point_id FROM $pt WHERE point_id IN ($ids)"
         );
+        return array_map('intval', $rows ?: array());
+    }
+
+    // -----------------------------------------------------------------------
+    // Offerings helpers (services / products)
+    // -----------------------------------------------------------------------
+
+    public static function get_offerings_table() {
+        global $wpdb;
+        return $wpdb->prefix . 'jg_map_offerings';
+    }
+
+    /**
+     * Return all offerings for a point, ordered by sort_order ASC.
+     */
+    public static function get_offerings($point_id) {
+        global $wpdb;
+        $ot = self::get_offerings_table();
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, name, description, price, sort_order, is_available FROM $ot WHERE point_id = %d ORDER BY sort_order ASC, id ASC",
+                intval($point_id)
+            ),
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Replace all offerings for a point.
+     * $items = [['name'=>'...', 'description'=>'...', 'price'=>0.0, 'is_available'=>1], ...]
+     */
+    public static function save_offerings($point_id, $items) {
+        global $wpdb;
+        $point_id = intval($point_id);
+        $ot = self::get_offerings_table();
+
+        $wpdb->delete($ot, array('point_id' => $point_id), array('%d'));
+
+        foreach ($items as $sort => $item) {
+            $name = sanitize_text_field(substr($item['name'] ?? '', 0, 255));
+            if ($name === '') continue;
+
+            $price = isset($item['price']) && $item['price'] !== '' ? round(floatval($item['price']), 2) : null;
+            $desc  = sanitize_textarea_field($item['description'] ?? '');
+            $avail = isset($item['is_available']) ? (intval($item['is_available']) ? 1 : 0) : 1;
+
+            $wpdb->insert(
+                $ot,
+                array(
+                    'point_id'     => $point_id,
+                    'name'         => $name,
+                    'description'  => $desc,
+                    'price'        => $price,
+                    'sort_order'   => $sort,
+                    'is_available' => $avail,
+                ),
+                array('%d', '%s', '%s', $price !== null ? '%f' : 'null', '%d', '%d')
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if a point has any offerings.
+     */
+    public static function point_has_offerings($point_id) {
+        global $wpdb;
+        $ot = self::get_offerings_table();
+        return (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $ot WHERE point_id = %d", intval($point_id))) > 0;
+    }
+
+    /**
+     * Batch-check which of the given point IDs have offerings.
+     * Returns a flat array of point IDs that have at least one offering.
+     */
+    public static function get_offerings_point_ids_batch(array $point_ids) {
+        if (empty($point_ids)) return array();
+        global $wpdb;
+        $ot  = self::get_offerings_table();
+        $ids = implode(',', array_map('intval', $point_ids));
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $rows = $wpdb->get_col("SELECT DISTINCT point_id FROM $ot WHERE point_id IN ($ids)");
         return array_map('intval', $rows ?: array());
     }
 }

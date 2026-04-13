@@ -2660,6 +2660,27 @@ class JG_Interactive_Map {
                     <?php if ($point['type'] === 'miejsce' && isset($place_cats) && !empty($place_cats[$point_category]['serves_cuisine']) && !empty($point['serves_cuisine'])): ?>
                     ,"servesCuisine": <?php echo json_encode($point['serves_cuisine']); ?>
                     <?php endif; ?>
+                    <?php
+                    $ld_offerings_cats = JG_Map_Ajax_Handlers::get_offerings_categories();
+                    if ($point['type'] === 'miejsce' && isset($ld_offerings_cats[$point_category]) && JG_Map_Database::point_has_offerings($point['id'])):
+                        $ld_offerings = JG_Map_Database::get_offerings($point['id']);
+                        $ld_off_elements = array();
+                        foreach ($ld_offerings as $ld_pos => $ld_off) {
+                            $ld_off_item = array('@type' => 'ListItem', 'position' => $ld_pos + 1, 'name' => $ld_off['name']);
+                            if (!empty($ld_off['description'])) $ld_off_item['description'] = $ld_off['description'];
+                            if ($ld_off['price'] !== null && $ld_off['price'] !== '') {
+                                $ld_off_item['offers'] = array('@type' => 'Offer', 'price' => number_format(floatval($ld_off['price']), 2, '.', ''), 'priceCurrency' => 'PLN');
+                            }
+                            $ld_off_elements[] = $ld_off_item;
+                        }
+                        if (!empty($ld_off_elements)):
+                    ?>
+                    ,"hasOfferCatalog": {
+                        "@type": "OfferCatalog",
+                        "name": <?php echo json_encode($ld_offerings_cats[$point_category]); ?>,
+                        "itemListElement": <?php echo json_encode($ld_off_elements, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+                    }
+                    <?php endif; endif; ?>
                     <?php if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])): ?>
                     <?php
                     $ld_menu_url      = home_url('/miejsce/' . $point['slug'] . '/menu/');
