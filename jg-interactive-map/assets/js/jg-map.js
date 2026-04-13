@@ -11217,11 +11217,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '</div>';
         }
 
-        // Business promotion section for non-sponsored business places
+        // Business promotion section — shown for pins whose category has show_promo enabled,
+        // but NOT for places that are already sponsored (is_promo/sponsored flag on the pin itself)
         var businessPromoHtml = '';
-        var businessCategories = ['gastronomia', 'uslugi', 'sport', 'kultura'];
-        var isOwnPlace = +CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id;
-        if (p.type === 'miejsce' && !p.sponsored && !CFG.hasSponsoredPoint && (isOwnPlace || !CFG.isLoggedIn) && p.category && businessCategories.indexOf(p.category) !== -1) {
+        var promoCategories = Array.isArray(CFG.promoCategories) ? CFG.promoCategories : [];
+        if (p.type === 'miejsce' && !p.sponsored && p.category && promoCategories.indexOf(p.category) !== -1) {
           businessPromoHtml = '<div class="jg-business-promo">' +
             '<div class="jg-business-promo__icon">💼</div>' +
             '<div class="jg-business-promo__text">' +

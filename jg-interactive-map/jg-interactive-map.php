@@ -1269,6 +1269,26 @@ class JG_Interactive_Map {
         .jg-sp-menu-preview__link { display: inline-block; margin-top: 10px; font-size: calc(13 * var(--jg)); color: #14532d !important; font-weight: 600; }
         .jg-sp-menu-preview__link:hover { text-decoration: underline; }
 
+        /* Business promo box */
+        .jg-sp-biz-promo {
+            display: flex; align-items: flex-start; gap: 14px;
+            background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+            border: 1.5px solid #3b82f6; border-radius: 12px;
+            padding: 16px 18px; margin-bottom: 24px;
+        }
+        .jg-sp-biz-promo__icon { font-size: calc(28 * var(--jg)); flex-shrink: 0; line-height: 1; }
+        .jg-sp-biz-promo__body { flex: 1; min-width: 0; }
+        .jg-sp-biz-promo__title { font-size: calc(14 * var(--jg)); font-weight: 700; color: #1e3a8a; margin-bottom: 4px; }
+        .jg-sp-biz-promo__desc { font-size: calc(13 * var(--jg)); color: #4b5563; line-height: 1.5; }
+        .jg-sp-biz-promo__btn {
+            display: inline-block; margin-top: 10px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff; font-size: calc(13 * var(--jg)); font-weight: 700;
+            padding: 8px 16px; border-radius: 8px; text-decoration: none;
+            white-space: nowrap; transition: opacity 0.15s;
+        }
+        .jg-sp-biz-promo__btn:hover { opacity: 0.87; color: #fff; }
+
         /* Gallery grid */
         .jg-sp-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 28px; }
         .jg-sp-gallery-item {
@@ -1563,6 +1583,21 @@ class JG_Interactive_Map {
                     <span style="color:#6b7280;font-size:12px"><?php echo esc_html($_sp_pr_labels[$point['price_range']] ?? ''); ?></span>
                 </span>
                 <?php endif; ?>
+            </div>
+            <?php endif; ?>
+
+            <!-- Business promo box (shown when category has show_promo enabled, hidden for already-sponsored places) -->
+            <?php
+            $sp_promo_cats = JG_Map_Ajax_Handlers::get_promo_categories();
+            if ($point['type'] === 'miejsce' && empty($point['is_promo']) && in_array($point['category'] ?? '', $sp_promo_cats, true)):
+            ?>
+            <div class="jg-sp-biz-promo">
+                <div class="jg-sp-biz-promo__icon">💼</div>
+                <div class="jg-sp-biz-promo__body">
+                    <div class="jg-sp-biz-promo__title">Jesteś właścicielem tego biznesu? Zwiększ jego widoczność na mapie już od 49 zł / miesiąc.</div>
+                    <div class="jg-sp-biz-promo__desc">Promuj swoją firmę! Lepsza widoczność na mapie, możliwość dodania danych kontaktowych i priorytet w wyświetlaniu w naszym portalu.</div>
+                    <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" class="jg-sp-biz-promo__btn">Zapytaj o ofertę</a>
+                </div>
             </div>
             <?php endif; ?>
 
