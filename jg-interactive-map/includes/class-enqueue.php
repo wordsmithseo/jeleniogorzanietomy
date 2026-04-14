@@ -984,7 +984,7 @@ class JG_Map_Enqueue {
                 ?>
                 <a href="<?php echo esc_url(home_url('/')); ?>" class="jg-top-bar-logo-link" aria-label="Strona główna">
                     <img src="https://jeleniogorzanietomy.pl/wp-content/uploads/2025/10/jg-logo-1.svg" alt="Jelenia Góra to my" class="jg-top-bar-logo-img">
-                    <span class="jg-top-bar-site-title">Jeleniogórzanie to my - Interaktywna mapa Jeleniej Góry</span>
+                    <span class="jg-top-bar-site-title"><span class="jg-title-main">Jeleniogórzanie to my</span><span class="jg-title-sub"> &ndash; Interaktywna mapa Jeleniej Góry</span></span>
                 </a>
                 <div class="jg-top-bar-menu-wrap">
                     <button class="jg-top-bar-menu-btn" id="jg-top-bar-menu-btn" aria-haspopup="true" aria-expanded="false" type="button">
