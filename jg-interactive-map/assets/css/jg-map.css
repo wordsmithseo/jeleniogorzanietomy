@@ -10194,3 +10194,180 @@ footer.site-footer .site-branding {
   border-radius: 6px !important;
   max-width: 160px;
 }
+
+/* ── Contact footer bar ──────────────────────────────────────────────────────
+   Fixed at the bottom of every page. Height tracked via --jg-footer-h so the
+   map viewport calculation can subtract it (see jgFitMobileViewport in
+   class-enqueue.php). z-index 9998 = below modals (99999) but above content.
+   ─────────────────────────────────────────────────────────────────────────── */
+#jg-footer-bar {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9998 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 24px !important;
+  background: #8d2324 !important;
+  color: #fff !important;
+  height: 28px !important;
+  padding: 0 16px !important;
+  box-sizing: border-box !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+  font-size: calc(12 * var(--jg)) !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+  white-space: nowrap !important;
+}
+
+.jg-footer-bar-copy {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: inherit !important;
+}
+
+.jg-footer-bar-link {
+  all: unset !important;
+  color: #fff !important;
+  font-size: inherit !important;
+  font-weight: 600 !important;
+  text-decoration: underline !important;
+  text-decoration-color: rgba(255, 255, 255, 0.45) !important;
+  text-underline-offset: 2px !important;
+  cursor: pointer !important;
+  transition: text-decoration-color 0.15s !important;
+}
+
+.jg-footer-bar-link:hover,
+.jg-footer-bar-link:focus {
+  text-decoration-color: #fff !important;
+  color: #fff !important;
+}
+
+/* Desktop fullscreen map: account for footer height */
+#jg-map-wrap.jg-fullscreen {
+  height: calc(100vh - var(--jg-footer-h, 28px)) !important;
+}
+
+/* Push non-fullscreen page content up so the fixed footer doesn't cover it */
+body.jg-has-map #jg-map-wrap:not(.jg-fullscreen) {
+  padding-bottom: var(--jg-footer-h, 28px) !important;
+  box-sizing: border-box !important;
+}
+
+/* ── Mobile nav: envelope (contact) icon ────────────────────────────────────
+   Sits between the logo link and the hamburger button inside #jg-nav-bar.
+   Uses margin-left: auto to push itself (and the hamburger) to the right,
+   overriding justify-content: space-between on the parent.
+   ─────────────────────────────────────────────────────────────────────────── */
+#jg-nav-bar .jg-nav-contact-btn {
+  all: unset !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  color: #8d2324 !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;   /* push contact + hamburger to the right */
+  margin-right: 4px !important;
+  transition: background 0.15s !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+#jg-nav-bar .jg-nav-contact-btn:hover,
+#jg-nav-bar .jg-nav-contact-btn:focus {
+  background: rgba(141, 35, 36, 0.08) !important;
+  color: #8d2324 !important;
+}
+
+#jg-nav-bar .jg-nav-contact-btn svg {
+  display: block !important;
+  flex-shrink: 0 !important;
+}
+
+/* ── Desktop top bar: contact button ────────────────────────────────────────
+   Rendered in .jg-top-bar-left, after the Menu dropdown.
+   On narrow desktops (≤ 1440px) the text hides, only icon remains — same
+   pattern as the Ranking / Edit profile buttons on the right side.
+   ─────────────────────────────────────────────────────────────────────────── */
+.jg-top-bar-contact-btn {
+  text-decoration: none !important;
+}
+
+@media (max-width: 1440px) {
+  .jg-top-bar-contact-btn .jg-btn-text {
+    display: none !important;
+  }
+  .jg-top-bar-contact-btn {
+    padding: 7px !important;
+    width: 34px !important;
+    height: 34px !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+  }
+  .jg-top-bar-contact-btn .jg-btn-icon {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+/* On mobile the entire .jg-top-bar-left is hidden (hamburger nav covers it).
+   So the desktop contact button is automatically hidden on mobile. */
+
+/* ── Place contact modal ────────────────────────────────────────────────────
+   Used by openPlaceContactModal() in jg-map.js to show a contact form.
+   ─────────────────────────────────────────────────────────────────────────── */
+.jg-place-contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.jg-place-contact-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: calc(13 * var(--jg));
+  font-weight: 600;
+  color: #374151;
+}
+
+.jg-place-contact-form input,
+.jg-place-contact-form textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: calc(14 * var(--jg));
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  resize: vertical;
+}
+
+.jg-place-contact-form input:focus,
+.jg-place-contact-form textarea:focus {
+  outline: none;
+  border-color: #8d2324;
+}
+
+.jg-place-contact-form textarea {
+  min-height: 100px;
+}
+
+.jg-place-contact-status {
+  font-size: calc(13 * var(--jg));
+  min-height: 18px;
+  text-align: center;
+}
+
+.jg-place-contact-status--error { color: #b91c1c; }
+.jg-place-contact-status--ok    { color: #15803d; }

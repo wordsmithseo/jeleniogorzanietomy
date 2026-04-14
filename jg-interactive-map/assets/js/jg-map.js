@@ -849,6 +849,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       var modalAuthor = document.getElementById('jg-map-modal-author');
       var modalStatus = document.getElementById('jg-map-modal-status');
       var modalRanking = document.getElementById('jg-map-modal-ranking');
+      var modalPlaceContact = document.getElementById('jg-place-contact-modal');
       var lightbox = document.getElementById('jg-map-lightbox');
 
       // Stats modal refresh interval
@@ -8718,6 +8719,96 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         };
       }
 
+      // ── Place contact modal ───────────────────────────────────────────────
+      // Opens a form letting the user send a message to the place's email.
+      // The email address is never exposed to the client — all sending is
+      // handled server-side by the jg_contact_place AJAX action.
+      function openPlaceContactModal(p) {
+        if (!modalPlaceContact) return;
+
+        var prefillName = CFG.currentUserDisplayName || '';
+
+        open(modalPlaceContact,
+          '<header>' +
+            '<h3>✉️ Napisz do: ' + esc(p.title) + '</h3>' +
+            '<button class="jg-close" id="place-contact-close">&times;</button>' +
+          '</header>' +
+          '<form id="place-contact-form" class="jg-place-contact-form" autocomplete="on">' +
+            '<label>Twoje imię lub nazwa' +
+              '<input type="text" name="sender_name" required maxlength="120" value="' + esc(prefillName) + '" placeholder="Wpisz swoje imię">' +
+            '</label>' +
+            '<label>Twój adres e-mail' +
+              '<input type="email" name="sender_email" required maxlength="200" value="" placeholder="twoj@email.pl">' +
+            '</label>' +
+            '<label>Wiadomość' +
+              '<textarea name="message" required maxlength="2000" placeholder="Treść wiadomości..."></textarea>' +
+            '</label>' +
+            '<p class="jg-place-contact-status" id="place-contact-status"></p>' +
+            '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+              '<button type="button" class="jg-btn jg-btn--ghost" id="place-contact-cancel">Anuluj</button>' +
+              '<button type="submit" class="jg-btn" id="place-contact-submit">Wyślij wiadomość</button>' +
+            '</div>' +
+          '</form>'
+        );
+
+        qs('#place-contact-close', modalPlaceContact).onclick = function() {
+          close(modalPlaceContact);
+        };
+        qs('#place-contact-cancel', modalPlaceContact).onclick = function() {
+          close(modalPlaceContact);
+        };
+
+        var form   = qs('#place-contact-form', modalPlaceContact);
+        var status = qs('#place-contact-status', modalPlaceContact);
+        var submitBtn = qs('#place-contact-submit', modalPlaceContact);
+
+        form.onsubmit = function(e) {
+          e.preventDefault();
+
+          var senderName  = (form.sender_name.value  || '').trim();
+          var senderEmail = (form.sender_email.value || '').trim();
+          var message     = (form.message.value      || '').trim();
+
+          if (!senderName || !senderEmail || !message) {
+            status.textContent = 'Uzupełnij wszystkie pola.';
+            status.className = 'jg-place-contact-status jg-place-contact-status--error';
+            return;
+          }
+
+          submitBtn.disabled = true;
+          status.textContent = 'Wysyłanie…';
+          status.className = 'jg-place-contact-status';
+
+          var fd = new FormData();
+          fd.append('action',       'jg_contact_place');
+          fd.append('nonce',        CFG.nonce);
+          fd.append('point_id',     p.id);
+          fd.append('sender_name',  senderName);
+          fd.append('sender_email', senderEmail);
+          fd.append('message',      message);
+
+          fetch(CFG.ajax, { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+              if (res.success) {
+                status.textContent = 'Wiadomość wysłana. Dziękujemy!';
+                status.className = 'jg-place-contact-status jg-place-contact-status--ok';
+                form.reset();
+                setTimeout(function() { close(modalPlaceContact); }, 1800);
+              } else {
+                status.textContent = (res.data && res.data.message) || 'Wystąpił błąd. Spróbuj ponownie.';
+                status.className = 'jg-place-contact-status jg-place-contact-status--error';
+                submitBtn.disabled = false;
+              }
+            })
+            .catch(function() {
+              status.textContent = 'Błąd połączenia. Spróbuj ponownie.';
+              status.className = 'jg-place-contact-status jg-place-contact-status--error';
+              submitBtn.disabled = false;
+            });
+        };
+      }
+
       function openReportsListModal(p) {
         open(modalReportsList, '<header><h3>Zgłoszenia</h3><button class="jg-close" id="rplist-close">&times;</button></header><div id="reports-content">Ładowanie...</div>');
         qs('#rplist-close', modalReportsList).onclick = function() {
@@ -11142,7 +11233,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             kontaktItems.push('<div><strong>📞 Telefon:</strong> <a href="tel:' + esc(p.phone) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.phone) + '</a></div>');
           }
           if (p.email) {
-            kontaktItems.push('<div><strong>✉️ Email:</strong> <a href="mailto:' + esc(p.email) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.email) + '</a></div>');
+            kontaktItems.push('<div><button type="button" class="jg-btn jg-place-contact-open-btn" data-point-id="' + esc(String(p.id)) + '" style="margin-top:4px">✉️ Napisz wiadomość</button></div>');
           }
           if (p.website) {
             var kontaktWebUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
@@ -12044,6 +12135,14 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         qs('#btn-report', modalView).onclick = function() {
           openReportModal(p);
         };
+
+        // Wire up "Napisz wiadomość" contact button (only present when place has email)
+        var placeContactBtn = qs('.jg-place-contact-open-btn', modalView);
+        if (placeContactBtn) {
+          placeContactBtn.onclick = function() {
+            openPlaceContactModal(p);
+          };
+        }
 
         if (canEdit) {
           // Stats button handler

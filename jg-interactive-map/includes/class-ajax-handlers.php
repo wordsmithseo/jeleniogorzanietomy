@@ -589,6 +589,10 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_get_tags', array($this, 'get_tags'));
         add_action('wp_ajax_nopriv_jg_get_tags', array($this, 'get_tags'));
 
+        // Contact place (send message to place email — available to everyone)
+        add_action('wp_ajax_jg_contact_place',        array($this, 'contact_place'));
+        add_action('wp_ajax_nopriv_jg_contact_place', array($this, 'contact_place'));
+
         // Menu actions (public read, auth write)
         add_action('wp_ajax_jg_get_menu', array($this, 'get_menu'));
         add_action('wp_ajax_nopriv_jg_get_menu', array($this, 'get_menu'));
@@ -10079,6 +10083,76 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success(array('message' => 'Oferta zapisana', 'pending' => !$is_admin));
+    }
+
+    /**
+     * Send a contact message to a place's email address.
+     * The email stored in the DB is never sent to the browser.
+     * Rate-limited to 5 messages per IP per hour via transient.
+     */
+    public function contact_place() {
+        if (!check_ajax_referer('jg_map_nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy token bezpieczeństwa.'));
+        }
+
+        $point_id     = intval($_POST['point_id'] ?? 0);
+        $sender_name  = sanitize_text_field(wp_unslash($_POST['sender_name']  ?? ''));
+        $sender_email = sanitize_email(wp_unslash($_POST['sender_email'] ?? ''));
+        $message      = sanitize_textarea_field(wp_unslash($_POST['message'] ?? ''));
+
+        if (!$point_id || !$sender_name || !$sender_email || !$message) {
+            wp_send_json_error(array('message' => 'Uzupełnij wszystkie pola.'));
+        }
+
+        if (!is_email($sender_email)) {
+            wp_send_json_error(array('message' => 'Podaj prawidłowy adres e-mail.'));
+        }
+
+        // Rate limit: max 5 messages per IP per hour
+        $ip_hash      = 'jg_cp_' . md5($_SERVER['REMOTE_ADDR'] ?? '');
+        $sent_count   = (int) get_transient($ip_hash);
+        if ($sent_count >= 5) {
+            wp_send_json_error(array('message' => 'Zbyt wiele wiadomości. Spróbuj za godzinę.'));
+        }
+
+        // Fetch place email from DB — never returned to the client
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+        $row = $wpdb->get_row($wpdb->prepare(
+            "SELECT title, email FROM $points_table WHERE id = %d AND status = 'publish' AND email IS NOT NULL AND email != ''",
+            $point_id
+        ));
+
+        if (!$row || !is_email($row->email)) {
+            wp_send_json_error(array('message' => 'To miejsce nie przyjmuje wiadomości e-mail.'));
+        }
+
+        $place_title = $row->title;
+        $to          = $row->email;
+        $subject     = '[Jeleniogórzanie to my] Wiadomość od: ' . $sender_name;
+        $body        = "Otrzymałeś wiadomość przez portal Jeleniogórzanie to my.\n\n" .
+                       "Nadawca: {$sender_name}\n" .
+                       "E-mail nadawcy: {$sender_email}\n\n" .
+                       "Treść:\n{$message}\n\n" .
+                       "---\n" .
+                       "Wiadomość dotyczy miejsca: {$place_title}\n" .
+                       "Portal: " . home_url('/');
+
+        $headers = array(
+            'Content-Type: text/plain; charset=UTF-8',
+            'Reply-To: ' . $sender_name . ' <' . $sender_email . '>',
+        );
+
+        $sent = wp_mail($to, $subject, $body, $headers);
+
+        if (!$sent) {
+            wp_send_json_error(array('message' => 'Nie udało się wysłać wiadomości. Spróbuj ponownie.'));
+        }
+
+        // Increment rate-limit counter (TTL = 1 hour)
+        set_transient($ip_hash, $sent_count + 1, HOUR_IN_SECONDS);
+
+        wp_send_json_success(array('message' => 'Wiadomość wysłana.'));
     }
 
     /**

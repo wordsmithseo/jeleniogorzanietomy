@@ -323,6 +323,7 @@ class JG_Map_Shortcode {
             <div id="jg-map-modal-status" class="jg-modal-bg"><div class="jg-modal"></div></div>
             <div id="jg-map-modal-ranking" class="jg-modal-bg"><div class="jg-modal"></div></div>
             <div id="jg-map-lightbox" class="jg-modal-bg"><div class="jg-lightbox"></div></div>
+            <div id="jg-place-contact-modal" class="jg-modal-bg"><div class="jg-modal"></div></div>
 
             <!-- Message Modals (for alert/confirm replacements) -->
             <div id="jg-modal-alert" class="jg-modal-bg" style="z-index:99999">
