@@ -3761,8 +3761,7 @@ class JG_Interactive_Map {
                     "description": <?php echo json_encode($description); ?>,
                     "isPartOf": {"@id": <?php echo json_encode(home_url('/#website')); ?>},
                     "inLanguage": "pl-PL",
-                    "breadcrumb": {"@id": <?php echo json_encode($category_url . '#breadcrumb'); ?>},
-                    "numberOfItems": <?php echo $count; ?>
+                    "breadcrumb": {"@id": <?php echo json_encode($category_url . '#breadcrumb'); ?>}
                 },
                 {
                     "@type": "BreadcrumbList",
@@ -4092,8 +4091,7 @@ class JG_Interactive_Map {
                     "description": <?php echo json_encode($description); ?>,
                     "isPartOf": {"@id": <?php echo json_encode(home_url('/#website')); ?>},
                     "inLanguage": "pl-PL",
-                    "breadcrumb": {"@id": <?php echo json_encode($tag_url . '#breadcrumb'); ?>},
-                    "numberOfItems": <?php echo $count; ?>
+                    "breadcrumb": {"@id": <?php echo json_encode($tag_url . '#breadcrumb'); ?>}
                 },
                 {
                     "@type": "BreadcrumbList",
