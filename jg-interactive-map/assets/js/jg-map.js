@@ -11233,7 +11233,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             kontaktItems.push('<div><strong>📞 Telefon:</strong> <a href="tel:' + esc(p.phone) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.phone) + '</a></div>');
           }
           if (p.email) {
-            kontaktItems.push('<div><button type="button" class="jg-btn jg-place-contact-open-btn" data-point-id="' + esc(String(p.id)) + '" style="margin-top:4px">✉️ Napisz wiadomość</button></div>');
+            kontaktItems.push('<div><button type="button" class="jg-btn jg-place-contact-open-btn" data-point-id="' + esc(String(p.id)) + '" style="margin-top:4px;background:#111;background-color:#111;color:#fff;border:none;border-width:0;border-style:none;outline:none;box-shadow:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:14px;font-weight:500;line-height:1.5;display:inline-flex;align-items:center;gap:6px;text-decoration:none;text-transform:none">&#9993; Napisz wiadomość</button></div>');
           }
           if (p.website) {
             var kontaktWebUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
