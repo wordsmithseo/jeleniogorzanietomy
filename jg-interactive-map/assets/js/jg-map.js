@@ -7738,6 +7738,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               html += '<div style="font-size:0.8rem;color:#9ca3af;margin-top:4px">+ ' + (items.length - maxShown) + ' więcej\u2026</div>';
             }
 
+            // Link to full offerings page
+            var offUrl = (CFG.homeUrl || '/') + 'miejsce/' + encodeURIComponent(p.slug) + '/oferta/';
+            html += '<div style="margin-top:10px">' +
+              '<a href="' + offUrl + '" target="_blank" class="jg-menu-modal-link">Zobacz pe\u0142n\u0105 ofert\u0119 \u2192</a>' +
+              '</div>';
+
             content.innerHTML = html;
           })
           .catch(function() {
