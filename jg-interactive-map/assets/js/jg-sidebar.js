@@ -256,6 +256,16 @@
     function setupEventListeners() {
         // Type filters
         $('[data-sidebar-type]').on('change', function() {
+            var type = $(this).attr('data-sidebar-type');
+            var isChecked = $(this).is(':checked');
+            // Sync category checkboxes when parent type is toggled
+            if (type === 'miejsce') {
+                $('[data-sidebar-place-category]').prop('checked', isChecked);
+                updatePlaceCategoryFilters();
+            } else if (type === 'ciekawostka') {
+                $('[data-sidebar-curiosity-category]').prop('checked', isChecked);
+                updateCuriosityCategoryFilters();
+            }
             updateTypeFilters();
             saveFilterPrefs();
             loadPoints();

@@ -13268,6 +13268,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var allCheckboxes = elFilters.querySelectorAll('input[type="checkbox"]');
           allCheckboxes.forEach(function(cb) {
             cb.addEventListener('change', function() {
+              // When type filter (miejsce/ciekawostka) is toggled, sync all its category checkboxes
+              var type = cb.getAttribute('data-type');
+              if (type === 'miejsce') {
+                document.querySelectorAll('input[data-map-place-category]').forEach(function(catCb) {
+                  catCb.checked = cb.checked;
+                });
+              } else if (type === 'ciekawostka') {
+                document.querySelectorAll('input[data-map-curiosity-category]').forEach(function(catCb) {
+                  catCb.checked = cb.checked;
+                });
+              }
               apply(true); // Skip fitBounds on filter change
             });
           });
