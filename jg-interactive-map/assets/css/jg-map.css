@@ -10296,31 +10296,22 @@ footer.site-footer .site-branding {
   flex-shrink: 0 !important;
 }
 
-/* ── Desktop top bar: contact button ────────────────────────────────────────
+/* ── Desktop top bar: contact button (icon-only) ────────────────────────────
    Rendered in .jg-top-bar-left, after the Menu dropdown.
-   On narrow desktops (≤ 1440px) the text hides, only icon remains — same
-   pattern as the Ranking / Edit profile buttons on the right side.
+   Always icon-only — the top bar has too many items to show text.
    ─────────────────────────────────────────────────────────────────────────── */
 .jg-top-bar-contact-btn {
   text-decoration: none !important;
+  padding: 7px !important;
+  width: 34px !important;
+  height: 34px !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
 }
-
-@media (max-width: 1440px) {
-  .jg-top-bar-contact-btn .jg-btn-text {
-    display: none !important;
-  }
-  .jg-top-bar-contact-btn {
-    padding: 7px !important;
-    width: 34px !important;
-    height: 34px !important;
-    justify-content: center !important;
-    border-radius: 8px !important;
-    box-sizing: border-box !important;
-  }
-  .jg-top-bar-contact-btn .jg-btn-icon {
-    width: 18px !important;
-    height: 18px !important;
-  }
+.jg-top-bar-contact-btn .jg-btn-icon {
+  width: 18px !important;
+  height: 18px !important;
 }
 
 /* On mobile the entire .jg-top-bar-left is hidden (hamburger nav covers it).
