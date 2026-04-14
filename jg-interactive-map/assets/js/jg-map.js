@@ -11546,8 +11546,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var offeringsSectionHtml = '';
         if (p.type === 'miejsce' && isOfferingsCategory(p.category)) {
           var ofLabel = getOfferingsLabel(p.category);
-          offeringsSectionHtml = '<div id="jg-offerings-section" class="jg-menu-modal-section" style="margin:0 0 12px 0;padding:10px 14px;background:#f0f4ff;border-radius:8px;border:1px solid #c7d2fe;font-size:0.875rem;color:#3730a3">' +
-            '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">' + esc(ofLabel) + '</div>' +
+          offeringsSectionHtml = '<div id="jg-offerings-section" class="jg-menu-modal-section" style="margin:0 0 12px 0;padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:0.875rem;color:#166534">' +
+            '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">📋 ' + esc(ofLabel) + '</div>' +
             '<div id="jg-offerings-content"><div style="font-size:0.85rem;color:#9ca3af">Ładowanie\u2026</div></div>' +
             '</div>';
         }
