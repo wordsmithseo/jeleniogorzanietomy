@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.26.22
+ * Version: 3.27.0
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.26.22');
+define('JG_MAP_VERSION', '3.27.0');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1269,8 +1269,8 @@ class JG_Interactive_Map {
         .jg-sp-menu-preview__link { display: inline-block; margin-top: 10px; font-size: calc(13 * var(--jg)); color: #14532d !important; font-weight: 600; }
         .jg-sp-menu-preview__link:hover { text-decoration: underline; }
 
-        /* Offerings preview (services / products) — same green palette as menu */
-        .jg-sp-offerings-preview { margin-bottom: 24px; padding: 14px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; }
+        /* Offerings preview (services / products) — inside jg-sp-oh-wrap, green palette */
+        .jg-sp-offerings-preview { flex: 1 1 100%; padding: 14px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; }
         .jg-sp-offerings-preview__title { font-size: calc(13 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #065f46; margin-bottom: 10px; }
         .jg-sp-offerings-preview__row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px solid #d1fae5; font-size: calc(14 * var(--jg)); }
         .jg-sp-offerings-preview__row:last-of-type { border-bottom: none; }
@@ -1797,38 +1797,7 @@ class JG_Interactive_Map {
             </div>
             <?php endif; endif; ?>
 
-            <!-- Offerings preview (services / products) -->
-            <?php
-            $sp_off_cats = JG_Map_Ajax_Handlers::get_offerings_categories();
-            if ($point['type'] === 'miejsce' && isset($sp_off_cats[$point['category'] ?? '']) && JG_Map_Database::point_has_offerings($point['id'])):
-                $sp_offerings     = JG_Map_Database::get_offerings($point['id']);
-                $sp_off_label     = $sp_off_cats[$point['category']];
-                $sp_off_max       = 6;
-                $sp_off_shown     = 0;
-                if (!empty($sp_offerings)):
-            ?>
-            <div class="jg-sp-offerings-preview">
-                <div class="jg-sp-offerings-preview__title">📋 <?php echo esc_html($sp_off_label); ?></div>
-                <?php foreach ($sp_offerings as $sp_off_item): ?>
-                    <?php if ($sp_off_shown >= $sp_off_max) break; $sp_off_shown++; ?>
-                    <?php
-                    $sp_off_price_str = '';
-                    if ($sp_off_item['price'] !== null && $sp_off_item['price'] !== '') {
-                        $sp_off_price_str = number_format(floatval($sp_off_item['price']), 2, ',', '') . '&nbsp;zł';
-                    }
-                    ?>
-                    <div class="jg-sp-offerings-preview__row">
-                        <span class="jg-sp-offerings-preview__name"><?php echo esc_html($sp_off_item['name']); ?></span>
-                        <?php if ($sp_off_price_str): ?><span class="jg-sp-offerings-preview__price"><?php echo $sp_off_price_str; ?></span><?php endif; ?>
-                    </div>
-                <?php endforeach; ?>
-                <?php if (count($sp_offerings) > $sp_off_max): ?>
-                <div style="font-size:calc(12 * var(--jg));color:#6b7280;margin-top:6px">+ <?php echo count($sp_offerings) - $sp_off_max; ?> więcej&hellip;</div>
-                <?php endif; ?>
-            </div>
-            <?php endif; endif; ?>
-
-            <!-- Opening hours + price range + cuisine -->
+            <!-- Opening hours + cuisine + offerings (all in the same top-info block) -->
             <?php
             $sp_oh_days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
             $sp_oh_labels = ['Mo' => 'Poniedziałek', 'Tu' => 'Wtorek', 'We' => 'Środa', 'Th' => 'Czwartek', 'Fr' => 'Piątek', 'Sa' => 'Sobota', 'Su' => 'Niedziela'];
@@ -1843,9 +1812,20 @@ class JG_Interactive_Map {
             }
             $sp_place_cats_tmp = JG_Map_Ajax_Handlers::get_place_categories();
             $sp_cat_key = $point['category'] ?? '';
-            $sp_cat_serves_cuisine  = $point['type'] === 'miejsce' && !empty($sp_place_cats_tmp[$sp_cat_key]['serves_cuisine']);
-            $sp_show_cuisine        = $sp_cat_serves_cuisine && !empty($point['serves_cuisine']);
-            $sp_show_oh_block       = !empty($sp_oh_parsed) || $sp_show_cuisine;
+            $sp_cat_serves_cuisine = $point['type'] === 'miejsce' && !empty($sp_place_cats_tmp[$sp_cat_key]['serves_cuisine']);
+            $sp_show_cuisine       = $sp_cat_serves_cuisine && !empty($point['serves_cuisine']);
+
+            // Offerings (services / products)
+            $sp_off_cats  = JG_Map_Ajax_Handlers::get_offerings_categories();
+            $sp_off_key   = $point['category'] ?? '';
+            $sp_has_offerings = $point['type'] === 'miejsce'
+                && isset($sp_off_cats[$sp_off_key])
+                && JG_Map_Database::point_has_offerings($point['id']);
+            $sp_offerings    = $sp_has_offerings ? JG_Map_Database::get_offerings($point['id']) : array();
+            $sp_off_label    = $sp_has_offerings ? $sp_off_cats[$sp_off_key] : '';
+            $sp_has_offerings = $sp_has_offerings && !empty($sp_offerings);
+
+            $sp_show_oh_block = !empty($sp_oh_parsed) || $sp_show_cuisine || $sp_has_offerings;
             if ($sp_show_oh_block):
             ?>
             <div class="jg-sp-oh-wrap">
@@ -1874,6 +1854,28 @@ class JG_Interactive_Map {
                         <div class="jg-sp-cuisine__label">Rodzaj kuchni</div>
                         <div class="jg-sp-cuisine__value"><?php echo esc_html($point['serves_cuisine']); ?></div>
                     </div>
+                </div>
+                <?php endif; ?>
+                <?php if ($sp_has_offerings): ?>
+                <?php $sp_off_max = 6; $sp_off_shown = 0; ?>
+                <div class="jg-sp-offerings-preview">
+                    <div class="jg-sp-offerings-preview__title">📋 <?php echo esc_html($sp_off_label); ?></div>
+                    <?php foreach ($sp_offerings as $sp_off_item): ?>
+                        <?php if ($sp_off_shown >= $sp_off_max) break; $sp_off_shown++; ?>
+                        <?php
+                        $sp_off_price_str = '';
+                        if ($sp_off_item['price'] !== null && $sp_off_item['price'] !== '') {
+                            $sp_off_price_str = number_format(floatval($sp_off_item['price']), 2, ',', '') . '&nbsp;zł';
+                        }
+                        ?>
+                        <div class="jg-sp-offerings-preview__row">
+                            <span class="jg-sp-offerings-preview__name"><?php echo esc_html($sp_off_item['name']); ?></span>
+                            <?php if ($sp_off_price_str): ?><span class="jg-sp-offerings-preview__price"><?php echo $sp_off_price_str; ?></span><?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                    <?php if (count($sp_offerings) > $sp_off_max): ?>
+                    <div style="font-size:calc(12 * var(--jg));color:#6b7280;margin-top:6px">+ <?php echo count($sp_offerings) - $sp_off_max; ?> więcej&hellip;</div>
+                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
             </div>
