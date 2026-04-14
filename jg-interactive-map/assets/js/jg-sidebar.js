@@ -280,6 +280,14 @@
 
         // Place category filters
         $(document).on('change', '[data-sidebar-place-category]', function() {
+            // If a place category is checked and Miejsca type is off, re-enable it
+            if ($(this).is(':checked')) {
+                var $placeType = $('[data-sidebar-type="miejsce"]');
+                if ($placeType.length && !$placeType.is(':checked')) {
+                    $placeType.prop('checked', true);
+                    updateTypeFilters();
+                }
+            }
             updatePlaceCategoryFilters();
             saveFilterPrefs();
             loadPoints();
@@ -287,6 +295,14 @@
 
         // Curiosity category filters
         $(document).on('change', '[data-sidebar-curiosity-category]', function() {
+            // If a curiosity category is checked and Ciekawostki type is off, re-enable it
+            if ($(this).is(':checked')) {
+                var $curiosityType = $('[data-sidebar-type="ciekawostka"]');
+                if ($curiosityType.length && !$curiosityType.is(':checked')) {
+                    $curiosityType.prop('checked', true);
+                    updateTypeFilters();
+                }
+            }
             updateCuriosityCategoryFilters();
             saveFilterPrefs();
             loadPoints();

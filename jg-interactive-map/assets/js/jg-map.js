@@ -13384,6 +13384,20 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var categoryCheckboxes = document.querySelectorAll('input[data-map-place-category], input[data-map-curiosity-category]');
         categoryCheckboxes.forEach(function(cb) {
           cb.addEventListener('change', function() {
+            // If a category is checked and the parent type is off, re-enable the parent type
+            if (cb.checked) {
+              if (cb.hasAttribute('data-map-place-category')) {
+                var placeTypeCb = elFilters && elFilters.querySelector('input[data-type="miejsce"]');
+                if (placeTypeCb && !placeTypeCb.checked) {
+                  placeTypeCb.checked = true;
+                }
+              } else if (cb.hasAttribute('data-map-curiosity-category')) {
+                var curiosityTypeCb = elFilters && elFilters.querySelector('input[data-type="ciekawostka"]');
+                if (curiosityTypeCb && !curiosityTypeCb.checked) {
+                  curiosityTypeCb.checked = true;
+                }
+              }
+            }
             apply(true);
           });
         });
