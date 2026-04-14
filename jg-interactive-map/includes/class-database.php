@@ -610,6 +610,9 @@ class JG_Map_Database {
         // Run migration to strip slashes from existing data (one-time)
         self::migrate_strip_slashes();
 
+        // Fix slugs for points with special European characters in titles (e.g. Ä→a, Ö→o, Ü→u)
+        self::migrate_fix_special_char_slugs();
+
         // Ensure slug_redirects table exists (for 301 redirects after title/slug changes)
         $table_slug_redirects = $wpdb->prefix . 'jg_map_slug_redirects';
         $sql_slug_redirects = "CREATE TABLE IF NOT EXISTS $table_slug_redirects (
@@ -827,6 +830,64 @@ class JG_Map_Database {
     }
 
     /**
+     * Migration: Regenerate slugs for points whose titles contain special European characters
+     * that were previously stripped (e.g. Ä, Ö, Ü) but should now be transliterated (ä→a, ö→o, ü→u)
+     */
+    public static function migrate_fix_special_char_slugs() {
+        if (get_option('jg_map_special_char_slugs_fixed', false)) {
+            return;
+        }
+
+        global $wpdb;
+        $table = self::get_points_table();
+
+        // Characters that are now transliterated but were previously stripped
+        $special_chars = array('ä', 'ö', 'ü', 'ß', 'Ä', 'Ö', 'Ü',
+            'à', 'â', 'é', 'è', 'ê', 'ë', 'î', 'ï', 'ô', 'ù', 'û', 'ÿ', 'ç',
+            'À', 'Â', 'É', 'È', 'Ê', 'Ë', 'Î', 'Ï', 'Ô', 'Ù', 'Û', 'Ÿ', 'Ç',
+            'á', 'í', 'ú', 'ñ', 'ã', 'õ', 'Á', 'Í', 'Ú', 'Ñ', 'Ã', 'Õ',
+            'č', 'š', 'ž', 'ř', 'ě', 'ý', 'ů', 'ď', 'ť',
+            'Č', 'Š', 'Ž', 'Ř', 'Ě', 'Ý', 'Ů', 'Ď', 'Ť');
+
+        // Build WHERE clause to find points with any of these characters in title
+        $like_conditions = array();
+        foreach ($special_chars as $char) {
+            $like_conditions[] = $wpdb->prepare("title LIKE %s", '%' . $wpdb->esc_like($char) . '%');
+        }
+        $where = implode(' OR ', $like_conditions);
+
+        $points = $wpdb->get_results(
+            "SELECT id, title, slug FROM $table WHERE $where ORDER BY id ASC",
+            ARRAY_A
+        );
+
+        foreach ($points as $point) {
+            if (empty($point['title'])) {
+                continue;
+            }
+
+            $new_slug = self::generate_unique_slug($point['title'], $point['id']);
+
+            if ($new_slug !== $point['slug']) {
+                // Save old slug as redirect before updating
+                if (!empty($point['slug'])) {
+                    self::save_slug_redirect($point['slug'], $point['id']);
+                }
+
+                $wpdb->update(
+                    $table,
+                    array('slug' => $new_slug),
+                    array('id' => $point['id']),
+                    array('%s'),
+                    array('%d')
+                );
+            }
+        }
+
+        update_option('jg_map_special_char_slugs_fixed', true);
+    }
+
+    /**
      * Create upload directory for map images
      */
     private static function create_upload_directory() {
@@ -856,10 +917,42 @@ class JG_Map_Database {
     public static function generate_slug($title) {
         $slug = strtolower($title);
 
-        // Polish characters transliteration
-        $polish = array('ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż', 'Ą', 'Ć', 'Ę', 'Ł', 'Ń', 'Ó', 'Ś', 'Ź', 'Ż');
-        $latin = array('a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z', 'a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z');
-        $slug = str_replace($polish, $latin, $slug);
+        // Polish and other European characters transliteration
+        $special = array(
+            // Polish
+            'ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż',
+            'Ą', 'Ć', 'Ę', 'Ł', 'Ń', 'Ó', 'Ś', 'Ź', 'Ż',
+            // German
+            'ä', 'ö', 'ü', 'ß',
+            'Ä', 'Ö', 'Ü',
+            // French
+            'à', 'â', 'é', 'è', 'ê', 'ë', 'î', 'ï', 'ô', 'ù', 'û', 'ü', 'ÿ', 'ç',
+            'À', 'Â', 'É', 'È', 'Ê', 'Ë', 'Î', 'Ï', 'Ô', 'Ù', 'Û', 'Ü', 'Ÿ', 'Ç',
+            // Spanish / Portuguese
+            'á', 'í', 'ú', 'ñ', 'ã', 'õ',
+            'Á', 'Í', 'Ú', 'Ñ', 'Ã', 'Õ',
+            // Czech / Slovak / other Slavic
+            'č', 'š', 'ž', 'ř', 'ě', 'ý', 'ů', 'ď', 'ť',
+            'Č', 'Š', 'Ž', 'Ř', 'Ě', 'Ý', 'Ů', 'Ď', 'Ť',
+        );
+        $latin = array(
+            // Polish
+            'a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z',
+            'a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z',
+            // German
+            'a', 'o', 'u', 's',
+            'a', 'o', 'u',
+            // French
+            'a', 'a', 'e', 'e', 'e', 'e', 'i', 'i', 'o', 'u', 'u', 'u', 'y', 'c',
+            'a', 'a', 'e', 'e', 'e', 'e', 'i', 'i', 'o', 'u', 'u', 'u', 'y', 'c',
+            // Spanish / Portuguese
+            'a', 'i', 'u', 'n', 'a', 'o',
+            'a', 'i', 'u', 'n', 'a', 'o',
+            // Czech / Slovak / other Slavic
+            'c', 's', 'z', 'r', 'e', 'y', 'u', 'd', 't',
+            'c', 's', 'z', 'r', 'e', 'y', 'u', 'd', 't',
+        );
+        $slug = str_replace($special, $latin, $slug);
 
         // Replace spaces and special characters with hyphens
         $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
