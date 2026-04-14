@@ -1703,6 +1703,7 @@ class JG_Interactive_Map {
             .jg-stay-banner__timer { flex-basis: 100%; }
             .jg-stay-countdown { font-size: calc(26 * var(--jg)); }
         }
+
     </style>
 </head>
 <body>
