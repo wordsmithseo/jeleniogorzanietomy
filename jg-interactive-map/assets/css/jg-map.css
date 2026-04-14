@@ -233,7 +233,8 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 9999;
   box-sizing: border-box;
-  overflow: hidden; /* prevent children from breaking out of the bar */
+  /* overflow: hidden would clip the Menu dropdown — flex-shrink + min-width:0
+     on children is enough to prevent horizontal overflow */
 }
 
 .jg-top-bar-left {
@@ -254,15 +255,19 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
 
 .jg-top-bar-site-title {
   color: #fff;
-  font-size: calc(14 * var(--jg));
-  font-weight: 600;
+  font-size: clamp(11px, 0.85vw, 14px); /* shrinks continuously with viewport width */
+  font-weight: 500;                      /* thinner = narrower, still readable */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-left: 10px;
   text-decoration: none;
   letter-spacing: 0.01em;
-  max-width: clamp(80px, 18vw, 320px); /* shrinks progressively, disappears at ≤1600px via media query */
+  max-width: clamp(60px, 22vw, 340px);
+  flex-shrink: 1;
+}
+.jg-title-sub {
+  opacity: 0.75; /* slightly dimmer to visually separate from main name */
 }
 
 .jg-top-bar-user {
@@ -2288,7 +2293,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
    usable as long as possible before anything gets clipped.
    ────────────────────────────────────────────────────────────────────────── */
 
-/* Step 1 ≤1800px — hide longest labels: Admin + Wyloguj */
+/* Step 1 ≤1800px — hide longest labels (Admin, Wyloguj) + subtitle of site title */
 @media (max-width: 1800px) {
   .jg-top-bar-btn-admin .jg-btn-text,
   a.jg-top-bar-btn[title="Wyloguj"] .jg-btn-text {
@@ -2308,9 +2313,13 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     width: 18px !important;
     height: 18px !important;
   }
+  /* Hide "– Interaktywna mapa Jeleniej Góry", keep "Jeleniogórzanie to my" */
+  .jg-title-sub {
+    display: none !important;
+  }
 }
 
-/* Step 2 ≤1600px — hide Ranking + Edytuj profil text; hide site title; shrink XP bar */
+/* Step 2 ≤1600px — hide Ranking + Edytuj profil text; shrink XP bar */
 @media (max-width: 1600px) {
   #jg-ranking-btn .jg-btn-text,
   #jg-edit-profile-btn .jg-btn-text {
@@ -2330,11 +2339,15 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     width: 18px !important;
     height: 18px !important;
   }
-  .jg-top-bar-site-title {
-    display: none !important;
-  }
   .jg-top-bar-xp-bar {
     width: 40px !important;
+  }
+}
+
+/* Step 2b ≤1300px — now hide the entire site title (logo image still visible) */
+@media (max-width: 1300px) {
+  .jg-top-bar-site-title {
+    display: none !important;
   }
 }
 
