@@ -669,7 +669,7 @@ class JG_Map_Enqueue {
                 <img src="<?php echo esc_url($logo_url); ?>" alt="Jelenia Góra to my" class="jg-nav-logo-img" loading="eager">
                 <span class="jg-nav-site-title">Jeleniogórzanie to my - Interaktywna mapa Jeleniej Góry</span>
             </a>
-            <a href="<?php echo esc_url($contact_url); ?>" class="jg-nav-contact-btn" aria-label="Kontakt z zarządem portalu" title="Kontakt">
+            <a href="<?php echo esc_url($contact_url); ?>" class="jg-nav-contact-btn" aria-label="Kontakt z redakcją" title="Kontakt z redakcją">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
             </a>
             <button id="jg-hamburger-btn" class="jg-hamburger-btn" aria-label="Otwórz menu" aria-expanded="false" aria-controls="jg-nav-menu" type="button">
@@ -1018,7 +1018,7 @@ class JG_Map_Enqueue {
                     }
                 }
                 ?>
-                <a href="<?php echo esc_url($tb_contact_url); ?>" class="jg-top-bar-btn jg-top-bar-contact-btn" title="Kontakt z zarządem portalu">
+                <a href="<?php echo esc_url($tb_contact_url); ?>" class="jg-top-bar-btn jg-top-bar-contact-btn" title="Kontakt z redakcją">
                     <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                     <span class="jg-btn-text">Kontakt</span>
                 </a>
@@ -1695,7 +1695,7 @@ class JG_Map_Enqueue {
         ?>
         <div id="jg-footer-bar" role="contentinfo" aria-label="Stopka portalu">
             <span class="jg-footer-bar-copy">&copy; <?php echo esc_html(date('Y')); ?> Jeleniogórzanie to my</span>
-            <a href="<?php echo esc_url($footer_contact_url); ?>" class="jg-footer-bar-link">Kontakt z zarządem portalu</a>
+            <a href="<?php echo esc_url($footer_contact_url); ?>" class="jg-footer-bar-link">Napisz do redakcji</a>
         </div>
         <script>
         (function () {
