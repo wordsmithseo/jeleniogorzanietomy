@@ -233,18 +233,23 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 9999;
   box-sizing: border-box;
+  overflow: hidden; /* prevent children from breaking out of the bar */
 }
 
 .jg-top-bar-left {
   display: flex;
   align-items: center;
   gap: 48px;
+  min-width: 0;   /* allow flex shrink below content size */
+  flex-shrink: 1;
 }
 
 .jg-top-bar-right {
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
+  flex-shrink: 0; /* right side (user actions) stays intact */
 }
 
 .jg-top-bar-site-title {
