@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.29.0
+ * Version: 3.29.1
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.29.0');
+define('JG_MAP_VERSION', '3.29.1');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1410,6 +1410,46 @@ class JG_Interactive_Map {
         .jg-sp-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 24px; }
         .jg-sp-contact-link { color: #2563eb; font-size: calc(15 * var(--jg)); display: inline-flex; align-items: center; gap: 6px; }
         .jg-sp-contact-link:hover { text-decoration: underline; }
+        .jg-sp-contact-email-btn {
+            all: unset; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+            padding: 7px 14px; background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: 8px;
+            color: #1d4ed8; font-size: calc(15 * var(--jg)); font-weight: 600; font-family: inherit;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .jg-sp-contact-email-btn:hover { background: #dbeafe; border-color: #60a5fa; color: #1e40af; }
+        /* Contact modal overlay */
+        #jg-sp-contact-modal-bg {
+            display: none; position: fixed; inset: 0; z-index: 99999;
+            background: rgba(0,0,0,0.55); align-items: center; justify-content: center; padding: 16px;
+        }
+        #jg-sp-contact-modal-bg.active { display: flex; }
+        #jg-sp-contact-modal {
+            background: #fff; border-radius: 12px; padding: 24px; max-width: 480px; width: 100%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18); position: relative;
+        }
+        #jg-sp-contact-modal h3 { margin: 0 0 18px; font-size: calc(17 * var(--jg)); font-weight: 700; padding-right: 28px; }
+        #jg-sp-contact-modal .jg-sp-cm-close {
+            position: absolute; top: 14px; right: 16px; background: none; border: none;
+            font-size: 22px; line-height: 1; cursor: pointer; color: #6b7280;
+        }
+        #jg-sp-contact-modal label { display: flex; flex-direction: column; gap: 4px; font-size: calc(13 * var(--jg)); font-weight: 600; color: #374151; margin-bottom: 12px; }
+        #jg-sp-contact-modal input, #jg-sp-contact-modal textarea {
+            width: 100%; padding: 9px 12px; border: 1.5px solid #d1d5db; border-radius: 8px;
+            font-size: calc(14 * var(--jg)); font-family: inherit; color: #111827; box-sizing: border-box;
+        }
+        #jg-sp-contact-modal input:focus, #jg-sp-contact-modal textarea:focus { outline: none; border-color: #8d2324; }
+        #jg-sp-contact-modal textarea { min-height: 100px; resize: vertical; }
+        #jg-sp-contact-modal .jg-sp-cm-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+        #jg-sp-contact-modal .jg-sp-cm-submit {
+            padding: 9px 20px; background: #8d2324; color: #fff; border: none; border-radius: 8px;
+            font-size: calc(14 * var(--jg)); font-weight: 600; font-family: inherit; cursor: pointer;
+        }
+        #jg-sp-contact-modal .jg-sp-cm-submit:disabled { opacity: 0.6; cursor: default; }
+        #jg-sp-contact-modal .jg-sp-cm-cancel {
+            padding: 9px 16px; background: #f3f4f6; color: #374151; border: 1.5px solid #e5e7eb;
+            border-radius: 8px; font-size: calc(14 * var(--jg)); font-family: inherit; cursor: pointer;
+        }
+        #jg-sp-contact-status { font-size: calc(13 * var(--jg)); text-align: center; min-height: 18px; margin-top: 6px; }
         .jg-sp-social {
             display: inline-flex; align-items: center; justify-content: center;
             width: 40px; height: 40px; border-radius: 50%;
@@ -1664,60 +1704,6 @@ class JG_Interactive_Map {
             .jg-stay-countdown { font-size: calc(26 * var(--jg)); }
         }
 
-        /* ── Contact button & modal on standalone place page ── */
-        .jg-sp-contact-btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: #111; color: #fff;
-            border: none; border-radius: 8px;
-            padding: 8px 16px; cursor: pointer;
-            font-size: calc(15 * var(--jg)); font-weight: 500;
-            font-family: inherit; line-height: 1.5;
-            text-decoration: none; transition: background 0.15s;
-        }
-        .jg-sp-contact-btn:hover { background: #333; color: #fff; }
-        .jg-sp-contact-modal-bg {
-            display: none; position: fixed; inset: 0; z-index: 9997;
-            background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
-            padding: 20px;
-        }
-        .jg-sp-contact-modal-bg.active { display: flex; }
-        .jg-sp-contact-modal {
-            background: #fff; border-radius: 12px; padding: 24px;
-            width: 100%; max-width: 480px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        .jg-sp-contact-modal header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 20px; gap: 12px;
-        }
-        .jg-sp-contact-modal h3 { font-size: calc(17 * var(--jg)); font-weight: 700; color: #111; line-height: 1.3; }
-        .jg-sp-contact-modal-close {
-            background: none; border: none; font-size: 24px; cursor: pointer;
-            color: #6b7280; line-height: 1; padding: 0 4px; flex-shrink: 0;
-        }
-        .jg-sp-contact-modal label {
-            display: block; font-size: calc(13 * var(--jg)); font-weight: 500;
-            color: #374151; margin-bottom: 14px;
-        }
-        .jg-sp-contact-modal input,
-        .jg-sp-contact-modal textarea {
-            display: block; width: 100%; margin-top: 4px;
-            padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px;
-            font-size: calc(14 * var(--jg)); font-family: inherit; color: #111;
-            outline: none; background: #fff;
-        }
-        .jg-sp-contact-modal input:focus,
-        .jg-sp-contact-modal textarea:focus { border-color: #6b7280; }
-        .jg-sp-contact-modal textarea { min-height: 100px; resize: vertical; }
-        .jg-sp-contact-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
-        .jg-sp-contact-modal-cancel {
-            background: #f3f4f6; color: #374151; border: none; border-radius: 8px;
-            padding: 8px 16px; cursor: pointer; font-size: calc(14 * var(--jg)); font-family: inherit;
-        }
-        .jg-sp-contact-modal-cancel:hover { background: #e5e7eb; }
-        .jg-sp-contact-modal-status { font-size: calc(13 * var(--jg)); margin: 8px 0 4px; min-height: 20px; }
-        .jg-sp-contact-modal-status--ok { color: #059669; }
-        .jg-sp-contact-modal-status--error { color: #dc2626; }
     </style>
 </head>
 <body>
@@ -1938,7 +1924,10 @@ class JG_Interactive_Map {
                         <a href="tel:<?php echo esc_attr($point['phone']); ?>" class="jg-sp-contact-link">&#128222; <?php echo esc_html($point['phone']); ?></a>
                     <?php endif; ?>
                     <?php if (!empty($point['email'])): ?>
-                        <button type="button" class="jg-sp-contact-btn" id="jg-sp-contact-open-btn">&#9993; Napisz wiadomość</button>
+                        <button type="button" class="jg-sp-contact-link jg-sp-contact-email-btn" id="jg-sp-contact-open">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                            Napisz wiadomość
+                        </button>
                     <?php endif; ?>
                     <?php if (!empty($point['website'])): ?>
                         <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-sp-contact-link">&#127760; <?php echo esc_html(parse_url($point['website'], PHP_URL_HOST) ?: $point['website']); ?></a>
@@ -2153,109 +2142,11 @@ class JG_Interactive_Map {
         $this->render_related_points($point);
         ?>
 
-        <!-- Contact form modal (only rendered when point has email) -->
-        <?php if (!empty($point['email'])): ?>
-        <div id="jg-sp-contact-modal-bg" class="jg-sp-contact-modal-bg">
-            <div class="jg-sp-contact-modal">
-                <header>
-                    <h3>&#9993; Napisz do: <?php echo esc_html($point['title']); ?></h3>
-                    <button type="button" class="jg-sp-contact-modal-close" id="jg-sp-contact-close">&times;</button>
-                </header>
-                <form id="jg-sp-contact-form" autocomplete="on">
-                    <label>Twoje imię lub nazwa
-                        <input type="text" name="sender_name" required maxlength="120" placeholder="Wpisz swoje imię">
-                    </label>
-                    <label>Twój adres e-mail
-                        <input type="email" name="sender_email" required maxlength="200" placeholder="twoj@email.pl">
-                    </label>
-                    <label>Wiadomość
-                        <textarea name="message" required maxlength="2000" placeholder="Treść wiadomości..."></textarea>
-                    </label>
-                    <p class="jg-sp-contact-modal-status" id="jg-sp-contact-status"></p>
-                    <div class="jg-sp-contact-modal-actions">
-                        <button type="button" class="jg-sp-contact-modal-cancel" id="jg-sp-contact-cancel">Anuluj</button>
-                        <button type="submit" class="jg-sp-contact-btn" id="jg-sp-contact-submit">Wyślij wiadomość</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <?php endif; ?>
-
         <!-- Minimal footer -->
         <footer class="jg-sp-site-footer">
             &copy; <?php echo date('Y'); ?> <?php bloginfo('name'); ?> &mdash;
             <a href="<?php echo esc_url(home_url('/')); ?>">Wróć do mapy</a>
         </footer>
-
-        <?php if (!empty($point['email'])): ?>
-        <script>
-        (function() {
-            var openBtn   = document.getElementById('jg-sp-contact-open-btn');
-            var modalBg   = document.getElementById('jg-sp-contact-modal-bg');
-            var closeBtn  = document.getElementById('jg-sp-contact-close');
-            var cancelBtn = document.getElementById('jg-sp-contact-cancel');
-            var form      = document.getElementById('jg-sp-contact-form');
-            var status    = document.getElementById('jg-sp-contact-status');
-            var submitBtn = document.getElementById('jg-sp-contact-submit');
-
-            if (!openBtn || !modalBg) return;
-
-            function openModal() { modalBg.classList.add('active'); }
-            function closeModal() { modalBg.classList.remove('active'); }
-
-            openBtn.addEventListener('click', openModal);
-            closeBtn.addEventListener('click', closeModal);
-            cancelBtn.addEventListener('click', closeModal);
-            modalBg.addEventListener('click', function(e) { if (e.target === modalBg) closeModal(); });
-            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
-
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                var senderName  = (form.sender_name.value  || '').trim();
-                var senderEmail = (form.sender_email.value || '').trim();
-                var message     = (form.message.value      || '').trim();
-
-                if (!senderName || !senderEmail || !message) {
-                    status.textContent = 'Uzupełnij wszystkie pola.';
-                    status.className = 'jg-sp-contact-modal-status jg-sp-contact-modal-status--error';
-                    return;
-                }
-
-                submitBtn.disabled = true;
-                status.textContent = 'Wysyłanie\u2026';
-                status.className = 'jg-sp-contact-modal-status';
-
-                var fd = new FormData();
-                fd.append('action',       'jg_contact_place');
-                fd.append('nonce',        <?php echo json_encode(wp_create_nonce('jg_map_nonce')); ?>);
-                fd.append('point_id',     <?php echo (int)$point['id']; ?>);
-                fd.append('sender_name',  senderName);
-                fd.append('sender_email', senderEmail);
-                fd.append('message',      message);
-
-                fetch(<?php echo json_encode(admin_url('admin-ajax.php')); ?>, { method: 'POST', body: fd })
-                    .then(function(r) { return r.json(); })
-                    .then(function(res) {
-                        if (res.success) {
-                            status.textContent = 'Wiadomo\u015b\u0107 wys\u0142ana. Dzi\u0119kujemy!';
-                            status.className = 'jg-sp-contact-modal-status jg-sp-contact-modal-status--ok';
-                            form.reset();
-                            setTimeout(closeModal, 1800);
-                        } else {
-                            status.textContent = (res.data && res.data.message) || 'Wyst\u0105pi\u0142 b\u0142\u0105d. Spr\u00f3buj ponownie.';
-                            status.className = 'jg-sp-contact-modal-status jg-sp-contact-modal-status--error';
-                            submitBtn.disabled = false;
-                        }
-                    })
-                    .catch(function() {
-                        status.textContent = 'B\u0142\u0105d po\u0142\u0105czenia. Spr\u00f3buj ponownie.';
-                        status.className = 'jg-sp-contact-modal-status jg-sp-contact-modal-status--error';
-                        submitBtn.disabled = false;
-                    });
-            });
-        })();
-        </script>
-        <?php endif; ?>
 
         <script>
         (function() {
@@ -2340,6 +2231,90 @@ class JG_Interactive_Map {
             };
         })();
         </script>
+
+        <?php if (!empty($point['email'])): ?>
+        <!-- Place contact modal (email stays server-side) -->
+        <div id="jg-sp-contact-modal-bg" role="dialog" aria-modal="true" aria-label="Formularz kontaktowy">
+            <div id="jg-sp-contact-modal">
+                <button class="jg-sp-cm-close" id="jg-sp-cm-close" aria-label="Zamknij">&times;</button>
+                <h3>✉️ Napisz do: <?php echo esc_html($point['title']); ?></h3>
+                <form id="jg-sp-contact-form" autocomplete="on">
+                    <label>Twoje imię lub nazwa<input type="text" name="sender_name" required maxlength="120" placeholder="Wpisz swoje imię"></label>
+                    <label>Twój adres e-mail<input type="email" name="sender_email" required maxlength="200" placeholder="twoj@email.pl"></label>
+                    <label>Wiadomość<textarea name="message" required maxlength="2000" placeholder="Treść wiadomości..."></textarea></label>
+                    <p id="jg-sp-contact-status"></p>
+                    <div class="jg-sp-cm-actions">
+                        <button type="button" class="jg-sp-cm-cancel" id="jg-sp-cm-cancel">Anuluj</button>
+                        <button type="submit" class="jg-sp-cm-submit" id="jg-sp-cm-submit">Wyślij wiadomość</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script>
+        (function() {
+            var openBtn  = document.getElementById('jg-sp-contact-open');
+            var modalBg  = document.getElementById('jg-sp-contact-modal-bg');
+            var closeBtn = document.getElementById('jg-sp-cm-close');
+            var cancelBtn = document.getElementById('jg-sp-cm-cancel');
+            var form     = document.getElementById('jg-sp-contact-form');
+            var status   = document.getElementById('jg-sp-contact-status');
+            var submitBtn = document.getElementById('jg-sp-cm-submit');
+            var pointId  = <?php echo intval($point['id']); ?>;
+            var ajaxUrl  = <?php echo json_encode(admin_url('admin-ajax.php')); ?>;
+            var nonce    = <?php echo json_encode(wp_create_nonce('jg_map_nonce')); ?>;
+
+            function openModal() { modalBg.classList.add('active'); }
+            function closeModal() { modalBg.classList.remove('active'); status.textContent = ''; status.style.color = ''; }
+
+            if (openBtn)   openBtn.addEventListener('click', openModal);
+            if (closeBtn)  closeBtn.addEventListener('click', closeModal);
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+            modalBg.addEventListener('click', function(e) { if (e.target === modalBg) closeModal(); });
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var senderName  = (form.sender_name.value  || '').trim();
+                var senderEmail = (form.sender_email.value || '').trim();
+                var message     = (form.message.value      || '').trim();
+                if (!senderName || !senderEmail || !message) {
+                    status.textContent = 'Uzupełnij wszystkie pola.';
+                    status.style.color = '#b91c1c';
+                    return;
+                }
+                submitBtn.disabled = true;
+                status.textContent = 'Wysyłanie…';
+                status.style.color = '#555';
+                var fd = new FormData();
+                fd.append('action',       'jg_contact_place');
+                fd.append('nonce',        nonce);
+                fd.append('point_id',     pointId);
+                fd.append('sender_name',  senderName);
+                fd.append('sender_email', senderEmail);
+                fd.append('message',      message);
+                fetch(ajaxUrl, { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        if (res.success) {
+                            status.textContent = 'Wiadomość wysłana. Dziękujemy!';
+                            status.style.color = '#15803d';
+                            form.reset();
+                            setTimeout(closeModal, 1800);
+                        } else {
+                            status.textContent = (res.data && res.data.message) || 'Wystąpił błąd. Spróbuj ponownie.';
+                            status.style.color = '#b91c1c';
+                            submitBtn.disabled = false;
+                        }
+                    })
+                    .catch(function() {
+                        status.textContent = 'Błąd połączenia. Spróbuj ponownie.';
+                        status.style.color = '#b91c1c';
+                        submitBtn.disabled = false;
+                    });
+            });
+        })();
+        </script>
+        <?php endif; ?>
 </body>
 </html>
         <?php
