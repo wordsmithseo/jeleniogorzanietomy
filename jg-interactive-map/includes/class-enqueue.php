@@ -919,7 +919,7 @@ class JG_Map_Enqueue {
                 var vpH = window.visualViewport
                     ? window.visualViewport.height
                     : window.innerHeight;
-                var avail = vpH - navH - topH - footerH;
+                var avail = vpH - navH - topH;
 
                 /* 1. Cap banner to 22 % of available vertical space */
                 if (bannerEl) {
@@ -928,10 +928,11 @@ class JG_Map_Enqueue {
                     void bannerEl.offsetHeight; /* force reflow before measuring map */
                 }
 
-                /* 2. Fill map from its real top edge to viewport bottom minus footer.
+                /* 2. Fill map from its real top edge to viewport bottom.
+                   The fixed footer overlays the bottom of the map — no gap needed.
                    setProperty with 'important' beats CSS height:100%!important */
                 var mapTop = mapWrapEl.getBoundingClientRect().top;
-                var mapH   = Math.max(vpH - mapTop - footerH, 200);
+                var mapH   = Math.max(vpH - mapTop, 200);
                 mapWrapEl.style.setProperty('height',     mapH + 'px', 'important');
                 mapWrapEl.style.setProperty('max-height', mapH + 'px', 'important');
 
