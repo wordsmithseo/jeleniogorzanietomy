@@ -41,6 +41,9 @@ class JG_Map_Enqueue {
         // Add custom top bar to the page
         add_action('wp_body_open', array($this, 'render_top_bar'), 10);
 
+        // Add contact footer bar
+        add_action('wp_footer', array($this, 'render_footer_bar'), 20);
+
         // Add jg-has-map body class early (before body content) so CSS can hide Elementor header
         // without FOUC — body_class fires when WP outputs <body class="...">, before any body content
         add_filter('body_class', array($this, 'add_map_body_class'));
@@ -540,6 +543,7 @@ class JG_Map_Enqueue {
                     ? admin_url('admin.php?page=jg-map-users')
                     : '',
                 'currentUserId' => get_current_user_id(),
+                'currentUserDisplayName' => is_user_logged_in() ? wp_get_current_user()->display_name : '',
                 'loginUrl' => wp_login_url(get_permalink()),
                 'registrationEnabled' => (bool) get_option('jg_map_registration_enabled', 1),
                 'registrationDisabledMessage' => get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.'),
@@ -638,6 +642,15 @@ class JG_Map_Enqueue {
         $logo_url   = 'https://jeleniogorzanietomy.pl/wp-content/uploads/2025/10/jg-logo-1.svg';
         $home_url   = home_url('/');
         $menu_items = get_option('jg_map_nav_menu', array());
+
+        // Resolve "Kontakt" URL from nav menu or fall back to /kontakt
+        $contact_url = home_url('/kontakt');
+        foreach ($menu_items as $_nav_item) {
+            if (!empty($_nav_item['label']) && mb_stripos($_nav_item['label'], 'kontakt') !== false) {
+                $contact_url = $_nav_item['url'];
+                break;
+            }
+        }
         ?>
         <!-- JG nav color override: injected in <body> so it loads after Elementor's <head> CSS -->
         <style id="jg-nav-color-fix">
@@ -655,6 +668,9 @@ class JG_Map_Enqueue {
             <a href="<?php echo esc_url($home_url); ?>" class="jg-nav-logo-link" aria-label="Strona główna">
                 <img src="<?php echo esc_url($logo_url); ?>" alt="Jelenia Góra to my" class="jg-nav-logo-img" loading="eager">
                 <span class="jg-nav-site-title">Jeleniogórzanie to my - Interaktywna mapa Jeleniej Góry</span>
+            </a>
+            <a href="<?php echo esc_url($contact_url); ?>" class="jg-nav-contact-btn" aria-label="Kontakt z redakcją" title="Kontakt z redakcją">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
             </a>
             <button id="jg-hamburger-btn" class="jg-hamburger-btn" aria-label="Otwórz menu" aria-expanded="false" aria-controls="jg-nav-menu" type="button">
                 <span></span>
@@ -886,22 +902,24 @@ class JG_Map_Enqueue {
                 if (jgFitting) return;
                 jgFitting = true;
 
-                var navBarEl  = document.getElementById('jg-nav-bar');
-                var topBarEl  = document.getElementById('jg-custom-top-bar');
-                var mapWrapEl = document.getElementById('jg-map-wrap');
-                var _slotWrap = document.querySelector('[data-cid]');
-                var bannerEl  = _slotWrap ? document.getElementById(_slotWrap.dataset.cid) : null;
+                var navBarEl    = document.getElementById('jg-nav-bar');
+                var topBarEl    = document.getElementById('jg-custom-top-bar');
+                var mapWrapEl   = document.getElementById('jg-map-wrap');
+                var footerBarEl = document.getElementById('jg-footer-bar');
+                var _slotWrap   = document.querySelector('[data-cid]');
+                var bannerEl    = _slotWrap ? document.getElementById(_slotWrap.dataset.cid) : null;
 
                 if (!mapWrapEl) { jgFitting = false; return; }
 
-                var navH  = navBarEl ? navBarEl.offsetHeight : 0;
-                var topH  = topBarEl ? topBarEl.offsetHeight : 0;
+                var navH    = navBarEl ? navBarEl.offsetHeight : 0;
+                var topH    = topBarEl ? topBarEl.offsetHeight : 0;
+                var footerH = (footerBarEl && window.getComputedStyle(footerBarEl).display !== 'none') ? footerBarEl.offsetHeight : 0;
                 /* visualViewport.height shrinks when browser chrome appears
                    (address bar, bottom nav bar, on-screen keyboard) */
                 var vpH = window.visualViewport
                     ? window.visualViewport.height
                     : window.innerHeight;
-                var avail = vpH - navH - topH;
+                var avail = vpH - navH - topH - footerH;
 
                 /* 1. Cap banner to 22 % of available vertical space */
                 if (bannerEl) {
@@ -910,10 +928,10 @@ class JG_Map_Enqueue {
                     void bannerEl.offsetHeight; /* force reflow before measuring map */
                 }
 
-                /* 2. Fill map from its real top edge to viewport bottom.
+                /* 2. Fill map from its real top edge to viewport bottom minus footer.
                    setProperty with 'important' beats CSS height:100%!important */
                 var mapTop = mapWrapEl.getBoundingClientRect().top;
-                var mapH   = Math.max(vpH - mapTop, 200);
+                var mapH   = Math.max(vpH - mapTop - footerH, 200);
                 mapWrapEl.style.setProperty('height',     mapH + 'px', 'important');
                 mapWrapEl.style.setProperty('max-height', mapH + 'px', 'important');
 
@@ -991,6 +1009,19 @@ class JG_Map_Enqueue {
                         <?php endif; ?>
                     </div>
                 </div>
+                <?php
+                $tb_contact_url = home_url('/kontakt');
+                foreach (get_option('jg_map_nav_menu', array()) as $_tb_item) {
+                    if (!empty($_tb_item['label']) && mb_stripos($_tb_item['label'], 'kontakt') !== false) {
+                        $tb_contact_url = $_tb_item['url'];
+                        break;
+                    }
+                }
+                ?>
+                <a href="<?php echo esc_url($tb_contact_url); ?>" class="jg-top-bar-btn jg-top-bar-contact-btn" title="Kontakt z redakcją">
+                    <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    <span class="jg-btn-text">Kontakt</span>
+                </a>
             </div>
             <div class="jg-top-bar-right">
                 <?php if (is_user_logged_in()) : ?>
@@ -1644,6 +1675,40 @@ class JG_Map_Enqueue {
             </script>
         </body>
         </html>
+        <?php
+    }
+
+    /**
+     * Render minimal contact footer bar (fixed bottom, portal-red + white text).
+     * Hooked to wp_footer so it renders after all page content.
+     * Sets --jg-footer-h CSS variable so JS can subtract it from map height.
+     */
+    public function render_footer_bar() {
+        // Resolve "Kontakt" URL from nav menu
+        $footer_contact_url = home_url('/kontakt');
+        foreach (get_option('jg_map_nav_menu', array()) as $_fi) {
+            if (!empty($_fi['label']) && mb_stripos($_fi['label'], 'kontakt') !== false) {
+                $footer_contact_url = $_fi['url'];
+                break;
+            }
+        }
+        ?>
+        <div id="jg-footer-bar" role="contentinfo" aria-label="Stopka portalu">
+            <span class="jg-footer-bar-copy">&copy; <?php echo esc_html(date('Y')); ?> Jeleniogórzanie to my</span>
+            <a href="<?php echo esc_url($footer_contact_url); ?>" class="jg-footer-bar-link">Napisz do redakcji</a>
+        </div>
+        <script>
+        (function () {
+            var bar = document.getElementById('jg-footer-bar');
+            if (!bar) return;
+            function jgSetFooterH() {
+                document.documentElement.style.setProperty('--jg-footer-h', bar.offsetHeight + 'px');
+            }
+            jgSetFooterH();
+            window.addEventListener('resize', jgSetFooterH);
+            window.addEventListener('load',   jgSetFooterH);
+        })();
+        </script>
         <?php
     }
 
