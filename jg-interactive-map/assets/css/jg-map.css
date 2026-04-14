@@ -3597,39 +3597,6 @@ body.jg-has-map #jg-map-wrap:not(.jg-fullscreen) {
   box-sizing: border-box !important;
 }
 
-/* Contact button — highest-specificity override so Elementor global button
-   styles (border, background, color) can never bleed through */
-button.jg-btn.jg-place-contact-open-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  background: #111 !important;
-  background-color: #111 !important;
-  color: #fff !important;
-  border: none !important;
-  border-width: 0 !important;
-  border-style: none !important;
-  border-color: transparent !important;
-  outline: none !important;
-  box-shadow: none !important;
-  border-radius: 8px !important;
-  padding: 8px 16px !important;
-  cursor: pointer !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-  line-height: 1.5 !important;
-  text-transform: none !important;
-  letter-spacing: normal !important;
-  text-decoration: none !important;
-}
-button.jg-btn.jg-place-contact-open-btn:hover {
-  background: #333 !important;
-  background-color: #333 !important;
-  color: #fff !important;
-  border: none !important;
-}
-
 /* Sponsored CTA Button - Square button inside contact info frame */
 .jg-btn-cta-sponsored {
   display: inline-flex;
