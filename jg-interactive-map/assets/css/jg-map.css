@@ -239,15 +239,15 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
 .jg-top-bar-left {
   display: flex;
   align-items: center;
-  gap: 48px;
-  min-width: 0;   /* allow flex shrink below content size */
+  gap: clamp(8px, 2vw, 24px); /* was 48px — fluid so it shrinks before overflow */
+  min-width: 0;
   flex-shrink: 1;
 }
 
 .jg-top-bar-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: clamp(4px, 0.8vw, 16px); /* fluid gap between user-action buttons */
   min-width: 0;
   flex-shrink: 0; /* right side (user actions) stays intact */
 }
@@ -262,6 +262,7 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
   margin-left: 10px;
   text-decoration: none;
   letter-spacing: 0.01em;
+  max-width: clamp(80px, 18vw, 320px); /* shrinks progressively, disappears at ≤1600px via media query */
 }
 
 .jg-top-bar-user {
@@ -2282,37 +2283,17 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 }
 
-/* Responsive navbar - Better spacing on narrow monitors (laptops) */
-@media (max-width: 1280px) {
-  .jg-custom-top-bar {
-    padding: 12px 16px;
-    min-height: 60px;
-    gap: 10px;
-  }
+/* ── Progressive top-bar compression ───────────────────────────────────────
+   Each breakpoint hides the next "least important" text so the bar stays
+   usable as long as possible before anything gets clipped.
+   ────────────────────────────────────────────────────────────────────────── */
 
-  .jg-top-bar-left,
-  .jg-top-bar-right {
-    gap: 12px;
-  }
-
-  .jg-top-bar-btn {
-    padding: 7px 14px;
-    font-size: calc(14 * var(--jg));
-  }
-
-}
-
-/* Icon-only buttons on laptop screens */
-@media (max-width: 1440px) {
-  #jg-ranking-btn .jg-btn-text,
-  #jg-edit-profile-btn .jg-btn-text,
+/* Step 1 ≤1800px — hide longest labels: Admin + Wyloguj */
+@media (max-width: 1800px) {
   .jg-top-bar-btn-admin .jg-btn-text,
   a.jg-top-bar-btn[title="Wyloguj"] .jg-btn-text {
     display: none !important;
   }
-
-  #jg-ranking-btn,
-  #jg-edit-profile-btn,
   .jg-top-bar-btn-admin,
   a.jg-top-bar-btn[title="Wyloguj"] {
     padding: 7px !important;
@@ -2322,13 +2303,57 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     border-radius: 8px !important;
     box-sizing: border-box !important;
   }
-
-  #jg-ranking-btn .jg-btn-icon,
-  #jg-edit-profile-btn .jg-btn-icon,
   .jg-top-bar-btn-admin .jg-btn-icon,
   a.jg-top-bar-btn[title="Wyloguj"] .jg-btn-icon {
     width: 18px !important;
     height: 18px !important;
+  }
+}
+
+/* Step 2 ≤1600px — hide Ranking + Edytuj profil text; hide site title; shrink XP bar */
+@media (max-width: 1600px) {
+  #jg-ranking-btn .jg-btn-text,
+  #jg-edit-profile-btn .jg-btn-text {
+    display: none !important;
+  }
+  #jg-ranking-btn,
+  #jg-edit-profile-btn {
+    padding: 7px !important;
+    width: 34px !important;
+    height: 34px !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+  }
+  #jg-ranking-btn .jg-btn-icon,
+  #jg-edit-profile-btn .jg-btn-icon {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .jg-top-bar-site-title {
+    display: none !important;
+  }
+  .jg-top-bar-xp-bar {
+    width: 40px !important;
+  }
+}
+
+/* Step 3 ≤1440px — smaller bar padding */
+@media (max-width: 1440px) {
+  .jg-custom-top-bar {
+    padding: 10px 16px;
+  }
+}
+
+/* Step 4 ≤1280px — tighter padding + smaller button font/padding */
+@media (max-width: 1280px) {
+  .jg-custom-top-bar {
+    padding: 8px 12px;
+    min-height: 52px;
+  }
+  .jg-top-bar-btn {
+    padding: 7px 14px;
+    font-size: calc(14 * var(--jg));
   }
 }
 

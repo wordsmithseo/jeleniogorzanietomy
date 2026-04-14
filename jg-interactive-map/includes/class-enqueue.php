@@ -1141,7 +1141,7 @@ class JG_Map_Enqueue {
                     else $level_tier = 'prestige-bronze';
                     ?>
                     <span class="jg-top-bar-level jg-level-<?php echo $level_tier; ?>" title="Poziom <?php echo $user_level; ?> — <?php echo $xp_in_level; ?>/<?php echo $xp_needed; ?> XP do następnego poziomu">
-                        <span class="jg-top-bar-level-num">Poz. <?php echo $user_level; ?></span>
+                        <span class="jg-top-bar-level-num"><?php echo $user_level; ?></span>
                         <span class="jg-top-bar-xp-bar"><span class="jg-top-bar-xp-fill" style="width:<?php echo $xp_progress; ?>%"></span></span>
                     </span>
                     <button id="jg-ranking-btn" class="jg-top-bar-btn" title="Ranking">
@@ -1166,7 +1166,7 @@ class JG_Map_Enqueue {
                     <?php if ($is_admin || $is_moderator) : ?>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=jg-map-dashboard')); ?>" class="jg-top-bar-btn jg-top-bar-btn-admin" title="Panel administratora">
                             <svg class="jg-btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                            <span class="jg-btn-text">Panel administratora</span>
+                            <span class="jg-btn-text">Admin</span>
                         </a>
                     <?php endif; ?>
                     <a href="<?php echo wp_logout_url(get_permalink()); ?>" class="jg-top-bar-btn" title="Wyloguj">
