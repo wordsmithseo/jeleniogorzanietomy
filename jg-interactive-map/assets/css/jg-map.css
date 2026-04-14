@@ -3591,6 +3591,12 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   width: 100% !important;
 }
 
+/* Push non-fullscreen page content up so the fixed footer doesn't cover it */
+body.jg-has-map #jg-map-wrap:not(.jg-fullscreen) {
+  padding-bottom: var(--jg-footer-h, 28px) !important;
+  box-sizing: border-box !important;
+}
+
 /* Contact button — highest-specificity override so Elementor global button
    styles (border, background, color) can never bleed through */
 button.jg-btn.jg-place-contact-open-btn {
