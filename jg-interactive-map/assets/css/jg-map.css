@@ -10302,12 +10302,17 @@ footer.site-footer .site-branding {
    ─────────────────────────────────────────────────────────────────────────── */
 .jg-top-bar-contact-btn {
   text-decoration: none !important;
+  color: #fff !important;
   padding: 7px !important;
   width: 34px !important;
   height: 34px !important;
   justify-content: center !important;
   border-radius: 8px !important;
   box-sizing: border-box !important;
+}
+.jg-top-bar-contact-btn:hover {
+  color: #fff !important;
+  opacity: 0.8 !important;
 }
 .jg-top-bar-contact-btn .jg-btn-icon {
   width: 18px !important;
