@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.27.0
+ * Version: 3.28.0
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.27.0');
+define('JG_MAP_VERSION', '3.28.0');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -333,6 +333,11 @@ class JG_Interactive_Map {
             'top'
         );
         add_rewrite_rule(
+            '^miejsce/([^/]+)/oferta/?$',
+            'index.php?jg_map_point=$matches[1]&jg_map_type=miejsce&jg_map_offerings=1',
+            'top'
+        );
+        add_rewrite_rule(
             '^miejsce/([^/]+)/?$',
             'index.php?jg_map_point=$matches[1]&jg_map_type=miejsce',
             'top'
@@ -389,6 +394,7 @@ class JG_Interactive_Map {
         $vars[] = 'jg_catalog_category';
         $vars[] = 'jg_tile_sw';
         $vars[] = 'jg_map_menu';
+        $vars[] = 'jg_map_offerings';
         return $vars;
     }
 
@@ -424,6 +430,13 @@ class JG_Interactive_Map {
         if ($flush_count_v5 < 3) {
             flush_rewrite_rules(false);
             update_option('jg_map_flush_count_v5', $flush_count_v5 + 1);
+        }
+
+        // v6: flush to register /miejsce/{slug}/oferta/ rewrite rule
+        $flush_count_v6 = get_option('jg_map_flush_count_v6', 0);
+        if ($flush_count_v6 < 3) {
+            flush_rewrite_rules(false);
+            update_option('jg_map_flush_count_v6', $flush_count_v6 + 1);
         }
 
         // Legacy flush check
@@ -523,9 +536,13 @@ class JG_Interactive_Map {
             $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
             if (preg_match('#^/(miejsce|ciekawostka|zgloszenie)/([^/]+)/menu/?$#', $request_uri, $matches)) {
                 $point_slug = sanitize_title($matches[2]);
-                // Override query var so we know it's the menu subpage
                 if (!get_query_var('jg_map_menu')) {
                     set_query_var('jg_map_menu', '1');
+                }
+            } elseif (preg_match('#^/(miejsce|ciekawostka|zgloszenie)/([^/]+)/oferta/?$#', $request_uri, $matches)) {
+                $point_slug = sanitize_title($matches[2]);
+                if (!get_query_var('jg_map_offerings')) {
+                    set_query_var('jg_map_offerings', '1');
                 }
             } elseif (preg_match('#^/(miejsce|ciekawostka|zgloszenie)/([^/]+)/?$#', $request_uri, $matches)) {
                 $point_slug = sanitize_title($matches[2]);
@@ -669,11 +686,14 @@ class JG_Interactive_Map {
         // No Yoast filter overrides needed since we don't call wp_head()
         ob_start();
 
-        $is_menu_page = (get_query_var('jg_map_menu') == '1');
+        $is_menu_page      = (get_query_var('jg_map_menu') == '1');
+        $is_offerings_page = (get_query_var('jg_map_offerings') == '1');
 
         try {
             if ($is_menu_page) {
                 $this->render_menu_page($point, $request_id);
+            } elseif ($is_offerings_page) {
+                $this->render_offerings_page($point, $request_id);
             } else {
                 $this->render_point_page($point, $request_id, $user_agent_short);
             }
@@ -1006,6 +1026,167 @@ class JG_Interactive_Map {
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') overlay.classList.remove('active'); });
 })();
 </script>
+</body>
+</html>
+<?php
+    }
+
+    /**
+     * Render the offerings subpage for a place (/miejsce/{slug}/oferta/)
+     */
+    private function render_offerings_page($point, $request_id = 'unknown') {
+        $point_url    = home_url('/miejsce/' . $point['slug'] . '/');
+        $offering_url = home_url('/miejsce/' . $point['slug'] . '/oferta/');
+        $type_color   = '#166534'; // green
+
+        $site_name  = get_bloginfo('name');
+        $logo_url   = '';
+        $custom_logo_id = get_theme_mod('custom_logo');
+        if ($custom_logo_id) {
+            $logo_url = wp_get_attachment_image_url($custom_logo_id, 'full');
+        }
+        $site_icon_32  = get_site_icon_url(32);
+        $site_icon_192 = get_site_icon_url(192);
+        $site_icon_180 = get_site_icon_url(180);
+
+        $off_cats  = JG_Map_Ajax_Handlers::get_offerings_categories();
+        $off_key   = $point['category'] ?? '';
+        $off_label = isset($off_cats[$off_key]) ? $off_cats[$off_key] : 'Oferta';
+        $items     = JG_Map_Database::get_offerings($point['id']);
+
+        $page_title  = $off_label . ' – ' . $point['title'] . ' | ' . $site_name;
+        $description = 'Sprawdź ' . mb_strtolower($off_label) . ' firmy ' . $point['title'] . ' w Jeleniej Górze.';
+        $canonical   = esc_url($offering_url);
+
+        ?><!doctype html>
+<html lang="pl-PL">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title><?php echo esc_html($page_title); ?></title>
+    <meta name="description" content="<?php echo esc_attr($description); ?>">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="<?php echo $canonical; ?>">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="<?php echo esc_attr($off_label . ' – ' . $point['title']); ?>">
+    <meta property="og:description" content="<?php echo esc_attr($description); ?>">
+    <meta property="og:url" content="<?php echo $canonical; ?>">
+    <meta property="og:locale" content="pl_PL">
+    <?php if ($site_icon_32): ?>
+    <link rel="icon" href="<?php echo esc_url($site_icon_32); ?>" sizes="32x32">
+    <link rel="icon" href="<?php echo esc_url($site_icon_192); ?>" sizes="192x192">
+    <link rel="apple-touch-icon" href="<?php echo esc_url($site_icon_180); ?>">
+    <?php endif; ?>
+    <?php
+    // Schema.org: LocalBusiness + OfferCatalog
+    if (!empty($items)):
+        $ld_items = array();
+        foreach ($items as $idx => $it) {
+            $ld_offer = array('@type' => 'Offer', 'name' => $it['name']);
+            if (!empty($it['description'])) $ld_offer['description'] = $it['description'];
+            if ($it['price'] !== null && $it['price'] !== '') {
+                $ld_offer['price'] = number_format(floatval($it['price']), 2, '.', '');
+                $ld_offer['priceCurrency'] = 'PLN';
+            }
+            $ld_items[] = array(
+                '@type'    => 'ListItem',
+                'position' => $idx + 1,
+                'item'     => $ld_offer,
+            );
+        }
+        $ld_catalog = array(
+            '@context'       => 'https://schema.org',
+            '@type'          => 'OfferCatalog',
+            '@id'            => $offering_url . '#catalog',
+            'name'           => $off_label . ' – ' . $point['title'],
+            'url'            => $offering_url,
+            'itemListElement' => $ld_items,
+        );
+        $all_cats = JG_Map_Ajax_Handlers::get_place_categories();
+        $schema_type = isset($all_cats[$off_key]['schema_type']) ? $all_cats[$off_key]['schema_type'] : 'LocalBusiness';
+        $ld_place = array(
+            '@context'    => 'https://schema.org',
+            '@type'       => $schema_type,
+            '@id'         => $point_url . '#place',
+            'name'        => $point['title'],
+            'url'         => $point_url,
+            'hasOfferCatalog' => array('@id' => $offering_url . '#catalog'),
+        );
+        echo '<script type="application/ld+json">' . json_encode($ld_catalog, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>' . "\n";
+        echo '<script type="application/ld+json">' . json_encode($ld_place, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>' . "\n";
+    endif;
+    ?>
+    <style>
+        :root { --jg: clamp(1px, 0.065vw, 1.1px); }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f9fafb; color: #111; }
+        a { color: inherit; text-decoration: none; }
+        .jg-sp-site-header { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid #e5e7eb; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .jg-sp-site-header a { font-weight: 700; font-size: calc(16 * var(--jg)); color: <?php echo esc_attr($type_color); ?>; display: flex; align-items: center; gap: 8px; }
+        .jg-sp-site-header img { height: 32px; width: auto; }
+        .jg-sp-site-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .jg-sp-site-nav a { font-size: calc(13 * var(--jg)); color: #6b7280; border: 1px solid #e5e7eb; padding: 6px 12px; border-radius: 20px; }
+        .jg-sp { max-width: 800px; margin: 0 auto; padding: 28px 20px 60px; }
+        .jg-off-back { display: inline-flex; align-items: center; gap: 6px; font-size: calc(13 * var(--jg)); color: #6b7280; margin-bottom: 16px; }
+        .jg-off-back:hover { color: <?php echo esc_attr($type_color); ?>; }
+        .jg-sp-title { font-size: calc(28 * var(--jg)); font-weight: 800; margin: 0 0 4px 0; color: #111; }
+        .jg-sp-date { font-size: calc(12 * var(--jg)); color: #9ca3af; margin-bottom: 24px; }
+
+        /* Offering items */
+        .jg-off-list { margin-bottom: 28px; }
+        .jg-off-item { display: flex; align-items: baseline; gap: 8px; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .jg-off-item:last-child { border-bottom: none; }
+        .jg-off-item--unavailable .jg-off-item__name { color: #9ca3af; text-decoration: line-through; }
+        .jg-off-item--unavailable .jg-off-item__price { color: #9ca3af; }
+        .jg-off-item__info { flex: 1; min-width: 0; }
+        .jg-off-item__name { font-size: calc(15 * var(--jg)); font-weight: 600; color: #1f2937; }
+        .jg-off-item__desc { font-size: calc(12 * var(--jg)); color: #6b7280; margin-top: 3px; }
+        .jg-off-item__price { font-size: calc(15 * var(--jg)); font-weight: 700; color: <?php echo esc_attr($type_color); ?>; white-space: nowrap; flex-shrink: 0; }
+        .jg-off-empty { color: #9ca3af; font-size: calc(14 * var(--jg)); padding: 24px 0; }
+
+        .jg-sp-site-footer { text-align: center; padding: 24px 20px; font-size: calc(12 * var(--jg)); color: #9ca3af; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+<header class="jg-sp-site-header">
+    <a href="<?php echo esc_url(home_url('/')); ?>">
+        <?php if ($logo_url): ?><img src="<?php echo esc_url($logo_url); ?>" alt="<?php echo esc_attr($site_name); ?>"><?php else: echo esc_html($site_name); endif; ?>
+    </a>
+    <nav class="jg-sp-site-nav">
+        <a href="<?php echo esc_url($point_url); ?>">← <?php echo esc_html($point['title']); ?></a>
+        <a href="<?php echo esc_url(home_url('/')); ?>">Mapa</a>
+    </nav>
+</header>
+
+<div class="jg-sp">
+    <a href="<?php echo esc_url($point_url); ?>" class="jg-off-back">← Wróć do: <?php echo esc_html($point['title']); ?></a>
+    <h1 class="jg-sp-title">📋 <?php echo esc_html($off_label); ?> – <?php echo esc_html($point['title']); ?></h1>
+
+    <?php if (!empty($items)): ?>
+    <div class="jg-off-list">
+        <?php foreach ($items as $it): ?>
+        <div class="jg-off-item<?php echo (!$it['is_available']) ? ' jg-off-item--unavailable' : ''; ?>">
+            <div class="jg-off-item__info">
+                <div class="jg-off-item__name"><?php echo esc_html($it['name']); ?></div>
+                <?php if (!empty($it['description'])): ?>
+                <div class="jg-off-item__desc"><?php echo esc_html($it['description']); ?></div>
+                <?php endif; ?>
+            </div>
+            <?php if ($it['price'] !== null && $it['price'] !== ''): ?>
+            <div class="jg-off-item__price"><?php echo number_format(floatval($it['price']), 2, ',', ' ') . ' zł'; ?></div>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php else: ?>
+    <p class="jg-off-empty">Oferta nie została jeszcze dodana.</p>
+    <?php endif; ?>
+</div>
+
+<footer class="jg-sp-site-footer">
+    <a href="<?php echo esc_url(home_url('/')); ?>"><?php echo esc_html($site_name); ?></a> &middot;
+    <a href="<?php echo esc_url($point_url); ?>"><?php echo esc_html($point['title']); ?></a>
+</footer>
 </body>
 </html>
 <?php
@@ -1810,8 +1991,10 @@ class JG_Interactive_Map {
             <?php endif; endif; ?>
 
             <!-- Offerings preview (services / products — non-gastronomic places) -->
-            <?php if ($sp_has_offerings): ?>
-            <?php $sp_off_max = 6; $sp_off_shown = 0; ?>
+            <?php if ($sp_has_offerings):
+                $sp_off_url = home_url('/miejsce/' . $point['slug'] . '/oferta/');
+                $sp_off_max = 6; $sp_off_shown = 0;
+            ?>
             <div class="jg-sp-offerings-preview">
                 <div class="jg-sp-offerings-preview__title">📋 <?php echo esc_html($sp_off_label); ?></div>
                 <?php foreach ($sp_offerings as $sp_off_item): ?>
@@ -1830,6 +2013,7 @@ class JG_Interactive_Map {
                 <?php if (count($sp_offerings) > $sp_off_max): ?>
                 <div style="font-size:calc(12 * var(--jg));color:#6b7280;margin-top:6px">+ <?php echo count($sp_offerings) - $sp_off_max; ?> więcej&hellip;</div>
                 <?php endif; ?>
+                <a href="<?php echo esc_url($sp_off_url); ?>" class="jg-sp-menu-preview__link">Zobacz pełną ofertę →</a>
             </div>
             <?php endif; ?>
 
