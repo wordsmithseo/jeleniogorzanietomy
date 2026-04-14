@@ -126,6 +126,21 @@ class JG_Map_Ajax_Handlers {
     }
 
     /**
+     * Get map of category_key => offerings_label for categories that support offerings.
+     * offerings_label is a non-empty string like "Usługi" or "Produkty".
+     */
+    public static function get_offerings_categories() {
+        $cats   = self::get_place_categories();
+        $result = array();
+        foreach ($cats as $key => $cat) {
+            if (!empty($cat['offerings_label'])) {
+                $result[$key] = $cat['offerings_label'];
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Get place categories (sorted alphabetically by label)
      */
     public static function get_place_categories() {
@@ -580,6 +595,11 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_save_menu', array($this, 'save_menu'));
         add_action('wp_ajax_jg_upload_menu_photo', array($this, 'upload_menu_photo'));
         add_action('wp_ajax_jg_delete_menu_photo', array($this, 'delete_menu_photo'));
+
+        // Offerings actions (public read, auth write)
+        add_action('wp_ajax_jg_get_offerings', array($this, 'get_offerings'));
+        add_action('wp_ajax_nopriv_jg_get_offerings', array($this, 'get_offerings'));
+        add_action('wp_ajax_jg_save_offerings', array($this, 'save_offerings'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -9212,13 +9232,14 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        $key             = sanitize_key($_POST['key'] ?? '');
-        $label           = sanitize_text_field($_POST['label'] ?? '');
-        $icon            = sanitize_text_field($_POST['icon'] ?? '📍');
-        $has_menu        = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
-        $has_price_range = !empty($_POST['has_price_range']) && $_POST['has_price_range'] === '1';
-        $serves_cuisine  = !empty($_POST['serves_cuisine']) && $_POST['serves_cuisine'] === '1';
-        $show_promo      = !empty($_POST['show_promo']) && $_POST['show_promo'] === '1';
+        $key              = sanitize_key($_POST['key'] ?? '');
+        $label            = sanitize_text_field($_POST['label'] ?? '');
+        $icon             = sanitize_text_field($_POST['icon'] ?? '📍');
+        $has_menu         = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
+        $has_price_range  = !empty($_POST['has_price_range']) && $_POST['has_price_range'] === '1';
+        $serves_cuisine   = !empty($_POST['serves_cuisine']) && $_POST['serves_cuisine'] === '1';
+        $show_promo       = !empty($_POST['show_promo']) && $_POST['show_promo'] === '1';
+        $offerings_label  = sanitize_text_field(substr($_POST['offerings_label'] ?? '', 0, 50));
 
         if (empty($key) || empty($label)) {
             wp_send_json_error('Klucz i nazwa są wymagane');
@@ -9239,6 +9260,7 @@ class JG_Map_Ajax_Handlers {
             'has_price_range' => $has_price_range,
             'serves_cuisine'  => $serves_cuisine,
             'show_promo'      => $show_promo,
+            'offerings_label' => $offerings_label,
         );
         update_option('jg_map_place_categories', $categories);
 
@@ -9271,13 +9293,14 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        $key             = sanitize_key($_POST['key'] ?? '');
-        $label           = sanitize_text_field($_POST['label'] ?? '');
-        $icon            = sanitize_text_field($_POST['icon'] ?? '📍');
-        $has_menu        = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
-        $has_price_range = !empty($_POST['has_price_range']) && $_POST['has_price_range'] === '1';
-        $serves_cuisine  = !empty($_POST['serves_cuisine']) && $_POST['serves_cuisine'] === '1';
-        $show_promo      = !empty($_POST['show_promo']) && $_POST['show_promo'] === '1';
+        $key              = sanitize_key($_POST['key'] ?? '');
+        $label            = sanitize_text_field($_POST['label'] ?? '');
+        $icon             = sanitize_text_field($_POST['icon'] ?? '📍');
+        $has_menu         = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
+        $has_price_range  = !empty($_POST['has_price_range']) && $_POST['has_price_range'] === '1';
+        $serves_cuisine   = !empty($_POST['serves_cuisine']) && $_POST['serves_cuisine'] === '1';
+        $show_promo       = !empty($_POST['show_promo']) && $_POST['show_promo'] === '1';
+        $offerings_label  = sanitize_text_field(substr($_POST['offerings_label'] ?? '', 0, 50));
 
         if (empty($key) || empty($label)) {
             wp_send_json_error('Klucz i nazwa są wymagane');
@@ -9300,6 +9323,7 @@ class JG_Map_Ajax_Handlers {
             'has_price_range' => $has_price_range,
             'serves_cuisine'  => $serves_cuisine,
             'show_promo'      => $show_promo,
+            'offerings_label' => $offerings_label,
         ));
         update_option('jg_map_place_categories', $categories);
 
@@ -9972,6 +9996,89 @@ class JG_Map_Ajax_Handlers {
         } else {
             wp_send_json_error(array('message' => 'Nie znaleziono zdjęcia'));
         }
+    }
+
+    /**
+     * Get offerings (services / products) for a place — public.
+     */
+    public function get_offerings() {
+        $point_id = intval($_POST['point_id'] ?? 0);
+        if ($point_id <= 0) {
+            wp_send_json_error(array('message' => 'Brak point_id'));
+            exit;
+        }
+
+        $items = JG_Map_Database::get_offerings($point_id);
+        wp_send_json_success(array('items' => $items));
+    }
+
+    /**
+     * Save offerings (services / products) for a place.
+     * Allowed: owner or admin/moderator.
+     */
+    public function save_offerings() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $point_id = intval($_POST['point_id'] ?? 0);
+        if ($point_id <= 0) {
+            wp_send_json_error(array('message' => 'Brak point_id'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        $user_id  = get_current_user_id();
+        $is_owner = intval($point['author_id']) === $user_id;
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        if (!$is_owner && !$is_admin) {
+            wp_send_json_error(array('message' => 'Brak uprawnień'));
+            exit;
+        }
+
+        $raw_items = isset($_POST['items']) ? $_POST['items'] : array();
+        if (!is_array($raw_items)) {
+            $decoded = json_decode(wp_unslash($_POST['items'] ?? '[]'), true);
+            $raw_items = is_array($decoded) ? $decoded : array();
+        }
+
+        $old_items = JG_Map_Database::get_offerings($point_id);
+
+        JG_Map_Database::save_offerings($point_id, $raw_items);
+
+        $old_values = array('offerings' => $old_items);
+        $new_values = array('offerings' => $raw_items);
+
+        if ($is_admin) {
+            JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
+            JG_Map_Activity_Log::log_user_action(
+                'edit_offerings',
+                'point',
+                $point_id,
+                sprintf('Zaktualizowano ofertę miejsca: %s', $point['title'])
+            );
+        } else {
+            $point_owner_id = ($is_owner) ? null : intval($point['author_id']);
+            JG_Map_Database::add_history($point_id, $user_id, 'edit_offerings', $old_values, $new_values, $point_owner_id);
+            JG_Map_Database::update_point($point_id, array('pending_edit' => 1));
+            JG_Map_Activity_Log::log_user_action(
+                'suggest_offerings_edit',
+                'point',
+                $point_id,
+                sprintf('Zaproponowano zmiany oferty: %s', $point['title'])
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Oferta zapisana', 'pending' => !$is_admin));
     }
 
     /**

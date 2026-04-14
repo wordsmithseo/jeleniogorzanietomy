@@ -210,6 +210,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
     return cats.indexOf(cat) !== -1;
   }
 
+  function isOfferingsCategory(cat) {
+    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.offeringsCategories) || {};
+    return Object.prototype.hasOwnProperty.call(cats, cat);
+  }
+
+  function getOfferingsLabel(cat) {
+    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.offeringsCategories) || {};
+    return cats[cat] || 'Oferta';
+  }
+
   function isPriceRangeCategory(cat) {
     var cats = (window.JG_MAP_CFG && JG_MAP_CFG.priceRangeCategories) || [];
     return cats.indexOf(cat) !== -1;
@@ -7683,6 +7693,197 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // Menu editor
       // -----------------------------------------------------------------------
 
+      // -----------------------------------------------------------------------
+      // Offerings (services / products)
+      // -----------------------------------------------------------------------
+
+      function loadOfferingsSection(p, offeringsSection) {
+        if (!offeringsSection) return;
+        var content = offeringsSection.querySelector('#jg-offerings-content') || offeringsSection;
+        content.innerHTML = '<div style="color:#9ca3af;padding:8px 0">Ładowanie\u2026</div>';
+
+        var fd = new FormData();
+        fd.append('action', 'jg_get_offerings');
+        fd.append('_ajax_nonce', CFG.nonce);
+        fd.append('point_id', p.id);
+
+        fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(j) {
+            var items = (j && j.success && j.data && j.data.items) ? j.data.items : [];
+
+            if (!items.length) {
+              offeringsSection.style.display = 'none';
+              return;
+            }
+            offeringsSection.style.display = '';
+
+            var html = '';
+            var shown = 0;
+            var maxShown = 6;
+            items.forEach(function(item) {
+              if (shown >= maxShown) return;
+              shown++;
+              var priceStr = '';
+              if (item.price !== null && item.price !== '') {
+                var p2 = parseFloat(item.price);
+                priceStr = !isNaN(p2) ? p2.toFixed(2).replace('.', ',') + '\u00a0z\u0142' : '';
+              }
+              html += '<div class="jg-menu-modal-row">' +
+                '<span class="jg-menu-modal-name">' + esc(item.name) + '</span>' +
+                (priceStr ? '<span class="jg-menu-modal-price">' + priceStr + '</span>' : '') +
+                '</div>';
+            });
+            if (items.length > maxShown) {
+              html += '<div style="font-size:0.8rem;color:#9ca3af;margin-top:4px">+ ' + (items.length - maxShown) + ' więcej\u2026</div>';
+            }
+
+            content.innerHTML = html;
+          })
+          .catch(function() {
+            offeringsSection.style.display = 'none';
+          });
+      }
+
+      function openOfferingsEditor(p) {
+        var ofLabel = getOfferingsLabel(p.category);
+
+        fetch(CFG.ajax, {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: (function() {
+            var fd = new FormData();
+            fd.append('action', 'jg_get_offerings');
+            fd.append('_ajax_nonce', CFG.nonce);
+            fd.append('point_id', p.id);
+            return fd;
+          })()
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(j) {
+            var items = (j && j.success && j.data && j.data.items) ? j.data.items : [];
+            renderOfferingsEditor(p, items, ofLabel);
+          })
+          .catch(function() {
+            renderOfferingsEditor(p, [], ofLabel);
+          });
+      }
+
+      function renderOfferingsEditor(p, items, ofLabel) {
+        var itemsHtml = '';
+        items.forEach(function(item, idx) {
+          itemsHtml += buildOfferingItemHtml(idx, item);
+        });
+
+        var editorHtml =
+          '<h3 style="margin:0 0 14px 0;font-size:1rem;font-weight:700">Zarządzaj: ' + esc(ofLabel) + '</h3>' +
+          '<div id="jg-off-ed-items">' + itemsHtml + '</div>' +
+          '<button type="button" id="jg-off-ed-add" class="jg-btn jg-btn--ghost" style="width:100%;margin-top:8px">+ Dodaj pozycję</button>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">' +
+          '<button type="button" class="jg-btn jg-btn--ghost" id="jg-off-ed-cancel">Anuluj</button>' +
+          '<button type="button" class="jg-btn jg-btn--primary" id="jg-off-ed-save">Zapisz</button>' +
+          '</div>' +
+          '<div id="jg-off-ed-msg" style="margin-top:10px;font-size:0.85rem"></div>';
+
+        open(modalEdit, editorHtml);
+
+        var itemsCont = qs('#jg-off-ed-items', modalEdit);
+
+        function addItem() {
+          var idx = itemsCont.querySelectorAll('.jg-off-ed-item').length;
+          var div = document.createElement('div');
+          div.innerHTML = buildOfferingItemHtml(idx, {});
+          itemsCont.appendChild(div.firstElementChild);
+          bindItemEvents(div.firstElementChild);
+        }
+
+        function bindItemEvents(el) {
+          var delBtn = el.querySelector('.jg-off-ed-del');
+          if (delBtn) delBtn.onclick = function() { el.parentNode.removeChild(el); };
+        }
+
+        itemsCont.querySelectorAll('.jg-off-ed-item').forEach(bindItemEvents);
+
+        qs('#jg-off-ed-add', modalEdit).onclick = addItem;
+
+        qs('#jg-off-ed-cancel', modalEdit).onclick = function() { close(modalEdit); };
+
+        qs('#jg-off-ed-save', modalEdit).onclick = function() {
+          var rows = itemsCont.querySelectorAll('.jg-off-ed-item');
+          var payload = [];
+          rows.forEach(function(row) {
+            var nameEl  = row.querySelector('.jg-off-ed-name');
+            var descEl  = row.querySelector('.jg-off-ed-desc');
+            var priceEl = row.querySelector('.jg-off-ed-price');
+            var availEl = row.querySelector('.jg-off-ed-avail');
+            var name = nameEl ? nameEl.value.trim() : '';
+            if (!name) return;
+            payload.push({
+              name:         name,
+              description:  descEl ? descEl.value.trim() : '',
+              price:        priceEl && priceEl.value.trim() !== '' ? priceEl.value.trim() : '',
+              is_available: availEl && availEl.checked ? 1 : 0,
+            });
+          });
+
+          var msgEl = qs('#jg-off-ed-msg', modalEdit);
+          var saveBtn = qs('#jg-off-ed-save', modalEdit);
+          saveBtn.disabled = true;
+          msgEl.textContent = 'Zapisywanie\u2026';
+          msgEl.style.color = '#6b7280';
+
+          var fd = new FormData();
+          fd.append('action', 'jg_save_offerings');
+          fd.append('_ajax_nonce', CFG.nonce);
+          fd.append('point_id', p.id);
+          fd.append('items', JSON.stringify(payload));
+
+          fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(j) {
+              saveBtn.disabled = false;
+              if (j && j.success) {
+                msgEl.style.color = '#15803d';
+                msgEl.textContent = j.data.pending
+                  ? 'Przesłano do moderacji.'
+                  : 'Zapisano!';
+                // Refresh offerings section in the view modal
+                var offSec = qs('#jg-offerings-section', modalView);
+                if (offSec) loadOfferingsSection(p, offSec);
+                setTimeout(function() { close(modalEdit); }, 1200);
+              } else {
+                msgEl.style.color = '#dc2626';
+                msgEl.textContent = (j && j.data && j.data.message) ? j.data.message : 'Błąd zapisu.';
+              }
+            })
+            .catch(function() {
+              saveBtn.disabled = false;
+              msgEl.style.color = '#dc2626';
+              msgEl.textContent = 'Błąd połączenia.';
+            });
+        };
+      }
+
+      function buildOfferingItemHtml(idx, item) {
+        var name  = esc(item.name || '');
+        var desc  = esc(item.description || '');
+        var price = item.price !== null && item.price !== undefined && item.price !== '' ? esc(String(item.price)) : '';
+        var avail = item.is_available === undefined || parseInt(item.is_available) ? 'checked' : '';
+        return '<div class="jg-off-ed-item" style="display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;padding:10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:6px">' +
+          '<div style="flex:1 1 180px">' +
+          '<input type="text" class="jg-off-ed-name" value="' + name + '" placeholder="Nazwa pozycji" maxlength="255" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:0.85rem">' +
+          '<input type="text" class="jg-off-ed-desc" value="' + desc + '" placeholder="Opis (opcjonalny)" maxlength="500" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:0.85rem;margin-top:4px">' +
+          '</div>' +
+          '<div style="flex:0 0 100px">' +
+          '<input type="number" class="jg-off-ed-price" value="' + price + '" placeholder="Cena (zł)" min="0" step="0.01" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:0.85rem">' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:6px;padding-top:6px">' +
+          '<label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;white-space:nowrap"><input type="checkbox" class="jg-off-ed-avail" ' + avail + '> Dostępne</label>' +
+          '<button type="button" class="jg-off-ed-del jg-btn jg-btn--ghost" style="padding:4px 8px;color:#ef4444" title="Usuń">\u2715</button>' +
+          '</div>' +
+          '</div>';
+      }
+
       function openMenuEditor(p) {
         var dietary_options = [
           { key: 'wegetarianskie', label: '🌿 wegetariańskie' },
@@ -11341,6 +11542,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '</div>';
         }
 
+        // Build offerings section placeholder (async-loaded after modal opens)
+        var offeringsSectionHtml = '';
+        if (p.type === 'miejsce' && isOfferingsCategory(p.category)) {
+          var ofLabel = getOfferingsLabel(p.category);
+          offeringsSectionHtml = '<div id="jg-offerings-section" class="jg-menu-modal-section" style="margin:0 0 12px 0;padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:0.875rem;color:#166534">' +
+            '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">📋 ' + esc(ofLabel) + '</div>' +
+            '<div id="jg-offerings-content"><div style="font-size:0.85rem;color:#9ca3af">Ładowanie\u2026</div></div>' +
+            '</div>';
+        }
+
         // Build tags display (clickable, linking to catalog via clean URLs)
         var tagsHtml = '';
         if (p.tags && p.tags.length > 0) {
@@ -11365,7 +11576,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           ? '<button id="btn-manage-menu" class="jg-btn jg-btn--ghost">🍽️ Menu</button>'
           : '';
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow-y:auto;overflow-x:hidden;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + openingHoursHtml + menuSectionHtml + metaRow + addressInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + kontaktInfo + tagsHtml + ctaButton + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + contactInfo + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + menuBtn + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var offeringsBtn = (canEdit && p.type === 'miejsce' && isOfferingsCategory(p.category))
+          ? '<button id="btn-manage-offerings" class="jg-btn jg-btn--ghost">📋 ' + esc(getOfferingsLabel(p.category)) + '</button>'
+          : '';
+
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow-y:auto;overflow-x:hidden;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + openingHoursHtml + menuSectionHtml + offeringsSectionHtml + metaRow + addressInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + kontaktInfo + tagsHtml + ctaButton + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + contactInfo + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + menuBtn + offeringsBtn + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
@@ -11444,6 +11659,18 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var manageMenuBtn = qs('#btn-manage-menu', modalView);
         if (manageMenuBtn) {
           manageMenuBtn.onclick = function() { openMenuEditor(p); };
+        }
+
+        // Load and display offerings for service/product places
+        var offeringsSection = qs('#jg-offerings-section', modalView);
+        if (offeringsSection && p.type === 'miejsce' && isOfferingsCategory(p.category)) {
+          loadOfferingsSection(p, offeringsSection);
+        }
+
+        // "Zarządzaj ofertą" button — open offerings editor panel
+        var manageOfferingsBtn = qs('#btn-manage-offerings', modalView);
+        if (manageOfferingsBtn) {
+          manageOfferingsBtn.onclick = function() { openOfferingsEditor(p); };
         }
 
         // Copy link button handler

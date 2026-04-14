@@ -6190,7 +6190,10 @@ JAVASCRIPT;
                             <?php if (!empty($category['show_promo'])): ?>
                             <span title="Ramka promocyjna" style="font-size:14px;opacity:0.7">💼</span>
                             <?php endif; ?>
-                            <button class="jg-action-btn" onclick="jgEditPlaceCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📍'); ?>', <?php echo !empty($category['has_menu']) ? 'true' : 'false'; ?>, <?php echo !empty($category['serves_cuisine']) ? 'true' : 'false'; ?>, <?php echo !empty($category['has_price_range']) ? 'true' : 'false'; ?>, <?php echo !empty($category['show_promo']) ? 'true' : 'false'; ?>)" title="Edytuj">✏️</button>
+                            <?php if (!empty($category['offerings_label'])): ?>
+                            <span title="Lista ofert: <?php echo esc_attr($category['offerings_label']); ?>" style="font-size:14px;opacity:0.7">📋</span>
+                            <?php endif; ?>
+                            <button class="jg-action-btn" onclick="jgEditPlaceCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📍'); ?>', <?php echo !empty($category['has_menu']) ? 'true' : 'false'; ?>, <?php echo !empty($category['serves_cuisine']) ? 'true' : 'false'; ?>, <?php echo !empty($category['has_price_range']) ? 'true' : 'false'; ?>, <?php echo !empty($category['show_promo']) ? 'true' : 'false'; ?>, '<?php echo esc_js($category['offerings_label'] ?? ''); ?>')" title="Edytuj">✏️</button>
                             <button class="jg-action-btn delete" onclick="jgDeletePlaceCategory('<?php echo esc_js($key); ?>')" title="Usuń">🗑️</button>
                         </li>
                         <?php endforeach; ?>
@@ -6239,6 +6242,9 @@ JAVASCRIPT;
                             <input type="checkbox" id="new-place-cat-show-promo" value="1">
                             💼 Wyświetlaj ramkę promocyjną „Jesteś właścicielem?" (mapa i strona pineski)
                         </label>
+                        <label style="display:block;margin-top:10px;font-weight:500">📋 Etykieta listy ofert (zostaw puste, aby wyłączyć)</label>
+                        <input type="text" id="new-place-cat-offerings-label" placeholder='np. "Usługi" lub "Produkty"' maxlength="50" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-top:4px">
+                        <p class="description" style="margin:4px 0 0">Pojawi się jako przycisk obok Menu w oknie pineski. Właściciel może dodać listę pozycji z cenami.</p>
 
                         <div class="jg-btn-row">
                             <button class="button button-primary" onclick="jgSavePlaceCategory()">Zapisz</button>
@@ -6288,6 +6294,9 @@ JAVASCRIPT;
                             <input type="checkbox" id="edit-place-cat-show-promo" value="1">
                             💼 Wyświetlaj ramkę promocyjną „Jesteś właścicielem?"
                         </label>
+                        <label style="display:block;margin-top:10px;font-weight:500">📋 Etykieta listy ofert (zostaw puste, aby wyłączyć)</label>
+                        <input type="text" id="edit-place-cat-offerings-label" placeholder='np. "Usługi" lub "Produkty"' maxlength="50" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-top:4px">
+                        <p class="description" style="margin:4px 0 0">Pojawi się jako przycisk obok Menu w oknie pineski.</p>
 
                         <div class="jg-btn-row">
                             <button class="button button-primary" onclick="jgUpdatePlaceCategory()">Zapisz zmiany</button>
@@ -6364,6 +6373,7 @@ JAVASCRIPT;
                     const servesCuisine = document.getElementById('new-place-cat-serves-cuisine').checked ? '1' : '0';
                     const hasPriceRange = document.getElementById('new-place-cat-has-price-range').checked ? '1' : '0';
                     const showPromo = document.getElementById('new-place-cat-show-promo').checked ? '1' : '0';
+                    const offeringsLabel = document.getElementById('new-place-cat-offerings-label').value.trim();
                     if (!jgIsValidEmoji(icon)) {
                         icon = jgGetFirstPlaceEmoji();
                     }
@@ -6390,7 +6400,8 @@ JAVASCRIPT;
                             has_menu: hasMenu,
                             serves_cuisine: servesCuisine,
                             has_price_range: hasPriceRange,
-                            show_promo: showPromo
+                            show_promo: showPromo,
+                            offerings_label: offeringsLabel
                         })
                     })
                     .then(r => r.json())
@@ -6404,7 +6415,7 @@ JAVASCRIPT;
                 };
 
                 // Edit category
-                window.jgEditPlaceCategory = function(key, label, icon, hasMenu, servesCuisine, hasPriceRange, showPromo) {
+                window.jgEditPlaceCategory = function(key, label, icon, hasMenu, servesCuisine, hasPriceRange, showPromo, offeringsLabel) {
                     document.getElementById('jg-add-place-category-form').classList.remove('visible');
                     const form = document.getElementById('jg-edit-place-category-form');
                     form.classList.add('visible');
@@ -6418,6 +6429,7 @@ JAVASCRIPT;
                     document.getElementById('edit-place-cat-serves-cuisine').checked = !!servesCuisine;
                     document.getElementById('edit-place-cat-has-price-range').checked = !!hasPriceRange;
                     document.getElementById('edit-place-cat-show-promo').checked = !!showPromo;
+                    document.getElementById('edit-place-cat-offerings-label').value = offeringsLabel || '';
 
                     // Highlight current emoji
                     document.querySelectorAll('#edit-place-emoji-picker .jg-emoji-btn').forEach(btn => {
@@ -6471,6 +6483,7 @@ JAVASCRIPT;
                     const servesCuisine = document.getElementById('edit-place-cat-serves-cuisine').checked ? '1' : '0';
                     const hasPriceRange = document.getElementById('edit-place-cat-has-price-range').checked ? '1' : '0';
                     const showPromo = document.getElementById('edit-place-cat-show-promo').checked ? '1' : '0';
+                    const offeringsLabel = document.getElementById('edit-place-cat-offerings-label').value.trim();
                     if (!jgIsValidEmoji(icon)) {
                         icon = jgGetFirstPlaceEmoji();
                     }
@@ -6492,7 +6505,8 @@ JAVASCRIPT;
                             has_menu: hasMenu,
                             serves_cuisine: servesCuisine,
                             has_price_range: hasPriceRange,
-                            show_promo: showPromo
+                            show_promo: showPromo,
+                            offerings_label: offeringsLabel
                         })
                     })
                     .then(r => r.json())
