@@ -11233,7 +11233,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             kontaktItems.push('<div><strong>📞 Telefon:</strong> <a href="tel:' + esc(p.phone) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.phone) + '</a></div>');
           }
           if (p.email) {
-            kontaktItems.push('<div><button type="button" class="jg-btn jg-place-contact-open-btn" data-point-id="' + esc(String(p.id)) + '" style="margin-top:4px;background:#111;background-color:#111;color:#fff;border:none;border-width:0;border-style:none;outline:none;box-shadow:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:14px;font-weight:500;line-height:1.5;display:inline-flex;align-items:center;gap:6px;text-decoration:none;text-transform:none">&#9993; Napisz wiadomość</button></div>');
+            kontaktItems.push('<div><button type="button" class="jg-btn jg-place-contact-open-btn" data-point-id="' + esc(String(p.id)) + '" style="margin-top:4px;background:#111;background-color:#111;color:#fff;border:none;border-width:0;border-style:none;outline:none;box-shadow:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:14px;font-weight:500;line-height:1.5;display:inline-flex;align-items:center;gap:6px;text-decoration:none;text-transform:none"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> Napisz wiadomość</button></div>');
           }
           if (p.website) {
             var kontaktWebUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
