@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.29.2
+ * Version: 3.29.3
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.29.2');
+define('JG_MAP_VERSION', '3.29.3');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1416,7 +1416,8 @@ class JG_Interactive_Map {
             color: #1d4ed8; font-size: calc(15 * var(--jg)); font-weight: 600; font-family: inherit;
             transition: background 0.15s, border-color 0.15s;
         }
-        .jg-sp-contact-email-btn:hover { background: #dbeafe; border-color: #60a5fa; color: #1e40af; }
+        .jg-sp-contact-email-btn:hover,
+        .jg-sp-contact-email-btn:focus { background: #dbeafe; border-color: #60a5fa; color: #1e40af; text-decoration: none; }
         /* Contact modal overlay */
         #jg-sp-contact-modal-bg {
             display: none; position: fixed; inset: 0; z-index: 99999;
@@ -1921,7 +1922,10 @@ class JG_Interactive_Map {
             <?php if (!empty($point['website']) || !empty($point['phone']) || !empty($point['email']) || !empty($point['facebook_url']) || !empty($point['instagram_url']) || !empty($point['linkedin_url']) || !empty($point['tiktok_url'])): ?>
                 <div class="jg-sp-contact">
                     <?php if (!empty($point['phone'])): ?>
-                        <a href="tel:<?php echo esc_attr($point['phone']); ?>" class="jg-sp-contact-link">&#128222; <?php echo esc_html($point['phone']); ?></a>
+                        <a href="tel:<?php echo esc_attr($point['phone']); ?>" class="jg-sp-contact-email-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            <?php echo esc_html($point['phone']); ?>
+                        </a>
                     <?php endif; ?>
                     <?php if (!empty($point['email'])): ?>
                         <button type="button" class="jg-sp-contact-email-btn" id="jg-sp-contact-open">
@@ -1930,7 +1934,10 @@ class JG_Interactive_Map {
                         </button>
                     <?php endif; ?>
                     <?php if (!empty($point['website'])): ?>
-                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-sp-contact-link">&#127760; <?php echo esc_html(parse_url($point['website'], PHP_URL_HOST) ?: $point['website']); ?></a>
+                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-sp-contact-email-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                            <?php echo esc_html(parse_url($point['website'], PHP_URL_HOST) ?: $point['website']); ?>
+                        </a>
                     <?php endif; ?>
                     <?php if (!empty($point['facebook_url'])): ?>
                         <a href="<?php echo esc_url($point['facebook_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#1877f2" title="Facebook"><svg viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/></svg></a>
