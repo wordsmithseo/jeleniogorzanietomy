@@ -2769,6 +2769,60 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         mcrZoom.appendChild(mcrZoomIn);
         mcrZoom.appendChild(mcrZoomOut);
 
+        // ── Locate me button (inserted before map/sat toggle in rAF) ─────────
+        var mcrLocateBtn = document.createElement('button');
+        mcrLocateBtn.type = 'button';
+        mcrLocateBtn.className = 'jg-mcr-locate-btn';
+        mcrLocateBtn.title = 'Moja lokalizacja';
+        mcrLocateBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="2" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>';
+
+        var _jgLocateMarker = null;
+        var _jgLocateCircle = null;
+
+        mcrLocateBtn.addEventListener('click', function() {
+          if (!navigator.geolocation) {
+            alert('Geolokalizacja nie jest obsługiwana przez tę przeglądarkę.');
+            return;
+          }
+          mcrLocateBtn.classList.add('jg-mcr-locate-btn--loading');
+          mcrLocateBtn.classList.remove('jg-mcr-locate-btn--active');
+          navigator.geolocation.getCurrentPosition(
+            function(pos) {
+              mcrLocateBtn.classList.remove('jg-mcr-locate-btn--loading');
+              mcrLocateBtn.classList.add('jg-mcr-locate-btn--active');
+              var lat = pos.coords.latitude;
+              var lng = pos.coords.longitude;
+              var acc = pos.coords.accuracy;
+              if (_jgLocateMarker) { map.removeLayer(_jgLocateMarker); }
+              if (_jgLocateCircle) { map.removeLayer(_jgLocateCircle); }
+              _jgLocateCircle = L.circle([lat, lng], {
+                radius: acc,
+                color: '#1a73e8',
+                fillColor: '#1a73e8',
+                fillOpacity: 0.15,
+                weight: 1
+              }).addTo(map);
+              _jgLocateMarker = L.circleMarker([lat, lng], {
+                radius: 8,
+                color: '#fff',
+                weight: 2.5,
+                fillColor: '#1a73e8',
+                fillOpacity: 1
+              }).addTo(map);
+              map.setView([lat, lng], 16);
+            },
+            function(err) {
+              mcrLocateBtn.classList.remove('jg-mcr-locate-btn--loading');
+              if (err.code === 1) {
+                alert('Odmówiono dostępu do lokalizacji. Sprawdź ustawienia przeglądarki.');
+              } else {
+                alert('Nie udało się pobrać lokalizacji. Spróbuj ponownie.');
+              }
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+          );
+        });
+
         mcrRow.appendChild(mcrFilterBtn);
         mcrRow.appendChild(mcrSearchWrap);
         mcrRow.appendChild(mcrZoom);
@@ -2960,6 +3014,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var toggleCtrl = elMap.querySelector('.jg-map-toggle-control');
           if (toggleCtrl && mcrZoom) {
             mcrRow.insertBefore(toggleCtrl, mcrZoom);
+          }
+          // Insert locate button before the map/sat toggle
+          if (mcrLocateBtn && (toggleCtrl || mcrZoom)) {
+            mcrRow.insertBefore(mcrLocateBtn, toggleCtrl || mcrZoom);
           }
           // Move ad banner slot into overlays container
           var slotWrap = document.querySelector('[data-cid]');
