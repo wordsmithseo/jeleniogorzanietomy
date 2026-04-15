@@ -521,9 +521,11 @@
   }
 
   // ====================================
-  // FIRST-ACTION HINTS (Layer 2)
-  // Shown the first time a user performs a specific action —
-  // not on hover, but triggered by what they actually do.
+  // UNIFIED SPOTLIGHT HINTS (Layer 2)
+  // One visual language for all first-use hints.
+  //   hover hints  → card near element, no overlay, auto-dismiss (×)
+  //   action hints → card near element, overlay dims the map ("Rozumiem ✓")
+  //   modal hints  → card over open modal, no extra overlay (modal already dims)
   // ====================================
 
   function getSeenHints() {
@@ -541,256 +543,230 @@
     } catch (e) {}
   }
 
-  // Display an action hint using the existing tip container (same visual style).
-  // If a timed tip is currently showing it is replaced; the timed queue
-  // resumes 3 s after this hint is dismissed.
-  function showActionHint(id, text) {
-    if (getSeenHints()[id]) return;
-    markHintSeen(id);
+  var _sOverlay = null;
+  var _sCard    = null;
+  var _sTimer   = null;
 
-    var container = document.getElementById('jg-tip-container');
-    var textEl    = document.getElementById('jg-tip-text');
-    var dismissBtn = document.getElementById('jg-tip-dismiss');
-    if (!container || !textEl) return;
-
-    // Pause any pending timed tip
-    if (tipTimeout) { clearTimeout(tipTimeout); tipTimeout = null; }
-    container.style.display = 'none';
-
-    textEl.textContent = text;
-    container.style.display = 'block';
-    container.style.animation = 'none';
-    container.offsetHeight; // reflow
-    container.style.animation = '';
-
-    var resume = function() {
-      container.style.display = 'none';
-      setTimeout(showNextTip, 3000);
-    };
-
-    var autoTimer = setTimeout(resume, 9000);
-
-    function onClose() {
-      clearTimeout(autoTimer);
-      dismissBtn && dismissBtn.removeEventListener('click', onClose);
-      resume();
-    }
-    dismissBtn && dismissBtn.addEventListener('click', onClose);
+  function dismissSpotlight() {
+    if (_sTimer) { clearTimeout(_sTimer); _sTimer = null; }
+    [_sOverlay, _sCard].forEach(function(el) {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
+    _sOverlay = null;
+    _sCard    = null;
   }
 
-  // Watch a pre-rendered element (identified by id) for its first transition
-  // to display:flex / display:block via a MutationObserver on the style attr.
+  /**
+   * showSpotlight(id, text, opts)
+   *   opts.targetEl  — element to anchor the card near (BoundingClientRect)
+   *   opts.placement — 'top' | 'bottom' | 'left' | 'right' | 'inside'
+   *                    'inside' centres the card within the target (for modals)
+   *   opts.overlay   — boolean: dim the background behind the card
+   *   opts.auto      — ms: auto-dismiss timeout; 0 = manual-only
+   *                    auto > 0  → shows  ×  button
+   *                    auto = 0  → shows  "Rozumiem ✓"  button
+   */
+  function showSpotlight(id, text, opts) {
+    var onbModal = document.getElementById('jg-onboarding-modal');
+    if (onbModal && onbModal.style.display === 'flex') return;
+    if (getSeenHints()[id]) return;
+    markHintSeen(id);
+    dismissSpotlight();
+
+    opts = opts || {};
+    var targetEl   = opts.targetEl  || null;
+    var placement  = opts.placement || 'bottom';
+    var hasOverlay = !!opts.overlay;
+    var auto       = opts.auto || 0;
+
+    // Semi-transparent overlay (the "freeze" effect)
+    if (hasOverlay) {
+      _sOverlay = document.createElement('div');
+      _sOverlay.className = 'jg-spotlight-overlay';
+      document.body.appendChild(_sOverlay);
+    }
+
+    // Card
+    var card = document.createElement('div');
+    card.className = 'jg-spotlight-card' + (auto > 0 ? ' jg-spotlight-card--light' : '');
+    var btnLabel = auto > 0 ? '\u00d7' : 'Rozumiem \u2713';
+    card.innerHTML =
+      '<div class="jg-spotlight-card-inner">' +
+        '<p class="jg-spotlight-card-text">' + text + '</p>' +
+        '<button class="jg-spotlight-card-btn">' + btnLabel + '</button>' +
+      '</div>';
+
+    card.style.visibility = 'hidden';
+    document.body.appendChild(card);
+    _sCard = card;
+
+    // Position the card
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var cw = card.offsetWidth,  ch = card.offsetHeight;
+    var gap = 14;
+    var top, left;
+
+    if (targetEl) {
+      var r = targetEl.getBoundingClientRect();
+      if (placement === 'inside') {
+        // Centred at ~65 % of the target's height (bottom area, still inside)
+        top  = r.top + r.height * 0.65 - ch / 2;
+        left = r.left + (r.width  - cw) / 2;
+      } else if (placement === 'right')  { top = r.top + (r.height - ch) / 2; left = r.right + gap; }
+        else if (placement === 'left')   { top = r.top + (r.height - ch) / 2; left = r.left  - cw - gap; }
+        else if (placement === 'top')    { top = r.top  - ch - gap; left = r.left + (r.width - cw) / 2; }
+        else /* bottom */                { top = r.bottom + gap;    left = r.left + (r.width - cw) / 2; }
+    } else {
+      top  = Math.round((vh - ch) / 2);
+      left = Math.round((vw - cw) / 2);
+    }
+
+    top  = Math.max(12, Math.min(Math.round(top),  vh - ch - 12));
+    left = Math.max(12, Math.min(Math.round(left), vw - cw - 12));
+    card.style.top  = top  + 'px';
+    card.style.left = left + 'px';
+    card.style.visibility = '';
+
+    // Dismiss handlers
+    var docClickH = null;
+    var keyH      = null;
+
+    var close = function() {
+      if (docClickH) document.removeEventListener('click', docClickH);
+      if (keyH)      document.removeEventListener('keydown', keyH);
+      dismissSpotlight();
+      setTimeout(showNextTip, 2500);
+    };
+
+    card.querySelector('.jg-spotlight-card-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      close();
+    });
+
+    keyH = function(e) { if (e.key === 'Escape' || e.keyCode === 27) close(); };
+    document.addEventListener('keydown', keyH);
+
+    if (hasOverlay) {
+      docClickH = function(e) { if (!card.contains(e.target)) close(); };
+      setTimeout(function() { document.addEventListener('click', docClickH); }, 120);
+    }
+
+    if (auto > 0) _sTimer = setTimeout(close, auto);
+  }
+
+  // Watch a PHP-rendered element for its first transition to visible.
+  // Monitors both style and class attribute changes, then checks computed style.
   function watchForVisible(id, callback) {
     var el = document.getElementById(id);
     if (!el) return;
-    var obs = new MutationObserver(function(mutations) {
-      for (var i = 0; i < mutations.length; i++) {
-        if (mutations[i].attributeName === 'style') {
-          var d = el.style.display;
-          if (d === 'flex' || d === 'block') {
-            obs.disconnect();
-            callback(el);
-            return;
-          }
-        }
-      }
-    });
-    obs.observe(el, { attributes: true, attributeFilter: ['style'] });
-  }
-
-  // Watch for a dynamically-created element (added to the DOM later by JS/jQuery)
-  // by observing childList mutations on the document body.
-  function watchForCreated(selector, callback) {
     var obs = new MutationObserver(function() {
-      var el = document.querySelector(selector);
-      if (el) {
+      var cs = window.getComputedStyle(el);
+      if (cs.display !== 'none' && cs.visibility !== 'hidden') {
         obs.disconnect();
         callback(el);
       }
     });
+    obs.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
+  }
+
+  // Watch for a dynamically-created element (jQuery/JS inserts it into the DOM).
+  function watchForCreated(selector, callback) {
+    var obs = new MutationObserver(function() {
+      var el = document.querySelector(selector);
+      if (el) { obs.disconnect(); callback(el); }
+    });
     obs.observe(document.body, { childList: true, subtree: true });
   }
 
-  // ---- Hover hints: position a small fixed bubble near an element ----
+  // ---- Hover hints (first mouseover on a UI element) ----
 
-  var activeHintEl = null;
-  var activeHintTimer = null;
-
-  function dismissHoverHint() {
-    if (activeHintTimer) { clearTimeout(activeHintTimer); activeHintTimer = null; }
-    if (activeHintEl && activeHintEl.parentNode) {
-      activeHintEl.parentNode.removeChild(activeHintEl);
-    }
-    activeHintEl = null;
-  }
-
-  function positionHint(hintEl, targetEl, placement) {
-    hintEl.style.visibility = 'hidden';
-    document.body.appendChild(hintEl);
-    var rect = targetEl.getBoundingClientRect();
-    var hw = hintEl.offsetWidth, hh = hintEl.offsetHeight, gap = 10;
-    var vw = window.innerWidth, vh = window.innerHeight;
-    var top, left;
-    if (placement === 'right')       { top = rect.top + (rect.height - hh) / 2; left = rect.right + gap; }
-    else if (placement === 'left')   { top = rect.top + (rect.height - hh) / 2; left = rect.left - hw - gap; }
-    else if (placement === 'top')    { top = rect.top - hh - gap; left = rect.left + (rect.width - hw) / 2; }
-    else /* bottom */                { top = rect.bottom + gap;   left = rect.left + (rect.width - hw) / 2; }
-    top  = Math.max(8, Math.min(top,  vh - hh - 8));
-    left = Math.max(8, Math.min(left, vw - hw - 8));
-    hintEl.style.top  = Math.round(top)  + 'px';
-    hintEl.style.left = Math.round(left) + 'px';
-    hintEl.style.visibility = '';
-  }
-
-  function showHoverHint(id, targetEl, text, placement) {
-    if (!targetEl) return;
-    var onbModal = document.getElementById('jg-onboarding-modal');
-    if (onbModal && onbModal.style.display === 'flex') return;
-    if (getSeenHints()[id]) return;
-
-    dismissHoverHint();
-    markHintSeen(id);
-
-    var el = document.createElement('div');
-    el.className = 'jg-hint';
-    el.innerHTML =
-      '<div class="jg-hint-body">' +
-        '<span class="jg-hint-text">' + text + '</span>' +
-        '<button class="jg-hint-close" aria-label="Zamknij">\u00d7</button>' +
-      '</div>';
-    activeHintEl = el;
-    positionHint(el, targetEl, placement);
-
-    el.querySelector('.jg-hint-close').addEventListener('click', function(e) {
-      e.stopPropagation();
-      dismissHoverHint();
-    });
-    activeHintTimer = setTimeout(dismissHoverHint, 6000);
-  }
-
-  var hoverHintsConfig = [
-    {
-      id: 'h_help',
-      selector: '#jg-help-btn',
-      text: 'Pomoc \u2014 zawsze dost\u0119pna. Znajdziesz tu opis funkcji i mo\u017cesz powt\u00f3rzy\u0107 samouczek.',
-      placement: 'right',
-      requireLogin: false
-    },
-    {
-      id: 'h_fab',
-      selector: '#jg-fab-button',
-      text: 'Kliknij, aby doda\u0107 nowy punkt z adresu lub kliknij bezpo\u015brednio w map\u0119.',
-      placement: 'left',
-      requireLogin: true
-    },
-    {
-      id: 'h_filters',
-      selector: '#jg-map-filters-wrapper',
-      text: 'Filtry \u2014 poka\u017c lub ukryj typy punkt\u00f3w i kategorie.',
-      placement: 'bottom',
-      requireLogin: false
-    },
-    {
-      id: 'h_search',
-      selector: '#jg-search-input',
-      text: 'Szukaj po nazwie, adresie lub tagu.',
-      placement: 'bottom',
-      requireLogin: false
-    }
+  var hoverSpecs = [
+    { id: 'h_help',    selector: '#jg-help-btn',            text: 'Pomoc \u2014 zawsze dost\u0119pna. Znajdziesz tu opis funkcji i mo\u017cesz powt\u00f3rzy\u0107 samouczek.',  placement: 'right',  requireLogin: false },
+    { id: 'h_fab',     selector: '#jg-fab-button',          text: 'Kliknij, aby doda\u0107 nowy punkt z adresu lub kliknij bezpo\u015brednio w map\u0119.',                       placement: 'left',   requireLogin: true  },
+    { id: 'h_filters', selector: '#jg-map-filters-wrapper', text: 'Filtry \u2014 poka\u017c lub ukryj typy punkt\u00f3w i kategorie.',                                             placement: 'bottom', requireLogin: false },
+    { id: 'h_search',  selector: '#jg-search-input',        text: 'Szukaj po nazwie, adresie lub tagu.',                                                                           placement: 'bottom', requireLogin: false }
   ];
 
   function initHoverHints() {
     var seen = getSeenHints();
-    hoverHintsConfig.forEach(function(h) {
+    hoverSpecs.forEach(function(h) {
       if (h.requireLogin && !isLoggedIn()) return;
       if (seen[h.id]) return;
-
-      // mouseover bubbles — works for delegation including dynamic elements
       document.addEventListener('mouseover', function handler(e) {
         if (getSeenHints()[h.id]) { document.removeEventListener('mouseover', handler, true); return; }
         var target = e.target && e.target.closest ? e.target.closest(h.selector) : null;
         if (!target) return;
-        showHoverHint(h.id, target, h.text, h.placement);
+        showSpotlight(h.id, h.text, { targetEl: target, placement: h.placement, overlay: false, auto: 5000 });
         document.removeEventListener('mouseover', handler, true);
       }, true);
     });
-
-    document.addEventListener('click', function(e) {
-      if (activeHintEl && !activeHintEl.contains(e.target)) dismissHoverHint();
-    });
   }
 
-  // ---- Action hints: shown when the user performs a feature for the first time ----
+  // ---- Action hints (first time the user performs a feature) ----
 
   function initActionHints() {
     var seen = getSeenHints();
 
-    // 1. First time opening a point's detail modal
-    //    → remind user to rate with stars
+    // 1. First time opening a point's detail modal → hint to rate with stars
     if (!seen['first_view_point']) {
-      watchForVisible('jg-map-modal-view', function() {
+      watchForVisible('jg-map-modal-view', function(el) {
         setTimeout(function() {
-          showActionHint(
-            'first_view_point',
-            '\u2B50 Podoba Ci si\u0119 to miejsce? Oce\u0144 je gwiazdkami (1\u20135) \u2014 zdobudziesz +2\u00a0XP i pom\u00f3\u017cesz innym!'
+          showSpotlight('first_view_point',
+            '\u2B50 Kliknij gwiazdki w tym oknie, aby oceni\u0107 to miejsce (1\u20135). Zdobudziesz +2\u00a0XP i pom\u00f3\u017cesz innym!',
+            { targetEl: el, placement: 'inside', overlay: false }
           );
-        }, 900);
+        }, 700);
       });
     }
 
-    // 2. First time opening the add-point form
-    //    → explain the moderation flow (logged-in only — form isn't available otherwise)
+    // 2. First time opening the add-point form (logged-in only)
     if (!seen['first_add_form'] && isLoggedIn()) {
-      // PHP-rendered modal (click on map)
-      watchForVisible('jg-map-modal-add', function() {
+      watchForVisible('jg-map-modal-add', function(el) {
         setTimeout(function() {
-          showActionHint(
-            'first_add_form',
-            '\u270f\ufe0f Opisz punkt dok\u0142adnie i dodaj zdj\u0119cie \u2014 po zatwierdzeniu przez moderatora pojawi si\u0119 na mapie i zdobudziesz\u00a0XP!'
+          showSpotlight('first_add_form',
+            '\u270f\ufe0f Opisz punkt dok\u0142adnie i dodaj zdj\u0119cie. Po zatwierdzeniu przez moderatora pojawi si\u0119 na mapie i zdobudziesz XP!',
+            { targetEl: el, placement: 'inside', overlay: false }
           );
-        }, 600);
+        }, 500);
       });
-      // Dynamically-created FAB overlay (type address and click +)
-      watchForCreated('#jg-fab-input-overlay', function() {
+      watchForCreated('#jg-fab-input-overlay', function(el) {
         setTimeout(function() {
-          showActionHint(
-            'first_add_form',
-            '\u270f\ufe0f Opisz punkt dok\u0142adnie i dodaj zdj\u0119cie \u2014 po zatwierdzeniu przez moderatora pojawi si\u0119 na mapie i zdobudziesz\u00a0XP!'
+          showSpotlight('first_add_form',
+            '\u270f\ufe0f Opisz punkt dok\u0142adnie i dodaj zdj\u0119cie. Po zatwierdzeniu przez moderatora pojawi si\u0119 na mapie i zdobudziesz XP!',
+            { targetEl: el, placement: 'inside', overlay: false }
           );
-        }, 600);
+        }, 500);
       });
     }
 
-    // 3. First time typing in the search field (≥ 3 chars)
-    //    → explain what to do with results
+    // 3. First time typing ≥ 3 chars in the search field
     if (!seen['first_search']) {
       var searchEl = document.getElementById('jg-search-input');
       if (searchEl) {
-        searchEl.addEventListener('input', function onSearchInput() {
+        searchEl.addEventListener('input', function onSearch() {
           if (searchEl.value.length >= 3) {
-            searchEl.removeEventListener('input', onSearchInput);
+            searchEl.removeEventListener('input', onSearch);
             setTimeout(function() {
-              showActionHint(
-                'first_search',
-                '\uD83D\uDDFA\uFE0F Kliknij wynik na li\u015bcie, aby przej\u015b\u0107 do tego miejsca na mapie.'
+              showSpotlight('first_search',
+                '\uD83D\uDDFA\uFE0F Kliknij wynik na li\u015bcie, aby przej\u015b\u0107 do tego miejsca na mapie.',
+                { targetEl: searchEl, placement: 'bottom', overlay: true }
               );
-            }, 1200);
+            }, 1000);
           }
         });
       }
     }
 
     // 4. First time toggling a filter checkbox
-    //    → explain filters work independently and in real time
     if (!seen['first_filter']) {
       var filtersEl = document.getElementById('jg-map-filters-wrapper');
       if (filtersEl) {
-        filtersEl.addEventListener('change', function onFilterChange(e) {
+        filtersEl.addEventListener('change', function onFilter(e) {
           if (e.target.type === 'checkbox') {
-            filtersEl.removeEventListener('change', onFilterChange);
-            showActionHint(
-              'first_filter',
-              '\uD83C\uDFAB Filtry dzia\u0142aj\u0105 niezale\u017cnie i na \u017cywo \u2014 mo\u017cesz dowolnie miesza\u0107 typy punkt\u00f3w i kategorie.'
+            filtersEl.removeEventListener('change', onFilter);
+            showSpotlight('first_filter',
+              '\uD83C\uDFAB Filtry dzia\u0142aj\u0105 niezale\u017cnie i na \u017cywo \u2014 mo\u017cesz dowolnie miesza\u0107 typy i kategorie.',
+              { targetEl: filtersEl, placement: 'bottom', overlay: true }
             );
           }
         });
