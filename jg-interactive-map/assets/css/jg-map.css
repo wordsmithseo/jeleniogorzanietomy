@@ -6369,24 +6369,30 @@ img.emoji {
 }
 
 @media (max-width: 768px) {
-  /* On mobile the flex chain sometimes fails to scroll the steps area;
-     make the whole modal scrollable so buttons are always reachable. */
+  /* The base .jg-modal mobile rule forces display:block + overflow:auto which
+     breaks the "steps scroll, footer always visible" flex-column pattern.
+     Override both with !important to restore the correct layout. */
   .jg-onboarding-modal {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #jg-onboarding-content {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  .jg-onboarding-steps {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
   }
-  #jg-onboarding-content {
-    overflow: visible !important;
-    min-height: 0;
-  }
-  .jg-onboarding-steps {
-    overflow-y: visible !important;
-  }
   .jg-onboarding-footer {
-    position: sticky;
-    bottom: 0;
-    background: #fff;
-    z-index: 2;
+    /* Static flex-child — always visible because flex-shrink:0 is set on the
+       base rule and the steps area absorbs all leftover height. No sticky needed. */
+    position: static;
+    flex-shrink: 0;
   }
 }
 
@@ -6405,7 +6411,6 @@ img.emoji {
 
   .jg-onboarding-footer {
     padding: 12px 20px 18px;
-    flex-direction: column;
   }
 
   .jg-tip-content {
@@ -6477,23 +6482,24 @@ img.emoji {
   }
 }
 
-/* Very small viewport height */
+/* Very small viewport height (e.g. landscape phone) */
 @media (max-height: 550px) {
   .jg-onboarding-modal {
     max-height: 95vh !important;
   }
 
   .jg-onboarding-header {
-    padding: 14px 20px 12px;
+    padding: 12px 20px 10px;
   }
 
   .jg-onboarding-header h2 {
     font-size: calc(18.4 * var(--jg));
-    margin-bottom: 4px;
+    margin-bottom: 0;
   }
 
+  /* Hide the subtitle on step 1 — saves ~36px so footer stays in view */
   .jg-onboarding-header p {
-    font-size: calc(12.8 * var(--jg));
+    display: none;
   }
 
   .jg-onboarding-steps {
