@@ -6278,8 +6278,8 @@ img.emoji {
 
 /* Contextual Tips (matches plugin brand) */
 .jg-tip-container {
-  position: absolute;
-  bottom: 100px;
+  position: fixed;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9997;
@@ -6302,22 +6302,22 @@ img.emoji {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
-  color: #fff;
+  background: #1e2329;
+  color: #f0f1f3;
   padding: 14px 18px;
   border-radius: 12px;
   font-size: calc(14.4 * var(--jg));
   font-weight: 500;
   line-height: 1.4;
-  box-shadow: 0 4px 16px rgba(141, 35, 36, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
   max-width: 440px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
 }
 
 .jg-tip-dismiss {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
   border: none;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.7);
   font-size: calc(16 * var(--jg));
   cursor: pointer;
   padding: 2px 6px;
@@ -6328,7 +6328,8 @@ img.emoji {
 }
 
 .jg-tip-dismiss:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
 }
 
 /* ======================================================
@@ -6384,6 +6385,92 @@ img.emoji {
   color: #374151;
 }
 
+/* ======================================================
+   Unified Spotlight Hints (Layer 2 – v2)
+   Overlay + card rendered by JS into document.body.
+   ====================================================== */
+
+/* Semi-transparent overlay — dims everything behind the card */
+.jg-spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background: rgba(0, 0, 0, 0.45);
+  animation: jgSpotlightFadeIn 0.2s ease-out both;
+}
+
+@keyframes jgSpotlightFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Card — floats above everything, positioned near target element by JS */
+.jg-spotlight-card {
+  position: fixed;
+  z-index: 99999;
+  width: 280px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-top: 3px solid #8d2324;
+  animation: jgSpotlightCardIn 0.2s ease-out both;
+  pointer-events: auto;
+}
+
+/* Light variant (hover hints, no overlay, auto-dismiss) */
+.jg-spotlight-card--light {
+  border-top-color: #4b5563;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14), 0 1px 4px rgba(0, 0, 0, 0.07);
+}
+
+@keyframes jgSpotlightCardIn {
+  from { opacity: 0; transform: scale(0.94) translateY(4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.jg-spotlight-card-inner {
+  padding: 16px 16px 12px;
+}
+
+.jg-spotlight-card-text {
+  margin: 0 0 12px;
+  font-size: calc(13.5 * var(--jg));
+  color: #1f2937;
+  line-height: 1.5;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+.jg-spotlight-card-btn {
+  display: block;
+  margin-left: auto;
+  background: #8d2324;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: calc(13 * var(--jg));
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+.jg-spotlight-card-btn:hover {
+  background: #a02829;
+}
+
+/* Light variant — ×  button  */
+.jg-spotlight-card--light .jg-spotlight-card-btn {
+  background: #e5e7eb;
+  color: #374151;
+  padding: 4px 10px;
+  font-weight: 500;
+}
+
+.jg-spotlight-card--light .jg-spotlight-card-btn:hover {
+  background: #d1d5db;
+}
+
 /* Responsive adjustments for onboarding */
 @media (max-width: 768px) {
   .jg-help-panel {
@@ -6396,7 +6483,7 @@ img.emoji {
   }
 
   .jg-tip-container {
-    bottom: 80px;
+    bottom: 16px;
     left: 12px;
     right: 12px;
     transform: none;
