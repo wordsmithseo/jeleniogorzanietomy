@@ -124,6 +124,7 @@ class JG_Interactive_Map {
         add_action('template_redirect', array($this, 'redirect_legacy_tag_urls'), 1);
         add_action('template_redirect', array($this, 'handle_tile_sw'), 1);
         add_action('wp_head', array($this, 'add_point_meta_tags'));
+        add_action('wp_head', array($this, 'add_theme_color_meta'), 1);
         // Priority 2 (was: default 10).
         // When suppress_seo_plugin_description_on_*_pages() removes Yoast from
         // wp_head and adds ob_start at priority 1, these callbacks fire at priority 2
@@ -2782,6 +2783,10 @@ class JG_Interactive_Map {
     /**
      * Add SEO meta tags for point pages
      */
+    public function add_theme_color_meta() {
+        echo '<meta name="theme-color" content="#8d2324">' . "\n";
+    }
+
     public function add_point_meta_tags() {
         global $jg_current_point;
 
