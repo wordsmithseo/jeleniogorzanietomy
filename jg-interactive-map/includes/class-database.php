@@ -95,6 +95,7 @@ class JG_Map_Database {
             KEY author_id (author_id),
             KEY status (status),
             KEY type (type),
+            KEY status_type (status, type),
             KEY lat_lng (lat, lng),
             KEY case_id (case_id)
         ) $charset_collate;";
@@ -302,7 +303,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.28.0'; // Add offerings table for services/products per place
+        $current_schema_version = '3.28.1'; // Add composite index (status, type) for performance
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -703,6 +704,15 @@ class JG_Map_Database {
             KEY point_id (point_id)
         ) $charset_collate;";
         dbDelta($sql_offerings);
+
+        // Add composite index (status, type) if not present (speeds up the most common WHERE clauses)
+        $index_exists = $wpdb->get_results($wpdb->prepare(
+            "SHOW INDEX FROM `$safe_table` WHERE Key_name = %s",
+            'status_type'
+        ));
+        if (empty($index_exists)) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD KEY status_type (status, type)");
+        }
 
         // Cache the schema version to avoid running these checks on every page load
         update_option('jg_map_schema_version', $current_schema_version);
