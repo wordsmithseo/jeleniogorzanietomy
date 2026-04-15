@@ -78,60 +78,93 @@
   }
 
   // ====================================
-  // WELCOME MODAL (3-step wizard)
+  // WELCOME MODAL (5-step wizard)
   // ====================================
 
   var currentStep = 0;
-  var totalSteps = 4;
+  var totalSteps = 5;
 
   var steps = [
+    // Step 1: Point types
     {
       title: 'Odkrywaj Jeleni\u0105 G\u00f3r\u0119',
       content:
         '<div class="jg-onboarding-type-list">' +
           '<div class="jg-onboarding-type-item">' +
             '<span class="jg-onb-icon">' + pinSvg('zgloszenie') + '</span>' +
-            '<div><strong>Zg\u0142oszenia</strong><p>Informuj o problemach: dziury, uszkodzone chodniki, nielegalne wysypiska, graffiti.</p></div>' +
+            '<div><strong>Zg\u0142oszenia</strong><p>Informuj o problemach infrastrukturalnych: dziury, uszkodzone chodniki, nielegalne wysypiska, graffiti.</p></div>' +
           '</div>' +
           '<div class="jg-onboarding-type-item">' +
             '<span class="jg-onb-icon">' + pinSvg('ciekawostka') + '</span>' +
-            '<div><strong>Ciekawostki</strong><p>Dziel si\u0119 wiedz\u0105: ciekawe miejsca, historia, architektura, legendy.</p></div>' +
+            '<div><strong>Ciekawostki</strong><p>Dziel si\u0119 wiedz\u0105: historia, architektura, lokalne legendy i nieoczywiste miejsca.</p></div>' +
           '</div>' +
           '<div class="jg-onboarding-type-item">' +
             '<span class="jg-onb-icon">' + pinSvg('miejsce') + '</span>' +
-            '<div><strong>Miejsca</strong><p>Dodawaj lokalizacje: gastronomia, kultura, sport, us\u0142ugi, przyroda.</p></div>' +
+            '<div><strong>Miejsca</strong><p>Oznaczaj lokalizacje: restauracje, kawiarnie, kultura, sport, us\u0142ugi, zabytki, przyroda.</p></div>' +
           '</div>' +
         '</div>'
     },
+
+    // Step 2: How to add a point
     {
       title: 'Jak doda\u0107 punkt?',
       content:
         '<div class="jg-onboarding-how-list">' +
           '<div class="jg-onboarding-how-item"><span>Zaloguj si\u0119 lub za\u0142\u00f3\u017c konto</span></div>' +
-          '<div class="jg-onboarding-how-item"><span>Przybli\u017c map\u0119 do poziomu ulicy</span></div>' +
+          '<div class="jg-onboarding-how-item"><span>Przybli\u017c map\u0119 do poziomu ulicy (zoom 17+)</span></div>' +
           '<div class="jg-onboarding-how-item"><span>Kliknij na map\u0119 w wybranym miejscu</span></div>' +
-          '<div class="jg-onboarding-how-item"><span>Opisz punkt i dodaj zdj\u0119cia</span></div>' +
+          '<div class="jg-onboarding-how-item"><span>Opisz punkt, wybierz kategori\u0119 i dodaj zdj\u0119cia</span></div>' +
           '<div class="jg-onboarding-how-item"><span>Gotowe! Punkt pojawi si\u0119 po moderacji</span></div>' +
-        '</div>'
+        '</div>' +
+        '<p class="jg-onb-note">\uD83D\uDCA1 Mo\u017cesz te\u017c u\u017cy\u0107 przycisku \u201e+\u201d w prawym dolnym rogu mapy, aby doda\u0107 punkt po adresie.</p>'
     },
+
+    // Step 3: Rating, photos, search & report (replacing old "Co jeszcze mogę robić?" with accurate content)
     {
-      title: 'Co jeszcze mog\u0119 robi\u0107?',
+      title: 'Oceniaj, fotografuj i szukaj',
       content:
         '<div class="jg-onboarding-type-list">' +
           '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#8d2324,#a02829)">&#x1F44D;</span>' +
-            '<div><strong>G\u0142osuj</strong><p>Oceniaj punkty kciukiem w g\u00f3r\u0119 lub w d\u00f3\u0142, aby wyr\u00f3\u017cni\u0107 najwa\u017cniejsze.</p></div>' +
+            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#b45309,#d97706)">\u2B50</span>' +
+            '<div><strong>Oceniaj gwiazdkami (1\u20135)</strong><p>Kliknij pin \u2192 otw\u00f3rz szczeg\u00f3\u0142y \u2192 przyznaj od 1 do 5 gwiazdek. Najlepiej oceniane miejsca zyskuj\u0105 wyr\u00f3\u017cnienie.</p></div>' +
           '</div>' +
           '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#8d2324,#a02829)">&#x1F50D;</span>' +
-            '<div><strong>Szukaj i filtruj</strong><p>U\u017cyj paska nad map\u0105, aby filtrowa\u0107 typy i kategorie punkt\u00f3w lub wyszuka\u0107 po nazwie.</p></div>' +
+            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">\uD83D\uDCF7</span>' +
+            '<div><strong>Dodawaj zdj\u0119cia</strong><p>Otw\u00f3rz dowolny punkt i kliknij przycisk aparatu. Zdj\u0119cia pomagaj\u0105 innym rozpozna\u0107 lokalizacj\u0119.</p></div>' +
           '</div>' +
           '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#8d2324,#a02829)">&#x1F6A9;</span>' +
-            '<div><strong>Zg\u0142aszaj problemy</strong><p>Widzisz nieodpowiedni\u0105 tre\u015b\u0107? Zg\u0142o\u015b j\u0105, a moderacja sprawdzi to.</p></div>' +
+            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#8d2324,#a02829)">\uD83D\uDD0D</span>' +
+            '<div><strong>Szukaj, filtruj i zg\u0142aszaj</strong><p>Filtruj typy punkt\u00f3w i wyszukuj po nazwie. Nieodpowiedni\u0105 tre\u015b\u0107 zg\u0142o\u015b przyciskiem w szczeg\u00f3\u0142ach punktu.</p></div>' +
           '</div>' +
         '</div>'
     },
+
+    // Step 4: XP & levels (new)
+    {
+      title: 'Zdobywaj XP i awansuj!',
+      content:
+        '<div class="jg-onboarding-xp-wrap">' +
+          '<div class="jg-onboarding-xp-list">' +
+            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Dodajesz nowy punkt</span><span class="jg-xp-badge">+50 XP</span></div>' +
+            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Punkt zostaje zatwierdzony</span><span class="jg-xp-badge">+30 XP</span></div>' +
+            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Dodajesz zdj\u0119cie</span><span class="jg-xp-badge">+10 XP</span></div>' +
+            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Edytujesz sw\u00f3j punkt</span><span class="jg-xp-badge">+15 XP</span></div>' +
+            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Oceniasz inny punkt</span><span class="jg-xp-badge">+2 XP</span></div>' +
+          '</div>' +
+          '<div class="jg-onboarding-levels">' +
+            '<span class="jg-lvl-badge jg-lvl-bronze">Br\u0105z</span>' +
+            '<span class="jg-lvl-sep">\u2192</span>' +
+            '<span class="jg-lvl-badge jg-lvl-silver">Srebro</span>' +
+            '<span class="jg-lvl-sep">\u2192</span>' +
+            '<span class="jg-lvl-badge jg-lvl-gold">Z\u0142oto</span>' +
+            '<span class="jg-lvl-sep">\u2192</span>' +
+            '<span class="jg-lvl-badge jg-lvl-legend">Legenda</span>' +
+          '</div>' +
+          '<p class="jg-onb-note">\uD83D\uDCC8 Tw\u00f3j poziom i pasek XP widoczne s\u0105 na pasku u g\u00f3ry strony. Sprawd\u017a ranking \u2014 kto jest najbardziej aktywny!</p>' +
+        '</div>'
+    },
+
+    // Step 5: Restaurant menu
     {
       title: 'Menu restauracji',
       content:
@@ -184,7 +217,7 @@
       headerHtml =
         '<div class="jg-onboarding-header">' +
           '<h2>Witaj na mapie Jeleniej G\u00f3ry!</h2>' +
-          '<p>Interaktywna mapa, na kt\u00f3rej mieszka\u0144cy mog\u0105 zg\u0142asza\u0107 problemy, dzieli\u0107 si\u0119 ciekawostkami i oznacza\u0107 wa\u017cne miejsca.</p>' +
+          '<p>Interaktywna mapa, na kt\u00f3rej mieszka\u0144cy zg\u0142aszaj\u0105 problemy, dziel\u0105 si\u0119 ciekawostkami i oznaczaj\u0105 wa\u017cne miejsca.</p>' +
         '</div>';
     }
 
@@ -264,7 +297,6 @@
   }
 
   // Create the help FAB dynamically and append to #jg-map
-  // (mirrors how the + FAB is built in jg-map.js)
   function createHelpFAB(mapEl) {
     var container = document.createElement('div');
     container.id = 'jg-help-fab';
@@ -357,12 +389,12 @@
   var tipQueue = [
     {
       id: 'click_map',
-      text: 'Kliknij na map\u0119 (po przybli\u017ceniu), aby doda\u0107 nowy punkt.',
+      text: 'Kliknij na map\u0119 (po przybli\u017ceniu do poziomu ulicy), aby doda\u0107 nowy punkt.',
       delay: 0
     },
     {
       id: 'use_filters',
-      text: 'U\u017cyj checkbox\u00f3w powy\u017cej, aby filtrowa\u0107 widoczne typy punkt\u00f3w.',
+      text: 'U\u017cyj checkbox\u00f3w powy\u017cej, aby filtrowa\u0107 widoczne typy punkt\u00f3w \u2014 Zg\u0142oszenia, Ciekawostki lub Miejsca.',
       delay: 8000
     },
     {
@@ -374,6 +406,26 @@
       id: 'restaurant_menu',
       text: '\uD83C\uDF7D\uFE0F Restauracje maj\u0105 menu! Kliknij zielony pin gastronomiczny i sprawd\u017a aktualne dania oraz ceny.',
       delay: 25000
+    },
+    {
+      id: 'rate_point',
+      text: '\u2B50 Oce\u0144 dowolne miejsce! Kliknij pin \u2192 otw\u00f3rz szczeg\u00f3\u0142y \u2192 przyznaj od 1 do 5 gwiazdek.',
+      delay: 36000
+    },
+    {
+      id: 'add_photo',
+      text: '\uD83D\uDCF7 Masz zdj\u0119cie miejsca? Kliknij pin, otw\u00f3rz szczeg\u00f3\u0142y i dodaj fotografi\u0119 \u2014 pomagasz innym u\u017cytkownikom!',
+      delay: 48000
+    },
+    {
+      id: 'earn_xp',
+      text: '\uD83C\uDFC6 Za ka\u017cd\u0105 aktywno\u015b\u0107 zdobywasz XP: +50 za nowy punkt, +30 gdy zostanie zatwierdzony, +10 za zdj\u0119cie. Awansuj przez 8 poziom\u00f3w!',
+      delay: 62000
+    },
+    {
+      id: 'check_ranking',
+      text: '\uD83D\uDCCA Sprawd\u017a, kto jest najbardziej aktywny na mapie \u2014 kliknij \u201eRanking\u201d w menu g\u0142\u00f3wnym.',
+      delay: 77000
     }
   ];
 

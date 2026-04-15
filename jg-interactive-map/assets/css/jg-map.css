@@ -5890,6 +5890,115 @@ img.emoji {
   line-height: 1.4;
 }
 
+/* Small note below a step (e.g. "You can also use the + button") */
+.jg-onb-note {
+  margin: 12px 0 0;
+  font-size: calc(12.8 * var(--jg));
+  color: #6b7280;
+  font-style: italic;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* XP & Levels step */
+.jg-onboarding-xp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.jg-onboarding-xp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jg-onboarding-xp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.jg-xp-action {
+  font-size: calc(13.6 * var(--jg));
+  color: #374151;
+  flex: 1;
+}
+
+.jg-xp-badge {
+  font-size: calc(12.8 * var(--jg));
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #15803d, #22c55e);
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Level tier badges */
+.jg-onboarding-levels {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.jg-lvl-badge {
+  font-size: calc(11.5 * var(--jg));
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  color: #fff;
+}
+
+.jg-lvl-bronze { background: linear-gradient(135deg, #92400e, #d97706); }
+.jg-lvl-silver { background: linear-gradient(135deg, #6b7280, #9ca3af); }
+.jg-lvl-gold   { background: linear-gradient(135deg, #a16207, #eab308); color: #1a1a1a; }
+.jg-lvl-legend { background: linear-gradient(135deg, #7c2d12, #dc2626); }
+
+.jg-lvl-sep {
+  font-size: calc(13 * var(--jg));
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* Help panel: XP mini-list */
+.jg-help-xp-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jg-help-xp-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: calc(13 * var(--jg));
+  color: #374151;
+  padding: 5px 8px;
+  background: #f9fafb;
+  border-radius: 4px;
+}
+
+.jg-help-xp-list li strong {
+  color: #15803d;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* Onboarding footer / nav */
 .jg-onboarding-footer {
   display: flex;
@@ -6260,24 +6369,30 @@ img.emoji {
 }
 
 @media (max-width: 768px) {
-  /* On mobile the flex chain sometimes fails to scroll the steps area;
-     make the whole modal scrollable so buttons are always reachable. */
+  /* The base .jg-modal mobile rule forces display:block + overflow:auto which
+     breaks the "steps scroll, footer always visible" flex-column pattern.
+     Override both with !important to restore the correct layout. */
   .jg-onboarding-modal {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #jg-onboarding-content {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  .jg-onboarding-steps {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
   }
-  #jg-onboarding-content {
-    overflow: visible !important;
-    min-height: 0;
-  }
-  .jg-onboarding-steps {
-    overflow-y: visible !important;
-  }
   .jg-onboarding-footer {
-    position: sticky;
-    bottom: 0;
-    background: #fff;
-    z-index: 2;
+    /* Static flex-child — always visible because flex-shrink:0 is set on the
+       base rule and the steps area absorbs all leftover height. No sticky needed. */
+    position: static;
+    flex-shrink: 0;
   }
 }
 
@@ -6296,7 +6411,6 @@ img.emoji {
 
   .jg-onboarding-footer {
     padding: 12px 20px 18px;
-    flex-direction: column;
   }
 
   .jg-tip-content {
@@ -6368,23 +6482,24 @@ img.emoji {
   }
 }
 
-/* Very small viewport height */
+/* Very small viewport height (e.g. landscape phone) */
 @media (max-height: 550px) {
   .jg-onboarding-modal {
     max-height: 95vh !important;
   }
 
   .jg-onboarding-header {
-    padding: 14px 20px 12px;
+    padding: 12px 20px 10px;
   }
 
   .jg-onboarding-header h2 {
     font-size: calc(18.4 * var(--jg));
-    margin-bottom: 4px;
+    margin-bottom: 0;
   }
 
+  /* Hide the subtitle on step 1 — saves ~36px so footer stays in view */
   .jg-onboarding-header p {
-    font-size: calc(12.8 * var(--jg));
+    display: none;
   }
 
   .jg-onboarding-steps {

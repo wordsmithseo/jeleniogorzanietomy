@@ -387,12 +387,24 @@ class JG_Map_Shortcode {
                     <div class="jg-help-section">
                         <h4><?php _e('Inne funkcje', 'jg-map'); ?></h4>
                         <ul class="jg-help-features">
-                            <li><strong><?php _e('Głosowanie', 'jg-map'); ?></strong> <?php _e('oceniaj punkty kciukiem w górę lub w dół', 'jg-map'); ?></li>
-                            <li><strong><?php _e('Filtrowanie', 'jg-map'); ?></strong> <?php _e('użyj checkboxów nad mapą, aby pokazać/ukryć typy punktów', 'jg-map'); ?></li>
-                            <li><strong><?php _e('Wyszukiwanie', 'jg-map'); ?></strong> <?php _e('wpisz nazwę w pole wyszukiwania, aby znaleźć punkt', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Ocenianie', 'jg-map'); ?></strong> <?php _e('przyznaj 1–5 gwiazdek każdemu miejscu lub ciekawostce — otwórz szczegóły punktu i wybierz ocenę', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Zdjęcia', 'jg-map'); ?></strong> <?php _e('dodaj własne zdjęcie do istniejącego punktu — otwórz szczegóły i kliknij przycisk aparatu', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Filtrowanie', 'jg-map'); ?></strong> <?php _e('użyj checkboxów nad mapą, aby pokazać/ukryć typy punktów i kategorie', 'jg-map'); ?></li>
+                            <li><strong><?php _e('Wyszukiwanie', 'jg-map'); ?></strong> <?php _e('wpisz nazwę w pole wyszukiwania, aby szybko znaleźć punkt na mapie', 'jg-map'); ?></li>
                             <li><strong><?php _e('Zgłaszanie', 'jg-map'); ?></strong> <?php _e('zgłoś nieodpowiednią treść przyciskiem w szczegółach punktu', 'jg-map'); ?></li>
                             <li><strong><?php _e('Edycja', 'jg-map'); ?></strong> <?php _e('edytuj własne punkty (zmiany wymagają ponownej moderacji)', 'jg-map'); ?></li>
                         </ul>
+                    </div>
+                    <div class="jg-help-section">
+                        <h4><?php _e('XP i poziomy', 'jg-map'); ?></h4>
+                        <ul class="jg-help-xp-list">
+                            <li><span><?php _e('Dodaj punkt', 'jg-map'); ?></span><strong>+50 XP</strong></li>
+                            <li><span><?php _e('Punkt zatwierdzony', 'jg-map'); ?></span><strong>+30 XP</strong></li>
+                            <li><span><?php _e('Dodaj zdjęcie', 'jg-map'); ?></span><strong>+10 XP</strong></li>
+                            <li><span><?php _e('Edytuj punkt', 'jg-map'); ?></span><strong>+15 XP</strong></li>
+                            <li><span><?php _e('Oceń punkt', 'jg-map'); ?></span><strong>+2 XP</strong></li>
+                        </ul>
+                        <p class="jg-help-tip"><?php _e('Awansujesz przez 8 poziomów: Brąz → Srebro → Złoto → Szmaragd → Fiolet → Diament → Rubin → Legenda. Twój poziom i pasek XP widoczne są na pasku u góry strony.', 'jg-map'); ?></p>
                     </div>
                     <div class="jg-help-section jg-help-section--footer">
                         <button id="jg-help-restart-onboarding" class="jg-btn jg-btn--ghost"><?php _e('Pokaż powitanie ponownie', 'jg-map'); ?></button>
