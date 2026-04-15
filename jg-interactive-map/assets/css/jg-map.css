@@ -5890,6 +5890,115 @@ img.emoji {
   line-height: 1.4;
 }
 
+/* Small note below a step (e.g. "You can also use the + button") */
+.jg-onb-note {
+  margin: 12px 0 0;
+  font-size: calc(12.8 * var(--jg));
+  color: #6b7280;
+  font-style: italic;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* XP & Levels step */
+.jg-onboarding-xp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.jg-onboarding-xp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jg-onboarding-xp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.jg-xp-action {
+  font-size: calc(13.6 * var(--jg));
+  color: #374151;
+  flex: 1;
+}
+
+.jg-xp-badge {
+  font-size: calc(12.8 * var(--jg));
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #15803d, #22c55e);
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Level tier badges */
+.jg-onboarding-levels {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.jg-lvl-badge {
+  font-size: calc(11.5 * var(--jg));
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  color: #fff;
+}
+
+.jg-lvl-bronze { background: linear-gradient(135deg, #92400e, #d97706); }
+.jg-lvl-silver { background: linear-gradient(135deg, #6b7280, #9ca3af); }
+.jg-lvl-gold   { background: linear-gradient(135deg, #a16207, #eab308); color: #1a1a1a; }
+.jg-lvl-legend { background: linear-gradient(135deg, #7c2d12, #dc2626); }
+
+.jg-lvl-sep {
+  font-size: calc(13 * var(--jg));
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* Help panel: XP mini-list */
+.jg-help-xp-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jg-help-xp-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: calc(13 * var(--jg));
+  color: #374151;
+  padding: 5px 8px;
+  background: #f9fafb;
+  border-radius: 4px;
+}
+
+.jg-help-xp-list li strong {
+  color: #15803d;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* Onboarding footer / nav */
 .jg-onboarding-footer {
   display: flex;
