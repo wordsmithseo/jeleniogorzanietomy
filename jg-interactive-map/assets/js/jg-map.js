@@ -5310,7 +5310,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (!j || j.success === false) {
                 // Handle duplicate point error specially
                 if (j && j.data && j.data.duplicate_point_id) {
-                  var duplicatePointId = j.data.duplicate_point_id;
+                  var duplicatePointId = parseInt(j.data.duplicate_point_id, 10);
                   msg.innerHTML = (j.data.message || 'Błąd') + ' <br><button style="margin-top:8px;padding:6px 12px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="' +
                     'document.getElementById(\'jg-map-modal-add\').style.display=\'none\';' +
                     'window.location.hash=\'#point-' + duplicatePointId + '\';' +
@@ -14983,7 +14983,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 if (!j || j.success === false) {
                   // Handle duplicate point error specially
                   if (j && j.data && j.data.duplicate_point_id) {
-                    var duplicatePointId = j.data.duplicate_point_id;
+                    var duplicatePointId = parseInt(j.data.duplicate_point_id, 10);
                     msg.innerHTML = (j.data.message || 'Błąd') + ' <br><button style="margin-top:8px;padding:6px 12px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="' +
                       'document.getElementById(\'jg-map-modal-add\').style.display=\'none\';' +
                       'window.location.hash=\'#point-' + duplicatePointId + '\';' +
