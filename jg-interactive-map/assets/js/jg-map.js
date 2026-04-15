@@ -2277,23 +2277,22 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         return text.charAt(0).toUpperCase() + text.slice(1);
       }
 
-      // Measure nav bar position and apply backdrop top + modal max-height
-      // as inline styles so they are guaranteed to override any CSS rules.
-      // Equal gap (gap px) above and below the modal.
+      // Measure nav bar + footer positions; apply backdrop padding and modal
+      // max-height so the modal sits symmetrically between nav and footer.
       function jgFitModal(bg, c) {
         if (!bg || !c) return;
-        /* jgGetNavBottom() is defined in the inline PHP script (render_nav_bar).
-           It returns max getBoundingClientRect().bottom across all VISIBLE nav
-           elements. This is necessary because #jg-nav-bar is display:none on
-           desktop — the correct element on desktop is #jg-custom-top-bar. */
+        /* Both helpers defined in the inline PHP script (render_nav_bar).
+           jgGetNavBottom — max bottom of all VISIBLE top-nav elements.
+           jgGetFooterTop — top of any visible footer (innerHeight when none). */
         var navBottom = window.jgGetNavBottom ? window.jgGetNavBottom() : 52;
+        var footerTop = window.jgGetFooterTop ? window.jgGetFooterTop() : window.innerHeight;
         var gap = window.innerWidth <= 768 ? 14 : 18;
         bg.style.paddingTop    = (navBottom + gap) + 'px';
-        bg.style.paddingBottom = gap + 'px';
+        bg.style.paddingBottom = (window.innerHeight - footerTop + gap) + 'px';
         bg.style.paddingLeft   = '10px';
         bg.style.paddingRight  = '10px';
         if (!c.classList.contains('jg-lightbox')) {
-          var available = window.innerHeight - navBottom - gap * 2;
+          var available = footerTop - navBottom - gap * 2;
           c.style.maxHeight = Math.max(available, 100) + 'px';
         }
       }

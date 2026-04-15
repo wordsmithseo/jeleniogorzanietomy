@@ -710,10 +710,12 @@ class JG_Map_Enqueue {
 
             overlay.addEventListener('click', closeMenu);
 
-            /* ── Keep --jg-nav-bottom CSS variable in sync ───────────────────────
-               Used by .jg-modal-bg top offset so modals always start flush below
-               the nav bar regardless of whether the info bar is visible.
-               Updates on: load, scroll (throttled), resize, visualViewport resize.
+            /* ── Keep --jg-nav-bottom / --jg-footer-top CSS variables in sync ─────
+               --jg-nav-bottom : bottom edge of all visible top-nav elements
+               --jg-footer-top : top edge of any visible footer (viewport coords).
+                                 Equals window.innerHeight when no footer visible.
+               Both are used by .jg-modal-bg so modals are symmetrically contained
+               between the nav bar and the footer on every page and screen size.
 
                IMPORTANT: #jg-nav-bar is mobile-only (display:none on desktop).
                On desktop the visible navigation is #jg-custom-top-bar.
@@ -722,7 +724,7 @@ class JG_Map_Enqueue {
             ────────────────────────────────────────────────────────────────────── */
             var navBarEl  = document.getElementById('jg-nav-bar');
             var infoBarEl = document.getElementById('jg-info-bar');
-            /* Shared helper — exposed globally so jg-map.js can reuse it */
+            /* Shared helpers — exposed globally so jg-map.js can reuse them */
             function jgGetNavBottom() {
                 var bottom = 0;
                 ['jg-nav-bar', 'jg-info-bar', 'jg-custom-top-bar'].forEach(function (id) {
@@ -735,6 +737,33 @@ class JG_Map_Enqueue {
                 return bottom || 52;
             }
             window.jgGetNavBottom = jgGetNavBottom;
+            /* Returns the top edge of any visible footer within the viewport.
+               Falls back to window.innerHeight (no footer constraint) when no
+               footer element is visible (e.g. on the map page where footer is hidden). */
+            function jgGetFooterTop() {
+                var vh = window.innerHeight;
+                var footerTop = vh;
+                var footerSelectors = [
+                    '#site-footer',
+                    '.elementor-location-footer',
+                    '.site-footer',
+                    'footer.elementor-section'
+                ];
+                footerSelectors.forEach(function (sel) {
+                    var el = document.querySelector(sel);
+                    if (!el) return;
+                    var s = window.getComputedStyle(el);
+                    if (s.display === 'none' || s.visibility === 'hidden') return;
+                    var rect = el.getBoundingClientRect();
+                    if (rect.height === 0) return;
+                    /* Only constrain when the footer top is inside the viewport */
+                    if (rect.top > 0 && rect.top < vh && rect.top < footerTop) {
+                        footerTop = Math.round(rect.top);
+                    }
+                });
+                return footerTop;
+            }
+            window.jgGetFooterTop = jgGetFooterTop;
             function jgUpdateNavBottom() {
                 /* --jg-info-bar-h: height of the info bar (0 when hidden/dismissed) — all widths */
                 var infoBarH = 0;
@@ -745,6 +774,8 @@ class JG_Map_Enqueue {
                 document.documentElement.style.setProperty('--jg-info-bar-h', infoBarH + 'px');
                 /* --jg-nav-bottom: max bottom-edge among all visible nav elements */
                 document.documentElement.style.setProperty('--jg-nav-bottom', jgGetNavBottom() + 'px');
+                /* --jg-footer-top: top edge of visible footer (or 100vh when none) */
+                document.documentElement.style.setProperty('--jg-footer-top', jgGetFooterTop() + 'px');
             }
             /* Also re-run when the info bar is dismissed */
             window.addEventListener('jg-info-bar-changed', jgUpdateNavBottom);
@@ -1133,22 +1164,20 @@ class JG_Map_Enqueue {
             ───────────────────────────────────────────────────────────────────── */
             (function () {
                 function jgPositionModalBg(bgEl) {
-                    /* Use global helper that picks the correct nav element per
-                       viewport (#jg-nav-bar on mobile, #jg-custom-top-bar on
-                       desktop — #jg-nav-bar is display:none on desktop!). */
-                    var navBottom = window.jgGetNavBottom ? window.jgGetNavBottom() : 52;
+                    /* Use global helpers — jgGetNavBottom picks the correct nav
+                       element per viewport; jgGetFooterTop finds any visible
+                       footer and uses its top as the bottom boundary. */
+                    var navBottom  = window.jgGetNavBottom  ? window.jgGetNavBottom()  : 52;
+                    var footerTop  = window.jgGetFooterTop  ? window.jgGetFooterTop()  : window.innerHeight;
                     var gap = window.innerWidth <= 768 ? 14 : 18;
-                    /* Push the modal below the nav bar using padding-top on the
-                       backdrop. padding-bottom = gap keeps equal spacing.
-                       The backdrop itself stays inset:0 (full-viewport overlay). */
                     bgEl.style.paddingTop    = (navBottom + gap) + 'px';
-                    bgEl.style.paddingBottom = gap + 'px';
+                    bgEl.style.paddingBottom = (window.innerHeight - footerTop + gap) + 'px';
                     bgEl.style.paddingLeft   = '10px';
                     bgEl.style.paddingRight  = '10px';
                     /* size the .jg-modal inner element — skip the lightbox */
                     var c = bgEl.querySelector('.jg-modal');
                     if (c) {
-                        var available = window.innerHeight - navBottom - gap * 2;
+                        var available = footerTop - navBottom - gap * 2;
                         c.style.maxHeight = Math.max(available, 100) + 'px';
                     }
                 }
