@@ -4565,6 +4565,9 @@ class JG_Map_Admin {
     public function render_settings_page() {
         // Handle form submission
         if (isset($_POST['jg_map_save_settings']) && check_admin_referer('jg_map_settings_nonce')) {
+            $onboarding_enabled = isset($_POST['jg_map_onboarding_enabled']) ? 1 : 0;
+            update_option('jg_map_onboarding_enabled', $onboarding_enabled);
+
             $registration_enabled = isset($_POST['jg_map_registration_enabled']) ? 1 : 0;
             $registration_disabled_message = sanitize_textarea_field($_POST['jg_map_registration_disabled_message'] ?? '');
 
@@ -4606,6 +4609,7 @@ class JG_Map_Admin {
             update_option('jg_map_indexnow_key', $indexnow_key);
         }
 
+        $onboarding_enabled = get_option('jg_map_onboarding_enabled', 1); // Enabled by default
         $registration_enabled = get_option('jg_map_registration_enabled', 1); // Enabled by default
         $registration_disabled_message = get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
         $terms_url = get_option('jg_map_terms_url', '');
@@ -4620,6 +4624,32 @@ class JG_Map_Admin {
 
             <form method="post" action="">
                 <?php wp_nonce_field('jg_map_settings_nonce'); ?>
+
+                <div class="jg-card jg-card-body" style="max-width:800px">
+                    <h2>Onboarding i samouczek</h2>
+
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="jg_map_onboarding_enabled">Samouczek</label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox"
+                                           name="jg_map_onboarding_enabled"
+                                           id="jg_map_onboarding_enabled"
+                                           value="1"
+                                           <?php checked($onboarding_enabled, 1); ?>>
+                                    <strong>Włącz onboarding dla użytkowników</strong>
+                                </label>
+                                <p class="description">
+                                    Gdy włączone: nowym użytkownikom wyświetla się modal powitalny, wskazówki kontekstowe (tipy) oraz tooltopy na elementach UI.
+                                    Gdy wyłączone: żadna z warstw samouczka nie jest inicjalizowana — przycisk pomocy (?) i panel pomocy również nie pojawią się na mapie.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
 
                 <div class="jg-card jg-card-body" style="max-width:800px">
                     <h2>Rejestracja użytkowników</h2>

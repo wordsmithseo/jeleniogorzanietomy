@@ -407,7 +407,7 @@ class JG_Map_Shortcode {
                         <p class="jg-help-tip"><?php _e('Awansujesz przez 8 poziomów: Brąz → Srebro → Złoto → Szmaragd → Fiolet → Diament → Rubin → Legenda. Twój poziom i pasek XP widoczne są na pasku u góry strony.', 'jg-map'); ?></p>
                     </div>
                     <div class="jg-help-section jg-help-section--footer">
-                        <button id="jg-help-restart-onboarding" class="jg-btn jg-btn--ghost"><?php _e('Pokaż powitanie ponownie', 'jg-map'); ?></button>
+                        <button id="jg-help-restart-onboarding" class="jg-btn jg-btn--ghost"><?php _e('↺ Zacznij samouczek od nowa', 'jg-map'); ?></button>
                     </div>
                 </div>
             </div>

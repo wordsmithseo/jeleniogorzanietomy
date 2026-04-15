@@ -12,6 +12,7 @@
   var STORAGE_PREFIX = 'jg_onboarding_';
   var WELCOME_KEY = STORAGE_PREFIX + 'welcome_seen';
   var TIPS_KEY = STORAGE_PREFIX + 'tips_seen';
+  var HINTS_KEY = STORAGE_PREFIX + 'hints_seen';
 
   // Pin colors matching the map markers
   var PIN_COLORS = {
@@ -74,7 +75,13 @@
     try {
       localStorage.removeItem(WELCOME_KEY);
       localStorage.removeItem(TIPS_KEY);
+      localStorage.removeItem(HINTS_KEY);
     } catch (e) {}
+  }
+
+  function isLoggedIn() {
+    if (window.JG_MAP_CFG && JG_MAP_CFG.isLoggedIn) return true;
+    return document.body.classList.contains('logged-in');
   }
 
   // ====================================
@@ -514,6 +521,165 @@
   }
 
   // ====================================
+  // FIRST-USE UI HINTS (Layer 2)
+  // ====================================
+
+  function getSeenHints() {
+    try {
+      var val = localStorage.getItem(HINTS_KEY);
+      return val ? JSON.parse(val) : {};
+    } catch (e) { return {}; }
+  }
+
+  function markHintSeen(id) {
+    try {
+      var seen = getSeenHints();
+      seen[id] = 1;
+      localStorage.setItem(HINTS_KEY, JSON.stringify(seen));
+    } catch (e) {}
+  }
+
+  var activeHintEl = null;
+  var activeHintTimer = null;
+
+  function dismissHint() {
+    if (activeHintTimer) { clearTimeout(activeHintTimer); activeHintTimer = null; }
+    if (activeHintEl && activeHintEl.parentNode) {
+      activeHintEl.parentNode.removeChild(activeHintEl);
+    }
+    activeHintEl = null;
+  }
+
+  function positionHint(hintEl, targetEl, placement) {
+    hintEl.style.visibility = 'hidden';
+    document.body.appendChild(hintEl);
+
+    var rect = targetEl.getBoundingClientRect();
+    var hw = hintEl.offsetWidth;
+    var hh = hintEl.offsetHeight;
+    var gap = 10;
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var top, left;
+
+    if (placement === 'right') {
+      top  = rect.top + (rect.height - hh) / 2;
+      left = rect.right + gap;
+    } else if (placement === 'left') {
+      top  = rect.top + (rect.height - hh) / 2;
+      left = rect.left - hw - gap;
+    } else if (placement === 'top') {
+      top  = rect.top - hh - gap;
+      left = rect.left + (rect.width - hw) / 2;
+    } else { // bottom
+      top  = rect.bottom + gap;
+      left = rect.left + (rect.width - hw) / 2;
+    }
+
+    // Clamp to viewport
+    top  = Math.max(8, Math.min(top,  vh - hh - 8));
+    left = Math.max(8, Math.min(left, vw - hw - 8));
+
+    hintEl.style.top  = Math.round(top)  + 'px';
+    hintEl.style.left = Math.round(left) + 'px';
+    hintEl.style.visibility = '';
+  }
+
+  function showHint(id, targetEl, text, placement) {
+    if (!targetEl) return;
+    // Don't show while welcome modal is visible
+    var modal = document.getElementById('jg-onboarding-modal');
+    if (modal && modal.style.display === 'flex') return;
+    if (getSeenHints()[id]) return;
+
+    dismissHint();
+
+    var el = document.createElement('div');
+    el.className = 'jg-hint';
+    el.setAttribute('role', 'tooltip');
+    el.innerHTML =
+      '<div class="jg-hint-body">' +
+        '<span class="jg-hint-text">' + text + '</span>' +
+        '<button class="jg-hint-close" aria-label="Zamknij">\u00d7</button>' +
+      '</div>';
+
+    activeHintEl = el;
+    positionHint(el, targetEl, placement);
+    markHintSeen(id);
+
+    el.querySelector('.jg-hint-close').addEventListener('click', function(e) {
+      e.stopPropagation();
+      dismissHint();
+    });
+
+    // Auto-dismiss after 6 s
+    activeHintTimer = setTimeout(dismissHint, 6000);
+  }
+
+  // Hint definitions — selector, text, placement, requireLogin
+  var hintsConfig = [
+    {
+      id: 'hint_help',
+      selector: '#jg-help-btn',
+      text: 'Tu zawsze znajdziesz pomoc i mo\u017cesz powt\u00f3rzy\u0107 samouczek od nowa.',
+      placement: 'right',
+      requireLogin: false,
+      trigger: 'mouseover'
+    },
+    {
+      id: 'hint_fab',
+      selector: '#jg-fab-button',
+      text: 'Wpisz adres lub kliknij w map\u0119, aby doda\u0107 nowy punkt.',
+      placement: 'left',
+      requireLogin: true,   // only logged-in users can add points
+      trigger: 'mouseover'
+    },
+    {
+      id: 'hint_filters',
+      selector: '#jg-map-filters-wrapper',
+      text: 'Poka\u017c lub ukryj typy punkt\u00f3w i kategorie.',
+      placement: 'bottom',
+      requireLogin: false,
+      trigger: 'mouseover'
+    },
+    {
+      id: 'hint_search',
+      selector: '#jg-search-input',
+      text: 'Szukaj po nazwie, adresie lub tagu.',
+      placement: 'bottom',
+      requireLogin: false,
+      trigger: 'focusin'
+    }
+  ];
+
+  function initHints() {
+    var seenNow = getSeenHints();
+
+    hintsConfig.forEach(function(hint) {
+      if (hint.requireLogin && !isLoggedIn()) return;
+      if (seenNow[hint.id]) return;
+
+      document.addEventListener(hint.trigger, function handler(e) {
+        // Bail early if already seen (user might trigger this after a reset)
+        if (getSeenHints()[hint.id]) {
+          document.removeEventListener(hint.trigger, handler, true);
+          return;
+        }
+        var target = e.target && e.target.closest ? e.target.closest(hint.selector) : null;
+        if (!target) return;
+
+        showHint(hint.id, target, hint.text, hint.placement);
+        document.removeEventListener(hint.trigger, handler, true);
+      }, true); // capture so it works before any stopPropagation
+    });
+
+    // Clicking anywhere outside an active hint dismisses it
+    document.addEventListener('click', function(e) {
+      if (activeHintEl && !activeHintEl.contains(e.target)) dismissHint();
+    });
+  }
+
+  // ====================================
   // MOBILE COLLAPSIBLE FILTERS
   // ====================================
 
@@ -551,11 +717,15 @@
   // ====================================
 
   function init() {
+    // Respect the admin toggle — if onboarding is disabled site-wide, do nothing
+    if (window.JG_MAP_CFG && JG_MAP_CFG.onboardingEnabled === false) return;
+
     var mapEl = document.getElementById('jg-map');
     if (!mapEl) return;
 
     initHelpPanel(mapEl);
     initMobileFilters();
+    initHints();
 
     // Prepend mobile fullscreen encouragement tip (shown only on mobile, only once)
     if (window.innerWidth <= 768) {
