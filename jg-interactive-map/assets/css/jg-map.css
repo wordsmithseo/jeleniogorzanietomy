@@ -3030,8 +3030,8 @@ body.jg-modal-open {
      JS (jgPositionModalBg / jgFitModal) overwrites these at open-time with
      exact measured values, but this CSS already produces a correct layout
      even without JS. */
-  padding: 18px;
-  padding-top: calc(var(--jg-nav-bottom, 90px) + 18px);
+  padding: calc(18 * var(--jg));
+  padding-top: calc(var(--jg-nav-bottom, 90px) + 18 * var(--jg));
 }
 
 .jg-modal {
@@ -3042,8 +3042,8 @@ body.jg-modal-open {
      the nav bar. JS (jgFitModal) overwrites this with a precisely measured
      value, but the CSS fallback is already correct. */
   max-height: calc(100dvh - var(--jg-nav-bottom, 90px) - 36px);
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: calc(12 * var(--jg));
+  padding: calc(14 * var(--jg));
   /* overflow:hidden keeps scrollbar inside the rounded corners on desktop.
      Inner non-header children carry overflow-y:auto via the flex rule below.
      On mobile the more specific rule in the media query overrides to block+auto. */
@@ -3071,15 +3071,15 @@ body.jg-modal-open {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin: -14px -14px 16px -14px;
-  padding: 16px 14px;
+  gap: calc(12 * var(--jg));
+  margin: calc(-14 * var(--jg)) calc(-14 * var(--jg)) calc(16 * var(--jg)) calc(-14 * var(--jg));
+  padding: calc(16 * var(--jg)) calc(14 * var(--jg));
   position: sticky;
-  top: -14px;
+  top: calc(-14 * var(--jg));
   background: #fff;
   z-index: 20;
   border-bottom: 2px solid #eee;
-  border-radius: 12px 12px 0 0;
+  border-radius: calc(12 * var(--jg)) calc(12 * var(--jg)) 0 0;
 }
 
 .jg-modal header h3 {
@@ -3152,7 +3152,7 @@ body.jg-modal-open {
 .jg-rte-wrap {
   position: relative;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: calc(8 * var(--jg));
   overflow: visible;
   background: #fff;
   transition: border-color 0.2s;
@@ -3164,11 +3164,11 @@ body.jg-modal-open {
 .jg-rte-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 6px 8px;
+  gap: calc(4 * var(--jg));
+  padding: calc(6 * var(--jg)) calc(8 * var(--jg));
   background: #f9fafb;
   border-bottom: 1px solid #ddd;
-  border-radius: 7px 7px 0 0;
+  border-radius: calc(7 * var(--jg)) calc(7 * var(--jg)) 0 0;
   align-items: center;
 }
 .jg-rte-btn {
@@ -3177,8 +3177,8 @@ body.jg-modal-open {
   color: #fff !important;
   border: none !important;
   border-width: 0 !important;
-  border-radius: 8px !important;
-  padding: 6px 10px !important;
+  border-radius: calc(8 * var(--jg)) !important;
+  padding: calc(6 * var(--jg)) calc(10 * var(--jg)) !important;
   cursor: pointer !important;
   font-size: calc(13 * var(--jg)) !important;
   font-weight: 400 !important;
@@ -3207,9 +3207,9 @@ body.jg-modal-open {
 .jg-rte-sep {
   display: inline-block;
   width: 1px;
-  height: 18px;
+  height: calc(18 * var(--jg));
   background: #ddd;
-  margin: 0 3px;
+  margin: 0 calc(3 * var(--jg));
   flex-shrink: 0;
 }
 .jg-section-incomplete {
@@ -3273,9 +3273,9 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 }
 
 .jg-rte-editor {
-  padding: 10px 12px;
-  min-height: 96px;
-  max-height: 300px;
+  padding: calc(10 * var(--jg)) calc(12 * var(--jg));
+  min-height: clamp(80px, 10vh, 120px);
+  max-height: clamp(180px, 25vh, 300px);
   overflow-y: auto;
   font-size: calc(14 * var(--jg));
   line-height: 1.6;
@@ -3290,8 +3290,8 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 }
 .jg-rte-editor ul,
 .jg-rte-editor ol {
-  margin: 4px 0;
-  padding-left: 24px;
+  margin: calc(4 * var(--jg)) 0;
+  padding-left: calc(24 * var(--jg));
 }
 .jg-rte-editor li {
   margin-bottom: 2px;
@@ -3305,13 +3305,13 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   font-weight: 500;
 }
 .jg-rte-counter {
-  padding: 4px 12px 6px;
+  padding: calc(4 * var(--jg)) calc(12 * var(--jg)) calc(6 * var(--jg));
   font-size: calc(11 * var(--jg));
   color: #999;
   text-align: right;
   background: #fafafa;
   border-top: 1px solid #f0f0f0;
-  border-radius: 0 0 7px 7px;
+  border-radius: 0 0 calc(7 * var(--jg)) calc(7 * var(--jg));
 }
 
 /* Link dialog */
@@ -3319,11 +3319,11 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 32px;
+  bottom: calc(32 * var(--jg));
   background: #fff;
   border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 14px 16px;
+  border-radius: calc(8 * var(--jg));
+  padding: calc(14 * var(--jg)) calc(16 * var(--jg));
   box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   z-index: 100;
 }
@@ -3336,8 +3336,8 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
+  margin-bottom: calc(12 * var(--jg));
+  padding-bottom: calc(8 * var(--jg));
   border-bottom: 1px solid #ddd;
 }
 .jg-rte-link-dialog-header strong {
@@ -3350,7 +3350,7 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   font-size: calc(20 * var(--jg));
   cursor: pointer;
   color: #999;
-  padding: 0 4px;
+  padding: 0 calc(4 * var(--jg));
   line-height: 1;
   transition: color 0.15s;
 }
@@ -3360,18 +3360,18 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 
 /* Pin autocomplete results */
 .jg-rte-pin-results {
-  max-height: 180px;
+  max-height: clamp(120px, 18vh, 200px);
   overflow-y: auto;
-  margin-top: 6px;
+  margin-top: calc(6 * var(--jg));
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: calc(8 * var(--jg));
   background: #fff;
 }
 .jg-rte-pin-results:empty {
   display: none;
 }
 .jg-rte-pin-hint {
-  padding: 12px;
+  padding: calc(12 * var(--jg));
   font-size: calc(12 * var(--jg));
   color: #9ca3af;
   text-align: center;
@@ -3379,8 +3379,8 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 .jg-rte-pin-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: calc(8 * var(--jg));
+  padding: calc(8 * var(--jg)) calc(10 * var(--jg));
   cursor: pointer;
   font-size: calc(13 * var(--jg));
   border-bottom: 1px solid #f3f4f6;
@@ -3398,7 +3398,7 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 }
 .jg-rte-pin-type {
   display: inline-block;
-  padding: 2px 8px;
+  padding: calc(2 * var(--jg)) calc(8 * var(--jg));
   border-radius: 999px;
   font-size: calc(10 * var(--jg));
   font-weight: 600;
@@ -3416,10 +3416,10 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 
 /* Small buttons for RTE dialogs */
 .jg-btn--sm {
-  padding: 6px 14px !important;
+  padding: calc(6 * var(--jg)) calc(14 * var(--jg)) !important;
   font-size: calc(13 * var(--jg)) !important;
   min-height: auto !important;
-  border-radius: 8px !important;
+  border-radius: calc(8 * var(--jg)) !important;
 }
 
 /* Mobile: stack toolbar buttons more compactly */
@@ -3451,10 +3451,10 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   background: rgba(0, 0, 0, 0.08);
   border: none;
   cursor: pointer;
-  padding: 0 0 2px 0;
+  padding: 0 0 calc(2 * var(--jg)) 0;
   color: #374151;
-  width: 36px;
-  height: 36px;
+  width: calc(36 * var(--jg));
+  height: calc(36 * var(--jg));
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -10371,13 +10371,13 @@ footer.site-footer .site-branding {
 .jg-place-contact-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: calc(14 * var(--jg));
 }
 
 .jg-place-contact-form label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: calc(4 * var(--jg));
   font-size: calc(13 * var(--jg));
   font-weight: 600;
   color: #374151;
@@ -10386,9 +10386,9 @@ footer.site-footer .site-branding {
 .jg-place-contact-form input,
 .jg-place-contact-form textarea {
   width: 100%;
-  padding: 9px 12px;
+  padding: calc(9 * var(--jg)) calc(12 * var(--jg));
   border: 1.5px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: calc(8 * var(--jg));
   font-size: calc(14 * var(--jg));
   font-family: inherit;
   color: #111827;
@@ -10405,7 +10405,7 @@ footer.site-footer .site-branding {
 }
 
 .jg-place-contact-form textarea {
-  min-height: 100px;
+  min-height: clamp(80px, 10vh, 120px);
 }
 
 .jg-place-contact-status {
@@ -10424,11 +10424,11 @@ footer.site-footer .site-branding {
   all: unset !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  padding: 7px 14px !important;
+  gap: calc(6 * var(--jg)) !important;
+  padding: calc(7 * var(--jg)) calc(14 * var(--jg)) !important;
   background: #eff6ff !important;
   border: 1.5px solid #93c5fd !important;
-  border-radius: 8px !important;
+  border-radius: calc(8 * var(--jg)) !important;
   color: #1d4ed8 !important;
   font-size: calc(13 * var(--jg)) !important;
   font-weight: 600 !important;
