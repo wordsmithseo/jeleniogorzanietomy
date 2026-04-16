@@ -3409,10 +3409,10 @@ class JG_Map_Admin {
             // Get last action (most recent activity across tables)
             $last_actions = array();
 
-            // Last point added/modified
+            // Last point added by user (use created_at only — updated_at changes on every
+            // admin action such as approval and would incorrectly appear as user activity)
             $last_point = $wpdb->get_var($wpdb->prepare(
-                "SELECT GREATEST(COALESCE(created_at, '1970-01-01'), COALESCE(updated_at, '1970-01-01'))
-                 FROM $points_table WHERE author_id = %d ORDER BY GREATEST(COALESCE(created_at, '1970-01-01'), COALESCE(updated_at, '1970-01-01')) DESC LIMIT 1",
+                "SELECT created_at FROM $points_table WHERE author_id = %d ORDER BY created_at DESC LIMIT 1",
                 $user->ID
             ));
             if ($last_point && $last_point !== '1970-01-01') $last_actions[] = $last_point;
@@ -4565,6 +4565,9 @@ class JG_Map_Admin {
     public function render_settings_page() {
         // Handle form submission
         if (isset($_POST['jg_map_save_settings']) && check_admin_referer('jg_map_settings_nonce')) {
+            $onboarding_enabled = isset($_POST['jg_map_onboarding_enabled']) ? 1 : 0;
+            update_option('jg_map_onboarding_enabled', $onboarding_enabled);
+
             $registration_enabled = isset($_POST['jg_map_registration_enabled']) ? 1 : 0;
             $registration_disabled_message = sanitize_textarea_field($_POST['jg_map_registration_disabled_message'] ?? '');
 
@@ -4591,9 +4594,22 @@ class JG_Map_Admin {
                 update_option('jg_map_privacy_content', wp_kses_post($_POST['jg_map_privacy_content'] ?? ''));
             }
 
+            // IndexNow: regenerate key if requested
+            if (!empty($_POST['jg_map_indexnow_regenerate'])) {
+                update_option('jg_map_indexnow_key', wp_generate_uuid4());
+            }
+
             echo '<div class="notice notice-success is-dismissible"><p>Ustawienia zostały zapisane.</p></div>';
         }
 
+        // Auto-generate IndexNow key on first use (no manual setup needed)
+        $indexnow_key = get_option('jg_map_indexnow_key', '');
+        if ($indexnow_key === '') {
+            $indexnow_key = wp_generate_uuid4();
+            update_option('jg_map_indexnow_key', $indexnow_key);
+        }
+
+        $onboarding_enabled = get_option('jg_map_onboarding_enabled', 1); // Enabled by default
         $registration_enabled = get_option('jg_map_registration_enabled', 1); // Enabled by default
         $registration_disabled_message = get_option('jg_map_registration_disabled_message', 'Rejestracja jest obecnie wyłączona. Spróbuj ponownie później.');
         $terms_url = get_option('jg_map_terms_url', '');
@@ -4608,6 +4624,32 @@ class JG_Map_Admin {
 
             <form method="post" action="">
                 <?php wp_nonce_field('jg_map_settings_nonce'); ?>
+
+                <div class="jg-card jg-card-body" style="max-width:800px">
+                    <h2>Onboarding i samouczek</h2>
+
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="jg_map_onboarding_enabled">Samouczek</label>
+                            </th>
+                            <td>
+                                <label>
+                                    <input type="checkbox"
+                                           name="jg_map_onboarding_enabled"
+                                           id="jg_map_onboarding_enabled"
+                                           value="1"
+                                           <?php checked($onboarding_enabled, 1); ?>>
+                                    <strong>Włącz onboarding dla użytkowników</strong>
+                                </label>
+                                <p class="description">
+                                    Gdy włączone: nowym użytkownikom wyświetla się modal powitalny, wskazówki kontekstowe (tipy) oraz tooltopy na elementach UI.
+                                    Gdy wyłączone: żadna z warstw samouczka nie jest inicjalizowana — przycisk pomocy (?) i panel pomocy również nie pojawią się na mapie.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
 
                 <div class="jg-card jg-card-body" style="max-width:800px">
                     <h2>Rejestracja użytkowników</h2>
@@ -4753,6 +4795,34 @@ class JG_Map_Admin {
                                           class="large-text"
                                           placeholder="Wpisz treść polityki prywatności..."><?php echo esc_textarea($privacy_content); ?></textarea>
                                 <p class="description">Treść polityki prywatności zostanie wyświetlona użytkownikom w okienku modalnym. Dozwolony HTML.</p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="jg-card jg-card-body" style="max-width:800px">
+                    <h2>IndexNow – automatyczne powiadamianie wyszukiwarek</h2>
+                    <p class="description" style="margin-bottom:16px">
+                        IndexNow to protokół obsługiwany przez Bing i Yandex. Plugin automatycznie pinguje wyszukiwarki
+                        za każdym razem gdy zatwierdzisz nowe miejsce lub edycję. Klucz poniżej jest generowany
+                        automatycznie i hostowany przez plugin pod adresem
+                        <code><?php echo esc_html(home_url('/' . $indexnow_key . '.txt')); ?></code> –
+                        <strong>nie musisz nic konfigurować ani rejestrować się nigdzie</strong>.
+                    </p>
+
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">Klucz IndexNow</th>
+                            <td>
+                                <code style="font-size:14px;background:#f6f7f7;padding:6px 10px;border-radius:4px;display:inline-block;letter-spacing:.5px"><?php echo esc_html($indexnow_key); ?></code>
+                                <p class="description" style="margin-top:8px">
+                                    Plik weryfikacyjny dostępny pod:
+                                    <a href="<?php echo esc_url(home_url('/' . $indexnow_key . '.txt')); ?>" target="_blank"><?php echo esc_html(home_url('/' . $indexnow_key . '.txt')); ?></a>
+                                </p>
+                                <label style="display:block;margin-top:12px">
+                                    <input type="checkbox" name="jg_map_indexnow_regenerate" value="1">
+                                    Wygeneruj nowy klucz (użyj tylko gdy coś nie działa)
+                                </label>
                             </td>
                         </tr>
                     </table>
@@ -6141,7 +6211,19 @@ JAVASCRIPT;
                             <?php if (!empty($category['has_menu'])): ?>
                             <span title="Posiada menu" style="font-size:14px;opacity:0.7">🍽️</span>
                             <?php endif; ?>
-                            <button class="jg-action-btn" onclick="jgEditPlaceCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📍'); ?>', <?php echo !empty($category['has_menu']) ? 'true' : 'false'; ?>)" title="Edytuj">✏️</button>
+                            <?php if (!empty($category['serves_cuisine'])): ?>
+                            <span title="Miejsce serwujące jedzenie" style="font-size:14px;opacity:0.7">🥗</span>
+                            <?php endif; ?>
+                            <?php if (!empty($category['has_price_range'])): ?>
+                            <span title="Zakres cenowy" style="font-size:14px;opacity:0.7">💰</span>
+                            <?php endif; ?>
+                            <?php if (!empty($category['show_promo'])): ?>
+                            <span title="Ramka promocyjna" style="font-size:14px;opacity:0.7">💼</span>
+                            <?php endif; ?>
+                            <?php if (!empty($category['offerings_label'])): ?>
+                            <span title="Lista ofert: <?php echo esc_attr($category['offerings_label']); ?>" style="font-size:14px;opacity:0.7">📋</span>
+                            <?php endif; ?>
+                            <button class="jg-action-btn" onclick="jgEditPlaceCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📍'); ?>', <?php echo !empty($category['has_menu']) ? 'true' : 'false'; ?>, <?php echo !empty($category['serves_cuisine']) ? 'true' : 'false'; ?>, <?php echo !empty($category['has_price_range']) ? 'true' : 'false'; ?>, <?php echo !empty($category['show_promo']) ? 'true' : 'false'; ?>, '<?php echo esc_js($category['offerings_label'] ?? ''); ?>')" title="Edytuj">✏️</button>
                             <button class="jg-action-btn delete" onclick="jgDeletePlaceCategory('<?php echo esc_js($key); ?>')" title="Usuń">🗑️</button>
                         </li>
                         <?php endforeach; ?>
@@ -6178,6 +6260,21 @@ JAVASCRIPT;
                             <input type="checkbox" id="new-place-cat-has-menu" value="1">
                             🍽️ Kategoria posiada menu (włącz opcję dodawania menu dla miejsc)
                         </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="new-place-cat-serves-cuisine" value="1">
+                            🥗 Miejsce serwujące jedzenie (dodaje pole rodzaju kuchni i servesCuisine do schematu)
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="new-place-cat-has-price-range" value="1">
+                            💰 Zakres cenowy (dodaje pole zakresu cenowego i priceRange do schematu)
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="new-place-cat-show-promo" value="1">
+                            💼 Wyświetlaj ramkę promocyjną „Jesteś właścicielem?" (mapa i strona pineski)
+                        </label>
+                        <label style="display:block;margin-top:10px;font-weight:500">📋 Etykieta listy ofert (zostaw puste, aby wyłączyć)</label>
+                        <input type="text" id="new-place-cat-offerings-label" placeholder='np. "Usługi" lub "Produkty"' maxlength="50" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-top:4px">
+                        <p class="description" style="margin:4px 0 0">Pojawi się jako przycisk obok Menu w oknie pineski. Właściciel może dodać listę pozycji z cenami.</p>
 
                         <div class="jg-btn-row">
                             <button class="button button-primary" onclick="jgSavePlaceCategory()">Zapisz</button>
@@ -6215,6 +6312,21 @@ JAVASCRIPT;
                             <input type="checkbox" id="edit-place-cat-has-menu" value="1">
                             🍽️ Kategoria posiada menu
                         </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="edit-place-cat-serves-cuisine" value="1">
+                            🥗 Miejsce serwujące jedzenie
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="edit-place-cat-has-price-range" value="1">
+                            💰 Zakres cenowy
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+                            <input type="checkbox" id="edit-place-cat-show-promo" value="1">
+                            💼 Wyświetlaj ramkę promocyjną „Jesteś właścicielem?"
+                        </label>
+                        <label style="display:block;margin-top:10px;font-weight:500">📋 Etykieta listy ofert (zostaw puste, aby wyłączyć)</label>
+                        <input type="text" id="edit-place-cat-offerings-label" placeholder='np. "Usługi" lub "Produkty"' maxlength="50" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-top:4px">
+                        <p class="description" style="margin:4px 0 0">Pojawi się jako przycisk obok Menu w oknie pineski.</p>
 
                         <div class="jg-btn-row">
                             <button class="button button-primary" onclick="jgUpdatePlaceCategory()">Zapisz zmiany</button>
@@ -6288,6 +6400,10 @@ JAVASCRIPT;
                     const label = document.getElementById('new-place-cat-label').value.trim();
                     let icon = document.getElementById('new-place-cat-icon').value || '📍';
                     const hasMenu = document.getElementById('new-place-cat-has-menu').checked ? '1' : '0';
+                    const servesCuisine = document.getElementById('new-place-cat-serves-cuisine').checked ? '1' : '0';
+                    const hasPriceRange = document.getElementById('new-place-cat-has-price-range').checked ? '1' : '0';
+                    const showPromo = document.getElementById('new-place-cat-show-promo').checked ? '1' : '0';
+                    const offeringsLabel = document.getElementById('new-place-cat-offerings-label').value.trim();
                     if (!jgIsValidEmoji(icon)) {
                         icon = jgGetFirstPlaceEmoji();
                     }
@@ -6311,7 +6427,11 @@ JAVASCRIPT;
                             key: key,
                             label: label,
                             icon: icon,
-                            has_menu: hasMenu
+                            has_menu: hasMenu,
+                            serves_cuisine: servesCuisine,
+                            has_price_range: hasPriceRange,
+                            show_promo: showPromo,
+                            offerings_label: offeringsLabel
                         })
                     })
                     .then(r => r.json())
@@ -6325,7 +6445,7 @@ JAVASCRIPT;
                 };
 
                 // Edit category
-                window.jgEditPlaceCategory = function(key, label, icon, hasMenu) {
+                window.jgEditPlaceCategory = function(key, label, icon, hasMenu, servesCuisine, hasPriceRange, showPromo, offeringsLabel) {
                     document.getElementById('jg-add-place-category-form').classList.remove('visible');
                     const form = document.getElementById('jg-edit-place-category-form');
                     form.classList.add('visible');
@@ -6336,6 +6456,10 @@ JAVASCRIPT;
                     document.getElementById('edit-place-cat-icon-manual').value = icon;
                     document.getElementById('edit-place-cat-icon-manual').classList.remove('invalid');
                     document.getElementById('edit-place-cat-has-menu').checked = !!hasMenu;
+                    document.getElementById('edit-place-cat-serves-cuisine').checked = !!servesCuisine;
+                    document.getElementById('edit-place-cat-has-price-range').checked = !!hasPriceRange;
+                    document.getElementById('edit-place-cat-show-promo').checked = !!showPromo;
+                    document.getElementById('edit-place-cat-offerings-label').value = offeringsLabel || '';
 
                     // Highlight current emoji
                     document.querySelectorAll('#edit-place-emoji-picker .jg-emoji-btn').forEach(btn => {
@@ -6386,6 +6510,10 @@ JAVASCRIPT;
                     const label = document.getElementById('edit-place-cat-label').value.trim();
                     let icon = document.getElementById('edit-place-cat-icon').value || '📍';
                     const hasMenu = document.getElementById('edit-place-cat-has-menu').checked ? '1' : '0';
+                    const servesCuisine = document.getElementById('edit-place-cat-serves-cuisine').checked ? '1' : '0';
+                    const hasPriceRange = document.getElementById('edit-place-cat-has-price-range').checked ? '1' : '0';
+                    const showPromo = document.getElementById('edit-place-cat-show-promo').checked ? '1' : '0';
+                    const offeringsLabel = document.getElementById('edit-place-cat-offerings-label').value.trim();
                     if (!jgIsValidEmoji(icon)) {
                         icon = jgGetFirstPlaceEmoji();
                     }
@@ -6404,7 +6532,11 @@ JAVASCRIPT;
                             key: key,
                             label: label,
                             icon: icon,
-                            has_menu: hasMenu
+                            has_menu: hasMenu,
+                            serves_cuisine: servesCuisine,
+                            has_price_range: hasPriceRange,
+                            show_promo: showPromo,
+                            offerings_label: offeringsLabel
                         })
                     })
                     .then(r => r.json())

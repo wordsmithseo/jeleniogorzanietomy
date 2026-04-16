@@ -87,12 +87,15 @@ class JG_Map_Database {
             tags varchar(500) DEFAULT NULL,
             opening_hours text DEFAULT NULL,
             pending_edit tinyint(1) DEFAULT 0,
+            price_range varchar(10) DEFAULT NULL,
+            serves_cuisine varchar(255) DEFAULT NULL,
             ip_address varchar(100),
             PRIMARY KEY (id),
             UNIQUE KEY slug (slug),
             KEY author_id (author_id),
             KEY status (status),
             KEY type (type),
+            KEY status_type (status, type),
             KEY lat_lng (lat, lng),
             KEY case_id (case_id)
         ) $charset_collate;";
@@ -230,6 +233,20 @@ class JG_Map_Database {
             KEY point_id (point_id)
         ) $charset_collate;";
 
+        // Table for offerings (services / products list per place)
+        $table_offerings = $wpdb->prefix . 'jg_map_offerings';
+        $sql_offerings = "CREATE TABLE IF NOT EXISTS $table_offerings (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            name varchar(255) NOT NULL,
+            description text DEFAULT NULL,
+            price decimal(8,2) DEFAULT NULL,
+            sort_order int(11) DEFAULT 0,
+            is_available tinyint(1) DEFAULT 1,
+            PRIMARY KEY (id),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_points);
         dbDelta($sql_votes);
@@ -241,6 +258,7 @@ class JG_Map_Database {
         dbDelta($sql_menu_sections);
         dbDelta($sql_menu_items);
         dbDelta($sql_menu_photos);
+        dbDelta($sql_offerings);
 
         // Set plugin version
         update_option('jg_map_db_version', JG_MAP_VERSION);
@@ -285,7 +303,7 @@ class JG_Map_Database {
 
         // Performance optimization: Cache schema check to avoid 17 SHOW COLUMNS queries on every page load
         // Schema version tracks which columns have been added
-        $current_schema_version = '3.26.0'; // Add seo_canonical and seo_noindex columns to points
+        $current_schema_version = '3.28.1'; // Add composite index (status, type) for performance
         $cached_schema_version = get_option('jg_map_schema_version', '0');
 
         // Only run schema check if version has changed
@@ -577,11 +595,24 @@ class JG_Map_Database {
             $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN pending_edit tinyint(1) DEFAULT 0 AFTER opening_hours");
         }
 
+        // Check if price_range column exists (Google priceRange schema field)
+        if (!$column_exists('price_range')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN price_range varchar(10) DEFAULT NULL AFTER pending_edit");
+        }
+
+        // Check if serves_cuisine column exists (Google servesCuisine schema field)
+        if (!$column_exists('serves_cuisine')) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD COLUMN serves_cuisine varchar(255) DEFAULT NULL AFTER price_range");
+        }
+
         // Fix tags stored with unicode escapes (e.g. "G\u00f3ry" -> "Góry")
         self::migrate_fix_unicode_tags();
 
         // Run migration to strip slashes from existing data (one-time)
         self::migrate_strip_slashes();
+
+        // Fix slugs for points with special European characters in titles (e.g. Ä→a, Ö→o, Ü→u)
+        self::migrate_fix_special_char_slugs();
 
         // Ensure slug_redirects table exists (for 301 redirects after title/slug changes)
         $table_slug_redirects = $wpdb->prefix . 'jg_map_slug_redirects';
@@ -658,6 +689,30 @@ class JG_Map_Database {
             KEY point_id (point_id)
         ) $charset_collate;";
         dbDelta($sql_menu_photos);
+
+        // Ensure offerings table exists (for existing installations)
+        $table_offerings = $wpdb->prefix . 'jg_map_offerings';
+        $sql_offerings = "CREATE TABLE IF NOT EXISTS $table_offerings (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            point_id bigint(20) UNSIGNED NOT NULL,
+            name varchar(255) NOT NULL,
+            description text DEFAULT NULL,
+            price decimal(8,2) DEFAULT NULL,
+            sort_order int(11) DEFAULT 0,
+            is_available tinyint(1) DEFAULT 1,
+            PRIMARY KEY (id),
+            KEY point_id (point_id)
+        ) $charset_collate;";
+        dbDelta($sql_offerings);
+
+        // Add composite index (status, type) if not present (speeds up the most common WHERE clauses)
+        $index_exists = $wpdb->get_results($wpdb->prepare(
+            "SHOW INDEX FROM `$safe_table` WHERE Key_name = %s",
+            'status_type'
+        ));
+        if (empty($index_exists)) {
+            $wpdb->query("ALTER TABLE `$safe_table` ADD KEY status_type (status, type)");
+        }
 
         // Cache the schema version to avoid running these checks on every page load
         update_option('jg_map_schema_version', $current_schema_version);
@@ -785,6 +840,64 @@ class JG_Map_Database {
     }
 
     /**
+     * Migration: Regenerate slugs for points whose titles contain special European characters
+     * that were previously stripped (e.g. Ä, Ö, Ü) but should now be transliterated (ä→a, ö→o, ü→u)
+     */
+    public static function migrate_fix_special_char_slugs() {
+        if (get_option('jg_map_special_char_slugs_fixed', false)) {
+            return;
+        }
+
+        global $wpdb;
+        $table = self::get_points_table();
+
+        // Characters that are now transliterated but were previously stripped
+        $special_chars = array('ä', 'ö', 'ü', 'ß', 'Ä', 'Ö', 'Ü',
+            'à', 'â', 'é', 'è', 'ê', 'ë', 'î', 'ï', 'ô', 'ù', 'û', 'ÿ', 'ç',
+            'À', 'Â', 'É', 'È', 'Ê', 'Ë', 'Î', 'Ï', 'Ô', 'Ù', 'Û', 'Ÿ', 'Ç',
+            'á', 'í', 'ú', 'ñ', 'ã', 'õ', 'Á', 'Í', 'Ú', 'Ñ', 'Ã', 'Õ',
+            'č', 'š', 'ž', 'ř', 'ě', 'ý', 'ů', 'ď', 'ť',
+            'Č', 'Š', 'Ž', 'Ř', 'Ě', 'Ý', 'Ů', 'Ď', 'Ť');
+
+        // Build WHERE clause to find points with any of these characters in title
+        $like_conditions = array();
+        foreach ($special_chars as $char) {
+            $like_conditions[] = $wpdb->prepare("title LIKE %s", '%' . $wpdb->esc_like($char) . '%');
+        }
+        $where = implode(' OR ', $like_conditions);
+
+        $points = $wpdb->get_results(
+            "SELECT id, title, slug FROM $table WHERE $where ORDER BY id ASC",
+            ARRAY_A
+        );
+
+        foreach ($points as $point) {
+            if (empty($point['title'])) {
+                continue;
+            }
+
+            $new_slug = self::generate_unique_slug($point['title'], $point['id']);
+
+            if ($new_slug !== $point['slug']) {
+                // Save old slug as redirect before updating
+                if (!empty($point['slug'])) {
+                    self::save_slug_redirect($point['slug'], $point['id']);
+                }
+
+                $wpdb->update(
+                    $table,
+                    array('slug' => $new_slug),
+                    array('id' => $point['id']),
+                    array('%s'),
+                    array('%d')
+                );
+            }
+        }
+
+        update_option('jg_map_special_char_slugs_fixed', true);
+    }
+
+    /**
      * Create upload directory for map images
      */
     private static function create_upload_directory() {
@@ -814,10 +927,42 @@ class JG_Map_Database {
     public static function generate_slug($title) {
         $slug = strtolower($title);
 
-        // Polish characters transliteration
-        $polish = array('ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż', 'Ą', 'Ć', 'Ę', 'Ł', 'Ń', 'Ó', 'Ś', 'Ź', 'Ż');
-        $latin = array('a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z', 'a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z');
-        $slug = str_replace($polish, $latin, $slug);
+        // Polish and other European characters transliteration
+        $special = array(
+            // Polish
+            'ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż',
+            'Ą', 'Ć', 'Ę', 'Ł', 'Ń', 'Ó', 'Ś', 'Ź', 'Ż',
+            // German
+            'ä', 'ö', 'ü', 'ß',
+            'Ä', 'Ö', 'Ü',
+            // French
+            'à', 'â', 'é', 'è', 'ê', 'ë', 'î', 'ï', 'ô', 'ù', 'û', 'ü', 'ÿ', 'ç',
+            'À', 'Â', 'É', 'È', 'Ê', 'Ë', 'Î', 'Ï', 'Ô', 'Ù', 'Û', 'Ü', 'Ÿ', 'Ç',
+            // Spanish / Portuguese
+            'á', 'í', 'ú', 'ñ', 'ã', 'õ',
+            'Á', 'Í', 'Ú', 'Ñ', 'Ã', 'Õ',
+            // Czech / Slovak / other Slavic
+            'č', 'š', 'ž', 'ř', 'ě', 'ý', 'ů', 'ď', 'ť',
+            'Č', 'Š', 'Ž', 'Ř', 'Ě', 'Ý', 'Ů', 'Ď', 'Ť',
+        );
+        $latin = array(
+            // Polish
+            'a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z',
+            'a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z',
+            // German
+            'a', 'o', 'u', 's',
+            'a', 'o', 'u',
+            // French
+            'a', 'a', 'e', 'e', 'e', 'e', 'i', 'i', 'o', 'u', 'u', 'u', 'y', 'c',
+            'a', 'a', 'e', 'e', 'e', 'e', 'i', 'i', 'o', 'u', 'u', 'u', 'y', 'c',
+            // Spanish / Portuguese
+            'a', 'i', 'u', 'n', 'a', 'o',
+            'a', 'i', 'u', 'n', 'a', 'o',
+            // Czech / Slovak / other Slavic
+            'c', 's', 'z', 'r', 'e', 'y', 'u', 'd', 't',
+            'c', 's', 'z', 'r', 'e', 'y', 'u', 'd', 't',
+        );
+        $slug = str_replace($special, $latin, $slug);
 
         // Replace spaces and special characters with hyphens
         $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
@@ -961,16 +1106,7 @@ class JG_Map_Database {
             ? "status IN ('publish', 'pending', 'edit') AND status != 'trash'"
             : "status = 'publish' AND status != 'trash'";
 
-        $sql = "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                       resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, edit_locked, is_deletion_requested, deletion_reason,
-                       deletion_requested_at, is_promo, promo_until, website, phone, email,
-                       cta_enabled, cta_type, admin_note, images, featured_image_index,
-                       facebook_url, instagram_url, linkedin_url, tiktok_url,
-                       stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
-                       stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
-                       stats_unique_visitors, stats_avg_time_spent,
-                       address, created_at, updated_at, ip_address, tags, opening_hours, pending_edit
-                FROM $table WHERE $status_condition ORDER BY created_at DESC";
+        $sql = "SELECT * FROM $table WHERE $status_condition ORDER BY created_at DESC";
 
         $results = $wpdb->get_results($sql, ARRAY_A);
 
@@ -1107,16 +1243,7 @@ class JG_Map_Database {
 
         return $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT id, case_id, title, slug, content, excerpt, lat, lng, type, category, status, report_status,
-                        resolved_delete_at, resolved_summary, rejected_reason, rejected_delete_at, author_id, author_hidden, edit_locked, is_deletion_requested, deletion_reason,
-                        deletion_requested_at, is_promo, promo_until, website, phone, email,
-                        cta_enabled, cta_type, admin_note, images, featured_image_index,
-                        facebook_url, instagram_url, linkedin_url, tiktok_url,
-                        stats_views, stats_phone_clicks, stats_website_clicks, stats_social_clicks,
-                        stats_cta_clicks, stats_gallery_clicks, stats_first_viewed, stats_last_viewed,
-                        stats_unique_visitors, stats_avg_time_spent,
-                        address, created_at, updated_at, ip_address, tags, opening_hours, pending_edit
-                 FROM $table WHERE id = %d",
+                "SELECT * FROM $table WHERE id = %d",
                 $point_id
             ),
             ARRAY_A
@@ -2694,6 +2821,89 @@ class JG_Map_Database {
              UNION
              SELECT DISTINCT point_id FROM $pt WHERE point_id IN ($ids)"
         );
+        return array_map('intval', $rows ?: array());
+    }
+
+    // -----------------------------------------------------------------------
+    // Offerings helpers (services / products)
+    // -----------------------------------------------------------------------
+
+    public static function get_offerings_table() {
+        global $wpdb;
+        return $wpdb->prefix . 'jg_map_offerings';
+    }
+
+    /**
+     * Return all offerings for a point, ordered by sort_order ASC.
+     */
+    public static function get_offerings($point_id) {
+        global $wpdb;
+        $ot = self::get_offerings_table();
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, name, description, price, sort_order, is_available FROM $ot WHERE point_id = %d ORDER BY sort_order ASC, id ASC",
+                intval($point_id)
+            ),
+            ARRAY_A
+        );
+    }
+
+    /**
+     * Replace all offerings for a point.
+     * $items = [['name'=>'...', 'description'=>'...', 'price'=>0.0, 'is_available'=>1], ...]
+     */
+    public static function save_offerings($point_id, $items) {
+        global $wpdb;
+        $point_id = intval($point_id);
+        $ot = self::get_offerings_table();
+
+        $wpdb->delete($ot, array('point_id' => $point_id), array('%d'));
+
+        foreach ($items as $sort => $item) {
+            $name = sanitize_text_field(substr($item['name'] ?? '', 0, 255));
+            if ($name === '') continue;
+
+            $price = isset($item['price']) && $item['price'] !== '' ? round(floatval($item['price']), 2) : null;
+            $desc  = sanitize_textarea_field($item['description'] ?? '');
+            $avail = isset($item['is_available']) ? (intval($item['is_available']) ? 1 : 0) : 1;
+
+            $wpdb->insert(
+                $ot,
+                array(
+                    'point_id'     => $point_id,
+                    'name'         => $name,
+                    'description'  => $desc,
+                    'price'        => $price,
+                    'sort_order'   => $sort,
+                    'is_available' => $avail,
+                ),
+                array('%d', '%s', '%s', $price !== null ? '%f' : 'null', '%d', '%d')
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if a point has any offerings.
+     */
+    public static function point_has_offerings($point_id) {
+        global $wpdb;
+        $ot = self::get_offerings_table();
+        return (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $ot WHERE point_id = %d", intval($point_id))) > 0;
+    }
+
+    /**
+     * Batch-check which of the given point IDs have offerings.
+     * Returns a flat array of point IDs that have at least one offering.
+     */
+    public static function get_offerings_point_ids_batch(array $point_ids) {
+        if (empty($point_ids)) return array();
+        global $wpdb;
+        $ot  = self::get_offerings_table();
+        $ids = implode(',', array_map('intval', $point_ids));
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $rows = $wpdb->get_col("SELECT DISTINCT point_id FROM $ot WHERE point_id IN ($ids)");
         return array_map('intval', $rows ?: array());
     }
 }

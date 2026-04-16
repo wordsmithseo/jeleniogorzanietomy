@@ -12,6 +12,7 @@
   var STORAGE_PREFIX = 'jg_onboarding_';
   var WELCOME_KEY = STORAGE_PREFIX + 'welcome_seen';
   var TIPS_KEY = STORAGE_PREFIX + 'tips_seen';
+  var HINTS_KEY = STORAGE_PREFIX + 'hints_seen';
 
   // Pin colors matching the map markers
   var PIN_COLORS = {
@@ -74,64 +75,103 @@
     try {
       localStorage.removeItem(WELCOME_KEY);
       localStorage.removeItem(TIPS_KEY);
+      localStorage.removeItem(HINTS_KEY);
     } catch (e) {}
   }
 
+  function isLoggedIn() {
+    if (window.JG_MAP_CFG && JG_MAP_CFG.isLoggedIn) return true;
+    return document.body.classList.contains('logged-in');
+  }
+
   // ====================================
-  // WELCOME MODAL (3-step wizard)
+  // WELCOME MODAL (5-step wizard)
   // ====================================
 
   var currentStep = 0;
-  var totalSteps = 4;
+  var totalSteps = 5;
 
   var steps = [
+    // Step 1: Point types
     {
       title: 'Odkrywaj Jeleni\u0105 G\u00f3r\u0119',
       content:
         '<div class="jg-onboarding-type-list">' +
           '<div class="jg-onboarding-type-item">' +
             '<span class="jg-onb-icon">' + pinSvg('zgloszenie') + '</span>' +
-            '<div><strong>Zg\u0142oszenia</strong><p>Informuj o problemach: dziury, uszkodzone chodniki, nielegalne wysypiska, graffiti.</p></div>' +
+            '<div><strong>Zg\u0142oszenia</strong><p>Informuj o problemach infrastrukturalnych: dziury, uszkodzone chodniki, nielegalne wysypiska, graffiti.</p></div>' +
           '</div>' +
           '<div class="jg-onboarding-type-item">' +
             '<span class="jg-onb-icon">' + pinSvg('ciekawostka') + '</span>' +
-            '<div><strong>Ciekawostki</strong><p>Dziel si\u0119 wiedz\u0105: ciekawe miejsca, historia, architektura, legendy.</p></div>' +
+            '<div><strong>Ciekawostki</strong><p>Dziel si\u0119 wiedz\u0105: historia, architektura, lokalne legendy i nieoczywiste miejsca.</p></div>' +
           '</div>' +
           '<div class="jg-onboarding-type-item">' +
             '<span class="jg-onb-icon">' + pinSvg('miejsce') + '</span>' +
-            '<div><strong>Miejsca</strong><p>Dodawaj lokalizacje: gastronomia, kultura, sport, us\u0142ugi, przyroda.</p></div>' +
+            '<div><strong>Miejsca</strong><p>Oznaczaj lokalizacje: restauracje, kawiarnie, kultura, sport, us\u0142ugi, zabytki, przyroda.</p></div>' +
           '</div>' +
         '</div>'
     },
+
+    // Step 2: How to add a point
     {
       title: 'Jak doda\u0107 punkt?',
       content:
         '<div class="jg-onboarding-how-list">' +
           '<div class="jg-onboarding-how-item"><span>Zaloguj si\u0119 lub za\u0142\u00f3\u017c konto</span></div>' +
-          '<div class="jg-onboarding-how-item"><span>Przybli\u017c map\u0119 do poziomu ulicy</span></div>' +
+          '<div class="jg-onboarding-how-item"><span>Przybli\u017c map\u0119 do poziomu ulicy (zoom 17+)</span></div>' +
           '<div class="jg-onboarding-how-item"><span>Kliknij na map\u0119 w wybranym miejscu</span></div>' +
-          '<div class="jg-onboarding-how-item"><span>Opisz punkt i dodaj zdj\u0119cia</span></div>' +
+          '<div class="jg-onboarding-how-item"><span>Opisz punkt, wybierz kategori\u0119 i dodaj zdj\u0119cia</span></div>' +
           '<div class="jg-onboarding-how-item"><span>Gotowe! Punkt pojawi si\u0119 po moderacji</span></div>' +
-        '</div>'
+        '</div>' +
+        '<p class="jg-onb-note">\uD83D\uDCA1 Mo\u017cesz te\u017c u\u017cy\u0107 przycisku \u201e+\u201d w prawym dolnym rogu mapy, aby doda\u0107 punkt po adresie.</p>'
     },
+
+    // Step 3: Rating, photos, search & report (replacing old "Co jeszcze mogę robić?" with accurate content)
     {
-      title: 'Co jeszcze mog\u0119 robi\u0107?',
+      title: 'Oceniaj, fotografuj i szukaj',
       content:
         '<div class="jg-onboarding-type-list">' +
           '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#8d2324,#a02829)">&#x1F44D;</span>' +
-            '<div><strong>G\u0142osuj</strong><p>Oceniaj punkty kciukiem w g\u00f3r\u0119 lub w d\u00f3\u0142, aby wyr\u00f3\u017cni\u0107 najwa\u017cniejsze.</p></div>' +
+            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#b45309,#d97706)">\u2B50</span>' +
+            '<div><strong>Oceniaj gwiazdkami (1\u20135)</strong><p>Kliknij pin \u2192 otw\u00f3rz szczeg\u00f3\u0142y \u2192 przyznaj od 1 do 5 gwiazdek. Najlepiej oceniane miejsca zyskuj\u0105 wyr\u00f3\u017cnienie.</p></div>' +
           '</div>' +
           '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#8d2324,#a02829)">&#x1F50D;</span>' +
-            '<div><strong>Szukaj i filtruj</strong><p>U\u017cyj paska nad map\u0105, aby filtrowa\u0107 typy i kategorie punkt\u00f3w lub wyszuka\u0107 po nazwie.</p></div>' +
+            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">\uD83D\uDCF7</span>' +
+            '<div><strong>Dodawaj zdj\u0119cia</strong><p>Otw\u00f3rz dowolny punkt i kliknij przycisk aparatu. Zdj\u0119cia pomagaj\u0105 innym rozpozna\u0107 lokalizacj\u0119.</p></div>' +
           '</div>' +
           '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#8d2324,#a02829)">&#x1F6A9;</span>' +
-            '<div><strong>Zg\u0142aszaj problemy</strong><p>Widzisz nieodpowiedni\u0105 tre\u015b\u0107? Zg\u0142o\u015b j\u0105, a moderacja sprawdzi to.</p></div>' +
+            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#8d2324,#a02829)">\uD83D\uDD0D</span>' +
+            '<div><strong>Szukaj, filtruj i zg\u0142aszaj</strong><p>Filtruj typy punkt\u00f3w i wyszukuj po nazwie. Nieodpowiedni\u0105 tre\u015b\u0107 zg\u0142o\u015b przyciskiem w szczeg\u00f3\u0142ach punktu.</p></div>' +
           '</div>' +
         '</div>'
     },
+
+    // Step 4: XP & levels (new)
+    {
+      title: 'Zdobywaj XP i awansuj!',
+      content:
+        '<div class="jg-onboarding-xp-wrap">' +
+          '<div class="jg-onboarding-xp-list">' +
+            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Dodajesz nowy punkt</span><span class="jg-xp-badge">+50 XP</span></div>' +
+            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Punkt zostaje zatwierdzony</span><span class="jg-xp-badge">+30 XP</span></div>' +
+            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Dodajesz zdj\u0119cie</span><span class="jg-xp-badge">+10 XP</span></div>' +
+            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Edytujesz sw\u00f3j punkt</span><span class="jg-xp-badge">+15 XP</span></div>' +
+            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Oceniasz inny punkt</span><span class="jg-xp-badge">+2 XP</span></div>' +
+          '</div>' +
+          '<div class="jg-onboarding-levels">' +
+            '<span class="jg-lvl-badge jg-lvl-bronze">Br\u0105z</span>' +
+            '<span class="jg-lvl-sep">\u2192</span>' +
+            '<span class="jg-lvl-badge jg-lvl-silver">Srebro</span>' +
+            '<span class="jg-lvl-sep">\u2192</span>' +
+            '<span class="jg-lvl-badge jg-lvl-gold">Z\u0142oto</span>' +
+            '<span class="jg-lvl-sep">\u2192</span>' +
+            '<span class="jg-lvl-badge jg-lvl-legend">Legenda</span>' +
+          '</div>' +
+          '<p class="jg-onb-note">\uD83D\uDCC8 Tw\u00f3j poziom i pasek XP widoczne s\u0105 na pasku u g\u00f3ry strony. Sprawd\u017a ranking \u2014 kto jest najbardziej aktywny!</p>' +
+        '</div>'
+    },
+
+    // Step 5: Restaurant menu
     {
       title: 'Menu restauracji',
       content:
@@ -184,7 +224,7 @@
       headerHtml =
         '<div class="jg-onboarding-header">' +
           '<h2>Witaj na mapie Jeleniej G\u00f3ry!</h2>' +
-          '<p>Interaktywna mapa, na kt\u00f3rej mieszka\u0144cy mog\u0105 zg\u0142asza\u0107 problemy, dzieli\u0107 si\u0119 ciekawostkami i oznacza\u0107 wa\u017cne miejsca.</p>' +
+          '<p>Interaktywna mapa, na kt\u00f3rej mieszka\u0144cy zg\u0142aszaj\u0105 problemy, dziel\u0105 si\u0119 ciekawostkami i oznaczaj\u0105 wa\u017cne miejsca.</p>' +
         '</div>';
     }
 
@@ -264,7 +304,6 @@
   }
 
   // Create the help FAB dynamically and append to #jg-map
-  // (mirrors how the + FAB is built in jg-map.js)
   function createHelpFAB(mapEl) {
     var container = document.createElement('div');
     container.id = 'jg-help-fab';
@@ -357,12 +396,12 @@
   var tipQueue = [
     {
       id: 'click_map',
-      text: 'Kliknij na map\u0119 (po przybli\u017ceniu), aby doda\u0107 nowy punkt.',
+      text: 'Kliknij na map\u0119 (po przybli\u017ceniu do poziomu ulicy), aby doda\u0107 nowy punkt.',
       delay: 0
     },
     {
       id: 'use_filters',
-      text: 'U\u017cyj checkbox\u00f3w powy\u017cej, aby filtrowa\u0107 widoczne typy punkt\u00f3w.',
+      text: 'U\u017cyj checkbox\u00f3w powy\u017cej, aby filtrowa\u0107 widoczne typy punkt\u00f3w \u2014 Zg\u0142oszenia, Ciekawostki lub Miejsca.',
       delay: 8000
     },
     {
@@ -374,6 +413,26 @@
       id: 'restaurant_menu',
       text: '\uD83C\uDF7D\uFE0F Restauracje maj\u0105 menu! Kliknij zielony pin gastronomiczny i sprawd\u017a aktualne dania oraz ceny.',
       delay: 25000
+    },
+    {
+      id: 'rate_point',
+      text: '\u2B50 Oce\u0144 dowolne miejsce! Kliknij pin \u2192 otw\u00f3rz szczeg\u00f3\u0142y \u2192 przyznaj od 1 do 5 gwiazdek.',
+      delay: 36000
+    },
+    {
+      id: 'add_photo',
+      text: '\uD83D\uDCF7 Masz zdj\u0119cie miejsca? Kliknij pin, otw\u00f3rz szczeg\u00f3\u0142y i dodaj fotografi\u0119 \u2014 pomagasz innym u\u017cytkownikom!',
+      delay: 48000
+    },
+    {
+      id: 'earn_xp',
+      text: '\uD83C\uDFC6 Za ka\u017cd\u0105 aktywno\u015b\u0107 zdobywasz XP: +50 za nowy punkt, +30 gdy zostanie zatwierdzony, +10 za zdj\u0119cie. Awansuj przez 8 poziom\u00f3w!',
+      delay: 62000
+    },
+    {
+      id: 'check_ranking',
+      text: '\uD83D\uDCCA Sprawd\u017a, kto jest najbardziej aktywny na mapie \u2014 kliknij \u201eRanking\u201d w menu g\u0142\u00f3wnym.',
+      delay: 77000
     }
   ];
 
@@ -462,6 +521,260 @@
   }
 
   // ====================================
+  // UNIFIED SPOTLIGHT HINTS (Layer 2)
+  // One visual language for all first-use hints.
+  //   hover hints  → card near element, no overlay, auto-dismiss (×)
+  //   action hints → card near element, overlay dims the map ("Rozumiem ✓")
+  //   modal hints  → card over open modal, no extra overlay (modal already dims)
+  // ====================================
+
+  function getSeenHints() {
+    try {
+      var val = localStorage.getItem(HINTS_KEY);
+      return val ? JSON.parse(val) : {};
+    } catch (e) { return {}; }
+  }
+
+  function markHintSeen(id) {
+    try {
+      var seen = getSeenHints();
+      seen[id] = 1;
+      localStorage.setItem(HINTS_KEY, JSON.stringify(seen));
+    } catch (e) {}
+  }
+
+  var _sOverlay = null;
+  var _sCard    = null;
+  var _sTimer   = null;
+
+  function dismissSpotlight() {
+    if (_sTimer) { clearTimeout(_sTimer); _sTimer = null; }
+    [_sOverlay, _sCard].forEach(function(el) {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
+    _sOverlay = null;
+    _sCard    = null;
+  }
+
+  /**
+   * showSpotlight(id, text, opts)
+   *   opts.targetEl  — element to anchor the card near (BoundingClientRect)
+   *   opts.placement — 'top' | 'bottom' | 'left' | 'right' | 'inside'
+   *                    'inside' centres the card within the target (for modals)
+   *   opts.overlay   — boolean: dim the background behind the card
+   *   opts.auto      — ms: auto-dismiss timeout; 0 = manual-only
+   *                    auto > 0  → shows  ×  button
+   *                    auto = 0  → shows  "Rozumiem ✓"  button
+   */
+  function showSpotlight(id, text, opts) {
+    var onbModal = document.getElementById('jg-onboarding-modal');
+    if (onbModal && onbModal.style.display === 'flex') return;
+    if (getSeenHints()[id]) return;
+    markHintSeen(id);
+    dismissSpotlight();
+
+    opts = opts || {};
+    var targetEl   = opts.targetEl  || null;
+    var placement  = opts.placement || 'bottom';
+    var hasOverlay = !!opts.overlay;
+    var auto       = opts.auto || 0;
+
+    // Semi-transparent overlay (the "freeze" effect)
+    if (hasOverlay) {
+      _sOverlay = document.createElement('div');
+      _sOverlay.className = 'jg-spotlight-overlay';
+      document.body.appendChild(_sOverlay);
+    }
+
+    // Card
+    var card = document.createElement('div');
+    card.className = 'jg-spotlight-card' + (auto > 0 ? ' jg-spotlight-card--light' : '');
+    var btnLabel = auto > 0 ? '\u00d7' : 'Rozumiem \u2713';
+    card.innerHTML =
+      '<div class="jg-spotlight-card-inner">' +
+        '<p class="jg-spotlight-card-text">' + text + '</p>' +
+        '<button class="jg-spotlight-card-btn">' + btnLabel + '</button>' +
+      '</div>';
+
+    card.style.visibility = 'hidden';
+    document.body.appendChild(card);
+    _sCard = card;
+
+    // Position the card
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var cw = card.offsetWidth,  ch = card.offsetHeight;
+    var gap = 14;
+    var top, left;
+
+    if (targetEl) {
+      var r = targetEl.getBoundingClientRect();
+      if (placement === 'inside') {
+        // Centred at ~65 % of the target's height (bottom area, still inside)
+        top  = r.top + r.height * 0.65 - ch / 2;
+        left = r.left + (r.width  - cw) / 2;
+      } else if (placement === 'right')  { top = r.top + (r.height - ch) / 2; left = r.right + gap; }
+        else if (placement === 'left')   { top = r.top + (r.height - ch) / 2; left = r.left  - cw - gap; }
+        else if (placement === 'top')    { top = r.top  - ch - gap; left = r.left + (r.width - cw) / 2; }
+        else /* bottom */                { top = r.bottom + gap;    left = r.left + (r.width - cw) / 2; }
+    } else {
+      top  = Math.round((vh - ch) / 2);
+      left = Math.round((vw - cw) / 2);
+    }
+
+    top  = Math.max(12, Math.min(Math.round(top),  vh - ch - 12));
+    left = Math.max(12, Math.min(Math.round(left), vw - cw - 12));
+    card.style.top  = top  + 'px';
+    card.style.left = left + 'px';
+    card.style.visibility = '';
+
+    // Dismiss handlers
+    var docClickH = null;
+    var keyH      = null;
+
+    var close = function() {
+      if (docClickH) document.removeEventListener('click', docClickH);
+      if (keyH)      document.removeEventListener('keydown', keyH);
+      dismissSpotlight();
+      setTimeout(showNextTip, 2500);
+    };
+
+    card.querySelector('.jg-spotlight-card-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      close();
+    });
+
+    keyH = function(e) { if (e.key === 'Escape' || e.keyCode === 27) close(); };
+    document.addEventListener('keydown', keyH);
+
+    if (hasOverlay) {
+      docClickH = function(e) { if (!card.contains(e.target)) close(); };
+      setTimeout(function() { document.addEventListener('click', docClickH); }, 120);
+    }
+
+    if (auto > 0) _sTimer = setTimeout(close, auto);
+  }
+
+  // Watch a PHP-rendered element for its first transition to visible.
+  // Monitors both style and class attribute changes, then checks computed style.
+  function watchForVisible(id, callback) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var obs = new MutationObserver(function() {
+      var cs = window.getComputedStyle(el);
+      if (cs.display !== 'none' && cs.visibility !== 'hidden') {
+        obs.disconnect();
+        callback(el);
+      }
+    });
+    obs.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
+  }
+
+  // Watch for a dynamically-created element (jQuery/JS inserts it into the DOM).
+  function watchForCreated(selector, callback) {
+    var obs = new MutationObserver(function() {
+      var el = document.querySelector(selector);
+      if (el) { obs.disconnect(); callback(el); }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ---- Hover hints (first mouseover on a UI element) ----
+
+  var hoverSpecs = [
+    { id: 'h_help',    selector: '#jg-help-btn',            text: 'Pomoc \u2014 zawsze dost\u0119pna. Znajdziesz tu opis funkcji i mo\u017cesz powt\u00f3rzy\u0107 samouczek.',  placement: 'right',  requireLogin: false },
+    { id: 'h_fab',     selector: '#jg-fab-button',          text: 'Kliknij, aby doda\u0107 nowy punkt z adresu lub kliknij bezpo\u015brednio w map\u0119.',                       placement: 'left',   requireLogin: true  },
+    { id: 'h_filters', selector: '#jg-map-filters-wrapper', text: 'Filtry \u2014 poka\u017c lub ukryj typy punkt\u00f3w i kategorie.',                                             placement: 'bottom', requireLogin: false },
+    { id: 'h_search',  selector: '#jg-search-input',        text: 'Szukaj po nazwie, adresie lub tagu.',                                                                           placement: 'bottom', requireLogin: false }
+  ];
+
+  function initHoverHints() {
+    var seen = getSeenHints();
+    hoverSpecs.forEach(function(h) {
+      if (h.requireLogin && !isLoggedIn()) return;
+      if (seen[h.id]) return;
+      document.addEventListener('mouseover', function handler(e) {
+        if (getSeenHints()[h.id]) { document.removeEventListener('mouseover', handler, true); return; }
+        var target = e.target && e.target.closest ? e.target.closest(h.selector) : null;
+        if (!target) return;
+        showSpotlight(h.id, h.text, { targetEl: target, placement: h.placement, overlay: false, auto: 5000 });
+        document.removeEventListener('mouseover', handler, true);
+      }, true);
+    });
+  }
+
+  // ---- Action hints (first time the user performs a feature) ----
+
+  function initActionHints() {
+    var seen = getSeenHints();
+
+    // 1. First time opening a point's detail modal → hint to rate with stars
+    if (!seen['first_view_point']) {
+      watchForVisible('jg-map-modal-view', function(el) {
+        setTimeout(function() {
+          showSpotlight('first_view_point',
+            '\u2B50 Kliknij gwiazdki w tym oknie, aby oceni\u0107 to miejsce (1\u20135). Zdobudziesz +2\u00a0XP i pom\u00f3\u017cesz innym!',
+            { targetEl: el, placement: 'inside', overlay: false }
+          );
+        }, 700);
+      });
+    }
+
+    // 2. First time opening the add-point form (logged-in only)
+    if (!seen['first_add_form'] && isLoggedIn()) {
+      watchForVisible('jg-map-modal-add', function(el) {
+        setTimeout(function() {
+          showSpotlight('first_add_form',
+            '\u270f\ufe0f Opisz punkt dok\u0142adnie i dodaj zdj\u0119cie. Po zatwierdzeniu przez moderatora pojawi si\u0119 na mapie i zdobudziesz XP!',
+            { targetEl: el, placement: 'inside', overlay: false }
+          );
+        }, 500);
+      });
+      watchForCreated('#jg-fab-input-overlay', function(el) {
+        setTimeout(function() {
+          showSpotlight('first_add_form',
+            '\u270f\ufe0f Opisz punkt dok\u0142adnie i dodaj zdj\u0119cie. Po zatwierdzeniu przez moderatora pojawi si\u0119 na mapie i zdobudziesz XP!',
+            { targetEl: el, placement: 'inside', overlay: false }
+          );
+        }, 500);
+      });
+    }
+
+    // 3. First time typing ≥ 3 chars in the search field
+    if (!seen['first_search']) {
+      var searchEl = document.getElementById('jg-search-input');
+      if (searchEl) {
+        searchEl.addEventListener('input', function onSearch() {
+          if (searchEl.value.length >= 3) {
+            searchEl.removeEventListener('input', onSearch);
+            setTimeout(function() {
+              showSpotlight('first_search',
+                '\uD83D\uDDFA\uFE0F Kliknij wynik na li\u015bcie, aby przej\u015b\u0107 do tego miejsca na mapie.',
+                { targetEl: searchEl, placement: 'bottom', overlay: true }
+              );
+            }, 1000);
+          }
+        });
+      }
+    }
+
+    // 4. First time toggling a filter checkbox
+    if (!seen['first_filter']) {
+      var filtersEl = document.getElementById('jg-map-filters-wrapper');
+      if (filtersEl) {
+        filtersEl.addEventListener('change', function onFilter(e) {
+          if (e.target.type === 'checkbox') {
+            filtersEl.removeEventListener('change', onFilter);
+            showSpotlight('first_filter',
+              '\uD83C\uDFAB Filtry dzia\u0142aj\u0105 niezale\u017cnie i na \u017cywo \u2014 mo\u017cesz dowolnie miesza\u0107 typy i kategorie.',
+              { targetEl: filtersEl, placement: 'bottom', overlay: true }
+            );
+          }
+        });
+      }
+    }
+  }
+
+  // ====================================
   // MOBILE COLLAPSIBLE FILTERS
   // ====================================
 
@@ -499,11 +812,16 @@
   // ====================================
 
   function init() {
+    // Respect the admin toggle — if onboarding is disabled site-wide, do nothing
+    if (window.JG_MAP_CFG && JG_MAP_CFG.onboardingEnabled === false) return;
+
     var mapEl = document.getElementById('jg-map');
     if (!mapEl) return;
 
     initHelpPanel(mapEl);
     initMobileFilters();
+    initHoverHints();
+    initActionHints();
 
     // Prepend mobile fullscreen encouragement tip (shown only on mobile, only once)
     if (window.innerWidth <= 768) {

@@ -48,7 +48,7 @@ class JG_Map_Ajax_Handlers {
      */
     private static function get_default_place_categories() {
         return array(
-            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️', 'schema_type' => 'FoodEstablishment', 'has_menu' => true),
+            'gastronomia' => array('label' => 'Gastronomia', 'icon' => '🍽️', 'schema_type' => 'FoodEstablishment', 'has_menu' => true, 'has_price_range' => true, 'serves_cuisine' => true),
             'kultura' => array('label' => 'Kultura', 'icon' => '🏛️', 'schema_type' => 'Museum'),
             'uslugi' => array('label' => 'Usługi', 'icon' => '🏢', 'schema_type' => 'LocalBusiness'),
             'sport' => array('label' => 'Sport i rekreacja', 'icon' => '⚽', 'schema_type' => 'SportsActivityLocation'),
@@ -81,6 +81,63 @@ class JG_Map_Ajax_Handlers {
             }
         }
         return $keys;
+    }
+
+    /**
+     * Get keys of categories that support price range (has_price_range => true)
+     */
+    public static function get_price_range_categories() {
+        $cats = self::get_place_categories();
+        $keys = array();
+        foreach ($cats as $key => $cat) {
+            if (!empty($cat['has_price_range'])) {
+                $keys[] = $key;
+            }
+        }
+        return $keys;
+    }
+
+    /**
+     * Get keys of categories that serve cuisine (serves_cuisine => true)
+     */
+    public static function get_serves_cuisine_categories() {
+        $cats = self::get_place_categories();
+        $keys = array();
+        foreach ($cats as $key => $cat) {
+            if (!empty($cat['serves_cuisine'])) {
+                $keys[] = $key;
+            }
+        }
+        return $keys;
+    }
+
+    /**
+     * Get keys of categories that show the business promo box (show_promo => true)
+     */
+    public static function get_promo_categories() {
+        $cats = self::get_place_categories();
+        $keys = array();
+        foreach ($cats as $key => $cat) {
+            if (!empty($cat['show_promo'])) {
+                $keys[] = $key;
+            }
+        }
+        return $keys;
+    }
+
+    /**
+     * Get map of category_key => offerings_label for categories that support offerings.
+     * offerings_label is a non-empty string like "Usługi" or "Produkty".
+     */
+    public static function get_offerings_categories() {
+        $cats   = self::get_place_categories();
+        $result = array();
+        foreach ($cats as $key => $cat) {
+            if (!empty($cat['offerings_label'])) {
+                $result[$key] = $cat['offerings_label'];
+            }
+        }
+        return $result;
     }
 
     /**
@@ -532,12 +589,21 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_get_tags', array($this, 'get_tags'));
         add_action('wp_ajax_nopriv_jg_get_tags', array($this, 'get_tags'));
 
+        // Contact place (send message to place email — available to everyone)
+        add_action('wp_ajax_jg_contact_place',        array($this, 'contact_place'));
+        add_action('wp_ajax_nopriv_jg_contact_place', array($this, 'contact_place'));
+
         // Menu actions (public read, auth write)
         add_action('wp_ajax_jg_get_menu', array($this, 'get_menu'));
         add_action('wp_ajax_nopriv_jg_get_menu', array($this, 'get_menu'));
         add_action('wp_ajax_jg_save_menu', array($this, 'save_menu'));
         add_action('wp_ajax_jg_upload_menu_photo', array($this, 'upload_menu_photo'));
         add_action('wp_ajax_jg_delete_menu_photo', array($this, 'delete_menu_photo'));
+
+        // Offerings actions (public read, auth write)
+        add_action('wp_ajax_jg_get_offerings', array($this, 'get_offerings'));
+        add_action('wp_ajax_nopriv_jg_get_offerings', array($this, 'get_offerings'));
+        add_action('wp_ajax_jg_save_offerings', array($this, 'save_offerings'));
 
         // Logged in user actions
         add_action('wp_ajax_jg_submit_point', array($this, 'submit_point'));
@@ -1113,6 +1179,8 @@ class JG_Map_Ajax_Handlers {
                 // SECURITY: For unauthenticated users, always hide moderation data
                 'admin_note' => ($current_user_id > 0) ? $point['admin_note'] : null,
                 'opening_hours' => $point['opening_hours'] ?? null,
+                'price_range'   => $point['price_range'] ?? null,
+                'serves_cuisine' => $point['serves_cuisine'] ?? null,
                 'pending_edit' => (bool)($point['pending_edit'] ?? 0),
                 'is_pending' => ($current_user_id > 0) ? $is_pending : false,
                 'is_edit' => ($current_user_id > 0) ? $is_edit : false,
@@ -1866,6 +1934,10 @@ class JG_Map_Ajax_Handlers {
         $website = !empty($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
         $email = !empty($_POST['contact_email']) ? sanitize_email($_POST['contact_email']) : '';
+        $price_range_raw = sanitize_text_field($_POST['price_range'] ?? '');
+        $valid_price_ranges = array('$', '$$', '$$$', '$$$$');
+        $price_range = in_array($price_range_raw, $valid_price_ranges, true) ? $price_range_raw : '';
+        $serves_cuisine = sanitize_text_field(wp_unslash($_POST['serves_cuisine'] ?? ''));
 
         // Process tags (max 5)
         $tags_raw = isset($_POST['tags']) ? wp_unslash($_POST['tags']) : '';
@@ -2023,6 +2095,8 @@ class JG_Map_Ajax_Handlers {
             'featured_image_index' => !empty($images) ? 0 : null, // Auto-set first image as featured
             'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : null,
             'opening_hours' => !empty($opening_hours) ? $opening_hours : null,
+            'price_range'   => !empty($price_range) ? $price_range : null,
+            'serves_cuisine' => !empty($serves_cuisine) ? $serves_cuisine : null,
             'website' => !empty($website) ? $website : null,
             'phone' => !empty($phone) ? $phone : null,
             'email' => !empty($email) ? $email : null,
@@ -2172,6 +2246,10 @@ class JG_Map_Ajax_Handlers {
         $phone = !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
         $email = !empty($_POST['contact_email']) ? sanitize_email($_POST['contact_email']) : '';
         $opening_hours = sanitize_textarea_field(wp_unslash($_POST['opening_hours'] ?? ''));
+        $price_range_raw = sanitize_text_field($_POST['price_range'] ?? '');
+        $valid_price_ranges = array('$', '$$', '$$$', '$$$$');
+        $price_range = in_array($price_range_raw, $valid_price_ranges, true) ? $price_range_raw : '';
+        $serves_cuisine = sanitize_text_field(wp_unslash($_POST['serves_cuisine'] ?? ''));
 
         // Normalize social media URLs - accept full URLs, domain URLs, or profile names
         $facebook_url = !empty($_POST['facebook_url']) ? $this->normalize_social_url($_POST['facebook_url'], 'facebook') : '';
@@ -2312,6 +2390,10 @@ class JG_Map_Ajax_Handlers {
             // Update opening_hours (admin can edit directly for all types)
             $update_data['opening_hours'] = !empty($opening_hours) ? $opening_hours : null;
 
+            // Update price_range and serves_cuisine
+            $update_data['price_range']   = !empty($price_range) ? $price_range : null;
+            $update_data['serves_cuisine'] = !empty($serves_cuisine) ? $serves_cuisine : null;
+
             // Update lat/lng if provided (from geocoding)
             if ($lat !== null && $lng !== null) {
                 $update_data['lat'] = $lat;
@@ -2446,6 +2528,8 @@ class JG_Map_Ajax_Handlers {
                 'address' => $point['address'] ?? '',
                 'images' => $point['images'] ?? '[]',
                 'opening_hours' => $point['opening_hours'] ?? '',
+                'price_range'   => $point['price_range'] ?? null,
+                'serves_cuisine' => $point['serves_cuisine'] ?? null,
                 'website' => $point['website'] ?? null,
                 'phone' => $point['phone'] ?? null,
                 'email' => $point['email'] ?? null
@@ -2458,6 +2542,8 @@ class JG_Map_Ajax_Handlers {
                 'content' => $content,
                 'tags' => !empty($tags) ? json_encode($tags, JSON_UNESCAPED_UNICODE) : '[]',
                 'opening_hours' => $opening_hours,
+                'price_range'   => !empty($price_range) ? $price_range : null,
+                'serves_cuisine' => !empty($serves_cuisine) ? $serves_cuisine : null,
                 'new_images' => json_encode($new_images), // Store new images separately for moderation
                 'website' => !empty($website) ? $website : null,
                 'phone' => !empty($phone) ? $phone : null,
@@ -2513,40 +2599,33 @@ class JG_Map_Ajax_Handlers {
                 $this->notify_admin_edit($point_id);
             }
 
-            // Award XP for editing — split by what actually changed
+            // Award XP for editing — single flat-rate award per meaningful edit
+            // Uses the unified 'edit_point' source key (consistent with admin UI and recalculation).
             $xp_results = array();
 
-            // --- Title change ---
-            $old_title_clean = trim($old_values['title']);
-            $new_title_clean = trim($title);
-            if ($old_title_clean !== $new_title_clean && $new_title_clean !== '') {
-                $valid_title_words = JG_Map_Levels_Achievements::count_valid_words($new_title_clean);
-                if ($valid_title_words > 0) {
-                    // Read per-word XP from config; default 3
-                    $title_per_word = 3;
-                    foreach (JG_Map_Levels_Achievements::get_xp_sources() as $s) {
-                        if ($s['key'] === 'edit_title') { $title_per_word = max(1, intval($s['xp'])); break; }
-                    }
-                    $title_xp = min($valid_title_words, 5) * $title_per_word; // cap: 5 words
-                    $r = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_title', $point_id, $title_xp);
-                    if ($r) $xp_results[] = $r;
-                }
-            }
-
-            // --- Description change ---
+            $old_title_clean   = trim($old_values['title']);
+            $new_title_clean   = trim($title);
             $old_content_plain = trim(wp_strip_all_tags($old_values['content']));
             $new_content_plain = trim(wp_strip_all_tags($content));
-            if ($old_content_plain !== $new_content_plain && $new_content_plain !== '') {
-                $old_word_count = JG_Map_Levels_Achievements::count_valid_words($old_content_plain);
-                $new_word_count = JG_Map_Levels_Achievements::count_valid_words($new_content_plain);
-                $added_words    = max(0, $new_word_count - $old_word_count);
-                if ($added_words > 0) {
-                    $desc_per_word = 2;
-                    foreach (JG_Map_Levels_Achievements::get_xp_sources() as $s) {
-                        if ($s['key'] === 'edit_description') { $desc_per_word = max(1, intval($s['xp'])); break; }
+
+            $title_changed   = ($old_title_clean !== $new_title_clean && $new_title_clean !== '');
+            $content_changed = ($old_content_plain !== $new_content_plain && $new_content_plain !== '');
+
+            // Award edit_point XP if title or description meaningfully changed
+            if ($title_changed || $content_changed) {
+                $has_meaningful_change = false;
+                if ($title_changed && JG_Map_Levels_Achievements::count_valid_words($new_title_clean) > 0) {
+                    $has_meaningful_change = true;
+                }
+                if (!$has_meaningful_change && $content_changed) {
+                    $new_word_count = JG_Map_Levels_Achievements::count_valid_words($new_content_plain);
+                    $old_word_count = JG_Map_Levels_Achievements::count_valid_words($old_content_plain);
+                    if ($new_word_count > $old_word_count) {
+                        $has_meaningful_change = true;
                     }
-                    $desc_xp = min($added_words, 10) * $desc_per_word; // cap: 10 new words
-                    $r = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_description', $point_id, $desc_xp);
+                }
+                if ($has_meaningful_change) {
+                    $r = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_point', $point_id);
                     if ($r) $xp_results[] = $r;
                 }
             }
@@ -3431,6 +3510,11 @@ class JG_Map_Ajax_Handlers {
         $author_id = intval($point['author_id']);
         if ($author_id) {
             JG_Map_Levels_Achievements::award_xp($author_id, 'point_approved', $point_id);
+        }
+
+        // Notify IndexNow: new point is now publicly visible
+        if (!empty($point['slug']) && !empty($point['type'])) {
+            JG_Interactive_Map::ping_indexnow_url(home_url('/' . $point['type'] . '/' . $point['slug'] . '/'));
         }
 
         wp_send_json_success(array('message' => 'Punkt zaakceptowany'));
@@ -4725,6 +4809,14 @@ class JG_Map_Ajax_Handlers {
             $update_data['opening_hours'] = !empty($new_values['opening_hours']) ? $new_values['opening_hours'] : null;
         }
 
+        // Apply price_range and serves_cuisine if present in approved edit
+        if (array_key_exists('price_range', $new_values)) {
+            $update_data['price_range'] = !empty($new_values['price_range']) ? $new_values['price_range'] : null;
+        }
+        if (array_key_exists('serves_cuisine', $new_values)) {
+            $update_data['serves_cuisine'] = !empty($new_values['serves_cuisine']) ? $new_values['serves_cuisine'] : null;
+        }
+
         // Clear pending_edit flag — edit has been approved
         $update_data['pending_edit'] = 0;
 
@@ -4760,6 +4852,11 @@ class JG_Map_Ajax_Handlers {
             $history_id,
             sprintf('Zaakceptowano edycję miejsca: %s', $point['title'])
         );
+
+        // Notify IndexNow: point content has been updated
+        if (!empty($point['slug']) && !empty($point['type'])) {
+            JG_Interactive_Map::ping_indexnow_url(home_url('/' . $point['type'] . '/' . $point['slug'] . '/'));
+        }
 
         wp_send_json_success(array('message' => 'Edycja zaakceptowana'));
     }
@@ -5025,6 +5122,14 @@ class JG_Map_Ajax_Handlers {
                 $update_data['opening_hours'] = !empty($new_values['opening_hours']) ? $new_values['opening_hours'] : null;
             }
 
+            // Apply price_range and serves_cuisine if present
+            if (array_key_exists('price_range', $new_values)) {
+                $update_data['price_range'] = !empty($new_values['price_range']) ? $new_values['price_range'] : null;
+            }
+            if (array_key_exists('serves_cuisine', $new_values)) {
+                $update_data['serves_cuisine'] = !empty($new_values['serves_cuisine']) ? $new_values['serves_cuisine'] : null;
+            }
+
             // Handle new images if present
             if (isset($new_values['new_images'])) {
                 $new_images = json_decode($new_values['new_images'], true) ?: array();
@@ -5082,6 +5187,11 @@ class JG_Map_Ajax_Handlers {
                 $history_id,
                 sprintf('Właściciel (admin/mod) zaakceptował i zatwierdził edycję miejsca: %s', $point['title'])
             );
+
+            // Notify IndexNow: point content has been updated (owner+mod fast-path)
+            if (!empty($point['slug']) && !empty($point['type'])) {
+                JG_Interactive_Map::ping_indexnow_url(home_url('/' . $point['type'] . '/' . $point['slug'] . '/'));
+            }
 
             wp_send_json_success(array('message' => 'Edycja zaakceptowana i zatwierdzona. Zmiany są już widoczne.'));
         } else {
@@ -9126,10 +9236,14 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        $key      = sanitize_key($_POST['key'] ?? '');
-        $label    = sanitize_text_field($_POST['label'] ?? '');
-        $icon     = sanitize_text_field($_POST['icon'] ?? '📍');
-        $has_menu = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
+        $key              = sanitize_key($_POST['key'] ?? '');
+        $label            = sanitize_text_field($_POST['label'] ?? '');
+        $icon             = sanitize_text_field($_POST['icon'] ?? '📍');
+        $has_menu         = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
+        $has_price_range  = !empty($_POST['has_price_range']) && $_POST['has_price_range'] === '1';
+        $serves_cuisine   = !empty($_POST['serves_cuisine']) && $_POST['serves_cuisine'] === '1';
+        $show_promo       = !empty($_POST['show_promo']) && $_POST['show_promo'] === '1';
+        $offerings_label  = sanitize_text_field(substr($_POST['offerings_label'] ?? '', 0, 50));
 
         if (empty($key) || empty($label)) {
             wp_send_json_error('Klucz i nazwa są wymagane');
@@ -9144,9 +9258,13 @@ class JG_Map_Ajax_Handlers {
         }
 
         $categories[$key] = array(
-            'label'    => $label,
-            'icon'     => $icon,
-            'has_menu' => $has_menu,
+            'label'           => $label,
+            'icon'            => $icon,
+            'has_menu'        => $has_menu,
+            'has_price_range' => $has_price_range,
+            'serves_cuisine'  => $serves_cuisine,
+            'show_promo'      => $show_promo,
+            'offerings_label' => $offerings_label,
         );
         update_option('jg_map_place_categories', $categories);
 
@@ -9179,10 +9297,14 @@ class JG_Map_Ajax_Handlers {
             return;
         }
 
-        $key      = sanitize_key($_POST['key'] ?? '');
-        $label    = sanitize_text_field($_POST['label'] ?? '');
-        $icon     = sanitize_text_field($_POST['icon'] ?? '📍');
-        $has_menu = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
+        $key              = sanitize_key($_POST['key'] ?? '');
+        $label            = sanitize_text_field($_POST['label'] ?? '');
+        $icon             = sanitize_text_field($_POST['icon'] ?? '📍');
+        $has_menu         = !empty($_POST['has_menu']) && $_POST['has_menu'] === '1';
+        $has_price_range  = !empty($_POST['has_price_range']) && $_POST['has_price_range'] === '1';
+        $serves_cuisine   = !empty($_POST['serves_cuisine']) && $_POST['serves_cuisine'] === '1';
+        $show_promo       = !empty($_POST['show_promo']) && $_POST['show_promo'] === '1';
+        $offerings_label  = sanitize_text_field(substr($_POST['offerings_label'] ?? '', 0, 50));
 
         if (empty($key) || empty($label)) {
             wp_send_json_error('Klucz i nazwa są wymagane');
@@ -9199,9 +9321,13 @@ class JG_Map_Ajax_Handlers {
         $old_label = $categories[$key]['label'];
         // Preserve existing fields (e.g. schema_type), only update editable ones
         $categories[$key] = array_merge($categories[$key], array(
-            'label'    => $label,
-            'icon'     => $icon,
-            'has_menu' => $has_menu,
+            'label'           => $label,
+            'icon'            => $icon,
+            'has_menu'        => $has_menu,
+            'has_price_range' => $has_price_range,
+            'serves_cuisine'  => $serves_cuisine,
+            'show_promo'      => $show_promo,
+            'offerings_label' => $offerings_label,
         ));
         update_option('jg_map_place_categories', $categories);
 
@@ -9874,6 +10000,159 @@ class JG_Map_Ajax_Handlers {
         } else {
             wp_send_json_error(array('message' => 'Nie znaleziono zdjęcia'));
         }
+    }
+
+    /**
+     * Get offerings (services / products) for a place — public.
+     */
+    public function get_offerings() {
+        $point_id = intval($_POST['point_id'] ?? 0);
+        if ($point_id <= 0) {
+            wp_send_json_error(array('message' => 'Brak point_id'));
+            exit;
+        }
+
+        $items = JG_Map_Database::get_offerings($point_id);
+        wp_send_json_success(array('items' => $items));
+    }
+
+    /**
+     * Save offerings (services / products) for a place.
+     * Allowed: owner or admin/moderator.
+     */
+    public function save_offerings() {
+        $this->verify_nonce();
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'Musisz być zalogowany'));
+            exit;
+        }
+
+        $point_id = intval($_POST['point_id'] ?? 0);
+        if ($point_id <= 0) {
+            wp_send_json_error(array('message' => 'Brak point_id'));
+            exit;
+        }
+
+        $point = JG_Map_Database::get_point($point_id);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
+
+        $user_id  = get_current_user_id();
+        $is_owner = intval($point['author_id']) === $user_id;
+        $is_admin = current_user_can('manage_options') || current_user_can('jg_map_moderate');
+
+        if (!$is_owner && !$is_admin) {
+            wp_send_json_error(array('message' => 'Brak uprawnień'));
+            exit;
+        }
+
+        $raw_items = isset($_POST['items']) ? $_POST['items'] : array();
+        if (!is_array($raw_items)) {
+            $decoded = json_decode(wp_unslash($_POST['items'] ?? '[]'), true);
+            $raw_items = is_array($decoded) ? $decoded : array();
+        }
+
+        $old_items = JG_Map_Database::get_offerings($point_id);
+
+        JG_Map_Database::save_offerings($point_id, $raw_items);
+
+        $old_values = array('offerings' => $old_items);
+        $new_values = array('offerings' => $raw_items);
+
+        if ($is_admin) {
+            JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
+            JG_Map_Activity_Log::log_user_action(
+                'edit_offerings',
+                'point',
+                $point_id,
+                sprintf('Zaktualizowano ofertę miejsca: %s', $point['title'])
+            );
+        } else {
+            $point_owner_id = ($is_owner) ? null : intval($point['author_id']);
+            JG_Map_Database::add_history($point_id, $user_id, 'edit_offerings', $old_values, $new_values, $point_owner_id);
+            JG_Map_Database::update_point($point_id, array('pending_edit' => 1));
+            JG_Map_Activity_Log::log_user_action(
+                'suggest_offerings_edit',
+                'point',
+                $point_id,
+                sprintf('Zaproponowano zmiany oferty: %s', $point['title'])
+            );
+        }
+
+        wp_send_json_success(array('message' => 'Oferta zapisana', 'pending' => !$is_admin));
+    }
+
+    /**
+     * Send a contact message to a place's email address.
+     * The email stored in the DB is never sent to the browser.
+     * Rate-limited to 5 messages per IP per hour via transient.
+     */
+    public function contact_place() {
+        if (!check_ajax_referer('jg_map_nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => 'Nieprawidłowy token bezpieczeństwa.'));
+        }
+
+        $point_id     = intval($_POST['point_id'] ?? 0);
+        $sender_name  = sanitize_text_field(wp_unslash($_POST['sender_name']  ?? ''));
+        $sender_email = sanitize_email(wp_unslash($_POST['sender_email'] ?? ''));
+        $message      = sanitize_textarea_field(wp_unslash($_POST['message'] ?? ''));
+
+        if (!$point_id || !$sender_name || !$sender_email || !$message) {
+            wp_send_json_error(array('message' => 'Uzupełnij wszystkie pola.'));
+        }
+
+        if (!is_email($sender_email)) {
+            wp_send_json_error(array('message' => 'Podaj prawidłowy adres e-mail.'));
+        }
+
+        // Rate limit: max 5 messages per IP per hour
+        $ip_hash      = 'jg_cp_' . md5($_SERVER['REMOTE_ADDR'] ?? '');
+        $sent_count   = (int) get_transient($ip_hash);
+        if ($sent_count >= 5) {
+            wp_send_json_error(array('message' => 'Zbyt wiele wiadomości. Spróbuj za godzinę.'));
+        }
+
+        // Fetch place email from DB — never returned to the client
+        global $wpdb;
+        $points_table = JG_Map_Database::get_points_table();
+        $row = $wpdb->get_row($wpdb->prepare(
+            "SELECT title, email FROM $points_table WHERE id = %d AND status = 'publish' AND email IS NOT NULL AND email != ''",
+            $point_id
+        ));
+
+        if (!$row || !is_email($row->email)) {
+            wp_send_json_error(array('message' => 'To miejsce nie przyjmuje wiadomości e-mail.'));
+        }
+
+        $place_title = $row->title;
+        $to          = $row->email;
+        $subject     = '[Jeleniogórzanie to my] Wiadomość od: ' . $sender_name;
+        $body        = "Otrzymałeś wiadomość przez portal Jeleniogórzanie to my.\n\n" .
+                       "Nadawca: {$sender_name}\n" .
+                       "E-mail nadawcy: {$sender_email}\n\n" .
+                       "Treść:\n{$message}\n\n" .
+                       "---\n" .
+                       "Wiadomość dotyczy miejsca: {$place_title}\n" .
+                       "Portal: " . home_url('/');
+
+        $headers = array(
+            'Content-Type: text/plain; charset=UTF-8',
+            'Reply-To: ' . $sender_name . ' <' . $sender_email . '>',
+        );
+
+        $sent = wp_mail($to, $subject, $body, $headers);
+
+        if (!$sent) {
+            wp_send_json_error(array('message' => 'Nie udało się wysłać wiadomości. Spróbuj ponownie.'));
+        }
+
+        // Increment rate-limit counter (TTL = 1 hour)
+        set_transient($ip_hash, $sent_count + 1, HOUR_IN_SECONDS);
+
+        wp_send_json_success(array('message' => 'Wiadomość wysłana.'));
     }
 
     /**

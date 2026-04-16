@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.26.17
+ * Version: 3.29.10
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.26.17');
+define('JG_MAP_VERSION', '3.29.10');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -124,8 +124,16 @@ class JG_Interactive_Map {
         add_action('template_redirect', array($this, 'redirect_legacy_tag_urls'), 1);
         add_action('template_redirect', array($this, 'handle_tile_sw'), 1);
         add_action('wp_head', array($this, 'add_point_meta_tags'));
-        add_action('wp_head', array($this, 'add_tag_page_meta_tags'));
-        add_action('wp_head', array($this, 'add_category_page_meta_tags'));
+        add_action('wp_head', array($this, 'add_theme_color_meta'), 1);
+        // Priority 2 (was: default 10).
+        // When suppress_seo_plugin_description_on_*_pages() removes Yoast from
+        // wp_head and adds ob_start at priority 1, these callbacks fire at priority 2
+        // and land inside the output buffer — their canonical/description become the
+        // first (and only) correct tags echoed by dedupe_meta_description_in_head().
+        // Running earlier (closer to priority 1) also slightly reduces the window in
+        // which other plugins could inject duplicate tags before this plugin's output.
+        add_action('wp_head', array($this, 'add_tag_page_meta_tags'), 2);
+        add_action('wp_head', array($this, 'add_category_page_meta_tags'), 2);
 
         // Suppress Yoast/RankMath meta description on catalog tag/category pages (plugin outputs its own)
         add_action('wp', array($this, 'suppress_seo_plugin_description_on_tag_pages'));
@@ -137,10 +145,35 @@ class JG_Interactive_Map {
         add_filter('document_title_parts', array($this, 'filter_category_page_title'));
         add_filter('wpseo_title', array($this, 'filter_category_page_yoast_title'));
 
+        // Ensure Yoast SEO outputs the correct canonical URL for catalog category/tag pages.
+        // Without this, Yoast emits the base /katalog/ canonical on every category/tag variant.
+        add_filter('wpseo_canonical', array($this, 'filter_yoast_canonical_for_catalog'));
+
+        // Ensure RankMath outputs the correct canonical for catalog pages
+        add_filter('rank_math/frontend/canonical', array($this, 'filter_yoast_canonical_for_catalog'));
+
+        // Ensure H1 is present on category/tag pages even when the shortcode is bypassed
+        // (e.g. full-canvas Elementor templates that don't call the_content).
+        // Priority 20: AFTER WordPress core's do_shortcode (priority 11), so the rendered
+        // shortcode HTML (which already contains an H1) is visible to the duplicate check.
+        add_filter('the_content', array($this, 'inject_catalog_h1_if_missing'), 20);
+
         // Register map sitemap in Yoast sitemap index for better discoverability
         add_filter('wpseo_sitemap_index', array($this, 'add_map_sitemap_to_yoast_index'));
         // Add map sitemap to robots.txt
         add_filter('robots_txt', array($this, 'add_map_sitemap_to_robots'), 10, 2);
+
+        // Meta description + SEO for native WP tag/category archive pages
+        // (separate from /katalog/tag/ and /katalog/kategoria/ which are handled above)
+        add_action('wp', array($this, 'suppress_seo_on_wp_tag_category_pages'));
+        add_action('wp_head', array($this, 'add_wp_archive_meta_tags'), 2);
+
+        // H1 deduplication on native WP archive pages (theme loop renders multiple H1s)
+        add_action('wp_body_open', array($this, 'start_archive_h1_buffer'), PHP_INT_MAX);
+        add_action('wp_footer', array($this, 'end_archive_h1_buffer'), 0);
+
+        // Serve IndexNow key verification file at /{key}.txt
+        add_action('template_redirect', array($this, 'handle_indexnow_key_file'), 1);
     }
 
     /**
@@ -162,6 +195,11 @@ class JG_Interactive_Map {
      * Initialize plugin components
      */
     public function init_components() {
+        // Ensure MySQL session uses UTC so that CURRENT_TIMESTAMP values in plugin
+        // tables are stored in UTC and can be safely converted with get_date_from_gmt().
+        global $wpdb;
+        $wpdb->query("SET time_zone = '+00:00'");
+
         // Allow admins to force schema update via URL parameter (for debugging)
         if (isset($_GET['jg_force_schema_update']) && current_user_can('manage_options')) {
             delete_option('jg_map_schema_version');
@@ -296,6 +334,11 @@ class JG_Interactive_Map {
             'top'
         );
         add_rewrite_rule(
+            '^miejsce/([^/]+)/oferta/?$',
+            'index.php?jg_map_point=$matches[1]&jg_map_type=miejsce&jg_map_offerings=1',
+            'top'
+        );
+        add_rewrite_rule(
             '^miejsce/([^/]+)/?$',
             'index.php?jg_map_point=$matches[1]&jg_map_type=miejsce',
             'top'
@@ -352,6 +395,7 @@ class JG_Interactive_Map {
         $vars[] = 'jg_catalog_category';
         $vars[] = 'jg_tile_sw';
         $vars[] = 'jg_map_menu';
+        $vars[] = 'jg_map_offerings';
         return $vars;
     }
 
@@ -387,6 +431,13 @@ class JG_Interactive_Map {
         if ($flush_count_v5 < 3) {
             flush_rewrite_rules(false);
             update_option('jg_map_flush_count_v5', $flush_count_v5 + 1);
+        }
+
+        // v6: flush to register /miejsce/{slug}/oferta/ rewrite rule
+        $flush_count_v6 = get_option('jg_map_flush_count_v6', 0);
+        if ($flush_count_v6 < 3) {
+            flush_rewrite_rules(false);
+            update_option('jg_map_flush_count_v6', $flush_count_v6 + 1);
         }
 
         // Legacy flush check
@@ -486,9 +537,13 @@ class JG_Interactive_Map {
             $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
             if (preg_match('#^/(miejsce|ciekawostka|zgloszenie)/([^/]+)/menu/?$#', $request_uri, $matches)) {
                 $point_slug = sanitize_title($matches[2]);
-                // Override query var so we know it's the menu subpage
                 if (!get_query_var('jg_map_menu')) {
                     set_query_var('jg_map_menu', '1');
+                }
+            } elseif (preg_match('#^/(miejsce|ciekawostka|zgloszenie)/([^/]+)/oferta/?$#', $request_uri, $matches)) {
+                $point_slug = sanitize_title($matches[2]);
+                if (!get_query_var('jg_map_offerings')) {
+                    set_query_var('jg_map_offerings', '1');
                 }
             } elseif (preg_match('#^/(miejsce|ciekawostka|zgloszenie)/([^/]+)/?$#', $request_uri, $matches)) {
                 $point_slug = sanitize_title($matches[2]);
@@ -530,9 +585,9 @@ class JG_Interactive_Map {
         $point = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT id, title, slug, content, excerpt, lat, lng, address, type, category, status,
-                        author_id, is_promo, website, phone, images, featured_image_index,
+                        author_id, is_promo, website, phone, email, images, featured_image_index,
                         facebook_url, instagram_url, linkedin_url, tiktok_url, tags, opening_hours, created_at, updated_at,
-                        seo_canonical, seo_noindex
+                        seo_canonical, seo_noindex, price_range, serves_cuisine
                  FROM $table
                  WHERE slug = %s AND status = 'publish'
                  LIMIT 1",
@@ -632,11 +687,14 @@ class JG_Interactive_Map {
         // No Yoast filter overrides needed since we don't call wp_head()
         ob_start();
 
-        $is_menu_page = (get_query_var('jg_map_menu') == '1');
+        $is_menu_page      = (get_query_var('jg_map_menu') == '1');
+        $is_offerings_page = (get_query_var('jg_map_offerings') == '1');
 
         try {
             if ($is_menu_page) {
                 $this->render_menu_page($point, $request_id);
+            } elseif ($is_offerings_page) {
+                $this->render_offerings_page($point, $request_id);
             } else {
                 $this->render_point_page($point, $request_id, $user_agent_short);
             }
@@ -745,7 +803,28 @@ class JG_Interactive_Map {
         if (!empty($menu_sections_schema)) {
             $menu_schema['hasMenuSection'] = $menu_sections_schema;
         }
+        // Add FoodEstablishment schema with priceRange and servesCuisine if available
+        $menu_schema_cats = JG_Map_Ajax_Handlers::get_place_categories();
+        $menu_schema_cat_key = $point['category'] ?? '';
+        $menu_schema_type = isset($menu_schema_cats[$menu_schema_cat_key]['schema_type']) ? $menu_schema_cats[$menu_schema_cat_key]['schema_type'] : 'FoodEstablishment';
+        $menu_schema_cat_has_price_range = !empty($menu_schema_cats[$menu_schema_cat_key]['has_price_range']);
+        $menu_schema_cat_serves_cuisine  = !empty($menu_schema_cats[$menu_schema_cat_key]['serves_cuisine']);
+        $place_schema = array(
+            '@context' => 'https://schema.org',
+            '@type'    => $menu_schema_type,
+            '@id'      => $point_url . '#place',
+            'name'     => $point['title'],
+            'url'      => $point_url,
+            'hasMenu'  => $menu_url,
+        );
+        if ($menu_schema_cat_has_price_range && !empty($point['price_range'])) {
+            $place_schema['priceRange'] = $point['price_range'];
+        }
+        if ($menu_schema_cat_serves_cuisine && !empty($point['serves_cuisine'])) {
+            $place_schema['servesCuisine'] = $point['serves_cuisine'];
+        }
         echo '<script type="application/ld+json">' . json_encode($menu_schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>' . "\n";
+        echo '<script type="application/ld+json">' . json_encode($place_schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>' . "\n";
     endif;
     ?>
     <style>
@@ -760,6 +839,7 @@ class JG_Interactive_Map {
         .jg-sp { max-width: 800px; margin: 0 auto; padding: 28px 20px 60px; }
         .jg-menu-back { display: inline-flex; align-items: center; gap: 6px; font-size: calc(13 * var(--jg)); color: #6b7280; margin-bottom: 16px; }
         .jg-menu-back:hover { color: <?php echo esc_attr($type_color); ?>; }
+        .jg-sp-site-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         .jg-sp-title { font-size: calc(28 * var(--jg)); font-weight: 800; margin: 0 0 4px 0; color: #111; }
         .jg-sp-date { font-size: calc(12 * var(--jg)); color: #9ca3af; margin-bottom: 24px; }
 
@@ -794,8 +874,17 @@ class JG_Interactive_Map {
 
         .jg-sp-site-footer { text-align: center; padding: 24px 20px; font-size: calc(12 * var(--jg)); color: #9ca3af; border-top: 1px solid #e5e7eb; }
         .jg-menu-empty { color: #9ca3af; font-size: calc(14 * var(--jg)); padding: 24px 0; }
+        .jg-menu-meta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .jg-menu-price-range, .jg-menu-cuisine { padding: 8px 14px; border-radius: 8px; font-size: calc(14 * var(--jg)); }
+        .jg-menu-price-range { color: #374151; }
+        .jg-menu-cuisine { color: #374151; }
+        .jg-menu-price-range__label, .jg-menu-cuisine__label { font-weight: 600; margin-right: 4px; }
+        .jg-menu-price-range__value { font-weight: 800; font-size: calc(16 * var(--jg)); margin-right: 4px; }
+        .jg-menu-price-range__desc { opacity: 0.75; font-size: calc(12 * var(--jg)); }
+        .jg-menu-cuisine__value { font-weight: 600; }
         @media (max-width: 480px) {
             .jg-menu-photos { grid-template-columns: repeat(2, 1fr); }
+            .jg-menu-meta-row { flex-direction: column; }
         }
     </style>
 </head>
@@ -805,13 +894,41 @@ class JG_Interactive_Map {
         <?php if ($logo_url): ?><img src="<?php echo esc_url($logo_url); ?>" alt="<?php echo esc_attr($site_name); ?>"><?php else: echo esc_html($site_name); endif; ?>
     </a>
     <nav class="jg-sp-site-nav">
-        <a href="<?php echo esc_url(home_url('/')); ?>">Otwórz mapę</a>
+        <a href="<?php echo esc_url($point_url); ?>">← <?php echo esc_html($point['title']); ?></a>
+        <a href="<?php echo esc_url(home_url('/')); ?>">Mapa</a>
     </nav>
 </header>
 
 <div class="jg-sp">
     <a href="<?php echo esc_url($point_url); ?>" class="jg-menu-back">← Wróć do: <?php echo esc_html($point['title']); ?></a>
     <h1 class="jg-sp-title">Menu – <?php echo esc_html($point['title']); ?></h1>
+
+    <?php
+    $menu_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
+    $menu_cat_key = $point['category'] ?? '';
+    $menu_cat_has_price_range = !empty($menu_place_cats[$menu_cat_key]['has_price_range']);
+    $menu_cat_serves_cuisine  = !empty($menu_place_cats[$menu_cat_key]['serves_cuisine']);
+    $menu_price_range_labels  = ['$' => 'Bardzo tanie', '$$' => 'Umiarkowane', '$$$' => 'Droższe', '$$$$' => 'Ekskluzywne'];
+    $menu_show_price_range    = $menu_cat_has_price_range && !empty($point['price_range']);
+    $menu_show_cuisine        = $menu_cat_serves_cuisine && !empty($point['serves_cuisine']);
+    if ($menu_show_price_range || $menu_show_cuisine):
+    ?>
+    <div class="jg-menu-meta-row">
+        <?php if ($menu_show_price_range): ?>
+        <div class="jg-menu-price-range">
+            <span class="jg-menu-price-range__label">Zakres cenowy:</span>
+            <span class="jg-menu-price-range__value"><?php echo esc_html($point['price_range']); ?></span>
+            <span class="jg-menu-price-range__desc">(<?php echo esc_html($menu_price_range_labels[$point['price_range']] ?? ''); ?>)</span>
+        </div>
+        <?php endif; ?>
+        <?php if ($menu_show_cuisine): ?>
+        <div class="jg-menu-cuisine">
+            <span class="jg-menu-cuisine__label">Rodzaj kuchni:</span>
+            <span class="jg-menu-cuisine__value"><?php echo esc_html($point['serves_cuisine']); ?></span>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 
     <?php if (!empty($photos)): ?>
     <div class="jg-menu-photos-title">Karta menu</div>
@@ -910,6 +1027,167 @@ class JG_Interactive_Map {
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') overlay.classList.remove('active'); });
 })();
 </script>
+</body>
+</html>
+<?php
+    }
+
+    /**
+     * Render the offerings subpage for a place (/miejsce/{slug}/oferta/)
+     */
+    private function render_offerings_page($point, $request_id = 'unknown') {
+        $point_url    = home_url('/miejsce/' . $point['slug'] . '/');
+        $offering_url = home_url('/miejsce/' . $point['slug'] . '/oferta/');
+        $type_color   = '#166534'; // green
+
+        $site_name  = get_bloginfo('name');
+        $logo_url   = '';
+        $custom_logo_id = get_theme_mod('custom_logo');
+        if ($custom_logo_id) {
+            $logo_url = wp_get_attachment_image_url($custom_logo_id, 'full');
+        }
+        $site_icon_32  = get_site_icon_url(32);
+        $site_icon_192 = get_site_icon_url(192);
+        $site_icon_180 = get_site_icon_url(180);
+
+        $off_cats  = JG_Map_Ajax_Handlers::get_offerings_categories();
+        $off_key   = $point['category'] ?? '';
+        $off_label = isset($off_cats[$off_key]) ? $off_cats[$off_key] : 'Oferta';
+        $items     = JG_Map_Database::get_offerings($point['id']);
+
+        $page_title  = $off_label . ' – ' . $point['title'] . ' | ' . $site_name;
+        $description = 'Sprawdź ' . mb_strtolower($off_label) . ' firmy ' . $point['title'] . ' w Jeleniej Górze.';
+        $canonical   = esc_url($offering_url);
+
+        ?><!doctype html>
+<html lang="pl-PL">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title><?php echo esc_html($page_title); ?></title>
+    <meta name="description" content="<?php echo esc_attr($description); ?>">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="<?php echo $canonical; ?>">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="<?php echo esc_attr($off_label . ' – ' . $point['title']); ?>">
+    <meta property="og:description" content="<?php echo esc_attr($description); ?>">
+    <meta property="og:url" content="<?php echo $canonical; ?>">
+    <meta property="og:locale" content="pl_PL">
+    <?php if ($site_icon_32): ?>
+    <link rel="icon" href="<?php echo esc_url($site_icon_32); ?>" sizes="32x32">
+    <link rel="icon" href="<?php echo esc_url($site_icon_192); ?>" sizes="192x192">
+    <link rel="apple-touch-icon" href="<?php echo esc_url($site_icon_180); ?>">
+    <?php endif; ?>
+    <?php
+    // Schema.org: LocalBusiness + OfferCatalog
+    if (!empty($items)):
+        $ld_items = array();
+        foreach ($items as $idx => $it) {
+            $ld_offer = array('@type' => 'Offer', 'name' => $it['name']);
+            if (!empty($it['description'])) $ld_offer['description'] = $it['description'];
+            if ($it['price'] !== null && $it['price'] !== '') {
+                $ld_offer['price'] = number_format(floatval($it['price']), 2, '.', '');
+                $ld_offer['priceCurrency'] = 'PLN';
+            }
+            $ld_items[] = array(
+                '@type'    => 'ListItem',
+                'position' => $idx + 1,
+                'item'     => $ld_offer,
+            );
+        }
+        $ld_catalog = array(
+            '@context'       => 'https://schema.org',
+            '@type'          => 'OfferCatalog',
+            '@id'            => $offering_url . '#catalog',
+            'name'           => $off_label . ' – ' . $point['title'],
+            'url'            => $offering_url,
+            'itemListElement' => $ld_items,
+        );
+        $all_cats = JG_Map_Ajax_Handlers::get_place_categories();
+        $schema_type = isset($all_cats[$off_key]['schema_type']) ? $all_cats[$off_key]['schema_type'] : 'LocalBusiness';
+        $ld_place = array(
+            '@context'    => 'https://schema.org',
+            '@type'       => $schema_type,
+            '@id'         => $point_url . '#place',
+            'name'        => $point['title'],
+            'url'         => $point_url,
+            'hasOfferCatalog' => array('@id' => $offering_url . '#catalog'),
+        );
+        echo '<script type="application/ld+json">' . json_encode($ld_catalog, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>' . "\n";
+        echo '<script type="application/ld+json">' . json_encode($ld_place, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>' . "\n";
+    endif;
+    ?>
+    <style>
+        :root { --jg: clamp(1px, 0.065vw, 1.1px); }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f9fafb; color: #111; }
+        a { color: inherit; text-decoration: none; }
+        .jg-sp-site-header { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid #e5e7eb; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .jg-sp-site-header a { font-weight: 700; font-size: calc(16 * var(--jg)); color: <?php echo esc_attr($type_color); ?>; display: flex; align-items: center; gap: 8px; }
+        .jg-sp-site-header img { height: 32px; width: auto; }
+        .jg-sp-site-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .jg-sp-site-nav a { font-size: calc(13 * var(--jg)); color: #6b7280; border: 1px solid #e5e7eb; padding: 6px 12px; border-radius: 20px; }
+        .jg-sp { max-width: 800px; margin: 0 auto; padding: 28px 20px 60px; }
+        .jg-off-back { display: inline-flex; align-items: center; gap: 6px; font-size: calc(13 * var(--jg)); color: #6b7280; margin-bottom: 16px; }
+        .jg-off-back:hover { color: <?php echo esc_attr($type_color); ?>; }
+        .jg-sp-title { font-size: calc(28 * var(--jg)); font-weight: 800; margin: 0 0 4px 0; color: #111; }
+        .jg-sp-date { font-size: calc(12 * var(--jg)); color: #9ca3af; margin-bottom: 24px; }
+
+        /* Offering items */
+        .jg-off-list { margin-bottom: 28px; }
+        .jg-off-item { display: flex; align-items: baseline; gap: 8px; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .jg-off-item:last-child { border-bottom: none; }
+        .jg-off-item--unavailable .jg-off-item__name { color: #9ca3af; text-decoration: line-through; }
+        .jg-off-item--unavailable .jg-off-item__price { color: #9ca3af; }
+        .jg-off-item__info { flex: 1; min-width: 0; }
+        .jg-off-item__name { font-size: calc(15 * var(--jg)); font-weight: 600; color: #1f2937; }
+        .jg-off-item__desc { font-size: calc(12 * var(--jg)); color: #6b7280; margin-top: 3px; }
+        .jg-off-item__price { font-size: calc(15 * var(--jg)); font-weight: 700; color: <?php echo esc_attr($type_color); ?>; white-space: nowrap; flex-shrink: 0; }
+        .jg-off-empty { color: #9ca3af; font-size: calc(14 * var(--jg)); padding: 24px 0; }
+
+        .jg-sp-site-footer { text-align: center; padding: 24px 20px; font-size: calc(12 * var(--jg)); color: #9ca3af; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+<header class="jg-sp-site-header">
+    <a href="<?php echo esc_url(home_url('/')); ?>">
+        <?php if ($logo_url): ?><img src="<?php echo esc_url($logo_url); ?>" alt="<?php echo esc_attr($site_name); ?>"><?php else: echo esc_html($site_name); endif; ?>
+    </a>
+    <nav class="jg-sp-site-nav">
+        <a href="<?php echo esc_url($point_url); ?>">← <?php echo esc_html($point['title']); ?></a>
+        <a href="<?php echo esc_url(home_url('/')); ?>">Mapa</a>
+    </nav>
+</header>
+
+<div class="jg-sp">
+    <a href="<?php echo esc_url($point_url); ?>" class="jg-off-back">← Wróć do: <?php echo esc_html($point['title']); ?></a>
+    <h1 class="jg-sp-title">📋 <?php echo esc_html($off_label); ?> – <?php echo esc_html($point['title']); ?></h1>
+
+    <?php if (!empty($items)): ?>
+    <div class="jg-off-list">
+        <?php foreach ($items as $it): ?>
+        <div class="jg-off-item<?php echo (!$it['is_available']) ? ' jg-off-item--unavailable' : ''; ?>">
+            <div class="jg-off-item__info">
+                <div class="jg-off-item__name"><?php echo esc_html($it['name']); ?></div>
+                <?php if (!empty($it['description'])): ?>
+                <div class="jg-off-item__desc"><?php echo esc_html($it['description']); ?></div>
+                <?php endif; ?>
+            </div>
+            <?php if ($it['price'] !== null && $it['price'] !== ''): ?>
+            <div class="jg-off-item__price"><?php echo number_format(floatval($it['price']), 2, ',', ' ') . ' zł'; ?></div>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php else: ?>
+    <p class="jg-off-empty">Oferta nie została jeszcze dodana.</p>
+    <?php endif; ?>
+</div>
+
+<footer class="jg-sp-site-footer">
+    <a href="<?php echo esc_url(home_url('/')); ?>"><?php echo esc_html($site_name); ?></a> &middot;
+    <a href="<?php echo esc_url($point_url); ?>"><?php echo esc_html($point['title']); ?></a>
+</footer>
 </body>
 </html>
 <?php
@@ -1069,11 +1347,14 @@ class JG_Interactive_Map {
         .jg-sp-site-header a { display: flex; align-items: center; gap: 10px; }
         .jg-sp-site-logo { height: 40px; width: auto; }
         .jg-sp-site-name { font-size: calc(16 * var(--jg)); font-weight: 700; color: #111; }
+        .jg-sp-site-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         .jg-sp-site-nav a {
             font-size: calc(14 * var(--jg)); font-weight: 600; color: #fff; background: <?php echo $type_color; ?>;
             padding: 8px 16px; border-radius: 8px; transition: opacity 0.15s;
         }
         .jg-sp-site-nav a:hover { opacity: 0.85; }
+        .jg-sp-back { display: inline-flex; align-items: center; gap: 6px; font-size: calc(13 * var(--jg)); color: #6b7280; margin-bottom: 16px; }
+        .jg-sp-back:hover { color: <?php echo $type_color; ?>; }
 
         /* Main content container */
         .jg-sp { max-width: 800px; margin: 0 auto; padding: 28px 20px 48px; background: #fff; min-height: calc(100vh - 130px); }
@@ -1130,6 +1411,47 @@ class JG_Interactive_Map {
         .jg-sp-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 24px; }
         .jg-sp-contact-link { color: #2563eb; font-size: calc(15 * var(--jg)); display: inline-flex; align-items: center; gap: 6px; }
         .jg-sp-contact-link:hover { text-decoration: underline; }
+        .jg-sp-contact-email-btn {
+            all: unset; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+            padding: 7px 14px; background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: 8px;
+            color: #1d4ed8; font-size: calc(15 * var(--jg)); font-weight: 600; font-family: inherit;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .jg-sp-contact-email-btn:hover,
+        .jg-sp-contact-email-btn:focus { background: #dbeafe; border-color: #60a5fa; color: #1e40af; text-decoration: none; }
+        /* Contact modal overlay */
+        #jg-sp-contact-modal-bg {
+            display: none; position: fixed; inset: 0; z-index: 99999;
+            background: rgba(0,0,0,0.55); align-items: center; justify-content: center; padding: 16px;
+        }
+        #jg-sp-contact-modal-bg.active { display: flex; }
+        #jg-sp-contact-modal {
+            background: #fff; border-radius: 12px; padding: 24px; max-width: 480px; width: 100%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18); position: relative;
+        }
+        #jg-sp-contact-modal h3 { margin: 0 0 18px; font-size: calc(17 * var(--jg)); font-weight: 700; padding-right: 28px; }
+        #jg-sp-contact-modal .jg-sp-cm-close {
+            position: absolute; top: 14px; right: 16px; background: none; border: none;
+            font-size: 22px; line-height: 1; cursor: pointer; color: #6b7280;
+        }
+        #jg-sp-contact-modal label { display: flex; flex-direction: column; gap: 4px; font-size: calc(13 * var(--jg)); font-weight: 600; color: #374151; margin-bottom: 12px; }
+        #jg-sp-contact-modal input, #jg-sp-contact-modal textarea {
+            width: 100%; padding: 9px 12px; border: 1.5px solid #d1d5db; border-radius: 8px;
+            font-size: calc(14 * var(--jg)); font-family: inherit; color: #111827; box-sizing: border-box;
+        }
+        #jg-sp-contact-modal input:focus, #jg-sp-contact-modal textarea:focus { outline: none; border-color: #8d2324; }
+        #jg-sp-contact-modal textarea { min-height: 100px; resize: vertical; }
+        #jg-sp-contact-modal .jg-sp-cm-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+        #jg-sp-contact-modal .jg-sp-cm-submit {
+            padding: 9px 20px; background: #8d2324; color: #fff; border: none; border-radius: 8px;
+            font-size: calc(14 * var(--jg)); font-weight: 600; font-family: inherit; cursor: pointer;
+        }
+        #jg-sp-contact-modal .jg-sp-cm-submit:disabled { opacity: 0.6; cursor: default; }
+        #jg-sp-contact-modal .jg-sp-cm-cancel {
+            padding: 9px 16px; background: #f3f4f6; color: #374151; border: 1.5px solid #e5e7eb;
+            border-radius: 8px; font-size: calc(14 * var(--jg)); font-family: inherit; cursor: pointer;
+        }
+        #jg-sp-contact-status { font-size: calc(13 * var(--jg)); text-align: center; min-height: 18px; margin-top: 6px; }
         .jg-sp-social {
             display: inline-flex; align-items: center; justify-content: center;
             width: 40px; height: 40px; border-radius: 50%;
@@ -1140,7 +1462,8 @@ class JG_Interactive_Map {
 
         /* Address */
         .jg-sp-address { font-size: calc(15 * var(--jg)); color: #6b7280; margin-bottom: 24px; }
-        .jg-sp-oh { margin-bottom: 24px; }
+        .jg-sp-oh-wrap { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; align-items: flex-start; }
+        .jg-sp-oh { flex: 1 1 50%; min-width: 220px; }
         .jg-sp-oh-title { font-size: calc(13 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin: 0 0 8px 0; }
         .jg-sp-oh-table { width: 100%; border-collapse: collapse; font-size: calc(14 * var(--jg)); color: #374151; }
         .jg-sp-oh-table tr { border-bottom: 1px solid #f3f4f6; }
@@ -1148,6 +1471,15 @@ class JG_Interactive_Map {
         .jg-sp-oh-day { padding: 5px 16px 5px 0; font-weight: 500; width: 55%; }
         .jg-sp-oh-time { padding: 5px 0; }
         .jg-sp-oh-closed { color: #dc2626; }
+        .jg-sp-price-info { flex: 1 1 40%; min-width: 160px; display: flex; flex-direction: column; gap: 12px; }
+        .jg-sp-price-range { padding: 12px 14px; border-radius: 10px; }
+        .jg-sp-price-range__label { font-size: calc(11 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-bottom: 4px; }
+        .jg-sp-price-range__value { font-size: calc(24 * var(--jg)); font-weight: 800; letter-spacing: 0.04em; color: #111827; line-height: 1.1; }
+        .jg-sp-price-range__desc { font-size: calc(12 * var(--jg)); color: #6b7280; margin-top: 2px; }
+        .jg-sp-cuisine { padding: 12px 14px; border-radius: 10px; }
+        .jg-sp-cuisine__label { font-size: calc(11 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-bottom: 4px; }
+        .jg-sp-cuisine__value { font-size: calc(15 * var(--jg)); font-weight: 600; color: #111827; }
+        @media (max-width: 480px) { .jg-sp-oh-wrap { flex-direction: column; } .jg-sp-oh, .jg-sp-price-info { flex: 1 1 100%; min-width: 0; } }
 
         /* Menu preview */
         .jg-sp-menu-preview { margin-bottom: 24px; padding: 14px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; }
@@ -1157,8 +1489,36 @@ class JG_Interactive_Map {
         .jg-sp-menu-preview__row:last-of-type { border-bottom: none; }
         .jg-sp-menu-preview__name { color: #111; flex: 1; min-width: 0; }
         .jg-sp-menu-preview__price { color: #065f46; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
-        .jg-sp-menu-preview__link { display: inline-block; margin-top: 10px; font-size: calc(13 * var(--jg)); color: #059669; font-weight: 600; }
+        .jg-sp-menu-preview__link { display: inline-block; margin-top: 10px; font-size: calc(13 * var(--jg)); color: #14532d !important; font-weight: 600; }
         .jg-sp-menu-preview__link:hover { text-decoration: underline; }
+
+        /* Offerings preview (services / products) — standalone card, same level as menu preview */
+        .jg-sp-offerings-preview { margin-bottom: 24px; padding: 14px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; }
+        .jg-sp-offerings-preview__title { font-size: calc(13 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #065f46; margin-bottom: 10px; }
+        .jg-sp-offerings-preview__row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px solid #d1fae5; font-size: calc(14 * var(--jg)); }
+        .jg-sp-offerings-preview__row:last-of-type { border-bottom: none; }
+        .jg-sp-offerings-preview__name { color: #111; flex: 1; min-width: 0; }
+        .jg-sp-offerings-preview__price { color: #065f46; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+
+        /* Business promo box */
+        .jg-sp-biz-promo {
+            display: flex; align-items: flex-start; gap: 14px;
+            background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+            border: 1.5px solid #3b82f6; border-radius: 12px;
+            padding: 16px 18px; margin-bottom: 24px;
+        }
+        .jg-sp-biz-promo__icon { font-size: calc(28 * var(--jg)); flex-shrink: 0; line-height: 1; }
+        .jg-sp-biz-promo__body { flex: 1; min-width: 0; }
+        .jg-sp-biz-promo__title { font-size: calc(14 * var(--jg)); font-weight: 700; color: #1e3a8a; margin-bottom: 4px; }
+        .jg-sp-biz-promo__desc { font-size: calc(13 * var(--jg)); color: #4b5563; line-height: 1.5; }
+        .jg-sp-biz-promo__btn {
+            display: inline-block; margin-top: 10px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff; font-size: calc(13 * var(--jg)); font-weight: 700;
+            padding: 8px 16px; border-radius: 8px; text-decoration: none;
+            white-space: nowrap; transition: opacity 0.15s;
+        }
+        .jg-sp-biz-promo__btn:hover { opacity: 0.87; color: #fff; }
 
         /* Gallery grid */
         .jg-sp-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 28px; }
@@ -1253,6 +1613,16 @@ class JG_Interactive_Map {
         }
         .jg-sp-dir-btn:hover { background: #dbeafe; box-shadow: 0 2px 10px rgba(37,99,235,0.18); color: #1d4ed8; }
         .jg-sp-dir-btn svg { width: 20px; height: 20px; fill: #1d4ed8; flex-shrink: 0; }
+        .jg-sp-menu-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 9px 18px; background: #f0fdf4; color: #166534;
+            border: 1.5px solid #bbf7d0; border-radius: 10px;
+            font-size: calc(14 * var(--jg)); font-weight: 700;
+            text-decoration: none; white-space: nowrap; flex-shrink: 0;
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .jg-sp-menu-btn:hover { background: #dcfce7; box-shadow: 0 2px 10px rgba(22,101,52,0.15); color: #166534; }
+        .jg-sp-menu-btn svg { width: 20px; height: 20px; fill: #166534; flex-shrink: 0; }
 
         /* offset body so redirect banner doesn't overlap header — set dynamically by JS */
         body { padding-top: 0; }
@@ -1335,6 +1705,7 @@ class JG_Interactive_Map {
             .jg-stay-banner__timer { flex-basis: 100%; }
             .jg-stay-countdown { font-size: calc(26 * var(--jg)); }
         }
+
     </style>
 </head>
 <body>
@@ -1368,6 +1739,7 @@ class JG_Interactive_Map {
         </header>
 
         <div class="jg-sp">
+            <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" class="jg-sp-back">← Wróć do mapy i otwórz modal</a>
             <!-- Prominent "View on Map" CTA (manual click only, no auto-redirect) -->
             <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" class="jg-sp-map-cta">
                 <div>
@@ -1407,8 +1779,16 @@ class JG_Interactive_Map {
             <!-- Date -->
             <div class="jg-sp-date"><?php echo get_date_from_gmt($point['created_at'], 'd.m.Y'); ?></div>
 
-            <!-- Star rating (read-only; voting requires map + login) -->
-            <?php if ($total_votes > 0):
+            <!-- Star rating + price range inline -->
+            <?php
+            // Compute price range flag early so it can appear inline next to rating
+            $_sp_pr_cats    = JG_Map_Ajax_Handlers::get_place_categories();
+            $_sp_pr_cat_key = $point['category'] ?? '';
+            $_sp_pr_show    = $point['type'] === 'miejsce'
+                && !empty($_sp_pr_cats[$_sp_pr_cat_key]['has_price_range'])
+                && !empty($point['price_range']);
+            $_sp_pr_labels  = ['$' => 'Bardzo tanie', '$$' => 'Umiarkowane', '$$$' => 'Droższe', '$$$$' => 'Ekskluzywne'];
+            if ($total_votes > 0):
                 $sp_stars_full  = floor($avg_rating_schema);
                 $sp_stars_empty = 5 - $sp_stars_full;
             ?>
@@ -1419,11 +1799,108 @@ class JG_Interactive_Map {
                 <strong style="font-size:16px"><?php echo esc_html(number_format($avg_rating_schema, 1)); ?></strong>
                 <span style="color:#6b7280;font-size:13px">(<?php echo esc_html($total_votes); ?> <?php echo esc_html($total_votes === 1 ? 'ocena' : ($total_votes >= 2 && $total_votes <= 4 ? 'oceny' : 'ocen')); ?>)</span>
                 <span style="font-size:12px;color:#92400e">— <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#b45309">oceń na mapie</a> (wymagane logowanie)</span>
+                <?php if ($_sp_pr_show): ?>
+                <span style="display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:6px;font-size:13px;color:#374151;white-space:nowrap">
+                    <span style="font-weight:800;font-size:15px;letter-spacing:0.04em"><?php echo esc_html($point['price_range']); ?></span>
+                    <span style="color:#6b7280;font-size:12px"><?php echo esc_html($_sp_pr_labels[$point['price_range']] ?? ''); ?></span>
+                </span>
+                <?php endif; ?>
             </div>
             <?php else: ?>
-            <div style="font-size:13px;color:#9ca3af;margin:8px 0 16px">
-                Brak ocen &mdash; <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#2563eb">przejdź na mapę i zaloguj się</a>, aby ocenić.
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:#9ca3af;margin:8px 0 16px">
+                <span>Brak ocen &mdash; <a href="<?php echo esc_url(home_url('/?from=point#point-' . $point['id'])); ?>" style="color:#2563eb">przejdź na mapę i zaloguj się</a>, aby ocenić.</span>
+                <?php if ($_sp_pr_show): ?>
+                <span style="display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:6px;font-size:13px;color:#374151;white-space:nowrap">
+                    <span style="font-weight:800;font-size:15px;letter-spacing:0.04em"><?php echo esc_html($point['price_range']); ?></span>
+                    <span style="color:#6b7280;font-size:12px"><?php echo esc_html($_sp_pr_labels[$point['price_range']] ?? ''); ?></span>
+                </span>
+                <?php endif; ?>
             </div>
+            <?php endif; ?>
+
+            <!-- Business promo box (shown when category has show_promo enabled, hidden for already-sponsored places) -->
+            <?php
+            $sp_promo_cats = JG_Map_Ajax_Handlers::get_promo_categories();
+            if ($point['type'] === 'miejsce' && empty($point['is_promo']) && in_array($point['category'] ?? '', $sp_promo_cats, true)):
+                $sp_promo_logged_in = is_user_logged_in();
+                $sp_promo_nonce     = $sp_promo_logged_in ? wp_create_nonce('jg_map_nonce') : '';
+                $sp_promo_ajax_url  = admin_url('admin-ajax.php');
+                $sp_promo_login_url = wp_login_url(get_permalink() ?: home_url('/miejsce/' . $point['slug'] . '/'));
+            ?>
+            <div class="jg-sp-biz-promo">
+                <div class="jg-sp-biz-promo__icon">💼</div>
+                <div class="jg-sp-biz-promo__body">
+                    <div class="jg-sp-biz-promo__title">Jesteś właścicielem tego biznesu? Zwiększ jego widoczność na mapie już od 49 zł / miesiąc.</div>
+                    <div class="jg-sp-biz-promo__desc">Promuj swoją firmę! Lepsza widoczność na mapie, możliwość dodania danych kontaktowych i priorytet w wyświetlaniu w naszym portalu.</div>
+                    <?php if ($sp_promo_logged_in): ?>
+                    <button
+                        id="jg-sp-promo-btn"
+                        class="jg-sp-biz-promo__btn"
+                        data-ajax="<?php echo esc_url($sp_promo_ajax_url); ?>"
+                        data-nonce="<?php echo esc_attr($sp_promo_nonce); ?>"
+                        data-point-id="<?php echo esc_attr($point['id']); ?>"
+                        data-point-title="<?php echo esc_attr($point['title']); ?>"
+                        data-point-category="<?php echo esc_attr($point['category'] ?? ''); ?>"
+                        data-point-address="<?php echo esc_attr($point['address'] ?? ''); ?>"
+                        data-point-lat="<?php echo esc_attr($point['lat'] ?? ''); ?>"
+                        data-point-lng="<?php echo esc_attr($point['lng'] ?? ''); ?>"
+                    >Zapytaj o ofertę</button>
+                    <div id="jg-sp-promo-msg" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:0.875rem;font-weight:600"></div>
+                    <?php else: ?>
+                    <a href="<?php echo esc_url($sp_promo_login_url); ?>" class="jg-sp-biz-promo__btn">Zaloguj się, aby zapytać o ofertę</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <script>
+            (function() {
+                var btn = document.getElementById('jg-sp-promo-btn');
+                if (!btn) return;
+                var msg = document.getElementById('jg-sp-promo-msg');
+                btn.addEventListener('click', function() {
+                    btn.disabled = true;
+                    btn.textContent = 'Wysyłanie...';
+                    var body = new URLSearchParams({
+                        action:         'jg_request_promotion',
+                        _ajax_nonce:    btn.dataset.nonce,
+                        point_id:       btn.dataset.pointId,
+                        point_title:    btn.dataset.pointTitle,
+                        point_category: btn.dataset.pointCategory,
+                        point_address:  btn.dataset.pointAddress,
+                        point_lat:      btn.dataset.pointLat,
+                        point_lng:      btn.dataset.pointLng
+                    });
+                    fetch(btn.dataset.ajax, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            if (data.success) {
+                                btn.textContent = 'Wysłano ✓';
+                                btn.style.background = '#d1fae5';
+                                btn.style.color = '#065f46';
+                                btn.style.borderColor = '#10b981';
+                                msg.style.display = 'block';
+                                msg.style.background = '#d1fae5';
+                                msg.style.color = '#065f46';
+                                msg.textContent = 'Prośba o ofertę została przesłana! Otrzymasz odpowiedź w ciągu 24 godzin roboczych na adres e-mail powiązany z Twoim kontem.';
+                            } else {
+                                btn.disabled = false;
+                                btn.textContent = 'Zapytaj o ofertę';
+                                msg.style.display = 'block';
+                                msg.style.background = '#fee2e2';
+                                msg.style.color = '#991b1b';
+                                msg.textContent = (data.data && data.data.message) ? data.data.message : 'Wystąpił błąd. Spróbuj ponownie.';
+                            }
+                        })
+                        .catch(function() {
+                            btn.disabled = false;
+                            btn.textContent = 'Zapytaj o ofertę';
+                            msg.style.display = 'block';
+                            msg.style.background = '#fee2e2';
+                            msg.style.color = '#991b1b';
+                            msg.textContent = 'Błąd połączenia. Spróbuj ponownie.';
+                        });
+                });
+            })();
+            </script>
             <?php endif; ?>
 
             <!-- Content -->
@@ -1446,13 +1923,22 @@ class JG_Interactive_Map {
             <?php if (!empty($point['website']) || !empty($point['phone']) || !empty($point['email']) || !empty($point['facebook_url']) || !empty($point['instagram_url']) || !empty($point['linkedin_url']) || !empty($point['tiktok_url'])): ?>
                 <div class="jg-sp-contact">
                     <?php if (!empty($point['phone'])): ?>
-                        <a href="tel:<?php echo esc_attr($point['phone']); ?>" class="jg-sp-contact-link">&#128222; <?php echo esc_html($point['phone']); ?></a>
+                        <a href="tel:<?php echo esc_attr($point['phone']); ?>" class="jg-sp-contact-email-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            <?php echo esc_html($point['phone']); ?>
+                        </a>
                     <?php endif; ?>
                     <?php if (!empty($point['email'])): ?>
-                        <a href="mailto:<?php echo esc_attr($point['email']); ?>" class="jg-sp-contact-link">&#9993; <?php echo esc_html($point['email']); ?></a>
+                        <button type="button" class="jg-sp-contact-email-btn" id="jg-sp-contact-open">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                            Napisz wiadomość
+                        </button>
                     <?php endif; ?>
                     <?php if (!empty($point['website'])): ?>
-                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-sp-contact-link">&#127760; <?php echo esc_html(parse_url($point['website'], PHP_URL_HOST) ?: $point['website']); ?></a>
+                        <a href="<?php echo esc_url($point['website']); ?>" target="_blank" rel="noopener" class="jg-sp-contact-email-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                            <?php echo esc_html(parse_url($point['website'], PHP_URL_HOST) ?: $point['website']); ?>
+                        </a>
                     <?php endif; ?>
                     <?php if (!empty($point['facebook_url'])): ?>
                         <a href="<?php echo esc_url($point['facebook_url']); ?>" target="_blank" rel="noopener" class="jg-sp-social" style="background:#1877f2" title="Facebook"><svg viewBox="0 0 320 512" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/></svg></a>
@@ -1470,10 +1956,22 @@ class JG_Interactive_Map {
             <?php endif; ?>
 
             <!-- Address + Directions button -->
-            <?php if (!empty($point['address']) || (!empty($point['lat']) && !empty($point['lng']))): ?>
+            <?php
+            $sp_menu_btn_url = '';
+            if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])) {
+                $sp_menu_btn_url = home_url('/miejsce/' . $point['slug'] . '/menu/');
+            }
+            ?>
+            <?php if (!empty($point['address']) || (!empty($point['lat']) && !empty($point['lng'])) || $sp_menu_btn_url): ?>
                 <div class="jg-sp-address-wrap">
                     <?php if (!empty($point['address'])): ?>
                         <div class="jg-sp-address">&#128205; <?php echo esc_html($point['address']); ?></div>
+                    <?php endif; ?>
+                    <?php if ($sp_menu_btn_url): ?>
+                        <a href="<?php echo esc_url($sp_menu_btn_url); ?>" class="jg-sp-menu-btn">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
+                            <span>Menu</span>
+                        </a>
                     <?php endif; ?>
                     <?php if (!empty($point['lat']) && !empty($point['lng'])): ?>
                         <a href="https://www.google.com/maps/dir/?api=1&destination=<?php echo urlencode($point['lat'] . ',' . $point['lng']); ?>" target="_blank" rel="noopener" class="jg-sp-dir-btn">
@@ -1483,6 +1981,18 @@ class JG_Interactive_Map {
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
+
+            <!-- Offerings preview variables (non-gastronomic places) -->
+            <?php
+            $sp_off_cats      = JG_Map_Ajax_Handlers::get_offerings_categories();
+            $sp_off_key       = $point['category'] ?? '';
+            $sp_has_offerings = $point['type'] === 'miejsce'
+                && isset($sp_off_cats[$sp_off_key])
+                && JG_Map_Database::point_has_offerings($point['id']);
+            $sp_offerings     = $sp_has_offerings ? JG_Map_Database::get_offerings($point['id']) : array();
+            $sp_off_label     = $sp_has_offerings ? $sp_off_cats[$sp_off_key] : '';
+            $sp_has_offerings = $sp_has_offerings && !empty($sp_offerings);
+            ?>
 
             <!-- Menu preview (gastronomy places only) -->
             <?php
@@ -1532,7 +2042,35 @@ class JG_Interactive_Map {
             </div>
             <?php endif; endif; ?>
 
-            <!-- Opening hours -->
+            <!-- Offerings preview (services / products — non-gastronomic places) -->
+            <?php if ($sp_has_offerings):
+                $sp_off_url = home_url('/miejsce/' . $point['slug'] . '/oferta/');
+                $sp_off_max = 6; $sp_off_shown = 0;
+            ?>
+            <div class="jg-sp-offerings-preview">
+                <div class="jg-sp-offerings-preview__title">📋 <?php echo esc_html($sp_off_label); ?></div>
+                <?php foreach ($sp_offerings as $sp_off_item): ?>
+                    <?php if ($sp_off_shown >= $sp_off_max) break; $sp_off_shown++; ?>
+                    <?php
+                    $sp_off_price_str = '';
+                    if ($sp_off_item['price'] !== null && $sp_off_item['price'] !== '') {
+                        $sp_off_price_str = number_format(floatval($sp_off_item['price']), 2, ',', '') . '&nbsp;zł';
+                    }
+                    ?>
+                    <div class="jg-sp-offerings-preview__row">
+                        <span class="jg-sp-offerings-preview__name"><?php echo esc_html($sp_off_item['name']); ?></span>
+                        <?php if ($sp_off_price_str): ?><span class="jg-sp-offerings-preview__price"><?php echo $sp_off_price_str; ?></span><?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+                <?php if (count($sp_offerings) > $sp_off_max): ?>
+                <div style="font-size:calc(12 * var(--jg));color:#6b7280;margin-top:6px">+ <?php echo count($sp_offerings) - $sp_off_max; ?> więcej&hellip;</div>
+                <?php endif; ?>
+                <a href="<?php echo esc_url($sp_off_url); ?>" class="jg-sp-menu-preview__link">Zobacz pełną ofertę →</a>
+            </div>
+            <?php endif; ?>
+
+            <!-- Opening hours + cuisine -->
+
             <?php
             $sp_oh_days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
             $sp_oh_labels = ['Mo' => 'Poniedziałek', 'Tu' => 'Wtorek', 'We' => 'Środa', 'Th' => 'Czwartek', 'Fr' => 'Piątek', 'Sa' => 'Sobota', 'Su' => 'Niedziela'];
@@ -1545,24 +2083,42 @@ class JG_Interactive_Map {
                     }
                 }
             }
-            if (!empty($sp_oh_parsed)):
+            $sp_place_cats_tmp = JG_Map_Ajax_Handlers::get_place_categories();
+            $sp_cat_key = $point['category'] ?? '';
+            $sp_cat_serves_cuisine = $point['type'] === 'miejsce' && !empty($sp_place_cats_tmp[$sp_cat_key]['serves_cuisine']);
+            $sp_show_cuisine       = $sp_cat_serves_cuisine && !empty($point['serves_cuisine']);
+
+            $sp_show_oh_block = !empty($sp_oh_parsed) || $sp_show_cuisine;
+            if ($sp_show_oh_block):
             ?>
-            <div class="jg-sp-oh">
-                <h2 class="jg-sp-oh-title">Godziny otwarcia</h2>
-                <table class="jg-sp-oh-table">
-                    <?php foreach ($sp_oh_days as $sp_oh_key): ?>
-                    <tr>
-                        <td class="jg-sp-oh-day"><?php echo esc_html($sp_oh_labels[$sp_oh_key]); ?></td>
-                        <td class="jg-sp-oh-time">
-                            <?php if (isset($sp_oh_parsed[$sp_oh_key])): ?>
-                                <?php echo esc_html($sp_oh_parsed[$sp_oh_key]['open'] . ' – ' . ($sp_oh_parsed[$sp_oh_key]['close'] === '24:00' ? '00:00' : $sp_oh_parsed[$sp_oh_key]['close'])); ?>
-                            <?php else: ?>
-                                <span class="jg-sp-oh-closed">Nieczynne</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </table>
+            <div class="jg-sp-oh-wrap">
+                <?php if (!empty($sp_oh_parsed)): ?>
+                <div class="jg-sp-oh">
+                    <h2 class="jg-sp-oh-title">Godziny otwarcia</h2>
+                    <table class="jg-sp-oh-table">
+                        <?php foreach ($sp_oh_days as $sp_oh_key): ?>
+                        <tr>
+                            <td class="jg-sp-oh-day"><?php echo esc_html($sp_oh_labels[$sp_oh_key]); ?></td>
+                            <td class="jg-sp-oh-time">
+                                <?php if (isset($sp_oh_parsed[$sp_oh_key])): ?>
+                                    <?php echo esc_html($sp_oh_parsed[$sp_oh_key]['open'] . ' – ' . ($sp_oh_parsed[$sp_oh_key]['close'] === '24:00' ? '00:00' : $sp_oh_parsed[$sp_oh_key]['close'])); ?>
+                                <?php else: ?>
+                                    <span class="jg-sp-oh-closed">Nieczynne</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </table>
+                </div>
+                <?php endif; ?>
+                <?php if ($sp_show_cuisine): ?>
+                <div class="jg-sp-price-info">
+                    <div class="jg-sp-cuisine">
+                        <div class="jg-sp-cuisine__label">Rodzaj kuchni</div>
+                        <div class="jg-sp-cuisine__value"><?php echo esc_html($point['serves_cuisine']); ?></div>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
 
@@ -1683,6 +2239,90 @@ class JG_Interactive_Map {
             };
         })();
         </script>
+
+        <?php if (!empty($point['email'])): ?>
+        <!-- Place contact modal (email stays server-side) -->
+        <div id="jg-sp-contact-modal-bg" role="dialog" aria-modal="true" aria-label="Formularz kontaktowy">
+            <div id="jg-sp-contact-modal">
+                <button class="jg-sp-cm-close" id="jg-sp-cm-close" aria-label="Zamknij">&times;</button>
+                <h3>✉️ Napisz do: <?php echo esc_html($point['title']); ?></h3>
+                <form id="jg-sp-contact-form" autocomplete="on">
+                    <label>Twoje imię lub nazwa<input type="text" name="sender_name" required maxlength="120" placeholder="Wpisz swoje imię"></label>
+                    <label>Twój adres e-mail<input type="email" name="sender_email" required maxlength="200" placeholder="twoj@email.pl"></label>
+                    <label>Wiadomość<textarea name="message" required maxlength="2000" placeholder="Treść wiadomości..."></textarea></label>
+                    <p id="jg-sp-contact-status"></p>
+                    <div class="jg-sp-cm-actions">
+                        <button type="button" class="jg-sp-cm-cancel" id="jg-sp-cm-cancel">Anuluj</button>
+                        <button type="submit" class="jg-sp-cm-submit" id="jg-sp-cm-submit">Wyślij wiadomość</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script>
+        (function() {
+            var openBtn  = document.getElementById('jg-sp-contact-open');
+            var modalBg  = document.getElementById('jg-sp-contact-modal-bg');
+            var closeBtn = document.getElementById('jg-sp-cm-close');
+            var cancelBtn = document.getElementById('jg-sp-cm-cancel');
+            var form     = document.getElementById('jg-sp-contact-form');
+            var status   = document.getElementById('jg-sp-contact-status');
+            var submitBtn = document.getElementById('jg-sp-cm-submit');
+            var pointId  = <?php echo intval($point['id']); ?>;
+            var ajaxUrl  = <?php echo json_encode(admin_url('admin-ajax.php')); ?>;
+            var nonce    = <?php echo json_encode(wp_create_nonce('jg_map_nonce')); ?>;
+
+            function openModal() { modalBg.classList.add('active'); }
+            function closeModal() { modalBg.classList.remove('active'); status.textContent = ''; status.style.color = ''; }
+
+            if (openBtn)   openBtn.addEventListener('click', openModal);
+            if (closeBtn)  closeBtn.addEventListener('click', closeModal);
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+            modalBg.addEventListener('click', function(e) { if (e.target === modalBg) closeModal(); });
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var senderName  = (form.sender_name.value  || '').trim();
+                var senderEmail = (form.sender_email.value || '').trim();
+                var message     = (form.message.value      || '').trim();
+                if (!senderName || !senderEmail || !message) {
+                    status.textContent = 'Uzupełnij wszystkie pola.';
+                    status.style.color = '#b91c1c';
+                    return;
+                }
+                submitBtn.disabled = true;
+                status.textContent = 'Wysyłanie…';
+                status.style.color = '#555';
+                var fd = new FormData();
+                fd.append('action',       'jg_contact_place');
+                fd.append('nonce',        nonce);
+                fd.append('point_id',     pointId);
+                fd.append('sender_name',  senderName);
+                fd.append('sender_email', senderEmail);
+                fd.append('message',      message);
+                fetch(ajaxUrl, { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        if (res.success) {
+                            status.textContent = 'Wiadomość wysłana. Dziękujemy!';
+                            status.style.color = '#15803d';
+                            form.reset();
+                            setTimeout(closeModal, 1800);
+                        } else {
+                            status.textContent = (res.data && res.data.message) || 'Wystąpił błąd. Spróbuj ponownie.';
+                            status.style.color = '#b91c1c';
+                            submitBtn.disabled = false;
+                        }
+                    })
+                    .catch(function() {
+                        status.textContent = 'Błąd połączenia. Spróbuj ponownie.';
+                        status.style.color = '#b91c1c';
+                        submitBtn.disabled = false;
+                    });
+            });
+        })();
+        </script>
+        <?php endif; ?>
 </body>
 </html>
         <?php
@@ -1897,7 +2537,13 @@ class JG_Interactive_Map {
     if ($point['type'] === 'miejsce') {
         $fb_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
         $fb_schema_type = isset($fb_place_cats[$fb_point_category]['schema_type']) ? $fb_place_cats[$fb_point_category]['schema_type'] : 'LocalBusiness';
-    } elseif ($point['type'] === 'ciekawostka') {
+        $fb_cat_has_price_range = !empty($fb_place_cats[$fb_point_category]['has_price_range']);
+        $fb_cat_serves_cuisine  = !empty($fb_place_cats[$fb_point_category]['serves_cuisine']);
+    } else {
+        $fb_cat_has_price_range = false;
+        $fb_cat_serves_cuisine  = false;
+    }
+    if ($point['type'] === 'ciekawostka') {
         $fb_cur_cats = JG_Map_Ajax_Handlers::get_curiosity_categories();
         $fb_schema_type = isset($fb_cur_cats[$fb_point_category]['schema_type']) ? $fb_cur_cats[$fb_point_category]['schema_type'] : 'TouristAttraction';
     }
@@ -1942,6 +2588,12 @@ class JG_Interactive_Map {
                 <?php endif; ?>
                 <?php if (!empty($point['email'])): ?>
                 ,"email": <?php echo json_encode($point['email']); ?>
+                <?php endif; ?>
+                <?php if ($fb_cat_has_price_range && !empty($point['price_range'])): ?>
+                ,"priceRange": <?php echo json_encode($point['price_range']); ?>
+                <?php endif; ?>
+                <?php if ($fb_cat_serves_cuisine && !empty($point['serves_cuisine'])): ?>
+                ,"servesCuisine": <?php echo json_encode($point['serves_cuisine']); ?>
                 <?php endif; ?>
                 <?php if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])): ?>
                 ,"hasMenu": <?php echo json_encode(home_url('/miejsce/' . $point['slug'] . '/menu/')); ?>
@@ -2131,6 +2783,10 @@ class JG_Interactive_Map {
     /**
      * Add SEO meta tags for point pages
      */
+    public function add_theme_color_meta() {
+        echo '<meta name="theme-color" content="#8d2324">' . "\n";
+    }
+
     public function add_point_meta_tags() {
         global $jg_current_point;
 
@@ -2368,6 +3024,33 @@ class JG_Interactive_Map {
                     <?php if (!empty($point['email'])): ?>
                     ,"email": <?php echo json_encode($point['email']); ?>
                     <?php endif; ?>
+                    <?php if ($point['type'] === 'miejsce' && isset($place_cats) && !empty($place_cats[$point_category]['has_price_range']) && !empty($point['price_range'])): ?>
+                    ,"priceRange": <?php echo json_encode($point['price_range']); ?>
+                    <?php endif; ?>
+                    <?php if ($point['type'] === 'miejsce' && isset($place_cats) && !empty($place_cats[$point_category]['serves_cuisine']) && !empty($point['serves_cuisine'])): ?>
+                    ,"servesCuisine": <?php echo json_encode($point['serves_cuisine']); ?>
+                    <?php endif; ?>
+                    <?php
+                    $ld_offerings_cats = JG_Map_Ajax_Handlers::get_offerings_categories();
+                    if ($point['type'] === 'miejsce' && isset($ld_offerings_cats[$point_category]) && JG_Map_Database::point_has_offerings($point['id'])):
+                        $ld_offerings = JG_Map_Database::get_offerings($point['id']);
+                        $ld_off_elements = array();
+                        foreach ($ld_offerings as $ld_pos => $ld_off) {
+                            $ld_off_item = array('@type' => 'ListItem', 'position' => $ld_pos + 1, 'name' => $ld_off['name']);
+                            if (!empty($ld_off['description'])) $ld_off_item['description'] = $ld_off['description'];
+                            if ($ld_off['price'] !== null && $ld_off['price'] !== '') {
+                                $ld_off_item['offers'] = array('@type' => 'Offer', 'price' => number_format(floatval($ld_off['price']), 2, '.', ''), 'priceCurrency' => 'PLN');
+                            }
+                            $ld_off_elements[] = $ld_off_item;
+                        }
+                        if (!empty($ld_off_elements)):
+                    ?>
+                    ,"hasOfferCatalog": {
+                        "@type": "OfferCatalog",
+                        "name": <?php echo json_encode($ld_offerings_cats[$point_category]); ?>,
+                        "itemListElement": <?php echo json_encode($ld_off_elements, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+                    }
+                    <?php endif; endif; ?>
                     <?php if ($point['type'] === 'miejsce' && in_array($point['category'] ?? '', JG_Map_Ajax_Handlers::get_menu_categories(), true) && JG_Map_Database::point_has_menu($point['id'])): ?>
                     <?php
                     $ld_menu_url      = home_url('/miejsce/' . $point['slug'] . '/menu/');
@@ -2926,10 +3609,12 @@ class JG_Interactive_Map {
             add_action('wp_head', '_wp_render_title_tag', 1);
         }
 
-        // Fallback filter for older Yoast versions that use wpseo_metadesc
-        add_filter('wpseo_metadesc', '__return_empty_string', PHP_INT_MAX);
+        // Fallback filter for older Yoast versions that expose wpseo_metadesc.
+        // Return the correct description rather than an empty string so that if
+        // Yoast's head block was not fully removed it still outputs useful content.
+        add_filter('wpseo_metadesc', array($this, 'filter_yoast_metadesc_for_catalog'), PHP_INT_MAX);
         // RankMath equivalent
-        add_filter('rank_math/frontend/description', '__return_empty_string', PHP_INT_MAX);
+        add_filter('rank_math/frontend/description', array($this, 'filter_yoast_metadesc_for_catalog'), PHP_INT_MAX);
 
         // Last-resort: buffer the entire wp_head output and strip any duplicate
         // <meta name="description"> tags, keeping only the first one (from this
@@ -3216,8 +3901,7 @@ class JG_Interactive_Map {
                     "description": <?php echo json_encode($description); ?>,
                     "isPartOf": {"@id": <?php echo json_encode(home_url('/#website')); ?>},
                     "inLanguage": "pl-PL",
-                    "breadcrumb": {"@id": <?php echo json_encode($category_url . '#breadcrumb'); ?>},
-                    "numberOfItems": <?php echo $count; ?>
+                    "breadcrumb": {"@id": <?php echo json_encode($category_url . '#breadcrumb'); ?>}
                 },
                 {
                     "@type": "BreadcrumbList",
@@ -3268,6 +3952,108 @@ class JG_Interactive_Map {
             return '#' . $tag . ' - Miejsca w Jeleniej Górze | ' . get_bloginfo('name');
         }
         return $title;
+    }
+
+    /**
+     * Override the Yoast SEO (and RankMath) canonical URL for catalog category/tag pages.
+     *
+     * Yoast has no knowledge of these virtual sub-pages and defaults to the base /katalog/
+     * URL. We intercept the filter and return the correct sub-page URL so that Yoast
+     * itself emits the right <link rel="canonical"> — this is safer than trying to
+     * remove Yoast's entire <head> block and avoids duplicate-canonical race conditions.
+     *
+     * The method intentionally derives the canonical directly from the query var (no DB
+     * round-trip needed) so it works even when the category/tag lookup fails.
+     */
+    public function filter_yoast_canonical_for_catalog($canonical) {
+        // Category pages: /katalog/kategoria/{slug}/
+        $cat_slug = get_query_var('jg_catalog_category', '');
+        if ($cat_slug !== '') {
+            return home_url('/katalog/kategoria/' . sanitize_title($cat_slug) . '/');
+        }
+
+        // Tag pages: /katalog/tag/{slug}/
+        $tag_slug = get_query_var('jg_catalog_tag', '');
+        if ($tag_slug !== '') {
+            return home_url('/katalog/tag/' . sanitize_title($tag_slug) . '/');
+        }
+
+        return $canonical; // not a catalog sub-page — leave Yoast's value untouched
+    }
+
+    /**
+     * Override the Yoast SEO / RankMath meta description for catalog pages.
+     *
+     * Called via wpseo_metadesc and rank_math/frontend/description filters.
+     * Returning the correct description here ensures a meaningful description is
+     * present even when Yoast's head block could not be fully removed.
+     */
+    public function filter_yoast_metadesc_for_catalog($desc) {
+        global $wpdb;
+        $table = JG_Map_Database::get_points_table();
+
+        $category = self::resolve_catalog_category();
+        if ($category !== '') {
+            $count = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE status = 'publish' AND slug IS NOT NULL AND slug != '' AND category = %s",
+                $category
+            ));
+            return $this->get_category_seo_description($category, $count);
+        }
+
+        $tag = self::resolve_catalog_tag();
+        if ($tag !== '') {
+            $like  = '%' . $wpdb->esc_like('"' . $tag . '"') . '%';
+            $count = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE status = 'publish' AND slug IS NOT NULL AND slug != '' AND tags LIKE %s",
+                $like
+            ));
+            return 'Przeglądaj ' . $count . ' miejsc oznaczonych tagiem #' . $tag
+                . ' na interaktywnej mapie Jeleniej Góry. Odkryj lokalne miejsca, ciekawostki i atrakcje.';
+        }
+
+        return $desc; // not a catalog sub-page — leave unchanged
+    }
+
+    /**
+     * Ensure H1 is present on catalog category/tag pages.
+     *
+     * The [jg_map_directory] shortcode normally renders the H1 as part of its output.
+     * This filter fires on the_content (after shortcodes have been processed) and
+     * prepends an H1 only when none exists — so there is never a duplicate.
+     * It is a safety net for full-canvas page-builder layouts that replace
+     * the_content() with their own rendering pipeline.
+     */
+    public function inject_catalog_h1_if_missing($content) {
+        if (is_admin()) {
+            return $content;
+        }
+
+        // Only act on catalog sub-pages
+        $cat_slug = get_query_var('jg_catalog_category', '');
+        $tag_slug = get_query_var('jg_catalog_tag', '');
+
+        if ($cat_slug === '' && $tag_slug === '') {
+            return $content;
+        }
+
+        // Do nothing if the shortcode already rendered an H1
+        if (stripos($content, '<h1') !== false) {
+            return $content;
+        }
+
+        // Build H1 text — prefer the pretty label from DB, fall back to the raw slug
+        if ($cat_slug !== '') {
+            $category = self::resolve_catalog_category();
+            $h1_text  = ($category !== '')
+                ? $this->get_category_seo_title($category)
+                : ucwords(str_replace('-', ' ', $cat_slug)) . ' w Jeleniej Górze';
+            return '<h1 class="jg-dir-h1">' . esc_html($h1_text) . '</h1>' . $content;
+        }
+
+        $tag     = self::resolve_catalog_tag();
+        $h1_text = ($tag !== '') ? '#' . $tag : '#' . $tag_slug;
+        return '<h1 class="jg-dir-h1">' . esc_html($h1_text) . ' – Miejsca w Jeleniej Górze</h1>' . $content;
     }
 
     /**
@@ -3445,8 +4231,7 @@ class JG_Interactive_Map {
                     "description": <?php echo json_encode($description); ?>,
                     "isPartOf": {"@id": <?php echo json_encode(home_url('/#website')); ?>},
                     "inLanguage": "pl-PL",
-                    "breadcrumb": {"@id": <?php echo json_encode($tag_url . '#breadcrumb'); ?>},
-                    "numberOfItems": <?php echo $count; ?>
+                    "breadcrumb": {"@id": <?php echo json_encode($tag_url . '#breadcrumb'); ?>}
                 },
                 {
                     "@type": "BreadcrumbList",
@@ -3475,6 +4260,183 @@ class JG_Interactive_Map {
         }
         </script>
         <?php
+    }
+
+    // ─── Native WP tag / category archive: SEO & H1 ────────────────────────
+
+    /**
+     * Suppress Yoast SEO / RankMath head on native WordPress tag and
+     * category archive pages (/tag/..., /category/...).
+     * The plugin outputs its own complete meta tags via add_wp_archive_meta_tags().
+     * Called on 'wp' action (after query vars are parsed, before wp_head fires).
+     */
+    public function suppress_seo_on_wp_tag_category_pages() {
+        if ( ! is_tag() && ! is_category() ) {
+            return;
+        }
+        $this->remove_yoast_head_from_wp_head();
+    }
+
+    /**
+     * Inject meta description, canonical URL and Open Graph tags for native
+     * WordPress tag and category archive pages.
+     * Fires at wp_head priority 2 — same as catalog tag/category handlers,
+     * after the ob_start buffer added by suppress_seo_on_wp_tag_category_pages().
+     */
+    public function add_wp_archive_meta_tags() {
+        if ( ! is_tag() && ! is_category() ) {
+            return;
+        }
+
+        $term = get_queried_object();
+        if ( ! ( $term instanceof WP_Term ) ) {
+            return;
+        }
+
+        $term_name  = $term->name;
+        $term_desc  = wp_strip_all_tags( $term->description );
+        $post_count = (int) $term->count;
+        $page_url   = get_term_link( $term );
+        if ( is_wp_error( $page_url ) ) {
+            return;
+        }
+
+        if ( $term->taxonomy === 'post_tag' ) {
+            $description = $term_desc !== ''
+                ? $term_desc
+                : 'Artykuły oznaczone tagiem "' . $term_name . '" na Jeleniogórzanie to my – poznaj lokalne miejsca, restauracje i atrakcje turystyczne Jeleniej Góry.';
+        } else {
+            $description = $term_desc !== ''
+                ? $term_desc
+                : 'Artykuły w kategorii "' . $term_name . '" na Jeleniogórzanie to my – sprawdź teksty o lokalnych miejscach, restauracjach i atrakcjach Jeleniej Góry.';
+        }
+
+        $title     = $term_name . ' \u2013 ' . get_bloginfo( 'name' );
+        $site_name = get_bloginfo( 'name' );
+
+        // Noindex empty archives (no posts = thin content)
+        $robots = ( $post_count === 0 ) ? 'noindex, follow' : 'index, follow';
+        if ( get_option( 'blog_public' ) == '0' ) {
+            $robots = 'noindex, nofollow';
+        }
+        $maintenance = get_option( 'elementor_maintenance_mode_mode' );
+        if ( $maintenance === 'maintenance' || $maintenance === 'coming_soon' ) {
+            $robots = 'noindex, nofollow';
+        }
+        ?>
+        <meta name="robots" content="<?php echo esc_attr( $robots ); ?>">
+        <link rel="canonical" href="<?php echo esc_url( $page_url ); ?>">
+        <meta name="description" content="<?php echo esc_attr( $description ); ?>">
+
+        <!-- Open Graph -->
+        <meta property="og:title" content="<?php echo esc_attr( $title ); ?>">
+        <meta property="og:description" content="<?php echo esc_attr( $description ); ?>">
+        <meta property="og:url" content="<?php echo esc_url( $page_url ); ?>">
+        <meta property="og:type" content="website">
+        <meta property="og:locale" content="pl_PL">
+        <meta property="og:site_name" content="<?php echo esc_attr( $site_name ); ?>">
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" content="<?php echo esc_attr( $title ); ?>">
+        <meta name="twitter:description" content="<?php echo esc_attr( $description ); ?>">
+        <?php
+    }
+
+    /**
+     * Start output buffering on native WP tag/category archive pages.
+     * Fires at wp_body_open PHP_INT_MAX — after the plugin's topbar/navbar
+     * (priorities 5 and 10) have already been echoed and are NOT in the buffer.
+     * Everything rendered after this point (the theme loop, pagination, etc.) is captured.
+     */
+    public function start_archive_h1_buffer() {
+        if ( ! is_tag() && ! is_category() ) {
+            return;
+        }
+        ob_start();
+    }
+
+    /**
+     * End the output buffer opened by start_archive_h1_buffer(), convert every
+     * <h1> except the first one into <h2> (preserving all attributes), then echo.
+     * Fires at wp_footer priority 0, before any footer scripts.
+     *
+     * Strategy: keep the first H1 (archive page title if present) and demote
+     * all subsequent H1s — those are post entry titles rendered by the theme loop.
+     */
+    public function end_archive_h1_buffer() {
+        if ( ! is_tag() && ! is_category() ) {
+            return;
+        }
+        if ( ob_get_level() < 1 ) {
+            return;
+        }
+        $html = ob_get_clean();
+        if ( $html === false || $html === '' ) {
+            return;
+        }
+
+        $first_found = false;
+        $html = preg_replace_callback(
+            '/<h1(\b[^>]*)>(.*?)<\/h1>/is',
+            function ( $m ) use ( &$first_found ) {
+                if ( ! $first_found ) {
+                    $first_found = true;
+                    return $m[0]; // preserve first H1 (archive title)
+                }
+                return '<h2' . $m[1] . '>' . $m[2] . '</h2>';
+            },
+            $html
+        );
+        echo $html;
+    }
+
+    // ─── IndexNow ────────────────────────────────────────────────────────────
+
+    /**
+     * Ping IndexNow to notify search engines of a new or updated URL.
+     * Does nothing if option 'jg_map_indexnow_key' is not set.
+     * Non-blocking HTTP request — does not add latency to the admin action.
+     *
+     * @param string $url Absolute URL of the page to submit.
+     */
+    public static function ping_indexnow_url( $url ) {
+        $key = get_option( 'jg_map_indexnow_key', '' );
+        if ( $key === '' ) {
+            return;
+        }
+
+        $api_url = 'https://api.indexnow.org/indexnow?url=' . rawurlencode( $url ) . '&key=' . rawurlencode( $key );
+
+        wp_remote_get( $api_url, array(
+            'timeout'  => 5,
+            'blocking' => false,
+            'headers'  => array( 'User-Agent' => 'JG-Interactive-Map/' . JG_MAP_VERSION ),
+        ) );
+    }
+
+    /**
+     * Serve the IndexNow key verification file at /{key}.txt so that
+     * indexnow.org can confirm this site owns the key.
+     * Called via template_redirect priority 1.
+     */
+    public function handle_indexnow_key_file() {
+        $key = get_option( 'jg_map_indexnow_key', '' );
+        if ( $key === '' ) {
+            return;
+        }
+
+        $request_path = isset( $_SERVER['REQUEST_URI'] )
+            ? strtok( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), '?' )
+            : '';
+
+        if ( $request_path !== '/' . $key . '.txt' ) {
+            return;
+        }
+
+        header( 'Content-Type: text/plain; charset=utf-8', true, 200 );
+        echo esc_html( $key );
+        exit;
     }
 
 }

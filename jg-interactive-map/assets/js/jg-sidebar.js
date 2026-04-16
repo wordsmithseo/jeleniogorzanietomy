@@ -256,6 +256,16 @@
     function setupEventListeners() {
         // Type filters
         $('[data-sidebar-type]').on('change', function() {
+            var type = $(this).attr('data-sidebar-type');
+            var isChecked = $(this).is(':checked');
+            // Sync category checkboxes when parent type is toggled
+            if (type === 'miejsce') {
+                $('[data-sidebar-place-category]').prop('checked', isChecked);
+                updatePlaceCategoryFilters();
+            } else if (type === 'ciekawostka') {
+                $('[data-sidebar-curiosity-category]').prop('checked', isChecked);
+                updateCuriosityCategoryFilters();
+            }
             updateTypeFilters();
             saveFilterPrefs();
             loadPoints();
@@ -270,6 +280,14 @@
 
         // Place category filters
         $(document).on('change', '[data-sidebar-place-category]', function() {
+            // If a place category is checked and Miejsca type is off, re-enable it
+            if ($(this).is(':checked')) {
+                var $placeType = $('[data-sidebar-type="miejsce"]');
+                if ($placeType.length && !$placeType.is(':checked')) {
+                    $placeType.prop('checked', true);
+                    updateTypeFilters();
+                }
+            }
             updatePlaceCategoryFilters();
             saveFilterPrefs();
             loadPoints();
@@ -277,6 +295,14 @@
 
         // Curiosity category filters
         $(document).on('change', '[data-sidebar-curiosity-category]', function() {
+            // If a curiosity category is checked and Ciekawostki type is off, re-enable it
+            if ($(this).is(':checked')) {
+                var $curiosityType = $('[data-sidebar-type="ciekawostka"]');
+                if ($curiosityType.length && !$curiosityType.is(':checked')) {
+                    $curiosityType.prop('checked', true);
+                    updateTypeFilters();
+                }
+            }
             updateCuriosityCategoryFilters();
             saveFilterPrefs();
             loadPoints();
@@ -389,7 +415,7 @@
         }
 
         // Build fingerprint from all visible/editable fields so any change triggers re-render
-        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.ratings_count || 0}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}:${p.has_internal_links ? 1 : 0}:${p.has_external_links ? 1 : 0}:${p.has_incomplete_sections ? 1 : 0}:${p.opening_hours || ''}`).join(',');
+        const pointsData = points.map(p => `${p.id}:${p.title}:${p.slug}:${p.type}:${p.votes_count}:${p.ratings_count || 0}:${p.is_promo ? 1 : 0}:${p.featured_image || ''}:${p.lat}:${p.lng}:${p.has_description ? 1 : 0}:${p.has_tags ? 1 : 0}:${p.category || ''}:${p.images_count || 0}:${p.has_internal_links ? 1 : 0}:${p.has_external_links ? 1 : 0}:${p.has_incomplete_sections ? 1 : 0}:${p.opening_hours || ''}:${p.has_menu ? 1 : 0}:${p.can_have_menu ? 1 : 0}`).join(',');
         const statsData = stats ? `|${stats.total}:${stats.miejsce}:${stats.ciekawostka}:${stats.zgloszenie}` : '';
         return pointsData + statsData;
     }
@@ -1078,6 +1104,46 @@
             }
         } else {
             $votes.remove();
+        }
+    };
+
+    /**
+     * Live-update the has_menu badge for a sidebar item without a full reload.
+     * Called from jg-map.js after a successful menu photo upload or menu save.
+     */
+    window.jgUpdatePointHasMenu = function(pointId) {
+        for (var i = 0; i < sidebarPoints.length; i++) {
+            if (String(sidebarPoints[i].id) === String(pointId)) {
+                sidebarPoints[i].has_menu = true;
+                break;
+            }
+        }
+        var $item = $('[data-point-id="' + pointId + '"]');
+        if (!$item.length) return;
+        var $badge = $item.find('.jg-info-badge--no-menu');
+        if ($badge.length) {
+            $badge.removeClass('jg-info-badge--no-menu').addClass('jg-info-badge--has-menu')
+                  .attr('data-jg-tip', 'Posiada menu');
+        }
+    };
+
+    /**
+     * Live-update the has_menu badge back to 'Brak menu' when all menu content is removed.
+     * Called from jg-map.js after photo deletion or menu save with no content.
+     */
+    window.jgUpdatePointNoMenu = function(pointId) {
+        for (var i = 0; i < sidebarPoints.length; i++) {
+            if (String(sidebarPoints[i].id) === String(pointId)) {
+                sidebarPoints[i].has_menu = false;
+                break;
+            }
+        }
+        var $item = $('[data-point-id="' + pointId + '"]');
+        if (!$item.length) return;
+        var $badge = $item.find('.jg-info-badge--has-menu');
+        if ($badge.length) {
+            $badge.removeClass('jg-info-badge--has-menu').addClass('jg-info-badge--no-menu')
+                  .attr('data-jg-tip', 'Brak menu');
         }
     };
 

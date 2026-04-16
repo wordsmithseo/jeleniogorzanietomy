@@ -13,9 +13,16 @@
  *   < 1538px viewport  → skaluje się liniowo z vw
  *   ≥ 1538px viewport  → 1.1px (+10%, max — duże monitory)
  *
- * Duże wyświetlacze (dodatkowe zmniejszenie przez media query):
+ * Duże wyświetlacze (progresywne skalowanie przez media query):
  *   ≥ 1600px  → --jg: 1.05px (+5%)
- *   ≥ 1920px  → --jg: 1px    (bazowa wielkość, brak skalowania)
+ *   ≥ 1920px  → --jg: 1.1px  (+10%, duże monitory 24-26")
+ *   ≥ 2560px  → --jg: 1.2px  (+20%, monitory 27"+)
+ *
+ * --jg-sidebar-w: responsywna szerokość sidebara:
+ *   clamp(280px, 19vw, 400px)
+ *   ~280px na 15" (1366px viewport) — mniej zajętej mapy
+ *   ~361px na 19" (1900px viewport) — bez zmiany
+ *   ~400px na 27" (2560px viewport) — lepsze wykorzystanie przestrzeni
  *
  * NIE zmienia html/body font-size → bezpieczne dla Leaflet, motywu i Elementora.
  * Elementor ustawia własne font-size w px — nie reaguje na --jg.
@@ -23,6 +30,7 @@
  */
 :root {
   --jg: clamp(1px, 0.065vw, 1.1px);
+  --jg-sidebar-w: clamp(280px, 19vw, 400px);
 }
 
 @media (min-width: 1600px) {
@@ -33,7 +41,13 @@
 
 @media (min-width: 1920px) {
   :root {
-    --jg: 1px;
+    --jg: 1.1px;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --jg: 1.2px;
   }
 }
 
@@ -219,30 +233,41 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 9999;
   box-sizing: border-box;
+  /* overflow: hidden would clip the Menu dropdown — flex-shrink + min-width:0
+     on children is enough to prevent horizontal overflow */
 }
 
 .jg-top-bar-left {
   display: flex;
   align-items: center;
-  gap: 48px;
+  gap: clamp(8px, 2vw, 24px); /* was 48px — fluid so it shrinks before overflow */
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .jg-top-bar-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: clamp(4px, 0.8vw, 16px); /* fluid gap between user-action buttons */
+  min-width: 0;
+  flex-shrink: 0; /* right side (user actions) stays intact */
 }
 
 .jg-top-bar-site-title {
   color: #fff;
-  font-size: calc(14 * var(--jg));
-  font-weight: 600;
+  font-size: clamp(11px, 0.85vw, 14px); /* shrinks continuously with viewport width */
+  font-weight: 500;                      /* thinner = narrower, still readable */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-left: 10px;
   text-decoration: none;
   letter-spacing: 0.01em;
+  max-width: clamp(60px, 22vw, 340px);
+  flex-shrink: 1;
+}
+.jg-title-sub {
+  opacity: 0.75; /* slightly dimmer to visually separate from main name */
 }
 
 .jg-top-bar-user {
@@ -1525,8 +1550,7 @@ body.jg-fullscreen-active #jg-search-panel {
     right: 12px !important;
     bottom: auto !important;
     left: auto !important;
-    width: 361px !important;
-    max-width: 28.5vw !important;
+    width: var(--jg-sidebar-w) !important;
     height: calc(100% - 24px) !important;
     max-height: calc(100% - 24px) !important;
     min-height: 0 !important;
@@ -1545,12 +1569,12 @@ body.jg-fullscreen-active #jg-search-panel {
   /* Desktop filter panel: floating to the left of the sidebar */
   .jg-fs-filter-panel {
     top: 12px;
-    right: calc(min(361px, 28.5vw) + 24px);
+    right: calc(var(--jg-sidebar-w) + 24px);
     bottom: auto;
     left: auto;
     width: auto;
     min-width: 260px;
-    max-width: calc(100% - min(361px, 28.5vw) - 120px);
+    max-width: calc(100% - var(--jg-sidebar-w) - 120px);
     max-height: calc(100% - 24px);
     border-radius: 16px;
     padding: 0;
@@ -1698,10 +1722,10 @@ body.jg-fullscreen-active #jg-search-panel {
     position: absolute;
     z-index: 1002;
     top: auto;
-    right: calc(min(361px, 28.5vw) + 24px);
+    right: calc(var(--jg-sidebar-w) + 24px);
     bottom: 12px;
     width: 340px;
-    max-width: calc(100% - min(361px, 28.5vw) - 120px);
+    max-width: calc(100% - var(--jg-sidebar-w) - 120px);
     max-height: 50%;
     background: rgba(255, 255, 255, 0.97);
     backdrop-filter: blur(12px);
@@ -1737,14 +1761,8 @@ body.jg-fullscreen-active #jg-search-panel {
 
   /* Move FAB to the left of the sidebar panel in fullscreen */
   body.jg-fullscreen-active #jg-fab-container {
-    right: calc(28.5vw + 40px) !important;
+    right: calc(var(--jg-sidebar-w) + 40px) !important;
     transition: right 0.3s ease !important;
-  }
-
-  @supports (width: min(361px, 28.5vw)) {
-    body.jg-fullscreen-active #jg-fab-container {
-      right: calc(min(361px, 28.5vw) + 40px) !important;
-    }
   }
 
 }
@@ -1960,7 +1978,7 @@ body.jg-fullscreen-active #jg-search-panel {
     position: absolute !important;
     top: 10px !important;
     left: 55px !important;
-    right: calc(min(361px, 28.5vw) + 24px) !important;
+    right: calc(var(--jg-sidebar-w) + 24px) !important;
     bottom: auto !important;
     z-index: 1001 !important;
     max-width: none !important;
@@ -1992,8 +2010,7 @@ body.jg-fullscreen-active #jg-search-panel {
     right: 12px !important;
     bottom: auto !important;
     left: auto !important;
-    width: 361px !important;
-    max-width: 28.5vw !important;
+    width: var(--jg-sidebar-w) !important;
     height: calc(100% - 24px) !important;
     max-height: calc(100% - 24px) !important;
     min-height: 0 !important;
@@ -2011,19 +2028,13 @@ body.jg-fullscreen-active #jg-search-panel {
 
   /* Search results panel: shifted left to avoid the floating sidebar */
   body.jg-desktop-wide-active #jg-search-panel {
-    right: calc(min(361px, 28.5vw) + 12px) !important;
+    right: calc(var(--jg-sidebar-w) + 12px) !important;
   }
 
   /* FAB: shifted left to stay clear of the floating sidebar */
   body.jg-desktop-wide-active #jg-fab-container {
-    right: calc(28.5vw + 40px) !important;
+    right: calc(var(--jg-sidebar-w) + 40px) !important;
     transition: right 0.3s ease !important;
-  }
-
-  @supports (width: min(361px, 28.5vw)) {
-    body.jg-desktop-wide-active #jg-fab-container {
-      right: calc(min(361px, 28.5vw) + 40px) !important;
-    }
   }
 }
 
@@ -2045,7 +2056,7 @@ body.jg-fullscreen-active .jg-fs-top-controls {
 @media (min-width: 769px) {
   body.jg-fullscreen-active .jg-fs-top-controls {
     top: 10px;
-    right: calc(min(361px, 28.5vw) + 24px);
+    right: calc(var(--jg-sidebar-w) + 24px);
   }
 }
 
@@ -2277,37 +2288,17 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   }
 }
 
-/* Responsive navbar - Better spacing on narrow monitors (laptops) */
-@media (max-width: 1280px) {
-  .jg-custom-top-bar {
-    padding: 12px 16px;
-    min-height: 60px;
-    gap: 10px;
-  }
+/* ── Progressive top-bar compression ───────────────────────────────────────
+   Each breakpoint hides the next "least important" text so the bar stays
+   usable as long as possible before anything gets clipped.
+   ────────────────────────────────────────────────────────────────────────── */
 
-  .jg-top-bar-left,
-  .jg-top-bar-right {
-    gap: 12px;
-  }
-
-  .jg-top-bar-btn {
-    padding: 7px 14px;
-    font-size: calc(14 * var(--jg));
-  }
-
-}
-
-/* Icon-only buttons on laptop screens */
-@media (max-width: 1440px) {
-  #jg-ranking-btn .jg-btn-text,
-  #jg-edit-profile-btn .jg-btn-text,
+/* Step 1 ≤1800px — hide longest labels (Admin, Wyloguj) + subtitle of site title */
+@media (max-width: 1800px) {
   .jg-top-bar-btn-admin .jg-btn-text,
   a.jg-top-bar-btn[title="Wyloguj"] .jg-btn-text {
     display: none !important;
   }
-
-  #jg-ranking-btn,
-  #jg-edit-profile-btn,
   .jg-top-bar-btn-admin,
   a.jg-top-bar-btn[title="Wyloguj"] {
     padding: 7px !important;
@@ -2317,13 +2308,65 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     border-radius: 8px !important;
     box-sizing: border-box !important;
   }
-
-  #jg-ranking-btn .jg-btn-icon,
-  #jg-edit-profile-btn .jg-btn-icon,
   .jg-top-bar-btn-admin .jg-btn-icon,
   a.jg-top-bar-btn[title="Wyloguj"] .jg-btn-icon {
     width: 18px !important;
     height: 18px !important;
+  }
+  /* Hide "– Interaktywna mapa Jeleniej Góry", keep "Jeleniogórzanie to my" */
+  .jg-title-sub {
+    display: none !important;
+  }
+}
+
+/* Step 2 ≤1600px — hide Ranking + Edytuj profil text; shrink XP bar */
+@media (max-width: 1600px) {
+  #jg-ranking-btn .jg-btn-text,
+  #jg-edit-profile-btn .jg-btn-text {
+    display: none !important;
+  }
+  #jg-ranking-btn,
+  #jg-edit-profile-btn {
+    padding: 7px !important;
+    width: 34px !important;
+    height: 34px !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+  }
+  #jg-ranking-btn .jg-btn-icon,
+  #jg-edit-profile-btn .jg-btn-icon {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .jg-top-bar-xp-bar {
+    width: 40px !important;
+  }
+}
+
+/* Step 2b ≤1300px — now hide the entire site title (logo image still visible) */
+@media (max-width: 1300px) {
+  .jg-top-bar-site-title {
+    display: none !important;
+  }
+}
+
+/* Step 3 ≤1440px — smaller bar padding */
+@media (max-width: 1440px) {
+  .jg-custom-top-bar {
+    padding: 10px 16px;
+  }
+}
+
+/* Step 4 ≤1280px — tighter padding + smaller button font/padding */
+@media (max-width: 1280px) {
+  .jg-custom-top-bar {
+    padding: 8px 12px;
+    min-height: 52px;
+  }
+  .jg-top-bar-btn {
+    padding: 7px 14px;
+    font-size: calc(14 * var(--jg));
   }
 }
 
@@ -2988,10 +3031,11 @@ body.jg-modal-open {
      --jg-nav-bottom  : bottom of top navigation
      --jg-footer-top  : top of footer (100dvh when no footer visible)
      JS (jgPositionModalBg / jgFitModal) overwrites these at open-time with
-     exact measured values, but this CSS already produces a correct layout. */
-  padding: 18px;
-  padding-top: calc(var(--jg-nav-bottom, 90px) + 18px);
-  padding-bottom: calc(100dvh - var(--jg-footer-top, 100dvh) + 18px);
+     exact measured values, but this CSS already produces a correct layout
+     even without JS. */
+  padding: calc(18 * var(--jg));
+  padding-top: calc(var(--jg-nav-bottom, 90px) + 18 * var(--jg));
+  padding-bottom: calc(100dvh - var(--jg-footer-top, 100dvh) + 18 * var(--jg));
 }
 
 .jg-modal {
@@ -3000,9 +3044,9 @@ body.jg-modal-open {
   width: min(900px, 96vw);
   /* max-height spans from below the nav bar to above the footer,
      minus equal gaps on each side. JS overwrites with measured values. */
-  max-height: calc(var(--jg-footer-top, 100dvh) - var(--jg-nav-bottom, 90px) - 36px);
-  border-radius: 12px;
-  padding: 14px;
+  max-height: calc(var(--jg-footer-top, 100dvh) - var(--jg-nav-bottom, 90px) - 36 * var(--jg));
+  border-radius: calc(12 * var(--jg));
+  padding: calc(14 * var(--jg));
   /* overflow:hidden keeps scrollbar inside the rounded corners on desktop.
      Inner non-header children carry overflow-y:auto via the flex rule below.
      On mobile the more specific rule in the media query overrides to block+auto. */
@@ -3030,15 +3074,15 @@ body.jg-modal-open {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin: -14px -14px 16px -14px;
-  padding: 16px 14px;
+  gap: calc(12 * var(--jg));
+  margin: calc(-14 * var(--jg)) calc(-14 * var(--jg)) calc(16 * var(--jg)) calc(-14 * var(--jg));
+  padding: calc(16 * var(--jg)) calc(14 * var(--jg));
   position: sticky;
-  top: -14px;
+  top: calc(-14 * var(--jg));
   background: #fff;
   z-index: 20;
   border-bottom: 2px solid #eee;
-  border-radius: 12px 12px 0 0;
+  border-radius: calc(12 * var(--jg)) calc(12 * var(--jg)) 0 0;
 }
 
 .jg-modal header h3 {
@@ -3111,7 +3155,7 @@ body.jg-modal-open {
 .jg-rte-wrap {
   position: relative;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: calc(8 * var(--jg));
   overflow: visible;
   background: #fff;
   transition: border-color 0.2s;
@@ -3123,11 +3167,11 @@ body.jg-modal-open {
 .jg-rte-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 6px 8px;
+  gap: calc(4 * var(--jg));
+  padding: calc(6 * var(--jg)) calc(8 * var(--jg));
   background: #f9fafb;
   border-bottom: 1px solid #ddd;
-  border-radius: 7px 7px 0 0;
+  border-radius: calc(7 * var(--jg)) calc(7 * var(--jg)) 0 0;
   align-items: center;
 }
 .jg-rte-btn {
@@ -3136,8 +3180,8 @@ body.jg-modal-open {
   color: #fff !important;
   border: none !important;
   border-width: 0 !important;
-  border-radius: 8px !important;
-  padding: 6px 10px !important;
+  border-radius: calc(8 * var(--jg)) !important;
+  padding: calc(6 * var(--jg)) calc(10 * var(--jg)) !important;
   cursor: pointer !important;
   font-size: calc(13 * var(--jg)) !important;
   font-weight: 400 !important;
@@ -3166,9 +3210,9 @@ body.jg-modal-open {
 .jg-rte-sep {
   display: inline-block;
   width: 1px;
-  height: 18px;
+  height: calc(18 * var(--jg));
   background: #ddd;
-  margin: 0 3px;
+  margin: 0 calc(3 * var(--jg));
   flex-shrink: 0;
 }
 .jg-section-incomplete {
@@ -3232,9 +3276,9 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 }
 
 .jg-rte-editor {
-  padding: 10px 12px;
-  min-height: 96px;
-  max-height: 300px;
+  padding: calc(10 * var(--jg)) calc(12 * var(--jg));
+  min-height: clamp(80px, 10vh, 120px);
+  max-height: clamp(180px, 25vh, 300px);
   overflow-y: auto;
   font-size: calc(14 * var(--jg));
   line-height: 1.6;
@@ -3249,8 +3293,8 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 }
 .jg-rte-editor ul,
 .jg-rte-editor ol {
-  margin: 4px 0;
-  padding-left: 24px;
+  margin: calc(4 * var(--jg)) 0;
+  padding-left: calc(24 * var(--jg));
 }
 .jg-rte-editor li {
   margin-bottom: 2px;
@@ -3264,13 +3308,13 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   font-weight: 500;
 }
 .jg-rte-counter {
-  padding: 4px 12px 6px;
+  padding: calc(4 * var(--jg)) calc(12 * var(--jg)) calc(6 * var(--jg));
   font-size: calc(11 * var(--jg));
   color: #999;
   text-align: right;
   background: #fafafa;
   border-top: 1px solid #f0f0f0;
-  border-radius: 0 0 7px 7px;
+  border-radius: 0 0 calc(7 * var(--jg)) calc(7 * var(--jg));
 }
 
 /* Link dialog */
@@ -3278,11 +3322,11 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 32px;
+  bottom: calc(32 * var(--jg));
   background: #fff;
   border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 14px 16px;
+  border-radius: calc(8 * var(--jg));
+  padding: calc(14 * var(--jg)) calc(16 * var(--jg));
   box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   z-index: 100;
 }
@@ -3295,8 +3339,8 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
+  margin-bottom: calc(12 * var(--jg));
+  padding-bottom: calc(8 * var(--jg));
   border-bottom: 1px solid #ddd;
 }
 .jg-rte-link-dialog-header strong {
@@ -3309,7 +3353,7 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   font-size: calc(20 * var(--jg));
   cursor: pointer;
   color: #999;
-  padding: 0 4px;
+  padding: 0 calc(4 * var(--jg));
   line-height: 1;
   transition: color 0.15s;
 }
@@ -3319,18 +3363,18 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 
 /* Pin autocomplete results */
 .jg-rte-pin-results {
-  max-height: 180px;
+  max-height: clamp(120px, 18vh, 200px);
   overflow-y: auto;
-  margin-top: 6px;
+  margin-top: calc(6 * var(--jg));
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: calc(8 * var(--jg));
   background: #fff;
 }
 .jg-rte-pin-results:empty {
   display: none;
 }
 .jg-rte-pin-hint {
-  padding: 12px;
+  padding: calc(12 * var(--jg));
   font-size: calc(12 * var(--jg));
   color: #9ca3af;
   text-align: center;
@@ -3338,8 +3382,8 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 .jg-rte-pin-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: calc(8 * var(--jg));
+  padding: calc(8 * var(--jg)) calc(10 * var(--jg));
   cursor: pointer;
   font-size: calc(13 * var(--jg));
   border-bottom: 1px solid #f3f4f6;
@@ -3357,7 +3401,7 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 }
 .jg-rte-pin-type {
   display: inline-block;
-  padding: 2px 8px;
+  padding: calc(2 * var(--jg)) calc(8 * var(--jg));
   border-radius: 999px;
   font-size: calc(10 * var(--jg));
   font-weight: 600;
@@ -3375,10 +3419,10 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 
 /* Small buttons for RTE dialogs */
 .jg-btn--sm {
-  padding: 6px 14px !important;
+  padding: calc(6 * var(--jg)) calc(14 * var(--jg)) !important;
   font-size: calc(13 * var(--jg)) !important;
   min-height: auto !important;
-  border-radius: 8px !important;
+  border-radius: calc(8 * var(--jg)) !important;
 }
 
 /* Mobile: stack toolbar buttons more compactly */
@@ -3410,10 +3454,10 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   background: rgba(0, 0, 0, 0.08);
   border: none;
   cursor: pointer;
-  padding: 0 0 2px 0;
+  padding: 0 0 calc(2 * var(--jg)) 0;
   color: #374151;
-  width: 36px;
-  height: 36px;
+  width: calc(36 * var(--jg));
+  height: calc(36 * var(--jg));
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3593,6 +3637,12 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
   width: 100% !important;
 }
 
+/* Push non-fullscreen page content up so the fixed footer doesn't cover it */
+body.jg-has-map #jg-map-wrap:not(.jg-fullscreen) {
+  padding-bottom: var(--jg-footer-h, 28px) !important;
+  box-sizing: border-box !important;
+}
+
 /* Sponsored CTA Button - Square button inside contact info frame */
 .jg-btn-cta-sponsored {
   display: inline-flex;
@@ -3652,7 +3702,19 @@ span.jg-section-incomplete:not(.jg-section-incomplete *) {
 /* Grid */
 .jg-grid {
   display: grid;
+  /* minmax(0,1fr): the single implicit column always fills available width and
+     can shrink to 0 — prevents auto-sizing to min-content which would make the
+     column narrower than the container and cause content to appear right-shifted
+     or to scroll horizontally. cols-2 overrides this with 1fr 1fr below. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
+}
+
+/* Prevent horizontal scroll in the view modal's content grid.
+   The inline style uses overflow-x:hidden (set in JS); !important is kept as
+   belt-and-suspenders in case any future inline style reverts to overflow:auto. */
+.jg-modal .jg-grid:not(.cols-2) {
+  overflow-x: hidden !important;
 }
 
 .jg-grid.cols-2 {
@@ -4241,6 +4303,14 @@ img.emoji {
 
 .jg-meta-row .jg-vote-avg {
   font-size: calc(12 * var(--jg)) !important;
+}
+
+@media (max-width: 520px) {
+  .jg-meta-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
 }
 
 /* Status Badge */
@@ -5823,6 +5893,115 @@ img.emoji {
   line-height: 1.4;
 }
 
+/* Small note below a step (e.g. "You can also use the + button") */
+.jg-onb-note {
+  margin: 12px 0 0;
+  font-size: calc(12.8 * var(--jg));
+  color: #6b7280;
+  font-style: italic;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* XP & Levels step */
+.jg-onboarding-xp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.jg-onboarding-xp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jg-onboarding-xp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.jg-xp-action {
+  font-size: calc(13.6 * var(--jg));
+  color: #374151;
+  flex: 1;
+}
+
+.jg-xp-badge {
+  font-size: calc(12.8 * var(--jg));
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #15803d, #22c55e);
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Level tier badges */
+.jg-onboarding-levels {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.jg-lvl-badge {
+  font-size: calc(11.5 * var(--jg));
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  color: #fff;
+}
+
+.jg-lvl-bronze { background: linear-gradient(135deg, #92400e, #d97706); }
+.jg-lvl-silver { background: linear-gradient(135deg, #6b7280, #9ca3af); }
+.jg-lvl-gold   { background: linear-gradient(135deg, #a16207, #eab308); color: #1a1a1a; }
+.jg-lvl-legend { background: linear-gradient(135deg, #7c2d12, #dc2626); }
+
+.jg-lvl-sep {
+  font-size: calc(13 * var(--jg));
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* Help panel: XP mini-list */
+.jg-help-xp-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jg-help-xp-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: calc(13 * var(--jg));
+  color: #374151;
+  padding: 5px 8px;
+  background: #f9fafb;
+  border-radius: 4px;
+}
+
+.jg-help-xp-list li strong {
+  color: #15803d;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* Onboarding footer / nav */
 .jg-onboarding-footer {
   display: flex;
@@ -6102,8 +6281,8 @@ img.emoji {
 
 /* Contextual Tips (matches plugin brand) */
 .jg-tip-container {
-  position: absolute;
-  bottom: 100px;
+  position: fixed;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9997;
@@ -6126,22 +6305,22 @@ img.emoji {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, #8d2324 0%, #a02829 100%);
-  color: #fff;
+  background: #1e2329;
+  color: #f0f1f3;
   padding: 14px 18px;
   border-radius: 12px;
   font-size: calc(14.4 * var(--jg));
   font-weight: 500;
   line-height: 1.4;
-  box-shadow: 0 4px 16px rgba(141, 35, 36, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
   max-width: 440px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
 }
 
 .jg-tip-dismiss {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
   border: none;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.7);
   font-size: calc(16 * var(--jg));
   cursor: pointer;
   padding: 2px 6px;
@@ -6152,7 +6331,147 @@ img.emoji {
 }
 
 .jg-tip-dismiss:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* ======================================================
+   First-use UI hints (Layer 2)
+   Positioned via JS (fixed), so they float above everything
+   ====================================================== */
+.jg-hint {
+  position: fixed;
+  z-index: 999999;
+  max-width: 240px;
+  background: #fff;
+  border-radius: 10px;
+  border-left: 3px solid #8d2324;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.14), 0 1px 4px rgba(0, 0, 0, 0.08);
+  pointer-events: auto;
+  animation: jgHintIn 0.18s ease-out both;
+}
+
+@keyframes jgHintIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.jg-hint-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.jg-hint-text {
+  font-size: calc(13 * var(--jg));
+  color: #374151;
+  line-height: 1.45;
+  flex: 1;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+.jg-hint-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: calc(17 * var(--jg));
+  padding: 0;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: -1px;
+  transition: color 0.15s;
+}
+
+.jg-hint-close:hover {
+  color: #374151;
+}
+
+/* ======================================================
+   Unified Spotlight Hints (Layer 2 – v2)
+   Overlay + card rendered by JS into document.body.
+   ====================================================== */
+
+/* Semi-transparent overlay — dims everything behind the card */
+.jg-spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background: rgba(0, 0, 0, 0.45);
+  animation: jgSpotlightFadeIn 0.2s ease-out both;
+}
+
+@keyframes jgSpotlightFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Card — floats above everything, positioned near target element by JS */
+.jg-spotlight-card {
+  position: fixed;
+  z-index: 99999;
+  width: 280px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-top: 3px solid #8d2324;
+  animation: jgSpotlightCardIn 0.2s ease-out both;
+  pointer-events: auto;
+}
+
+/* Light variant (hover hints, no overlay, auto-dismiss) */
+.jg-spotlight-card--light {
+  border-top-color: #4b5563;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14), 0 1px 4px rgba(0, 0, 0, 0.07);
+}
+
+@keyframes jgSpotlightCardIn {
+  from { opacity: 0; transform: scale(0.94) translateY(4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.jg-spotlight-card-inner {
+  padding: 16px 16px 12px;
+}
+
+.jg-spotlight-card-text {
+  margin: 0 0 12px;
+  font-size: calc(13.5 * var(--jg));
+  color: #1f2937;
+  line-height: 1.5;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+.jg-spotlight-card-btn {
+  display: block;
+  margin-left: auto;
+  background: #8d2324;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: calc(13 * var(--jg));
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
+.jg-spotlight-card-btn:hover {
+  background: #a02829;
+}
+
+/* Light variant — ×  button  */
+.jg-spotlight-card--light .jg-spotlight-card-btn {
+  background: #e5e7eb;
+  color: #374151;
+  padding: 4px 10px;
+  font-weight: 500;
+}
+
+.jg-spotlight-card--light .jg-spotlight-card-btn:hover {
+  background: #d1d5db;
 }
 
 /* Responsive adjustments for onboarding */
@@ -6167,7 +6486,7 @@ img.emoji {
   }
 
   .jg-tip-container {
-    bottom: 80px;
+    bottom: 16px;
     left: 12px;
     right: 12px;
     transform: none;
@@ -6193,24 +6512,30 @@ img.emoji {
 }
 
 @media (max-width: 768px) {
-  /* On mobile the flex chain sometimes fails to scroll the steps area;
-     make the whole modal scrollable so buttons are always reachable. */
+  /* The base .jg-modal mobile rule forces display:block + overflow:auto which
+     breaks the "steps scroll, footer always visible" flex-column pattern.
+     Override both with !important to restore the correct layout. */
   .jg-onboarding-modal {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #jg-onboarding-content {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  .jg-onboarding-steps {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
   }
-  #jg-onboarding-content {
-    overflow: visible !important;
-    min-height: 0;
-  }
-  .jg-onboarding-steps {
-    overflow-y: visible !important;
-  }
   .jg-onboarding-footer {
-    position: sticky;
-    bottom: 0;
-    background: #fff;
-    z-index: 2;
+    /* Static flex-child — always visible because flex-shrink:0 is set on the
+       base rule and the steps area absorbs all leftover height. No sticky needed. */
+    position: static;
+    flex-shrink: 0;
   }
 }
 
@@ -6229,7 +6554,6 @@ img.emoji {
 
   .jg-onboarding-footer {
     padding: 12px 20px 18px;
-    flex-direction: column;
   }
 
   .jg-tip-content {
@@ -6301,23 +6625,24 @@ img.emoji {
   }
 }
 
-/* Very small viewport height */
+/* Very small viewport height (e.g. landscape phone) */
 @media (max-height: 550px) {
   .jg-onboarding-modal {
     max-height: 95vh !important;
   }
 
   .jg-onboarding-header {
-    padding: 14px 20px 12px;
+    padding: 12px 20px 10px;
   }
 
   .jg-onboarding-header h2 {
     font-size: calc(18.4 * var(--jg));
-    margin-bottom: 4px;
+    margin-bottom: 0;
   }
 
+  /* Hide the subtitle on step 1 — saves ~36px so footer stays in view */
   .jg-onboarding-header p {
-    font-size: calc(12.8 * var(--jg));
+    display: none;
   }
 
   .jg-onboarding-steps {
@@ -7162,6 +7487,7 @@ img.emoji {
   align-items: center;
   justify-content: space-between;
   position: relative;
+  top: 0;
   border-bottom: none;
   flex-shrink: 0;
 }
@@ -9181,6 +9507,36 @@ body.jg-fullscreen-active .jg-modal-bg {
     display: flex !important;
   }
 
+  /* Locate me button */
+  #jg-mobile-controls-row .jg-mcr-locate-btn {
+    all: unset !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    border-radius: 8px !important;
+    color: #374151 !important;
+    cursor: pointer !important;
+    transition: background 0.15s, color 0.15s !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+  }
+  #jg-mobile-controls-row .jg-mcr-locate-btn--active {
+    color: #1a73e8 !important;
+    background: rgba(26, 115, 232, 0.1) !important;
+  }
+  #jg-mobile-controls-row .jg-mcr-locate-btn--loading {
+    animation: jg-locate-pulse 0.9s ease-in-out infinite !important;
+  }
+
   /* Map/satellite toggle inside controls row — icons only, no text */
   #jg-mobile-controls-row .jg-map-toggle-control {
     flex-shrink: 0;
@@ -9247,6 +9603,12 @@ body.jg-fullscreen-active .jg-modal-bg {
   #jg-mobile-controls-row .jg-mcr-zoom-btn:active {
     background: #e5e7eb !important;
   }
+}
+
+/* ── Locate me button pulse animation ── */
+@keyframes jg-locate-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
 /* ── 5. Mobile banner slot ── */
@@ -9494,7 +9856,7 @@ footer.site-footer .site-branding {
   margin-top: 8px;
   font-size: calc(12 * var(--jg));
   font-weight: 600;
-  color: #065f46;
+  color: #14532d !important;
   text-decoration: underline;
 }
 
@@ -10174,4 +10536,212 @@ footer.site-footer .site-branding {
   border: 1px solid #d1d5db !important;
   border-radius: 6px !important;
   max-width: 160px;
+}
+
+/* ── Contact footer bar ──────────────────────────────────────────────────────
+   Fixed at the bottom of every page. Height tracked via --jg-footer-h so the
+   map viewport calculation can subtract it (see jgFitMobileViewport in
+   class-enqueue.php). z-index 9998 = below modals (99999) but above content.
+   ─────────────────────────────────────────────────────────────────────────── */
+#jg-footer-bar {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9998 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 24px !important;
+  background: #8d2324 !important;
+  color: #fff !important;
+  height: 28px !important;
+  padding: 0 16px !important;
+  box-sizing: border-box !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+  font-size: calc(12 * var(--jg)) !important;
+  font-weight: 400 !important;
+  line-height: 1 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+  white-space: nowrap !important;
+}
+
+.jg-footer-bar-copy {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: inherit !important;
+}
+
+.jg-footer-bar-link {
+  all: unset !important;
+  color: #fff !important;
+  font-size: inherit !important;
+  font-weight: 600 !important;
+  text-decoration: underline !important;
+  text-decoration-color: rgba(255, 255, 255, 0.45) !important;
+  text-underline-offset: 2px !important;
+  cursor: pointer !important;
+  transition: text-decoration-color 0.15s !important;
+}
+
+.jg-footer-bar-link:hover,
+.jg-footer-bar-link:focus {
+  text-decoration-color: #fff !important;
+  color: #fff !important;
+}
+
+/* Desktop fullscreen map: account for footer height */
+#jg-map-wrap.jg-fullscreen {
+  height: calc(100vh - var(--jg-footer-h, 28px)) !important;
+}
+
+/* Lift Leaflet bottom controls above the fixed footer bar so they remain
+   accessible. The footer overlays the bottom of the map (no gap needed). */
+.jg-map .leaflet-bottom {
+  bottom: calc(var(--jg-footer-h, 28px) + 4px) !important;
+}
+
+/* ── Mobile nav: envelope (contact) icon ────────────────────────────────────
+   Sits between the logo link and the hamburger button inside #jg-nav-bar.
+   Uses margin-left: auto to push itself (and the hamburger) to the right,
+   overriding justify-content: space-between on the parent.
+   ─────────────────────────────────────────────────────────────────────────── */
+#jg-nav-bar .jg-nav-contact-btn {
+  all: unset !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  color: #8d2324 !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;   /* push contact + hamburger to the right */
+  margin-right: 4px !important;
+  transition: background 0.15s !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+#jg-nav-bar .jg-nav-contact-btn:hover,
+#jg-nav-bar .jg-nav-contact-btn:focus {
+  background: rgba(141, 35, 36, 0.08) !important;
+  color: #8d2324 !important;
+}
+
+#jg-nav-bar .jg-nav-contact-btn svg {
+  display: block !important;
+  flex-shrink: 0 !important;
+}
+
+/* ── Desktop top bar: contact button (icon-only) ────────────────────────────
+   Rendered in .jg-top-bar-left, after the Menu dropdown.
+   Always icon-only — the top bar has too many items to show text.
+   ─────────────────────────────────────────────────────────────────────────── */
+.jg-top-bar-contact-btn {
+  text-decoration: none !important;
+  color: #fff !important;
+  padding: 7px !important;
+  width: 34px !important;
+  height: 34px !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+}
+.jg-top-bar-contact-btn:hover {
+  color: #fff !important;
+  opacity: 0.8 !important;
+}
+.jg-top-bar-contact-btn .jg-btn-icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* On mobile the entire .jg-top-bar-left is hidden (hamburger nav covers it).
+   So the desktop contact button is automatically hidden on mobile. */
+
+/* ── Place contact modal ────────────────────────────────────────────────────
+   Used by openPlaceContactModal() in jg-map.js to show a contact form.
+   ─────────────────────────────────────────────────────────────────────────── */
+.jg-place-contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--jg));
+}
+
+.jg-place-contact-form label {
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--jg));
+  font-size: calc(13 * var(--jg));
+  font-weight: 600;
+  color: #374151;
+}
+
+.jg-place-contact-form input,
+.jg-place-contact-form textarea {
+  width: 100%;
+  padding: calc(9 * var(--jg)) calc(12 * var(--jg));
+  border: 1.5px solid #d1d5db;
+  border-radius: calc(8 * var(--jg));
+  font-size: calc(14 * var(--jg));
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  resize: vertical;
+}
+
+.jg-place-contact-form input:focus,
+.jg-place-contact-form textarea:focus {
+  outline: none;
+  border-color: #8d2324;
+}
+
+.jg-place-contact-form textarea {
+  min-height: clamp(80px, 10vh, 120px);
+}
+
+.jg-place-contact-status {
+  font-size: calc(13 * var(--jg));
+  min-height: 18px;
+  text-align: center;
+}
+
+.jg-place-contact-status--error { color: #b91c1c; }
+.jg-place-contact-status--ok    { color: #15803d; }
+
+/* ── "Napisz wiadomość" button inside the kontakt box ─────────────────────── */
+/* High-specificity + !important to beat Elementor global button styles */
+#jg-map-modal-view .jg-place-contact-open-btn,
+.jg-modal .jg-place-contact-open-btn {
+  all: unset !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: calc(6 * var(--jg)) !important;
+  padding: calc(7 * var(--jg)) calc(14 * var(--jg)) !important;
+  background: #eff6ff !important;
+  border: 1.5px solid #93c5fd !important;
+  border-radius: calc(8 * var(--jg)) !important;
+  color: #1d4ed8 !important;
+  font-size: calc(13 * var(--jg)) !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  transition: background 0.15s, border-color 0.15s !important;
+  line-height: 1.3 !important;
+  box-sizing: border-box !important;
+  text-decoration: none !important;
+}
+#jg-map-modal-view .jg-place-contact-open-btn:hover,
+#jg-map-modal-view .jg-place-contact-open-btn:focus,
+.jg-modal .jg-place-contact-open-btn:hover,
+.jg-modal .jg-place-contact-open-btn:focus {
+  background: #dbeafe !important;
+  border-color: #60a5fa !important;
+  color: #1e40af !important;
+}
+#jg-map-modal-view .jg-place-contact-open-btn svg,
+.jg-modal .jg-place-contact-open-btn svg {
+  flex-shrink: 0 !important;
 }

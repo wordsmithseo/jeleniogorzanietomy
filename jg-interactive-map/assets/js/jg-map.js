@@ -210,6 +210,26 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
     return cats.indexOf(cat) !== -1;
   }
 
+  function isOfferingsCategory(cat) {
+    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.offeringsCategories) || {};
+    return Object.prototype.hasOwnProperty.call(cats, cat);
+  }
+
+  function getOfferingsLabel(cat) {
+    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.offeringsCategories) || {};
+    return cats[cat] || 'Oferta';
+  }
+
+  function isPriceRangeCategory(cat) {
+    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.priceRangeCategories) || [];
+    return cats.indexOf(cat) !== -1;
+  }
+
+  function isServesCuisineCategory(cat) {
+    var cats = (window.JG_MAP_CFG && JG_MAP_CFG.servesCuisineCategories) || [];
+    return cats.indexOf(cat) !== -1;
+  }
+
   function getCategoryLabel(key, type) {
     var reasons = (window.JG_MAP_CFG && JG_MAP_CFG.reportReasons) || {};
     var placeCategories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
@@ -829,6 +849,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       var modalAuthor = document.getElementById('jg-map-modal-author');
       var modalStatus = document.getElementById('jg-map-modal-status');
       var modalRanking = document.getElementById('jg-map-modal-ranking');
+      var modalPlaceContact = document.getElementById('jg-place-contact-modal');
       var lightbox = document.getElementById('jg-map-lightbox');
 
       // Stats modal refresh interval
@@ -1583,6 +1604,23 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           if (m) parsed[m[1]] = { open: m[2], close: m[3] };
         });
         return parsed;
+      }
+
+      // Build price range SELECT HTML
+      function buildPriceRangeSelectHtml(prefix, currentValue) {
+        var options = [
+          { val: '', label: '— brak —' },
+          { val: '$', label: '$ – bardzo tanie' },
+          { val: '$$', label: '$$ – umiarkowane' },
+          { val: '$$$', label: '$$$ – droższe' },
+          { val: '$$$$', label: '$$$$ – ekskluzywne' }
+        ];
+        var html = '<select name="price_range" id="' + prefix + '-price-range-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">';
+        options.forEach(function(o) {
+          html += '<option value="' + o.val + '"' + (currentValue === o.val ? ' selected' : '') + '>' + o.label + '</option>';
+        });
+        html += '</select>';
+        return html;
       }
 
       // Build the picker HTML (hidden input + 7 day rows)
@@ -2730,6 +2768,60 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         mcrZoom.appendChild(mcrZoomIn);
         mcrZoom.appendChild(mcrZoomOut);
 
+        // ── Locate me button (inserted before map/sat toggle in rAF) ─────────
+        var mcrLocateBtn = document.createElement('button');
+        mcrLocateBtn.type = 'button';
+        mcrLocateBtn.className = 'jg-mcr-locate-btn';
+        mcrLocateBtn.title = 'Moja lokalizacja';
+        mcrLocateBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="22"/><line x1="2" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>';
+
+        var _jgLocateMarker = null;
+        var _jgLocateCircle = null;
+
+        mcrLocateBtn.addEventListener('click', function() {
+          if (!navigator.geolocation) {
+            alert('Geolokalizacja nie jest obsługiwana przez tę przeglądarkę.');
+            return;
+          }
+          mcrLocateBtn.classList.add('jg-mcr-locate-btn--loading');
+          mcrLocateBtn.classList.remove('jg-mcr-locate-btn--active');
+          navigator.geolocation.getCurrentPosition(
+            function(pos) {
+              mcrLocateBtn.classList.remove('jg-mcr-locate-btn--loading');
+              mcrLocateBtn.classList.add('jg-mcr-locate-btn--active');
+              var lat = pos.coords.latitude;
+              var lng = pos.coords.longitude;
+              var acc = pos.coords.accuracy;
+              if (_jgLocateMarker) { map.removeLayer(_jgLocateMarker); }
+              if (_jgLocateCircle) { map.removeLayer(_jgLocateCircle); }
+              _jgLocateCircle = L.circle([lat, lng], {
+                radius: acc,
+                color: '#1a73e8',
+                fillColor: '#1a73e8',
+                fillOpacity: 0.15,
+                weight: 1
+              }).addTo(map);
+              _jgLocateMarker = L.circleMarker([lat, lng], {
+                radius: 8,
+                color: '#fff',
+                weight: 2.5,
+                fillColor: '#1a73e8',
+                fillOpacity: 1
+              }).addTo(map);
+              map.setView([lat, lng], 16);
+            },
+            function(err) {
+              mcrLocateBtn.classList.remove('jg-mcr-locate-btn--loading');
+              if (err.code === 1) {
+                alert('Odmówiono dostępu do lokalizacji. Sprawdź ustawienia przeglądarki.');
+              } else {
+                alert('Nie udało się pobrać lokalizacji. Spróbuj ponownie.');
+              }
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+          );
+        });
+
         mcrRow.appendChild(mcrFilterBtn);
         mcrRow.appendChild(mcrSearchWrap);
         mcrRow.appendChild(mcrZoom);
@@ -2921,6 +3013,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var toggleCtrl = elMap.querySelector('.jg-map-toggle-control');
           if (toggleCtrl && mcrZoom) {
             mcrRow.insertBefore(toggleCtrl, mcrZoom);
+          }
+          // Insert locate button before the map/sat toggle
+          if (mcrLocateBtn && (toggleCtrl || mcrZoom)) {
+            mcrRow.insertBefore(mcrLocateBtn, toggleCtrl || mcrZoom);
           }
           // Move ad banner slot into overlays container
           var slotWrap = document.querySelector('[data-cid]');
@@ -4700,7 +4796,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 [50.9089,15.7410],[50.9077,15.7448],[50.9047,15.7465],[50.9102,15.7368]
               ];
 
-              var gpCurrentHour = Math.floor(Date.now() / 3600000);
+              var gpCurrentPeriod = Math.floor(Date.now() / 300000);
+
+              // Natychmiast ustaw pozycję według aktualnego okresu czasu.
+              // PHP mógł podać cache'owaną pozycję — JS musi ją nadpisać bez animacji.
+              var gpInitialIdx = gpCurrentPeriod % gpCandidates.length;
+              gpMarker.setLatLng([gpCandidates[gpInitialIdx][0], gpCandidates[gpInitialIdx][1]]);
 
               function gpMoveTo(newPos) {
                 var el = gpMarker.getElement();
@@ -4717,16 +4818,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 }, 460);
               }
 
-              // Sprawdzaj co minutę czy godzina się zmieniła
+              // Sprawdzaj co 30 sekund czy minął 5-minutowy okres
               var gpRotateTimer = setInterval(function() {
                 if (!map || !gpMarker) { clearInterval(gpRotateTimer); return; }
-                var nowHour = Math.floor(Date.now() / 3600000);
-                if (nowHour !== gpCurrentHour) {
-                  gpCurrentHour = nowHour;
-                  var newIdx = nowHour % gpCandidates.length;
+                var nowPeriod = Math.floor(Date.now() / 300000);
+                if (nowPeriod !== gpCurrentPeriod) {
+                  gpCurrentPeriod = nowPeriod;
+                  var newIdx = nowPeriod % gpCandidates.length;
                   gpMoveTo(gpCandidates[newIdx]);
                 }
-              }, 60000);
+              }, 30000);
             }
 
             // Clean up any old markers
@@ -4947,6 +5048,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 '</select></label>' +
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('add-rte', 800, '', 4) + '</div>' +
                 '<div class="cols-2" id="add-opening-hours-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('add', '') + '</div>' +
+                '<div class="cols-2" id="add-price-range-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">💰 Zakres cenowy</label>' + buildPriceRangeSelectHtml('add', '') + '</div>' +
+                '<div class="cols-2" id="add-serves-cuisine-field" style="display:none"><label style="display:block;margin-bottom:4px;font-weight:500">🥗 Rodzaj kuchni <input type="text" name="serves_cuisine" id="add-serves-cuisine-input" placeholder="np. polska, włoska, pizza…" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label></div>' +
                 '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('add-tags') + '</div>' +
                 '<div class="cols-2" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin:4px 0">' +
                 '<strong style="display:block;margin-bottom:10px;color:#0369a1">📋 Dane kontaktowe (opcjonalnie)</strong>' +
@@ -5044,6 +5147,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               var curiosityCategorySelect = qs('#add-curiosity-category-select', modalAdd);
 
               var addOpeningHoursField = qs('#add-opening-hours-field', modalAdd);
+              var addPriceRangeField = qs('#add-price-range-field', modalAdd);
+              var addServesCuisineField = qs('#add-serves-cuisine-field', modalAdd);
+
+              function updateAddExtraFields() {
+                var cat = placeCategorySelect ? placeCategorySelect.value : '';
+                var selectedType = typeSelect ? typeSelect.value : '';
+                if (addPriceRangeField) addPriceRangeField.style.display = (selectedType === 'miejsce' && isPriceRangeCategory(cat)) ? 'block' : 'none';
+                if (addServesCuisineField) addServesCuisineField.style.display = (selectedType === 'miejsce' && isServesCuisineCategory(cat)) ? 'block' : 'none';
+              }
+
+              if (placeCategorySelect) placeCategorySelect.addEventListener('change', updateAddExtraFields);
 
               if (typeSelect && categoryField && categorySelect) {
                 // Function to toggle category field visibility
@@ -5070,6 +5184,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   if (addOpeningHoursField) {
                     addOpeningHoursField.style.display = selectedType === 'miejsce' ? 'block' : 'none';
                   }
+
+                  updateAddExtraFields();
                 }
 
                 // Initial toggle on page load (default is zgloszenie)
@@ -5193,7 +5309,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (!j || j.success === false) {
                 // Handle duplicate point error specially
                 if (j && j.data && j.data.duplicate_point_id) {
-                  var duplicatePointId = j.data.duplicate_point_id;
+                  var duplicatePointId = parseInt(j.data.duplicate_point_id, 10);
                   msg.innerHTML = (j.data.message || 'Błąd') + ' <br><button style="margin-top:8px;padding:6px 12px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="' +
                     'document.getElementById(\'jg-map-modal-add\').style.display=\'none\';' +
                     'window.location.hash=\'#point-' + duplicatePointId + '\';' +
@@ -6025,7 +6141,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         return fetchPoints().then(function(data) {
 
           ALL = (data || []).map(function(r) {
-            return {
+            var p = {
               id: r.id,
               title: r.title || '',
               slug: r.slug || '',
@@ -6080,8 +6196,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               is_own_place: !!r.is_own_place,
               edit_locked: !!r.edit_locked,
               tags: r.tags || [],
-              opening_hours: r.opening_hours || null
+              opening_hours: r.opening_hours || null,
+              price_range: r.price_range || null,
+              serves_cuisine: r.serves_cuisine || null
             };
+            // Forward-compatible: copy any new server fields not yet explicitly mapped
+            for (var _k in r) {
+              if (Object.prototype.hasOwnProperty.call(r, _k) && !(_k in p)) {
+                p[_k] = r[_k];
+              }
+            }
+            return p;
           });
 
           // Always save to cache with current timestamp (in seconds to match server)
@@ -7479,7 +7604,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
       function loadMenuSection(p, menuSection) {
         if (!menuSection) return;
-        menuSection.innerHTML = '<div style="color:#9ca3af;padding:8px 0">Ładowanie menu\u2026</div>';
+        var menuContent = menuSection.querySelector('#jg-menu-content') || menuSection;
+        menuContent.innerHTML = '<div style="color:#9ca3af;padding:8px 0">Ładowanie menu\u2026</div>';
 
         var fd = new FormData();
         fd.append('action', 'jg_get_menu');
@@ -7493,7 +7619,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var photos   = (j && j.success && j.data && j.data.photos)   ? j.data.photos   : [];
 
             if (!sections.length && !photos.length) {
-              menuSection.innerHTML = '';
               menuSection.style.display = 'none';
               return;
             }
@@ -7554,7 +7679,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<a href="' + menuUrl + '" target="_blank" class="jg-menu-modal-link">Zobacz pełne menu \u2192</a>' +
               '</div>';
 
-            menuSection.innerHTML = html;
+            menuContent.innerHTML = html;
 
             // Bind lightbox to photo thumbnails
             var photoEls = menuSection.querySelectorAll('.jg-menu-modal-photo');
@@ -7625,6 +7750,203 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // -----------------------------------------------------------------------
       // Menu editor
       // -----------------------------------------------------------------------
+
+      // -----------------------------------------------------------------------
+      // Offerings (services / products)
+      // -----------------------------------------------------------------------
+
+      function loadOfferingsSection(p, offeringsSection) {
+        if (!offeringsSection) return;
+        var content = offeringsSection.querySelector('#jg-offerings-content') || offeringsSection;
+        content.innerHTML = '<div style="color:#9ca3af;padding:8px 0">Ładowanie\u2026</div>';
+
+        var fd = new FormData();
+        fd.append('action', 'jg_get_offerings');
+        fd.append('_ajax_nonce', CFG.nonce);
+        fd.append('point_id', p.id);
+
+        fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(j) {
+            var items = (j && j.success && j.data && j.data.items) ? j.data.items : [];
+
+            if (!items.length) {
+              offeringsSection.style.display = 'none';
+              return;
+            }
+            offeringsSection.style.display = '';
+
+            var html = '';
+            var shown = 0;
+            var maxShown = 6;
+            items.forEach(function(item) {
+              if (shown >= maxShown) return;
+              shown++;
+              var priceStr = '';
+              if (item.price !== null && item.price !== '') {
+                var p2 = parseFloat(item.price);
+                priceStr = !isNaN(p2) ? p2.toFixed(2).replace('.', ',') + '\u00a0z\u0142' : '';
+              }
+              html += '<div class="jg-menu-modal-row">' +
+                '<span class="jg-menu-modal-name">' + esc(item.name) + '</span>' +
+                (priceStr ? '<span class="jg-menu-modal-price">' + priceStr + '</span>' : '') +
+                '</div>';
+            });
+            if (items.length > maxShown) {
+              html += '<div style="font-size:0.8rem;color:#9ca3af;margin-top:4px">+ ' + (items.length - maxShown) + ' więcej\u2026</div>';
+            }
+
+            // Link to full offerings page
+            var offUrl = (CFG.homeUrl || '/') + 'miejsce/' + encodeURIComponent(p.slug) + '/oferta/';
+            html += '<div style="margin-top:10px">' +
+              '<a href="' + offUrl + '" target="_blank" class="jg-menu-modal-link">Zobacz pe\u0142n\u0105 ofert\u0119 \u2192</a>' +
+              '</div>';
+
+            content.innerHTML = html;
+          })
+          .catch(function() {
+            offeringsSection.style.display = 'none';
+          });
+      }
+
+      function openOfferingsEditor(p) {
+        var ofLabel = getOfferingsLabel(p.category);
+
+        fetch(CFG.ajax, {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: (function() {
+            var fd = new FormData();
+            fd.append('action', 'jg_get_offerings');
+            fd.append('_ajax_nonce', CFG.nonce);
+            fd.append('point_id', p.id);
+            return fd;
+          })()
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(j) {
+            var items = (j && j.success && j.data && j.data.items) ? j.data.items : [];
+            renderOfferingsEditor(p, items, ofLabel);
+          })
+          .catch(function() {
+            renderOfferingsEditor(p, [], ofLabel);
+          });
+      }
+
+      function renderOfferingsEditor(p, items, ofLabel) {
+        var itemsHtml = '';
+        items.forEach(function(item, idx) {
+          itemsHtml += buildOfferingItemHtml(idx, item);
+        });
+
+        var editorHtml =
+          '<h3 style="margin:0 0 14px 0;font-size:1rem;font-weight:700">Zarządzaj: ' + esc(ofLabel) + '</h3>' +
+          '<div id="jg-off-ed-items">' + itemsHtml + '</div>' +
+          '<button type="button" id="jg-off-ed-add" class="jg-btn jg-btn--ghost" style="width:100%;margin-top:8px">+ Dodaj pozycję</button>' +
+          '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">' +
+          '<button type="button" class="jg-btn jg-btn--ghost" id="jg-off-ed-cancel">Anuluj</button>' +
+          '<button type="button" class="jg-btn jg-btn--primary" id="jg-off-ed-save">Zapisz</button>' +
+          '</div>' +
+          '<div id="jg-off-ed-msg" style="margin-top:10px;font-size:0.85rem"></div>';
+
+        open(modalEdit, editorHtml);
+
+        var itemsCont = qs('#jg-off-ed-items', modalEdit);
+
+        function addItem() {
+          var idx = itemsCont.querySelectorAll('.jg-off-ed-item').length;
+          var div = document.createElement('div');
+          div.innerHTML = buildOfferingItemHtml(idx, {});
+          itemsCont.appendChild(div.firstElementChild);
+          bindItemEvents(div.firstElementChild);
+        }
+
+        function bindItemEvents(el) {
+          var delBtn = el.querySelector('.jg-off-ed-del');
+          if (delBtn) delBtn.onclick = function() { el.parentNode.removeChild(el); };
+        }
+
+        itemsCont.querySelectorAll('.jg-off-ed-item').forEach(bindItemEvents);
+
+        qs('#jg-off-ed-add', modalEdit).onclick = addItem;
+
+        qs('#jg-off-ed-cancel', modalEdit).onclick = function() { close(modalEdit); };
+
+        qs('#jg-off-ed-save', modalEdit).onclick = function() {
+          var rows = itemsCont.querySelectorAll('.jg-off-ed-item');
+          var payload = [];
+          rows.forEach(function(row) {
+            var nameEl  = row.querySelector('.jg-off-ed-name');
+            var descEl  = row.querySelector('.jg-off-ed-desc');
+            var priceEl = row.querySelector('.jg-off-ed-price');
+            var availEl = row.querySelector('.jg-off-ed-avail');
+            var name = nameEl ? nameEl.value.trim() : '';
+            if (!name) return;
+            payload.push({
+              name:         name,
+              description:  descEl ? descEl.value.trim() : '',
+              price:        priceEl && priceEl.value.trim() !== '' ? priceEl.value.trim() : '',
+              is_available: availEl && availEl.checked ? 1 : 0,
+            });
+          });
+
+          var msgEl = qs('#jg-off-ed-msg', modalEdit);
+          var saveBtn = qs('#jg-off-ed-save', modalEdit);
+          saveBtn.disabled = true;
+          msgEl.textContent = 'Zapisywanie\u2026';
+          msgEl.style.color = '#6b7280';
+
+          var fd = new FormData();
+          fd.append('action', 'jg_save_offerings');
+          fd.append('_ajax_nonce', CFG.nonce);
+          fd.append('point_id', p.id);
+          fd.append('items', JSON.stringify(payload));
+
+          fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(j) {
+              saveBtn.disabled = false;
+              if (j && j.success) {
+                msgEl.style.color = '#15803d';
+                msgEl.textContent = j.data.pending
+                  ? 'Przesłano do moderacji.'
+                  : 'Zapisano!';
+                // Refresh offerings section in the view modal
+                var offSec = qs('#jg-offerings-section', modalView);
+                if (offSec) loadOfferingsSection(p, offSec);
+                setTimeout(function() { close(modalEdit); }, 1200);
+              } else {
+                msgEl.style.color = '#dc2626';
+                msgEl.textContent = (j && j.data && j.data.message) ? j.data.message : 'Błąd zapisu.';
+              }
+            })
+            .catch(function() {
+              saveBtn.disabled = false;
+              msgEl.style.color = '#dc2626';
+              msgEl.textContent = 'Błąd połączenia.';
+            });
+        };
+      }
+
+      function buildOfferingItemHtml(idx, item) {
+        var name  = esc(item.name || '');
+        var desc  = esc(item.description || '');
+        var price = item.price !== null && item.price !== undefined && item.price !== '' ? esc(String(item.price)) : '';
+        var avail = item.is_available === undefined || parseInt(item.is_available) ? 'checked' : '';
+        return '<div class="jg-off-ed-item" style="display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;padding:10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:6px">' +
+          '<div style="flex:1 1 180px">' +
+          '<input type="text" class="jg-off-ed-name" value="' + name + '" placeholder="Nazwa pozycji" maxlength="255" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:0.85rem">' +
+          '<input type="text" class="jg-off-ed-desc" value="' + desc + '" placeholder="Opis (opcjonalny)" maxlength="500" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:0.85rem;margin-top:4px">' +
+          '</div>' +
+          '<div style="flex:0 0 100px">' +
+          '<input type="number" class="jg-off-ed-price" value="' + price + '" placeholder="Cena (zł)" min="0" step="0.01" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:0.85rem">' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:6px;padding-top:6px">' +
+          '<label style="display:flex;align-items:center;gap:4px;font-size:0.8rem;white-space:nowrap"><input type="checkbox" class="jg-off-ed-avail" ' + avail + '> Dostępne</label>' +
+          '<button type="button" class="jg-off-ed-del jg-btn jg-btn--ghost" style="padding:4px 8px;color:#ef4444" title="Usuń">\u2715</button>' +
+          '</div>' +
+          '</div>';
+      }
 
       function openMenuEditor(p) {
         var dietary_options = [
@@ -7864,11 +8186,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   newDiv.innerHTML = '<img src="' + esc(resp.data.thumb_url || resp.data.url) + '" alt="">' +
                     '<button type="button" class="jg-menu-ed-photo-del" title="Usuń zdjęcie">&times;</button>';
                   photosContainer.insertBefore(newDiv, addLabel || null);
-                  bindPhotoDelBtn(newDiv.querySelector('.jg-menu-ed-photo-del'), newDiv, p.id);
+                  bindPhotoDelBtn(newDiv.querySelector('.jg-menu-ed-photo-del'), newDiv, p.id, modalEdit);
                   // Hide add button if 4 photos
                   if (photosContainer.querySelectorAll('.jg-menu-ed-photo').length >= 4 && addLabel) {
                     addLabel.style.display = 'none';
                   }
+                  // Update sidebar has_menu badge (photo alone counts as having a menu)
+                  if (typeof window.jgUpdatePointHasMenu === 'function') window.jgUpdatePointHasMenu(p.id);
                 } else {
                   photoMsg.textContent = (resp && resp.data && resp.data.message) ? resp.data.message : 'Błąd uploadu.';
                   photoMsg.style.color = '#b91c1c';
@@ -7885,7 +8209,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         // Bind photo delete buttons
         modalEdit.querySelectorAll('.jg-menu-ed-photo').forEach(function(photoEl) {
           var btn = photoEl.querySelector('.jg-menu-ed-photo-del');
-          if (btn) bindPhotoDelBtn(btn, photoEl, p.id);
+          if (btn) bindPhotoDelBtn(btn, photoEl, p.id, modalEdit);
         });
 
         // Save menu
@@ -7912,6 +8236,14 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 // Live-refresh the menu section in the place modal (still open behind)
                 var menuSec = qs('#jg-menu-section', modalView);
                 if (menuSec) loadMenuSection(p, menuSec);
+                // Update sidebar has_menu badge based on current editor state
+                var _hasSections = collectedSections && collectedSections.length > 0;
+                var _hasPhotos = modalEdit.querySelectorAll('.jg-menu-ed-photo').length > 0;
+                if (_hasSections || _hasPhotos) {
+                  if (typeof window.jgUpdatePointHasMenu === 'function') window.jgUpdatePointHasMenu(p.id);
+                } else {
+                  if (typeof window.jgUpdatePointNoMenu === 'function') window.jgUpdatePointNoMenu(p.id);
+                }
                 setTimeout(function() { close(modalEdit); }, 900);
               } else {
                 msgEl.textContent = (resp && resp.data && resp.data.message) ? resp.data.message : 'Błąd zapisu.';
@@ -8097,7 +8429,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         syncToggleState();
       }
 
-      function bindPhotoDelBtn(btn, photoEl, pointId) {
+      function bindPhotoDelBtn(btn, photoEl, pointId, menuEditorEl) {
         btn.onclick = function() {
           var photoId = photoEl.dataset.id;
           if (!photoId || !confirm('Usunąć to zdjęcie?')) return;
@@ -8115,6 +8447,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 // Show add button if now < 4
                 var addLabel = qs('.jg-menu-ed-photo-add', photosContainer);
                 if (addLabel) addLabel.style.display = '';
+                // Update sidebar badge: check if any photos or sections remain
+                var hasPhotosLeft = photosContainer.querySelectorAll('.jg-menu-ed-photo').length > 0;
+                var hasSectionsLeft = menuEditorEl ? menuEditorEl.querySelectorAll('.jg-menu-ed-section').length > 0 : false;
+                if (!hasPhotosLeft && !hasSectionsLeft) {
+                  if (typeof window.jgUpdatePointNoMenu === 'function') window.jgUpdatePointNoMenu(pointId);
+                }
               }
             });
         };
@@ -8435,6 +8773,96 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             msg.textContent = (err && err.message) || 'Błąd';
             msg.style.color = '#b91c1c';
           });
+        };
+      }
+
+      // ── Place contact modal ───────────────────────────────────────────────
+      // Opens a form letting the user send a message to the place's email.
+      // The email address is never exposed to the client — all sending is
+      // handled server-side by the jg_contact_place AJAX action.
+      function openPlaceContactModal(p) {
+        if (!modalPlaceContact) return;
+
+        var prefillName = CFG.currentUserDisplayName || '';
+
+        open(modalPlaceContact,
+          '<header>' +
+            '<h3>✉️ Napisz do: ' + esc(p.title) + '</h3>' +
+            '<button class="jg-close" id="place-contact-close">&times;</button>' +
+          '</header>' +
+          '<form id="place-contact-form" class="jg-place-contact-form" autocomplete="on">' +
+            '<label>Twoje imię lub nazwa' +
+              '<input type="text" name="sender_name" required maxlength="120" value="' + esc(prefillName) + '" placeholder="Wpisz swoje imię">' +
+            '</label>' +
+            '<label>Twój adres e-mail' +
+              '<input type="email" name="sender_email" required maxlength="200" value="" placeholder="twoj@email.pl">' +
+            '</label>' +
+            '<label>Wiadomość' +
+              '<textarea name="message" required maxlength="2000" placeholder="Treść wiadomości..."></textarea>' +
+            '</label>' +
+            '<p class="jg-place-contact-status" id="place-contact-status"></p>' +
+            '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+              '<button type="button" class="jg-btn jg-btn--ghost" id="place-contact-cancel">Anuluj</button>' +
+              '<button type="submit" class="jg-btn" id="place-contact-submit">Wyślij wiadomość</button>' +
+            '</div>' +
+          '</form>'
+        );
+
+        qs('#place-contact-close', modalPlaceContact).onclick = function() {
+          close(modalPlaceContact);
+        };
+        qs('#place-contact-cancel', modalPlaceContact).onclick = function() {
+          close(modalPlaceContact);
+        };
+
+        var form   = qs('#place-contact-form', modalPlaceContact);
+        var status = qs('#place-contact-status', modalPlaceContact);
+        var submitBtn = qs('#place-contact-submit', modalPlaceContact);
+
+        form.onsubmit = function(e) {
+          e.preventDefault();
+
+          var senderName  = (form.sender_name.value  || '').trim();
+          var senderEmail = (form.sender_email.value || '').trim();
+          var message     = (form.message.value      || '').trim();
+
+          if (!senderName || !senderEmail || !message) {
+            status.textContent = 'Uzupełnij wszystkie pola.';
+            status.className = 'jg-place-contact-status jg-place-contact-status--error';
+            return;
+          }
+
+          submitBtn.disabled = true;
+          status.textContent = 'Wysyłanie…';
+          status.className = 'jg-place-contact-status';
+
+          var fd = new FormData();
+          fd.append('action',       'jg_contact_place');
+          fd.append('nonce',        CFG.nonce);
+          fd.append('point_id',     p.id);
+          fd.append('sender_name',  senderName);
+          fd.append('sender_email', senderEmail);
+          fd.append('message',      message);
+
+          fetch(CFG.ajax, { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+              if (res.success) {
+                status.textContent = 'Wiadomość wysłana. Dziękujemy!';
+                status.className = 'jg-place-contact-status jg-place-contact-status--ok';
+                form.reset();
+                setTimeout(function() { close(modalPlaceContact); }, 1800);
+              } else {
+                status.textContent = (res.data && res.data.message) || 'Wystąpił błąd. Spróbuj ponownie.';
+                status.className = 'jg-place-contact-status jg-place-contact-status--error';
+                submitBtn.disabled = false;
+              }
+            })
+            .catch(function() {
+              status.textContent = 'Błąd połączenia. Spróbuj ponownie.';
+              status.className = 'jg-place-contact-status jg-place-contact-status--error';
+              submitBtn.disabled = false;
+            });
         };
       }
 
@@ -8812,6 +9240,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '</div>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis*</label>' + buildRichEditorHtml('edit-rte', maxDescLength, '', 6) + '</div>' +
               (p.type === 'miejsce' ? '<div class="cols-2"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('edit', p.opening_hours || '') + '</div>' : '') +
+              (p.type === 'miejsce' && isPriceRangeCategory(p.category || '') ? '<div class="cols-2" id="edit-price-range-field"><label style="display:block;margin-bottom:6px;font-weight:500">💰 Zakres cenowy</label>' + buildPriceRangeSelectHtml('edit', p.price_range || '') + '</div>' : '') +
+              (p.type === 'miejsce' && isServesCuisineCategory(p.category || '') ? '<div class="cols-2" id="edit-serves-cuisine-field"><label style="display:block;margin-bottom:4px;font-weight:500">🥗 Rodzaj kuchni <input type="text" name="serves_cuisine" id="edit-serves-cuisine-input" value="' + esc(p.serves_cuisine || '') + '" placeholder="np. polska, włoska, pizza…" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label></div>' : '') +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('edit-tags') + '</div>' +
               contactFieldsHtml +
               sponsoredContactHtml +
@@ -10857,14 +11287,15 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         if (p.phone || p.email || p.website) {
           var kontaktItems = [];
           if (p.phone) {
-            kontaktItems.push('<div><strong>📞 Telefon:</strong> <a href="tel:' + esc(p.phone) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.phone) + '</a></div>');
+            kontaktItems.push('<div style="margin:6px 0"><a href="tel:' + esc(p.phone) + '" class="jg-place-contact-open-btn"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> ' + esc(p.phone) + '</a></div>');
           }
           if (p.email) {
-            kontaktItems.push('<div><strong>✉️ Email:</strong> <a href="mailto:' + esc(p.email) + '" style="color:#2563eb;text-decoration:underline">' + esc(p.email) + '</a></div>');
+            kontaktItems.push('<div style="margin:6px 0"><button type="button" class="jg-place-contact-open-btn" data-point-id="' + esc(String(p.id)) + '"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> Napisz wiadomość</button></div>');
           }
           if (p.website) {
             var kontaktWebUrl = p.website.startsWith('http') ? p.website : 'https://' + p.website;
-            kontaktItems.push('<div><strong>🌐 Strona:</strong> <a href="' + esc(kontaktWebUrl) + '" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline">' + esc(p.website) + '</a></div>');
+            var kontaktWebDisplay = p.website.replace(/^https?:\/\/(www\.)?/, '').replace(/[/?#].*$/, '');
+            kontaktItems.push('<div style="margin:6px 0"><a href="' + esc(kontaktWebUrl) + '" class="jg-place-contact-open-btn" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg> ' + esc(kontaktWebDisplay) + '</a></div>');
           }
           kontaktBoxHtml = '<div style="font-weight:700;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.05em;color:#0369a1;margin-bottom:8px">Kontakt</div>' + kontaktItems.join('');
         }
@@ -11142,11 +11573,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '</div>';
         }
 
-        // Business promotion section for non-sponsored business places
+        // Business promotion section — shown for pins whose category has show_promo enabled,
+        // but NOT for places that are already sponsored (is_promo/sponsored flag on the pin itself)
         var businessPromoHtml = '';
-        var businessCategories = ['gastronomia', 'uslugi', 'sport', 'kultura'];
-        var isOwnPlace = +CFG.currentUserId > 0 && +CFG.currentUserId === +p.author_id;
-        if (p.type === 'miejsce' && !p.sponsored && !CFG.hasSponsoredPoint && (isOwnPlace || !CFG.isLoggedIn) && p.category && businessCategories.indexOf(p.category) !== -1) {
+        var promoCategories = Array.isArray(CFG.promoCategories) ? CFG.promoCategories : [];
+        if (p.type === 'miejsce' && !p.sponsored && p.category && promoCategories.indexOf(p.category) !== -1) {
           businessPromoHtml = '<div class="jg-business-promo">' +
             '<div class="jg-business-promo__icon">💼</div>' +
             '<div class="jg-business-promo__text">' +
@@ -11157,8 +11588,22 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           '</div>';
         }
 
-        // Build opening hours display (shown under title for miejsca and ciekawostki)
+        // Build opening hours + price range display
         var openingHoursHtml = '';
+        var _ohBoxHtml = '';
+        var _priceRangeBoxHtml = '';
+
+        // Price range box (independent of opening hours)
+        if (p.type === 'miejsce' && p.price_range && isPriceRangeCategory(p.category || '')) {
+          var prPriceLabels = { '$': 'Bardzo tanie', '$$': 'Umiarkowane', '$$$': 'Droższe', '$$$$': 'Ekskluzywne' };
+          _priceRangeBoxHtml = '<div style="padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:0.875rem;color:#166534;flex:0 0 auto;min-width:140px;max-width:100%;box-sizing:border-box">' +
+            '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Zakres cenowy</div>' +
+            '<div style="font-size:1.2rem;font-weight:800;letter-spacing:0.05em">' + esc(p.price_range) + '</div>' +
+            '<div style="font-size:0.8rem;opacity:0.85;margin-top:2px">' + esc(prPriceLabels[p.price_range] || '') + '</div>' +
+            '</div>';
+        }
+
+        // Opening hours box
         if (p.opening_hours && p.opening_hours.trim() && (p.type === 'miejsce' || p.type === 'ciekawostka')) {
           var ohDayLabels = { Mo: 'Pon', Tu: 'Wt', We: 'Śr', Th: 'Czw', Fr: 'Pt', Sa: 'Sob', Su: 'Niedz' };
           var ohAllDayKeys = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -11229,7 +11674,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 '</div>';
             }).join('');
 
-            openingHoursHtml = '<div class="jg-opening-hours" style="margin:0 0 12px 0;padding:10px 14px;background:' + ohColors.bg + ';border-radius:8px;border:1px solid ' + ohColors.border + ';font-size:0.875rem;color:' + ohColors.text + '">' +
+            _ohBoxHtml = '<div class="jg-opening-hours" style="padding:10px 14px;background:' + ohColors.bg + ';border-radius:8px;border:1px solid ' + ohColors.border + ';font-size:0.875rem;color:' + ohColors.text + ';flex:1;min-width:0">' +
               '<div id="jg-oh-title" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Dzisiejsze godziny otwarcia</div>' +
               '<div id="jg-oh-today">' + todayRowHtml + '</div>' +
               '<div id="jg-oh-all" style="display:none;margin-top:6px;line-height:2;color:' + ohColors.text + '">' + allDaysHtml + '</div>' +
@@ -11238,12 +11683,27 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }
         }
 
+        // Show flex row if either section exists
+        if (_ohBoxHtml || _priceRangeBoxHtml) {
+          openingHoursHtml = '<div style="display:flex;gap:8px;margin:0 0 12px 0;flex-wrap:wrap;min-width:0;width:100%">' + _ohBoxHtml + _priceRangeBoxHtml + '</div>';
+        }
+
         // Build menu section placeholder (async-loaded after modal opens)
         var menuSectionHtml = '';
         if (p.type === 'miejsce' && isMenuCategory(p.category)) {
-          menuSectionHtml = '<div id="jg-menu-section" class="jg-menu-modal-section" style="margin:0 0 12px 0">' +
-            '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#92400e;margin-bottom:6px;opacity:0.7">Aktualne menu</div>' +
-            '<div id="jg-menu-loading" style="font-size:0.85rem;color:#9ca3af">Ładowanie menu\u2026</div>' +
+          menuSectionHtml = '<div id="jg-menu-section" class="jg-menu-modal-section" style="margin:0 0 12px 0;padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:0.875rem;color:#166534">' +
+            '<div id="jg-menu-title" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">Aktualne menu</div>' +
+            '<div id="jg-menu-content"><div style="font-size:0.85rem;color:#9ca3af">Ładowanie menu\u2026</div></div>' +
+            '</div>';
+        }
+
+        // Build offerings section placeholder (async-loaded after modal opens)
+        var offeringsSectionHtml = '';
+        if (p.type === 'miejsce' && isOfferingsCategory(p.category)) {
+          var ofLabel = getOfferingsLabel(p.category);
+          offeringsSectionHtml = '<div id="jg-offerings-section" class="jg-menu-modal-section" style="margin:0 0 12px 0;padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:0.875rem;color:#166534">' +
+            '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;opacity:0.7">📋 ' + esc(ofLabel) + '</div>' +
+            '<div id="jg-offerings-content"><div style="font-size:0.85rem;color:#9ca3af">Ładowanie\u2026</div></div>' +
             '</div>';
         }
 
@@ -11271,7 +11731,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           ? '<button id="btn-manage-menu" class="jg-btn jg-btn--ghost">🍽️ Menu</button>'
           : '';
 
-        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow:auto;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + openingHoursHtml + menuSectionHtml + metaRow + addressInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + kontaktInfo + tagsHtml + ctaButton + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + contactInfo + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + menuBtn + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
+        var offeringsBtn = (canEdit && p.type === 'miejsce' && isOfferingsCategory(p.category))
+          ? '<button id="btn-manage-offerings" class="jg-btn jg-btn--ghost">📋 ' + esc(getOfferingsLabel(p.category)) + '</button>'
+          : '';
+
+        var html = '<header style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e5e7eb"><div style="display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden">' + sponsoredBadgeHeader + typeBadge + categoryBadgeHeader + '</div><div style="display:flex;align-items:center;gap:12px;flex-shrink:0">' + statusBadge + caseIdBadge + '<button class="jg-close" id="dlg-close" style="margin:0">&times;</button></div></header><div class="jg-grid" style="overflow-y:auto;overflow-x:hidden;padding:20px"><h3 class="jg-place-title" style="margin:0 0 16px 0;font-size:2.5rem;font-weight:400;line-height:1.2">' + esc(p.title || 'Szczegóły') + lockIcon + '</h3>' + openingHoursHtml + menuSectionHtml + offeringsSectionHtml + metaRow + addressInfo + (p.content ? ('<div class="jg-place-content">' + p.content + '</div>') : (p.excerpt ? ('<p class="jg-place-excerpt">' + esc(p.excerpt) + '</p>') : '')) + kontaktInfo + tagsHtml + ctaButton + (gal ? ('<div class="jg-gallery" style="margin-top:10px">' + gal + '</div>') : '') + contactInfo + (who ? ('<div style="margin-top:10px">' + who + '</div>') : '') + verificationBadge + reportsWarning + userReportNotice + editInfo + deletionInfo + adminNote + resolvedNotice + rejectedNotice + businessPromoHtml + shareHtml + adminBox + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">' + statsBtn + (canEdit ? '<button id="btn-edit" class="jg-btn jg-btn--ghost">Edytuj</button>' : '') + menuBtn + offeringsBtn + deletionBtn + '<button id="btn-report" class="jg-btn jg-btn--ghost">Zgłoś</button></div></div>';
 
         open(modalView, html, { addClass: (promoClass + typeClass).trim(), pointData: p });
 
@@ -11350,6 +11814,18 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var manageMenuBtn = qs('#btn-manage-menu', modalView);
         if (manageMenuBtn) {
           manageMenuBtn.onclick = function() { openMenuEditor(p); };
+        }
+
+        // Load and display offerings for service/product places
+        var offeringsSection = qs('#jg-offerings-section', modalView);
+        if (offeringsSection && p.type === 'miejsce' && isOfferingsCategory(p.category)) {
+          loadOfferingsSection(p, offeringsSection);
+        }
+
+        // "Zarządzaj ofertą" button — open offerings editor panel
+        var manageOfferingsBtn = qs('#btn-manage-offerings', modalView);
+        if (manageOfferingsBtn) {
+          manageOfferingsBtn.onclick = function() { openOfferingsEditor(p); };
         }
 
         // Copy link button handler
@@ -11717,6 +12193,14 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         qs('#btn-report', modalView).onclick = function() {
           openReportModal(p);
         };
+
+        // Wire up "Napisz wiadomość" contact button (only present when place has email)
+        var placeContactBtn = qs('.jg-place-contact-open-btn', modalView);
+        if (placeContactBtn) {
+          placeContactBtn.onclick = function() {
+            openPlaceContactModal(p);
+          };
+        }
 
         if (canEdit) {
           // Stats button handler
@@ -12947,6 +13431,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var allCheckboxes = elFilters.querySelectorAll('input[type="checkbox"]');
           allCheckboxes.forEach(function(cb) {
             cb.addEventListener('change', function() {
+              // When type filter (miejsce/ciekawostka) is toggled, sync all its category checkboxes
+              var type = cb.getAttribute('data-type');
+              if (type === 'miejsce') {
+                document.querySelectorAll('input[data-map-place-category]').forEach(function(catCb) {
+                  catCb.checked = cb.checked;
+                });
+              } else if (type === 'ciekawostka') {
+                document.querySelectorAll('input[data-map-curiosity-category]').forEach(function(catCb) {
+                  catCb.checked = cb.checked;
+                });
+              }
               apply(true); // Skip fitBounds on filter change
             });
           });
@@ -13052,6 +13547,20 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var categoryCheckboxes = document.querySelectorAll('input[data-map-place-category], input[data-map-curiosity-category]');
         categoryCheckboxes.forEach(function(cb) {
           cb.addEventListener('change', function() {
+            // If a category is checked and the parent type is off, re-enable the parent type
+            if (cb.checked) {
+              if (cb.hasAttribute('data-map-place-category')) {
+                var placeTypeCb = elFilters && elFilters.querySelector('input[data-type="miejsce"]');
+                if (placeTypeCb && !placeTypeCb.checked) {
+                  placeTypeCb.checked = true;
+                }
+              } else if (cb.hasAttribute('data-map-curiosity-category')) {
+                var curiosityTypeCb = elFilters && elFilters.querySelector('input[data-type="ciekawostka"]');
+                if (curiosityTypeCb && !curiosityTypeCb.checked) {
+                  curiosityTypeCb.checked = true;
+                }
+              }
+            }
             apply(true);
           });
         });
@@ -14231,6 +14740,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '</select></label>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Opis* (max 800 znaków)</label>' + buildRichEditorHtml('fab-rte', 800, '', 4) + '</div>' +
               '<div class="cols-2" id="fab-opening-hours-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">Godziny otwarcia</label>' + buildOpeningHoursPickerHtml('fab', '') + '</div>' +
+              '<div class="cols-2" id="fab-price-range-field" style="display:none"><label style="display:block;margin-bottom:6px;font-weight:500">💰 Zakres cenowy</label>' + buildPriceRangeSelectHtml('fab', '') + '</div>' +
+              '<div class="cols-2" id="fab-serves-cuisine-field" style="display:none"><label style="display:block;margin-bottom:4px;font-weight:500">🥗 Rodzaj kuchni <input type="text" name="serves_cuisine" id="fab-serves-cuisine-input" placeholder="np. polska, włoska, pizza…" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;margin-top:4px"></label></div>' +
               '<div class="cols-2"><label style="display:block;margin-bottom:4px">Tagi (max 5)</label>' + buildTagInputHtml('fab-tags') + '</div>' +
               '<div class="cols-2" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin:4px 0">' +
               '<strong style="display:block;margin-bottom:10px;color:#0369a1">📋 Dane kontaktowe (opcjonalnie)</strong>' +
@@ -14376,6 +14887,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var curiosityCategorySelect = qs('#add-curiosity-category-select', modalAdd);
 
             var fabOpeningHoursField = qs('#fab-opening-hours-field', modalAdd);
+            var fabPriceRangeField = qs('#fab-price-range-field', modalAdd);
+            var fabServesCuisineField = qs('#fab-serves-cuisine-field', modalAdd);
+
+            function updateFabExtraFields() {
+              var cat = placeCategorySelect ? placeCategorySelect.value : '';
+              var selectedType = typeSelect ? typeSelect.value : '';
+              if (fabPriceRangeField) fabPriceRangeField.style.display = (selectedType === 'miejsce' && isPriceRangeCategory(cat)) ? 'block' : 'none';
+              if (fabServesCuisineField) fabServesCuisineField.style.display = (selectedType === 'miejsce' && isServesCuisineCategory(cat)) ? 'block' : 'none';
+            }
+
+            if (placeCategorySelect) placeCategorySelect.addEventListener('change', updateFabExtraFields);
 
             if (typeSelect && categoryField && categorySelect) {
               // Function to toggle category field visibility
@@ -14402,6 +14924,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 if (fabOpeningHoursField) {
                   fabOpeningHoursField.style.display = selectedType === 'miejsce' ? 'block' : 'none';
                 }
+
+                updateFabExtraFields();
               }
 
               // Initial toggle on page load (default is zgloszenie)
@@ -14458,7 +14982,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 if (!j || j.success === false) {
                   // Handle duplicate point error specially
                   if (j && j.data && j.data.duplicate_point_id) {
-                    var duplicatePointId = j.data.duplicate_point_id;
+                    var duplicatePointId = parseInt(j.data.duplicate_point_id, 10);
                     msg.innerHTML = (j.data.message || 'Błąd') + ' <br><button style="margin-top:8px;padding:6px 12px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="' +
                       'document.getElementById(\'jg-map-modal-add\').style.display=\'none\';' +
                       'window.location.hash=\'#point-' + duplicatePointId + '\';' +
