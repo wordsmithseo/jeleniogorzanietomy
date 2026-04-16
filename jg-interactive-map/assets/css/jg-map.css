@@ -2683,9 +2683,10 @@ body.jg-fullscreen-active .jg-fs-top-controls {
   .jg-modal-bg {
     padding: 14px !important;
     padding-top: calc(var(--jg-nav-bottom, 60px) + 14px) !important;
+    padding-bottom: calc(100dvh - var(--jg-footer-top, 100dvh) + 14px) !important;
   }
   .jg-modal {
-    max-height: calc(100dvh - var(--jg-nav-bottom, 60px) - 28px);
+    max-height: calc(var(--jg-footer-top, 100dvh) - var(--jg-nav-bottom, 60px) - 28px);
     /* On mobile scroll the whole modal as a single block */
     overflow: auto !important;
     display: block !important;
@@ -3025,23 +3026,25 @@ body.jg-modal-open {
   align-items: flex-start;
   justify-content: center;
   z-index: 10001;
-  /* CSS-level positioning using --jg-nav-bottom (set by jgUpdateNavBottom()
-     in the inline PHP script, never affected by JS file caching).
+  /* CSS-level positioning using CSS variables set by jgUpdateNavBottom()
+     in the inline PHP script (never affected by JS file caching).
+     --jg-nav-bottom  : bottom of top navigation
+     --jg-footer-top  : top of footer (100dvh when no footer visible)
      JS (jgPositionModalBg / jgFitModal) overwrites these at open-time with
      exact measured values, but this CSS already produces a correct layout
      even without JS. */
   padding: calc(18 * var(--jg));
   padding-top: calc(var(--jg-nav-bottom, 90px) + 18 * var(--jg));
+  padding-bottom: calc(100dvh - var(--jg-footer-top, 100dvh) + 18 * var(--jg));
 }
 
 .jg-modal {
   background: #fff;
   color: #111;
   width: min(900px, 96vw);
-  /* CSS-level max-height keeps the modal inside the available area below
-     the nav bar. JS (jgFitModal) overwrites this with a precisely measured
-     value, but the CSS fallback is already correct. */
-  max-height: calc(100dvh - var(--jg-nav-bottom, 90px) - 36px);
+  /* max-height spans from below the nav bar to above the footer,
+     minus equal gaps on each side. JS overwrites with measured values. */
+  max-height: calc(var(--jg-footer-top, 100dvh) - var(--jg-nav-bottom, 90px) - 36 * var(--jg));
   border-radius: calc(12 * var(--jg));
   padding: calc(14 * var(--jg));
   /* overflow:hidden keeps scrollbar inside the rounded corners on desktop.
