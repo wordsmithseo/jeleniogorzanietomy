@@ -183,7 +183,8 @@
     tt.style.opacity = '0';
   }
 
-  // Spec: { sel, text }
+  // Spec: { sel, text }          — querySelector (jeden element)
+  //        { sel, text, all:true } — querySelectorAll (wiele elementów)
   var TOOLTIPS = [
     // Help FAB
     { sel: '#jg-help-btn',
@@ -197,9 +198,18 @@
     // Desktop sidebar search
     { sel: '#jg-sidebar-search-input',
       text: 'Szukaj punktów na mapie' },
-    // Filters wrapper
-    { sel: '#jg-map-filters-wrapper',
-      text: 'Pokaż lub ukryj typy punktów i kategorie' },
+    // Filter labels — each type separately
+    { sel: '[data-filter-type="zgloszenie"]',
+      text: 'Zgłoszenia — pokaż lub ukryj czarne pinezki zgłoszeń' },
+    { sel: '[data-filter-type="ciekawostka"]',
+      text: 'Ciekawostki — pokaż lub ukryj niebieskie pinezki' },
+    { sel: '[data-filter-type="miejsce"]',
+      text: 'Miejsca — pokaż lub ukryj zielone pinezki' },
+    // Category expand buttons
+    { sel: '[data-expand-target="curiosity-categories"]',
+      text: 'Rozwiń kategorie ciekawostek' },
+    { sel: '[data-expand-target="place-categories"]',
+      text: 'Rozwiń kategorie miejsc' },
     // Mobile filter button
     { sel: '.jg-mcr-filter-btn',
       text: 'Otwórz panel filtrów' },
@@ -225,7 +235,7 @@
     // Fullscreen control
     { sel: '.jg-fullscreen-control',
       text: 'Tryb pełnoekranowy mapy' },
-    // Zoom-in / clear search
+    // MCR zoom / clear buttons
     { sel: '.jg-mcr-zoom-in',
       text: 'Powiększ mapę' },
     { sel: '.jg-mcr-zoom-out',
@@ -250,6 +260,15 @@
 
     function bindReady() {
       pending = pending.filter(function (spec) {
+        // all:true → bind every matching element; otherwise just the first
+        if (spec.all) {
+          var els = document.querySelectorAll(spec.sel);
+          if (els.length) {
+            for (var i = 0; i < els.length; i++) bindTooltip(els[i], spec.text);
+            return false;
+          }
+          return true;
+        }
         var el = document.querySelector(spec.sel);
         if (el) { bindTooltip(el, spec.text); return false; }
         return true;
