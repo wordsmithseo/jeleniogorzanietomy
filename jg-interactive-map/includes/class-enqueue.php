@@ -739,7 +739,11 @@ class JG_Map_Enqueue {
             window.jgGetNavBottom = jgGetNavBottom;
             /* Returns the top edge of any visible footer within the viewport.
                Falls back to window.innerHeight (no footer constraint) when no
-               footer element is visible (e.g. on the map page where footer is hidden). */
+               footer element is visible (e.g. on the map page where footer is hidden).
+               Uses querySelectorAll per selector so a hidden first match (e.g. the
+               Elementor location-footer hidden by plugin CSS) does not prevent a
+               second visible element from being found.
+               Selectors mirror dwDetectHeaderFooter() in jg-map.js. */
             function jgGetFooterTop() {
                 var vh = window.innerHeight;
                 var footerTop = vh;
@@ -747,19 +751,21 @@ class JG_Map_Enqueue {
                     '#site-footer',
                     '.elementor-location-footer',
                     '.site-footer',
-                    'footer.elementor-section'
+                    'footer.elementor-section',
+                    '#colophon',
+                    'footer'
                 ];
                 footerSelectors.forEach(function (sel) {
-                    var el = document.querySelector(sel);
-                    if (!el) return;
-                    var s = window.getComputedStyle(el);
-                    if (s.display === 'none' || s.visibility === 'hidden') return;
-                    var rect = el.getBoundingClientRect();
-                    if (rect.height === 0) return;
-                    /* Only constrain when the footer top is inside the viewport */
-                    if (rect.top > 0 && rect.top < vh && rect.top < footerTop) {
-                        footerTop = Math.round(rect.top);
-                    }
+                    document.querySelectorAll(sel).forEach(function (el) {
+                        var s = window.getComputedStyle(el);
+                        if (s.display === 'none' || s.visibility === 'hidden') return;
+                        var rect = el.getBoundingClientRect();
+                        if (rect.height === 0) return;
+                        /* Only constrain when the footer top is inside the viewport */
+                        if (rect.top > 0 && rect.top < vh && rect.top < footerTop) {
+                            footerTop = Math.round(rect.top);
+                        }
+                    });
                 });
                 return footerTop;
             }
