@@ -2452,7 +2452,12 @@ class JG_Interactive_Map {
             } elseif ($desc_type_key === 'miejsce' && !empty($desc_cat_key)) {
                 $desc_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
                 if (!empty($desc_place_cats[$desc_cat_key]['has_menu'])) {
-                    $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, menu, adres i mapa dojazdu na jeleniogorzanietomy.pl';
+                    // Gastro place page: focus on location/hours/ratings — NOT "menu" (menu page owns those queries)
+                    $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, adres, zdjęcia i opinie na jeleniogorzanietomy.pl';
+                } elseif (!empty($desc_place_cats[$desc_cat_key]['offerings_label'])) {
+                    // Services/products place page: focus on location/identity — NOT the offerings label
+                    // (oferta page /oferta/ owns "[name] + service/product" queries)
+                    $description = $point['title'] . ' w Jeleniej Górze – adres, godziny otwarcia, zdjęcia i kontakt na jeleniogorzanietomy.pl';
                 } elseif (isset($desc_place_cats[$desc_cat_key]['label'])) {
                     $desc_cat_label = mb_strtolower($desc_place_cats[$desc_cat_key]['label']);
                     $description = $point['title'] . ' w Jeleniej Górze – ' . $desc_cat_label . '. Zdjęcia, mapa dojazdu i szczegółowe informacje na jeleniogorzanietomy.pl';
@@ -2886,7 +2891,12 @@ class JG_Interactive_Map {
             } elseif ($desc_type_key === 'miejsce' && !empty($desc_cat_key)) {
                 $desc_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
                 if (!empty($desc_place_cats[$desc_cat_key]['has_menu'])) {
-                    $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, menu, adres i mapa dojazdu na jeleniogorzanietomy.pl';
+                    // Gastro place page: focus on location/hours/ratings — NOT "menu" (menu page owns those queries)
+                    $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, adres, zdjęcia i opinie na jeleniogorzanietomy.pl';
+                } elseif (!empty($desc_place_cats[$desc_cat_key]['offerings_label'])) {
+                    // Services/products place page: focus on location/identity — NOT the offerings label
+                    // (oferta page /oferta/ owns "[name] + service/product" queries)
+                    $description = $point['title'] . ' w Jeleniej Górze – adres, godziny otwarcia, zdjęcia i kontakt na jeleniogorzanietomy.pl';
                 } elseif (isset($desc_place_cats[$desc_cat_key]['label'])) {
                     $desc_cat_label = mb_strtolower($desc_place_cats[$desc_cat_key]['label']);
                     $description = $point['title'] . ' w Jeleniej Górze – ' . $desc_cat_label . '. Zdjęcia, mapa dojazdu i szczegółowe informacje na jeleniogorzanietomy.pl';
