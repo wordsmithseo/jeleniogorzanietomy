@@ -1,818 +1,275 @@
 /**
- * JG Interactive Map - Onboarding & Help System
+ * JG Interactive Map — Help FAB & Tooltips
  *
- * Three layers:
- * 1. Welcome modal (shown once on first visit)
- * 2. Help button + panel (always available)
- * 3. Contextual tips (shown once per feature)
+ * Provides:
+ *  1. Help FAB button (?) with instruction panel
+ *  2. Mobile collapsible filters
+ *  3. Lightweight JS tooltips on all key UI elements
  */
-(function() {
+(function () {
   'use strict';
 
-  var STORAGE_PREFIX = 'jg_onboarding_';
-  var WELCOME_KEY = STORAGE_PREFIX + 'welcome_seen';
-  var TIPS_KEY = STORAGE_PREFIX + 'tips_seen';
-  var HINTS_KEY = STORAGE_PREFIX + 'hints_seen';
-
-  // Pin colors matching the map markers
-  var PIN_COLORS = {
-    zgloszenie:  { start: '#000000', mid: '#1f1f1f', end: '#000000' },
-    ciekawostka: { start: '#1e40af', mid: '#3b82f6', end: '#1e40af' },
-    miejsce:     { start: '#15803d', mid: '#22c55e', end: '#15803d' }
-  };
-
-  // Build a small SVG pin in the type's color
-  function pinSvg(type, size) {
-    size = size || 28;
-    var c = PIN_COLORS[type] || PIN_COLORS.zgloszenie;
-    return '<svg width="' + size + '" height="' + Math.round(size * 1.25) + '" viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg">' +
-      '<defs><linearGradient id="onb-' + type + '" x1="0%" y1="0%" x2="100%" y2="100%">' +
-      '<stop offset="0%" style="stop-color:' + c.start + '"/>' +
-      '<stop offset="50%" style="stop-color:' + c.mid + '"/>' +
-      '<stop offset="100%" style="stop-color:' + c.end + '"/>' +
-      '</linearGradient></defs>' +
-      '<path d="M16 0 C7.163 0 0 7.163 0 16 C0 19 1 22 4 26 L16 40 L28 26 C31 22 32 19 32 16 C32 7.163 24.837 0 16 0 Z" fill="url(#onb-' + type + ')"/>' +
-      '<circle cx="16" cy="16" r="5.5" fill="rgba(255,255,255,0.85)"/>' +
-      '</svg>';
-  }
-
-  // ====================================
-  // STORAGE HELPERS
-  // ====================================
-
-  function getFlag(key) {
-    try {
-      return localStorage.getItem(key) === '1';
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function setFlag(key) {
-    try {
-      localStorage.setItem(key, '1');
-    } catch (e) {}
-  }
-
-  function getSeenTips() {
-    try {
-      var val = localStorage.getItem(TIPS_KEY);
-      return val ? JSON.parse(val) : {};
-    } catch (e) {
-      return {};
-    }
-  }
-
-  function markTipSeen(tipId) {
-    try {
-      var seen = getSeenTips();
-      seen[tipId] = 1;
-      localStorage.setItem(TIPS_KEY, JSON.stringify(seen));
-    } catch (e) {}
-  }
-
-  function resetOnboarding() {
-    try {
-      localStorage.removeItem(WELCOME_KEY);
-      localStorage.removeItem(TIPS_KEY);
-      localStorage.removeItem(HINTS_KEY);
-    } catch (e) {}
-  }
-
-  function isLoggedIn() {
-    if (window.JG_MAP_CFG && JG_MAP_CFG.isLoggedIn) return true;
-    return document.body.classList.contains('logged-in');
-  }
-
-  // ====================================
-  // WELCOME MODAL (5-step wizard)
-  // ====================================
-
-  var currentStep = 0;
-  var totalSteps = 5;
-
-  var steps = [
-    // Step 1: Point types
-    {
-      title: 'Odkrywaj Jeleni\u0105 G\u00f3r\u0119',
-      content:
-        '<div class="jg-onboarding-type-list">' +
-          '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon">' + pinSvg('zgloszenie') + '</span>' +
-            '<div><strong>Zg\u0142oszenia</strong><p>Informuj o problemach infrastrukturalnych: dziury, uszkodzone chodniki, nielegalne wysypiska, graffiti.</p></div>' +
-          '</div>' +
-          '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon">' + pinSvg('ciekawostka') + '</span>' +
-            '<div><strong>Ciekawostki</strong><p>Dziel si\u0119 wiedz\u0105: historia, architektura, lokalne legendy i nieoczywiste miejsca.</p></div>' +
-          '</div>' +
-          '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon">' + pinSvg('miejsce') + '</span>' +
-            '<div><strong>Miejsca</strong><p>Oznaczaj lokalizacje: restauracje, kawiarnie, kultura, sport, us\u0142ugi, zabytki, przyroda.</p></div>' +
-          '</div>' +
-        '</div>'
-    },
-
-    // Step 2: How to add a point
-    {
-      title: 'Jak doda\u0107 punkt?',
-      content:
-        '<div class="jg-onboarding-how-list">' +
-          '<div class="jg-onboarding-how-item"><span>Zaloguj si\u0119 lub za\u0142\u00f3\u017c konto</span></div>' +
-          '<div class="jg-onboarding-how-item"><span>Przybli\u017c map\u0119 do poziomu ulicy (zoom 17+)</span></div>' +
-          '<div class="jg-onboarding-how-item"><span>Kliknij na map\u0119 w wybranym miejscu</span></div>' +
-          '<div class="jg-onboarding-how-item"><span>Opisz punkt, wybierz kategori\u0119 i dodaj zdj\u0119cia</span></div>' +
-          '<div class="jg-onboarding-how-item"><span>Gotowe! Punkt pojawi si\u0119 po moderacji</span></div>' +
-        '</div>' +
-        '<p class="jg-onb-note">\uD83D\uDCA1 Mo\u017cesz te\u017c u\u017cy\u0107 przycisku \u201e+\u201d w prawym dolnym rogu mapy, aby doda\u0107 punkt po adresie.</p>'
-    },
-
-    // Step 3: Rating, photos, search & report (replacing old "Co jeszcze mogę robić?" with accurate content)
-    {
-      title: 'Oceniaj, fotografuj i szukaj',
-      content:
-        '<div class="jg-onboarding-type-list">' +
-          '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#b45309,#d97706)">\u2B50</span>' +
-            '<div><strong>Oceniaj gwiazdkami (1\u20135)</strong><p>Kliknij pin \u2192 otw\u00f3rz szczeg\u00f3\u0142y \u2192 przyznaj od 1 do 5 gwiazdek. Najlepiej oceniane miejsca zyskuj\u0105 wyr\u00f3\u017cnienie.</p></div>' +
-          '</div>' +
-          '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">\uD83D\uDCF7</span>' +
-            '<div><strong>Dodawaj zdj\u0119cia</strong><p>Otw\u00f3rz dowolny punkt i kliknij przycisk aparatu. Zdj\u0119cia pomagaj\u0105 innym rozpozna\u0107 lokalizacj\u0119.</p></div>' +
-          '</div>' +
-          '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#8d2324,#a02829)">\uD83D\uDD0D</span>' +
-            '<div><strong>Szukaj, filtruj i zg\u0142aszaj</strong><p>Filtruj typy punkt\u00f3w i wyszukuj po nazwie. Nieodpowiedni\u0105 tre\u015b\u0107 zg\u0142o\u015b przyciskiem w szczeg\u00f3\u0142ach punktu.</p></div>' +
-          '</div>' +
-        '</div>'
-    },
-
-    // Step 4: XP & levels (new)
-    {
-      title: 'Zdobywaj XP i awansuj!',
-      content:
-        '<div class="jg-onboarding-xp-wrap">' +
-          '<div class="jg-onboarding-xp-list">' +
-            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Dodajesz nowy punkt</span><span class="jg-xp-badge">+50 XP</span></div>' +
-            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Punkt zostaje zatwierdzony</span><span class="jg-xp-badge">+30 XP</span></div>' +
-            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Dodajesz zdj\u0119cie</span><span class="jg-xp-badge">+10 XP</span></div>' +
-            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Edytujesz sw\u00f3j punkt</span><span class="jg-xp-badge">+15 XP</span></div>' +
-            '<div class="jg-onboarding-xp-row"><span class="jg-xp-action">Oceniasz inny punkt</span><span class="jg-xp-badge">+2 XP</span></div>' +
-          '</div>' +
-          '<div class="jg-onboarding-levels">' +
-            '<span class="jg-lvl-badge jg-lvl-bronze">Br\u0105z</span>' +
-            '<span class="jg-lvl-sep">\u2192</span>' +
-            '<span class="jg-lvl-badge jg-lvl-silver">Srebro</span>' +
-            '<span class="jg-lvl-sep">\u2192</span>' +
-            '<span class="jg-lvl-badge jg-lvl-gold">Z\u0142oto</span>' +
-            '<span class="jg-lvl-sep">\u2192</span>' +
-            '<span class="jg-lvl-badge jg-lvl-legend">Legenda</span>' +
-          '</div>' +
-          '<p class="jg-onb-note">\uD83D\uDCC8 Tw\u00f3j poziom i pasek XP widoczne s\u0105 na pasku u g\u00f3ry strony. Sprawd\u017a ranking \u2014 kto jest najbardziej aktywny!</p>' +
-        '</div>'
-    },
-
-    // Step 5: Restaurant menu
-    {
-      title: 'Menu restauracji',
-      content:
-        '<div class="jg-onboarding-type-list">' +
-          '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#15803d,#22c55e)">\uD83C\uDF7D\uFE0F</span>' +
-            '<div><strong>Aktualne menu</strong><p>Restauracje i caf\u00e9 mog\u0105 publikowa\u0107 pe\u0142ne menu \u2014 sekcje, dania, ceny i warianty wielko\u015bci.</p></div>' +
-          '</div>' +
-          '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#15803d,#22c55e)">\uD83D\uDCF7</span>' +
-            '<div><strong>Zdj\u0119cia karty menu</strong><p>W\u0142a\u015bciciel miejsca mo\u017ce doda\u0107 zdj\u0119cia fizycznej karty menu \u2014 do 4 skan\u00f3w.</p></div>' +
-          '</div>' +
-          '<div class="jg-onboarding-type-item">' +
-            '<span class="jg-onb-icon jg-onb-icon--round" style="background:linear-gradient(135deg,#15803d,#22c55e)">\uD83D\uDD17</span>' +
-            '<div><strong>Indeksowane przez Google</strong><p>Ka\u017cde menu ma dedykowan\u0105 stron\u0119 /menu/ ze schema.org, widoczn\u0105 w wynikach wyszukiwania.</p></div>' +
-          '</div>' +
-        '</div>'
-    }
-  ];
-
-  function renderWelcomeModal() {
-    var modal = document.getElementById('jg-onboarding-modal');
-    var content = document.getElementById('jg-onboarding-content');
-    if (!modal || !content) return;
-
-    var step = steps[currentStep];
-
-    var dotsHtml = '';
-    for (var i = 0; i < totalSteps; i++) {
-      dotsHtml += '<div class="jg-onboarding-dot' + (i === currentStep ? ' active' : '') + '"></div>';
-    }
-
-    var isFirst = currentStep === 0;
-    var isLast = currentStep === totalSteps - 1;
-
-    var navHtml = '<div class="jg-onboarding-nav">';
-    if (!isFirst) {
-      navHtml += '<button class="jg-btn jg-btn--ghost" id="jg-onb-prev">Wstecz</button>';
-    }
-    navHtml += '<button class="jg-btn jg-btn--ghost" id="jg-onb-skip">Pomi\u0144</button>';
-    if (isLast) {
-      navHtml += '<button class="jg-btn jg-onboarding-btn-primary" id="jg-onb-finish">Zaczynamy!</button>';
-    } else {
-      navHtml += '<button class="jg-btn jg-onboarding-btn-primary" id="jg-onb-next">Dalej</button>';
-    }
-    navHtml += '</div>';
-
-    var headerHtml = '';
-    if (isFirst) {
-      headerHtml =
-        '<div class="jg-onboarding-header">' +
-          '<h2>Witaj na mapie Jeleniej G\u00f3ry!</h2>' +
-          '<p>Interaktywna mapa, na kt\u00f3rej mieszka\u0144cy zg\u0142aszaj\u0105 problemy, dziel\u0105 si\u0119 ciekawostkami i oznaczaj\u0105 wa\u017cne miejsca.</p>' +
-        '</div>';
-    }
-
-    content.innerHTML =
-      headerHtml +
-      '<div class="jg-onboarding-steps">' +
-        '<div class="jg-onboarding-step active">' +
-          '<h3>' + step.title + '</h3>' +
-          step.content +
-        '</div>' +
-      '</div>' +
-      '<div class="jg-onboarding-footer">' +
-        '<div class="jg-onboarding-dots">' + dotsHtml + '</div>' +
-        navHtml +
-      '</div>';
-
-    modal.style.display = 'flex';
-    document.body.classList.add('jg-modal-open');
-
-    // Bind navigation buttons
-    var nextBtn = document.getElementById('jg-onb-next');
-    var prevBtn = document.getElementById('jg-onb-prev');
-    var skipBtn = document.getElementById('jg-onb-skip');
-    var finishBtn = document.getElementById('jg-onb-finish');
-
-    if (nextBtn) nextBtn.addEventListener('click', function() {
-      currentStep++;
-      renderWelcomeModal();
-    });
-
-    if (prevBtn) prevBtn.addEventListener('click', function() {
-      currentStep--;
-      renderWelcomeModal();
-    });
-
-    if (skipBtn) skipBtn.addEventListener('click', closeWelcome);
-    if (finishBtn) finishBtn.addEventListener('click', closeWelcome);
-  }
-
-  function closeWelcome() {
-    var modal = document.getElementById('jg-onboarding-modal');
-    if (modal) modal.style.display = 'none';
-    // Unlock body scroll if no other modal is open
-    var bgs = document.querySelectorAll('.jg-modal-bg');
-    var anyOpen = false;
-    for (var i = 0; i < bgs.length; i++) {
-      if (bgs[i].style.display === 'flex' || bgs[i].classList.contains('active')) { anyOpen = true; break; }
-    }
-    if (!anyOpen) document.body.classList.remove('jg-modal-open');
-    setFlag(WELCOME_KEY);
-    currentStep = 0;
-
-    // Show first contextual tip after a short delay
-    setTimeout(function() {
-      showNextTip();
-    }, 1000);
-  }
-
-  function showWelcome() {
-    currentStep = 0;
-    renderWelcomeModal();
-  }
-
-  // ====================================
-  // HELP FAB + PANEL
-  // ====================================
-
-  // Prevent all Leaflet map interactions (click, touch, scroll) on an element
+  // ──────────────────────────────────────────
+  //  SHIELD (prevent Leaflet from consuming events)
+  // ──────────────────────────────────────────
   function shieldFromMap(el) {
     if (window.L && L.DomEvent) {
       L.DomEvent.disableClickPropagation(el);
       L.DomEvent.disableScrollPropagation(el);
     }
-    // Fallback / extra safety
-    el.addEventListener('click', function(e) { e.stopPropagation(); });
-    el.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
+    el.addEventListener('click',      function (e) { e.stopPropagation(); });
+    el.addEventListener('touchstart', function (e) { e.stopPropagation(); }, { passive: true });
   }
 
-  // Create the help FAB dynamically and append to #jg-map
+  // ──────────────────────────────────────────
+  //  HELP FAB
+  // ──────────────────────────────────────────
   function createHelpFAB(mapEl) {
-    var container = document.createElement('div');
-    container.id = 'jg-help-fab';
-    container.style.cssText = 'position:absolute;bottom:30px;left:30px;z-index:9998;display:flex;flex-direction:column;align-items:flex-start;gap:12px;';
+    var wrap = document.createElement('div');
+    wrap.id = 'jg-help-fab';
+    wrap.style.cssText = 'position:absolute;bottom:30px;left:30px;z-index:9998;';
 
-    // Prevent map interactions when clicking the FAB area
-    shieldFromMap(container);
-    container.addEventListener('wheel', function(e) { e.stopPropagation(); e.preventDefault(); }, { passive: false });
+    shieldFromMap(wrap);
+    wrap.addEventListener('wheel', function (e) {
+      e.stopPropagation(); e.preventDefault();
+    }, { passive: false });
 
     var btn = document.createElement('button');
-    btn.id = 'jg-help-btn';
-    btn.title = 'Pomoc';
-    btn.style.cssText = 'width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#8d2324 0%,#a02829 100%);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(141,35,36,0.4);transition:all 0.3s ease;outline:none;';
-    btn.innerHTML = '<span style="color:#fff;font-size:26px;font-weight:700;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;line-height:1;">?</span>';
+    btn.id   = 'jg-help-btn';
+    btn.type = 'button';
+    btn.style.cssText = [
+      'width:60px;height:60px;border-radius:50%',
+      'background:linear-gradient(135deg,#8d2324 0%,#a02829 100%)',
+      'border:none;cursor:pointer;display:flex;align-items:center;justify-content:center',
+      'box-shadow:0 4px 12px rgba(141,35,36,0.4);transition:all 0.3s ease;outline:none'
+    ].join(';');
+    btn.innerHTML = '<span style="color:#fff;font-size:26px;font-weight:700;'
+      + 'font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;line-height:1">?</span>';
 
-    btn.addEventListener('mouseenter', function() {
+    btn.addEventListener('mouseenter', function () {
       btn.style.transform = 'scale(1.1)';
       btn.style.boxShadow = '0 6px 16px rgba(141,35,36,0.5)';
     });
-    btn.addEventListener('mouseleave', function() {
+    btn.addEventListener('mouseleave', function () {
       btn.style.transform = 'scale(1)';
       btn.style.boxShadow = '0 4px 12px rgba(141,35,36,0.4)';
     });
 
-    container.appendChild(btn);
-    mapEl.appendChild(container);
-
+    wrap.appendChild(btn);
+    mapEl.appendChild(wrap);
     return btn;
   }
 
   function initHelpPanel(mapEl) {
-    // Move help panel and tip container into #jg-map so they position inside the map
-    var helpPanel = document.getElementById('jg-help-panel');
-    var tipContainer = document.getElementById('jg-tip-container');
-    if (helpPanel) {
-      mapEl.appendChild(helpPanel);
-      shieldFromMap(helpPanel);
-    }
-    if (tipContainer) {
-      mapEl.appendChild(tipContainer);
-      shieldFromMap(tipContainer);
-    }
+    var panel  = document.getElementById('jg-help-panel');
+    if (panel) { mapEl.appendChild(panel); shieldFromMap(panel); }
 
-    // Shield the onboarding modal from map interactions too
-    var onbModal = document.getElementById('jg-onboarding-modal');
-    if (onbModal) shieldFromMap(onbModal);
-
-    // Create FAB button dynamically inside #jg-map
-    var helpBtn = createHelpFAB(mapEl);
-
+    var helpBtn  = createHelpFAB(mapEl);
     var closeBtn = document.getElementById('jg-help-panel-close');
-    var restartBtn = document.getElementById('jg-help-restart-onboarding');
 
-    if (!helpBtn || !helpPanel) return;
+    if (!helpBtn || !panel) return;
 
-    helpBtn.addEventListener('click', function(e) {
+    helpBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      var isOpen = helpPanel.style.display !== 'none';
-      helpPanel.style.display = isOpen ? 'none' : 'flex';
+      panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
     });
 
     if (closeBtn) {
-      closeBtn.addEventListener('click', function() {
-        helpPanel.style.display = 'none';
+      closeBtn.addEventListener('click', function () {
+        panel.style.display = 'none';
       });
     }
 
-    if (restartBtn) {
-      restartBtn.addEventListener('click', function() {
-        helpPanel.style.display = 'none';
-        resetOnboarding();
-        showWelcome();
-      });
-    }
-
-    // Close help panel when clicking outside
-    document.addEventListener('click', function(e) {
-      if (helpPanel.style.display === 'none') return;
+    // Close when clicking outside panel + FAB
+    document.addEventListener('click', function (e) {
+      if (panel.style.display === 'none') return;
       var fab = document.getElementById('jg-help-fab');
-      if (helpPanel.contains(e.target)) return;
+      if (panel.contains(e.target)) return;
       if (fab && fab.contains(e.target)) return;
-      helpPanel.style.display = 'none';
+      panel.style.display = 'none';
     });
   }
 
-  // ====================================
-  // CONTEXTUAL TIPS
-  // ====================================
-
-  var tipQueue = [
-    {
-      id: 'click_map',
-      text: 'Kliknij na map\u0119 (po przybli\u017ceniu do poziomu ulicy), aby doda\u0107 nowy punkt.',
-      delay: 0
-    },
-    {
-      id: 'use_filters',
-      text: 'U\u017cyj checkbox\u00f3w powy\u017cej, aby filtrowa\u0107 widoczne typy punkt\u00f3w \u2014 Zg\u0142oszenia, Ciekawostki lub Miejsca.',
-      delay: 8000
-    },
-    {
-      id: 'use_search',
-      text: 'Wpisz nazw\u0119 w pole wyszukiwania, aby szybko znale\u017a\u0107 punkt na mapie.',
-      delay: 16000
-    },
-    {
-      id: 'restaurant_menu',
-      text: '\uD83C\uDF7D\uFE0F Restauracje maj\u0105 menu! Kliknij zielony pin gastronomiczny i sprawd\u017a aktualne dania oraz ceny.',
-      delay: 25000
-    },
-    {
-      id: 'rate_point',
-      text: '\u2B50 Oce\u0144 dowolne miejsce! Kliknij pin \u2192 otw\u00f3rz szczeg\u00f3\u0142y \u2192 przyznaj od 1 do 5 gwiazdek.',
-      delay: 36000
-    },
-    {
-      id: 'add_photo',
-      text: '\uD83D\uDCF7 Masz zdj\u0119cie miejsca? Kliknij pin, otw\u00f3rz szczeg\u00f3\u0142y i dodaj fotografi\u0119 \u2014 pomagasz innym u\u017cytkownikom!',
-      delay: 48000
-    },
-    {
-      id: 'earn_xp',
-      text: '\uD83C\uDFC6 Za ka\u017cd\u0105 aktywno\u015b\u0107 zdobywasz XP: +50 za nowy punkt, +30 gdy zostanie zatwierdzony, +10 za zdj\u0119cie. Awansuj przez 8 poziom\u00f3w!',
-      delay: 62000
-    },
-    {
-      id: 'check_ranking',
-      text: '\uD83D\uDCCA Sprawd\u017a, kto jest najbardziej aktywny na mapie \u2014 kliknij \u201eRanking\u201d w menu g\u0142\u00f3wnym.',
-      delay: 77000
-    }
-  ];
-
-  // Mobile-only fullscreen encouragement tip (prepended in init if on mobile)
-  var mobileFsTip = {
-    id: 'mobile_fullscreen',
-    text: 'Wskaz\u00f3wka dla telefonu: naci\u015bnij ikon\u0119 pe\u0142nego ekranu w lewym g\u00f3rnym rogu mapy \u2197\ufe0f, aby prze\u0142\u0105czy\u0107 na tryb pe\u0142noekranowy \u2014 du\u017co wygodniej na telefonie!',
-    delay: 600,
-    onShow: function() {
-      var fsCtrl = document.querySelector('.jg-fullscreen-control');
-      if (fsCtrl) fsCtrl.classList.add('jg-onboarding-fs-pulse');
-    },
-    onDismiss: function() {
-      var fsCtrl = document.querySelector('.jg-fullscreen-control');
-      if (fsCtrl) fsCtrl.classList.remove('jg-onboarding-fs-pulse');
-    }
-  };
-
-  var tipTimeout = null;
-  var currentTipIndex = 0;
-
-  function showNextTip() {
-    var seen = getSeenTips();
-
-    // Find next unseen tip
-    while (currentTipIndex < tipQueue.length && seen[tipQueue[currentTipIndex].id]) {
-      currentTipIndex++;
-    }
-
-    if (currentTipIndex >= tipQueue.length) return;
-
-    var tip = tipQueue[currentTipIndex];
-
-    tipTimeout = setTimeout(function() {
-      showTip(tip.id, tip.text, tip);
-    }, tip.delay);
-  }
-
-  function showTip(id, text, tip) {
-    var container = document.getElementById('jg-tip-container');
-    var textEl = document.getElementById('jg-tip-text');
-    var dismissBtn = document.getElementById('jg-tip-dismiss');
-
-    if (!container || !textEl) return;
-
-    textEl.textContent = text;
-    container.style.display = 'block';
-
-    // Fire optional onShow callback (e.g. highlight a UI element)
-    if (tip && tip.onShow) tip.onShow();
-
-    // Force re-trigger animation
-    container.style.animation = 'none';
-    container.offsetHeight; // trigger reflow
-    container.style.animation = '';
-
-    var autoDismiss = setTimeout(function() {
-      dismissTip(id, tip);
-    }, 10000);
-
-    function onDismiss() {
-      clearTimeout(autoDismiss);
-      dismissTip(id, tip);
-      dismissBtn.removeEventListener('click', onDismiss);
-    }
-
-    if (dismissBtn) {
-      dismissBtn.addEventListener('click', onDismiss);
-    }
-  }
-
-  function dismissTip(id, tip) {
-    var container = document.getElementById('jg-tip-container');
-    if (container) container.style.display = 'none';
-
-    // Fire optional onDismiss callback (e.g. remove highlight from UI element)
-    if (tip && tip.onDismiss) tip.onDismiss();
-
-    markTipSeen(id);
-    currentTipIndex++;
-
-    // Show next tip after a pause
-    setTimeout(function() {
-      showNextTip();
-    }, 3000);
-  }
-
-  // ====================================
-  // UNIFIED SPOTLIGHT HINTS (Layer 2)
-  // One visual language for all first-use hints.
-  //   hover hints  → card near element, no overlay, auto-dismiss (×)
-  //   action hints → card near element, overlay dims the map ("Rozumiem ✓")
-  //   modal hints  → card over open modal, no extra overlay (modal already dims)
-  // ====================================
-
-  function getSeenHints() {
-    try {
-      var val = localStorage.getItem(HINTS_KEY);
-      return val ? JSON.parse(val) : {};
-    } catch (e) { return {}; }
-  }
-
-  function markHintSeen(id) {
-    try {
-      var seen = getSeenHints();
-      seen[id] = 1;
-      localStorage.setItem(HINTS_KEY, JSON.stringify(seen));
-    } catch (e) {}
-  }
-
-  var _sOverlay = null;
-  var _sCard    = null;
-  var _sTimer   = null;
-
-  function dismissSpotlight() {
-    if (_sTimer) { clearTimeout(_sTimer); _sTimer = null; }
-    [_sOverlay, _sCard].forEach(function(el) {
-      if (el && el.parentNode) el.parentNode.removeChild(el);
-    });
-    _sOverlay = null;
-    _sCard    = null;
-  }
-
-  /**
-   * showSpotlight(id, text, opts)
-   *   opts.targetEl  — element to anchor the card near (BoundingClientRect)
-   *   opts.placement — 'top' | 'bottom' | 'left' | 'right' | 'inside'
-   *                    'inside' centres the card within the target (for modals)
-   *   opts.overlay   — boolean: dim the background behind the card
-   *   opts.auto      — ms: auto-dismiss timeout; 0 = manual-only
-   *                    auto > 0  → shows  ×  button
-   *                    auto = 0  → shows  "Rozumiem ✓"  button
-   */
-  function showSpotlight(id, text, opts) {
-    var onbModal = document.getElementById('jg-onboarding-modal');
-    if (onbModal && onbModal.style.display === 'flex') return;
-    if (getSeenHints()[id]) return;
-    markHintSeen(id);
-    dismissSpotlight();
-
-    opts = opts || {};
-    var targetEl   = opts.targetEl  || null;
-    var placement  = opts.placement || 'bottom';
-    var hasOverlay = !!opts.overlay;
-    var auto       = opts.auto || 0;
-
-    // Semi-transparent overlay (the "freeze" effect)
-    if (hasOverlay) {
-      _sOverlay = document.createElement('div');
-      _sOverlay.className = 'jg-spotlight-overlay';
-      document.body.appendChild(_sOverlay);
-    }
-
-    // Card
-    var card = document.createElement('div');
-    card.className = 'jg-spotlight-card' + (auto > 0 ? ' jg-spotlight-card--light' : '');
-    var btnLabel = auto > 0 ? '\u00d7' : 'Rozumiem \u2713';
-    card.innerHTML =
-      '<div class="jg-spotlight-card-inner">' +
-        '<p class="jg-spotlight-card-text">' + text + '</p>' +
-        '<button class="jg-spotlight-card-btn">' + btnLabel + '</button>' +
-      '</div>';
-
-    card.style.visibility = 'hidden';
-    document.body.appendChild(card);
-    _sCard = card;
-
-    // Position the card
-    var vw = window.innerWidth, vh = window.innerHeight;
-    var cw = card.offsetWidth,  ch = card.offsetHeight;
-    var gap = 14;
-    var top, left;
-
-    if (targetEl) {
-      var r = targetEl.getBoundingClientRect();
-      if (placement === 'inside') {
-        // Centred at ~65 % of the target's height (bottom area, still inside)
-        top  = r.top + r.height * 0.65 - ch / 2;
-        left = r.left + (r.width  - cw) / 2;
-      } else if (placement === 'right')  { top = r.top + (r.height - ch) / 2; left = r.right + gap; }
-        else if (placement === 'left')   { top = r.top + (r.height - ch) / 2; left = r.left  - cw - gap; }
-        else if (placement === 'top')    { top = r.top  - ch - gap; left = r.left + (r.width - cw) / 2; }
-        else /* bottom */                { top = r.bottom + gap;    left = r.left + (r.width - cw) / 2; }
-    } else {
-      top  = Math.round((vh - ch) / 2);
-      left = Math.round((vw - cw) / 2);
-    }
-
-    top  = Math.max(12, Math.min(Math.round(top),  vh - ch - 12));
-    left = Math.max(12, Math.min(Math.round(left), vw - cw - 12));
-    card.style.top  = top  + 'px';
-    card.style.left = left + 'px';
-    card.style.visibility = '';
-
-    // Dismiss handlers
-    var docClickH = null;
-    var keyH      = null;
-
-    var close = function() {
-      if (docClickH) document.removeEventListener('click', docClickH);
-      if (keyH)      document.removeEventListener('keydown', keyH);
-      dismissSpotlight();
-      setTimeout(showNextTip, 2500);
-    };
-
-    card.querySelector('.jg-spotlight-card-btn').addEventListener('click', function(e) {
-      e.stopPropagation();
-      close();
-    });
-
-    keyH = function(e) { if (e.key === 'Escape' || e.keyCode === 27) close(); };
-    document.addEventListener('keydown', keyH);
-
-    if (hasOverlay) {
-      docClickH = function(e) { if (!card.contains(e.target)) close(); };
-      setTimeout(function() { document.addEventListener('click', docClickH); }, 120);
-    }
-
-    if (auto > 0) _sTimer = setTimeout(close, auto);
-  }
-
-  // Watch a PHP-rendered element for its first transition to visible.
-  // Monitors both style and class attribute changes, then checks computed style.
-  function watchForVisible(id, callback) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    var obs = new MutationObserver(function() {
-      var cs = window.getComputedStyle(el);
-      if (cs.display !== 'none' && cs.visibility !== 'hidden') {
-        obs.disconnect();
-        callback(el);
-      }
-    });
-    obs.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
-  }
-
-  // Watch for a dynamically-created element (jQuery/JS inserts it into the DOM).
-  function watchForCreated(selector, callback) {
-    var obs = new MutationObserver(function() {
-      var el = document.querySelector(selector);
-      if (el) { obs.disconnect(); callback(el); }
-    });
-    obs.observe(document.body, { childList: true, subtree: true });
-  }
-
-  // ---- Hover hints (first mouseover on a UI element) ----
-
-  var hoverSpecs = [
-    { id: 'h_help',    selector: '#jg-help-btn',            text: 'Pomoc \u2014 zawsze dost\u0119pna. Znajdziesz tu opis funkcji i mo\u017cesz powt\u00f3rzy\u0107 samouczek.',  placement: 'right',  requireLogin: false },
-    { id: 'h_fab',     selector: '#jg-fab-button',          text: 'Kliknij, aby doda\u0107 nowy punkt z adresu lub kliknij bezpo\u015brednio w map\u0119.',                       placement: 'left',   requireLogin: true  },
-    { id: 'h_filters', selector: '#jg-map-filters-wrapper', text: 'Filtry \u2014 poka\u017c lub ukryj typy punkt\u00f3w i kategorie.',                                             placement: 'bottom', requireLogin: false },
-    { id: 'h_search',  selector: '#jg-search-input',        text: 'Szukaj po nazwie, adresie lub tagu.',                                                                           placement: 'bottom', requireLogin: false }
-  ];
-
-  function initHoverHints() {
-    var seen = getSeenHints();
-    hoverSpecs.forEach(function(h) {
-      if (h.requireLogin && !isLoggedIn()) return;
-      if (seen[h.id]) return;
-      document.addEventListener('mouseover', function handler(e) {
-        if (getSeenHints()[h.id]) { document.removeEventListener('mouseover', handler, true); return; }
-        var target = e.target && e.target.closest ? e.target.closest(h.selector) : null;
-        if (!target) return;
-        showSpotlight(h.id, h.text, { targetEl: target, placement: h.placement, overlay: false, auto: 5000 });
-        document.removeEventListener('mouseover', handler, true);
-      }, true);
-    });
-  }
-
-  // ---- Action hints (first time the user performs a feature) ----
-
-  function initActionHints() {
-    var seen = getSeenHints();
-
-    // 1. First time opening a point's detail modal → hint to rate with stars
-    if (!seen['first_view_point']) {
-      watchForVisible('jg-map-modal-view', function(el) {
-        setTimeout(function() {
-          showSpotlight('first_view_point',
-            '\u2B50 Kliknij gwiazdki w tym oknie, aby oceni\u0107 to miejsce (1\u20135). Zdobudziesz +2\u00a0XP i pom\u00f3\u017cesz innym!',
-            { targetEl: el, placement: 'inside', overlay: false }
-          );
-        }, 700);
-      });
-    }
-
-    // 2. First time opening the add-point form (logged-in only)
-    if (!seen['first_add_form'] && isLoggedIn()) {
-      watchForVisible('jg-map-modal-add', function(el) {
-        setTimeout(function() {
-          showSpotlight('first_add_form',
-            '\u270f\ufe0f Opisz punkt dok\u0142adnie i dodaj zdj\u0119cie. Po zatwierdzeniu przez moderatora pojawi si\u0119 na mapie i zdobudziesz XP!',
-            { targetEl: el, placement: 'inside', overlay: false }
-          );
-        }, 500);
-      });
-      watchForCreated('#jg-fab-input-overlay', function(el) {
-        setTimeout(function() {
-          showSpotlight('first_add_form',
-            '\u270f\ufe0f Opisz punkt dok\u0142adnie i dodaj zdj\u0119cie. Po zatwierdzeniu przez moderatora pojawi si\u0119 na mapie i zdobudziesz XP!',
-            { targetEl: el, placement: 'inside', overlay: false }
-          );
-        }, 500);
-      });
-    }
-
-    // 3. First time typing ≥ 3 chars in the search field
-    if (!seen['first_search']) {
-      var searchEl = document.getElementById('jg-search-input');
-      if (searchEl) {
-        searchEl.addEventListener('input', function onSearch() {
-          if (searchEl.value.length >= 3) {
-            searchEl.removeEventListener('input', onSearch);
-            setTimeout(function() {
-              showSpotlight('first_search',
-                '\uD83D\uDDFA\uFE0F Kliknij wynik na li\u015bcie, aby przej\u015b\u0107 do tego miejsca na mapie.',
-                { targetEl: searchEl, placement: 'bottom', overlay: true }
-              );
-            }, 1000);
-          }
-        });
-      }
-    }
-
-    // 4. First time toggling a filter checkbox
-    if (!seen['first_filter']) {
-      var filtersEl = document.getElementById('jg-map-filters-wrapper');
-      if (filtersEl) {
-        filtersEl.addEventListener('change', function onFilter(e) {
-          if (e.target.type === 'checkbox') {
-            filtersEl.removeEventListener('change', onFilter);
-            showSpotlight('first_filter',
-              '\uD83C\uDFAB Filtry dzia\u0142aj\u0105 niezale\u017cnie i na \u017cywo \u2014 mo\u017cesz dowolnie miesza\u0107 typy i kategorie.',
-              { targetEl: filtersEl, placement: 'bottom', overlay: true }
-            );
-          }
-        });
-      }
-    }
-  }
-
-  // ====================================
-  // MOBILE COLLAPSIBLE FILTERS
-  // ====================================
-
+  // ──────────────────────────────────────────
+  //  MOBILE COLLAPSIBLE FILTERS
+  // ──────────────────────────────────────────
   function initMobileFilters() {
     if (window.innerWidth > 768) return;
 
     var wrapper = document.getElementById('jg-map-filters-wrapper');
     if (!wrapper || wrapper.querySelector('.jg-mobile-filters-toggle')) return;
 
-    // Create toggle button
     var toggle = document.createElement('button');
     toggle.className = 'jg-mobile-filters-toggle';
     toggle.type = 'button';
-    toggle.innerHTML = '<span>Filtry i wyszukiwanie</span><span class="jg-toggle-arrow">&#x25BC;</span>';
+    toggle.innerHTML = '<span>Filtry i wyszukiwanie</span>'
+      + '<span class="jg-toggle-arrow">&#x25BC;</span>';
 
-    // Start collapsed
     wrapper.classList.add('collapsed');
 
-    toggle.addEventListener('click', function() {
-      var isCollapsed = wrapper.classList.contains('collapsed');
-      if (isCollapsed) {
-        wrapper.classList.remove('collapsed');
-        toggle.classList.add('expanded');
-      } else {
-        wrapper.classList.add('collapsed');
-        toggle.classList.remove('expanded');
-      }
+    toggle.addEventListener('click', function () {
+      var isCol = wrapper.classList.contains('collapsed');
+      wrapper.classList.toggle('collapsed', !isCol);
+      toggle.classList.toggle('expanded', isCol);
     });
 
     wrapper.insertBefore(toggle, wrapper.firstChild);
   }
 
-  // ====================================
-  // INITIALIZATION
-  // ====================================
+  // ──────────────────────────────────────────
+  //  TOOLTIPS
+  //  Lightweight single-element tooltip that
+  //  follows the hovered element's top edge.
+  // ──────────────────────────────────────────
 
+  var _ttEl    = null;
+  var _ttTimer = null;
+
+  function getTooltipEl() {
+    if (!_ttEl) {
+      _ttEl = document.createElement('div');
+      _ttEl.id = 'jg-tt';
+      _ttEl.style.cssText = [
+        'position:fixed;z-index:999999;pointer-events:none',
+        'background:#1e2329;color:#f0f1f3',
+        'font-size:12.5px;line-height:1.4',
+        'padding:5px 10px;border-radius:6px',
+        'box-shadow:0 2px 8px rgba(0,0,0,0.28)',
+        'font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial',
+        'max-width:220px;white-space:normal;text-align:center',
+        'opacity:0;transition:opacity 0.15s'
+      ].join(';');
+      document.body.appendChild(_ttEl);
+    }
+    return _ttEl;
+  }
+
+  function positionTooltip(el) {
+    var tt = getTooltipEl();
+    var r  = el.getBoundingClientRect();
+    var vw = window.innerWidth;
+    var tw = tt.offsetWidth;
+    var th = tt.offsetHeight;
+    var gap = 8;
+
+    var left = r.left + r.width / 2 - tw / 2;
+    var top  = r.top - th - gap;
+
+    // Flip below if not enough room above
+    if (top < 4) top = r.bottom + gap;
+
+    // Clamp horizontally
+    if (left < 6)          left = 6;
+    if (left + tw > vw - 6) left = vw - tw - 6;
+
+    tt.style.left = Math.round(left) + 'px';
+    tt.style.top  = Math.round(top)  + 'px';
+  }
+
+  function showTooltip(text, el) {
+    var tt = getTooltipEl();
+    tt.textContent = text;
+    tt.style.opacity = '0';
+    tt.style.display = 'block';
+    positionTooltip(el);
+
+    if (_ttTimer) clearTimeout(_ttTimer);
+    _ttTimer = setTimeout(function () { tt.style.opacity = '1'; }, 20);
+  }
+
+  function hideTooltip() {
+    if (_ttTimer) { clearTimeout(_ttTimer); _ttTimer = null; }
+    var tt = getTooltipEl();
+    tt.style.opacity = '0';
+  }
+
+  // Spec: { sel, text }
+  var TOOLTIPS = [
+    // Help FAB
+    { sel: '#jg-help-btn',
+      text: 'Pomoc — instrukcja korzystania z mapy' },
+    // Add-point FAB
+    { sel: '#jg-fab-button',
+      text: 'Dodaj nowy punkt na mapę' },
+    // Search
+    { sel: '#jg-search-input',
+      text: 'Szukaj po nazwie, adresie lub tagu' },
+    // Desktop sidebar search
+    { sel: '#jg-sidebar-search-input',
+      text: 'Szukaj punktów na mapie' },
+    // Filters wrapper
+    { sel: '#jg-map-filters-wrapper',
+      text: 'Pokaż lub ukryj typy punktów i kategorie' },
+    // Mobile filter button
+    { sel: '.jg-mcr-filter-btn',
+      text: 'Otwórz panel filtrów' },
+    // Locate (my position)
+    { sel: '.jg-mcr-locate-btn',
+      text: 'Pokaż moją lokalizację na mapie' },
+    // Map/satellite toggle
+    { sel: '[data-layer="map"]',
+      text: 'Widok mapy ulicznej' },
+    { sel: '[data-layer="satellite"]',
+      text: 'Widok satelitarny (zdjęcia lotnicze)' },
+    // Zoom buttons (Leaflet adds title, these are fallback)
+    { sel: '.leaflet-control-zoom-in',
+      text: 'Powiększ mapę' },
+    { sel: '.leaflet-control-zoom-out',
+      text: 'Pomniejsz mapę' },
+    // Mobile login button
+    { sel: '#jg-mup-auth-btn',
+      text: 'Zaloguj się, aby dodawać punkty i zdobywać XP' },
+    // Mobile filters toggle
+    { sel: '.jg-mobile-filters-toggle',
+      text: 'Rozwiń filtry i wyszukiwanie' },
+    // Fullscreen control
+    { sel: '.jg-fullscreen-control',
+      text: 'Tryb pełnoekranowy mapy' },
+    // Zoom-in / clear search
+    { sel: '.jg-mcr-zoom-in',
+      text: 'Powiększ mapę' },
+    { sel: '.jg-mcr-zoom-out',
+      text: 'Pomniejsz mapę' },
+    { sel: '.jg-mcr-clear-btn',
+      text: 'Wyczyść wyszukiwanie' },
+  ];
+
+  function bindTooltip(el, text) {
+    if (el._jgTTBound) return;
+    el._jgTTBound = true;
+
+    el.addEventListener('mouseenter', function () { showTooltip(text, el); });
+    el.addEventListener('mouseleave', hideTooltip);
+    el.addEventListener('focus',      function () { showTooltip(text, el); });
+    el.addEventListener('blur',       hideTooltip);
+    el.addEventListener('click',      hideTooltip);
+  }
+
+  function initTooltips() {
+    var pending = TOOLTIPS.slice();
+
+    function bindReady() {
+      pending = pending.filter(function (spec) {
+        var el = document.querySelector(spec.sel);
+        if (el) { bindTooltip(el, spec.text); return false; }
+        return true;
+      });
+      return pending.length === 0;
+    }
+
+    if (bindReady()) return;
+
+    // Watch for dynamically-created elements (FAB, controls, etc.)
+    var obs = new MutationObserver(function () {
+      if (bindReady()) obs.disconnect();
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ──────────────────────────────────────────
+  //  INIT
+  // ──────────────────────────────────────────
   function init() {
-    // Respect the admin toggle — if onboarding is disabled site-wide, do nothing
     if (window.JG_MAP_CFG && JG_MAP_CFG.onboardingEnabled === false) return;
 
     var mapEl = document.getElementById('jg-map');
@@ -820,25 +277,9 @@
 
     initHelpPanel(mapEl);
     initMobileFilters();
-    initHoverHints();
-    initActionHints();
-
-    // Prepend mobile fullscreen encouragement tip (shown only on mobile, only once)
-    if (window.innerWidth <= 768) {
-      tipQueue.unshift(mobileFsTip);
-    }
-
-    // Show welcome modal on first visit
-    if (!getFlag(WELCOME_KEY)) {
-      // Small delay so user sees the map loaded first
-      setTimeout(showWelcome, 800);
-    } else {
-      // For returning users, show any unseen contextual tips
-      setTimeout(showNextTip, 3000);
-    }
+    initTooltips();
   }
 
-  // Start when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

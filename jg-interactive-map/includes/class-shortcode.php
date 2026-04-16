@@ -333,14 +333,7 @@ class JG_Map_Shortcode {
                 </div>
             </div>
 
-            <!-- Onboarding: Welcome Modal -->
-            <div id="jg-onboarding-modal" class="jg-modal-bg" style="z-index:99998">
-                <div class="jg-modal jg-onboarding-modal">
-                    <div id="jg-onboarding-content"></div>
-                </div>
-            </div>
-
-            <!-- Onboarding: Help Panel (will be moved into #jg-map by JS) -->
+            <!-- Help Panel (moved into #jg-map by JS) -->
             <div id="jg-help-panel" class="jg-help-panel" style="display:none">
                 <div class="jg-help-panel-header">
                     <h3><?php _e('Jak korzystać z mapy?', 'jg-map'); ?></h3>
@@ -406,19 +399,9 @@ class JG_Map_Shortcode {
                         </ul>
                         <p class="jg-help-tip"><?php _e('Awansujesz przez 8 poziomów: Brąz → Srebro → Złoto → Szmaragd → Fiolet → Diament → Rubin → Legenda. Twój poziom i pasek XP widoczne są na pasku u góry strony.', 'jg-map'); ?></p>
                     </div>
-                    <div class="jg-help-section jg-help-section--footer">
-                        <button id="jg-help-restart-onboarding" class="jg-btn jg-btn--ghost"><?php _e('↺ Zacznij samouczek od nowa', 'jg-map'); ?></button>
-                    </div>
                 </div>
             </div>
 
-            <!-- Onboarding: Contextual Tips (will be moved into #jg-map by JS) -->
-            <div id="jg-tip-container" class="jg-tip-container" style="display:none">
-                <div class="jg-tip-content">
-                    <span id="jg-tip-text"></span>
-                    <button id="jg-tip-dismiss" class="jg-tip-dismiss">&times;</button>
-                </div>
-            </div>
         </div>
         <?php
         return ob_get_clean();
