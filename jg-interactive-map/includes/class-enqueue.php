@@ -743,11 +743,13 @@ class JG_Map_Enqueue {
                Uses querySelectorAll per selector so a hidden first match (e.g. the
                Elementor location-footer hidden by plugin CSS) does not prevent a
                second visible element from being found.
-               Selectors mirror dwDetectHeaderFooter() in jg-map.js. */
+               #jg-footer-bar is the plugin's own fixed bottom bar (copyright + CTA).
+               Remaining selectors mirror dwDetectHeaderFooter() in jg-map.js. */
             function jgGetFooterTop() {
                 var vh = window.innerHeight;
                 var footerTop = vh;
                 var footerSelectors = [
+                    '#jg-footer-bar',
                     '#site-footer',
                     '.elementor-location-footer',
                     '.site-footer',
