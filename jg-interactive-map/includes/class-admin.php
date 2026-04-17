@@ -5041,6 +5041,7 @@ class JG_Map_Admin {
                         ?>
                         <li class="jg-category-item" data-key="<?php echo esc_attr($key); ?>">
                             <span class="cat-name" onclick="jgFilterByCategory('<?php echo esc_js($key); ?>')"><?php echo esc_html($label); ?></span>
+                            <code class="cat-slug"><?php echo esc_html($key); ?></code>
                             <span class="cat-count"><?php echo $count; ?></span>
                             <button class="jg-action-btn" onclick="jgEditCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($label); ?>')" title="Edytuj">✏️</button>
                             <button class="jg-action-btn delete" onclick="jgDeleteCategory('<?php echo esc_js($key); ?>')" title="Usuń">🗑️</button>
@@ -6220,6 +6221,7 @@ JAVASCRIPT;
                         <li class="jg-category-item" data-key="<?php echo esc_attr($key); ?>">
                             <span class="cat-icon"><?php echo esc_html($category['icon'] ?? '📍'); ?></span>
                             <span class="cat-name"><?php echo esc_html($category['label']); ?></span>
+                            <code class="cat-slug"><?php echo esc_html($key); ?></code>
                             <?php if (!empty($category['has_menu'])): ?>
                             <span title="Posiada menu" style="font-size:14px;opacity:0.7">🍽️</span>
                             <?php endif; ?>
@@ -6668,6 +6670,7 @@ JAVASCRIPT;
                         <li class="jg-category-item" data-key="<?php echo esc_attr($key); ?>">
                             <span class="cat-icon"><?php echo esc_html($category['icon'] ?? '📖'); ?></span>
                             <span class="cat-name"><?php echo esc_html($category['label']); ?></span>
+                            <code class="cat-slug"><?php echo esc_html($key); ?></code>
                             <button class="jg-action-btn" onclick="jgEditCuriosityCategory('<?php echo esc_js($key); ?>', '<?php echo esc_js($category['label']); ?>', '<?php echo esc_js($category['icon'] ?? '📖'); ?>')" title="Edytuj">✏️</button>
                             <button class="jg-action-btn delete" onclick="jgDeleteCuriosityCategory('<?php echo esc_js($key); ?>')" title="Usuń">🗑️</button>
                         </li>
