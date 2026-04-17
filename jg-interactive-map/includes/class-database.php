@@ -285,6 +285,10 @@ class JG_Map_Database {
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-levels-achievements.php';
         JG_Map_Levels_Achievements::create_tables();
 
+        // Create challenges table
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-challenges.php';
+        JG_Map_Challenges::create_table();
+
         // Add custom capabilities to administrator role
         $admin = get_role('administrator');
         if ($admin) {
@@ -346,6 +350,10 @@ class JG_Map_Database {
         // Ensure levels & achievements tables exist (for existing installations)
         require_once JG_MAP_PLUGIN_DIR . 'includes/class-levels-achievements.php';
         JG_Map_Levels_Achievements::create_tables();
+
+        // Ensure challenges table exists (for existing installations)
+        require_once JG_MAP_PLUGIN_DIR . 'includes/class-challenges.php';
+        JG_Map_Challenges::create_table();
 
         // Helper function to check if column exists
         $column_exists = function($column_name) use ($wpdb, $safe_table) {

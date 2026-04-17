@@ -577,7 +577,8 @@ class JG_Map_Enqueue {
                 'privacyContent' => get_option('jg_map_privacy_content', ''),
                 'catalogUrl' => self::get_catalog_page_url(),
                 'tagBaseUrl' => home_url('/katalog/tag/'),
-                'homeUrl' => home_url('/'),
+                'homeUrl'         => home_url('/'),
+                'activeChallenge' => JG_Map_Challenges::get_active_with_progress(),
             )
         );
 

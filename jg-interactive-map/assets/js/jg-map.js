@@ -1147,6 +1147,50 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         });
       }
 
+      // Benefits modal: shown to guests before opening login/register
+      function showBenefitsModal() {
+        var modalEdit = document.getElementById('jg-map-modal-edit');
+
+        var html =
+          '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
+            '<h2 style="margin:0;font-size:20px;font-weight:600">Dołącz do społeczności!</h2>' +
+            '<p style="margin:6px 0 0;font-size:13px;opacity:0.85">Zarejestruj się i zacznij kształtować mapę Jeleniej Góry</p>' +
+          '</div>' +
+          '<div class="jg-modal-body" style="padding:20px 24px">' +
+            '<div class="jg-benefits-grid">' +
+              '<div class="jg-benefit-card">' +
+                '<div class="jg-benefit-icon">📍</div>' +
+                '<div class="jg-benefit-title">Dodawaj miejsca</div>' +
+                '<div class="jg-benefit-desc">Zaznacz restauracje, atrakcje i ciekawostki — zdobywaj XP za każdy wkład</div>' +
+              '</div>' +
+              '<div class="jg-benefit-card">' +
+                '<div class="jg-benefit-icon">⚠️</div>' +
+                '<div class="jg-benefit-title">Zgłaszaj problemy</div>' +
+                '<div class="jg-benefit-desc">Informuj o dziurach w drodze, połamanej infrastrukturze i innych usterkach</div>' +
+              '</div>' +
+              '<div class="jg-benefit-card">' +
+                '<div class="jg-benefit-icon">🏆</div>' +
+                '<div class="jg-benefit-title">Zdobywaj nagrody</div>' +
+                '<div class="jg-benefit-desc">Zbieraj XP, awansuj na poziomy i odblokuj odznaki aktywnego mieszkańca</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;flex-direction:column;gap:10px;border-radius:0 0 8px 8px">' +
+            (CFG.registrationEnabled
+              ? '<button id="jg-benefits-register-btn" style="width:100%;padding:12px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer">Zarejestruj się (bezpłatnie)</button>'
+              : '') +
+            '<button id="jg-benefits-login-btn" style="width:100%;padding:11px;background:#fff;color:#8d2324;border:2px solid #8d2324;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer">Mam już konto — Zaloguj się</button>' +
+            '<button id="jg-benefits-close-btn" style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;padding:4px">Przeglądaj bez logowania</button>' +
+          '</div>';
+
+        open(modalEdit, html);
+
+        document.getElementById('jg-benefits-close-btn').addEventListener('click', function() { close(modalEdit); });
+        document.getElementById('jg-benefits-login-btn').addEventListener('click', function() { close(modalEdit); openLoginModal(); });
+        var regBtn = document.getElementById('jg-benefits-register-btn');
+        if (regBtn) regBtn.addEventListener('click', function() { close(modalEdit); showRegistrationForm(); });
+      }
+
       // Single auth button handler (replaces separate login/register buttons)
       var authBtn = document.getElementById('jg-auth-btn');
       if (authBtn && !authBtn.jgHandlerAttached) {
@@ -4930,9 +4974,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         mapClickTimeout = setTimeout(function() {
           if (!CFG.isLoggedIn) {
-            showAlert('Musisz być zalogowany, aby dodać miejsce.').then(function() {
-              openLoginModal();
-            });
+            showBenefitsModal();
             return;
           }
 
@@ -14618,9 +14660,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       function openAddPlaceModal(lat, lng) {
         // Check if user is logged in
         if (!CFG.isLoggedIn) {
-          showAlert('Musisz być zalogowany, aby dodać miejsce.').then(function() {
-            openLoginModal();
-          });
+          showBenefitsModal();
           return;
         }
 
@@ -15211,10 +15251,78 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         }
       }
 
-      // Initialise indicator for admins/mods
+      // Initialise indicator for admins/mods (desktop only – hidden on mobile via CSS)
       if (CFG.isAdmin) {
         createUserCountIndicator();
       }
+
+      // =========================================================
+      // CHALLENGE WIDGETS
+      // =========================================================
+
+      (function() {
+        var ch = CFG.activeChallenge;
+        if (!ch) return;
+
+        var progress = Math.min(ch.progress, ch.target_count);
+        var pct      = ch.target_count > 0 ? Math.round((progress / ch.target_count) * 100) : 0;
+
+        // Days remaining
+        var msLeft   = new Date(ch.end_date.replace(' ', 'T')) - new Date();
+        var daysLeft = Math.max(0, Math.ceil(msLeft / 86400000));
+        var timeStr  = daysLeft > 1 ? 'jeszcze ' + daysLeft + ' dni' : (daysLeft === 1 ? 'ostatni dzień!' : 'kończy się dzisiaj!');
+
+        // ── DESKTOP: circular progress widget in sidebar ──────────────────────
+        var desktopEl = document.getElementById('jg-challenge-widget-desktop');
+        if (desktopEl) {
+          var radius = 34;
+          var circ   = Math.round(2 * Math.PI * radius * 10) / 10; // 213.6
+          var offset = Math.round((1 - progress / ch.target_count) * circ * 10) / 10;
+
+          desktopEl.innerHTML =
+            '<div class="jg-cw-d-inner">' +
+              '<div class="jg-cw-d-left">' +
+                '<svg class="jg-cw-d-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">' +
+                  '<circle cx="40" cy="40" r="' + radius + '" class="jg-cw-d-track"/>' +
+                  '<circle cx="40" cy="40" r="' + radius + '" class="jg-cw-d-fill"' +
+                    ' stroke-dasharray="' + circ + '"' +
+                    ' stroke-dashoffset="' + offset + '"/>' +
+                  '<text x="40" y="36" class="jg-cw-d-pct">' + pct + '%</text>' +
+                  '<text x="40" y="51" class="jg-cw-d-ratio">' + progress + '/' + ch.target_count + '</text>' +
+                '</svg>' +
+              '</div>' +
+              '<div class="jg-cw-d-right">' +
+                '<div class="jg-cw-d-label">🏆 Wyzwanie tygodnia</div>' +
+                '<div class="jg-cw-d-title">' + $('<div>').text(ch.title).html() + '</div>' +
+                (ch.description ? '<div class="jg-cw-d-desc">' + $('<div>').text(ch.description).html() + '</div>' : '') +
+                '<div class="jg-cw-d-meta">' + timeStr + (ch.xp_reward ? ' · +' + ch.xp_reward + ' XP' : '') + '</div>' +
+              '</div>' +
+            '</div>';
+          desktopEl.style.display = '';
+        }
+
+        // ── MOBILE: pill widget between FABs (below user count indicator) ─────
+        if (window.innerWidth <= 768) {
+          var pill = document.createElement('div');
+          pill.id = 'jg-challenge-widget-mobile';
+          pill.setAttribute('data-jg-no-elementor', '1');
+
+          pill.innerHTML =
+            '<div class="jg-cw-m-bar">' +
+              '<span class="jg-cw-m-icon">🏆</span>' +
+              '<div class="jg-cw-m-body">' +
+                '<div class="jg-cw-m-title">' + $('<div>').text(ch.title).html() + '</div>' +
+                '<div class="jg-cw-m-progress-track"><div class="jg-cw-m-progress-fill" style="width:' + pct + '%"></div></div>' +
+              '</div>' +
+              '<div class="jg-cw-m-count">' + progress + '/' + ch.target_count + '</div>' +
+            '</div>';
+
+          // Position below the FABs row (bottom center of map)
+          pill.style.cssText = 'position:absolute;bottom:82px;left:50%;transform:translateX(-50%);z-index:9996;width:calc(100% - 140px);max-width:340px;pointer-events:none;';
+
+          $(elMap).append(pill);
+        }
+      }());
 
       // =========================================================
       // REAL-TIME LEVEL / XP BAR UPDATE
