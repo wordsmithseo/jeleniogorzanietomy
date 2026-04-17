@@ -7401,7 +7401,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 var glow = rarityGlows[ach.rarity] || rarityGlows.common;
                 var border = rarityBorders[ach.rarity] || rarityBorders.common;
                 achHtml += '<div class="jg-achievement-icon" title="' + esc(ach.name) + ': ' + esc(ach.description) + '" style="border-color:' + border + ';box-shadow:' + glow + '">' +
-                  '<span>' + esc(ach.icon) + '</span></div>';
+                  '<span class="jg-ach-icon-emoji">' + esc(ach.icon) + '</span>' +
+                  '<span class="jg-ach-icon-name">' + esc(ach.name) + '</span>' +
+                  '<span class="jg-ach-icon-desc">' + esc(ach.description) + '</span>' +
+                  '</div>';
               }
               if (levelData.total_achievements > 4) {
                 achHtml += '<div class="jg-achievement-more">+' + (levelData.total_achievements - 4) + '</div>';
@@ -15279,34 +15282,27 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           : circ;
         var titleHtml = $('<div>').text(ch.title).html();
 
-        // ── DESKTOP: Leaflet control floating below zoom and map/satellite toggle ──
+        // ── DESKTOP: absolute div to the RIGHT of zoom controls ──
         if (window.innerWidth > 768) {
-          var ChallengeCtrl = L.Control.extend({
-            options: { position: 'topleft' },
-            onAdd: function() {
-              var el = L.DomUtil.create('div', 'jg-challenge-map-ctrl leaflet-bar');
-              L.DomEvent.disableClickPropagation(el);
-              L.DomEvent.disableScrollPropagation(el);
-              el.innerHTML =
-                '<div class="jg-cw-ctrl-inner">' +
-                  '<svg class="jg-cw-ctrl-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">' +
-                    '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-track"/>' +
-                    '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-fill"' +
-                      ' stroke-dasharray="' + circ + '"' +
-                      ' stroke-dashoffset="' + offset + '"/>' +
-                    '<text x="32" y="28" class="jg-cw-ctrl-pct">' + pct + '%</text>' +
-                    '<text x="32" y="40" class="jg-cw-ctrl-ratio">' + progress + '/' + ch.target_count + '</text>' +
-                  '</svg>' +
-                  '<div class="jg-cw-ctrl-body">' +
-                    '<div class="jg-cw-ctrl-label">🏆 Wyzwanie</div>' +
-                    '<div class="jg-cw-ctrl-title">' + titleHtml + '</div>' +
-                    '<div class="jg-cw-ctrl-meta">' + timeStr + (ch.xp_reward ? ' · +' + ch.xp_reward + ' XP' : '') + '</div>' +
-                  '</div>' +
-                '</div>';
-              return el;
-            }
-          });
-          map.addControl(new ChallengeCtrl());
+          var desktopWidget = document.createElement('div');
+          desktopWidget.id = 'jg-challenge-widget-desktop';
+          desktopWidget.innerHTML =
+            '<div class="jg-cw-ctrl-inner">' +
+              '<svg class="jg-cw-ctrl-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">' +
+                '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-track"/>' +
+                '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-fill"' +
+                  ' stroke-dasharray="' + circ + '"' +
+                  ' stroke-dashoffset="' + offset + '"/>' +
+                '<text x="32" y="28" class="jg-cw-ctrl-pct">' + pct + '%</text>' +
+                '<text x="32" y="40" class="jg-cw-ctrl-ratio">' + progress + '/' + ch.target_count + '</text>' +
+              '</svg>' +
+              '<div class="jg-cw-ctrl-body">' +
+                '<div class="jg-cw-ctrl-label">🏆 Wyzwanie</div>' +
+                '<div class="jg-cw-ctrl-title">' + titleHtml + '</div>' +
+                '<div class="jg-cw-ctrl-meta">' + timeStr + (ch.xp_reward ? ' · +' + ch.xp_reward + ' XP' : '') + '</div>' +
+              '</div>' +
+            '</div>';
+          elMap.appendChild(desktopWidget);
         }
 
         // ── MOBILE: pill widget between FABs ─────────────────────────────────
@@ -15324,7 +15320,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<div class="jg-cw-m-count">' + progress + '/' + ch.target_count + '</div>' +
             '</div>';
 
-          pill.style.cssText = 'position:absolute;bottom:82px;left:50%;transform:translateX(-50%);z-index:9996;width:calc(100% - 140px);max-width:340px;pointer-events:none;';
+          pill.style.cssText = 'position:absolute;bottom:15px;left:50%;transform:translateX(-50%);z-index:9996;width:calc(100% - 160px);max-width:260px;pointer-events:none;';
           $(elMap).append(pill);
         }
       }());
