@@ -15305,9 +15305,22 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '</div>' +
             '</div>';
           elMap.appendChild(desktopWidget);
+
+          // Position next to zoom controls (measured after render to get real coordinates)
+          setTimeout(function() {
+            var zoomCtrl = elMap.querySelector('.leaflet-control-zoom');
+            if (!zoomCtrl) return;
+            var mapRect  = elMap.getBoundingClientRect();
+            var zoomRect = zoomCtrl.getBoundingClientRect();
+            if (!mapRect.height || !zoomRect.height) return;
+            desktopWidget.style.setProperty('top',  Math.round(zoomRect.top  - mapRect.top)  + 'px', 'important');
+            desktopWidget.style.setProperty('left', Math.round(zoomRect.right - mapRect.left + 12) + 'px', 'important');
+          }, 150);
         }
 
         // ── MOBILE: pill widget between FABs ─────────────────────────────────
+        // Position and size are fully controlled by CSS (#jg-challenge-widget-mobile).
+        // Inline style is omitted so the CSS !important rules are not fought.
         if (window.innerWidth <= 768) {
           var pill = document.createElement('div');
           pill.id = 'jg-challenge-widget-mobile';
@@ -15323,8 +15336,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<div class="jg-cw-m-count">' + progress + '/' + ch.target_count + '</div>' +
             '</div>';
 
-          pill.style.cssText = 'position:absolute;bottom:15px;left:50%;transform:translateX(-50%);z-index:9996;width:calc(100% - 160px);max-width:260px;pointer-events:none;';
-          $(elMap).append(pill);
+          elMap.appendChild(pill);
         }
       }());
 
