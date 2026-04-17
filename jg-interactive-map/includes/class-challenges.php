@@ -40,6 +40,7 @@ class JG_Map_Challenges {
             'cast_vote'          => array('label' => '⭐ Zagłosuj na punkty',                    'desc' => 'Oddane głosy w wybranym przedziale czasu',    'needs_cat' => false),
             'cast_report'        => array('label' => '🚩 Zgłoś problem z punktem',               'desc' => 'Wysłane raporty o problemach',                 'needs_cat' => false),
             'edit_approved'      => array('label' => '✏️ Edytuj i zatwierdź punkt',              'desc' => 'Zatwierdzone edycje istniejących punktów',    'needs_cat' => false),
+            'upload_photo_existing' => array('label' => '📸 Dodaj zdjęcie do istniejącego miejsca', 'desc' => 'Zatwierdzone edycje z nowymi zdjęciami do cudzych miejsc', 'needs_cat' => false),
         );
     }
 
@@ -94,9 +95,12 @@ class JG_Map_Challenges {
     // =========================================================================
 
     public static function get_active_with_progress() {
+        if (!is_user_logged_in()) return null;
+
         global $wpdb;
-        $table = $wpdb->prefix . 'jg_map_challenges';
-        $now   = current_time('mysql');
+        $table   = $wpdb->prefix . 'jg_map_challenges';
+        $now     = current_time('mysql');
+        $user_id = get_current_user_id();
 
         $challenge = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM `$table` WHERE is_active = 1 AND start_date <= %s AND end_date >= %s ORDER BY start_date DESC LIMIT 1",
@@ -107,7 +111,7 @@ class JG_Map_Challenges {
             return null;
         }
 
-        $progress = self::calculate_progress($challenge);
+        $progress = self::calculate_progress($challenge, $user_id);
 
         return array(
             'id'             => (int) $challenge->id,
@@ -125,7 +129,7 @@ class JG_Map_Challenges {
     /**
      * Calculate current progress for a challenge based on its condition_type.
      */
-    private static function calculate_progress($challenge) {
+    private static function calculate_progress($challenge, $user_id = 0) {
         global $wpdb;
 
         $pts    = $wpdb->prefix . 'jg_map_points';
@@ -143,121 +147,134 @@ class JG_Map_Challenges {
             // ── Point-adding conditions ───────────────────────────────────────
             case 'place_any':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'place_category':
                 if (empty($cat)) return 0;
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND category=%s AND approved_at BETWEEN %s AND %s",
-                    $cat, $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND category=%s AND approved_at BETWEEN %s AND %s",
+                    $user_id, $cat, $start, $end
                 ));
 
             case 'place_photo':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND images IS NOT NULL AND images NOT IN ('','[]') AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND images IS NOT NULL AND images NOT IN ('','[]') AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'place_hours':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND opening_hours IS NOT NULL AND opening_hours != '' AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND opening_hours IS NOT NULL AND opening_hours != '' AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'place_menu':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(DISTINCT p.id) FROM `$pts` p INNER JOIN `$menu` m ON m.point_id = p.id WHERE p.status='approved' AND p.type='miejsce' AND p.approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(DISTINCT p.id) FROM `$pts` p INNER JOIN `$menu` m ON m.point_id = p.id WHERE p.status='approved' AND p.type='miejsce' AND p.author_id=%d AND p.approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'place_desc':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND content IS NOT NULL AND content != '' AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND content IS NOT NULL AND content != '' AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'place_phone':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND phone IS NOT NULL AND phone != '' AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND phone IS NOT NULL AND phone != '' AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'place_website':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND website IS NOT NULL AND website != '' AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND website IS NOT NULL AND website != '' AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'place_full':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND content IS NOT NULL AND content != '' AND images IS NOT NULL AND images NOT IN ('','[]') AND opening_hours IS NOT NULL AND opening_hours != '' AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND content IS NOT NULL AND content != '' AND images IS NOT NULL AND images NOT IN ('','[]') AND opening_hours IS NOT NULL AND opening_hours != '' AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'curiosity_any':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='ciekawostka' AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='ciekawostka' AND author_id=%d AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'curiosity_category':
                 if (empty($cat)) return 0;
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='ciekawostka' AND category=%s AND approved_at BETWEEN %s AND %s",
-                    $cat, $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='ciekawostka' AND author_id=%d AND category=%s AND approved_at BETWEEN %s AND %s",
+                    $user_id, $cat, $start, $end
                 ));
 
             case 'curiosity_photo':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='ciekawostka' AND images IS NOT NULL AND images NOT IN ('','[]') AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='ciekawostka' AND author_id=%d AND images IS NOT NULL AND images NOT IN ('','[]') AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'issue_any':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='zgloszenie' AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='zgloszenie' AND author_id=%d AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'issue_category':
                 if (empty($cat)) return 0;
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='zgloszenie' AND category=%s AND approved_at BETWEEN %s AND %s",
-                    $cat, $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='zgloszenie' AND author_id=%d AND category=%s AND approved_at BETWEEN %s AND %s",
+                    $user_id, $cat, $start, $end
                 ));
 
             case 'any_point':
-                $sql    = "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND approved_at BETWEEN %s AND %s";
-                $params = array($start, $end);
+                $sql    = "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND author_id=%d AND approved_at BETWEEN %s AND %s";
+                $params = array($user_id, $start, $end);
                 if (!empty($cat)) { $sql .= " AND category = %s"; $params[] = $cat; }
                 return (int) $wpdb->get_var($wpdb->prepare($sql, $params));
 
             case 'any_with_photo':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND images IS NOT NULL AND images NOT IN ('','[]') AND approved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND author_id=%d AND images IS NOT NULL AND images NOT IN ('','[]') AND approved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             // ── Interaction conditions ────────────────────────────────────────
             case 'cast_vote':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$votes` WHERE created_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$votes` WHERE user_id=%d AND created_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'cast_report':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$rpts` WHERE created_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$rpts` WHERE user_id=%d AND created_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
 
             case 'edit_approved':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$hist` WHERE status='approved' AND resolved_at BETWEEN %s AND %s",
-                    $start, $end
+                    "SELECT COUNT(*) FROM `$hist` WHERE user_id=%d AND status='approved' AND resolved_at BETWEEN %s AND %s",
+                    $user_id, $start, $end
                 ));
+
+            case 'upload_photo_existing': {
+                $like = '%' . $wpdb->esc_like('"images":') . '%';
+                return (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
+                     INNER JOIN `$pts` p ON p.id = h.point_id
+                     WHERE h.user_id = %d
+                     AND h.status = 'approved'
+                     AND h.resolved_at BETWEEN %s AND %s
+                     AND h.new_values LIKE %s",
+                    $user_id, $start, $end, $like
+                ));
+            }
 
             default:
                 return 0;

@@ -15341,6 +15341,60 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         }
       }());
 
+      // ── Live challenge progress refresh ──────────────────────────────────
+      // Called after any relevant AJAX action succeeds.
+      var _challengeRefreshTimer = null;
+      function refreshChallengeProgress() {
+        if (!CFG.activeChallenge) return;
+        $.ajax({
+          url: CFG.ajaxUrl,
+          type: 'POST',
+          data: { action: 'jg_get_active_challenge', _ajax_nonce: CFG.nonce },
+          success: function(res) {
+            if (!res || !res.success || !res.data) return;
+            var ch       = res.data;
+            var prog     = Math.min(ch.progress, ch.target_count);
+            var pct      = ch.target_count > 0 ? Math.round((prog / ch.target_count) * 100) : 0;
+            var radius   = 28;
+            var circ     = Math.round(2 * Math.PI * radius * 10) / 10;
+            var offset   = ch.target_count > 0 ? Math.round((1 - prog / ch.target_count) * circ * 10) / 10 : circ;
+
+            var dw = document.getElementById('jg-challenge-widget-desktop');
+            if (dw) {
+              var pctEl   = dw.querySelector('.jg-cw-ctrl-pct');
+              var ratioEl = dw.querySelector('.jg-cw-ctrl-ratio');
+              var fillEl  = dw.querySelector('.jg-cw-ctrl-fill');
+              if (pctEl)   pctEl.textContent = pct + '%';
+              if (ratioEl) ratioEl.textContent = prog + '/' + ch.target_count;
+              if (fillEl)  fillEl.setAttribute('stroke-dashoffset', String(offset));
+            }
+
+            var mw = document.getElementById('jg-challenge-widget-mobile');
+            if (mw) {
+              var mCount = mw.querySelector('.jg-cw-m-count');
+              var mFill  = mw.querySelector('.jg-cw-m-progress-fill');
+              if (mCount) mCount.textContent = prog + '/' + ch.target_count;
+              if (mFill)  mFill.style.width  = pct + '%';
+            }
+          }
+        });
+      }
+
+      $(document).ajaxSuccess(function(e, xhr, settings) {
+        try {
+          var data = settings.data || '';
+          if (typeof data !== 'string') return;
+          var m = data.match(/(?:^|&)action=([^&]+)/);
+          if (!m) return;
+          var action = decodeURIComponent(m[1]);
+          var tracked = ['jg_submit_point', 'jg_update_point', 'jg_vote',
+                         'jg_submit_report', 'jg_upload_menu_photo'];
+          if (tracked.indexOf(action) === -1) return;
+          clearTimeout(_challengeRefreshTimer);
+          _challengeRefreshTimer = setTimeout(refreshChallengeProgress, 600);
+        } catch (ignored) {}
+      });
+
       // =========================================================
       // REAL-TIME LEVEL / XP BAR UPDATE
       // =========================================================

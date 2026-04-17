@@ -9976,6 +9976,11 @@ footer.site-footer .site-branding {
   bottom: 4px !important;
 }
 
+/* Remove Leaflet attribution — it breaks the bottom-right layout */
+.jg-map .leaflet-control-attribution {
+  display: none !important;
+}
+
 /* ── Mobile nav: envelope (contact) icon ────────────────────────────────────
    Sits between the logo link and the hamburger button inside #jg-nav-bar.
    Uses margin-left: auto to push itself (and the hamburger) to the right,
@@ -10275,6 +10280,7 @@ footer.site-footer .site-branding {
   margin-bottom: 2px !important;
 }
 #jg-challenge-widget-mobile .jg-cw-m-desc {
+  display: block !important;
   font-size: 9px !important;
   color: rgba(255,255,255,0.75) !important;
   line-height: 1.2 !important;
