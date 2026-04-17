@@ -768,6 +768,9 @@ class JG_Map_Admin {
                     <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-achievements-editor'); ?>">
                         <span class="jg-nav-icon">🏆</span> Osiągnięcia
                     </a>
+                    <a class="jg-nav-item" href="<?php echo admin_url('admin.php?page=jg-map-challenges'); ?>">
+                        <span class="jg-nav-icon">🎯</span> Wyzwania
+                    </a>
                 </div>
             </div>
 
@@ -7257,50 +7260,104 @@ JAVASCRIPT;
      * Render Challenges editor page
      */
     public function render_challenges_page() {
-        $nonce = wp_create_nonce('jg_map_admin_nonce');
+        $nonce      = wp_create_nonce('jg_map_admin_nonce');
+        $conditions = JG_Map_Challenges::get_condition_types();
         ?>
         <div class="wrap">
             <?php $this->render_page_header('Wyzwania społecznościowe'); ?>
-            <p style="margin-top:0;color:#6b7280">Utwórz wyzwanie widoczne dla wszystkich użytkowników na mapie. Postęp jest liczony automatycznie na podstawie zatwierdzonych pinezek w danym przedziale czasowym.</p>
 
-            <div style="max-width:1100px;margin-top:12px">
-                <div class="jg-admin-table-wrap"><div class="jg-table-scroll">
-                <table class="jg-admin-table" id="jg-ch-table">
-                    <thead>
-                        <tr>
-                            <th style="width:40px">ID</th>
-                            <th style="width:200px">Tytuł</th>
-                            <th>Opis</th>
-                            <th style="width:100px">Typ pinezki</th>
-                            <th style="width:80px">Cel (szt.)</th>
-                            <th style="width:70px">XP</th>
-                            <th style="width:140px">Start</th>
-                            <th style="width:140px">Koniec</th>
-                            <th style="width:60px">Aktywne</th>
-                            <th style="width:80px">Akcje</th>
-                        </tr>
-                    </thead>
-                    <tbody id="jg-ch-tbody"></tbody>
-                </table>
-                </div></div>
-                <p style="margin-top:12px">
-                    <button class="button" id="jg-ch-add-row">+ Dodaj wyzwanie</button>
-                    <button class="button button-primary" id="jg-ch-save" style="margin-left:8px">Zapisz zmiany</button>
-                    <span id="jg-ch-status" style="margin-left:12px;color:#059669;font-weight:600;display:none">Zapisano!</span>
-                </p>
+            <style>
+            .jg-ch-page { max-width: 1200px; }
+            .jg-ch-info { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:14px 18px; margin-bottom:24px; font-size:13px; color:#1e40af; line-height:1.6; }
+            .jg-ch-info strong { display:block; margin-bottom:4px; font-size:14px; }
+
+            .jg-ch-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.06); margin-bottom:20px; overflow:hidden; }
+            .jg-ch-card-head { padding:14px 20px; background:#f8fafc; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+            .jg-ch-card-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#374151; margin:0; }
+            .jg-ch-card-body { padding:20px; }
+
+            .jg-ch-list { display:flex; flex-direction:column; gap:16px; }
+
+            .jg-ch-row { border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
+            .jg-ch-row-head { background:#f9fafb; padding:10px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #e5e7eb; }
+            .jg-ch-row-id { font-size:11px; color:#9ca3af; min-width:50px; }
+            .jg-ch-row-status { margin-left:auto; display:flex; align-items:center; gap:8px; }
+            .jg-ch-row-body { padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; }
+            .jg-ch-row-body .jg-ch-full { grid-column:1/-1; }
+
+            .jg-ch-field { display:flex; flex-direction:column; gap:5px; }
+            .jg-ch-field label { font-size:12px; font-weight:600; color:#374151; }
+            .jg-ch-field input[type=text],
+            .jg-ch-field input[type=number],
+            .jg-ch-field input[type=datetime-local],
+            .jg-ch-field select,
+            .jg-ch-field textarea {
+                padding:8px 10px; border:1px solid #d1d5db; border-radius:6px;
+                font-size:13px; width:100%; box-sizing:border-box;
+                background:#fff; color:#111827; transition:border-color .15s;
+                font-family:inherit;
+            }
+            .jg-ch-field input:focus,
+            .jg-ch-field select:focus,
+            .jg-ch-field textarea:focus { outline:none; border-color:#8d2324; box-shadow:0 0 0 2px rgba(141,35,36,.1); }
+            .jg-ch-field textarea { resize:vertical; min-height:60px; }
+            .jg-ch-field .jg-ch-hint { font-size:11px; color:#6b7280; margin-top:2px; }
+            .jg-ch-field .jg-ch-error { font-size:11px; color:#dc2626; display:none; }
+
+            .jg-ch-row-foot { padding:10px 16px; background:#f9fafb; border-top:1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+            .jg-ch-row-foot .jg-ch-row-save { background:#8d2324; color:#fff; border:none; padding:8px 18px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; }
+            .jg-ch-row-foot .jg-ch-row-delete { background:#fff; color:#dc2626; border:1px solid #dc2626; padding:7px 14px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; }
+            .jg-ch-row-foot .jg-ch-row-msg { font-size:12px; font-weight:600; display:none; }
+
+            .jg-ch-add-btn { background:#8d2324; color:#fff; border:none; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; }
+            .jg-ch-add-btn:hover { background:#a02829; }
+
+            .jg-ch-toggle-wrap { display:flex; align-items:center; gap:8px; }
+            .jg-ch-toggle { position:relative; width:40px; height:22px; cursor:pointer; flex-shrink:0; }
+            .jg-ch-toggle input { opacity:0; width:0; height:0; position:absolute; }
+            .jg-ch-toggle-slider { position:absolute; inset:0; background:#d1d5db; border-radius:11px; transition:.2s; }
+            .jg-ch-toggle input:checked + .jg-ch-toggle-slider { background:#059669; }
+            .jg-ch-toggle-slider:before { content:''; position:absolute; left:3px; top:3px; width:16px; height:16px; border-radius:50%; background:#fff; transition:.2s; }
+            .jg-ch-toggle input:checked + .jg-ch-toggle-slider:before { transform:translateX(18px); }
+
+            @media(max-width:700px) {
+                .jg-ch-row-body { grid-template-columns:1fr; }
+                .jg-ch-row-body .jg-ch-full { grid-column:1; }
+            }
+            </style>
+
+            <div class="jg-ch-page">
+                <div class="jg-ch-info">
+                    <strong>Jak działają wyzwania?</strong>
+                    Wyzwanie jest widoczne na mapie dla wszystkich użytkowników — na desktopie jako widget na mapie, na telefonie między przyciskami. Postęp jest liczony automatycznie na podstawie aktywności w portalu w wybranym przedziale czasowym. Tylko jedno wyzwanie może być aktywne jednocześnie (pierwsze aktywne w bieżącym czasie).
+                </div>
+
+                <div class="jg-ch-card">
+                    <div class="jg-ch-card-head">
+                        <p class="jg-ch-card-title">🏆 Lista wyzwań</p>
+                        <button class="jg-ch-add-btn" id="jg-ch-add">+ Dodaj nowe wyzwanie</button>
+                    </div>
+                    <div class="jg-ch-card-body">
+                        <div class="jg-ch-list" id="jg-ch-list">
+                            <p id="jg-ch-loading" style="color:#9ca3af;font-size:13px">Ładowanie...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <script>
             (function() {
-                var ajaxUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
-                var nonce   = '<?php echo $nonce; ?>';
-                var tbody   = document.getElementById('jg-ch-tbody');
+                var ajaxUrl = '<?php echo esc_js(admin_url('admin-ajax.php')); ?>';
+                var nonce   = '<?php echo esc_js($nonce); ?>';
+                var list    = document.getElementById('jg-ch-list');
 
-                var typeOptions =
-                    '<option value="">Wszystkie typy</option>' +
-                    '<option value="miejsce">Miejsce</option>' +
-                    '<option value="ciekawostka">Ciekawostka</option>' +
-                    '<option value="zgloszenie">Zgłoszenie</option>';
+                var conditionTypes = <?php
+                    $ct = array();
+                    foreach ($conditions as $k => $v) {
+                        $ct[] = array('key' => $k, 'label' => $v['label'], 'needs_cat' => (bool)$v['needs_cat']);
+                    }
+                    echo json_encode($ct);
+                ?>;
 
                 function esc(s) {
                     var d = document.createElement('div');
@@ -7310,45 +7367,231 @@ JAVASCRIPT;
 
                 function toDatetimeLocal(dt) {
                     if (!dt) return '';
-                    // MySQL datetime → datetime-local input (YYYY-MM-DDTHH:MM)
                     return dt.replace(' ', 'T').substring(0, 16);
                 }
 
-                function renderRow(ch) {
-                    var tr = document.createElement('tr');
-                    tr.dataset.id = ch.id || '';
-                    tr.innerHTML =
-                        '<td>' + (ch.id || '<em>nowe</em>') + '<input type="hidden" class="ch-id" value="' + (ch.id || '') + '"></td>' +
-                        '<td><input type="text" value="' + esc(ch.title) + '" class="ch-title" style="width:100%"></td>' +
-                        '<td><input type="text" value="' + esc(ch.description) + '" class="ch-desc" style="width:100%"></td>' +
-                        '<td><select class="ch-type" style="width:100%">' + typeOptions + '</select></td>' +
-                        '<td><input type="number" value="' + (ch.target_count || 10) + '" class="ch-target" style="width:60px" min="1"></td>' +
-                        '<td><input type="number" value="' + (ch.xp_reward || 0) + '" class="ch-xp" style="width:55px" min="0"></td>' +
-                        '<td><input type="datetime-local" value="' + toDatetimeLocal(ch.start_date) + '" class="ch-start" style="width:130px"></td>' +
-                        '<td><input type="datetime-local" value="' + toDatetimeLocal(ch.end_date) + '" class="ch-end" style="width:130px"></td>' +
-                        '<td style="text-align:center"><input type="checkbox" class="ch-active"' + (ch.is_active == 1 ? ' checked' : '') + '></td>' +
-                        '<td><button class="button ch-delete" style="color:#dc2626">Usuń</button></td>';
+                function buildConditionOptions(selected) {
+                    return conditionTypes.map(function(ct) {
+                        return '<option value="' + ct.key + '"' + (ct.key === selected ? ' selected' : '') + '>' + ct.label + '</option>';
+                    }).join('');
+                }
 
-                    if (ch.point_type) tr.querySelector('.ch-type').value = ch.point_type;
+                function needsCat(ctKey) {
+                    for (var i = 0; i < conditionTypes.length; i++) {
+                        if (conditionTypes[i].key === ctKey) return conditionTypes[i].needs_cat;
+                    }
+                    return false;
+                }
 
-                    tr.querySelector('.ch-delete').onclick = function() {
-                        var id = tr.dataset.id;
+                function buildRow(ch) {
+                    var isNew = !ch.id;
+                    var div = document.createElement('div');
+                    div.className = 'jg-ch-row';
+                    div.dataset.id = ch.id || '';
+
+                    var now  = new Date();
+                    var week = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                    var fmt  = function(d) { return d.toISOString().substring(0, 16); };
+
+                    var catVal = ch.category || ch.cat || '';
+                    var ctVal  = ch.condition_type || ch.point_type || 'any_point';
+                    var showCat = needsCat(ctVal) ? '' : 'display:none';
+
+                    div.innerHTML =
+                        '<div class="jg-ch-row-head">' +
+                            '<span class="jg-ch-row-id">' + (ch.id ? '#' + ch.id : '<em>nowe</em>') + '</span>' +
+                            '<strong style="font-size:13px;color:#111827;flex:1">' + esc(ch.title || '—') + '</strong>' +
+                            '<div class="jg-ch-row-status">' +
+                                '<label class="jg-ch-toggle" title="Aktywne">' +
+                                    '<input type="checkbox" class="ch-active"' + (ch.is_active == 1 ? ' checked' : '') + '>' +
+                                    '<span class="jg-ch-toggle-slider"></span>' +
+                                '</label>' +
+                                '<span style="font-size:12px;color:#6b7280">Aktywne</span>' +
+                            '</div>' +
+                        '</div>' +
+
+                        '<div class="jg-ch-row-body">' +
+                            '<div class="jg-ch-field jg-ch-full">' +
+                                '<label>Tytuł wyzwania <span style="color:#dc2626">*</span></label>' +
+                                '<input type="text" class="ch-title" value="' + esc(ch.title) + '" placeholder="np. Odkryj restauracje Jeleniej Góry!" maxlength="255">' +
+                                '<span class="jg-ch-error" id="err-title-' + (ch.id||'new') + '">Tytuł jest wymagany</span>' +
+                            '</div>' +
+
+                            '<div class="jg-ch-field jg-ch-full">' +
+                                '<label>Opis (opcjonalny)</label>' +
+                                '<textarea class="ch-desc" placeholder="Dodatkowe wyjaśnienie czego dotyczy wyzwanie…" maxlength="500">' + esc(ch.description) + '</textarea>' +
+                            '</div>' +
+
+                            '<div class="jg-ch-field jg-ch-full">' +
+                                '<label>Warunek — co trzeba zrobić <span style="color:#dc2626">*</span></label>' +
+                                '<select class="ch-condition-type">' + buildConditionOptions(ctVal) + '</select>' +
+                                '<span class="jg-ch-hint">Postęp wyzwania jest liczony automatycznie na podstawie wybranego warunku w przedziale czasowym wyzwania.</span>' +
+                            '</div>' +
+
+                            '<div class="jg-ch-field jg-ch-full jg-ch-cat-wrap" style="' + showCat + '">' +
+                                '<label>Konkretna kategoria (slug)</label>' +
+                                '<input type="text" class="ch-category" value="' + esc(catVal) + '" placeholder="np. restauracja, historyczne (slug z ustawień kategorii)">' +
+                                '<span class="jg-ch-hint">Wpisz slug kategorii z edytora kategorii. Pozostaw puste by liczyć wszystkie kategorie wybranego warunku.</span>' +
+                            '</div>' +
+
+                            '<div class="jg-ch-field">' +
+                                '<label>Cel (liczba akcji) <span style="color:#dc2626">*</span></label>' +
+                                '<input type="number" class="ch-target" value="' + (ch.target_count || 10) + '" min="1" max="9999" style="max-width:120px">' +
+                                '<span class="jg-ch-hint">Ile akcji trzeba wykonać, żeby ukończyć wyzwanie</span>' +
+                                '<span class="jg-ch-error" id="err-target-' + (ch.id||'new') + '">Cel musi być liczbą ≥ 1</span>' +
+                            '</div>' +
+
+                            '<div class="jg-ch-field">' +
+                                '<label>Nagroda XP za ukończenie</label>' +
+                                '<input type="number" class="ch-xp" value="' + (ch.xp_reward || 0) + '" min="0" max="99999" style="max-width:120px">' +
+                                '<span class="jg-ch-hint">0 = brak nagrody XP (wyzwanie jest nadal widoczne)</span>' +
+                            '</div>' +
+
+                            '<div class="jg-ch-field">' +
+                                '<label>Data i godzina startu <span style="color:#dc2626">*</span></label>' +
+                                '<input type="datetime-local" class="ch-start" value="' + toDatetimeLocal(ch.start_date || fmt(now).replace('T',' ')) + '">' +
+                                '<span class="jg-ch-error" id="err-start-' + (ch.id||'new') + '">Data startu jest wymagana</span>' +
+                            '</div>' +
+
+                            '<div class="jg-ch-field">' +
+                                '<label>Data i godzina zakończenia <span style="color:#dc2626">*</span></label>' +
+                                '<input type="datetime-local" class="ch-end" value="' + toDatetimeLocal(ch.end_date || fmt(week).replace('T',' ')) + '">' +
+                                '<span class="jg-ch-error" id="err-end-' + (ch.id||'new') + '">Data zakończenia musi być po starcie</span>' +
+                            '</div>' +
+
+                            '<input type="hidden" class="ch-id" value="' + (ch.id || '') + '">' +
+                        '</div>' +
+
+                        '<div class="jg-ch-row-foot">' +
+                            '<button class="jg-ch-row-delete">🗑 Usuń wyzwanie</button>' +
+                            '<div style="display:flex;align-items:center;gap:12px">' +
+                                '<span class="jg-ch-row-msg"></span>' +
+                                '<button class="jg-ch-row-save">💾 Zapisz</button>' +
+                            '</div>' +
+                        '</div>';
+
+                    // Show/hide category field on condition type change
+                    var ctSel  = div.querySelector('.ch-condition-type');
+                    var catWrap = div.querySelector('.jg-ch-cat-wrap');
+                    ctSel.addEventListener('change', function() {
+                        catWrap.style.display = needsCat(ctSel.value) ? '' : 'none';
+                    });
+
+                    // Update header title on input
+                    var titleInput = div.querySelector('.ch-title');
+                    var headTitle  = div.querySelector('.jg-ch-row-head strong');
+                    titleInput.addEventListener('input', function() {
+                        headTitle.textContent = titleInput.value || '—';
+                    });
+
+                    // Validate and save row
+                    div.querySelector('.jg-ch-row-save').addEventListener('click', function() {
+                        var title   = titleInput.value.trim();
+                        var target  = parseInt(div.querySelector('.ch-target').value, 10);
+                        var startV  = div.querySelector('.ch-start').value;
+                        var endV    = div.querySelector('.ch-end').value;
+                        var msg     = div.querySelector('.jg-ch-row-msg');
+                        var valid   = true;
+
+                        if (!title) {
+                            valid = false;
+                            msg.textContent = '⚠ Tytuł jest wymagany.';
+                            msg.style.color = '#dc2626';
+                            msg.style.display = 'inline';
+                        }
+                        if (!target || target < 1) {
+                            valid = false;
+                            msg.textContent = '⚠ Cel musi być liczbą ≥ 1.';
+                            msg.style.color = '#dc2626';
+                            msg.style.display = 'inline';
+                        }
+                        if (!startV || !endV) {
+                            valid = false;
+                            msg.textContent = '⚠ Daty startu i zakończenia są wymagane.';
+                            msg.style.color = '#dc2626';
+                            msg.style.display = 'inline';
+                        }
+                        if (startV && endV && startV >= endV) {
+                            valid = false;
+                            msg.textContent = '⚠ Data zakończenia musi być późniejsza niż start.';
+                            msg.style.color = '#dc2626';
+                            msg.style.display = 'inline';
+                        }
+                        if (!valid) return;
+
+                        msg.style.display = 'none';
+                        var btn = div.querySelector('.jg-ch-row-save');
+                        btn.disabled = true;
+                        btn.textContent = 'Zapisywanie…';
+
+                        var data = {
+                            action:         'jg_admin_save_challenge',
+                            _ajax_nonce:    nonce,
+                            id:             div.querySelector('.ch-id').value,
+                            title:          title,
+                            description:    div.querySelector('.ch-desc').value,
+                            condition_type: div.querySelector('.ch-condition-type').value,
+                            category:       div.querySelector('.ch-category').value,
+                            target_count:   target,
+                            xp_reward:      parseInt(div.querySelector('.ch-xp').value, 10) || 0,
+                            start_date:     startV.replace('T', ' ') + ':00',
+                            end_date:       endV.replace('T', ' ')   + ':00',
+                            is_active:      div.querySelector('.ch-active').checked ? 1 : 0
+                        };
+
+                        fetch(ajaxUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams(data)
+                        })
+                        .then(function(r) { return r.json(); })
+                        .then(function(resp) {
+                            btn.disabled = false;
+                            btn.textContent = '💾 Zapisz';
+                            if (resp.success) {
+                                msg.textContent = '✓ Zapisano!';
+                                msg.style.color = '#059669';
+                                msg.style.display = 'inline';
+                                if (!div.dataset.id && resp.data && resp.data.id) {
+                                    div.dataset.id = resp.data.id;
+                                    div.querySelector('.ch-id').value = resp.data.id;
+                                    div.querySelector('.jg-ch-row-id').textContent = '#' + resp.data.id;
+                                }
+                                setTimeout(function() { msg.style.display = 'none'; }, 3000);
+                            } else {
+                                msg.textContent = '✗ ' + (resp.data || 'Błąd zapisu');
+                                msg.style.color = '#dc2626';
+                                msg.style.display = 'inline';
+                            }
+                        })
+                        .catch(function() {
+                            btn.disabled = false;
+                            btn.textContent = '💾 Zapisz';
+                            msg.textContent = '✗ Błąd połączenia';
+                            msg.style.color = '#dc2626';
+                            msg.style.display = 'inline';
+                        });
+                    });
+
+                    // Delete row
+                    div.querySelector('.jg-ch-row-delete').addEventListener('click', function() {
+                        var id = div.dataset.id;
                         if (id) {
-                            if (!confirm('Usunąć wyzwanie?')) return;
+                            if (!confirm('Usunąć to wyzwanie trwale?')) return;
                             fetch(ajaxUrl, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                                 body: new URLSearchParams({ action: 'jg_admin_delete_challenge', _ajax_nonce: nonce, challenge_id: id })
-                            }).then(function() { tr.remove(); });
+                            }).then(function() { div.remove(); });
                         } else {
-                            tr.remove();
+                            div.remove();
                         }
-                    };
+                    });
 
-                    tbody.appendChild(tr);
+                    return div;
                 }
 
-                // Load existing
+                // Load existing challenges
                 fetch(ajaxUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -7356,52 +7599,24 @@ JAVASCRIPT;
                 })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    if (data.success && Array.isArray(data.data)) {
-                        data.data.forEach(renderRow);
+                    document.getElementById('jg-ch-loading').remove();
+                    if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+                        data.data.forEach(function(ch) { list.appendChild(buildRow(ch)); });
+                    } else {
+                        var empty = document.createElement('p');
+                        empty.style.cssText = 'color:#9ca3af;font-size:13px;margin:0';
+                        empty.textContent = 'Brak wyzwań. Kliknij „+ Dodaj nowe wyzwanie" by utworzyć pierwsze.';
+                        list.appendChild(empty);
                     }
                 });
 
-                document.getElementById('jg-ch-add-row').onclick = function() {
-                    var now  = new Date();
-                    var week = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-                    var fmt  = function(d) { return d.toISOString().substring(0, 16); };
-                    renderRow({ id: '', title: '', description: '', point_type: '', target_count: 10, xp_reward: 50, start_date: fmt(now).replace('T', ' '), end_date: fmt(week).replace('T', ' '), is_active: 1 });
-                };
-
-                document.getElementById('jg-ch-save').onclick = function() {
-                    var rows = tbody.querySelectorAll('tr');
-                    var promises = [];
-                    rows.forEach(function(tr) {
-                        var data = {
-                            action:       'jg_admin_save_challenge',
-                            _ajax_nonce:  nonce,
-                            id:           tr.querySelector('.ch-id').value,
-                            title:        tr.querySelector('.ch-title').value,
-                            description:  tr.querySelector('.ch-desc').value,
-                            point_type:   tr.querySelector('.ch-type').value,
-                            target_count: tr.querySelector('.ch-target').value,
-                            xp_reward:    tr.querySelector('.ch-xp').value,
-                            start_date:   tr.querySelector('.ch-start').value.replace('T', ' ') + ':00',
-                            end_date:     tr.querySelector('.ch-end').value.replace('T', ' ') + ':00',
-                            is_active:    tr.querySelector('.ch-active').checked ? 1 : 0
-                        };
-                        promises.push(
-                            fetch(ajaxUrl, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                body: new URLSearchParams(data)
-                            }).then(function(r) { return r.json(); })
-                        );
-                    });
-                    Promise.all(promises).then(function(results) {
-                        var status = document.getElementById('jg-ch-status');
-                        var ok = results.every(function(r) { return r.success; });
-                        status.textContent = ok ? 'Zapisano!' : 'Błąd zapisu!';
-                        status.style.color = ok ? '#059669' : '#dc2626';
-                        status.style.display = 'inline';
-                        if (ok) setTimeout(function() { location.reload(); }, 1000);
-                    });
-                };
+                document.getElementById('jg-ch-add').addEventListener('click', function() {
+                    var emptyMsg = list.querySelector('p');
+                    if (emptyMsg) emptyMsg.remove();
+                    var row = buildRow({ id:'', title:'', description:'', condition_type:'any_point', category:'', target_count:10, xp_reward:50, start_date:'', end_date:'', is_active:1 });
+                    list.prepend(row);
+                    row.querySelector('.ch-title').focus();
+                });
             })();
             </script>
         </div>
