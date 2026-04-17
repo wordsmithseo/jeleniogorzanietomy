@@ -15272,54 +15272,59 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var daysLeft = Math.max(0, Math.ceil(msLeft / 86400000));
         var timeStr  = daysLeft > 1 ? 'jeszcze ' + daysLeft + ' dni' : (daysLeft === 1 ? 'ostatni dzień!' : 'kończy się dzisiaj!');
 
-        // ── DESKTOP: circular progress widget in sidebar ──────────────────────
-        var desktopEl = document.getElementById('jg-challenge-widget-desktop');
-        if (desktopEl) {
-          var radius = 34;
-          var circ   = Math.round(2 * Math.PI * radius * 10) / 10; // 213.6
-          var offset = Math.round((1 - progress / ch.target_count) * circ * 10) / 10;
+        var radius = 28;
+        var circ   = Math.round(2 * Math.PI * radius * 10) / 10;
+        var offset = ch.target_count > 0
+          ? Math.round((1 - progress / ch.target_count) * circ * 10) / 10
+          : circ;
+        var titleHtml = $('<div>').text(ch.title).html();
 
-          desktopEl.innerHTML =
-            '<div class="jg-cw-d-inner">' +
-              '<div class="jg-cw-d-left">' +
-                '<svg class="jg-cw-d-svg" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">' +
-                  '<circle cx="40" cy="40" r="' + radius + '" class="jg-cw-d-track"/>' +
-                  '<circle cx="40" cy="40" r="' + radius + '" class="jg-cw-d-fill"' +
-                    ' stroke-dasharray="' + circ + '"' +
-                    ' stroke-dashoffset="' + offset + '"/>' +
-                  '<text x="40" y="36" class="jg-cw-d-pct">' + pct + '%</text>' +
-                  '<text x="40" y="51" class="jg-cw-d-ratio">' + progress + '/' + ch.target_count + '</text>' +
-                '</svg>' +
-              '</div>' +
-              '<div class="jg-cw-d-right">' +
-                '<div class="jg-cw-d-label">🏆 Wyzwanie tygodnia</div>' +
-                '<div class="jg-cw-d-title">' + $('<div>').text(ch.title).html() + '</div>' +
-                (ch.description ? '<div class="jg-cw-d-desc">' + $('<div>').text(ch.description).html() + '</div>' : '') +
-                '<div class="jg-cw-d-meta">' + timeStr + (ch.xp_reward ? ' · +' + ch.xp_reward + ' XP' : '') + '</div>' +
-              '</div>' +
-            '</div>';
-          desktopEl.style.display = '';
+        // ── DESKTOP: Leaflet control floating below zoom and map/satellite toggle ──
+        if (window.innerWidth > 768) {
+          var ChallengeCtrl = L.Control.extend({
+            options: { position: 'topleft' },
+            onAdd: function() {
+              var el = L.DomUtil.create('div', 'jg-challenge-map-ctrl leaflet-bar');
+              L.DomEvent.disableClickPropagation(el);
+              L.DomEvent.disableScrollPropagation(el);
+              el.innerHTML =
+                '<div class="jg-cw-ctrl-inner">' +
+                  '<svg class="jg-cw-ctrl-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">' +
+                    '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-track"/>' +
+                    '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-fill"' +
+                      ' stroke-dasharray="' + circ + '"' +
+                      ' stroke-dashoffset="' + offset + '"/>' +
+                    '<text x="32" y="28" class="jg-cw-ctrl-pct">' + pct + '%</text>' +
+                    '<text x="32" y="40" class="jg-cw-ctrl-ratio">' + progress + '/' + ch.target_count + '</text>' +
+                  '</svg>' +
+                  '<div class="jg-cw-ctrl-body">' +
+                    '<div class="jg-cw-ctrl-label">🏆 Wyzwanie</div>' +
+                    '<div class="jg-cw-ctrl-title">' + titleHtml + '</div>' +
+                    '<div class="jg-cw-ctrl-meta">' + timeStr + (ch.xp_reward ? ' · +' + ch.xp_reward + ' XP' : '') + '</div>' +
+                  '</div>' +
+                '</div>';
+              return el;
+            }
+          });
+          map.addControl(new ChallengeCtrl());
         }
 
-        // ── MOBILE: pill widget between FABs (below user count indicator) ─────
+        // ── MOBILE: pill widget between FABs ─────────────────────────────────
         if (window.innerWidth <= 768) {
           var pill = document.createElement('div');
           pill.id = 'jg-challenge-widget-mobile';
-          pill.setAttribute('data-jg-no-elementor', '1');
 
           pill.innerHTML =
             '<div class="jg-cw-m-bar">' +
               '<span class="jg-cw-m-icon">🏆</span>' +
               '<div class="jg-cw-m-body">' +
-                '<div class="jg-cw-m-title">' + $('<div>').text(ch.title).html() + '</div>' +
+                '<div class="jg-cw-m-title">' + titleHtml + '</div>' +
                 '<div class="jg-cw-m-progress-track"><div class="jg-cw-m-progress-fill" style="width:' + pct + '%"></div></div>' +
               '</div>' +
               '<div class="jg-cw-m-count">' + progress + '/' + ch.target_count + '</div>' +
             '</div>';
 
-          // Position below the FABs row (bottom center of map)
           pill.style.cssText = 'position:absolute;bottom:82px;left:50%;transform:translateX(-50%);z-index:9996;width:calc(100% - 140px);max-width:340px;pointer-events:none;';
-
           $(elMap).append(pill);
         }
       }());

@@ -769,9 +769,6 @@ class JG_Map_Shortcode {
         ?>
         <div id="jg-map-sidebar" class="jg-map-sidebar" style="height: <?php echo esc_attr($atts['height']); ?> !important; opacity: 0; transition: opacity 0.3s ease;">
 
-            <!-- Challenge Widget (desktop) - populated by JS from CFG.activeChallenge -->
-            <div id="jg-challenge-widget-desktop" class="jg-challenge-widget-desktop" style="display:none"></div>
-
             <!-- Statistics Summary -->
             <div class="jg-sidebar-stats">
                 <div class="jg-sidebar-stat">
