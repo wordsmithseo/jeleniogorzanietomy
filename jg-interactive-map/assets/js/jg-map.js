@@ -15281,7 +15281,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           ? Math.round((1 - progress / ch.target_count) * circ * 10) / 10
           : circ;
         var titleHtml = $('<div>').text(ch.title).html();
-        var descHtml  = ch.description ? $('<div>').text(ch.description).html() : '';
+        var descRaw   = ch.description ? ch.description.slice(0, 100) + (ch.description.length > 100 ? '…' : '') : '';
+        var descHtml  = descRaw ? $('<div>').text(descRaw).html() : '';
 
         // ── DESKTOP: absolute div to the RIGHT of zoom controls ──
         if (window.innerWidth > 768) {

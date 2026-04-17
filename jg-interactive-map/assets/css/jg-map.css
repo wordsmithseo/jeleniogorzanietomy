@@ -10218,10 +10218,7 @@ footer.site-footer .site-branding {
   color: rgba(255,255,255,0.8) !important;
   line-height: 1.35 !important;
   margin-bottom: 4px !important;
-  overflow: hidden !important;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2 !important;
-  -webkit-box-orient: vertical !important;
+  word-break: break-word !important;
 }
 #jg-challenge-widget-desktop .jg-cw-ctrl-meta {
   font-size: 10px !important;
@@ -10281,9 +10278,7 @@ footer.site-footer .site-branding {
   font-size: 9px !important;
   color: rgba(255,255,255,0.75) !important;
   line-height: 1.2 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  word-break: break-word !important;
   margin-bottom: 3px !important;
 }
 #jg-challenge-widget-mobile .jg-cw-m-progress-track {
