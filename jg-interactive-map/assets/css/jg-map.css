@@ -9969,10 +9969,11 @@ footer.site-footer .site-branding {
   height: calc(100vh - var(--jg-footer-h, 28px)) !important;
 }
 
-/* Lift Leaflet bottom controls above the fixed footer bar so they remain
-   accessible. The footer overlays the bottom of the map (no gap needed). */
+/* #jg-map-wrap already has padding-bottom = footer height, so #jg-map
+   ends above the footer bar. Keep attribution 4px from the map's own
+   bottom edge – no need to add footer height again. */
 .jg-map .leaflet-bottom {
-  bottom: calc(var(--jg-footer-h, 28px) + 4px) !important;
+  bottom: 4px !important;
 }
 
 /* ── Mobile nav: envelope (contact) icon ────────────────────────────────────
@@ -10127,13 +10128,13 @@ footer.site-footer .site-branding {
    Elementor cannot override them.
    ============================================================ */
 
-/* ── Desktop: absolute div to the right of zoom controls ── */
+/* ── Desktop: absolute div to the right of zoom controls (top/left set by JS) ── */
 #jg-challenge-widget-desktop {
   all: initial !important;
   display: block !important;
   position: absolute !important;
   top: 14px !important;
-  left: 62px !important;
+  left: 62px !important; /* overwritten by JS once zoom control is measured */
   z-index: 9996 !important;
   background: #7f1d1d !important;
   border-radius: 10px !important;
@@ -10217,10 +10218,7 @@ footer.site-footer .site-branding {
   color: rgba(255,255,255,0.8) !important;
   line-height: 1.35 !important;
   margin-bottom: 4px !important;
-  overflow: hidden !important;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2 !important;
-  -webkit-box-orient: vertical !important;
+  word-break: break-word !important;
 }
 #jg-challenge-widget-desktop .jg-cw-ctrl-meta {
   font-size: 10px !important;
@@ -10233,8 +10231,15 @@ footer.site-footer .site-branding {
 #jg-challenge-widget-mobile {
   all: initial !important;
   display: block !important;
-  font-family: inherit !important;
+  position: absolute !important;
+  bottom: 15px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 9996 !important;
+  width: calc(100% - 160px) !important;
+  max-width: 260px !important;
   pointer-events: none !important;
+  font-family: inherit !important;
 }
 #jg-challenge-widget-mobile * {
   box-sizing: border-box !important;
@@ -10273,9 +10278,7 @@ footer.site-footer .site-branding {
   font-size: 9px !important;
   color: rgba(255,255,255,0.75) !important;
   line-height: 1.2 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  word-break: break-word !important;
   margin-bottom: 3px !important;
 }
 #jg-challenge-widget-mobile .jg-cw-m-progress-track {
