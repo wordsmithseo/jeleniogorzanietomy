@@ -10212,6 +10212,16 @@ footer.site-footer .site-branding {
   margin-bottom: 4px !important;
   word-break: break-word !important;
 }
+#jg-challenge-widget-desktop .jg-cw-ctrl-desc {
+  font-size: 10px !important;
+  color: rgba(255,255,255,0.8) !important;
+  line-height: 1.35 !important;
+  margin-bottom: 4px !important;
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+}
 #jg-challenge-widget-desktop .jg-cw-ctrl-meta {
   font-size: 10px !important;
   color: #fcd34d !important;
@@ -10254,6 +10264,15 @@ footer.site-footer .site-branding {
   font-size: 11px !important;
   font-weight: 600 !important;
   color: #fff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  margin-bottom: 2px !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-desc {
+  font-size: 9px !important;
+  color: rgba(255,255,255,0.75) !important;
+  line-height: 1.2 !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;

@@ -15281,6 +15281,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           ? Math.round((1 - progress / ch.target_count) * circ * 10) / 10
           : circ;
         var titleHtml = $('<div>').text(ch.title).html();
+        var descHtml  = ch.description ? $('<div>').text(ch.description).html() : '';
 
         // ── DESKTOP: absolute div to the RIGHT of zoom controls ──
         if (window.innerWidth > 768) {
@@ -15299,6 +15300,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<div class="jg-cw-ctrl-body">' +
                 '<div class="jg-cw-ctrl-label">🏆 Wyzwanie</div>' +
                 '<div class="jg-cw-ctrl-title">' + titleHtml + '</div>' +
+                (descHtml ? '<div class="jg-cw-ctrl-desc">' + descHtml + '</div>' : '') +
                 '<div class="jg-cw-ctrl-meta">' + timeStr + (ch.xp_reward ? ' · +' + ch.xp_reward + ' XP' : '') + '</div>' +
               '</div>' +
             '</div>';
@@ -15315,6 +15317,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<span class="jg-cw-m-icon">🏆</span>' +
               '<div class="jg-cw-m-body">' +
                 '<div class="jg-cw-m-title">' + titleHtml + '</div>' +
+                (descHtml ? '<div class="jg-cw-m-desc">' + descHtml + '</div>' : '') +
                 '<div class="jg-cw-m-progress-track"><div class="jg-cw-m-progress-fill" style="width:' + pct + '%"></div></div>' +
               '</div>' +
               '<div class="jg-cw-m-count">' + progress + '/' + ch.target_count + '</div>' +
