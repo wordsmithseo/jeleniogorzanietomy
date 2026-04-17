@@ -1972,12 +1972,12 @@ body.jg-fullscreen-active #jg-search-panel {
   }
 
   /* Filter bar: lifted out of document flow, floats at the top of the map.
-     top/left use 10px to match Leaflet's standard control offset so all
-     navigation elements share the same margin from the map edge. */
+     left: 0 extends it flush to the left viewport edge; right accounts for
+     the floating sidebar so the bar never overlaps it. */
   #jg-map-wrap.jg-desktop-wide #jg-map-filters-wrapper {
     position: absolute !important;
     top: 10px !important;
-    left: 55px !important;
+    left: 0 !important;
     right: calc(var(--jg-sidebar-w) + 24px) !important;
     bottom: auto !important;
     z-index: 1001 !important;
@@ -1985,10 +1985,22 @@ body.jg-fullscreen-active #jg-search-panel {
     min-width: 0 !important;
   }
 
-  /* Remove bottom margin from floating filter bar */
+  /* Remove bottom margin; square the left corners that now sit flush with the
+     viewport edge so the rounded shape doesn't float away from the edge. */
   #jg-map-wrap.jg-desktop-wide .jg-filters {
     margin-bottom: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
   }
+
+  /* Push zoom controls below the floating filter bar.
+     Filter bar: top 10px + ~48px height + 10px gap = 68px. */
+  #jg-map-wrap.jg-desktop-wide .leaflet-control-zoom {
+    margin-top: 68px !important;
+  }
+
+  /* Map/satellite toggle follows zoom controls automatically (its own
+     margin-top: 6px is already set in the block below); no extra rule needed. */
 
   /* Map element expands to fill all available height */
   #jg-map-wrap.jg-desktop-wide .jg-map {
