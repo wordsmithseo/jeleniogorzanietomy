@@ -497,6 +497,15 @@ class JG_Map_Admin {
             array($this, 'render_achievements_editor_page')
         );
 
+        add_submenu_page(
+            'jg-map-dashboard',
+            'Wyzwania',
+            'Wyzwania',
+            'jg_map_manage',
+            'jg-map-challenges',
+            array($this, 'render_challenges_page')
+        );
+
         // --- Konfiguracja ---
         add_submenu_page(
             'jg-map-dashboard',
@@ -7236,6 +7245,161 @@ JAVASCRIPT;
                             status.style.color = '#dc2626';
                         }
                         status.style.display = 'inline';
+                    });
+                };
+            })();
+            </script>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render Challenges editor page
+     */
+    public function render_challenges_page() {
+        $nonce = wp_create_nonce('jg_map_admin_nonce');
+        ?>
+        <div class="wrap">
+            <?php $this->render_page_header('Wyzwania społecznościowe'); ?>
+            <p style="margin-top:0;color:#6b7280">Utwórz wyzwanie widoczne dla wszystkich użytkowników na mapie. Postęp jest liczony automatycznie na podstawie zatwierdzonych pinezek w danym przedziale czasowym.</p>
+
+            <div style="max-width:1100px;margin-top:12px">
+                <div class="jg-admin-table-wrap"><div class="jg-table-scroll">
+                <table class="jg-admin-table" id="jg-ch-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px">ID</th>
+                            <th style="width:200px">Tytuł</th>
+                            <th>Opis</th>
+                            <th style="width:100px">Typ pinezki</th>
+                            <th style="width:80px">Cel (szt.)</th>
+                            <th style="width:70px">XP</th>
+                            <th style="width:140px">Start</th>
+                            <th style="width:140px">Koniec</th>
+                            <th style="width:60px">Aktywne</th>
+                            <th style="width:80px">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jg-ch-tbody"></tbody>
+                </table>
+                </div></div>
+                <p style="margin-top:12px">
+                    <button class="button" id="jg-ch-add-row">+ Dodaj wyzwanie</button>
+                    <button class="button button-primary" id="jg-ch-save" style="margin-left:8px">Zapisz zmiany</button>
+                    <span id="jg-ch-status" style="margin-left:12px;color:#059669;font-weight:600;display:none">Zapisano!</span>
+                </p>
+            </div>
+
+            <script>
+            (function() {
+                var ajaxUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
+                var nonce   = '<?php echo $nonce; ?>';
+                var tbody   = document.getElementById('jg-ch-tbody');
+
+                var typeOptions =
+                    '<option value="">Wszystkie typy</option>' +
+                    '<option value="miejsce">Miejsce</option>' +
+                    '<option value="ciekawostka">Ciekawostka</option>' +
+                    '<option value="zgloszenie">Zgłoszenie</option>';
+
+                function esc(s) {
+                    var d = document.createElement('div');
+                    d.textContent = s || '';
+                    return d.innerHTML.replace(/"/g, '&quot;');
+                }
+
+                function toDatetimeLocal(dt) {
+                    if (!dt) return '';
+                    // MySQL datetime → datetime-local input (YYYY-MM-DDTHH:MM)
+                    return dt.replace(' ', 'T').substring(0, 16);
+                }
+
+                function renderRow(ch) {
+                    var tr = document.createElement('tr');
+                    tr.dataset.id = ch.id || '';
+                    tr.innerHTML =
+                        '<td>' + (ch.id || '<em>nowe</em>') + '<input type="hidden" class="ch-id" value="' + (ch.id || '') + '"></td>' +
+                        '<td><input type="text" value="' + esc(ch.title) + '" class="ch-title" style="width:100%"></td>' +
+                        '<td><input type="text" value="' + esc(ch.description) + '" class="ch-desc" style="width:100%"></td>' +
+                        '<td><select class="ch-type" style="width:100%">' + typeOptions + '</select></td>' +
+                        '<td><input type="number" value="' + (ch.target_count || 10) + '" class="ch-target" style="width:60px" min="1"></td>' +
+                        '<td><input type="number" value="' + (ch.xp_reward || 0) + '" class="ch-xp" style="width:55px" min="0"></td>' +
+                        '<td><input type="datetime-local" value="' + toDatetimeLocal(ch.start_date) + '" class="ch-start" style="width:130px"></td>' +
+                        '<td><input type="datetime-local" value="' + toDatetimeLocal(ch.end_date) + '" class="ch-end" style="width:130px"></td>' +
+                        '<td style="text-align:center"><input type="checkbox" class="ch-active"' + (ch.is_active == 1 ? ' checked' : '') + '></td>' +
+                        '<td><button class="button ch-delete" style="color:#dc2626">Usuń</button></td>';
+
+                    if (ch.point_type) tr.querySelector('.ch-type').value = ch.point_type;
+
+                    tr.querySelector('.ch-delete').onclick = function() {
+                        var id = tr.dataset.id;
+                        if (id) {
+                            if (!confirm('Usunąć wyzwanie?')) return;
+                            fetch(ajaxUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: new URLSearchParams({ action: 'jg_admin_delete_challenge', _ajax_nonce: nonce, challenge_id: id })
+                            }).then(function() { tr.remove(); });
+                        } else {
+                            tr.remove();
+                        }
+                    };
+
+                    tbody.appendChild(tr);
+                }
+
+                // Load existing
+                fetch(ajaxUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ action: 'jg_admin_get_challenges', _ajax_nonce: nonce })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success && Array.isArray(data.data)) {
+                        data.data.forEach(renderRow);
+                    }
+                });
+
+                document.getElementById('jg-ch-add-row').onclick = function() {
+                    var now  = new Date();
+                    var week = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                    var fmt  = function(d) { return d.toISOString().substring(0, 16); };
+                    renderRow({ id: '', title: '', description: '', point_type: '', target_count: 10, xp_reward: 50, start_date: fmt(now).replace('T', ' '), end_date: fmt(week).replace('T', ' '), is_active: 1 });
+                };
+
+                document.getElementById('jg-ch-save').onclick = function() {
+                    var rows = tbody.querySelectorAll('tr');
+                    var promises = [];
+                    rows.forEach(function(tr) {
+                        var data = {
+                            action:       'jg_admin_save_challenge',
+                            _ajax_nonce:  nonce,
+                            id:           tr.querySelector('.ch-id').value,
+                            title:        tr.querySelector('.ch-title').value,
+                            description:  tr.querySelector('.ch-desc').value,
+                            point_type:   tr.querySelector('.ch-type').value,
+                            target_count: tr.querySelector('.ch-target').value,
+                            xp_reward:    tr.querySelector('.ch-xp').value,
+                            start_date:   tr.querySelector('.ch-start').value.replace('T', ' ') + ':00',
+                            end_date:     tr.querySelector('.ch-end').value.replace('T', ' ') + ':00',
+                            is_active:    tr.querySelector('.ch-active').checked ? 1 : 0
+                        };
+                        promises.push(
+                            fetch(ajaxUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: new URLSearchParams(data)
+                            }).then(function(r) { return r.json(); })
+                        );
+                    });
+                    Promise.all(promises).then(function(results) {
+                        var status = document.getElementById('jg-ch-status');
+                        var ok = results.every(function(r) { return r.success; });
+                        status.textContent = ok ? 'Zapisano!' : 'Błąd zapisu!';
+                        status.style.color = ok ? '#059669' : '#dc2626';
+                        status.style.display = 'inline';
+                        if (ok) setTimeout(function() { location.reload(); }, 1000);
                     });
                 };
             })();
