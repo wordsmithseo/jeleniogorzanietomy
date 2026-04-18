@@ -10288,6 +10288,28 @@ footer.site-footer .site-branding {
   white-space: nowrap !important;
 }
 
+/* Challenge widget — completion state */
+#jg-challenge-widget-desktop.jg-cw-done {
+  background: #064e3b !important;
+  border: 2px solid #10b981 !important;
+  box-shadow: 0 0 12px rgba(16,185,129,0.4) !important;
+}
+#jg-challenge-widget-desktop.jg-cw-done .jg-cw-ctrl-fill {
+  stroke: #10b981 !important;
+}
+#jg-challenge-widget-desktop.jg-cw-done .jg-cw-ctrl-pct {
+  font-size: 18px !important;
+}
+#jg-challenge-widget-desktop.jg-cw-done .jg-cw-ctrl-label {
+  color: #6ee7b7 !important;
+}
+#jg-challenge-widget-mobile.jg-cw-done .jg-cw-m-progress-fill {
+  background: #10b981 !important;
+}
+#jg-challenge-widget-mobile.jg-cw-done .jg-cw-m-count {
+  color: #6ee7b7 !important;
+}
+
 /* Hide admin user-count indicator on mobile (replaced by challenge widget) */
 @media (max-width: 768px) {
   #jg-user-count-indicator {

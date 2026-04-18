@@ -15277,6 +15277,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         var progress = Math.min(ch.progress, ch.target_count);
         var pct      = ch.target_count > 0 ? Math.round((progress / ch.target_count) * 100) : 0;
+        var done     = pct >= 100;
 
         // Days remaining
         var msLeft   = new Date(ch.end_date.replace(' ', 'T')) - new Date();
@@ -15285,9 +15286,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         var radius = 28;
         var circ   = Math.round(2 * Math.PI * radius * 10) / 10;
-        var offset = ch.target_count > 0
+        var offset = done ? 0 : (ch.target_count > 0
           ? Math.round((1 - progress / ch.target_count) * circ * 10) / 10
-          : circ;
+          : circ);
         var titleHtml = $('<div>').text(ch.title).html();
         var descRaw   = ch.description ? ch.description.slice(0, 100) + (ch.description.length > 100 ? '…' : '') : '';
         var descHtml  = descRaw ? $('<div>').text(descRaw).html() : '';
@@ -15296,6 +15297,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         if (window.innerWidth > 768) {
           var desktopWidget = document.createElement('div');
           desktopWidget.id = 'jg-challenge-widget-desktop';
+          if (done) desktopWidget.classList.add('jg-cw-done');
           desktopWidget.innerHTML =
             '<div class="jg-cw-ctrl-inner">' +
               '<svg class="jg-cw-ctrl-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">' +
@@ -15303,14 +15305,14 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-fill"' +
                   ' stroke-dasharray="' + circ + '"' +
                   ' stroke-dashoffset="' + offset + '"/>' +
-                '<text x="32" y="28" class="jg-cw-ctrl-pct">' + pct + '%</text>' +
-                '<text x="32" y="40" class="jg-cw-ctrl-ratio">' + progress + '/' + ch.target_count + '</text>' +
+                '<text x="32" y="30" class="jg-cw-ctrl-pct">' + (done ? '✓' : pct + '%') + '</text>' +
+                '<text x="32" y="42" class="jg-cw-ctrl-ratio">' + (done ? 'Gotowe!' : progress + '/' + ch.target_count) + '</text>' +
               '</svg>' +
               '<div class="jg-cw-ctrl-body">' +
-                '<div class="jg-cw-ctrl-label">🏆 Wyzwanie</div>' +
+                '<div class="jg-cw-ctrl-label">' + (done ? '✅ Ukończono!' : '🏆 Wyzwanie') + '</div>' +
                 '<div class="jg-cw-ctrl-title">' + titleHtml + '</div>' +
                 (descHtml ? '<div class="jg-cw-ctrl-desc">' + descHtml + '</div>' : '') +
-                '<div class="jg-cw-ctrl-meta">' + timeStr + (ch.xp_reward ? ' · +' + ch.xp_reward + ' XP' : '') + '</div>' +
+                '<div class="jg-cw-ctrl-meta">' + (done ? 'Osiągnięcie odblokowane' : timeStr + (ch.xp_reward ? ' · +' + ch.xp_reward + ' XP' : '')) + '</div>' +
               '</div>' +
             '</div>';
           elMap.appendChild(desktopWidget);
@@ -15333,16 +15335,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         if (window.innerWidth <= 768) {
           var pill = document.createElement('div');
           pill.id = 'jg-challenge-widget-mobile';
+          if (done) pill.classList.add('jg-cw-done');
 
           pill.innerHTML =
             '<div class="jg-cw-m-bar">' +
-              '<span class="jg-cw-m-icon">🏆</span>' +
+              '<span class="jg-cw-m-icon">' + (done ? '✅' : '🏆') + '</span>' +
               '<div class="jg-cw-m-body">' +
                 '<div class="jg-cw-m-title">' + titleHtml + '</div>' +
                 (descHtml ? '<div class="jg-cw-m-desc">' + descHtml + '</div>' : '') +
                 '<div class="jg-cw-m-progress-track"><div class="jg-cw-m-progress-fill" style="width:' + pct + '%"></div></div>' +
               '</div>' +
-              '<div class="jg-cw-m-count">' + progress + '/' + ch.target_count + '</div>' +
+              '<div class="jg-cw-m-count">' + (done ? '✓' : progress + '/' + ch.target_count) + '</div>' +
             '</div>';
 
           elMap.appendChild(pill);
@@ -15363,25 +15366,34 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var ch     = res.data;
             var prog   = Math.min(ch.progress, ch.target_count);
             var pct    = ch.target_count > 0 ? Math.round((prog / ch.target_count) * 100) : 0;
+            var done   = pct >= 100;
             var radius = 28;
             var circ   = Math.round(2 * Math.PI * radius * 10) / 10;
-            var offset = ch.target_count > 0 ? Math.round((1 - prog / ch.target_count) * circ * 10) / 10 : circ;
+            var offset = done ? 0 : (ch.target_count > 0 ? Math.round((1 - prog / ch.target_count) * circ * 10) / 10 : circ);
 
             var dw = document.getElementById('jg-challenge-widget-desktop');
             if (dw) {
+              dw.classList.toggle('jg-cw-done', done);
               var pctEl   = dw.querySelector('.jg-cw-ctrl-pct');
               var ratioEl = dw.querySelector('.jg-cw-ctrl-ratio');
               var fillEl  = dw.querySelector('.jg-cw-ctrl-fill');
-              if (pctEl)   pctEl.textContent = pct + '%';
-              if (ratioEl) ratioEl.textContent = prog + '/' + ch.target_count;
+              var labelEl = dw.querySelector('.jg-cw-ctrl-label');
+              var metaEl  = dw.querySelector('.jg-cw-ctrl-meta');
+              if (pctEl)   pctEl.textContent   = done ? '✓'        : pct + '%';
+              if (ratioEl) ratioEl.textContent = done ? 'Gotowe!'  : prog + '/' + ch.target_count;
               if (fillEl)  fillEl.setAttribute('stroke-dashoffset', String(offset));
+              if (labelEl) labelEl.textContent = done ? '✅ Ukończono!' : '🏆 Wyzwanie';
+              if (metaEl && done) metaEl.textContent = 'Osiągnięcie odblokowane';
             }
 
             var mw = document.getElementById('jg-challenge-widget-mobile');
             if (mw) {
+              mw.classList.toggle('jg-cw-done', done);
+              var mIcon  = mw.querySelector('.jg-cw-m-icon');
               var mCount = mw.querySelector('.jg-cw-m-count');
               var mFill  = mw.querySelector('.jg-cw-m-progress-fill');
-              if (mCount) mCount.textContent = prog + '/' + ch.target_count;
+              if (mIcon)  mIcon.textContent  = done ? '✅' : '🏆';
+              if (mCount) mCount.textContent = done ? '✓' : prog + '/' + ch.target_count;
               if (mFill)  mFill.style.width  = pct + '%';
             }
           })

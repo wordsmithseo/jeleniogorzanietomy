@@ -59,8 +59,9 @@ class JG_Map_Challenges {
         add_action('wp_ajax_jg_admin_save_challenge',   array($this, 'ajax_save'));
         add_action('wp_ajax_jg_admin_delete_challenge', array($this, 'ajax_delete'));
 
-        // Auto-migrate DB schema when plugin updates add new columns
-        add_action('plugins_loaded', array($this, 'maybe_upgrade_db'));
+        // Run DB migration immediately — not via hook, since this constructor
+        // is itself called inside plugins_loaded (via init_components).
+        $this->maybe_upgrade_db();
     }
 
     public function maybe_upgrade_db() {
