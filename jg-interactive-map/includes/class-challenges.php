@@ -65,10 +65,23 @@ class JG_Map_Challenges {
     }
 
     public function maybe_upgrade_db() {
-        $current = get_option('jg_map_challenges_db_version', '0');
-        if (version_compare($current, '1.1', '<')) {
-            self::create_table();
-            update_option('jg_map_challenges_db_version', '1.1');
+        global $wpdb;
+        $table = $wpdb->prefix . 'jg_map_challenges';
+
+        // Check which columns actually exist — don't rely on dbDelta or version options
+        $columns = $wpdb->get_col("SHOW COLUMNS FROM `$table`", 0);
+        if (empty($columns)) return; // table not created yet; create_table() handles it
+
+        $to_add = array(
+            'ach_name'   => "varchar(255) DEFAULT NULL",
+            'ach_desc'   => "text DEFAULT NULL",
+            'ach_icon'   => "varchar(50) DEFAULT NULL",
+            'ach_rarity' => "varchar(20) DEFAULT 'rare'",
+        );
+        foreach ($to_add as $col => $def) {
+            if (!in_array($col, $columns, true)) {
+                $wpdb->query("ALTER TABLE `$table` ADD COLUMN `$col` $def");
+            }
         }
     }
 
@@ -430,7 +443,20 @@ class JG_Map_Challenges {
         $ach_id = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM `$ach_table` WHERE slug = %s", $slug
         ));
-        if (!$ach_id) return;
+
+        // Record missing — challenge was saved before upsert logic existed; create it now
+        if (!$ach_id) {
+            self::upsert_challenge_achievement(intval($challenge->id), array(
+                'ach_name'   => $challenge->ach_name ?? '',
+                'ach_desc'   => $challenge->ach_desc ?? '',
+                'ach_icon'   => $challenge->ach_icon ?? '🏆',
+                'ach_rarity' => $challenge->ach_rarity ?? 'rare',
+            ));
+            $ach_id = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM `$ach_table` WHERE slug = %s", $slug
+            ));
+            if (!$ach_id) return;
+        }
 
         $already = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM `$ua_table` WHERE user_id = %d AND achievement_id = %d",
