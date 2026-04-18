@@ -246,24 +246,29 @@ class JG_Map_Challenges {
 
             // ── Interaction conditions ────────────────────────────────────────
             case 'cast_vote':
+                // COUNT(DISTINCT point_id) prevents vote→un-vote→re-vote on the
+                // same point from inflating the counter.
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$votes` WHERE user_id=%d AND created_at BETWEEN %s AND %s",
+                    "SELECT COUNT(DISTINCT point_id) FROM `$votes` WHERE user_id=%d AND created_at BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'cast_report':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$rpts` WHERE user_id=%d AND created_at BETWEEN %s AND %s",
+                    "SELECT COUNT(DISTINCT point_id) FROM `$rpts` WHERE user_id=%d AND created_at BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'edit_approved':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$hist` WHERE user_id=%d AND status='approved' AND resolved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(DISTINCT point_id) FROM `$hist` WHERE user_id=%d AND status='approved' AND resolved_at BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'upload_photo_existing': {
+                // Only count places that CURRENTLY have photos — joining with the
+                // points table ensures upload→delete→re-upload stays at 1 and a
+                // final delete drops the count back to 0.
                 $like = '%' . $wpdb->esc_like('"images":') . '%';
                 return (int) $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
@@ -271,7 +276,8 @@ class JG_Map_Challenges {
                      WHERE h.user_id = %d
                      AND h.status = 'approved'
                      AND h.resolved_at BETWEEN %s AND %s
-                     AND h.new_values LIKE %s",
+                     AND h.new_values LIKE %s
+                     AND p.images IS NOT NULL AND p.images NOT IN ('', '[]')",
                     $user_id, $start, $end, $like
                 ));
             }
