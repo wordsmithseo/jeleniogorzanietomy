@@ -10310,6 +10310,69 @@ footer.site-footer .site-branding {
   color: #6ee7b7 !important;
 }
 
+/* Challenge widget — dismiss button (shown when done) */
+#jg-challenge-widget-desktop .jg-cw-close-btn,
+#jg-challenge-widget-mobile .jg-cw-close-btn {
+  position: absolute !important;
+  top: 5px !important;
+  right: 5px !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background: rgba(255,255,255,0.18) !important;
+  border: 1px solid rgba(255,255,255,0.35) !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  padding: 0 !important;
+  z-index: 10 !important;
+}
+#jg-challenge-widget-desktop .jg-cw-close-btn:hover,
+#jg-challenge-widget-mobile .jg-cw-close-btn:hover {
+  background: rgba(255,255,255,0.35) !important;
+}
+
+/* Admin achievement management */
+.jg-achievement-card { position: relative; }
+.jg-ach-admin-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid #ef4444;
+  background: #fff;
+  color: #ef4444;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.jg-achievement-card:hover .jg-ach-admin-remove {
+  opacity: 1;
+}
+.jg-ach-admin-remove:hover {
+  background: #ef4444;
+  color: #fff;
+}
+.jg-achievement-zeroed {
+  opacity: 0.5;
+  filter: grayscale(70%);
+}
+
 /* Hide admin user-count indicator on mobile (replaced by challenge widget) */
 @media (max-width: 768px) {
   #jg-user-count-indicator {

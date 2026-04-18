@@ -38,6 +38,25 @@ class JG_Map_Levels_Achievements {
         add_action('wp_ajax_jg_check_level_notifications', array($this, 'ajax_check_notifications'));
         add_action('wp_ajax_jg_dismiss_level_notification', array($this, 'ajax_dismiss_notification'));
         add_action('wp_ajax_jg_mark_notifications_seen', array($this, 'ajax_mark_notifications_seen'));
+
+        // AJAX handler - admin achievement management
+        add_action('wp_ajax_jg_admin_manage_user_achievement', array($this, 'ajax_admin_manage_user_achievement'));
+
+        $this->maybe_upgrade_achievements_db();
+    }
+
+    // =========================================================================
+    // DB MIGRATIONS
+    // =========================================================================
+
+    private function maybe_upgrade_achievements_db() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'jg_map_user_achievements';
+        $columns = $wpdb->get_col("SHOW COLUMNS FROM `$table`", 0);
+        if (empty($columns)) return;
+        if (!in_array('status', $columns, true)) {
+            $wpdb->query("ALTER TABLE `$table` ADD COLUMN `status` varchar(20) NOT NULL DEFAULT 'earned'");
+        }
     }
 
     // =========================================================================
@@ -711,7 +730,8 @@ class JG_Map_Levels_Achievements {
         }
 
         global $wpdb;
-        $table_achievements = $wpdb->prefix . 'jg_map_achievements';
+        $table_achievements      = $wpdb->prefix . 'jg_map_achievements';
+        $table_user_achievements = $wpdb->prefix . 'jg_map_user_achievements';
 
         // All available achievements
         $all_achievements = $wpdb->get_results(
@@ -719,28 +739,80 @@ class JG_Map_Levels_Achievements {
             ARRAY_A
         );
 
-        // User's earned achievements
-        $earned = self::get_user_achievements($user_id);
+        // User's non-blocked achievements (includes zeroed)
+        $ua_rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT achievement_id, earned_at, status FROM `$table_user_achievements`
+             WHERE user_id = %d AND status != 'blocked'",
+            $user_id
+        ), ARRAY_A);
+
         $earned_ids = array();
         $earned_map = array();
-        foreach ($earned as $e) {
-            $earned_ids[] = $e['id'];
-            $earned_map[$e['id']] = $e['earned_at'];
+        $zeroed_ids = array();
+        foreach ($ua_rows as $row) {
+            $aid = intval($row['achievement_id']);
+            $earned_ids[] = $aid;
+            $earned_map[$aid] = $row['earned_at'];
+            if ($row['status'] === 'zeroed') {
+                $zeroed_ids[] = $aid;
+            }
         }
 
         $result = array();
         foreach ($all_achievements as $ach) {
-            $earned = in_array($ach['id'], $earned_ids);
+            $aid       = intval($ach['id']);
+            $is_earned = in_array($aid, $earned_ids);
+            $is_zeroed = in_array($aid, $zeroed_ids);
             // Challenge achievements are surprises — hide them until earned
-            if (!$earned && $ach['condition_type'] === 'challenge_completed') {
+            if (!$is_earned && $ach['condition_type'] === 'challenge_completed') {
                 continue;
             }
-            $ach['earned']    = $earned;
-            $ach['earned_at'] = isset($earned_map[$ach['id']]) ? $earned_map[$ach['id']] : null;
+            $ach['earned']    = $is_earned && !$is_zeroed;
+            $ach['zeroed']    = $is_zeroed;
+            $ach['earned_at'] = isset($earned_map[$aid]) ? $earned_map[$aid] : null;
             $result[] = $ach;
         }
 
         wp_send_json_success($result);
+    }
+
+    /**
+     * Admin/mod: zero or block a user's achievement
+     */
+    public function ajax_admin_manage_user_achievement() {
+        if (!current_user_can('moderate_comments')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+        $user_id        = isset($_POST['user_id'])        ? intval($_POST['user_id'])          : 0;
+        $achievement_id = isset($_POST['achievement_id']) ? intval($_POST['achievement_id'])    : 0;
+        $action         = isset($_POST['manage_action'])  ? sanitize_key($_POST['manage_action']) : '';
+
+        if (!$user_id || !$achievement_id || !in_array($action, array('zero', 'block'), true)) {
+            wp_send_json_error('Nieprawidłowe parametry');
+            return;
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'jg_map_user_achievements';
+
+        $row = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, status FROM `$table` WHERE user_id = %d AND achievement_id = %d",
+            $user_id, $achievement_id
+        ));
+
+        if (!$row) {
+            wp_send_json_error('Osiągnięcie nie znalezione');
+            return;
+        }
+
+        if ($action === 'zero') {
+            $wpdb->update($table, array('status' => 'zeroed'), array('id' => intval($row->id)));
+            wp_send_json_success(array('new_status' => 'zeroed'));
+        } else {
+            $wpdb->delete($table, array('id' => intval($row->id)));
+            wp_send_json_success(array('new_status' => 'blocked'));
+        }
     }
 
     /**
