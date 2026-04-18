@@ -7450,6 +7450,35 @@ JAVASCRIPT;
                                 '<span class="jg-ch-hint">0 = brak nagrody XP (wyzwanie jest nadal widoczne)</span>' +
                             '</div>' +
 
+                            '<div class="jg-ch-field jg-ch-full" style="border-top:1px solid #e5e7eb;padding-top:14px;margin-top:2px">' +
+                                '<label style="font-size:13px;font-weight:700;color:#374151">🏅 Unikalne osiągnięcie za ukończenie (opcjonalne)</label>' +
+                                '<span class="jg-ch-hint" style="display:block;margin-top:3px">Użytkownicy, którzy ukończą wyzwanie, otrzymają poniższe osiągnięcie. Zostaw nazwę pustą, by nie przyznawać osiągnięcia.</span>' +
+                            '</div>' +
+
+                            '<div class="jg-ch-field">' +
+                                '<label>Nazwa osiągnięcia</label>' +
+                                '<input type="text" class="ch-ach-name" value="' + esc(ch.ach_name || '') + '" placeholder="np. Odkrywca Jeleniej Góry" maxlength="255">' +
+                            '</div>' +
+
+                            '<div class="jg-ch-field">' +
+                                '<label>Ikona (emoji) i rzadkość</label>' +
+                                '<div style="display:flex;gap:8px;align-items:center">' +
+                                    '<input type="text" class="ch-ach-icon" value="' + esc(ch.ach_icon || '🏆') + '" placeholder="🏆" style="max-width:64px;font-size:20px;text-align:center">' +
+                                    '<select class="ch-ach-rarity" style="flex:1">' +
+                                        '<option value="common"'    + ((!ch.ach_rarity||ch.ach_rarity==='common')?' selected':'')    + '>Zwykłe</option>' +
+                                        '<option value="uncommon"'  + (ch.ach_rarity==='uncommon'?' selected':'')  + '>Niepospolite</option>' +
+                                        '<option value="rare"'      + (ch.ach_rarity==='rare'?' selected':'')      + '>Rzadkie</option>' +
+                                        '<option value="epic"'      + (ch.ach_rarity==='epic'?' selected':'')      + '>Epickie</option>' +
+                                        '<option value="legendary"' + (ch.ach_rarity==='legendary'?' selected':'') + '>Legendarne</option>' +
+                                    '</select>' +
+                                '</div>' +
+                            '</div>' +
+
+                            '<div class="jg-ch-field jg-ch-full">' +
+                                '<label>Opis osiągnięcia</label>' +
+                                '<textarea class="ch-ach-desc" placeholder="np. Odkryłeś restauracje i kawiarnie Jeleniej Góry!" maxlength="500" style="min-height:48px">' + esc(ch.ach_desc || '') + '</textarea>' +
+                            '</div>' +
+
                             '<div class="jg-ch-field">' +
                                 '<label>Data i godzina startu <span style="color:#dc2626">*</span></label>' +
                                 '<input type="datetime-local" class="ch-start" value="' + toDatetimeLocal(ch.start_date || fmt(now).replace('T',' ')) + '">' +
@@ -7539,7 +7568,11 @@ JAVASCRIPT;
                             xp_reward:      parseInt(div.querySelector('.ch-xp').value, 10) || 0,
                             start_date:     startV.replace('T', ' ') + ':00',
                             end_date:       endV.replace('T', ' ')   + ':00',
-                            is_active:      div.querySelector('.ch-active').checked ? 1 : 0
+                            is_active:      div.querySelector('.ch-active').checked ? 1 : 0,
+                            ach_name:       div.querySelector('.ch-ach-name').value.trim(),
+                            ach_desc:       div.querySelector('.ch-ach-desc').value.trim(),
+                            ach_icon:       div.querySelector('.ch-ach-icon').value.trim() || '🏆',
+                            ach_rarity:     div.querySelector('.ch-ach-rarity').value
                         };
 
                         fetch(ajaxUrl, {

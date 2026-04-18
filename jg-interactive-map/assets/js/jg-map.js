@@ -15351,21 +15351,21 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
       // ── Live challenge progress refresh ──────────────────────────────────
       // Called after any relevant AJAX action succeeds.
-      var _challengeRefreshTimer = null;
       function refreshChallengeProgress() {
         if (!CFG.activeChallenge) return;
-        $.ajax({
-          url: CFG.ajaxUrl,
-          type: 'POST',
-          data: { action: 'jg_get_active_challenge', _ajax_nonce: CFG.nonce },
-          success: function(res) {
+        var fd = new FormData();
+        fd.append('action', 'jg_get_active_challenge');
+        fd.append('_ajax_nonce', CFG.nonce);
+        fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
             if (!res || !res.success || !res.data) return;
-            var ch       = res.data;
-            var prog     = Math.min(ch.progress, ch.target_count);
-            var pct      = ch.target_count > 0 ? Math.round((prog / ch.target_count) * 100) : 0;
-            var radius   = 28;
-            var circ     = Math.round(2 * Math.PI * radius * 10) / 10;
-            var offset   = ch.target_count > 0 ? Math.round((1 - prog / ch.target_count) * circ * 10) / 10 : circ;
+            var ch     = res.data;
+            var prog   = Math.min(ch.progress, ch.target_count);
+            var pct    = ch.target_count > 0 ? Math.round((prog / ch.target_count) * 100) : 0;
+            var radius = 28;
+            var circ   = Math.round(2 * Math.PI * radius * 10) / 10;
+            var offset = ch.target_count > 0 ? Math.round((1 - prog / ch.target_count) * circ * 10) / 10 : circ;
 
             var dw = document.getElementById('jg-challenge-widget-desktop');
             if (dw) {
@@ -15384,8 +15384,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (mCount) mCount.textContent = prog + '/' + ch.target_count;
               if (mFill)  mFill.style.width  = pct + '%';
             }
-          }
-        });
+          })
+          .catch(function() {});
       }
 
       // =========================================================
