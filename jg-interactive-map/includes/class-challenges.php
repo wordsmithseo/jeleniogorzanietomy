@@ -59,24 +59,44 @@ class JG_Map_Challenges {
         add_action('wp_ajax_jg_admin_save_challenge',   array($this, 'ajax_save'));
         add_action('wp_ajax_jg_admin_delete_challenge', array($this, 'ajax_delete'));
 
-        // Run DB migration immediately — not via hook, since this constructor
-        // is itself called inside plugins_loaded (via init_components).
+        // Run DB migration immediately (plugins_loaded has already fired when
+        // get_instance() is called via init_components, so we can't hook it).
         $this->maybe_upgrade_db();
+
+        // Auto-deactivate expired challenges on every init
+        add_action('init', array($this, 'auto_deactivate_expired'));
     }
 
+    /**
+     * Deactivate challenges whose end_date has passed. Called on 'init'.
+     */
+    public function auto_deactivate_expired() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'jg_map_challenges';
+        $wpdb->query($wpdb->prepare(
+            "UPDATE `$table` SET is_active = 0 WHERE is_active = 1 AND end_date < %s",
+            current_time('mysql')
+        ));
+    }
+
+    /**
+     * Add ach_* columns to the challenges table if they don't exist yet.
+     * Uses explicit ALTER TABLE — more reliable than dbDelta for existing tables.
+     * NOTE: TEXT columns cannot have DEFAULT values in MySQL < 8.0, so ach_desc
+     *       is defined without a DEFAULT clause.
+     */
     public function maybe_upgrade_db() {
         global $wpdb;
         $table = $wpdb->prefix . 'jg_map_challenges';
 
-        // Check which columns actually exist — don't rely on dbDelta or version options
         $columns = $wpdb->get_col("SHOW COLUMNS FROM `$table`", 0);
-        if (empty($columns)) return; // table not created yet; create_table() handles it
+        if (empty($columns)) return; // table doesn't exist yet; create_table() will handle it
 
         $to_add = array(
             'ach_name'   => "varchar(255) DEFAULT NULL",
-            'ach_desc'   => "text DEFAULT NULL",
             'ach_icon'   => "varchar(50) DEFAULT NULL",
-            'ach_rarity' => "varchar(20) DEFAULT 'rare'",
+            'ach_rarity' => "varchar(20) NOT NULL DEFAULT 'rare'",
+            'ach_desc'   => "text",   // no DEFAULT — TEXT can't have one in MySQL < 8.0
         );
         foreach ($to_add as $col => $def) {
             if (!in_array($col, $columns, true)) {
@@ -345,10 +365,16 @@ class JG_Map_Challenges {
             $ctype = 'any_point';
         }
 
-        $valid_rarities = array('common', 'uncommon', 'rare', 'epic', 'legendary');
-        $ach_rarity = isset($data['ach_rarity']) && in_array($data['ach_rarity'], $valid_rarities)
-            ? $data['ach_rarity'] : 'rare';
+        $is_active  = isset($data['is_active']) ? intval($data['is_active']) : 1;
+        $start_date = sanitize_text_field($data['start_date']);
+        $end_date   = sanitize_text_field($data['end_date']);
 
+        // Trying to activate a challenge with a past end_date — require new dates
+        if ($is_active === 1 && strtotime($end_date) <= strtotime(current_time('mysql'))) {
+            return 'Nie można aktywować wyzwania z datą zakończenia w przeszłości. Ustaw nowe ramy czasowe.';
+        }
+
+        // Base columns always available
         $row = array(
             'title'          => sanitize_text_field($data['title']),
             'description'    => sanitize_textarea_field($data['description'] ?? ''),
@@ -356,14 +382,21 @@ class JG_Map_Challenges {
             'category'       => !empty($data['category']) ? sanitize_text_field($data['category']) : null,
             'target_count'   => max(1, intval($data['target_count'])),
             'xp_reward'      => max(0, intval($data['xp_reward'])),
-            'start_date'     => sanitize_text_field($data['start_date']),
-            'end_date'       => sanitize_text_field($data['end_date']),
-            'is_active'      => isset($data['is_active']) ? intval($data['is_active']) : 1,
-            'ach_name'       => !empty($data['ach_name']) ? sanitize_text_field($data['ach_name']) : null,
-            'ach_desc'       => !empty($data['ach_desc']) ? sanitize_textarea_field($data['ach_desc']) : null,
-            'ach_icon'       => !empty($data['ach_icon']) ? sanitize_text_field($data['ach_icon']) : null,
-            'ach_rarity'     => $ach_rarity,
+            'start_date'     => $start_date,
+            'end_date'       => $end_date,
+            'is_active'      => $is_active,
         );
+
+        // Only include ach_* columns if they actually exist in the DB (migration guard)
+        $existing_cols = $wpdb->get_col("SHOW COLUMNS FROM `$table`", 0);
+        if (in_array('ach_name', $existing_cols, true)) {
+            $valid_rarities = array('common', 'uncommon', 'rare', 'epic', 'legendary');
+            $row['ach_name']   = !empty($data['ach_name']) ? sanitize_text_field($data['ach_name']) : null;
+            $row['ach_desc']   = !empty($data['ach_desc']) ? sanitize_textarea_field($data['ach_desc']) : null;
+            $row['ach_icon']   = !empty($data['ach_icon']) ? sanitize_text_field($data['ach_icon']) : null;
+            $row['ach_rarity'] = isset($data['ach_rarity']) && in_array($data['ach_rarity'], $valid_rarities)
+                ? $data['ach_rarity'] : 'rare';
+        }
 
         if (!empty($data['id'])) {
             $wpdb->update($table, $row, array('id' => intval($data['id'])));
@@ -371,6 +404,10 @@ class JG_Map_Challenges {
         } else {
             $wpdb->insert($table, $row);
             $id = $wpdb->insert_id;
+        }
+
+        if (!$id) {
+            return false;
         }
 
         self::upsert_challenge_achievement($id, $data);
@@ -381,9 +418,8 @@ class JG_Map_Challenges {
         global $wpdb;
         $table = $wpdb->prefix . 'jg_map_challenges';
         $wpdb->delete($table, array('id' => intval($id)));
-        // Remove the associated achievement definition (user records remain as history)
-        $ach_table = $wpdb->prefix . 'jg_map_achievements';
-        $wpdb->delete($ach_table, array('slug' => 'challenge_' . intval($id)));
+        // NOTE: the achievement definition in wp_jg_map_achievements is intentionally
+        // kept — users who already earned it must continue to see it in their profile.
     }
 
     /**
@@ -396,8 +432,20 @@ class JG_Map_Challenges {
         $slug      = 'challenge_' . intval($challenge_id);
 
         if (empty($data['ach_name'])) {
-            // Achievement removed — delete definition (keep user records)
-            $wpdb->delete($ach_table, array('slug' => $slug));
+            // Achievement removed from challenge — only delete the definition if
+            // no user has earned it yet; otherwise keep it so earners retain it.
+            $ach_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM `$ach_table` WHERE slug = %s", $slug
+            ));
+            if ($ach_id) {
+                $ua_table  = $wpdb->prefix . 'jg_map_user_achievements';
+                $has_earners = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM `$ua_table` WHERE achievement_id = %d", intval($ach_id)
+                ));
+                if (!$has_earners) {
+                    $wpdb->delete($ach_table, array('id' => intval($ach_id)));
+                }
+            }
             return;
         }
 
@@ -507,11 +555,15 @@ class JG_Map_Challenges {
         if (!current_user_can('jg_map_manage')) {
             wp_send_json_error('Access denied', 403);
         }
-        $id = self::save($_POST);
-        if ($id === false) {
+        $result = self::save($_POST);
+        if ($result === false) {
             wp_send_json_error('Brakuje wymaganych pól (tytuł, daty).');
         }
-        wp_send_json_success(array('id' => $id));
+        if (is_string($result)) {
+            // Validation error message returned by save()
+            wp_send_json_error($result);
+        }
+        wp_send_json_success(array('id' => $result));
     }
 
     public function ajax_delete() {
