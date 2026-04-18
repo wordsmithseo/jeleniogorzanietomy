@@ -5375,6 +5375,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
               // Update level/XP bar immediately if server returned XP data
               if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
+              refreshChallengeProgress();
 
               // For admin/mod: point is published immediately — shoot confetti at pin
               var _addedLat = j.data && j.data.lat;
@@ -7956,6 +7957,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 msgEl.textContent = j.data.pending
                   ? 'Przesłano do moderacji.'
                   : 'Zapisano!';
+                refreshChallengeProgress();
                 // Refresh offerings section in the view modal
                 var offSec = qs('#jg-offerings-section', modalView);
                 if (offSec) loadOfferingsSection(p, offSec);
@@ -8223,6 +8225,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 if (resp && resp.success) {
                   photoMsg.textContent = 'Zdjęcie dodane.';
                   photoMsg.style.color = '#15803d';
+                  refreshChallengeProgress();
                   var photosContainer = qs('#jg-menu-ed-photos', modalEdit);
                   var addLabel = qs('.jg-menu-ed-photo-add', photosContainer);
                   var newDiv = document.createElement('div');
@@ -8278,6 +8281,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (resp && resp.success) {
                 msgEl.textContent = 'Menu zapisano.';
                 msgEl.style.color = '#15803d';
+                refreshChallengeProgress();
                 // Live-refresh the menu section in the place modal (still open behind)
                 var menuSec = qs('#jg-menu-section', modalView);
                 if (menuSec) loadMenuSection(p, menuSec);
@@ -8782,6 +8786,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
             msg.textContent = 'Dziękujemy!';
             msg.style.color = '#15803d';
+            refreshChallengeProgress();
             f.reset();
 
             // Update marker appearance immediately if admin
@@ -9866,6 +9871,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
             msg.textContent = 'Zaktualizowano.';
             msg.style.color = '#15803d';
+            refreshChallengeProgress();
             // Clear any saved draft state on successful submission
             try { sessionStorage.removeItem('jg_edit_modal_state'); } catch(e) {}
             // Invalidate tag cache so updated tags appear in suggestions immediately
@@ -12189,6 +12195,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                     var starColors = ['#f59e0b', '#fbbf24', '#fcd34d', '#fde68a', '#fffbeb'];
                     if (pressedBtn) shootButtonConfetti(pressedBtn, starColors, 25);
                   }
+                  refreshChallengeProgress();
                 })
                 .catch(function(e) {
                   showAlert((e && e.message) || 'Błąd');
@@ -15050,6 +15057,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
                 // Update level/XP bar immediately if server returned XP data
                 if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
+                refreshChallengeProgress();
 
                 // For admin/mod: point is published immediately — shoot confetti at pin
                 var _fabLat = j.data && j.data.lat;
@@ -15379,21 +15387,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }
         });
       }
-
-      $(document).ajaxSuccess(function(e, xhr, settings) {
-        try {
-          var data = settings.data || '';
-          if (typeof data !== 'string') return;
-          var m = data.match(/(?:^|&)action=([^&]+)/);
-          if (!m) return;
-          var action = decodeURIComponent(m[1]);
-          var tracked = ['jg_submit_point', 'jg_update_point', 'jg_vote',
-                         'jg_submit_report', 'jg_upload_menu_photo'];
-          if (tracked.indexOf(action) === -1) return;
-          clearTimeout(_challengeRefreshTimer);
-          _challengeRefreshTimer = setTimeout(refreshChallengeProgress, 600);
-        } catch (ignored) {}
-      });
 
       // =========================================================
       // REAL-TIME LEVEL / XP BAR UPDATE
