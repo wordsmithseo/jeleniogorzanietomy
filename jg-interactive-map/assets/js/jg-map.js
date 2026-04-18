@@ -7533,6 +7533,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             'legendary': '#f59e0b'
           };
 
+          var isAdminView = CFG.isAdmin && +userId !== +CFG.currentUserId;
+
           var html = '<header style="background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);padding:20px;border-radius:12px 12px 0 0">' +
             '<h3 style="margin:0;color:#fff;font-size:20px">🏆 Osiągnięcia</h3>' +
             '<button class="jg-close" id="ach-modal-close" style="color:#fff;opacity:0.9">&times;</button>' +
@@ -7544,17 +7546,26 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var a = achievements[i];
             var color = rarityColors[a.rarity] || rarityColors.common;
             var label = rarityLabels[a.rarity] || 'Zwykłe';
-            var earned = a.earned;
+            var earned = !!a.earned;
+            var zeroed = !!a.zeroed;
             var earnedDate = a.earned_at ? new Date(a.earned_at).toLocaleDateString('pl-PL') : '';
+            var showLocked = !earned;
 
-            html += '<div class="jg-achievement-card' + (earned ? '' : ' jg-achievement-locked') + '" style="border-color:' + color + '">' +
+            html += '<div class="jg-achievement-card' +
+              (showLocked ? ' jg-achievement-locked' : '') +
+              (zeroed ? ' jg-achievement-zeroed' : '') +
+              '" style="border-color:' + color + '"' +
+              ' data-ach-id="' + parseInt(a.id) + '"' +
+              ' data-zeroed="' + (zeroed ? '1' : '0') + '"' +
+              ' data-challenge-ach="' + (a.condition_type === 'challenge_completed' ? '1' : '0') + '">' +
+              (isAdminView ? '<button class="jg-ach-admin-remove" title="Usuń osiągnięcie">\xd7</button>' : '') +
               '<div class="jg-achievement-card-icon" style="box-shadow:' + (earned ? '0 0 12px ' + color : 'none') + ';border-color:' + color + '">' +
               '<span style="font-size:28px">' + (earned ? esc(a.icon) : '🔒') + '</span></div>' +
               '<div class="jg-achievement-card-info">' +
               '<div class="jg-achievement-card-name">' + esc(a.name) + '</div>' +
               '<div class="jg-achievement-card-desc">' + esc(a.description) + '</div>' +
               '<div class="jg-achievement-card-rarity" style="color:' + color + '">' + label + '</div>' +
-              (earnedDate ? '<div class="jg-achievement-card-date">Zdobyto: ' + earnedDate + '</div>' : '') +
+              (earnedDate && !zeroed ? '<div class="jg-achievement-card-date">Zdobyto: ' + earnedDate + '</div>' : '') +
               '</div></div>';
           }
 
@@ -7564,6 +7575,43 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           qs('#ach-modal-close', modalReportsList).onclick = function() {
             close(modalReportsList);
           };
+
+          // Admin X button handlers
+          if (isAdminView) {
+            var removeBtns = modalReportsList.querySelectorAll('.jg-ach-admin-remove');
+            for (var j = 0; j < removeBtns.length; j++) {
+              (function(btn) {
+                btn.onclick = function(e) {
+                  e.stopPropagation();
+                  var card        = btn.parentNode;
+                  var achId       = parseInt(card.getAttribute('data-ach-id'));
+                  var isZeroed    = card.getAttribute('data-zeroed') === '1';
+                  var isChallengeAch = card.getAttribute('data-challenge-ach') === '1';
+                  var action      = (isChallengeAch || isZeroed) ? 'block' : 'zero';
+
+                  api('jg_admin_manage_user_achievement', {
+                    user_id: userId,
+                    achievement_id: achId,
+                    manage_action: action
+                  }).then(function() {
+                    if (action === 'block') {
+                      card.parentNode.removeChild(card);
+                    } else {
+                      // Zeroed: show as locked
+                      card.classList.add('jg-achievement-locked', 'jg-achievement-zeroed');
+                      card.setAttribute('data-zeroed', '1');
+                      var iconSpan = card.querySelector('.jg-achievement-card-icon span');
+                      if (iconSpan) iconSpan.textContent = '🔒';
+                      var iconBox = card.querySelector('.jg-achievement-card-icon');
+                      if (iconBox) iconBox.style.boxShadow = 'none';
+                      var dateEl = card.querySelector('.jg-achievement-card-date');
+                      if (dateEl) dateEl.parentNode.removeChild(dateEl);
+                    }
+                  }).catch(function() {});
+                };
+              })(removeBtns[j]);
+            }
+          }
         });
       }
 
@@ -15279,6 +15327,11 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var pct      = ch.target_count > 0 ? Math.round((progress / ch.target_count) * 100) : 0;
         var done     = pct >= 100;
 
+        // If already dismissed, don't render at all
+        if (done) {
+          try { if (localStorage.getItem('jg_ch_dismissed_' + ch.id)) return; } catch(e) {}
+        }
+
         // Days remaining
         var msLeft   = new Date(ch.end_date.replace(' ', 'T')) - new Date();
         var daysLeft = Math.max(0, Math.ceil(msLeft / 86400000));
@@ -15299,6 +15352,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           desktopWidget.id = 'jg-challenge-widget-desktop';
           if (done) desktopWidget.classList.add('jg-cw-done');
           desktopWidget.innerHTML =
+            (done ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '') +
             '<div class="jg-cw-ctrl-inner">' +
               '<svg class="jg-cw-ctrl-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">' +
                 '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-track"/>' +
@@ -15316,6 +15370,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '</div>' +
             '</div>';
           elMap.appendChild(desktopWidget);
+
+          if (done) {
+            var _dwCloseBtn = desktopWidget.querySelector('.jg-cw-close-btn');
+            if (_dwCloseBtn) {
+              _dwCloseBtn.onclick = function() {
+                try { localStorage.setItem('jg_ch_dismissed_' + ch.id, '1'); } catch(e) {}
+                desktopWidget.style.setProperty('display', 'none', 'important');
+              };
+            }
+          }
 
           // Position next to zoom controls (measured after render to get real coordinates)
           setTimeout(function() {
@@ -15338,6 +15402,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           if (done) pill.classList.add('jg-cw-done');
 
           pill.innerHTML =
+            (done ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '') +
             '<div class="jg-cw-m-bar">' +
               '<span class="jg-cw-m-icon">' + (done ? '✅' : '🏆') + '</span>' +
               '<div class="jg-cw-m-body">' +
@@ -15349,6 +15414,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '</div>';
 
           elMap.appendChild(pill);
+
+          if (done) {
+            var _mCloseBtn = pill.querySelector('.jg-cw-close-btn');
+            if (_mCloseBtn) {
+              _mCloseBtn.onclick = function() {
+                try { localStorage.setItem('jg_ch_dismissed_' + ch.id, '1'); } catch(e) {}
+                pill.style.setProperty('display', 'none', 'important');
+              };
+            }
+          }
         }
 
         // If challenge is already completed on page load, mark as seen silently
@@ -15458,6 +15533,33 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (mIcon)  mIcon.textContent  = done ? '✅' : '🏆';
               if (mCount) mCount.textContent = done ? '✓' : prog + '/' + ch.target_count;
               if (mFill)  mFill.style.width  = pct + '%';
+            }
+
+            // Inject dismiss button when challenge just completed (dynamic transition)
+            if (done) {
+              var _dismissFn = function(widgetEl) {
+                try { localStorage.setItem('jg_ch_dismissed_' + ch.id, '1'); } catch(e) {}
+                var _dw = document.getElementById('jg-challenge-widget-desktop');
+                var _mw = document.getElementById('jg-challenge-widget-mobile');
+                if (_dw) _dw.style.setProperty('display', 'none', 'important');
+                if (_mw) _mw.style.setProperty('display', 'none', 'important');
+              };
+              if (dw && !dw.querySelector('.jg-cw-close-btn')) {
+                var _dwCb = document.createElement('button');
+                _dwCb.className = 'jg-cw-close-btn';
+                _dwCb.title = 'Zamknij';
+                _dwCb.textContent = '\xd7';
+                _dwCb.onclick = _dismissFn;
+                dw.insertBefore(_dwCb, dw.firstChild);
+              }
+              if (mw && !mw.querySelector('.jg-cw-close-btn')) {
+                var _mwCb = document.createElement('button');
+                _mwCb.className = 'jg-cw-close-btn';
+                _mwCb.title = 'Zamknij';
+                _mwCb.textContent = '\xd7';
+                _mwCb.onclick = _dismissFn;
+                mw.insertBefore(_mwCb, mw.firstChild);
+              }
             }
           })
           .catch(function() {});
