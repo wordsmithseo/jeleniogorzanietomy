@@ -730,7 +730,12 @@ class JG_Map_Levels_Achievements {
 
         $result = array();
         foreach ($all_achievements as $ach) {
-            $ach['earned'] = in_array($ach['id'], $earned_ids);
+            $earned = in_array($ach['id'], $earned_ids);
+            // Challenge achievements are surprises — hide them until earned
+            if (!$earned && $ach['condition_type'] === 'challenge_completed') {
+                continue;
+            }
+            $ach['earned']    = $earned;
             $ach['earned_at'] = isset($earned_map[$ach['id']]) ? $earned_map[$ach['id']] : null;
             $result[] = $ach;
         }

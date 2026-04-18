@@ -15350,7 +15350,59 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
           elMap.appendChild(pill);
         }
+
+        // If challenge is already completed on page load, mark as seen silently
+        // so the modal only fires the first time the user actually finishes it.
+        if (done) {
+          try { localStorage.setItem('jg_ch_done_' + ch.id, '1'); } catch(e) {}
+        }
       }());
+
+      // ── Challenge completion modal ────────────────────────────────────────
+      function showChallengeCompleteModal(ch) {
+        var modalAlert = document.getElementById('jg-modal-alert');
+        if (!modalAlert) return;
+
+        var rarityColors = { common:'#d1d5db', uncommon:'#10b981', rare:'#3b82f6', epic:'#8b5cf6', legendary:'#f59e0b' };
+        var rarityLabels = { common:'Zwykłe', uncommon:'Niepospolite', rare:'Rzadkie', epic:'Epickie', legendary:'Legendarne' };
+
+        var achHtml = '';
+        if (ch.ach_name) {
+          var achColor = rarityColors[ch.ach_rarity] || '#f59e0b';
+          var achLabel = rarityLabels[ch.ach_rarity] || '';
+          achHtml =
+            '<div style="margin:16px 0 4px;padding:14px 12px;background:rgba(0,0,0,0.06);border-radius:10px;border:1.5px solid ' + achColor + ';box-shadow:0 0 14px ' + achColor + '55">' +
+              '<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:' + achColor + ';margin-bottom:10px;text-transform:uppercase">🏅 Odblokowane osiągnięcie</div>' +
+              '<div style="display:flex;align-items:center;gap:12px">' +
+                '<div style="width:52px;height:52px;border-radius:50%;border:2.5px solid ' + achColor + ';display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 0 12px ' + achColor + '">' + esc(ch.ach_icon || '🏆') + '</div>' +
+                '<div style="text-align:left">' +
+                  '<div style="font-size:15px;font-weight:800;color:#111827">' + esc(ch.ach_name) + '</div>' +
+                  (achLabel ? '<div style="font-size:11px;font-weight:700;color:' + achColor + ';text-transform:uppercase;letter-spacing:.5px;margin-top:2px">' + achLabel + '</div>' : '') +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        }
+
+        var content = modalAlert.querySelector('.jg-modal-message-content');
+        var buttons  = modalAlert.querySelector('.jg-modal-message-buttons');
+        content.innerHTML =
+          '<div style="text-align:center;padding:8px 0">' +
+            '<div style="font-size:52px;margin-bottom:6px">🎉</div>' +
+            '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#6b7280;text-transform:uppercase;margin-bottom:6px">Gratulacje!</div>' +
+            '<div style="font-size:20px;font-weight:800;color:#111827;margin-bottom:8px">Wyzwanie ukończone!</div>' +
+            '<div style="font-size:13px;color:#6b7280">' + esc(ch.title) + '</div>' +
+            (ch.xp_reward ? '<div style="font-size:14px;color:#d97706;font-weight:700;margin-top:6px">+' + ch.xp_reward + ' XP</div>' : '') +
+            achHtml +
+          '</div>';
+        buttons.innerHTML = '<button id="jg-ch-done-ok" style="padding:10px 32px;background:#10b981;border:none;color:#fff;border-radius:8px;font-weight:700;cursor:pointer;font-size:15px">Super! 🎉</button>';
+
+        modalAlert.style.display = 'flex';
+        lockBodyScroll();
+
+        function closeIt() { modalAlert.style.display = 'none'; unlockBodyScroll(); }
+        document.getElementById('jg-ch-done-ok').onclick = closeIt;
+        modalAlert.onclick = function(e) { if (e.target === modalAlert) closeIt(); };
+      }
 
       // ── Live challenge progress refresh ──────────────────────────────────
       // Called after any relevant AJAX action succeeds.
@@ -15384,6 +15436,17 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (fillEl)  fillEl.setAttribute('stroke-dashoffset', String(offset));
               if (labelEl) labelEl.textContent = done ? '✅ Ukończono!' : '🏆 Wyzwanie';
               if (metaEl && done) metaEl.textContent = 'Osiągnięcie odblokowane';
+            }
+
+            // Show completion modal once (first time this session the goal is reached)
+            if (done) {
+              var _key = 'jg_ch_done_' + ch.id;
+              try {
+                if (!localStorage.getItem(_key)) {
+                  localStorage.setItem(_key, '1');
+                  showChallengeCompleteModal(ch);
+                }
+              } catch(e) {}
             }
 
             var mw = document.getElementById('jg-challenge-widget-mobile');
