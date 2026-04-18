@@ -58,6 +58,17 @@ class JG_Map_Challenges {
         add_action('wp_ajax_jg_admin_get_challenges',   array($this, 'ajax_get_all'));
         add_action('wp_ajax_jg_admin_save_challenge',   array($this, 'ajax_save'));
         add_action('wp_ajax_jg_admin_delete_challenge', array($this, 'ajax_delete'));
+
+        // Auto-migrate DB schema when plugin updates add new columns
+        add_action('plugins_loaded', array($this, 'maybe_upgrade_db'));
+    }
+
+    public function maybe_upgrade_db() {
+        $current = get_option('jg_map_challenges_db_version', '0');
+        if (version_compare($current, '1.1', '<')) {
+            self::create_table();
+            update_option('jg_map_challenges_db_version', '1.1');
+        }
     }
 
     // =========================================================================
@@ -117,7 +128,7 @@ class JG_Map_Challenges {
 
         $progress = self::calculate_progress($challenge, $user_id);
 
-        if ($progress >= intval($challenge->target_count)) {
+        if ($progress >= intval($challenge->target_count) && !empty($challenge->ach_name ?? '')) {
             self::maybe_award_challenge_achievement($challenge, $user_id);
         }
 
@@ -132,9 +143,9 @@ class JG_Map_Challenges {
             'xp_reward'      => (int) $challenge->xp_reward,
             'progress'       => $progress,
             'end_date'       => $challenge->end_date,
-            'ach_name'       => $challenge->ach_name ?: null,
-            'ach_icon'       => $challenge->ach_icon ?: null,
-            'ach_rarity'     => in_array($challenge->ach_rarity, $valid_rarities) ? $challenge->ach_rarity : 'rare',
+            'ach_name'       => ($challenge->ach_name ?? '') ?: null,
+            'ach_icon'       => ($challenge->ach_icon ?? '') ?: null,
+            'ach_rarity'     => in_array($challenge->ach_rarity ?? '', $valid_rarities) ? $challenge->ach_rarity : 'rare',
         );
     }
 
@@ -407,7 +418,7 @@ class JG_Map_Challenges {
      * Called when progress reaches the target.
      */
     private static function maybe_award_challenge_achievement($challenge, $user_id) {
-        if (empty($challenge->ach_name)) return;
+        if (empty($challenge->ach_name ?? '')) return;
 
         global $wpdb;
         $ach_table   = $wpdb->prefix . 'jg_map_achievements';
@@ -438,10 +449,10 @@ class JG_Map_Challenges {
                 'type'    => 'achievement',
                 'data'    => wp_json_encode(array(
                     'achievement_id' => $ach_id,
-                    'name'           => $challenge->ach_name,
-                    'description'    => $challenge->ach_desc ?: '',
-                    'icon'           => $challenge->ach_icon ?: '🏆',
-                    'rarity'         => $challenge->ach_rarity ?: 'rare',
+                    'name'           => $challenge->ach_name ?? '',
+                    'description'    => ($challenge->ach_desc ?? '') ?: '',
+                    'icon'           => ($challenge->ach_icon ?? '') ?: '🏆',
+                    'rarity'         => ($challenge->ach_rarity ?? '') ?: 'rare',
                 )),
             ));
         }
