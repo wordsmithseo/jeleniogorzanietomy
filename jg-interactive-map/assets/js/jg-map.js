@@ -7533,7 +7533,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             'legendary': '#f59e0b'
           };
 
-          var isAdminView = CFG.isAdmin && +userId !== +CFG.currentUserId;
+          var isAdminView = CFG.isAdmin;
 
           var html = '<header style="background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);padding:20px;border-radius:12px 12px 0 0">' +
             '<h3 style="margin:0;color:#fff;font-size:20px">🏆 Osiągnięcia</h3>' +
@@ -15316,120 +15316,214 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       }
 
       // =========================================================
-      // CHALLENGE WIDGETS
+      // CHALLENGE WIDGETS  (up to 4 simultaneous)
       // =========================================================
 
-      (function() {
-        var ch = CFG.activeChallenge;
-        if (!ch) return;
+      var _mobileSelChId  = null;  // ID of challenge currently shown in mobile pill
+      var _mobileChList   = [];    // non-dismissed active challenges for mobile
 
-        var progress = Math.min(ch.progress, ch.target_count);
-        var pct      = ch.target_count > 0 ? Math.round((progress / ch.target_count) * 100) : 0;
-        var done     = pct >= 100;
+      // Rebuild mobile pill from current _mobileChList / _mobileSelChId.
+      // Safe to call repeatedly; replaces innerHTML each time.
+      function _buildMobilePill() {
+        var mw = document.getElementById('jg-challenge-widget-mobile');
+        if (!mw || !_mobileChList.length) return;
 
-        // If already dismissed, don't render at all
-        if (done) {
-          try { if (localStorage.getItem('jg_ch_dismissed_' + ch.id)) return; } catch(e) {}
+        // Validate selection
+        var selIdx = -1;
+        for (var _i = 0; _i < _mobileChList.length; _i++) {
+          if (_mobileChList[_i].id === _mobileSelChId) { selIdx = _i; break; }
+        }
+        if (selIdx === -1) { selIdx = 0; _mobileSelChId = _mobileChList[0].id; }
+
+        var selCh   = _mobileChList[selIdx];
+        var others  = _mobileChList.filter(function(c) { return c.id !== selCh.id; });
+        var radius  = 28;
+        var circ    = Math.round(2 * Math.PI * radius * 10) / 10;
+
+        var sp   = Math.min(selCh.progress, selCh.target_count);
+        var spct = selCh.target_count > 0 ? Math.round((sp / selCh.target_count) * 100) : 0;
+        var sd   = spct >= 100;
+
+        var selTitleHtml = $('<div>').text(selCh.title).html();
+        var selDescRaw   = selCh.description ? selCh.description.slice(0, 60) + (selCh.description.length > 60 ? '\u2026' : '') : '';
+        var selDescHtml  = selDescRaw ? $('<div>').text(selDescRaw).html() : '';
+
+        // Dropdown items (other challenges)
+        var dropHtml = '';
+        if (others.length) {
+          dropHtml = '<div class="jg-cw-m-dropdown"><div class="jg-cw-m-dropdown-title">Inne wyzwania</div>';
+          for (var _oi = 0; _oi < others.length; _oi++) {
+            var _oc = others[_oi];
+            var _op = Math.min(_oc.progress, _oc.target_count);
+            var _opct = _oc.target_count > 0 ? Math.round((_op / _oc.target_count) * 100) : 0;
+            var _od = _opct >= 100;
+            dropHtml += '<div class="jg-cw-m-dropdown-item' + (_od ? ' jg-cw-di-done' : '') + '" data-ch-id="' + _oc.id + '">' +
+              '<span class="jg-cw-m-di-icon">' + (_od ? '\u2705' : '\ud83c\udfc6') + '</span>' +
+              '<div class="jg-cw-m-di-body">' +
+                '<div class="jg-cw-m-di-title">' + $('<div>').text(_oc.title).html() + '</div>' +
+                '<div class="jg-cw-m-di-progress' + (_od ? ' jg-cw-done-text' : '') + '">' + (_od ? '\u2713 Ukończono' : _op + '/' + _oc.target_count) + '</div>' +
+              '</div></div>';
+          }
+          dropHtml += '</div>';
         }
 
-        // Days remaining
-        var msLeft   = new Date(ch.end_date.replace(' ', 'T')) - new Date();
-        var daysLeft = Math.max(0, Math.ceil(msLeft / 86400000));
-        var timeStr  = daysLeft > 1 ? 'jeszcze ' + daysLeft + ' dni' : (daysLeft === 1 ? 'ostatni dzień!' : 'kończy się dzisiaj!');
+        mw.className = sd ? 'jg-cw-done' : '';
+        mw.innerHTML =
+          dropHtml +
+          '<div class="jg-cw-m-bar">' +
+            '<span class="jg-cw-m-icon">' + (sd ? '\u2705' : '\ud83c\udfc6') + '</span>' +
+            '<div class="jg-cw-m-body">' +
+              '<div class="jg-cw-m-title">' + selTitleHtml + '</div>' +
+              (selDescHtml ? '<div class="jg-cw-m-desc">' + selDescHtml + '</div>' : '') +
+              '<div class="jg-cw-m-progress-track"><div class="jg-cw-m-progress-fill" style="width:' + spct + '%"></div></div>' +
+            '</div>' +
+            '<div class="jg-cw-m-count">' + (sd ? '\u2713' : sp + '/' + selCh.target_count) + '</div>' +
+            (others.length ? '<button class="jg-cw-m-expand-btn" title="Inne wyzwania">&#9650;</button>' : '') +
+          '</div>' +
+          (sd ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '');
+
+        // Bind expand button
+        var expBtn  = mw.querySelector('.jg-cw-m-expand-btn');
+        var dropdown = mw.querySelector('.jg-cw-m-dropdown');
+        if (expBtn && dropdown) {
+          expBtn.onclick = function() {
+            var open = dropdown.classList.contains('jg-cw-open');
+            dropdown.classList.toggle('jg-cw-open', !open);
+            expBtn.classList.toggle('jg-cw-open', !open);
+          };
+        }
+
+        // Bind dropdown item clicks
+        var items = mw.querySelectorAll('.jg-cw-m-dropdown-item');
+        for (var _ii = 0; _ii < items.length; _ii++) {
+          (function(item) {
+            item.onclick = function() {
+              _mobileSelChId = parseInt(item.getAttribute('data-ch-id'), 10);
+              _buildMobilePill();
+            };
+          })(items[_ii]);
+        }
+
+        // Bind dismiss button (shown when done)
+        var closeBtn = mw.querySelector('.jg-cw-close-btn');
+        if (closeBtn) {
+          (function(dismissId) {
+            closeBtn.onclick = function() {
+              try { localStorage.setItem('jg_ch_dismissed_' + dismissId, '1'); } catch(e) {}
+              _mobileChList = _mobileChList.filter(function(c) { return c.id !== dismissId; });
+              if (_mobileChList.length) {
+                _mobileSelChId = _mobileChList[0].id;
+                _buildMobilePill();
+              } else {
+                mw.style.setProperty('display', 'none', 'important');
+              }
+            };
+          })(selCh.id);
+        }
+
+        // Silently mark done on page load (suppress completion modal)
+        if (sd) { try { localStorage.setItem('jg_ch_done_' + selCh.id, '1'); } catch(e) {} }
+      }
+
+      (function() {
+        var challenges = CFG.activeChallenges;
+        if (!challenges || !challenges.length) return;
 
         var radius = 28;
         var circ   = Math.round(2 * Math.PI * radius * 10) / 10;
-        var offset = done ? 0 : (ch.target_count > 0
-          ? Math.round((1 - progress / ch.target_count) * circ * 10) / 10
-          : circ);
-        var titleHtml = $('<div>').text(ch.title).html();
-        var descRaw   = ch.description ? ch.description.slice(0, 100) + (ch.description.length > 100 ? '…' : '') : '';
-        var descHtml  = descRaw ? $('<div>').text(descRaw).html() : '';
 
-        // ── DESKTOP: absolute div to the RIGHT of zoom controls ──
+        function _isDismissed(id) {
+          try { return !!localStorage.getItem('jg_ch_dismissed_' + id); } catch(e) { return false; }
+        }
+        function _chPct(ch) {
+          var p = Math.min(ch.progress, ch.target_count);
+          var pct = ch.target_count > 0 ? Math.round((p / ch.target_count) * 100) : 0;
+          return { prog: p, pct: pct, done: pct >= 100 };
+        }
+
+        // ── DESKTOP: one widget per challenge, stacked vertically ──────────
         if (window.innerWidth > 768) {
-          var desktopWidget = document.createElement('div');
-          desktopWidget.id = 'jg-challenge-widget-desktop';
-          if (done) desktopWidget.classList.add('jg-cw-done');
-          desktopWidget.innerHTML =
-            (done ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '') +
-            '<div class="jg-cw-ctrl-inner">' +
-              '<svg class="jg-cw-ctrl-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">' +
-                '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-track"/>' +
-                '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-fill"' +
-                  ' stroke-dasharray="' + circ + '"' +
-                  ' stroke-dashoffset="' + offset + '"/>' +
-                '<text x="32" y="30" class="jg-cw-ctrl-pct">' + (done ? '✓' : pct + '%') + '</text>' +
-                '<text x="32" y="42" class="jg-cw-ctrl-ratio">' + (done ? 'Gotowe!' : progress + '/' + ch.target_count) + '</text>' +
-              '</svg>' +
-              '<div class="jg-cw-ctrl-body">' +
-                '<div class="jg-cw-ctrl-label">' + (done ? '✅ Ukończono!' : '🏆 Wyzwanie') + '</div>' +
-                '<div class="jg-cw-ctrl-title">' + titleHtml + '</div>' +
-                (descHtml ? '<div class="jg-cw-ctrl-desc">' + descHtml + '</div>' : '') +
-                '<div class="jg-cw-ctrl-meta">' + (done ? 'Osiągnięcie odblokowane' : timeStr + (ch.xp_reward ? ' · +' + ch.xp_reward + ' XP' : '')) + '</div>' +
-              '</div>' +
-            '</div>';
-          elMap.appendChild(desktopWidget);
+          var deskWidgets = [];
 
-          if (done) {
-            var _dwCloseBtn = desktopWidget.querySelector('.jg-cw-close-btn');
-            if (_dwCloseBtn) {
-              _dwCloseBtn.onclick = function() {
-                try { localStorage.setItem('jg_ch_dismissed_' + ch.id, '1'); } catch(e) {}
-                desktopWidget.style.setProperty('display', 'none', 'important');
-              };
+          for (var di = 0; di < challenges.length; di++) {
+            var ch = challenges[di];
+            var v  = _chPct(ch);
+            if (v.done && _isDismissed(ch.id)) continue;
+
+            var offset    = v.done ? 0 : (ch.target_count > 0 ? Math.round((1 - v.prog / ch.target_count) * circ * 10) / 10 : circ);
+            var msLeft    = new Date(ch.end_date.replace(' ', 'T')) - new Date();
+            var daysLeft  = Math.max(0, Math.ceil(msLeft / 86400000));
+            var timeStr   = daysLeft > 1 ? 'jeszcze ' + daysLeft + ' dni' : (daysLeft === 1 ? 'ostatni dzie\u0144!' : 'ko\u0144czy si\u0119 dzisiaj!');
+            var titleHtml = $('<div>').text(ch.title).html();
+            var descRaw   = ch.description ? ch.description.slice(0, 100) + (ch.description.length > 100 ? '\u2026' : '') : '';
+            var descHtml  = descRaw ? $('<div>').text(descRaw).html() : '';
+
+            var dw = document.createElement('div');
+            dw.id  = 'jg-cw-desk-' + ch.id;
+            dw.setAttribute('data-ch-id', ch.id);
+            if (v.done) dw.classList.add('jg-cw-done');
+            dw.innerHTML =
+              (v.done ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '') +
+              '<div class="jg-cw-ctrl-inner">' +
+                '<svg class="jg-cw-ctrl-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">' +
+                  '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-track"/>' +
+                  '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-fill"' +
+                    ' stroke-dasharray="' + circ + '" stroke-dashoffset="' + offset + '"/>' +
+                  '<text x="32" y="30" class="jg-cw-ctrl-pct">' + (v.done ? '\u2713' : v.pct + '%') + '</text>' +
+                  '<text x="32" y="42" class="jg-cw-ctrl-ratio">' + (v.done ? 'Gotowe!' : v.prog + '/' + ch.target_count) + '</text>' +
+                '</svg>' +
+                '<div class="jg-cw-ctrl-body">' +
+                  '<div class="jg-cw-ctrl-label">' + (v.done ? '\u2705 Uko\u0144czono!' : '\ud83c\udfc6 Wyzwanie') + '</div>' +
+                  '<div class="jg-cw-ctrl-title">' + titleHtml + '</div>' +
+                  (descHtml ? '<div class="jg-cw-ctrl-desc">' + descHtml + '</div>' : '') +
+                  '<div class="jg-cw-ctrl-meta">' + (v.done ? 'Osi\u0105gni\u0119cie odblokowane' : timeStr + (ch.xp_reward ? ' \xb7 +' + ch.xp_reward + ' XP' : '')) + '</div>' +
+                '</div>' +
+              '</div>';
+            elMap.appendChild(dw);
+            deskWidgets.push(dw);
+
+            if (v.done) {
+              try { localStorage.setItem('jg_ch_done_' + ch.id, '1'); } catch(e) {}
+              (function(widget, chId) {
+                var cb = widget.querySelector('.jg-cw-close-btn');
+                if (cb) cb.onclick = function() {
+                  try { localStorage.setItem('jg_ch_dismissed_' + chId, '1'); } catch(e) {}
+                  widget.style.setProperty('display', 'none', 'important');
+                };
+              })(dw, ch.id);
             }
           }
 
-          // Position next to zoom controls (measured after render to get real coordinates)
+          // Stack widgets vertically next to zoom controls
           setTimeout(function() {
             var zoomCtrl = elMap.querySelector('.leaflet-control-zoom');
-            if (!zoomCtrl) return;
+            if (!zoomCtrl || !deskWidgets.length) return;
             var mapRect  = elMap.getBoundingClientRect();
             var zoomRect = zoomCtrl.getBoundingClientRect();
             if (!mapRect.height || !zoomRect.height) return;
-            desktopWidget.style.setProperty('top',  Math.round(zoomRect.top  - mapRect.top)  + 'px', 'important');
-            desktopWidget.style.setProperty('left', Math.round(zoomRect.right - mapRect.left + 12) + 'px', 'important');
+            var curTop  = Math.round(zoomRect.top  - mapRect.top);
+            var baseLeft = Math.round(zoomRect.right - mapRect.left + 12);
+            for (var wi = 0; wi < deskWidgets.length; wi++) {
+              deskWidgets[wi].style.setProperty('top',  curTop + 'px', 'important');
+              deskWidgets[wi].style.setProperty('left', baseLeft + 'px', 'important');
+              curTop += deskWidgets[wi].getBoundingClientRect().height + 8;
+            }
           }, 150);
         }
 
-        // ── MOBILE: pill widget between FABs ─────────────────────────────────
-        // Position and size are fully controlled by CSS (#jg-challenge-widget-mobile).
-        // Inline style is omitted so the CSS !important rules are not fought.
+        // ── MOBILE: pill for selected challenge + expand dropdown ──────────
         if (window.innerWidth <= 768) {
-          var pill = document.createElement('div');
-          pill.id = 'jg-challenge-widget-mobile';
-          if (done) pill.classList.add('jg-cw-done');
+          _mobileChList = challenges.filter(function(c) {
+            var v = _chPct(c);
+            return !(v.done && _isDismissed(c.id));
+          });
+          if (!_mobileChList.length) return;
+          _mobileSelChId = _mobileChList[0].id;
 
-          pill.innerHTML =
-            (done ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '') +
-            '<div class="jg-cw-m-bar">' +
-              '<span class="jg-cw-m-icon">' + (done ? '✅' : '🏆') + '</span>' +
-              '<div class="jg-cw-m-body">' +
-                '<div class="jg-cw-m-title">' + titleHtml + '</div>' +
-                (descHtml ? '<div class="jg-cw-m-desc">' + descHtml + '</div>' : '') +
-                '<div class="jg-cw-m-progress-track"><div class="jg-cw-m-progress-fill" style="width:' + pct + '%"></div></div>' +
-              '</div>' +
-              '<div class="jg-cw-m-count">' + (done ? '✓' : progress + '/' + ch.target_count) + '</div>' +
-            '</div>';
-
-          elMap.appendChild(pill);
-
-          if (done) {
-            var _mCloseBtn = pill.querySelector('.jg-cw-close-btn');
-            if (_mCloseBtn) {
-              _mCloseBtn.onclick = function() {
-                try { localStorage.setItem('jg_ch_dismissed_' + ch.id, '1'); } catch(e) {}
-                pill.style.setProperty('display', 'none', 'important');
-              };
-            }
-          }
-        }
-
-        // If challenge is already completed on page load, mark as seen silently
-        // so the modal only fires the first time the user actually finishes it.
-        if (done) {
-          try { localStorage.setItem('jg_ch_done_' + ch.id, '1'); } catch(e) {}
+          var mobilePill = document.createElement('div');
+          mobilePill.id  = 'jg-challenge-widget-mobile';
+          elMap.appendChild(mobilePill);
+          _buildMobilePill();
         }
       }());
 
@@ -15482,85 +15576,104 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // ── Live challenge progress refresh ──────────────────────────────────
       // Called after any relevant AJAX action succeeds.
       function refreshChallengeProgress() {
-        if (!CFG.activeChallenge) return;
+        if (!CFG.activeChallenges || !CFG.activeChallenges.length) return;
         var fd = new FormData();
         fd.append('action', 'jg_get_active_challenge');
         fd.append('_ajax_nonce', CFG.nonce);
         fetch(CFG.ajax, { method: 'POST', body: fd, credentials: 'same-origin' })
           .then(function(r) { return r.json(); })
           .then(function(res) {
-            if (!res || !res.success || !res.data) return;
-            var ch     = res.data;
-            var prog   = Math.min(ch.progress, ch.target_count);
-            var pct    = ch.target_count > 0 ? Math.round((prog / ch.target_count) * 100) : 0;
-            var done   = pct >= 100;
+            if (!res || !res.success || !Array.isArray(res.data)) return;
+            var challenges = res.data;
             var radius = 28;
             var circ   = Math.round(2 * Math.PI * radius * 10) / 10;
-            var offset = done ? 0 : (ch.target_count > 0 ? Math.round((1 - prog / ch.target_count) * circ * 10) / 10 : circ);
+            var justCompleted = []; // challenge objects newly completed this tick
 
-            var dw = document.getElementById('jg-challenge-widget-desktop');
-            if (dw) {
-              dw.classList.toggle('jg-cw-done', done);
-              var pctEl   = dw.querySelector('.jg-cw-ctrl-pct');
-              var ratioEl = dw.querySelector('.jg-cw-ctrl-ratio');
-              var fillEl  = dw.querySelector('.jg-cw-ctrl-fill');
-              var labelEl = dw.querySelector('.jg-cw-ctrl-label');
-              var metaEl  = dw.querySelector('.jg-cw-ctrl-meta');
-              if (pctEl)   pctEl.textContent   = done ? '✓'        : pct + '%';
-              if (ratioEl) ratioEl.textContent = done ? 'Gotowe!'  : prog + '/' + ch.target_count;
-              if (fillEl)  fillEl.setAttribute('stroke-dashoffset', String(offset));
-              if (labelEl) labelEl.textContent = done ? '✅ Ukończono!' : '🏆 Wyzwanie';
-              if (metaEl && done) metaEl.textContent = 'Osiągnięcie odblokowane';
-            }
+            for (var i = 0; i < challenges.length; i++) {
+              var ch   = challenges[i];
+              var prog = Math.min(ch.progress, ch.target_count);
+              var pct  = ch.target_count > 0 ? Math.round((prog / ch.target_count) * 100) : 0;
+              var done = pct >= 100;
+              var offset = done ? 0 : (ch.target_count > 0 ? Math.round((1 - prog / ch.target_count) * circ * 10) / 10 : circ);
 
-            // Show completion modal once (first time this session the goal is reached)
-            if (done) {
-              var _key = 'jg_ch_done_' + ch.id;
-              try {
-                if (!localStorage.getItem(_key)) {
-                  localStorage.setItem(_key, '1');
-                  showChallengeCompleteModal(ch);
+              // Update desktop widget for this challenge
+              var dw = document.getElementById('jg-cw-desk-' + ch.id);
+              if (dw) {
+                dw.classList.toggle('jg-cw-done', done);
+                var pctEl   = dw.querySelector('.jg-cw-ctrl-pct');
+                var ratioEl = dw.querySelector('.jg-cw-ctrl-ratio');
+                var fillEl  = dw.querySelector('.jg-cw-ctrl-fill');
+                var labelEl = dw.querySelector('.jg-cw-ctrl-label');
+                var metaEl  = dw.querySelector('.jg-cw-ctrl-meta');
+                if (pctEl)   pctEl.textContent   = done ? '\u2713'       : pct + '%';
+                if (ratioEl) ratioEl.textContent = done ? 'Gotowe!'      : prog + '/' + ch.target_count;
+                if (fillEl)  fillEl.setAttribute('stroke-dashoffset', String(offset));
+                if (labelEl) labelEl.textContent = done ? '\u2705 Uko\u0144czono!' : '\ud83c\udfc6 Wyzwanie';
+                if (metaEl && done) metaEl.textContent = 'Osi\u0105gni\u0119cie odblokowane';
+                // Inject dismiss button when newly done
+                if (done && !dw.querySelector('.jg-cw-close-btn')) {
+                  var _dCb = document.createElement('button');
+                  _dCb.className = 'jg-cw-close-btn';
+                  _dCb.title = 'Zamknij';
+                  _dCb.textContent = '\xd7';
+                  (function(w, id) {
+                    _dCb.onclick = function() {
+                      try { localStorage.setItem('jg_ch_dismissed_' + id, '1'); } catch(e) {}
+                      w.style.setProperty('display', 'none', 'important');
+                    };
+                  })(dw, ch.id);
+                  dw.insertBefore(_dCb, dw.firstChild);
                 }
-              } catch(e) {}
-            }
-
-            var mw = document.getElementById('jg-challenge-widget-mobile');
-            if (mw) {
-              mw.classList.toggle('jg-cw-done', done);
-              var mIcon  = mw.querySelector('.jg-cw-m-icon');
-              var mCount = mw.querySelector('.jg-cw-m-count');
-              var mFill  = mw.querySelector('.jg-cw-m-progress-fill');
-              if (mIcon)  mIcon.textContent  = done ? '✅' : '🏆';
-              if (mCount) mCount.textContent = done ? '✓' : prog + '/' + ch.target_count;
-              if (mFill)  mFill.style.width  = pct + '%';
-            }
-
-            // Inject dismiss button when challenge just completed (dynamic transition)
-            if (done) {
-              var _dismissFn = function(widgetEl) {
-                try { localStorage.setItem('jg_ch_dismissed_' + ch.id, '1'); } catch(e) {}
-                var _dw = document.getElementById('jg-challenge-widget-desktop');
-                var _mw = document.getElementById('jg-challenge-widget-mobile');
-                if (_dw) _dw.style.setProperty('display', 'none', 'important');
-                if (_mw) _mw.style.setProperty('display', 'none', 'important');
-              };
-              if (dw && !dw.querySelector('.jg-cw-close-btn')) {
-                var _dwCb = document.createElement('button');
-                _dwCb.className = 'jg-cw-close-btn';
-                _dwCb.title = 'Zamknij';
-                _dwCb.textContent = '\xd7';
-                _dwCb.onclick = _dismissFn;
-                dw.insertBefore(_dwCb, dw.firstChild);
               }
-              if (mw && !mw.querySelector('.jg-cw-close-btn')) {
-                var _mwCb = document.createElement('button');
-                _mwCb.className = 'jg-cw-close-btn';
-                _mwCb.title = 'Zamknij';
-                _mwCb.textContent = '\xd7';
-                _mwCb.onclick = _dismissFn;
-                mw.insertBefore(_mwCb, mw.firstChild);
+
+              // Track first-time completions for modal
+              if (done) {
+                try {
+                  if (!localStorage.getItem('jg_ch_done_' + ch.id)) {
+                    localStorage.setItem('jg_ch_done_' + ch.id, '1');
+                    justCompleted.push(ch);
+                  }
+                } catch(e) {}
               }
             }
+
+            // Update _mobileChList with fresh data
+            _mobileChList = _mobileChList.map(function(old) {
+              for (var j = 0; j < challenges.length; j++) {
+                if (challenges[j].id === old.id) return challenges[j];
+              }
+              return old;
+            });
+
+            // Auto-select newly completed non-selected mobile challenges
+            var newDoneOther = justCompleted.filter(function(c) { return c.id !== _mobileSelChId; });
+            if (newDoneOther.length === 1) {
+              _mobileSelChId = newDoneOther[0].id;
+              _buildMobilePill();
+            } else if (newDoneOther.length > 1) {
+              _buildMobilePill();
+              // Open dropdown so user sees what completed
+              var mw = document.getElementById('jg-challenge-widget-mobile');
+              if (mw) {
+                var dd = mw.querySelector('.jg-cw-m-dropdown');
+                var eb = mw.querySelector('.jg-cw-m-expand-btn');
+                if (dd) dd.classList.add('jg-cw-open');
+                if (eb) eb.classList.add('jg-cw-open');
+              }
+            } else {
+              _buildMobilePill();
+            }
+
+            // Show completion modals (queue sequentially to avoid overlap)
+            (function showNext(queue) {
+              if (!queue.length) return;
+              showChallengeCompleteModal(queue[0]);
+              var ok = document.getElementById('jg-ch-done-ok');
+              if (ok) {
+                var orig = ok.onclick;
+                ok.onclick = function() { if (orig) orig(); showNext(queue.slice(1)); };
+              }
+            })(justCompleted);
           })
           .catch(function() {});
       }
