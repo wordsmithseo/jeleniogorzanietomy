@@ -5056,6 +5056,10 @@ class JG_Map_Ajax_Handlers {
 
         // Get point info
         $point = JG_Map_Database::get_point($history['point_id']);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
         $editor = get_userdata($history['user_id']);
 
         if ($owner_is_admin) {
