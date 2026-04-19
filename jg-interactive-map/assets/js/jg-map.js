@@ -15536,6 +15536,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             }
 
             elMap.appendChild(dw);
+            L.DomEvent.disableClickPropagation(dw);
             deskWidgets.push(dw);
           }
 
@@ -15568,6 +15569,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           var mobilePill = document.createElement('div');
           mobilePill.id  = 'jg-challenge-widget-mobile';
           elMap.appendChild(mobilePill);
+          L.DomEvent.disableClickPropagation(mobilePill);
           _buildMobilePill();
         }
       }());
