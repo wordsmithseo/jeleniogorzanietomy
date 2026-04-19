@@ -3042,26 +3042,30 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Load point before potential deletion — needed for notifications and activity log
+        $point = JG_Map_Database::get_point($point_id);
+        $point_title = $point ? $point['title'] : "ID:{$point_id}";
+
         if ($action_type === 'remove') {
-            // Delete permanently
-            JG_Map_Database::delete_point($point_id);
             $message = 'Miejsce usunięte';
             $decision_text = 'usunięte';
         } else if ($action_type === 'edit') {
-            // Place was edited
             $message = 'Miejsce edytowane';
             $decision_text = 'edytowane i pozostawione';
         } else {
-            // Keep the point
             $message = 'Miejsce pozostawione';
             $decision_text = 'pozostawione bez zmian';
         }
 
-        // Notify reporters about decision
+        // Notify reporters before deletion — delete_point removes reports from DB
         $this->notify_reporters_decision($point_id, $decision_text, $reason);
 
-        // Resolve reports
-        JG_Map_Database::resolve_reports($point_id, $reason);
+        if ($action_type === 'remove') {
+            JG_Map_Database::delete_point($point_id);
+        } else {
+            // Resolve reports (keep/edit path — point stays in DB)
+            JG_Map_Database::resolve_reports($point_id, $reason);
+        }
 
         // Queue sync event via dedicated sync manager
         if ($action_type === 'remove') {
@@ -3077,12 +3081,11 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Log action
-        $point = JG_Map_Database::get_point($point_id);
         JG_Map_Activity_Log::log(
             'handle_reports',
             'point',
             $point_id,
-            sprintf('Rozpatrzono zgłoszenia dla: %s. Decyzja: %s', $point['title'], $decision_text)
+            sprintf('Rozpatrzono zgłoszenia dla: %s. Decyzja: %s', $point_title, $decision_text)
         );
 
         wp_send_json_success(array('message' => $message));
@@ -3548,10 +3551,10 @@ class JG_Map_Ajax_Handlers {
             $this->decrement_daily_limit($author_id, 'reports');
         }
 
-        JG_Map_Database::delete_point($point_id);
+        // Notify author before deletion — notify_author_rejected re-fetches point internally
+        $this->notify_author_rejected($point_id, $reason);
 
-        // Resolve any pending reports for this point
-        JG_Map_Database::resolve_reports($point_id, 'Punkt został odrzucony przez moderatora: ' . $reason);
+        JG_Map_Database::delete_point($point_id);
 
         // Queue sync event via dedicated sync manager
         JG_Map_Sync_Manager::get_instance()->queue_point_deleted($point_id, array(
@@ -3567,9 +3570,6 @@ class JG_Map_Ajax_Handlers {
             $point_id,
             sprintf('Odrzucono punkt: %s. Powód: %s', $point['title'], $reason)
         );
-
-        // Notify author
-        $this->notify_author_rejected($point_id, $reason);
 
         // Store rejected point ID for real-time broadcast via Heartbeat
         $rejected_points = get_transient('jg_map_rejected_points');
@@ -4082,6 +4082,7 @@ class JG_Map_Ajax_Handlers {
     private function notify_admin_new_point($point_id) {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
 
         $subject = 'Portal Jeleniogórzanie to my - Nowy punkt do moderacji';
         $message = "Nowy punkt został dodany i czeka na moderację:\n\n";
@@ -4098,6 +4099,7 @@ class JG_Map_Ajax_Handlers {
     private function notify_admin_new_report($point_id, $reporter_user_id = 0) {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
 
         // Get reporter name
         $reporter_name = 'Nieznany';
@@ -4125,6 +4127,7 @@ class JG_Map_Ajax_Handlers {
         }
 
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
 
         $subject = 'Portal Jeleniogórzanie to my - Potwierdzenie zgłoszenia miejsca';
         $message = "Dziękujemy za zgłoszenie miejsca \"{$point['title']}\".\n\n";
@@ -4142,7 +4145,7 @@ class JG_Map_Ajax_Handlers {
         $point = JG_Map_Database::get_point($point_id);
         $reports = JG_Map_Database::get_reports($point_id);
 
-        if (empty($reports)) {
+        if (!$point || empty($reports)) {
             return;
         }
 
@@ -4181,6 +4184,7 @@ class JG_Map_Ajax_Handlers {
      */
     private function notify_author_approved($point_id) {
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
         $author = get_userdata($point['author_id']);
 
         if ($author && $author->user_email) {
@@ -4196,6 +4200,7 @@ class JG_Map_Ajax_Handlers {
      */
     private function notify_author_rejected($point_id, $reason) {
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
         $author = get_userdata($point['author_id']);
 
         if ($author && $author->user_email) {
@@ -4215,6 +4220,7 @@ class JG_Map_Ajax_Handlers {
     private function notify_admin_edit($point_id) {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
 
         $subject = 'Portal Jeleniogórzanie to my - Edycja miejsca do zatwierdzenia';
         $message = "Użytkownik zaktualizował miejsce:\n\n";
@@ -4234,6 +4240,7 @@ class JG_Map_Ajax_Handlers {
         }
 
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
         $editor = wp_get_current_user();
 
         $subject = 'Portal Jeleniogórzanie to my - Propozycja edycji twojego miejsca';
@@ -4584,17 +4591,8 @@ class JG_Map_Ajax_Handlers {
      * Approve edit (admin only)
      */
     public function admin_approve_edit() {
-        try {
-            $this->verify_nonce();
-        } catch (Exception $e) {
-            throw $e;
-        }
-
-        try {
-            $this->check_admin();
-        } catch (Exception $e) {
-            throw $e;
-        }
+        $this->verify_nonce();
+        $this->check_admin();
 
         $history_id = intval($_POST['history_id'] ?? 0);
 
@@ -4613,6 +4611,11 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        if ($history['status'] !== 'pending') {
+            wp_send_json_error(array('message' => 'Ta edycja została już rozpatrzona'));
+            exit;
+        }
+
         // Check if admin is requesting to override owner approval
         $override_owner = !empty($_POST['override_owner']) && intval($_POST['override_owner']) === 1;
 
@@ -4626,7 +4629,7 @@ class JG_Map_Ajax_Handlers {
                         $table,
                         array(
                             'owner_approval_status' => 'approved',
-                            'owner_approval_at' => current_time('mysql'),
+                            'owner_approval_at' => current_time('mysql', true),
                             'owner_approval_by' => $current_user_id
                         ),
                         array('id' => $history_id)
@@ -4649,7 +4652,7 @@ class JG_Map_Ajax_Handlers {
                             $table,
                             array(
                                 'owner_approval_status' => 'approved',
-                                'owner_approval_at' => current_time('mysql'),
+                                'owner_approval_at' => current_time('mysql', true),
                                 'owner_approval_by' => $current_user_id
                             ),
                             array('id' => $history_id)
@@ -4677,7 +4680,7 @@ class JG_Map_Ajax_Handlers {
             JG_Map_Database::approve_history($history_id, $current_user_id);
             $history_table_local = JG_Map_Database::get_history_table();
             $remaining = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $history_table_local WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu')",
+                "SELECT COUNT(*) FROM $history_table_local WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu','edit_offerings')",
                 $history['point_id']
             ));
             if (!$remaining) {
@@ -4817,32 +4820,39 @@ class JG_Map_Ajax_Handlers {
             $update_data['serves_cuisine'] = !empty($new_values['serves_cuisine']) ? $new_values['serves_cuisine'] : null;
         }
 
-        // Clear pending_edit flag — edit has been approved
-        $update_data['pending_edit'] = 0;
-
         // Update point with new values
         JG_Map_Database::update_point($history['point_id'], $update_data);
 
         // Approve history
-        JG_Map_Database::approve_history($history_id, get_current_user_id());
+        JG_Map_Database::approve_history($history_id, $current_user_id);
+
+        // Clear pending_edit flag only if no other pending edits remain
+        $remaining_pending = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu','edit_offerings')",
+            $history['point_id']
+        ));
+        if (!$remaining_pending) {
+            JG_Map_Database::update_point($history['point_id'], array('pending_edit' => 0));
+        }
 
         // Notify editor (the person who submitted the edit)
         $point = JG_Map_Database::get_point($history['point_id']);
+        $point_title = $point ? $point['title'] : "ID:{$history['point_id']}";
         $editor = get_userdata($history['user_id']);
         if ($editor && $editor->user_email) {
             $subject = 'Portal Jeleniogórzanie to my - Twoja edycja została zaakceptowana';
-            $message = "Twoja edycja miejsca \"{$point['title']}\" została zaakceptowana przez moderatora.";
+            $message = "Twoja edycja miejsca \"{$point_title}\" została zaakceptowana przez moderatora.";
             wp_mail($editor->user_email, $subject, $message);
         }
 
         // Queue sync event via dedicated sync manager
         JG_Map_Sync_Manager::get_instance()->queue_edit_approved($history['point_id'], array(
             'history_id' => $history_id,
-            'point_title' => $point['title'],
-            'point_type' => $point['type'],
+            'point_title' => $point_title,
+            'point_type' => $point ? $point['type'] : '',
             'editor_id' => intval($history['user_id']),
-            'lat' => floatval($point['lat']),
-            'lng' => floatval($point['lng'])
+            'lat' => $point ? floatval($point['lat']) : 0.0,
+            'lng' => $point ? floatval($point['lng']) : 0.0
         ));
 
         // Log action
@@ -4885,15 +4895,18 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        if ($history['status'] !== 'pending') {
+            wp_send_json_error(array('message' => 'Ta edycja została już rozpatrzona'));
+            exit;
+        }
+
         // Reject history with reason
         JG_Map_Database::reject_history($history_id, get_current_user_id(), $reason);
 
-        // Clear pending_edit flag — edit has been rejected, no more pending changes
-        // (only clear if no other pending edits remain for this point)
-        global $wpdb;
+        // Clear pending_edit flag only if no other pending edits remain
         $history_table = JG_Map_Database::get_history_table();
         $remaining_pending = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $history_table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu')",
+            "SELECT COUNT(*) FROM $history_table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu','edit_offerings')",
             $history['point_id']
         ));
         if (!$remaining_pending) {
@@ -4908,10 +4921,11 @@ class JG_Map_Ajax_Handlers {
 
         // Notify editor (the person who submitted the edit)
         $point = JG_Map_Database::get_point($history['point_id']);
+        $point_title = $point ? $point['title'] : "ID:{$history['point_id']}";
         $editor = get_userdata($history['user_id']);
         if ($editor && $editor->user_email) {
             $subject = 'Portal Jeleniogórzanie to my - Twoja edycja została odrzucona';
-            $message = "Twoja edycja miejsca \"{$point['title']}\" została odrzucona przez moderatora.\n\n";
+            $message = "Twoja edycja miejsca \"{$point_title}\" została odrzucona przez moderatora.\n\n";
             if ($reason) {
                 $message .= "Powód: $reason\n";
             }
@@ -4923,7 +4937,7 @@ class JG_Map_Ajax_Handlers {
             'reject_edit',
             'history',
             $history_id,
-            sprintf('Odrzucono edycję miejsca: %s. Powód: %s', $point['title'], $reason)
+            sprintf('Odrzucono edycję miejsca: %s. Powód: %s', $point_title, $reason)
         );
 
         wp_send_json_success(array('message' => 'Edycja odrzucona'));
@@ -4975,7 +4989,7 @@ class JG_Map_Ajax_Handlers {
             array(
                 'status' => 'cancelled',
                 'rejection_reason' => 'Cofnięte przez użytkownika',
-                'resolved_at' => current_time('mysql'),
+                'resolved_at' => current_time('mysql', true),
                 'resolved_by' => $user_id
             ),
             array('id' => $history_id)
@@ -4983,7 +4997,7 @@ class JG_Map_Ajax_Handlers {
 
         // Clear pending_edit flag if no other pending edits remain for this point
         $remaining_pending = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu')",
+            "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu','edit_offerings')",
             $history['point_id']
         ));
         if (!$remaining_pending) {
@@ -5042,6 +5056,10 @@ class JG_Map_Ajax_Handlers {
 
         // Get point info
         $point = JG_Map_Database::get_point($history['point_id']);
+        if (!$point) {
+            wp_send_json_error(array('message' => 'Punkt nie istnieje'));
+            exit;
+        }
         $editor = get_userdata($history['user_id']);
 
         if ($owner_is_admin) {
@@ -5072,8 +5090,8 @@ class JG_Map_Ajax_Handlers {
 
             // Add lat/lng if changed
             if (isset($new_values['lat']) && isset($new_values['lng'])) {
-                $update_data['lat'] = $new_values['lat'];
-                $update_data['lng'] = $new_values['lng'];
+                $update_data['lat'] = floatval($new_values['lat']);
+                $update_data['lng'] = floatval($new_values['lng']);
             }
             if (isset($new_values['address'])) {
                 $update_data['address'] = $new_values['address'];
@@ -5142,9 +5160,6 @@ class JG_Map_Ajax_Handlers {
                 }
             }
 
-            // Clear pending_edit flag
-            $update_data['pending_edit'] = 0;
-
             // Update point with new values
             JG_Map_Database::update_point($history['point_id'], $update_data);
 
@@ -5153,14 +5168,23 @@ class JG_Map_Ajax_Handlers {
                 $table,
                 array(
                     'owner_approval_status' => 'approved',
-                    'owner_approval_at' => current_time('mysql'),
+                    'owner_approval_at' => current_time('mysql', true),
                     'owner_approval_by' => $user_id,
                     'status' => 'approved',
-                    'resolved_at' => current_time('mysql'),
+                    'resolved_at' => current_time('mysql', true),
                     'resolved_by' => $user_id
                 ),
                 array('id' => $history_id)
             );
+
+            // Clear pending_edit flag only if no other pending edits remain
+            $remaining_pending_owner = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu','edit_offerings')",
+                $history['point_id']
+            ));
+            if (!$remaining_pending_owner) {
+                JG_Map_Database::update_point($history['point_id'], array('pending_edit' => 0));
+            }
 
             // Notify editor that edit was fully approved
             if ($editor && $editor->user_email) {
@@ -5200,7 +5224,7 @@ class JG_Map_Ajax_Handlers {
                 $table,
                 array(
                     'owner_approval_status' => 'approved',
-                    'owner_approval_at' => current_time('mysql'),
+                    'owner_approval_at' => current_time('mysql', true),
                     'owner_approval_by' => $user_id
                 ),
                 array('id' => $history_id)
@@ -5270,10 +5294,10 @@ class JG_Map_Ajax_Handlers {
             $table,
             array(
                 'owner_approval_status' => 'rejected',
-                'owner_approval_at' => current_time('mysql'),
+                'owner_approval_at' => current_time('mysql', true),
                 'owner_approval_by' => $user_id,
                 'status' => 'rejected',
-                'resolved_at' => current_time('mysql'),
+                'resolved_at' => current_time('mysql', true),
                 'resolved_by' => $user_id,
                 'rejection_reason' => $reason
             ),
@@ -5282,12 +5306,13 @@ class JG_Map_Ajax_Handlers {
 
         // Get point info for notification
         $point = JG_Map_Database::get_point($history['point_id']);
+        $point_title = $point ? $point['title'] : "ID:{$history['point_id']}";
         $editor = get_userdata($history['user_id']);
 
         // Notify editor that owner rejected
         if ($editor && $editor->user_email) {
             $subject = 'Portal Jeleniogórzanie to my - Właściciel odrzucił twoją edycję';
-            $message = "Właściciel miejsca \"{$point['title']}\" odrzucił twoją propozycję zmian.\n\n";
+            $message = "Właściciel miejsca \"{$point_title}\" odrzucił twoją propozycję zmian.\n\n";
             if ($reason) {
                 $message .= "Powód: $reason\n";
             }
@@ -5306,7 +5331,7 @@ class JG_Map_Ajax_Handlers {
             'owner_reject_edit',
             'history',
             $history_id,
-            sprintf('Właściciel odrzucił propozycję edycji miejsca: %s. Powód: %s', $point['title'], $reason)
+            sprintf('Właściciel odrzucił propozycję edycji miejsca: %s. Powód: %s', $point_title, $reason)
         );
 
         wp_send_json_success(array('message' => 'Edycja odrzucona'));
@@ -10062,27 +10087,17 @@ class JG_Map_Ajax_Handlers {
         $old_values = array('offerings' => $old_items);
         $new_values = array('offerings' => $raw_items);
 
-        if ($is_admin) {
-            JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
-            JG_Map_Activity_Log::log_user_action(
-                'edit_offerings',
-                'point',
-                $point_id,
-                sprintf('Zaktualizowano ofertę miejsca: %s', $point['title'])
-            );
-        } else {
-            $point_owner_id = ($is_owner) ? null : intval($point['author_id']);
-            JG_Map_Database::add_history($point_id, $user_id, 'edit_offerings', $old_values, $new_values, $point_owner_id);
-            JG_Map_Database::update_point($point_id, array('pending_edit' => 1));
-            JG_Map_Activity_Log::log_user_action(
-                'suggest_offerings_edit',
-                'point',
-                $point_id,
-                sprintf('Zaproponowano zmiany oferty: %s', $point['title'])
-            );
-        }
+        // Offerings are always applied immediately — owner edits their own data directly,
+        // no moderation gate needed. Both paths use the same audit history type.
+        JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
+        JG_Map_Activity_Log::log_user_action(
+            'edit_offerings',
+            'point',
+            $point_id,
+            sprintf('Zaktualizowano ofertę miejsca: %s', $point['title'])
+        );
 
-        wp_send_json_success(array('message' => 'Oferta zapisana', 'pending' => !$is_admin));
+        wp_send_json_success(array('message' => 'Oferta zapisana', 'pending' => false));
     }
 
     /**
