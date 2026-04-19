@@ -10073,27 +10073,17 @@ class JG_Map_Ajax_Handlers {
         $old_values = array('offerings' => $old_items);
         $new_values = array('offerings' => $raw_items);
 
-        if ($is_admin) {
-            JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
-            JG_Map_Activity_Log::log_user_action(
-                'edit_offerings',
-                'point',
-                $point_id,
-                sprintf('Zaktualizowano ofertę miejsca: %s', $point['title'])
-            );
-        } else {
-            $point_owner_id = ($is_owner) ? null : intval($point['author_id']);
-            JG_Map_Database::add_history($point_id, $user_id, 'edit_offerings', $old_values, $new_values, $point_owner_id);
-            JG_Map_Database::update_point($point_id, array('pending_edit' => 1));
-            JG_Map_Activity_Log::log_user_action(
-                'suggest_offerings_edit',
-                'point',
-                $point_id,
-                sprintf('Zaproponowano zmiany oferty: %s', $point['title'])
-            );
-        }
+        // Offerings are always applied immediately — owner edits their own data directly,
+        // no moderation gate needed. Both paths use the same audit history type.
+        JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
+        JG_Map_Activity_Log::log_user_action(
+            'edit_offerings',
+            'point',
+            $point_id,
+            sprintf('Zaktualizowano ofertę miejsca: %s', $point['title'])
+        );
 
-        wp_send_json_success(array('message' => 'Oferta zapisana', 'pending' => !$is_admin));
+        wp_send_json_success(array('message' => 'Oferta zapisana', 'pending' => false));
     }
 
     /**
