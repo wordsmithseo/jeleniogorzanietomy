@@ -1,5 +1,11 @@
 /* JG Interactive Map Styles */
 
+/* ── Google Font – Plus Jakarta Sans (polskie znaki, wagi 400/500/600/700) ──
+   Zastępuje system-ui w chrome'ie UI pluginu (top bar, sidebar, filtry).
+   Nie ingeruje w Elementor ani html/body font-size.
+   ────────────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
 /*
  * ── Responsywna baza czcionek wtyczki ──────────────────────────────────────
  *
@@ -31,6 +37,52 @@
 :root {
   --jg: clamp(1px, 0.065vw, 1.1px);
   --jg-sidebar-w: clamp(280px, 19vw, 400px);
+
+  /* ── Typografia ──────────────────────────────────────────────────────────
+     --jg-font zastępuje system-ui w chrome'ie UI pluginu.
+     Elementor i reszta motywu nie są dotknięte.
+     ─────────────────────────────────────────────────────────────────────── */
+  --jg-font: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+
+  /* ── Skala border-radius ─────────────────────────────────────────────────
+     sm  → przyciski, badge'e, małe elementy
+     md  → inputy, karty, dropdowny
+     lg  → panele, sidebar overlay, modale
+     ─────────────────────────────────────────────────────────────────────── */
+  --jg-r-sm: 6px;
+  --jg-r-md: 10px;
+  --jg-r-lg: 16px;
+
+  /* ── Kolory semantyczne ──────────────────────────────────────────────────
+     primary  → akcja, brand, aktywne elementy       (#8d2324)
+     success  → "otwarte", potwierdzone, ok           (zielony)
+     warning  → "zamknięte za X min", zgłoszenia      (bursztyn)
+     Chroma i lightness wyrównane między success/warning dla spójności.
+     ─────────────────────────────────────────────────────────────────────── */
+  --jg-color-primary:         #8d2324;
+  --jg-color-primary-hover:   #a02829;
+  --jg-color-primary-dim:     rgba(141, 35, 36, 0.08);
+  --jg-color-primary-mid:     rgba(141, 35, 36, 0.18);
+
+  --jg-color-success:         oklch(48% 0.155 145);   /* #1a7a3c equiv */
+  --jg-color-success-bg:      oklch(97% 0.03  145);
+  --jg-color-success-border:  oklch(88% 0.07  145);
+
+  --jg-color-warning:         oklch(52% 0.155 72);    /* ciemny bursztyn */
+  --jg-color-warning-bg:      oklch(97% 0.04  75);
+  --jg-color-warning-border:  oklch(88% 0.08  75);
+
+  /* ── Tokeny tła / tekstu (light mode) ────────────────────────────────────
+     Używane w regułach dark mode poniżej.
+     ─────────────────────────────────────────────────────────────────────── */
+  --jg-bg:          #ffffff;
+  --jg-bg-surface:  #f9fafb;
+  --jg-bg-hover:    #f3f4f6;
+  --jg-border:      #e5e7eb;
+  --jg-text:        #111827;
+  --jg-text-mid:    #374151;
+  --jg-text-dim:    #6b7280;
+  --jg-text-faint:  #9ca3af;
 }
 
 @media (min-width: 1600px) {
@@ -213,6 +265,24 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
 @keyframes jg-info-bar-ticker {
   0%   { transform: translateX(100vw); }
   100% { transform: translateX(-100%); }
+}
+
+/* ── Aplikacja fontu pluginu ─────────────────────────────────────────────
+   Ustawia --jg-font na głównych kontenerach pluginu zamiast nadpisywać
+   każdą regułę osobno. Dziedziczenie CSS robi resztę.
+   Nie dotyka html/body → bezpieczne dla Elementora i Leaflet.
+   ─────────────────────────────────────────────────────────────────────── */
+#jg-info-bar,
+.jg-custom-top-bar,
+#jg-map-filters-wrapper,
+#jg-map-sidebar,
+.jg-search-panel,
+.jg-fs-filter-panel,
+.jg-fs-search-results-panel,
+.jg-category-dropdown,
+.jg-search-suggestions,
+#jg-badge-tooltip {
+  font-family: var(--jg-font) !important;
 }
 
 /* ── Custom Top Bar - Fixed at top of page */
@@ -10547,3 +10617,251 @@ footer.site-footer .site-branding {
   color: #6b7280 !important;
   line-height: 1.4 !important;
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ── DARK MODE ────────────────────────────────────────────────────────────
+   Nadpisuje tokeny --jg-* zdefiniowane w :root.
+   Dotyczy tylko elementów pluginu używających tych tokenów.
+   Nie ingeruje w Elementor, motyw ani Leaflet.
+   ════════════════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --jg-bg:          #1c1c1e;
+    --jg-bg-surface:  #2c2c2e;
+    --jg-bg-hover:    #3a3a3c;
+    --jg-border:      #3a3a3c;
+    --jg-text:        #f2f2f7;
+    --jg-text-mid:    #ebebf5cc;   /* ~80% opacity white */
+    --jg-text-dim:    #ebebf599;   /* ~60% opacity white */
+    --jg-text-faint:  #ebebf54d;   /* ~30% opacity white */
+  }
+
+  /* Sidebar floating overlay */
+  .jg-sidebar-desktop-wide-overlay,
+  .jg-sidebar-fullscreen-overlay {
+    background: rgba(28, 28, 30, 0.97) !important;
+  }
+
+  /* Filter bar */
+  .jg-filters {
+    background: #2c2c2e !important;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .jg-filter-label {
+    color: var(--jg-text-mid) !important;
+  }
+
+  .jg-filter-label:hover {
+    background: var(--jg-bg-hover) !important;
+    border-color: #48484a !important;
+  }
+
+  .jg-filter-label:has(input[type="checkbox"]:checked) {
+    background: rgba(141, 35, 36, 0.2) !important;
+    border-color: #8d2324 !important;
+    color: #ff6b6b !important;
+  }
+
+  /* Search input */
+  .jg-search input {
+    background: #2c2c2e !important;
+    border-color: #48484a !important;
+    color: var(--jg-text) !important;
+  }
+
+  .jg-search input:focus {
+    border-color: #8d2324 !important;
+    box-shadow: 0 0 0 3px rgba(141, 35, 36, 0.25) !important;
+  }
+
+  /* Sidebar items */
+  .jg-sidebar-item {
+    background: #2c2c2e !important;
+    border-color: #3a3a3c !important;
+  }
+
+  .jg-sidebar-item:hover {
+    background: #3a3a3c !important;
+  }
+
+  .jg-sidebar-item__title {
+    color: var(--jg-text) !important;
+  }
+
+  /* Search suggestions */
+  .jg-search-suggestions {
+    background: #2c2c2e !important;
+    border-color: #48484a !important;
+  }
+
+  .jg-suggest-item:hover,
+  .jg-suggest-item.jg-suggest-active {
+    background: #3a3a3c !important;
+  }
+
+  .jg-suggest-header {
+    background: #1c1c1e !important;
+  }
+
+  .jg-suggest-main {
+    color: var(--jg-text) !important;
+  }
+
+  /* Category dropdown */
+  .jg-category-dropdown {
+    background: #2c2c2e !important;
+  }
+
+  .jg-category-filter-label:hover {
+    background: #3a3a3c !important;
+  }
+
+  /* Sync indicator */
+  .jg-sync-indicator {
+    background: #2c2c2e !important;
+    border-color: #48484a !important;
+    color: var(--jg-text-dim) !important;
+  }
+
+  /* Info bar */
+  #jg-info-bar {
+    background: #2c2c2e !important;
+    border-bottom-color: #3a3a3c !important;
+  }
+
+  /* Search panel */
+  .jg-search-panel {
+    background: #1c1c1e !important;
+  }
+
+  .jg-search-result-item {
+    border-bottom-color: #3a3a3c !important;
+  }
+
+  .jg-search-result-item:hover {
+    background: #2c2c2e !important;
+  }
+
+  .jg-search-result-title {
+    color: var(--jg-text) !important;
+  }
+
+  .jg-search-panel-footer {
+    background: #2c2c2e !important;
+    border-top-color: #3a3a3c !important;
+  }
+
+  /* Fullscreen filter panel */
+  .jg-fs-filter-panel {
+    background: rgba(28, 28, 30, 0.97) !important;
+  }
+
+  /* Leaflet map tiles — nieco rozjaśnione w dark mode (mapa jest ciemna sama w sobie) */
+  .jg-map-tiles .leaflet-tile {
+    filter: brightness(0.75) contrast(1.1) saturate(1.2) !important;
+  }
+
+  .jg-map--satellite .jg-map-tiles .leaflet-tile {
+    filter: brightness(0.85) !important;
+  }
+
+  /* Zoom controls */
+  .leaflet-control-zoom a {
+    background: #2c2c2e !important;
+    color: var(--jg-text) !important;
+    border-bottom-color: #3a3a3c !important;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: #8d2324 !important;
+    color: #fff !important;
+  }
+
+  /* Fullscreen button */
+  .jg-fullscreen-btn {
+    background: #2c2c2e !important;
+    color: var(--jg-text) !important;
+  }
+
+  .jg-fullscreen-btn:hover {
+    background: #8d2324 !important;
+    color: #fff !important;
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ── PREFERS-REDUCED-MOTION ───────────────────────────────────────────────
+   Wyłącza wszystkie animacje pluginu dla użytkowników, którzy mają włączone
+   "Ogranicz ruch" w ustawieniach systemu (WCAG 2.3.3).
+   ════════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+
+  /* Ticker – zatrzymaj animację, wyrównaj do lewej */
+  #jg-info-bar .jg-info-bar-text {
+    animation: none !important;
+    transform: none !important;
+  }
+  #jg-info-bar.jg-info-bar--scroll .jg-info-bar-track {
+    justify-content: flex-start !important;
+  }
+
+  /* Loader pinów – bez bounce */
+  .jg-loader-pin {
+    animation: none !important;
+  }
+
+  /* Spinner ładowania */
+  .jg-spinner {
+    animation: none !important;
+    border-top-color: #8d2324;
+    opacity: 0.6;
+  }
+
+  /* Sync dot pulse */
+  .jg-sync-dot--pulse,
+  .jg-sync-dot--pulse-fast {
+    animation: none !important;
+  }
+
+  /* Sync icon spin */
+  .jg-sync-icon--spin {
+    animation: none !important;
+  }
+
+  /* Wszystkie transition-based animacje – skróć do 0 */
+  .jg-top-bar-btn,
+  .jg-top-bar-menu-btn,
+  .jg-filter-label,
+  .jg-sidebar-item,
+  .jg-search-result-item,
+  .jg-suggest-item,
+  .jg-category-filter-label,
+  .jg-fs-notif-circle {
+    transition: none !important;
+  }
+
+  /* Search panel slide-in */
+  .jg-search-panel {
+    transition: none !important;
+  }
+
+  /* FAB position transition */
+  .jg-map #jg-fab-container {
+    transition: none !important;
+  }
+
+  /* XP bar fill transition */
+  .jg-top-bar-xp-fill {
+    transition: none !important;
+  }
+
+  /* Collapsible sections – natychmiastowe (jQuery slideToggle jest JS-owe,
+     ale CSS transition na max-height też bywa używany) */
+  .jg-fs-panel-content {
+    transition: none !important;
+  }
+}
+
