@@ -3042,26 +3042,30 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Load point before potential deletion — needed for notifications and activity log
+        $point = JG_Map_Database::get_point($point_id);
+        $point_title = $point ? $point['title'] : "ID:{$point_id}";
+
         if ($action_type === 'remove') {
-            // Delete permanently
-            JG_Map_Database::delete_point($point_id);
             $message = 'Miejsce usunięte';
             $decision_text = 'usunięte';
         } else if ($action_type === 'edit') {
-            // Place was edited
             $message = 'Miejsce edytowane';
             $decision_text = 'edytowane i pozostawione';
         } else {
-            // Keep the point
             $message = 'Miejsce pozostawione';
             $decision_text = 'pozostawione bez zmian';
         }
 
-        // Notify reporters about decision
+        // Notify reporters before deletion — delete_point removes reports from DB
         $this->notify_reporters_decision($point_id, $decision_text, $reason);
 
-        // Resolve reports
-        JG_Map_Database::resolve_reports($point_id, $reason);
+        if ($action_type === 'remove') {
+            JG_Map_Database::delete_point($point_id);
+        } else {
+            // Resolve reports (keep/edit path — point stays in DB)
+            JG_Map_Database::resolve_reports($point_id, $reason);
+        }
 
         // Queue sync event via dedicated sync manager
         if ($action_type === 'remove') {
@@ -3077,12 +3081,11 @@ class JG_Map_Ajax_Handlers {
         }
 
         // Log action
-        $point = JG_Map_Database::get_point($point_id);
         JG_Map_Activity_Log::log(
             'handle_reports',
             'point',
             $point_id,
-            sprintf('Rozpatrzono zgłoszenia dla: %s. Decyzja: %s', $point['title'], $decision_text)
+            sprintf('Rozpatrzono zgłoszenia dla: %s. Decyzja: %s', $point_title, $decision_text)
         );
 
         wp_send_json_success(array('message' => $message));
@@ -4673,7 +4676,7 @@ class JG_Map_Ajax_Handlers {
             JG_Map_Database::approve_history($history_id, $current_user_id);
             $history_table_local = JG_Map_Database::get_history_table();
             $remaining = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $history_table_local WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu')",
+                "SELECT COUNT(*) FROM $history_table_local WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu','edit_offerings')",
                 $history['point_id']
             ));
             if (!$remaining) {
@@ -4988,7 +4991,7 @@ class JG_Map_Ajax_Handlers {
 
         // Clear pending_edit flag if no other pending edits remain for this point
         $remaining_pending = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu')",
+            "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu','edit_offerings')",
             $history['point_id']
         ));
         if (!$remaining_pending) {
