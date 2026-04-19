@@ -7357,7 +7357,7 @@ JAVASCRIPT;
                 var conditionTypes = <?php
                     $ct = array();
                     foreach ($conditions as $k => $v) {
-                        $ct[] = array('key' => $k, 'label' => $v['label'], 'needs_cat' => (bool)$v['needs_cat']);
+                        $ct[] = array('key' => $k, 'label' => $v['label'], 'needs_cat' => (bool)$v['needs_cat'], 'group' => $v['group'] ?? '');
                     }
                     echo json_encode($ct);
                 ?>;
@@ -7374,9 +7374,18 @@ JAVASCRIPT;
                 }
 
                 function buildConditionOptions(selected) {
-                    return conditionTypes.map(function(ct) {
-                        return '<option value="' + ct.key + '"' + (ct.key === selected ? ' selected' : '') + '>' + ct.label + '</option>';
-                    }).join('');
+                    var html = '';
+                    var curGroup = null;
+                    conditionTypes.forEach(function(ct) {
+                        if (ct.group && ct.group !== curGroup) {
+                            if (curGroup !== null) html += '</optgroup>';
+                            html += '<optgroup label="' + ct.group + '">';
+                            curGroup = ct.group;
+                        }
+                        html += '<option value="' + ct.key + '"' + (ct.key === selected ? ' selected' : '') + '>' + ct.label + '</option>';
+                    });
+                    if (curGroup !== null) html += '</optgroup>';
+                    return html;
                 }
 
                 function needsCat(ctKey) {
