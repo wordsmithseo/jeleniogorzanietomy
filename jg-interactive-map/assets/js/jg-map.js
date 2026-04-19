@@ -7533,7 +7533,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             'legendary': '#f59e0b'
           };
 
-          var isAdminView = CFG.isAdmin && +userId !== +CFG.currentUserId;
+          var isAdminView = CFG.isAdmin;
 
           var html = '<header style="background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);padding:20px;border-radius:12px 12px 0 0">' +
             '<h3 style="margin:0;color:#fff;font-size:20px">🏆 Osiągnięcia</h3>' +
