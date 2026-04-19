@@ -10113,13 +10113,13 @@ footer.site-footer .site-branding {
    Elementor cannot override them.
    ============================================================ */
 
-/* ── Desktop: absolute div to the right of zoom controls (top/left set by JS) ── */
-#jg-challenge-widget-desktop {
+/* ── Desktop challenge widgets — one per active challenge, stacked vertically ── */
+[id^="jg-cw-desk-"] {
   all: initial !important;
   display: block !important;
   position: absolute !important;
   top: 14px !important;
-  left: 62px !important; /* overwritten by JS once zoom control is measured */
+  left: 62px !important; /* overwritten by JS */
   z-index: 9996 !important;
   background: #7f1d1d !important;
   border-radius: 10px !important;
@@ -10131,36 +10131,36 @@ footer.site-footer .site-branding {
   cursor: default !important;
   pointer-events: auto !important;
 }
-#jg-challenge-widget-desktop * {
+[id^="jg-cw-desk-"] * {
   box-sizing: border-box !important;
   font-family: inherit !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-inner {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-inner {
   display: flex !important;
   align-items: center !important;
   gap: 10px !important;
   padding: 10px 12px !important;
   box-sizing: border-box !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-svg {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-svg {
   width: 64px !important;
   height: 64px !important;
   flex-shrink: 0 !important;
   transform: rotate(-90deg) !important;
   overflow: visible !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-track {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-track {
   fill: none !important;
   stroke: rgba(255,255,255,0.2) !important;
   stroke-width: 6 !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-fill {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-fill {
   fill: none !important;
   stroke: #fbbf24 !important;
   stroke-width: 6 !important;
   stroke-linecap: round !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-pct {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-pct {
   fill: #fff !important;
   font-size: 13px !important;
   font-weight: 700 !important;
@@ -10168,7 +10168,7 @@ footer.site-footer .site-branding {
   transform: rotate(90deg) !important;
   transform-origin: 32px 32px !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-ratio {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-ratio {
   fill: rgba(255,255,255,0.7) !important;
   font-size: 9px !important;
   font-weight: 500 !important;
@@ -10176,12 +10176,12 @@ footer.site-footer .site-branding {
   transform: rotate(90deg) !important;
   transform-origin: 32px 32px !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-body {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-body {
   flex: 1 !important;
   min-width: 0 !important;
   font-family: inherit !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-label {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-label {
   font-size: 9px !important;
   font-weight: 700 !important;
   letter-spacing: 0.5px !important;
@@ -10190,7 +10190,7 @@ footer.site-footer .site-branding {
   margin-bottom: 3px !important;
   line-height: 1 !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-title {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-title {
   font-size: 12px !important;
   font-weight: 700 !important;
   color: #fff !important;
@@ -10198,18 +10198,34 @@ footer.site-footer .site-branding {
   margin-bottom: 4px !important;
   word-break: break-word !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-desc {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-desc {
   font-size: 10px !important;
   color: rgba(255,255,255,0.8) !important;
   line-height: 1.35 !important;
   margin-bottom: 4px !important;
   word-break: break-word !important;
 }
-#jg-challenge-widget-desktop .jg-cw-ctrl-meta {
+[id^="jg-cw-desk-"] .jg-cw-ctrl-meta {
   font-size: 10px !important;
   color: #fcd34d !important;
   font-weight: 600 !important;
   line-height: 1 !important;
+}
+
+/* Desktop completion state */
+[id^="jg-cw-desk-"].jg-cw-done {
+  background: #064e3b !important;
+  border: 2px solid #10b981 !important;
+  box-shadow: 0 0 12px rgba(16,185,129,0.4) !important;
+}
+[id^="jg-cw-desk-"].jg-cw-done .jg-cw-ctrl-fill {
+  stroke: #10b981 !important;
+}
+[id^="jg-cw-desk-"].jg-cw-done .jg-cw-ctrl-pct {
+  font-size: 18px !important;
+}
+[id^="jg-cw-desk-"].jg-cw-done .jg-cw-ctrl-label {
+  color: #6ee7b7 !important;
 }
 
 /* ── Mobile: pill widget between FABs ── */
@@ -10288,21 +10304,7 @@ footer.site-footer .site-branding {
   white-space: nowrap !important;
 }
 
-/* Challenge widget — completion state */
-#jg-challenge-widget-desktop.jg-cw-done {
-  background: #064e3b !important;
-  border: 2px solid #10b981 !important;
-  box-shadow: 0 0 12px rgba(16,185,129,0.4) !important;
-}
-#jg-challenge-widget-desktop.jg-cw-done .jg-cw-ctrl-fill {
-  stroke: #10b981 !important;
-}
-#jg-challenge-widget-desktop.jg-cw-done .jg-cw-ctrl-pct {
-  font-size: 18px !important;
-}
-#jg-challenge-widget-desktop.jg-cw-done .jg-cw-ctrl-label {
-  color: #6ee7b7 !important;
-}
+/* Mobile completion state */
 #jg-challenge-widget-mobile.jg-cw-done .jg-cw-m-progress-fill {
   background: #10b981 !important;
 }
@@ -10310,8 +10312,100 @@ footer.site-footer .site-branding {
   color: #6ee7b7 !important;
 }
 
+/* Mobile expand button (▲ other challenges) */
+#jg-challenge-widget-mobile .jg-cw-m-expand-btn {
+  background: rgba(255,255,255,0.12) !important;
+  border: 1px solid rgba(255,255,255,0.28) !important;
+  border-radius: 50% !important;
+  color: rgba(255,255,255,0.85) !important;
+  cursor: pointer !important;
+  font-size: 8px !important;
+  width: 20px !important;
+  height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  pointer-events: auto !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  transition: background 0.15s !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-expand-btn.jg-cw-open {
+  color: #fcd34d !important;
+  background: rgba(255,255,255,0.22) !important;
+  transform: rotate(180deg) !important;
+}
+
+/* Mobile challenges dropdown — expands upward */
+#jg-challenge-widget-mobile .jg-cw-m-dropdown {
+  display: none !important;
+  position: absolute !important;
+  bottom: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-bottom: 6px !important;
+  background: rgba(20,5,5,0.97) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255,255,255,0.13) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.4) !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-dropdown.jg-cw-open {
+  display: block !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-dropdown-title {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,0.4) !important;
+  padding: 8px 12px 4px !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-dropdown-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  border-top: 1px solid rgba(255,255,255,0.07) !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-dropdown-item:hover {
+  background: rgba(255,255,255,0.07) !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-dropdown-item.jg-cw-di-done {
+  background: rgba(6,78,59,0.35) !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-di-icon {
+  font-size: 14px !important;
+  flex-shrink: 0 !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-di-body {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-di-title {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #fff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-di-progress {
+  font-size: 10px !important;
+  color: rgba(255,255,255,0.55) !important;
+  margin-top: 1px !important;
+}
+#jg-challenge-widget-mobile .jg-cw-m-di-progress.jg-cw-done-text {
+  color: #6ee7b7 !important;
+  font-weight: 700 !important;
+}
+
 /* Challenge widget — dismiss button (shown when done) */
-#jg-challenge-widget-desktop .jg-cw-close-btn,
+[id^="jg-cw-desk-"] .jg-cw-close-btn,
 #jg-challenge-widget-mobile .jg-cw-close-btn {
   position: absolute !important;
   top: 5px !important;
@@ -10332,7 +10426,7 @@ footer.site-footer .site-branding {
   padding: 0 !important;
   z-index: 10 !important;
 }
-#jg-challenge-widget-desktop .jg-cw-close-btn:hover,
+[id^="jg-cw-desk-"] .jg-cw-close-btn:hover,
 #jg-challenge-widget-mobile .jg-cw-close-btn:hover {
   background: rgba(255,255,255,0.35) !important;
 }

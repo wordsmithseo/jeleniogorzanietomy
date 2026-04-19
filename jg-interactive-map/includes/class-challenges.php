@@ -144,43 +144,52 @@ class JG_Map_Challenges {
     // =========================================================================
 
     public static function get_active_with_progress() {
-        if (!is_user_logged_in()) return null;
+        $all = self::get_all_active_with_progress();
+        return !empty($all) ? $all[0] : null;
+    }
+
+    public static function get_all_active_with_progress() {
+        if (!is_user_logged_in()) return array();
 
         global $wpdb;
         $table   = $wpdb->prefix . 'jg_map_challenges';
         $now     = current_time('mysql');
         $user_id = get_current_user_id();
 
-        $challenge = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM `$table` WHERE is_active = 1 AND start_date <= %s AND end_date >= %s ORDER BY start_date DESC LIMIT 1",
+        $challenges = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM `$table` WHERE is_active = 1 AND start_date <= %s AND end_date >= %s ORDER BY start_date DESC LIMIT 4",
             $now, $now
         ));
 
-        if (!$challenge) {
-            return null;
-        }
-
-        $progress = self::calculate_progress($challenge, $user_id);
-
-        if ($progress >= intval($challenge->target_count) && !empty($challenge->ach_name ?? '')) {
-            self::maybe_award_challenge_achievement($challenge, $user_id);
-        }
+        if (!$challenges) return array();
 
         $valid_rarities = array('common', 'uncommon', 'rare', 'epic', 'legendary');
-        return array(
-            'id'             => (int) $challenge->id,
-            'title'          => $challenge->title,
-            'description'    => $challenge->description,
-            'condition_type' => $challenge->condition_type,
-            'category'       => $challenge->category,
-            'target_count'   => (int) $challenge->target_count,
-            'xp_reward'      => (int) $challenge->xp_reward,
-            'progress'       => $progress,
-            'end_date'       => $challenge->end_date,
-            'ach_name'       => ($challenge->ach_name ?? '') ?: null,
-            'ach_icon'       => ($challenge->ach_icon ?? '') ?: null,
-            'ach_rarity'     => in_array($challenge->ach_rarity ?? '', $valid_rarities) ? $challenge->ach_rarity : 'rare',
-        );
+        $result = array();
+
+        foreach ($challenges as $challenge) {
+            $progress = self::calculate_progress($challenge, $user_id);
+
+            if ($progress >= intval($challenge->target_count) && !empty($challenge->ach_name ?? '')) {
+                self::maybe_award_challenge_achievement($challenge, $user_id);
+            }
+
+            $result[] = array(
+                'id'             => (int) $challenge->id,
+                'title'          => $challenge->title,
+                'description'    => $challenge->description,
+                'condition_type' => $challenge->condition_type,
+                'category'       => $challenge->category,
+                'target_count'   => (int) $challenge->target_count,
+                'xp_reward'      => (int) $challenge->xp_reward,
+                'progress'       => $progress,
+                'end_date'       => $challenge->end_date,
+                'ach_name'       => ($challenge->ach_name ?? '') ?: null,
+                'ach_icon'       => ($challenge->ach_icon ?? '') ?: null,
+                'ach_rarity'     => in_array($challenge->ach_rarity ?? '', $valid_rarities) ? $challenge->ach_rarity : 'rare',
+            );
+        }
+
+        return $result;
     }
 
     /**
@@ -539,7 +548,7 @@ class JG_Map_Challenges {
 
     public function ajax_get_active_challenge() {
         check_ajax_referer('jg_map_nonce', '_ajax_nonce');
-        wp_send_json_success(self::get_active_with_progress());
+        wp_send_json_success(self::get_all_active_with_progress());
     }
 
     public function ajax_get_all() {
