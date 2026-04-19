@@ -7583,31 +7583,37 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               (function(btn) {
                 btn.onclick = function(e) {
                   e.stopPropagation();
-                  var card        = btn.parentNode;
-                  var achId       = parseInt(card.getAttribute('data-ach-id'));
-                  var isZeroed    = card.getAttribute('data-zeroed') === '1';
+                  var card           = btn.parentNode;
+                  var achId          = parseInt(card.getAttribute('data-ach-id'));
+                  var isZeroed       = card.getAttribute('data-zeroed') === '1';
                   var isChallengeAch = card.getAttribute('data-challenge-ach') === '1';
-                  var action      = (isChallengeAch || isZeroed) ? 'block' : 'zero';
+                  var action         = (isChallengeAch || isZeroed) ? 'block' : 'zero';
+                  var achName        = (card.querySelector('.jg-achievement-card-name') || {}).textContent || 'to osiągnięcie';
+                  var msg            = action === 'block'
+                    ? 'Czy na pewno chcesz <strong>trwale usunąć</strong> osiągnięcie <em>' + esc(achName) + '</em>?'
+                    : 'Czy na pewno chcesz <strong>wyzerować</strong> osiągnięcie <em>' + esc(achName) + '</em>? (będzie widoczne jako zablokowane)';
 
-                  api('jg_admin_manage_user_achievement', {
-                    user_id: userId,
-                    achievement_id: achId,
-                    manage_action: action
-                  }).then(function() {
-                    if (action === 'block') {
-                      card.parentNode.removeChild(card);
-                    } else {
-                      // Zeroed: show as locked
-                      card.classList.add('jg-achievement-locked', 'jg-achievement-zeroed');
-                      card.setAttribute('data-zeroed', '1');
-                      var iconSpan = card.querySelector('.jg-achievement-card-icon span');
-                      if (iconSpan) iconSpan.textContent = '🔒';
-                      var iconBox = card.querySelector('.jg-achievement-card-icon');
-                      if (iconBox) iconBox.style.boxShadow = 'none';
-                      var dateEl = card.querySelector('.jg-achievement-card-date');
-                      if (dateEl) dateEl.parentNode.removeChild(dateEl);
-                    }
-                  }).catch(function() {});
+                  showConfirm(msg).then(function(confirmed) {
+                    if (!confirmed) return;
+                    api('jg_admin_manage_user_achievement', {
+                      user_id: userId,
+                      achievement_id: achId,
+                      manage_action: action
+                    }).then(function() {
+                      if (action === 'block') {
+                        card.parentNode.removeChild(card);
+                      } else {
+                        card.classList.add('jg-achievement-locked', 'jg-achievement-zeroed');
+                        card.setAttribute('data-zeroed', '1');
+                        var iconSpan = card.querySelector('.jg-achievement-card-icon span');
+                        if (iconSpan) iconSpan.textContent = '🔒';
+                        var iconBox = card.querySelector('.jg-achievement-card-icon');
+                        if (iconBox) iconBox.style.boxShadow = 'none';
+                        var dateEl = card.querySelector('.jg-achievement-card-date');
+                        if (dateEl) dateEl.parentNode.removeChild(dateEl);
+                      }
+                    }).catch(function() {});
+                  });
                 };
               })(removeBtns[j]);
             }
