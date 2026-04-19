@@ -15395,15 +15395,19 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           '</div>' +
           (sd ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '');
 
-        // Guest: clicking the bar opens benefits/login modal.
-        // The container has pointer-events:none so we target the bar directly (it
-        // has pointer-events:auto via CSS .jg-cw-guest .jg-cw-m-bar).
+        // Block all Leaflet-triggering events on the bar itself — this is the
+        // element users actually tap. The container has pointer-events:none so
+        // disableClickPropagation on the container is unreliable; putting it on
+        // the bar (which has pointer-events:auto) guarantees interception.
         var barEl = mw.querySelector('.jg-cw-m-bar');
-        if (isGuest && barEl) {
-          barEl.onclick = function(e) {
-            e.stopPropagation();
-            showBenefitsModal();
-          };
+        if (barEl) {
+          L.DomEvent.disableClickPropagation(barEl);
+          if (isGuest) {
+            barEl.onclick = function(e) {
+              e.stopPropagation();
+              showBenefitsModal();
+            };
+          }
         }
 
         // Bind expand button
