@@ -3556,9 +3556,6 @@ class JG_Map_Ajax_Handlers {
 
         JG_Map_Database::delete_point($point_id);
 
-        // Resolve any pending reports for this point
-        JG_Map_Database::resolve_reports($point_id, 'Punkt został odrzucony przez moderatora: ' . $reason);
-
         // Queue sync event via dedicated sync manager
         JG_Map_Sync_Manager::get_instance()->queue_point_deleted($point_id, array(
             'reason' => $reason,
@@ -4833,21 +4830,22 @@ class JG_Map_Ajax_Handlers {
 
         // Notify editor (the person who submitted the edit)
         $point = JG_Map_Database::get_point($history['point_id']);
+        $point_title = $point ? $point['title'] : "ID:{$history['point_id']}";
         $editor = get_userdata($history['user_id']);
         if ($editor && $editor->user_email) {
             $subject = 'Portal Jeleniogórzanie to my - Twoja edycja została zaakceptowana';
-            $message = "Twoja edycja miejsca \"{$point['title']}\" została zaakceptowana przez moderatora.";
+            $message = "Twoja edycja miejsca \"{$point_title}\" została zaakceptowana przez moderatora.";
             wp_mail($editor->user_email, $subject, $message);
         }
 
         // Queue sync event via dedicated sync manager
         JG_Map_Sync_Manager::get_instance()->queue_edit_approved($history['point_id'], array(
             'history_id' => $history_id,
-            'point_title' => $point['title'],
-            'point_type' => $point['type'],
+            'point_title' => $point_title,
+            'point_type' => $point ? $point['type'] : '',
             'editor_id' => intval($history['user_id']),
-            'lat' => floatval($point['lat']),
-            'lng' => floatval($point['lng'])
+            'lat' => $point ? floatval($point['lat']) : 0.0,
+            'lng' => $point ? floatval($point['lng']) : 0.0
         ));
 
         // Log action
@@ -4916,10 +4914,11 @@ class JG_Map_Ajax_Handlers {
 
         // Notify editor (the person who submitted the edit)
         $point = JG_Map_Database::get_point($history['point_id']);
+        $point_title = $point ? $point['title'] : "ID:{$history['point_id']}";
         $editor = get_userdata($history['user_id']);
         if ($editor && $editor->user_email) {
             $subject = 'Portal Jeleniogórzanie to my - Twoja edycja została odrzucona';
-            $message = "Twoja edycja miejsca \"{$point['title']}\" została odrzucona przez moderatora.\n\n";
+            $message = "Twoja edycja miejsca \"{$point_title}\" została odrzucona przez moderatora.\n\n";
             if ($reason) {
                 $message .= "Powód: $reason\n";
             }
@@ -4931,7 +4930,7 @@ class JG_Map_Ajax_Handlers {
             'reject_edit',
             'history',
             $history_id,
-            sprintf('Odrzucono edycję miejsca: %s. Powód: %s', $point['title'], $reason)
+            sprintf('Odrzucono edycję miejsca: %s. Powód: %s', $point_title, $reason)
         );
 
         wp_send_json_success(array('message' => 'Edycja odrzucona'));
@@ -5296,12 +5295,13 @@ class JG_Map_Ajax_Handlers {
 
         // Get point info for notification
         $point = JG_Map_Database::get_point($history['point_id']);
+        $point_title = $point ? $point['title'] : "ID:{$history['point_id']}";
         $editor = get_userdata($history['user_id']);
 
         // Notify editor that owner rejected
         if ($editor && $editor->user_email) {
             $subject = 'Portal Jeleniogórzanie to my - Właściciel odrzucił twoją edycję';
-            $message = "Właściciel miejsca \"{$point['title']}\" odrzucił twoją propozycję zmian.\n\n";
+            $message = "Właściciel miejsca \"{$point_title}\" odrzucił twoją propozycję zmian.\n\n";
             if ($reason) {
                 $message .= "Powód: $reason\n";
             }
@@ -5320,7 +5320,7 @@ class JG_Map_Ajax_Handlers {
             'owner_reject_edit',
             'history',
             $history_id,
-            sprintf('Właściciel odrzucił propozycję edycji miejsca: %s. Powód: %s', $point['title'], $reason)
+            sprintf('Właściciel odrzucił propozycję edycji miejsca: %s. Powód: %s', $point_title, $reason)
         );
 
         wp_send_json_success(array('message' => 'Edycja odrzucona'));
