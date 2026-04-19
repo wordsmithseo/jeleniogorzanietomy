@@ -4082,6 +4082,7 @@ class JG_Map_Ajax_Handlers {
     private function notify_admin_new_point($point_id) {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
 
         $subject = 'Portal Jeleniogórzanie to my - Nowy punkt do moderacji';
         $message = "Nowy punkt został dodany i czeka na moderację:\n\n";
@@ -4098,6 +4099,7 @@ class JG_Map_Ajax_Handlers {
     private function notify_admin_new_report($point_id, $reporter_user_id = 0) {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
 
         // Get reporter name
         $reporter_name = 'Nieznany';
@@ -4125,6 +4127,7 @@ class JG_Map_Ajax_Handlers {
         }
 
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
 
         $subject = 'Portal Jeleniogórzanie to my - Potwierdzenie zgłoszenia miejsca';
         $message = "Dziękujemy za zgłoszenie miejsca \"{$point['title']}\".\n\n";
@@ -4142,7 +4145,7 @@ class JG_Map_Ajax_Handlers {
         $point = JG_Map_Database::get_point($point_id);
         $reports = JG_Map_Database::get_reports($point_id);
 
-        if (empty($reports)) {
+        if (!$point || empty($reports)) {
             return;
         }
 
@@ -4181,6 +4184,7 @@ class JG_Map_Ajax_Handlers {
      */
     private function notify_author_approved($point_id) {
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
         $author = get_userdata($point['author_id']);
 
         if ($author && $author->user_email) {
@@ -4196,6 +4200,7 @@ class JG_Map_Ajax_Handlers {
      */
     private function notify_author_rejected($point_id, $reason) {
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
         $author = get_userdata($point['author_id']);
 
         if ($author && $author->user_email) {
@@ -4215,6 +4220,7 @@ class JG_Map_Ajax_Handlers {
     private function notify_admin_edit($point_id) {
         $admin_email = get_option('admin_email');
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
 
         $subject = 'Portal Jeleniogórzanie to my - Edycja miejsca do zatwierdzenia';
         $message = "Użytkownik zaktualizował miejsce:\n\n";
@@ -4234,6 +4240,7 @@ class JG_Map_Ajax_Handlers {
         }
 
         $point = JG_Map_Database::get_point($point_id);
+        if (!$point) return;
         $editor = wp_get_current_user();
 
         $subject = 'Portal Jeleniogórzanie to my - Propozycja edycji twojego miejsca';
