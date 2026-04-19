@@ -205,8 +205,13 @@ class JG_Map_Challenges {
         foreach ($challenges as $challenge) {
             $progress = self::calculate_progress($challenge, $user_id);
 
-            if ($progress >= intval($challenge->target_count) && !empty($challenge->ach_name ?? '')) {
-                self::maybe_award_challenge_achievement($challenge, $user_id);
+            if ($progress >= intval($challenge->target_count)) {
+                if (!empty($challenge->ach_name ?? '')) {
+                    self::maybe_award_challenge_achievement($challenge, $user_id);
+                }
+                if (intval($challenge->xp_reward) > 0) {
+                    self::maybe_award_challenge_xp($challenge, $user_id);
+                }
             }
 
             $result[] = array(
@@ -613,6 +618,23 @@ class JG_Map_Challenges {
      * Award the challenge-specific achievement to a user if not already held.
      * Called when progress reaches the target.
      */
+    private static function maybe_award_challenge_xp($challenge, $user_id) {
+        $xp = intval($challenge->xp_reward);
+        if ($xp <= 0) return;
+
+        global $wpdb;
+        $log = $wpdb->prefix . 'jg_map_xp_log';
+
+        // Only award once per challenge per user (reference_id = challenge id, source = challenge_complete)
+        $already = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM `$log` WHERE user_id = %d AND source = 'challenge_complete' AND reference_id = %d LIMIT 1",
+            $user_id, intval($challenge->id)
+        ));
+        if ($already) return;
+
+        JG_Map_Levels_Achievements::award_xp($user_id, 'challenge_complete', intval($challenge->id), $xp);
+    }
+
     private static function maybe_award_challenge_achievement($challenge, $user_id) {
         if (empty($challenge->ach_name ?? '')) return;
 
