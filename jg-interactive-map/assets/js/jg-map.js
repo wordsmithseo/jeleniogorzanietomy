@@ -14,13 +14,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
   ? window.history.replaceState.bind(window.history)
   : null;
 
-// Apply saved dark mode preference immediately (before first render)
-(function() {
-  var dm = localStorage.getItem('jg-dark-mode');
-  if (dm === 'dark') document.documentElement.classList.add('jg-dark');
-  else if (dm === 'light') document.documentElement.classList.add('jg-light');
-}());
-
 (function($) {
   'use strict';
 
@@ -894,15 +887,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Potwierdź hasło</label>' +
             '<input type="password" id="profile-password-confirm" class="jg-input" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
             '</div>' +
-            '<div style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e5e5;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
-            '<div><div style="font-weight:600;color:#333;font-size:14px">Tryb ciemny</div>' +
-            '<div style="font-size:12px;color:#666;margin-top:3px">Zastępuje ustawienie systemowe</div></div>' +
-            '<label style="position:relative;display:inline-block;width:48px;height:26px;flex-shrink:0;cursor:pointer">' +
-            '<input type="checkbox" id="jg-dark-toggle" style="opacity:0;position:absolute;inset:0;margin:0;cursor:pointer;z-index:1">' +
-            '<span id="jg-dark-slider" style="position:absolute;inset:0;border-radius:26px;transition:background 0.2s;pointer-events:none;background:#ccc"></span>' +
-            '<span id="jg-dark-knob" style="position:absolute;left:3px;top:3px;width:20px;height:20px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:transform 0.2s;pointer-events:none"></span>' +
-            '</label>' +
-            '</div>' +
             '</form>' +
             '</div>' +
             '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
@@ -911,40 +895,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '</div>';
 
           open(modalEdit, html);
-
-          // Dark mode toggle
-          var darkToggle = document.getElementById('jg-dark-toggle');
-          var darkSlider = document.getElementById('jg-dark-slider');
-          var darkKnob   = document.getElementById('jg-dark-knob');
-          function jgToggleUI(on) {
-            if (darkSlider) darkSlider.style.background = on ? '#8d2324' : '#ccc';
-            if (darkKnob)   darkKnob.style.transform    = on ? 'translateX(22px)' : 'none';
-          }
-          function jgIsDark() {
-            var dm = localStorage.getItem('jg-dark-mode');
-            if (dm === 'dark')  return true;
-            if (dm === 'light') return false;
-            return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          }
-          if (darkToggle) {
-            var initDark = jgIsDark();
-            darkToggle.checked = initDark;
-            jgToggleUI(initDark);
-            darkToggle.addEventListener('change', function() {
-              var on  = this.checked;
-              var doc = document.documentElement;
-              jgToggleUI(on);
-              if (on) {
-                doc.classList.add('jg-dark');
-                doc.classList.remove('jg-light');
-                localStorage.setItem('jg-dark-mode', 'dark');
-              } else {
-                doc.classList.remove('jg-dark');
-                doc.classList.add('jg-light');
-                localStorage.setItem('jg-dark-mode', 'light');
-              }
-            });
-          }
 
           // Load current user data
           jQuery.ajax({
