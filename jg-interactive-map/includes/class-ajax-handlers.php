@@ -3548,6 +3548,9 @@ class JG_Map_Ajax_Handlers {
             $this->decrement_daily_limit($author_id, 'reports');
         }
 
+        // Notify author before deletion — notify_author_rejected re-fetches point internally
+        $this->notify_author_rejected($point_id, $reason);
+
         JG_Map_Database::delete_point($point_id);
 
         // Resolve any pending reports for this point
@@ -3567,9 +3570,6 @@ class JG_Map_Ajax_Handlers {
             $point_id,
             sprintf('Odrzucono punkt: %s. Powód: %s', $point['title'], $reason)
         );
-
-        // Notify author
-        $this->notify_author_rejected($point_id, $reason);
 
         // Store rejected point ID for real-time broadcast via Heartbeat
         $rejected_points = get_transient('jg_map_rejected_points');
@@ -4584,17 +4584,8 @@ class JG_Map_Ajax_Handlers {
      * Approve edit (admin only)
      */
     public function admin_approve_edit() {
-        try {
-            $this->verify_nonce();
-        } catch (Exception $e) {
-            throw $e;
-        }
-
-        try {
-            $this->check_admin();
-        } catch (Exception $e) {
-            throw $e;
-        }
+        $this->verify_nonce();
+        $this->check_admin();
 
         $history_id = intval($_POST['history_id'] ?? 0);
 
@@ -4613,6 +4604,11 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        if ($history['status'] !== 'pending') {
+            wp_send_json_error(array('message' => 'Ta edycja została już rozpatrzona'));
+            exit;
+        }
+
         // Check if admin is requesting to override owner approval
         $override_owner = !empty($_POST['override_owner']) && intval($_POST['override_owner']) === 1;
 
@@ -4626,7 +4622,7 @@ class JG_Map_Ajax_Handlers {
                         $table,
                         array(
                             'owner_approval_status' => 'approved',
-                            'owner_approval_at' => current_time('mysql'),
+                            'owner_approval_at' => current_time('mysql', true),
                             'owner_approval_by' => $current_user_id
                         ),
                         array('id' => $history_id)
@@ -4649,7 +4645,7 @@ class JG_Map_Ajax_Handlers {
                             $table,
                             array(
                                 'owner_approval_status' => 'approved',
-                                'owner_approval_at' => current_time('mysql'),
+                                'owner_approval_at' => current_time('mysql', true),
                                 'owner_approval_by' => $current_user_id
                             ),
                             array('id' => $history_id)
@@ -4817,14 +4813,20 @@ class JG_Map_Ajax_Handlers {
             $update_data['serves_cuisine'] = !empty($new_values['serves_cuisine']) ? $new_values['serves_cuisine'] : null;
         }
 
-        // Clear pending_edit flag — edit has been approved
-        $update_data['pending_edit'] = 0;
-
         // Update point with new values
         JG_Map_Database::update_point($history['point_id'], $update_data);
 
         // Approve history
-        JG_Map_Database::approve_history($history_id, get_current_user_id());
+        JG_Map_Database::approve_history($history_id, $current_user_id);
+
+        // Clear pending_edit flag only if no other pending edits remain
+        $remaining_pending = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu','edit_offerings')",
+            $history['point_id']
+        ));
+        if (!$remaining_pending) {
+            JG_Map_Database::update_point($history['point_id'], array('pending_edit' => 0));
+        }
 
         // Notify editor (the person who submitted the edit)
         $point = JG_Map_Database::get_point($history['point_id']);
@@ -4885,15 +4887,18 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        if ($history['status'] !== 'pending') {
+            wp_send_json_error(array('message' => 'Ta edycja została już rozpatrzona'));
+            exit;
+        }
+
         // Reject history with reason
         JG_Map_Database::reject_history($history_id, get_current_user_id(), $reason);
 
-        // Clear pending_edit flag — edit has been rejected, no more pending changes
-        // (only clear if no other pending edits remain for this point)
-        global $wpdb;
+        // Clear pending_edit flag only if no other pending edits remain
         $history_table = JG_Map_Database::get_history_table();
         $remaining_pending = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $history_table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu')",
+            "SELECT COUNT(*) FROM $history_table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu','edit_offerings')",
             $history['point_id']
         ));
         if (!$remaining_pending) {
@@ -4975,7 +4980,7 @@ class JG_Map_Ajax_Handlers {
             array(
                 'status' => 'cancelled',
                 'rejection_reason' => 'Cofnięte przez użytkownika',
-                'resolved_at' => current_time('mysql'),
+                'resolved_at' => current_time('mysql', true),
                 'resolved_by' => $user_id
             ),
             array('id' => $history_id)
@@ -5072,8 +5077,8 @@ class JG_Map_Ajax_Handlers {
 
             // Add lat/lng if changed
             if (isset($new_values['lat']) && isset($new_values['lng'])) {
-                $update_data['lat'] = $new_values['lat'];
-                $update_data['lng'] = $new_values['lng'];
+                $update_data['lat'] = floatval($new_values['lat']);
+                $update_data['lng'] = floatval($new_values['lng']);
             }
             if (isset($new_values['address'])) {
                 $update_data['address'] = $new_values['address'];
@@ -5142,9 +5147,6 @@ class JG_Map_Ajax_Handlers {
                 }
             }
 
-            // Clear pending_edit flag
-            $update_data['pending_edit'] = 0;
-
             // Update point with new values
             JG_Map_Database::update_point($history['point_id'], $update_data);
 
@@ -5153,14 +5155,23 @@ class JG_Map_Ajax_Handlers {
                 $table,
                 array(
                     'owner_approval_status' => 'approved',
-                    'owner_approval_at' => current_time('mysql'),
+                    'owner_approval_at' => current_time('mysql', true),
                     'owner_approval_by' => $user_id,
                     'status' => 'approved',
-                    'resolved_at' => current_time('mysql'),
+                    'resolved_at' => current_time('mysql', true),
                     'resolved_by' => $user_id
                 ),
                 array('id' => $history_id)
             );
+
+            // Clear pending_edit flag only if no other pending edits remain
+            $remaining_pending_owner = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table WHERE point_id = %d AND status = 'pending' AND action_type IN ('edit','edit_menu','edit_offerings')",
+                $history['point_id']
+            ));
+            if (!$remaining_pending_owner) {
+                JG_Map_Database::update_point($history['point_id'], array('pending_edit' => 0));
+            }
 
             // Notify editor that edit was fully approved
             if ($editor && $editor->user_email) {
@@ -5200,7 +5211,7 @@ class JG_Map_Ajax_Handlers {
                 $table,
                 array(
                     'owner_approval_status' => 'approved',
-                    'owner_approval_at' => current_time('mysql'),
+                    'owner_approval_at' => current_time('mysql', true),
                     'owner_approval_by' => $user_id
                 ),
                 array('id' => $history_id)
@@ -5270,10 +5281,10 @@ class JG_Map_Ajax_Handlers {
             $table,
             array(
                 'owner_approval_status' => 'rejected',
-                'owner_approval_at' => current_time('mysql'),
+                'owner_approval_at' => current_time('mysql', true),
                 'owner_approval_by' => $user_id,
                 'status' => 'rejected',
-                'resolved_at' => current_time('mysql'),
+                'resolved_at' => current_time('mysql', true),
                 'resolved_by' => $user_id,
                 'rejection_reason' => $reason
             ),
