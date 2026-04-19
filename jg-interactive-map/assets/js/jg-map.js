@@ -15395,23 +15395,23 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           '</div>' +
           (sd ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '');
 
-        // Guest: whole pill opens login modal
-        if (isGuest) {
-          mw.style.cursor = 'pointer';
-          mw.onclick = function(e) {
-            if (e.target.closest && e.target.closest('.jg-cw-m-expand-btn')) return;
-            openLoginModal();
+        // Guest: clicking the bar opens benefits/login modal.
+        // The container has pointer-events:none so we target the bar directly (it
+        // has pointer-events:auto via CSS .jg-cw-guest .jg-cw-m-bar).
+        var barEl = mw.querySelector('.jg-cw-m-bar');
+        if (isGuest && barEl) {
+          barEl.onclick = function(e) {
+            e.stopPropagation();
+            showBenefitsModal();
           };
-        } else {
-          mw.style.cursor = '';
-          mw.onclick = null;
         }
 
         // Bind expand button
         var expBtn  = mw.querySelector('.jg-cw-m-expand-btn');
         var dropdown = mw.querySelector('.jg-cw-m-dropdown');
         if (expBtn && dropdown) {
-          expBtn.onclick = function() {
+          expBtn.onclick = function(e) {
+            e.stopPropagation();
             var open = dropdown.classList.contains('jg-cw-open');
             dropdown.classList.toggle('jg-cw-open', !open);
             expBtn.classList.toggle('jg-cw-open', !open);
@@ -15422,7 +15422,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var items = mw.querySelectorAll('.jg-cw-m-dropdown-item');
         for (var _ii = 0; _ii < items.length; _ii++) {
           (function(item) {
-            item.onclick = function() {
+            item.onclick = function(e) {
+              e.stopPropagation();
               _mobileSelChId = parseInt(item.getAttribute('data-ch-id'), 10);
               _buildMobilePill();
             };
@@ -15433,7 +15434,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var closeBtn = mw.querySelector('.jg-cw-close-btn');
         if (closeBtn) {
           (function(dismissId) {
-            closeBtn.onclick = function() {
+            closeBtn.onclick = function(e) {
+              e.stopPropagation();
               try { localStorage.setItem('jg_ch_dismissed_' + dismissId, '1'); } catch(e) {}
               _mobileChList = _mobileChList.filter(function(c) { return c.id !== dismissId; });
               if (_mobileChList.length) {
@@ -15500,7 +15502,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                     '<div class="jg-cw-ctrl-meta jg-cw-guest-hint">Zaloguj si\u0119, by \u015bledzi\u0107 post\u0119p \u2192</div>' +
                   '</div>' +
                 '</div>';
-              dw.onclick = function() { openLoginModal(); };
+              dw.onclick = function(e) { e.stopPropagation(); showBenefitsModal(); };
             } else {
               dw.innerHTML =
                 (v.done ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '') +
@@ -15524,7 +15526,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 try { localStorage.setItem('jg_ch_done_' + ch.id, '1'); } catch(e) {}
                 (function(widget, chId) {
                   var cb = widget.querySelector('.jg-cw-close-btn');
-                  if (cb) cb.onclick = function() {
+                  if (cb) cb.onclick = function(e) {
+                    e.stopPropagation();
                     try { localStorage.setItem('jg_ch_dismissed_' + chId, '1'); } catch(e) {}
                     widget.style.setProperty('display', 'none', 'important');
                   };
@@ -15660,7 +15663,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   _dCb.title = 'Zamknij';
                   _dCb.textContent = '\xd7';
                   (function(w, id) {
-                    _dCb.onclick = function() {
+                    _dCb.onclick = function(e) {
+                      e.stopPropagation();
                       try { localStorage.setItem('jg_ch_dismissed_' + id, '1'); } catch(e) {}
                       w.style.setProperty('display', 'none', 'important');
                     };

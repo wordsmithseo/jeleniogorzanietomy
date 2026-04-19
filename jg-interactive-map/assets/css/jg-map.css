@@ -10335,9 +10335,10 @@ footer.site-footer .site-branding {
 }
 
 /* Mobile guest state */
-#jg-challenge-widget-mobile.jg-cw-guest {
-  background: #1e3a5f !important;
+#jg-challenge-widget-mobile.jg-cw-guest .jg-cw-m-bar {
+  background: rgba(30,58,95,0.93) !important;
   cursor: pointer !important;
+  pointer-events: auto !important;
 }
 #jg-challenge-widget-mobile .jg-cw-m-guest-hint {
   font-size: 10px !important;
