@@ -15349,6 +15349,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var sp   = Math.min(selCh.progress, selCh.target_count);
         var spct = selCh.target_count > 0 ? Math.round((sp / selCh.target_count) * 100) : 0;
         var sd   = spct >= 100;
+        var isGuest = !!selCh.user_is_guest;
 
         var selTitleHtml = $('<div>').text(selCh.title).html();
         var selDescRaw   = selCh.description ? selCh.description.slice(0, 60) + (selCh.description.length > 60 ? '\u2026' : '') : '';
@@ -15367,26 +15368,44 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               '<span class="jg-cw-m-di-icon">' + (_od ? '\u2705' : '\ud83c\udfc6') + '</span>' +
               '<div class="jg-cw-m-di-body">' +
                 '<div class="jg-cw-m-di-title">' + $('<div>').text(_oc.title).html() + '</div>' +
-                '<div class="jg-cw-m-di-progress' + (_od ? ' jg-cw-done-text' : '') + '">' + (_od ? '\u2713 Ukończono' : _op + '/' + _oc.target_count) + '</div>' +
+                '<div class="jg-cw-m-di-progress' + (_od ? ' jg-cw-done-text' : '') + '">' +
+                  (_oc.user_is_guest ? '\ud83d\udd12 Zaloguj si\u0119' : (_od ? '\u2713 Uko\u0144czono' : _op + '/' + _oc.target_count)) +
+                '</div>' +
               '</div></div>';
           }
           dropHtml += '</div>';
         }
 
-        mw.className = sd ? 'jg-cw-done' : '';
+        mw.className = sd ? 'jg-cw-done' : (isGuest ? 'jg-cw-guest' : '');
         mw.innerHTML =
           dropHtml +
           '<div class="jg-cw-m-bar">' +
-            '<span class="jg-cw-m-icon">' + (sd ? '\u2705' : '\ud83c\udfc6') + '</span>' +
+            '<span class="jg-cw-m-icon">' + (isGuest ? '\ud83d\udd12' : (sd ? '\u2705' : '\ud83c\udfc6')) + '</span>' +
             '<div class="jg-cw-m-body">' +
               '<div class="jg-cw-m-title">' + selTitleHtml + '</div>' +
               (selDescHtml ? '<div class="jg-cw-m-desc">' + selDescHtml + '</div>' : '') +
-              '<div class="jg-cw-m-progress-track"><div class="jg-cw-m-progress-fill" style="width:' + spct + '%"></div></div>' +
+              (isGuest
+                ? '<div class="jg-cw-m-guest-hint">Zaloguj si\u0119, by \u015bledzi\u0107 post\u0119p \u2192</div>'
+                : '<div class="jg-cw-m-progress-track"><div class="jg-cw-m-progress-fill" style="width:' + spct + '%"></div></div>') +
             '</div>' +
-            '<div class="jg-cw-m-count">' + (sd ? '\u2713' : sp + '/' + selCh.target_count) + '</div>' +
+            (isGuest
+              ? ''
+              : '<div class="jg-cw-m-count">' + (sd ? '\u2713' : sp + '/' + selCh.target_count) + '</div>') +
             (others.length ? '<button class="jg-cw-m-expand-btn" title="Inne wyzwania">&#9650;</button>' : '') +
           '</div>' +
           (sd ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '');
+
+        // Guest: whole pill opens login modal
+        if (isGuest) {
+          mw.style.cursor = 'pointer';
+          mw.onclick = function(e) {
+            if (e.target.closest && e.target.closest('.jg-cw-m-expand-btn')) return;
+            openLoginModal();
+          };
+        } else {
+          mw.style.cursor = '';
+          mw.onclick = null;
+        }
 
         // Bind expand button
         var expBtn  = mw.querySelector('.jg-cw-m-expand-btn');
@@ -15468,36 +15487,53 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             dw.id  = 'jg-cw-desk-' + ch.id;
             dw.setAttribute('data-ch-id', ch.id);
             if (v.done) dw.classList.add('jg-cw-done');
-            dw.innerHTML =
-              (v.done ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '') +
-              '<div class="jg-cw-ctrl-inner">' +
-                '<svg class="jg-cw-ctrl-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">' +
-                  '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-track"/>' +
-                  '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-fill"' +
-                    ' stroke-dasharray="' + circ + '" stroke-dashoffset="' + offset + '"/>' +
-                  '<text x="32" y="30" class="jg-cw-ctrl-pct">' + (v.done ? '\u2713' : v.pct + '%') + '</text>' +
-                  '<text x="32" y="42" class="jg-cw-ctrl-ratio">' + (v.done ? 'Gotowe!' : v.prog + '/' + ch.target_count) + '</text>' +
-                '</svg>' +
-                '<div class="jg-cw-ctrl-body">' +
-                  '<div class="jg-cw-ctrl-label">' + (v.done ? '\u2705 Uko\u0144czono!' : '\ud83c\udfc6 Wyzwanie') + '</div>' +
-                  '<div class="jg-cw-ctrl-title">' + titleHtml + '</div>' +
-                  (descHtml ? '<div class="jg-cw-ctrl-desc">' + descHtml + '</div>' : '') +
-                  '<div class="jg-cw-ctrl-meta">' + (v.done ? 'Osi\u0105gni\u0119cie odblokowane' : timeStr + (ch.xp_reward ? ' \xb7 +' + ch.xp_reward + ' XP' : '')) + '</div>' +
-                '</div>' +
-              '</div>';
+
+            if (ch.user_is_guest) {
+              dw.classList.add('jg-cw-guest');
+              dw.innerHTML =
+                '<div class="jg-cw-ctrl-inner">' +
+                  '<div class="jg-cw-ctrl-lock">\ud83d\udd12</div>' +
+                  '<div class="jg-cw-ctrl-body">' +
+                    '<div class="jg-cw-ctrl-label">\ud83c\udfc6 Wyzwanie</div>' +
+                    '<div class="jg-cw-ctrl-title">' + titleHtml + '</div>' +
+                    (descHtml ? '<div class="jg-cw-ctrl-desc">' + descHtml + '</div>' : '') +
+                    '<div class="jg-cw-ctrl-meta jg-cw-guest-hint">Zaloguj si\u0119, by \u015bledzi\u0107 post\u0119p \u2192</div>' +
+                  '</div>' +
+                '</div>';
+              dw.onclick = function() { openLoginModal(); };
+            } else {
+              dw.innerHTML =
+                (v.done ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '') +
+                '<div class="jg-cw-ctrl-inner">' +
+                  '<svg class="jg-cw-ctrl-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">' +
+                    '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-track"/>' +
+                    '<circle cx="32" cy="32" r="' + radius + '" class="jg-cw-ctrl-fill"' +
+                      ' stroke-dasharray="' + circ + '" stroke-dashoffset="' + offset + '"/>' +
+                    '<text x="32" y="30" class="jg-cw-ctrl-pct">' + (v.done ? '\u2713' : v.pct + '%') + '</text>' +
+                    '<text x="32" y="42" class="jg-cw-ctrl-ratio">' + (v.done ? 'Gotowe!' : v.prog + '/' + ch.target_count) + '</text>' +
+                  '</svg>' +
+                  '<div class="jg-cw-ctrl-body">' +
+                    '<div class="jg-cw-ctrl-label">' + (v.done ? '\u2705 Uko\u0144czono!' : '\ud83c\udfc6 Wyzwanie') + '</div>' +
+                    '<div class="jg-cw-ctrl-title">' + titleHtml + '</div>' +
+                    (descHtml ? '<div class="jg-cw-ctrl-desc">' + descHtml + '</div>' : '') +
+                    '<div class="jg-cw-ctrl-meta">' + (v.done ? 'Osi\u0105gni\u0119cie odblokowane' : timeStr + (ch.xp_reward ? ' \xb7 +' + ch.xp_reward + ' XP' : '')) + '</div>' +
+                  '</div>' +
+                '</div>';
+
+              if (v.done) {
+                try { localStorage.setItem('jg_ch_done_' + ch.id, '1'); } catch(e) {}
+                (function(widget, chId) {
+                  var cb = widget.querySelector('.jg-cw-close-btn');
+                  if (cb) cb.onclick = function() {
+                    try { localStorage.setItem('jg_ch_dismissed_' + chId, '1'); } catch(e) {}
+                    widget.style.setProperty('display', 'none', 'important');
+                  };
+                })(dw, ch.id);
+              }
+            }
+
             elMap.appendChild(dw);
             deskWidgets.push(dw);
-
-            if (v.done) {
-              try { localStorage.setItem('jg_ch_done_' + ch.id, '1'); } catch(e) {}
-              (function(widget, chId) {
-                var cb = widget.querySelector('.jg-cw-close-btn');
-                if (cb) cb.onclick = function() {
-                  try { localStorage.setItem('jg_ch_dismissed_' + chId, '1'); } catch(e) {}
-                  widget.style.setProperty('display', 'none', 'important');
-                };
-              })(dw, ch.id);
-            }
           }
 
           // Stack widgets vertically next to zoom controls
@@ -15583,6 +15619,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // Called after any relevant AJAX action succeeds.
       function refreshChallengeProgress() {
         if (!CFG.activeChallenges || !CFG.activeChallenges.length) return;
+        if (!CFG.isLoggedIn) return;
         var fd = new FormData();
         fd.append('action', 'jg_get_active_challenge');
         fd.append('_ajax_nonce', CFG.nonce);

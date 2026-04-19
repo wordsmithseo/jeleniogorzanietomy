@@ -17,30 +17,37 @@ class JG_Map_Challenges {
     public static function get_condition_types() {
         return array(
             // --- DODAWANIE PUNKTÓW ---
-            'place_any'          => array('label' => '📍 Dodaj dowolne Miejsce',                  'desc' => 'Zatwierdzone punkty typu Miejsce',            'needs_cat' => false),
-            'place_category'     => array('label' => '📍 Dodaj Miejsce z konkretnej kategorii',   'desc' => 'Miejsce o wybranej kategorii',                 'needs_cat' => true),
-            'place_photo'        => array('label' => '📸 Dodaj Miejsce ze zdjęciem',              'desc' => 'Miejsce z min. 1 zdjęciem',                   'needs_cat' => false),
-            'place_hours'        => array('label' => '🕐 Dodaj Miejsce z godzinami otwarcia',     'desc' => 'Miejsce z uzupełnionymi godzinami',           'needs_cat' => false),
-            'place_menu'         => array('label' => '🍽️ Dodaj Miejsce z kartą menu',             'desc' => 'Miejsce z co najmniej jedną pozycją w menu',  'needs_cat' => false),
-            'place_desc'         => array('label' => '📝 Dodaj Miejsce z opisem',                 'desc' => 'Miejsce z niepustym opisem',                  'needs_cat' => false),
-            'place_phone'        => array('label' => '📞 Dodaj Miejsce z numerem telefonu',       'desc' => 'Miejsce z uzupełnionym numerem kontaktowym',  'needs_cat' => false),
-            'place_website'      => array('label' => '🌐 Dodaj Miejsce ze stroną WWW',            'desc' => 'Miejsce z podanym adresem strony',            'needs_cat' => false),
-            'place_full'         => array('label' => '⭐ Dodaj kompletne Miejsce',               'desc' => 'Miejsce z opisem, zdjęciem i godzinami',      'needs_cat' => false),
+            'place_any'          => array('label' => '📍 Dodaj dowolne Miejsce',                  'desc' => 'Zatwierdzone punkty typu Miejsce',            'needs_cat' => false, 'group' => 'Dodawanie punktów'),
+            'place_category'     => array('label' => '📍 Dodaj Miejsce z konkretnej kategorii',   'desc' => 'Miejsce o wybranej kategorii',                 'needs_cat' => true,  'group' => 'Dodawanie punktów'),
+            'place_photo'        => array('label' => '📸 Dodaj Miejsce ze zdjęciem',              'desc' => 'Miejsce z min. 1 zdjęciem',                   'needs_cat' => false, 'group' => 'Dodawanie punktów'),
+            'place_hours'        => array('label' => '🕐 Dodaj Miejsce z godzinami otwarcia',     'desc' => 'Miejsce z uzupełnionymi godzinami',           'needs_cat' => false, 'group' => 'Dodawanie punktów'),
+            'place_menu'         => array('label' => '🍽️ Dodaj Miejsce z kartą menu',             'desc' => 'Miejsce z co najmniej jedną pozycją w menu',  'needs_cat' => false, 'group' => 'Dodawanie punktów'),
+            'place_desc'         => array('label' => '📝 Dodaj Miejsce z opisem',                 'desc' => 'Miejsce z niepustym opisem',                  'needs_cat' => false, 'group' => 'Dodawanie punktów'),
+            'place_phone'        => array('label' => '📞 Dodaj Miejsce z numerem telefonu',       'desc' => 'Miejsce z uzupełnionym numerem kontaktowym',  'needs_cat' => false, 'group' => 'Dodawanie punktów'),
+            'place_website'      => array('label' => '🌐 Dodaj Miejsce ze stroną WWW',            'desc' => 'Miejsce z podanym adresem strony',            'needs_cat' => false, 'group' => 'Dodawanie punktów'),
+            'place_full'         => array('label' => '⭐ Dodaj kompletne Miejsce',               'desc' => 'Miejsce z opisem, zdjęciem i godzinami',      'needs_cat' => false, 'group' => 'Dodawanie punktów'),
             // --- CIEKAWOSTKI ---
-            'curiosity_any'      => array('label' => '💡 Dodaj dowolną Ciekawostkę',             'desc' => 'Zatwierdzone punkty typu Ciekawostka',         'needs_cat' => false),
-            'curiosity_category' => array('label' => '💡 Dodaj Ciekawostkę z kategorii',         'desc' => 'Ciekawostka z wybraną kategorią',              'needs_cat' => true),
-            'curiosity_photo'    => array('label' => '📸 Dodaj Ciekawostkę ze zdjęciem',         'desc' => 'Ciekawostka z min. 1 zdjęciem',               'needs_cat' => false),
+            'curiosity_any'      => array('label' => '💡 Dodaj dowolną Ciekawostkę',             'desc' => 'Zatwierdzone punkty typu Ciekawostka',         'needs_cat' => false, 'group' => 'Ciekawostki'),
+            'curiosity_category' => array('label' => '💡 Dodaj Ciekawostkę z kategorii',         'desc' => 'Ciekawostka z wybraną kategorią',              'needs_cat' => true,  'group' => 'Ciekawostki'),
+            'curiosity_photo'    => array('label' => '📸 Dodaj Ciekawostkę ze zdjęciem',         'desc' => 'Ciekawostka z min. 1 zdjęciem',               'needs_cat' => false, 'group' => 'Ciekawostki'),
             // --- ZGŁOSZENIA ---
-            'issue_any'          => array('label' => '⚠️ Dodaj dowolne Zgłoszenie',              'desc' => 'Zatwierdzone punkty typu Zgłoszenie',          'needs_cat' => false),
-            'issue_category'     => array('label' => '⚠️ Dodaj Zgłoszenie z kategorii',         'desc' => 'Zgłoszenie o wybranej kategorii',              'needs_cat' => true),
+            'issue_any'          => array('label' => '⚠️ Dodaj dowolne Zgłoszenie',              'desc' => 'Zatwierdzone punkty typu Zgłoszenie',          'needs_cat' => false, 'group' => 'Zgłoszenia'),
+            'issue_category'     => array('label' => '⚠️ Dodaj Zgłoszenie z kategorii',         'desc' => 'Zgłoszenie o wybranej kategorii',              'needs_cat' => true,  'group' => 'Zgłoszenia'),
             // --- WSZYSTKIE TYPY ---
-            'any_point'          => array('label' => '🗺️ Dodaj dowolny punkt (wszystkie typy)',  'desc' => 'Miejsce, Ciekawostka lub Zgłoszenie',          'needs_cat' => false),
-            'any_with_photo'     => array('label' => '📸 Dodaj dowolny punkt ze zdjęciem',       'desc' => 'Dowolny typ punktu z min. 1 zdjęciem',        'needs_cat' => false),
+            'any_point'          => array('label' => '🗺️ Dodaj dowolny punkt (wszystkie typy)',  'desc' => 'Miejsce, Ciekawostka lub Zgłoszenie',          'needs_cat' => false, 'group' => 'Wszystkie typy'),
+            'any_with_photo'     => array('label' => '📸 Dodaj dowolny punkt ze zdjęciem',       'desc' => 'Dowolny typ punktu z min. 1 zdjęciem',        'needs_cat' => false, 'group' => 'Wszystkie typy'),
             // --- INTERAKCJE ---
-            'cast_vote'          => array('label' => '⭐ Zagłosuj na punkty',                    'desc' => 'Oddane głosy w wybranym przedziale czasu',    'needs_cat' => false),
-            'cast_report'        => array('label' => '🚩 Zgłoś problem z punktem',               'desc' => 'Wysłane raporty o problemach',                 'needs_cat' => false),
-            'edit_approved'      => array('label' => '✏️ Edytuj i zatwierdź punkt',              'desc' => 'Zatwierdzone edycje istniejących punktów',    'needs_cat' => false),
-            'upload_photo_existing' => array('label' => '📸 Dodaj zdjęcie do istniejącego miejsca', 'desc' => 'Zatwierdzone edycje z nowymi zdjęciami do cudzych miejsc', 'needs_cat' => false),
+            'cast_vote'          => array('label' => '⭐ Zagłosuj na punkty',                    'desc' => 'Oddane głosy w wybranym przedziale czasu',    'needs_cat' => false, 'group' => 'Interakcje'),
+            'cast_report'        => array('label' => '🚩 Zgłoś problem z punktem',               'desc' => 'Wysłane raporty o problemach',                 'needs_cat' => false, 'group' => 'Interakcje'),
+            'edit_approved'      => array('label' => '✏️ Edytuj i zatwierdź punkt',              'desc' => 'Zatwierdzone edycje istniejących punktów',    'needs_cat' => false, 'group' => 'Interakcje'),
+            // --- UZUPEŁNIANIE ISTNIEJĄCYCH ---
+            'upload_photo_existing' => array('label' => '📸 Dodaj zdjęcie do istniejącego miejsca', 'desc' => 'Zatwierdzone edycje z nowymi zdjęciami do cudzych miejsc', 'needs_cat' => false, 'group' => 'Uzupełnianie istniejących'),
+            'update_hours'       => array('label' => '🕐 Uzupełnij godziny otwarcia',            'desc' => 'Istniejące miejsca, do których dodano godziny',        'needs_cat' => false, 'group' => 'Uzupełnianie istniejących'),
+            'update_phone'       => array('label' => '📞 Uzupełnij telefon',                     'desc' => 'Istniejące miejsca, do których dodano telefon',        'needs_cat' => false, 'group' => 'Uzupełnianie istniejących'),
+            'update_website'     => array('label' => '🌐 Uzupełnij stronę WWW',                  'desc' => 'Istniejące miejsca, do których dodano stronę WWW',     'needs_cat' => false, 'group' => 'Uzupełnianie istniejących'),
+            'update_desc'        => array('label' => '📝 Uzupełnij opis',                        'desc' => 'Istniejące miejsca, do których dodano opis',           'needs_cat' => false, 'group' => 'Uzupełnianie istniejących'),
+            'update_price_range' => array('label' => '💰 Uzupełnij zakres cenowy',               'desc' => 'Istniejące miejsca, do których dodano zakres cenowy',  'needs_cat' => false, 'group' => 'Uzupełnianie istniejących'),
+            'update_any_field'   => array('label' => '✨ Uzupełnij dowolne brakujące pole',      'desc' => 'Istniejące miejsca z dowolnym uzupełnionym polem',     'needs_cat' => false, 'group' => 'Uzupełnianie istniejących'),
         );
     }
 
@@ -149,7 +156,36 @@ class JG_Map_Challenges {
     }
 
     public static function get_all_active_with_progress() {
-        if (!is_user_logged_in()) return array();
+        if (!is_user_logged_in()) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'jg_map_challenges';
+            $now   = current_time('mysql');
+            $rows  = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM `$table` WHERE is_active = 1 AND start_date <= %s AND end_date >= %s ORDER BY start_date DESC LIMIT 4",
+                $now, $now
+            ));
+            if (!$rows) return array();
+            $valid_rarities = array('common', 'uncommon', 'rare', 'epic', 'legendary');
+            $out = array();
+            foreach ($rows as $ch) {
+                $out[] = array(
+                    'id'             => (int) $ch->id,
+                    'title'          => $ch->title,
+                    'description'    => $ch->description,
+                    'condition_type' => $ch->condition_type,
+                    'category'       => $ch->category,
+                    'target_count'   => (int) $ch->target_count,
+                    'xp_reward'      => (int) $ch->xp_reward,
+                    'progress'       => 0,
+                    'end_date'       => $ch->end_date,
+                    'ach_name'       => ($ch->ach_name ?? '') ?: null,
+                    'ach_icon'       => ($ch->ach_icon ?? '') ?: null,
+                    'ach_rarity'     => in_array($ch->ach_rarity ?? '', $valid_rarities) ? $ch->ach_rarity : 'rare',
+                    'user_is_guest'  => true,
+                );
+            }
+            return $out;
+        }
 
         global $wpdb;
         $table   = $wpdb->prefix . 'jg_map_challenges';
@@ -345,6 +381,95 @@ class JG_Map_Challenges {
                      AND h.new_values LIKE %s
                      AND p.images IS NOT NULL AND p.images NOT IN ('', '[]')",
                     $user_id, $start, $end, $like
+                ));
+            }
+
+            // ── Fill-in missing fields on existing places ─────────────────────
+            case 'update_hours': {
+                $like = '%' . $wpdb->esc_like('"opening_hours":') . '%';
+                return (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
+                     INNER JOIN `$pts` p ON p.id = h.point_id
+                     WHERE h.user_id = %d
+                     AND h.status = 'approved'
+                     AND h.resolved_at BETWEEN %s AND %s
+                     AND h.new_values LIKE %s
+                     AND p.opening_hours IS NOT NULL AND p.opening_hours != ''",
+                    $user_id, $start, $end, $like
+                ));
+            }
+
+            case 'update_phone': {
+                $like = '%' . $wpdb->esc_like('"phone":') . '%';
+                return (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
+                     INNER JOIN `$pts` p ON p.id = h.point_id
+                     WHERE h.user_id = %d
+                     AND h.status = 'approved'
+                     AND h.resolved_at BETWEEN %s AND %s
+                     AND h.new_values LIKE %s
+                     AND p.phone IS NOT NULL AND p.phone != ''",
+                    $user_id, $start, $end, $like
+                ));
+            }
+
+            case 'update_website': {
+                $like = '%' . $wpdb->esc_like('"website":') . '%';
+                return (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
+                     INNER JOIN `$pts` p ON p.id = h.point_id
+                     WHERE h.user_id = %d
+                     AND h.status = 'approved'
+                     AND h.resolved_at BETWEEN %s AND %s
+                     AND h.new_values LIKE %s
+                     AND p.website IS NOT NULL AND p.website != ''",
+                    $user_id, $start, $end, $like
+                ));
+            }
+
+            case 'update_desc': {
+                $like = '%' . $wpdb->esc_like('"content":') . '%';
+                return (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
+                     INNER JOIN `$pts` p ON p.id = h.point_id
+                     WHERE h.user_id = %d
+                     AND h.status = 'approved'
+                     AND h.resolved_at BETWEEN %s AND %s
+                     AND h.new_values LIKE %s
+                     AND p.content IS NOT NULL AND p.content != ''",
+                    $user_id, $start, $end, $like
+                ));
+            }
+
+            case 'update_price_range': {
+                $like = '%' . $wpdb->esc_like('"price_range":') . '%';
+                return (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
+                     INNER JOIN `$pts` p ON p.id = h.point_id
+                     WHERE h.user_id = %d
+                     AND h.status = 'approved'
+                     AND h.resolved_at BETWEEN %s AND %s
+                     AND h.new_values LIKE %s
+                     AND p.price_range IS NOT NULL AND p.price_range != ''",
+                    $user_id, $start, $end, $like
+                ));
+            }
+
+            case 'update_any_field': {
+                $l1 = '%' . $wpdb->esc_like('"opening_hours":') . '%';
+                $l2 = '%' . $wpdb->esc_like('"phone":') . '%';
+                $l3 = '%' . $wpdb->esc_like('"website":') . '%';
+                $l4 = '%' . $wpdb->esc_like('"content":') . '%';
+                $l5 = '%' . $wpdb->esc_like('"price_range":') . '%';
+                $l6 = '%' . $wpdb->esc_like('"images":') . '%';
+                return (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
+                     WHERE h.user_id = %d
+                     AND h.status = 'approved'
+                     AND h.resolved_at BETWEEN %s AND %s
+                     AND (h.new_values LIKE %s OR h.new_values LIKE %s OR h.new_values LIKE %s
+                          OR h.new_values LIKE %s OR h.new_values LIKE %s OR h.new_values LIKE %s)",
+                    $user_id, $start, $end, $l1, $l2, $l3, $l4, $l5, $l6
                 ));
             }
 
