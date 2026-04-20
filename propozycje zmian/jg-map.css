@@ -9192,6 +9192,10 @@ footer.site-footer .site-branding {
   .jg-kontakt-solo-dir .jg-kontakt-dir-btn {
     width: 90px;
     height: 90px;
+    flex-direction: column;
+    white-space: normal;
+    padding: 10px;
+    gap: 6px;
   }
 }
 
