@@ -281,7 +281,9 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
 .jg-fs-search-results-panel,
 .jg-category-dropdown,
 .jg-search-suggestions,
-#jg-badge-tooltip {
+#jg-badge-tooltip,
+.jg-modal-bg,
+.jg-modal {
   font-family: var(--jg-font) !important;
 }
 
