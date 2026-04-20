@@ -1107,7 +1107,7 @@ class JG_Map_Levels_Achievements {
                 $count = $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(*) FROM $table_votes v
                      INNER JOIN $table_points p ON v.point_id = p.id
-                     WHERE p.author_id = %d AND v.vote_type = 'up' AND v.user_id != %d",
+                     WHERE p.author_id = %d AND v.user_id != %d",
                     $uid, $uid
                 ));
                 $xp += intval($count) * $xp_map['receive_upvote'];
