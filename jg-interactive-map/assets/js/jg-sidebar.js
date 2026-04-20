@@ -9,6 +9,26 @@
         return;
     }
 
+    /* ── SVG ikony dla chrome'u UI (zastępują emoji) ─────────────────────────
+       Używane TYLKO w elementach interfejsu generowanych przez JS.
+       Emoji w treściach użytkownika pozostają niezmienione.
+       ─────────────────────────────────────────────────────────────────────── */
+    var JG_SVG = {
+        pin:      '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>',
+        bulb:     '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>',
+        alert:    '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        star:     '<svg class="jg-badge-svg jg-badge-svg--filled" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>',
+        clock:    '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>',
+        doc:      '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+        tag:      '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+        grid:     '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+        camera:   '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+        menu:     '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 2h1a2 2 0 012 2v15.5A2.5 2.5 0 008.5 22h0A2.5 2.5 0 0011 19.5V4a2 2 0 012-2h8"/><path d="M3 2v6"/><path d="M11 2v6"/></svg>',
+        link:     '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>',
+        globe:    '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>',
+        warning:  '<svg class="jg-badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    };
+
     var PAGE_SIZE = 10;
 
     let sidebarPoints = [];
@@ -60,6 +80,8 @@
         $('[data-sidebar-my-places]').prop('checked', currentFilters.myPlaces);
         // Sort select
         $('#jg-sidebar-sort-select').val(currentFilters.sortBy);
+        // Sync pills if already rendered
+        updateSortPillsUI();
         // Place category checkboxes (empty array = all checked = default)
         if (currentFilters.placeCategories.length > 0) {
             $('[data-sidebar-place-category]').each(function() {
@@ -119,6 +141,9 @@
         // Setup event listeners
         setupEventListeners();
 
+        // Sort pills – wstrzyknij pill-toggle zastępujący natywny <select>
+        initSortPills();
+
         // Setup fixed tooltip for info-badges (avoids overflow:hidden clipping)
         setupBadgeTooltip();
 
@@ -136,6 +161,57 @@
         } else {
             loadPoints();
         }
+    }
+
+    /**
+     * Synchronizuje aktywny stan pill-toggle sortu z currentFilters.sortBy.
+     * Wywoływana z restoreFilterUI() gdy prefs są ładowane z localStorage.
+     */
+    function updateSortPillsUI() {
+        var $pills = $('#jg-sidebar-sort-pills');
+        if (!$pills.length) return;
+        $pills.find('.jg-sort-pill').each(function() {
+            $(this).toggleClass('jg-sort-pill--active', $(this).attr('data-sort-val') === currentFilters.sortBy);
+        });
+    }
+
+    /**
+     * Wstrzykuje poziome pill-toggle jako zamiennik natywnego #jg-sidebar-sort-select.
+     * Select pozostaje w DOM (ukryty klasą), więc wszystkie event listenery działają.
+     * Tylko 3 najpopularniejsze opcje jako pills; select = fallback no-JS.
+     */
+    function initSortPills() {
+        var $select = $('#jg-sidebar-sort-select');
+        if (!$select.length || $('#jg-sidebar-sort-pills').length) return;
+
+        var pillDefs = [
+            { val: 'date_desc', label: 'Najnowsze' },
+            { val: 'votes_desc', label: 'Oceniane' },
+            { val: 'name_asc',  label: 'A→Z' }
+        ];
+
+        var $pills = $('<div id="jg-sidebar-sort-pills"></div>');
+        pillDefs.forEach(function(def) {
+            var $btn = $('<button>')
+                .addClass('jg-sort-pill' + (currentFilters.sortBy === def.val ? ' jg-sort-pill--active' : ''))
+                .attr('type', 'button')
+                .attr('data-sort-val', def.val)
+                .text(def.label);
+
+            $btn.on('click', function() {
+                currentFilters.sortBy = def.val;
+                $pills.find('.jg-sort-pill').removeClass('jg-sort-pill--active');
+                $btn.addClass('jg-sort-pill--active');
+                $('#jg-sidebar-sort-select').val(def.val).trigger('change');
+                saveFilterPrefs();
+            });
+
+            $pills.append($btn);
+        });
+
+        $select.before($pills);
+        $select.addClass('jg-sort-select--hidden');
+        $select.closest('.jg-sidebar-sort-controls').find('label').addClass('jg-sidebar-sort-label--hidden');
     }
 
     /**
@@ -616,13 +692,13 @@
                     }
                 }
             }
-            return '<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Zamknięte' + (sbNextOpen ? ' · ' + escapeHtml(sbNextOpen) : '') + '</div>';
+            return '<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">' + JG_SVG.clock + ' Zamknięte' + (sbNextOpen ? ' · ' + escapeHtml(sbNextOpen) : '') + '</div>';
         } else {
             var sbMinsLeft = sbCloseMins - sbNowMins;
             var sbWarning = (sbMinsLeft > 0 && sbMinsLeft < 60)
                 ? '<br><span class="jg-sidebar-item__hours-warning">⚠️ Zamknięcie za ' + sbMinsLeft + ' min</span>'
                 : '';
-            return '<div class="jg-sidebar-item__hours">🕐 ' + escapeHtml(sbToday.open) + ' – ' + escapeHtml(sbToday.close === '24:00' ? '00:00' : sbToday.close) + sbWarning + '</div>';
+            return '<div class="jg-sidebar-item__hours">' + JG_SVG.clock + ' ' + escapeHtml(sbToday.open) + ' – ' + escapeHtml(sbToday.close === '24:00' ? '00:00' : sbToday.close) + sbWarning + '</div>';
         }
     }
 
@@ -637,9 +713,9 @@
         };
 
         const typeIcons = {
-            'miejsce': '📍',
-            'ciekawostka': '💡',
-            'zgloszenie': '⚠️'
+            'miejsce':     JG_SVG.pin,
+            'ciekawostka': JG_SVG.bulb,
+            'zgloszenie':  JG_SVG.alert
         };
 
         const $item = $('<div>')
@@ -663,7 +739,7 @@
         } else if (point.is_promo) {
             // Show gold star for sponsored places without image
             imageHtml = `<div class="jg-sidebar-item__image jg-sidebar-item__image--star">
-                <span class="jg-sidebar-star-icon">⭐</span>
+                <span class="jg-sidebar-star-icon">${JG_SVG.star}</span>
             </div>`;
         } else {
             // Show crossed-camera icon for places without image
@@ -679,7 +755,7 @@
         // Badge (sponsored or type)
         let badgeHtml = '';
         if (point.is_promo) {
-            badgeHtml = '<span class="jg-sidebar-item__badge jg-sidebar-item__badge--sponsored">⭐ Sponsorowane</span>';
+            badgeHtml = '<span class="jg-sidebar-item__badge jg-sidebar-item__badge--sponsored">' + JG_SVG.star + ' Sponsorowane</span>';
         } else {
             const typeIcon = typeIcons[point.type] || '📍';
             const typeLabel = typeLabels[point.type] || point.type;
@@ -746,28 +822,28 @@
         var badges = [];
 
         if (point.has_description) {
-            badges.push({ icon: '📝', tip: 'Ma opis' });
+            badges.push({ icon: JG_SVG.doc, tip: 'Ma opis' });
         }
         if (point.has_incomplete_sections) {
-            badges.push({ icon: '⚠️', tip: 'Zawiera sekcje do uzupełnienia' });
+            badges.push({ icon: JG_SVG.warning, tip: 'Zawiera sekcje do uzupełnienia' });
         }
         if (point.has_tags) {
-            badges.push({ icon: '🏷️', tip: 'Ma tagi' });
+            badges.push({ icon: JG_SVG.tag, tip: 'Ma tagi' });
         }
         if (point.category) {
             var catLabel = resolveCategoryLabel(point.type, point.category);
-            badges.push({ icon: '🗂️', tip: 'Kategoria: ' + catLabel });
+            badges.push({ icon: JG_SVG.grid, tip: 'Kategoria: ' + catLabel });
         }
         if (point.images_count > 0) {
             var n = point.images_count;
             var photoLabel = n === 1 ? '1 zdjęcie' : (n < 5 ? n + ' zdjęcia' : n + ' zdjęć');
-            badges.push({ icon: '📷', tip: photoLabel });
+            badges.push({ icon: JG_SVG.camera, tip: photoLabel });
         }
         if (point.can_have_menu) {
             if (point.has_menu) {
-                badges.push({ icon: '🍽️', tip: 'Posiada menu', cls: 'jg-info-badge--has-menu' });
+                badges.push({ icon: JG_SVG.menu, tip: 'Posiada menu', cls: 'jg-info-badge--has-menu' });
             } else {
-                badges.push({ icon: '🍽️', tip: 'Brak menu', cls: 'jg-info-badge--no-menu' });
+                badges.push({ icon: JG_SVG.menu, tip: 'Brak menu', cls: 'jg-info-badge--no-menu' });
             }
         }
 
@@ -775,10 +851,10 @@
         var adminBadges = [];
         if (window.JG_MAP_CFG && JG_MAP_CFG.isAdmin) {
             if (point.has_internal_links) {
-                adminBadges.push({ icon: '🔗', tip: 'Linki do pinesek' });
+                adminBadges.push({ icon: JG_SVG.link, tip: 'Linki do pinesek' });
             }
             if (point.has_external_links) {
-                adminBadges.push({ icon: '🌐', tip: 'Linki zewnętrzne' });
+                adminBadges.push({ icon: JG_SVG.globe, tip: 'Linki zewnętrzne' });
             }
         }
 

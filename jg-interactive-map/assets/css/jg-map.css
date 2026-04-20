@@ -281,9 +281,7 @@ html body #jg-info-bar .jg-info-bar-text a:focus {
 .jg-fs-search-results-panel,
 .jg-category-dropdown,
 .jg-search-suggestions,
-#jg-badge-tooltip,
-.jg-modal-bg,
-.jg-modal {
+#jg-badge-tooltip {
   font-family: var(--jg-font) !important;
 }
 
@@ -9194,10 +9192,6 @@ footer.site-footer .site-branding {
   .jg-kontakt-solo-dir .jg-kontakt-dir-btn {
     width: 90px;
     height: 90px;
-    flex-direction: column;
-    white-space: normal;
-    padding: 10px;
-    gap: 6px;
   }
 }
 
@@ -10624,7 +10618,6 @@ footer.site-footer .site-branding {
   line-height: 1.4 !important;
 }
 
-
 /* ════════════════════════════════════════════════════════════════════════════
    ── PREFERS-REDUCED-MOTION ───────────────────────────────────────────────
    Wyłącza wszystkie animacje pluginu dla użytkowników, którzy mają włączone
@@ -10697,4 +10690,287 @@ footer.site-footer .site-branding {
     transition: none !important;
   }
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ── WDROŻONE ZMIANY UI  (audit 2026-04-20) ───────────────────────────────
+   Wszystkie reguły addytywne – nie usuwają istniejących selektorów.
+   Przesłaniają wcześniejsze wartości przez kolejność kaskady + !important
+   tam, gdzie konieczne (izolacja od Elementora).
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. INFO BAR – statyczny banner zamiast scrollującego tickera ─────────
+   Dezaktywuje animację translateX globalnie (nie tylko reduced-motion).
+   Tekst pozostaje wycentrowany i zawsze czytelny.
+   ─────────────────────────────────────────────────────────────────────────── */
+#jg-info-bar.jg-info-bar--scroll .jg-info-bar-text {
+  animation: none !important;
+  transform: translateX(0) !important;
+  will-change: auto !important;
+}
+#jg-info-bar.jg-info-bar--scroll .jg-info-bar-track {
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+/* Subtelny ciepły odcień zamiast zimnego #f3f4f6 */
+#jg-info-bar {
+  background: oklch(98% 0.02 25) !important;
+  border-bottom-color: oklch(90% 0.05 25) !important;
+}
+
+
+/* ── 2. FILTRY – pill toggle zamiast checkboxów HTML ─────────────────────
+   Checkbox zostaje w DOM (JS go czyta przez [data-sidebar-type]),
+   ale jest wizualnie ukryty. Label staje się klikalnymi pills.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Ukryj surowy checkbox – dostępnie (nie display:none, żeby screen-readery
+   wciąż mogły go odczytać) */
+.jg-filters input[type="checkbox"] {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+/* Label jako pill */
+.jg-filter-label {
+  border-radius: 20px !important;
+  border: 1.5px solid #e5e7eb !important;
+  background: #f9fafb !important;
+  color: #374151 !important;
+  padding: 6px 14px !important;
+  gap: 5px !important;
+  font-weight: 600 !important;
+  transition: background .15s, border-color .15s, color .15s !important;
+}
+.jg-filter-label:hover {
+  background: #f3f4f6 !important;
+  border-color: #d1d5db !important;
+  color: #374151 !important;
+}
+
+/* Aktywny pill */
+.jg-filter-label:has(input[type="checkbox"]:checked) {
+  background: #8d2324 !important;
+  border-color: #8d2324 !important;
+  color: #fff !important;
+}
+.jg-filter-label:has(input[type="checkbox"]:checked):hover {
+  background: #a02829 !important;
+  border-color: #a02829 !important;
+  color: #fff !important;
+}
+
+/* Pokaż ikonę emoji na pills (była ukryta) */
+.jg-filter-icon {
+  display: inline !important;
+  font-size: calc(14 * var(--jg)) !important;
+  line-height: 1 !important;
+}
+
+/* Focus ring dla dostępności klawiaturowej */
+.jg-filter-label:focus-within {
+  outline: 2px solid #8d2324 !important;
+  outline-offset: 2px !important;
+}
+
+/* Mobile: poziomy scroll z snap — eliminuje nowrap bez overflow */
+@media (max-width: 768px) {
+  .jg-filters {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px !important;
+    scrollbar-width: none !important;
+  }
+  .jg-filters::-webkit-scrollbar {
+    display: none !important;
+  }
+  .jg-filter-label {
+    scroll-snap-align: start !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+
+/* ── 3. SVG IKONY w kartach sidebara ──────────────────────────────────────
+   .jg-badge-svg – klasa nadawana przez JS na każdym inline SVG
+   zastępującym emoji w chrome'ie UI.
+   Emoji w treściach generowanych przez użytkowników pozostają niezmienione.
+   ─────────────────────────────────────────────────────────────────────────── */
+.jg-badge-svg {
+  display: inline-block !important;
+  width: calc(11 * var(--jg)) !important;
+  height: calc(11 * var(--jg)) !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  overflow: visible !important;
+  margin-bottom: 1px !important;
+}
+.jg-badge-svg--filled {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+
+/* Badge zawierający SVG – flex wyrównanie */
+.jg-sidebar-item__badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* Godziny – flex dla wyrównania SVG clock */
+.jg-sidebar-item__hours {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* SVG w info-badge'ach (pasek ikon na dole karty) */
+.jg-map-sidebar .jg-info-badge .jg-badge-svg {
+  width: calc(13 * var(--jg)) !important;
+  height: calc(13 * var(--jg)) !important;
+  margin-bottom: 0 !important;
+}
+
+/* Sponsored star – SVG zamiast emoji ⭐ */
+.jg-sidebar-star-icon .jg-badge-svg {
+  width: calc(38 * var(--jg)) !important;
+  height: calc(38 * var(--jg)) !important;
+  fill: #fff !important;
+  stroke: rgba(255,255,255,.4) !important;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.2)) !important;
+}
+
+
+/* ── 4. SORTOWANIE – pill toggle (style dla przycisków wstrzykiwanych przez JS) ──
+   JS wstrzykuje #jg-sidebar-sort-pills obok #jg-sidebar-sort-select,
+   który zostaje ukryty klasą jg-sort-select--hidden.
+   ─────────────────────────────────────────────────────────────────────────── */
+#jg-sidebar-sort-pills {
+  display: flex !important;
+  gap: 5px !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+}
+
+.jg-sort-pill {
+  padding: 5px 13px !important;
+  border-radius: 20px !important;
+  font-size: calc(11 * var(--jg)) !important;
+  font-weight: 600 !important;
+  border: 1.5px solid #e5e7eb !important;
+  background: #f9fafb !important;
+  color: #374151 !important;
+  cursor: pointer !important;
+  transition: background .15s, border-color .15s, color .15s !important;
+  font-family: var(--jg-font) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1.4 !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+.jg-sort-pill:hover {
+  background: #f3f4f6 !important;
+  border-color: #d1d5db !important;
+  color: #374151 !important;
+}
+.jg-sort-pill.jg-sort-pill--active {
+  background: #8d2324 !important;
+  border-color: #8d2324 !important;
+  color: #fff !important;
+}
+.jg-sort-pill.jg-sort-pill--active:hover {
+  background: #a02829 !important;
+  border-color: #a02829 !important;
+  color: #fff !important;
+}
+
+/* Ukryj natywny select gdy pills są aktywne */
+#jg-sidebar-sort-select.jg-sort-select--hidden {
+  display: none !important;
+}
+/* Ukryj etykietę "Sortuj:" obok selecta */
+.jg-sidebar-sort-label--hidden,
+.jg-sidebar-sort-controls label.jg-sidebar-sort-label--hidden {
+  display: none !important;
+}
+
+
+/* ── 5. BORDER-RADIUS TOKENS – zastosowanie var() ────────────────────────
+   Mapuje wcześniej zdefiniowane --jg-r-sm / --jg-r-md / --jg-r-lg
+   na główne elementy UI. Zachowana semantyka: sm=działania, md=karty,
+   lg=panele, pill=20px dla zaokrąglonych elementów.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* sm → przyciski, małe kontrolki */
+.jg-top-bar-btn,
+.jg-top-bar-menu-btn,
+.jg-top-bar-menu-dropdown,
+.jg-sidebar-item__badge,
+.jg-sidebar-collapsible-header,
+.jg-sync-indicator,
+.jg-search-btn,
+.jg-rte-btn,
+.jg-map-toggle-control,
+.jg-fullscreen-control,
+.jg-fullscreen-btn {
+  border-radius: var(--jg-r-sm) !important;
+}
+
+/* md → inputy, karty, dropdowny, zoom control */
+.jg-search input,
+.jg-sidebar-item,
+.jg-category-dropdown,
+.jg-suggest-group,
+.leaflet-control-zoom,
+.jg-fs-search-ctrl,
+.jg-fs-filter-dropdown-btn,
+.jg-fs-filter-dropdown-panel,
+.jg-btn,
+.jg-map {
+  border-radius: var(--jg-r-md) !important;
+}
+
+/* lg → panele, overlay, modale */
+.jg-sidebar-desktop-wide-overlay,
+.jg-sidebar-fullscreen-overlay,
+.jg-fs-filter-panel,
+.jg-fs-search-results-panel,
+.jg-search-panel,
+.jg-search-suggestions,
+.jg-modal {
+  border-radius: var(--jg-r-lg) !important;
+}
+/* Nagłówki paneli – zaokrąglenie tylko na górze */
+.jg-search-panel-header,
+.jg-fs-search-header {
+  border-radius: var(--jg-r-lg) var(--jg-r-lg) 0 0 !important;
+}
+
+/* pill = pełne zaokrąglenie dla elementów pill-shaped */
+.jg-filter-label,
+.jg-sort-pill,
+.jg-notif-badge,
+.jg-search-count,
+.jg-fs-search-count,
+.jg-promo-tag,
+.jg-badge,
+.jg-sidebar-item__votes {
+  border-radius: 20px !important;
+}
+
 
