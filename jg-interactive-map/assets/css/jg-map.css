@@ -2117,6 +2117,40 @@ body.jg-fullscreen-active #jg-search-panel {
   }
 }
 
+/* Small desktop ≤1440px — reduce sidebar width and overlay spacing to free up map area.
+   --jg-sidebar-w is stuck at its 280px minimum below ~1473px viewport width;
+   overriding it here drops it to 240px on a typical 1366px/15" screen. */
+@media (min-width: 769px) and (max-width: 1440px) {
+  :root {
+    --jg-sidebar-w: clamp(240px, 16vw, 280px);
+  }
+
+  #jg-map-wrap.jg-desktop-wide #jg-map-filters-wrapper {
+    top: 8px !important;
+    left: 8px !important;
+    right: calc(var(--jg-sidebar-w) + 16px) !important;
+  }
+
+  .jg-sidebar-desktop-wide-overlay {
+    top: 8px !important;
+    right: 8px !important;
+    height: calc(100% - 16px) !important;
+    max-height: calc(100% - 16px) !important;
+  }
+
+  #jg-map-wrap.jg-desktop-wide .leaflet-control-zoom {
+    margin-top: 82px !important;
+  }
+
+  body.jg-desktop-wide-active #jg-search-panel {
+    right: calc(var(--jg-sidebar-w) + 8px) !important;
+  }
+
+  body.jg-desktop-wide-active #jg-fab-container {
+    right: calc(var(--jg-sidebar-w) + 24px) !important;
+  }
+}
+
 /* === Fullscreen topbar: absolute positioning (not in Leaflet container) === */
 
 /* Combined controls container */
