@@ -2826,6 +2826,17 @@ class JG_Map_Ajax_Handlers {
 
         JG_Map_Database::set_vote($point_id, $user_id, $new_vote);
 
+        $author_id = intval($point['author_id']);
+        if (empty($current_vote) && !empty($new_vote)) {
+            // New vote: award XP to voter and to point author
+            JG_Map_Levels_Achievements::award_xp($user_id, 'vote_on_point', $point_id);
+            JG_Map_Levels_Achievements::award_xp($author_id, 'receive_upvote', $point_id);
+        } elseif (!empty($current_vote) && empty($new_vote)) {
+            // Vote removed: revoke XP from voter and from point author
+            JG_Map_Levels_Achievements::revoke_xp($user_id, 'vote_on_point', $point_id);
+            JG_Map_Levels_Achievements::revoke_xp($author_id, 'receive_upvote', $point_id);
+        }
+
         $rating_data = JG_Map_Database::get_rating_data($point_id);
 
         // Log user action
