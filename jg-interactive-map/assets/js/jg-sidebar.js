@@ -84,12 +84,32 @@
         updateSortPillsUI();
         // Place category checkboxes (empty array = all checked = default)
         if (currentFilters.placeCategories.length > 0) {
+            // New categories added since last save default to checked
+            var availablePlaceKeys = Object.keys((window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {});
+            var hadNewPlace = false;
+            availablePlaceKeys.forEach(function(key) {
+                if (currentFilters.placeCategories.indexOf(key) === -1) {
+                    currentFilters.placeCategories.push(key);
+                    hadNewPlace = true;
+                }
+            });
+            if (hadNewPlace) saveFilterPrefs();
             $('[data-sidebar-place-category]').each(function() {
                 $(this).prop('checked', currentFilters.placeCategories.indexOf($(this).attr('data-sidebar-place-category')) !== -1);
             });
         }
         // Curiosity category checkboxes
         if (currentFilters.curiosityCategories.length > 0) {
+            // New categories added since last save default to checked
+            var availableCuriosityKeys = Object.keys((window.JG_MAP_CFG && JG_MAP_CFG.curiosityCategories) || {});
+            var hadNewCuriosity = false;
+            availableCuriosityKeys.forEach(function(key) {
+                if (currentFilters.curiosityCategories.indexOf(key) === -1) {
+                    currentFilters.curiosityCategories.push(key);
+                    hadNewCuriosity = true;
+                }
+            });
+            if (hadNewCuriosity) saveFilterPrefs();
             $('[data-sidebar-curiosity-category]').each(function() {
                 $(this).prop('checked', currentFilters.curiosityCategories.indexOf($(this).attr('data-sidebar-curiosity-category')) !== -1);
             });
