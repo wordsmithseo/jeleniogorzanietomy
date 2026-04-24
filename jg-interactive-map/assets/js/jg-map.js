@@ -11406,28 +11406,18 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             '<div style="display:flex;flex-wrap:wrap;gap:8px">' + kontaktItems.join('') + '</div>';
         }
 
-        // Directions button – only when pin has clear coordinates
-        var kontaktDirectionsBtn = '';
+        // Directions button – inline next to address
+        var dirBtnHtml = '';
         if (p.lat && p.lng) {
           var dirUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(p.lat + ',' + p.lng);
-          kontaktDirectionsBtn = '<a href="' + dirUrl + '" target="_blank" rel="noopener" class="jg-kontakt-dir-btn">' +
-            '<svg width="30" height="30" viewBox="0 0 24 24" fill="#1d4ed8"><path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg>' +
-            'Wyznacz trasę</a>';
+          dirBtnHtml = '<a href="' + dirUrl + '" target="_blank" rel="noopener" class="jg-dir-btn-inline">' +
+            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg>' +
+            '<span>Wyznacz trasę</span></a>';
         }
 
-        // Assemble kontaktInfo with optional directions button
-        if (kontaktBoxHtml && kontaktDirectionsBtn) {
-          // Contacts + button: contact box 80%, button 20% (column on mobile)
-          kontaktInfo = '<div class="jg-kontakt-wrapper">' +
-            '<div class="jg-kontakt-box">' + kontaktBoxHtml + '</div>' +
-            '<div class="jg-kontakt-dir-col">' + kontaktDirectionsBtn + '</div>' +
-            '</div>';
-        } else if (kontaktBoxHtml) {
-          // Contacts only, no clear location – full width
+        // Assemble kontaktInfo – contacts only, button moved to address row
+        if (kontaktBoxHtml) {
           kontaktInfo = '<div style="margin:12px 0">' + kontaktBoxHtml + '</div>';
-        } else if (kontaktDirectionsBtn) {
-          // No contacts but clear location – square on left (full-width elongated on mobile)
-          kontaktInfo = '<div class="jg-kontakt-solo-dir">' + kontaktDirectionsBtn + '</div>';
         }
 
         // Social media and CTA for sponsored points
@@ -11534,10 +11524,12 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           deletionBtn = '<button id="btn-request-deletion" class="jg-btn jg-btn--danger">Zgłoś usunięcie</button>';
         }
 
-        // Address info - simple, below main content
+        // Address info + inline directions button
         var addressInfo = '';
         if (p.address && p.address.trim()) {
-          addressInfo = '<div style="margin:0 0 12px 0;padding:0;font-size:13px;color:#6b7280"><span style="font-weight:500;color:#374151">📍</span> ' + esc(p.address) + '</div>';
+          addressInfo = '<div class="jg-address-row"><span class="jg-address-text"><span style="font-weight:500;color:#374151">📍</span> ' + esc(p.address) + '</span>' + dirBtnHtml + '</div>';
+        } else if (dirBtnHtml) {
+          addressInfo = '<div class="jg-address-row">' + dirBtnHtml + '</div>';
         }
 
         // Category info for reports - prominent card

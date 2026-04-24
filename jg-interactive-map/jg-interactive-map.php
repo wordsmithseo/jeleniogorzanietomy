@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.36.1
+ * Version: 3.36.2
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.36.1');
+define('JG_MAP_VERSION', '3.36.2');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1606,15 +1606,16 @@ class JG_Interactive_Map {
         .jg-sp-address-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
         .jg-sp-address-wrap .jg-sp-address { margin-bottom: 0; flex: 1; min-width: 0; }
         .jg-sp-dir-btn {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 9px 18px; background: #eff6ff; color: #1d4ed8;
-            border: 1.5px solid #bfdbfe; border-radius: 10px;
-            font-size: calc(14 * var(--jg)); font-weight: 700;
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 8px 16px; background: #8d2324; color: #fff;
+            border: none; border-radius: 8px;
+            font-size: calc(13 * var(--jg)); font-weight: 700;
             text-decoration: none; white-space: nowrap; flex-shrink: 0;
             transition: background 0.15s, box-shadow 0.15s;
+            box-shadow: 0 1px 4px rgba(141,35,36,0.25);
         }
-        .jg-sp-dir-btn:hover { background: #dbeafe; box-shadow: 0 2px 10px rgba(37,99,235,0.18); color: #1d4ed8; }
-        .jg-sp-dir-btn svg { width: 20px; height: 20px; fill: #1d4ed8; flex-shrink: 0; }
+        .jg-sp-dir-btn:hover { background: #a02829; box-shadow: 0 3px 10px rgba(141,35,36,0.35); color: #fff; }
+        .jg-sp-dir-btn svg { width: 16px; height: 16px; fill: #fff; flex-shrink: 0; }
         .jg-sp-menu-btn {
             display: inline-flex; align-items: center; gap: 8px;
             padding: 9px 18px; background: #f0fdf4; color: #166534;
