@@ -2599,36 +2599,11 @@ class JG_Map_Ajax_Handlers {
                 $this->notify_admin_edit($point_id);
             }
 
-            // Award XP for editing — single flat-rate award per meaningful edit
-            // Uses the unified 'edit_point' source key (consistent with admin UI and recalculation).
+            // Award XP for editing — one award per submitted edit, regardless of which fields changed.
+            // Matches recalculate_all_xp() which counts all action_type='edit' history entries.
             $xp_results = array();
-
-            $old_title_clean   = trim($old_values['title']);
-            $new_title_clean   = trim($title);
-            $old_content_plain = trim(wp_strip_all_tags($old_values['content']));
-            $new_content_plain = trim(wp_strip_all_tags($content));
-
-            $title_changed   = ($old_title_clean !== $new_title_clean && $new_title_clean !== '');
-            $content_changed = ($old_content_plain !== $new_content_plain && $new_content_plain !== '');
-
-            // Award edit_point XP if title or description meaningfully changed
-            if ($title_changed || $content_changed) {
-                $has_meaningful_change = false;
-                if ($title_changed && JG_Map_Levels_Achievements::count_valid_words($new_title_clean) > 0) {
-                    $has_meaningful_change = true;
-                }
-                if (!$has_meaningful_change && $content_changed) {
-                    $new_word_count = JG_Map_Levels_Achievements::count_valid_words($new_content_plain);
-                    $old_word_count = JG_Map_Levels_Achievements::count_valid_words($old_content_plain);
-                    if ($new_word_count > $old_word_count) {
-                        $has_meaningful_change = true;
-                    }
-                }
-                if ($has_meaningful_change) {
-                    $r = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_point', $point_id);
-                    if ($r) $xp_results[] = $r;
-                }
-            }
+            $r = JG_Map_Levels_Achievements::award_xp($user_id, 'edit_point', $point_id);
+            if ($r) $xp_results[] = $r;
 
             // --- New photos ---
             if (!empty($new_images)) {

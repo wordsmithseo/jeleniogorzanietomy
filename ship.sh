@@ -5,8 +5,9 @@ SCRIPT_DIR="$(dirname "$0")"
 PLUGIN_FILE="$SCRIPT_DIR/jg-interactive-map/jg-interactive-map.php"
 
 # 1. Analiza zmian przez Claude
-DIFF=$(git -C "$SCRIPT_DIR" diff HEAD -- jg-interactive-map/ | head -c 8000)
-NEW_FILES=$(git -C "$SCRIPT_DIR" ls-files --others --exclude-standard -- jg-interactive-map/)
+FULL_DIFF=$(git -C "$SCRIPT_DIR" diff HEAD -- jg-interactive-map/ || true)
+DIFF="${FULL_DIFF:0:8000}"
+NEW_FILES=$(git -C "$SCRIPT_DIR" ls-files --others --exclude-standard -- jg-interactive-map/ || true)
 
 if [[ -z "$DIFF" && -z "$NEW_FILES" ]]; then
   echo "Brak zmian w pluginie."
@@ -33,8 +34,21 @@ $NEW_FILES"
 
   ANALYSIS=$(echo "$PROMPT" | claude -p 2>/dev/null || echo '{"bump":"patch","message":"Aktualizacja pluginu"}')
 
-  BUMP=$(echo "$ANALYSIS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('bump','patch'))" 2>/dev/null || echo "patch")
-  SUGGESTED_MSG=$(echo "$ANALYSIS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('message','Aktualizacja pluginu'))" 2>/dev/null || echo "Aktualizacja pluginu")
+  # Extract first JSON object from response (handles markdown code fence wrapping)
+  BUMP=$(echo "$ANALYSIS" | python3 -c "
+import sys, json, re
+text = sys.stdin.read()
+m = re.search(r'\{[^{}]*\}', text, re.DOTALL)
+d = json.loads(m.group(0)) if m else {}
+print(d.get('bump', 'patch'))
+" 2>/dev/null || echo "patch")
+  SUGGESTED_MSG=$(echo "$ANALYSIS" | python3 -c "
+import sys, json, re
+text = sys.stdin.read()
+m = re.search(r'\{[^{}]*\}', text, re.DOTALL)
+d = json.loads(m.group(0)) if m else {}
+print(d.get('message', 'Aktualizacja pluginu'))
+" 2>/dev/null || echo "Aktualizacja pluginu")
 
   [[ -z "$BUMP" ]] && BUMP="patch"
   [[ -z "$SUGGESTED_MSG" ]] && SUGGESTED_MSG="Aktualizacja pluginu"

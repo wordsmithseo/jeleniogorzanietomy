@@ -252,102 +252,104 @@ class JG_Map_Challenges {
 
         switch ($type) {
             // ── Point-adding conditions ───────────────────────────────────────
+            // Points have status='publish' (not 'approved'). Admin-submitted points
+            // may have approved_at=NULL, so COALESCE falls back to created_at.
             case 'place_any':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='miejsce' AND author_id=%d AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'place_category':
                 if (empty($cat)) return 0;
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND category=%s AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='miejsce' AND author_id=%d AND category=%s AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $cat, $start, $end
                 ));
 
             case 'place_photo':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND images IS NOT NULL AND images NOT IN ('','[]') AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='miejsce' AND author_id=%d AND images IS NOT NULL AND images NOT IN ('','[]') AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'place_hours':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND opening_hours IS NOT NULL AND opening_hours != '' AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='miejsce' AND author_id=%d AND opening_hours IS NOT NULL AND opening_hours != '' AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'place_menu':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(DISTINCT p.id) FROM `$pts` p INNER JOIN `$menu` m ON m.point_id = p.id WHERE p.status='approved' AND p.type='miejsce' AND p.author_id=%d AND p.approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(DISTINCT p.id) FROM `$pts` p INNER JOIN `$menu` m ON m.point_id = p.id WHERE p.status='publish' AND p.type='miejsce' AND p.author_id=%d AND COALESCE(p.approved_at, p.created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'place_desc':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND content IS NOT NULL AND content != '' AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='miejsce' AND author_id=%d AND content IS NOT NULL AND content != '' AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'place_phone':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND phone IS NOT NULL AND phone != '' AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='miejsce' AND author_id=%d AND phone IS NOT NULL AND phone != '' AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'place_website':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND website IS NOT NULL AND website != '' AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='miejsce' AND author_id=%d AND website IS NOT NULL AND website != '' AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'place_full':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='miejsce' AND author_id=%d AND content IS NOT NULL AND content != '' AND images IS NOT NULL AND images NOT IN ('','[]') AND opening_hours IS NOT NULL AND opening_hours != '' AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='miejsce' AND author_id=%d AND content IS NOT NULL AND content != '' AND images IS NOT NULL AND images NOT IN ('','[]') AND opening_hours IS NOT NULL AND opening_hours != '' AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'curiosity_any':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='ciekawostka' AND author_id=%d AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='ciekawostka' AND author_id=%d AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'curiosity_category':
                 if (empty($cat)) return 0;
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='ciekawostka' AND author_id=%d AND category=%s AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='ciekawostka' AND author_id=%d AND category=%s AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $cat, $start, $end
                 ));
 
             case 'curiosity_photo':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='ciekawostka' AND author_id=%d AND images IS NOT NULL AND images NOT IN ('','[]') AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='ciekawostka' AND author_id=%d AND images IS NOT NULL AND images NOT IN ('','[]') AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'issue_any':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='zgloszenie' AND author_id=%d AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='zgloszenie' AND author_id=%d AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'issue_category':
                 if (empty($cat)) return 0;
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND type='zgloszenie' AND author_id=%d AND category=%s AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND type='zgloszenie' AND author_id=%d AND category=%s AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $cat, $start, $end
                 ));
 
             case 'any_point':
-                $sql    = "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND author_id=%d AND approved_at BETWEEN %s AND %s";
+                $sql    = "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND author_id=%d AND COALESCE(approved_at, created_at) BETWEEN %s AND %s";
                 $params = array($user_id, $start, $end);
                 if (!empty($cat)) { $sql .= " AND category = %s"; $params[] = $cat; }
                 return (int) $wpdb->get_var($wpdb->prepare($sql, $params));
 
             case 'any_with_photo':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM `$pts` WHERE status='approved' AND author_id=%d AND images IS NOT NULL AND images NOT IN ('','[]') AND approved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(*) FROM `$pts` WHERE status='publish' AND author_id=%d AND images IS NOT NULL AND images NOT IN ('','[]') AND COALESCE(approved_at, created_at) BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
@@ -368,15 +370,20 @@ class JG_Map_Challenges {
 
             case 'edit_approved':
                 return (int) $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(DISTINCT point_id) FROM `$hist` WHERE user_id=%d AND status='approved' AND resolved_at BETWEEN %s AND %s",
+                    "SELECT COUNT(DISTINCT point_id) FROM `$hist` WHERE user_id=%d AND action_type='edit' AND status='approved' AND resolved_at BETWEEN %s AND %s",
                     $user_id, $start, $end
                 ));
 
             case 'upload_photo_existing': {
-                // Only count places that CURRENTLY have photos — joining with the
-                // points table ensures upload→delete→re-upload stays at 1 and a
-                // final delete drops the count back to 0.
-                $like = '%' . $wpdb->esc_like('"images":') . '%';
+                // images is stored as a PHP string in DB ('[]', '["url"]'), so in JSON
+                // it appears as "images":"[]" or "images":null — always quoted/null, never bare [].
+                $new_has    = '%' . $wpdb->esc_like('"images":') . '%';
+                $new_null   = '%' . $wpdb->esc_like('"images":null') . '%';
+                $new_empty1 = '%' . $wpdb->esc_like('"images":""') . '%';
+                $new_empty2 = '%' . $wpdb->esc_like('"images":"[]"') . '%';
+                $old_null   = '%' . $wpdb->esc_like('"images":null') . '%';
+                $old_empty1 = '%' . $wpdb->esc_like('"images":""') . '%';
+                $old_empty2 = '%' . $wpdb->esc_like('"images":"[]"') . '%';
                 return (int) $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
                      INNER JOIN `$pts` p ON p.id = h.point_id
@@ -384,14 +391,28 @@ class JG_Map_Challenges {
                      AND h.status = 'approved'
                      AND h.resolved_at BETWEEN %s AND %s
                      AND h.new_values LIKE %s
+                     AND h.new_values NOT LIKE %s AND h.new_values NOT LIKE %s AND h.new_values NOT LIKE %s
+                     AND (h.old_values LIKE %s OR h.old_values LIKE %s OR h.old_values LIKE %s)
+                     AND p.author_id != %d
                      AND p.images IS NOT NULL AND p.images NOT IN ('', '[]')",
-                    $user_id, $start, $end, $like
+                    $user_id, $start, $end,
+                    $new_has, $new_null, $new_empty1, $new_empty2,
+                    $old_null, $old_empty1, $old_empty2,
+                    $user_id
                 ));
             }
 
             // ── Fill-in missing fields on existing places ─────────────────────
+            // Each case checks three things:
+            //   1. new_values has a non-empty value for the field (not null, not "")
+            //   2. old_values had an empty/null value (user actually ADDED the field)
+            //   3. The point currently has the field set (sanity check)
             case 'update_hours': {
-                $like = '%' . $wpdb->esc_like('"opening_hours":') . '%';
+                $new_has  = '%' . $wpdb->esc_like('"opening_hours":') . '%';
+                $new_null = '%' . $wpdb->esc_like('"opening_hours":null') . '%';
+                $new_empty = '%' . $wpdb->esc_like('"opening_hours":""') . '%';
+                $old_null  = '%' . $wpdb->esc_like('"opening_hours":null') . '%';
+                $old_empty = '%' . $wpdb->esc_like('"opening_hours":""') . '%';
                 return (int) $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
                      INNER JOIN `$pts` p ON p.id = h.point_id
@@ -399,13 +420,19 @@ class JG_Map_Challenges {
                      AND h.status = 'approved'
                      AND h.resolved_at BETWEEN %s AND %s
                      AND h.new_values LIKE %s
+                     AND h.new_values NOT LIKE %s AND h.new_values NOT LIKE %s
+                     AND (h.old_values LIKE %s OR h.old_values LIKE %s)
                      AND p.opening_hours IS NOT NULL AND p.opening_hours != ''",
-                    $user_id, $start, $end, $like
+                    $user_id, $start, $end, $new_has, $new_null, $new_empty, $old_null, $old_empty
                 ));
             }
 
             case 'update_phone': {
-                $like = '%' . $wpdb->esc_like('"phone":') . '%';
+                $new_has   = '%' . $wpdb->esc_like('"phone":') . '%';
+                $new_null  = '%' . $wpdb->esc_like('"phone":null') . '%';
+                $new_empty = '%' . $wpdb->esc_like('"phone":""') . '%';
+                $old_null  = '%' . $wpdb->esc_like('"phone":null') . '%';
+                $old_empty = '%' . $wpdb->esc_like('"phone":""') . '%';
                 return (int) $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
                      INNER JOIN `$pts` p ON p.id = h.point_id
@@ -413,13 +440,19 @@ class JG_Map_Challenges {
                      AND h.status = 'approved'
                      AND h.resolved_at BETWEEN %s AND %s
                      AND h.new_values LIKE %s
+                     AND h.new_values NOT LIKE %s AND h.new_values NOT LIKE %s
+                     AND (h.old_values LIKE %s OR h.old_values LIKE %s)
                      AND p.phone IS NOT NULL AND p.phone != ''",
-                    $user_id, $start, $end, $like
+                    $user_id, $start, $end, $new_has, $new_null, $new_empty, $old_null, $old_empty
                 ));
             }
 
             case 'update_website': {
-                $like = '%' . $wpdb->esc_like('"website":') . '%';
+                $new_has   = '%' . $wpdb->esc_like('"website":') . '%';
+                $new_null  = '%' . $wpdb->esc_like('"website":null') . '%';
+                $new_empty = '%' . $wpdb->esc_like('"website":""') . '%';
+                $old_null  = '%' . $wpdb->esc_like('"website":null') . '%';
+                $old_empty = '%' . $wpdb->esc_like('"website":""') . '%';
                 return (int) $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
                      INNER JOIN `$pts` p ON p.id = h.point_id
@@ -427,13 +460,19 @@ class JG_Map_Challenges {
                      AND h.status = 'approved'
                      AND h.resolved_at BETWEEN %s AND %s
                      AND h.new_values LIKE %s
+                     AND h.new_values NOT LIKE %s AND h.new_values NOT LIKE %s
+                     AND (h.old_values LIKE %s OR h.old_values LIKE %s)
                      AND p.website IS NOT NULL AND p.website != ''",
-                    $user_id, $start, $end, $like
+                    $user_id, $start, $end, $new_has, $new_null, $new_empty, $old_null, $old_empty
                 ));
             }
 
             case 'update_desc': {
-                $like = '%' . $wpdb->esc_like('"content":') . '%';
+                $new_has   = '%' . $wpdb->esc_like('"content":') . '%';
+                $new_null  = '%' . $wpdb->esc_like('"content":null') . '%';
+                $new_empty = '%' . $wpdb->esc_like('"content":""') . '%';
+                $old_null  = '%' . $wpdb->esc_like('"content":null') . '%';
+                $old_empty = '%' . $wpdb->esc_like('"content":""') . '%';
                 return (int) $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
                      INNER JOIN `$pts` p ON p.id = h.point_id
@@ -441,13 +480,19 @@ class JG_Map_Challenges {
                      AND h.status = 'approved'
                      AND h.resolved_at BETWEEN %s AND %s
                      AND h.new_values LIKE %s
+                     AND h.new_values NOT LIKE %s AND h.new_values NOT LIKE %s
+                     AND (h.old_values LIKE %s OR h.old_values LIKE %s)
                      AND p.content IS NOT NULL AND p.content != ''",
-                    $user_id, $start, $end, $like
+                    $user_id, $start, $end, $new_has, $new_null, $new_empty, $old_null, $old_empty
                 ));
             }
 
             case 'update_price_range': {
-                $like = '%' . $wpdb->esc_like('"price_range":') . '%';
+                $new_has   = '%' . $wpdb->esc_like('"price_range":') . '%';
+                $new_null  = '%' . $wpdb->esc_like('"price_range":null') . '%';
+                $new_empty = '%' . $wpdb->esc_like('"price_range":""') . '%';
+                $old_null  = '%' . $wpdb->esc_like('"price_range":null') . '%';
+                $old_empty = '%' . $wpdb->esc_like('"price_range":""') . '%';
                 return (int) $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
                      INNER JOIN `$pts` p ON p.id = h.point_id
@@ -455,26 +500,44 @@ class JG_Map_Challenges {
                      AND h.status = 'approved'
                      AND h.resolved_at BETWEEN %s AND %s
                      AND h.new_values LIKE %s
+                     AND h.new_values NOT LIKE %s AND h.new_values NOT LIKE %s
+                     AND (h.old_values LIKE %s OR h.old_values LIKE %s)
                      AND p.price_range IS NOT NULL AND p.price_range != ''",
-                    $user_id, $start, $end, $like
+                    $user_id, $start, $end, $new_has, $new_null, $new_empty, $old_null, $old_empty
                 ));
             }
 
             case 'update_any_field': {
-                $l1 = '%' . $wpdb->esc_like('"opening_hours":') . '%';
-                $l2 = '%' . $wpdb->esc_like('"phone":') . '%';
-                $l3 = '%' . $wpdb->esc_like('"website":') . '%';
-                $l4 = '%' . $wpdb->esc_like('"content":') . '%';
-                $l5 = '%' . $wpdb->esc_like('"price_range":') . '%';
-                $l6 = '%' . $wpdb->esc_like('"images":') . '%';
+                $text_fields = array('opening_hours', 'phone', 'website', 'content', 'price_range');
+                $conditions = array();
+                $params = array($user_id, $start, $end);
+                foreach ($text_fields as $f) {
+                    $conditions[] = "(h.new_values LIKE %s AND h.new_values NOT LIKE %s AND h.new_values NOT LIKE %s
+                                      AND (h.old_values LIKE %s OR h.old_values LIKE %s))";
+                    $params[] = '%' . $wpdb->esc_like('"' . $f . '":') . '%';
+                    $params[] = '%' . $wpdb->esc_like('"' . $f . '":null') . '%';
+                    $params[] = '%' . $wpdb->esc_like('"' . $f . '":""') . '%';
+                    $params[] = '%' . $wpdb->esc_like('"' . $f . '":null') . '%';
+                    $params[] = '%' . $wpdb->esc_like('"' . $f . '":""') . '%';
+                }
+                // images is stored as a PHP string, so empty appears as "images":"[]" not "images":[]
+                $conditions[] = '(h.new_values LIKE %s AND h.new_values NOT LIKE %s AND h.new_values NOT LIKE %s AND h.new_values NOT LIKE %s
+                                  AND (h.old_values LIKE %s OR h.old_values LIKE %s OR h.old_values LIKE %s))';
+                $params[] = '%' . $wpdb->esc_like('"images":') . '%';
+                $params[] = '%' . $wpdb->esc_like('"images":null') . '%';
+                $params[] = '%' . $wpdb->esc_like('"images":""') . '%';
+                $params[] = '%' . $wpdb->esc_like('"images":"[]"') . '%';
+                $params[] = '%' . $wpdb->esc_like('"images":null') . '%';
+                $params[] = '%' . $wpdb->esc_like('"images":""') . '%';
+                $params[] = '%' . $wpdb->esc_like('"images":"[]"') . '%';
+                $where_fields = implode(' OR ', $conditions);
                 return (int) $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(DISTINCT h.point_id) FROM `$hist` h
                      WHERE h.user_id = %d
                      AND h.status = 'approved'
                      AND h.resolved_at BETWEEN %s AND %s
-                     AND (h.new_values LIKE %s OR h.new_values LIKE %s OR h.new_values LIKE %s
-                          OR h.new_values LIKE %s OR h.new_values LIKE %s OR h.new_values LIKE %s)",
-                    $user_id, $start, $end, $l1, $l2, $l3, $l4, $l5, $l6
+                     AND ($where_fields)",
+                    ...$params
                 ));
             }
 

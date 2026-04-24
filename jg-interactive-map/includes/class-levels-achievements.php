@@ -1113,7 +1113,7 @@ class JG_Map_Levels_Achievements {
                 $xp += intval($count) * $xp_map['receive_upvote'];
             }
 
-            // edit_point: count edit history entries
+            // edit_point: count all user-submitted edit history entries
             if (!empty($xp_map['edit_point'])) {
                 $count = $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(*) FROM $table_history WHERE user_id = %d AND action_type = 'edit'",
