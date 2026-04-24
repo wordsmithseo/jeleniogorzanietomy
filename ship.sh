@@ -2,23 +2,81 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(dirname "$0")"
+PLUGIN_FILE="$SCRIPT_DIR/jg-interactive-map/jg-interactive-map.php"
 
-# 1. Deploy
+# 1. Analiza zmian przez Claude
+DIFF=$(git -C "$SCRIPT_DIR" diff HEAD -- jg-interactive-map/ | head -c 8000)
+NEW_FILES=$(git -C "$SCRIPT_DIR" ls-files --others --exclude-standard -- jg-interactive-map/)
+
+if [[ -z "$DIFF" && -z "$NEW_FILES" ]]; then
+  echo "Brak zmian w pluginie."
+  read -rp "Mimo to deployować? (y/n): " CONT
+  [[ "$CONT" != "y" && "$CONT" != "Y" ]] && exit 0
+  BUMP="patch"
+  SUGGESTED_MSG="Aktualizacja pluginu"
+else
+  echo "Analizuję zmiany..."
+
+  PROMPT="Jesteś ekspertem od semantic versioning pluginów WordPress.
+Na podstawie poniższego git diff oceń:
+1. Typ bumpa wersji: 'patch' (poprawki, refactor, style), 'minor' (nowe funkcje, nowe endpointy), 'major' (usunięcia, zmiany API, niekompatybilne)
+2. Krótki komunikat commita po polsku, max 72 znaki, czas teraźniejszy (np. 'Dodaje filtrowanie wyników mapy')
+
+Odpowiedz WYŁĄCZNIE w JSON bez żadnego dodatkowego tekstu:
+{\"bump\": \"patch\", \"message\": \"...\"}
+
+DIFF:
+$DIFF
+
+NOWE PLIKI:
+$NEW_FILES"
+
+  ANALYSIS=$(echo "$PROMPT" | claude -p 2>/dev/null || echo '{"bump":"patch","message":"Aktualizacja pluginu"}')
+
+  BUMP=$(echo "$ANALYSIS" | grep -oP '(?<="bump"\s*:\s*")[^"]+' | head -1)
+  SUGGESTED_MSG=$(echo "$ANALYSIS" | grep -oP '(?<="message"\s*:\s*")[^"]+' | head -1)
+
+  [[ -z "$BUMP" ]] && BUMP="patch"
+  [[ -z "$SUGGESTED_MSG" ]] && SUGGESTED_MSG="Aktualizacja pluginu"
+fi
+
+echo ""
+echo "  Typ bumpa : $BUMP"
+echo "  Commit    : $SUGGESTED_MSG"
+echo ""
+read -rp "Zatwierdź Enter lub wpisz własną treść commita: " USER_MSG
+COMMIT_MSG="${USER_MSG:-$SUGGESTED_MSG}"
+
+# 2. Bump wersji
+CURRENT_VERSION=$(grep -oP '(?<=Version: )\d+\.\d+\.\d+' "$PLUGIN_FILE")
+IFS='.' read -r VER_MAJOR VER_MINOR VER_PATCH <<< "$CURRENT_VERSION"
+case "$BUMP" in
+  major) NEW_VERSION="$((VER_MAJOR + 1)).0.0" ;;
+  minor) NEW_VERSION="$VER_MAJOR.$((VER_MINOR + 1)).0" ;;
+  *)     NEW_VERSION="$VER_MAJOR.$VER_MINOR.$((VER_PATCH + 1))" ;;
+esac
+sed -i "s/Version: $CURRENT_VERSION/Version: $NEW_VERSION/" "$PLUGIN_FILE"
+sed -i "s/define('JG_MAP_VERSION', '$CURRENT_VERSION')/define('JG_MAP_VERSION', '$NEW_VERSION')/" "$PLUGIN_FILE"
+echo "Wersja: $CURRENT_VERSION → $NEW_VERSION"
+
+# 3. Deploy
 "$SCRIPT_DIR/deploy.sh"
 
-# 2. Weryfikacja
+# 4. Weryfikacja
 echo ""
 read -rp "Zasoby wysłane na serwer. Sprawdź stronę w przeglądarce. Czy wszystko działa poprawnie? (y/n): " ANSWER
 
-# 3. Git workflow
+# 5. Git workflow
 if [[ "$ANSWER" == "y" || "$ANSWER" == "Y" ]]; then
-    read -rp "Treść commita: " COMMIT_MSG
     cd "$SCRIPT_DIR"
     git add .
     git commit -m "$COMMIT_MSG"
     git push origin main
-    echo "Zmiany zapisane na GitHubie i wdrożone!"
+    echo "Wdrożono i zapisano na GitHubie! [$NEW_VERSION]"
 else
-    echo "Przerwano zapisywanie na Git. Napraw błędy i spróbuj ponownie."
+    echo "Przerwano. Cofam zmianę wersji..."
+    sed -i "s/Version: $NEW_VERSION/Version: $CURRENT_VERSION/" "$PLUGIN_FILE"
+    sed -i "s/define('JG_MAP_VERSION', '$NEW_VERSION')/define('JG_MAP_VERSION', '$CURRENT_VERSION')/" "$PLUGIN_FILE"
+    echo "Wersja przywrócona do $CURRENT_VERSION. Napraw błędy i spróbuj ponownie."
     exit 1
 fi
