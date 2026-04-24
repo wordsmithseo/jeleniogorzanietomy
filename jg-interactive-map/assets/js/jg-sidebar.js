@@ -54,7 +54,8 @@
 
     function saveFilterPrefs() {
         try {
-            localStorage.setItem(FILTER_PREFS_KEY, JSON.stringify(currentFilters));
+            var data = Object.assign({}, currentFilters, { _savedAt: Date.now() });
+            localStorage.setItem(FILTER_PREFS_KEY, JSON.stringify(data));
         } catch (e) {}
     }
 
@@ -63,6 +64,12 @@
             var saved = localStorage.getItem(FILTER_PREFS_KEY);
             if (!saved) return;
             var prefs = JSON.parse(saved);
+            // If admin triggered a reset newer than these prefs, discard them
+            var resetAt = (window.JG_MAP_CFG && JG_MAP_CFG.filterResetAt) ? JG_MAP_CFG.filterResetAt * 1000 : 0;
+            if (resetAt && (!prefs._savedAt || prefs._savedAt < resetAt)) {
+                localStorage.removeItem(FILTER_PREFS_KEY);
+                return;
+            }
             if (Array.isArray(prefs.types))                    currentFilters.types = prefs.types;
             if (typeof prefs.myPlaces === 'boolean')           currentFilters.myPlaces = prefs.myPlaces;
             if (typeof prefs.sortBy === 'string' && prefs.sortBy) currentFilters.sortBy = prefs.sortBy;

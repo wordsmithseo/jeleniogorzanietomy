@@ -693,6 +693,9 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_jg_update_curiosity_category', array($this, 'update_curiosity_category'), 1);
         add_action('wp_ajax_jg_delete_curiosity_category', array($this, 'delete_curiosity_category'), 1);
 
+        // Filter prefs reset (admin only)
+        add_action('wp_ajax_jg_admin_reset_filter_prefs', array($this, 'admin_reset_filter_prefs'), 1);
+
         // Business promotion request (logged in users)
         add_action('wp_ajax_jg_request_promotion', array($this, 'request_promotion'));
 
@@ -9550,6 +9553,23 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success(array('message' => 'Kategoria została usunięta'));
+    }
+
+    /**
+     * Reset filter preferences for all users (sets a timestamp; JS discards older saved prefs)
+     */
+    public function admin_reset_filter_prefs() {
+        if (!current_user_can('manage_options') && !current_user_can('jg_map_moderate')) {
+            wp_send_json_error('Brak uprawnień');
+            return;
+        }
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'jg_admin_reset_filter_prefs_nonce')) {
+            wp_send_json_error('Błąd bezpieczeństwa');
+            return;
+        }
+        $ts = time();
+        update_option('jg_map_filter_reset_at', $ts);
+        wp_send_json_success(array('reset_at' => $ts));
     }
 
     /**

@@ -563,6 +563,7 @@ class JG_Map_Enqueue {
                 ),
                 'reportCategories' => JG_Map_Ajax_Handlers::get_category_groups(),
                 'reportReasons' => JG_Map_Ajax_Handlers::get_report_categories(),
+                'filterResetAt' => (int) get_option('jg_map_filter_reset_at', 0),
                 'placeCategories' => JG_Map_Ajax_Handlers::get_place_categories(),
                 'curiosityCategories' => JG_Map_Ajax_Handlers::get_curiosity_categories(),
                 'menuCategories' => JG_Map_Ajax_Handlers::get_menu_categories(),
