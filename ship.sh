@@ -33,8 +33,8 @@ $NEW_FILES"
 
   ANALYSIS=$(echo "$PROMPT" | claude -p 2>/dev/null || echo '{"bump":"patch","message":"Aktualizacja pluginu"}')
 
-  BUMP=$(echo "$ANALYSIS" | grep -oP '(?<="bump"\s*:\s*")[^"]+' | head -1)
-  SUGGESTED_MSG=$(echo "$ANALYSIS" | grep -oP '(?<="message"\s*:\s*")[^"]+' | head -1)
+  BUMP=$(echo "$ANALYSIS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('bump','patch'))" 2>/dev/null || echo "patch")
+  SUGGESTED_MSG=$(echo "$ANALYSIS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('message','Aktualizacja pluginu'))" 2>/dev/null || echo "Aktualizacja pluginu")
 
   [[ -z "$BUMP" ]] && BUMP="patch"
   [[ -z "$SUGGESTED_MSG" ]] && SUGGESTED_MSG="Aktualizacja pluginu"
@@ -48,7 +48,7 @@ read -rp "Zatwierdź Enter lub wpisz własną treść commita: " USER_MSG
 COMMIT_MSG="${USER_MSG:-$SUGGESTED_MSG}"
 
 # 2. Bump wersji
-CURRENT_VERSION=$(grep -oP '(?<=Version: )\d+\.\d+\.\d+' "$PLUGIN_FILE")
+CURRENT_VERSION=$(sed -n 's/.*Version: \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' "$PLUGIN_FILE" | head -1)
 IFS='.' read -r VER_MAJOR VER_MINOR VER_PATCH <<< "$CURRENT_VERSION"
 case "$BUMP" in
   major) NEW_VERSION="$((VER_MAJOR + 1)).0.0" ;;

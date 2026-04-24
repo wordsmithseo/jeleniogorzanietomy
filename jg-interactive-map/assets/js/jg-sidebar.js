@@ -35,7 +35,7 @@
     let currentFilters = {
         types: ['miejsce', 'ciekawostka', 'zgloszenie'],
         myPlaces: false,
-        sortBy: 'date_desc',
+        sortBy: 'modified_desc',
         placeCategories: [],
         curiosityCategories: []
     };
@@ -185,9 +185,10 @@
         if (!$select.length || $('#jg-sidebar-sort-pills').length) return;
 
         var pillDefs = [
-            { val: 'date_desc', label: 'Najnowsze' },
-            { val: 'votes_desc', label: 'Oceniane' },
-            { val: 'name_asc',  label: 'A→Z' }
+            { val: 'modified_desc', label: 'Ostatnio edytowane' },
+            { val: 'date_desc',     label: 'Najnowsze' },
+            { val: 'votes_desc',    label: 'Oceniane' },
+            { val: 'alpha_asc',     label: 'A→Z' }
         ];
 
         var $pills = $('<div id="jg-sidebar-sort-pills"></div>');
