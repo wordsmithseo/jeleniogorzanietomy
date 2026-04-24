@@ -10895,7 +10895,7 @@ footer.site-footer .site-branding {
 #jg-sidebar-sort-pills {
   display: flex !important;
   gap: 5px !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
   align-items: center !important;
 }
 
