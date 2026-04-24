@@ -71,6 +71,7 @@ if [[ "$ANSWER" == "y" || "$ANSWER" == "Y" ]]; then
     cd "$SCRIPT_DIR"
     git add .
     git commit -m "$COMMIT_MSG"
+    git pull --rebase origin main
     git push origin main
     echo "Wdrożono i zapisano na GitHubie! [$NEW_VERSION]"
 else
