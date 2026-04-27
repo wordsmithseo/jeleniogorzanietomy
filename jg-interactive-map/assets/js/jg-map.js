@@ -1387,7 +1387,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         return '<div class="jg-tags-wrap" id="' + id + '-wrap">' +
           '<div class="jg-tags-list" id="' + id + '-list"></div>' +
           '<div style="position:relative">' +
-            '<input type="text" id="' + id + '-input" class="jg-tags-input" placeholder="Wpisz tag i naciśnij Enter (max 5)..." autocomplete="off" maxlength="30">' +
+            '<input type="text" id="' + id + '-input" class="jg-tags-input" placeholder="Wpisz tag i naciśnij Enter lub , (max 5)..." autocomplete="off" maxlength="30">' +
             '<div class="jg-tags-suggestions" id="' + id + '-suggestions" style="display:none"></div>' +
           '</div>' +
           '<input type="hidden" name="tags" id="' + id + '-hidden">' +
@@ -1504,7 +1504,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             }
           }
 
-          if (e.key === 'Enter' || e.key === ',') {
+          if (e.key === 'Enter') {
             e.preventDefault();
             var val = input.value.trim();
             if (val) {
@@ -1514,6 +1514,20 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             }
           } else if (e.key === 'Backspace' && !input.value && tags.length > 0) {
             removeTag(tags.length - 1);
+          }
+        });
+
+        input.addEventListener('input', function() {
+          var val = input.value;
+          if (val.indexOf(',') !== -1) {
+            var parts = val.split(',');
+            var last = parts.pop();
+            parts.forEach(function(p) {
+              p = p.trim();
+              if (p) addTag(p);
+            });
+            input.value = last;
+            if (!last) hideSuggestions();
           }
         });
 
