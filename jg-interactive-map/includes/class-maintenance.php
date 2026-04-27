@@ -16,20 +16,85 @@ class JG_Map_Maintenance {
     const CRON_HOOK = 'jg_map_daily_maintenance';
 
     /**
+     * XP sync cron hook name (runs twice a week)
+     */
+    const XP_SYNC_HOOK = 'jg_map_xp_sync';
+
+    /**
      * Initialize maintenance tasks
      */
     public static function init() {
-        // Schedule cron if not already scheduled
+        add_filter('cron_schedules', array(__CLASS__, 'add_cron_schedules'));
+
+        // Schedule daily maintenance cron if not already scheduled
         if (!wp_next_scheduled(self::CRON_HOOK)) {
             wp_schedule_event(time(), 'daily', self::CRON_HOOK);
         }
 
+        // Schedule twice-weekly XP sync starting at next Mon/Thu midnight
+        if (!wp_next_scheduled(self::XP_SYNC_HOOK)) {
+            wp_schedule_event(self::next_sync_midnight(), 'twiceweekly', self::XP_SYNC_HOOK);
+        }
+
         // Hook the maintenance function
         add_action(self::CRON_HOOK, array(__CLASS__, 'run_maintenance'));
+        add_action(self::XP_SYNC_HOOK, array(__CLASS__, 'run_xp_sync'));
 
         // Add manual triggers for admins
         add_action('admin_init', array(__CLASS__, 'handle_manual_trigger'));
         add_action('admin_init', array(__CLASS__, 'handle_xp_sync_trigger'));
+    }
+
+    /**
+     * Register custom cron interval: every 3.5 days (twice a week)
+     */
+    public static function add_cron_schedules($schedules) {
+        $schedules['twiceweekly'] = array(
+            'interval' => 302400,
+            'display'  => 'Twice Weekly',
+        );
+        return $schedules;
+    }
+
+    /**
+     * Returns UTC timestamp of the next Monday or Thursday midnight in site timezone
+     */
+    private static function next_sync_midnight() {
+        $tz  = wp_timezone();
+        $now = new DateTime('now', $tz);
+
+        $best = null;
+        foreach (array(1, 4) as $target_dow) { // 1=Monday, 4=Thursday
+            $diff = ($target_dow - (int) $now->format('N') + 7) % 7;
+            $candidate = clone $now;
+            $candidate->modify("+{$diff} days");
+            $candidate->setTime(0, 0, 0);
+            // If that midnight has already passed today, shift to next week
+            if ($candidate <= $now) {
+                $candidate->modify('+7 days');
+            }
+            if ($best === null || $candidate < $best) {
+                $best = $candidate;
+            }
+        }
+
+        return $best->getTimestamp();
+    }
+
+    /**
+     * Run XP recalculation and achievement recheck; shared by cron and manual trigger
+     */
+    public static function run_xp_sync() {
+        $xp_result  = JG_Map_Levels_Achievements::recalculate_all_xp();
+        $ach_result = JG_Map_Levels_Achievements::recheck_all_achievements();
+
+        update_option('jg_map_last_xp_sync', array(
+            'time'         => current_time('mysql'),
+            'xp'           => $xp_result,
+            'achievements' => $ach_result,
+        ));
+
+        return array('xp' => $xp_result, 'achievements' => $ach_result);
     }
 
     /**
@@ -64,14 +129,7 @@ class JG_Map_Maintenance {
                 wp_die('Security check failed');
             }
 
-            $xp_result = JG_Map_Levels_Achievements::recalculate_all_xp();
-            $ach_result = JG_Map_Levels_Achievements::recheck_all_achievements();
-
-            update_option('jg_map_last_xp_sync', array(
-                'time' => current_time('mysql'),
-                'xp' => $xp_result,
-                'achievements' => $ach_result
-            ));
+            self::run_xp_sync();
 
             wp_redirect(admin_url('admin.php?page=jg-map-maintenance&xp_sync_done=1'));
             exit;
@@ -638,6 +696,11 @@ class JG_Map_Maintenance {
         $timestamp = wp_next_scheduled(self::CRON_HOOK);
         if ($timestamp) {
             wp_unschedule_event($timestamp, self::CRON_HOOK);
+        }
+
+        $xp_timestamp = wp_next_scheduled(self::XP_SYNC_HOOK);
+        if ($xp_timestamp) {
+            wp_unschedule_event($xp_timestamp, self::XP_SYNC_HOOK);
         }
     }
 }
