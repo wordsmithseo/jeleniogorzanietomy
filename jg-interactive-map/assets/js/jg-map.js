@@ -4763,19 +4763,19 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
 
               var formHtml = '<header><h3>Dodaj nowe miejsce</h3><button class="jg-close" id="add-close">&times;</button></header>' +
-                '<form id="add-form" class="jg-grid cols-2">' +
+                '<form id="add-form" class="jg-grid cols-2" novalidate>' +
                 '<input type="hidden" name="lat" id="add-lat-input" value="' + lat + '">' +
                 '<input type="hidden" name="lng" id="add-lng-input" value="' + lng + '">' +
                 '<input type="hidden" name="address" id="add-address-input" value="">' +
                 limitsHtml +
                 '<div class="cols-2" id="add-address-display" style="padding:8px 12px;background:#f3f4f6;border-left:3px solid #8d2324;border-radius:4px;font-size:13px;color:#374151;margin-bottom:8px"><strong>📍 Wczytywanie adresu...</strong></div>' +
-                '<label>Tytuł* <input name="title" required placeholder="Nazwa miejsca" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
-                '<label>Typ* <select name="type" id="add-type-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+                '<label style="display:block"><span style="display:block;margin-bottom:4px">Tytuł*</span><input name="title" required placeholder="Nazwa miejsca" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
+                '<label style="display:block"><span style="display:block;margin-bottom:4px">Typ*</span><select name="type" id="add-type-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
                 '<option value="zgloszenie">Zgłoszenie</option>' +
                 '<option value="ciekawostka">Ciekawostka</option>' +
                 '<option value="miejsce" selected>Miejsce</option>' +
                 '</select></label>' +
-                '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+                '<label class="cols-2" id="add-category-field" style="display:block"><span style="display:block;margin-bottom:4px;color:#dc2626">Kategoria zgłoszenia*</span><select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
                 generateCategoryOptions('') +
                 '</select></label>' +
                 '<label class="cols-2" id="add-place-category-field" style="display:none"><span>Kategoria miejsca</span> <select name="place_category" id="add-place-category-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
@@ -14580,19 +14580,19 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             }
 
             var formHtml = '<header><h3>Dodaj nowe miejsce</h3><button class="jg-close" id="add-close">&times;</button></header>' +
-              '<form id="add-form" class="jg-grid cols-2">' +
+              '<form id="add-form" class="jg-grid cols-2" novalidate>' +
               '<input type="hidden" name="lat" id="add-lat-input" value="' + latFixed + '">' +
               '<input type="hidden" name="lng" id="add-lng-input" value="' + lngFixed + '">' +
               '<input type="hidden" name="address" id="add-address-input" value="">' +
               limitsHtml +
               '<div class="cols-2" id="add-address-display" style="padding:8px 12px;background:#f3f4f6;border-left:3px solid #8d2324;border-radius:4px;font-size:13px;color:#374151;margin-bottom:8px"><strong>📍 Wczytywanie adresu...</strong></div>' +
-              '<label>Tytuł* <input name="title" required placeholder="Nazwa miejsca" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
-              '<label>Typ* <select name="type" id="add-type-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+              '<label style="display:block"><span style="display:block;margin-bottom:4px">Tytuł*</span><input name="title" required placeholder="Nazwa miejsca" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px"></label>' +
+              '<label style="display:block"><span style="display:block;margin-bottom:4px">Typ*</span><select name="type" id="add-type-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
               '<option value="zgloszenie">Zgłoszenie</option>' +
               '<option value="ciekawostka">Ciekawostka</option>' +
               '<option value="miejsce" selected>Miejsce</option>' +
               '</select></label>' +
-              '<label class="cols-2" id="add-category-field" style="display:block"><span style="color:#dc2626">Kategoria zgłoszenia*</span> <select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
+              '<label class="cols-2" id="add-category-field" style="display:block"><span style="display:block;margin-bottom:4px;color:#dc2626">Kategoria zgłoszenia*</span><select name="category" id="add-category-select" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
               generateCategoryOptions('') +
               '</select></label>' +
               '<label class="cols-2" id="add-place-category-field" style="display:none"><span>Kategoria miejsca (opcjonalna)</span> <select name="place_category" id="add-place-category-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px">' +
