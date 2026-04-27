@@ -3789,11 +3789,15 @@ class JG_Map_Admin {
                             </td>
                             <td class="jg-td-actions">
                                 <div class="jg-action-btns">
+                                    <?php
+                                    $is_protected = user_can($user->ID, 'manage_options') || user_can($user->ID, 'jg_map_moderate');
+                                    ?>
                                     <button class="button button-small jg-manage-user"
                                             data-user-id="<?php echo $user->ID; ?>"
                                             data-user-name="<?php echo esc_attr($user->display_name); ?>"
                                             data-ban-status="<?php echo esc_attr($stats['ban_status']); ?>"
-                                            data-restrictions='<?php echo esc_attr(json_encode($stats['restrictions'])); ?>'>
+                                            data-restrictions='<?php echo esc_attr(json_encode($stats['restrictions'])); ?>'
+                                            data-is-protected="<?php echo $is_protected ? '1' : '0'; ?>">
                                         Zarządzaj
                                     </button>
                                     <?php if ($stats['account_status'] === 'pending'): ?>
@@ -3942,12 +3946,38 @@ class JG_Map_Admin {
                 var message = $('#jg-user-message');
                 var currentUserId = null;
                 var currentRestrictions = [];
+                var currentIsProtected = false;
+
+                function applyProtectedState(isProtected) {
+                    if (isProtected) {
+                        var unlimitedBadge = '<div id="jg-unlimited-badge" style="background:#f0fdf4;border:2px solid #16a34a;padding:12px 16px;border-radius:8px;margin-bottom:16px;display:flex;align-items:center;gap:10px">' +
+                            '<span style="font-size:20px">🛡️</span>' +
+                            '<div><strong style="color:#15803d;font-size:14px">Administrator / Moderator</strong>' +
+                            '<br><span style="color:#166534;font-size:12px">Ten użytkownik jest poza wszelkimi limitami i restrykcjami. Nie można go usunąć.</span></div>' +
+                            '</div>';
+                        if (!$('#jg-unlimited-badge').length) {
+                            $('#jg-user-current-status').after(unlimitedBadge);
+                        }
+                        // Hide delete section
+                        $('.jg-delete-user-profile').closest('div[style*="fee2e2"]').hide();
+                        // Show "unlimited" in limit displays
+                        $('#limit-places-display').text('∞');
+                        $('#limit-reports-display').text('∞');
+                        $('#photo-used-display').text('0');
+                        $('#photo-limit-display').text('∞');
+                        $('#edit-count-display').text('∞');
+                    } else {
+                        $('#jg-unlimited-badge').remove();
+                        $('.jg-delete-user-profile').closest('div[style*="fee2e2"]').show();
+                    }
+                }
 
                 $('.jg-manage-user').on('click', function() {
                     currentUserId = $(this).data('user-id');
                     var userName = $(this).data('user-name');
                     var banStatus = $(this).data('ban-status');
                     currentRestrictions = $(this).data('restrictions') || [];
+                    currentIsProtected = $(this).data('is-protected') == '1';
 
                     modalTitle.text('Zarządzanie: ' + userName);
 
@@ -3967,6 +3997,9 @@ class JG_Map_Admin {
 
                     currentStatus.html(statusHtml);
 
+                    // Apply or remove protected (admin/mod) UI state
+                    applyProtectedState(currentIsProtected);
+
                     // Update restriction button states
                     $('.jg-toggle-restriction').each(function() {
                         var type = $(this).data('type');
@@ -3985,61 +4018,63 @@ class JG_Map_Admin {
                         }
                     });
 
-                    // Fetch current daily limits
-                    $.ajax({
-                        url: ajaxurl,
-                        method: 'POST',
-                        data: {
-                            action: 'jg_admin_get_user_limits',
-                            user_id: currentUserId,
-                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                var data = response.data;
-                                $('#limit-places-display').text(data.places_remaining + ' / ' + data.places_limit);
-                                $('#limit-reports-display').text(data.reports_remaining + ' / ' + data.reports_limit);
-                                $('#limit-places-input').val(data.places_limit);
-                                $('#limit-reports-input').val(data.reports_limit);
+                    if (!currentIsProtected) {
+                        // Fetch current daily limits
+                        $.ajax({
+                            url: ajaxurl,
+                            method: 'POST',
+                            data: {
+                                action: 'jg_admin_get_user_limits',
+                                user_id: currentUserId,
+                                _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    var data = response.data;
+                                    $('#limit-places-display').text(data.places_remaining + ' / ' + data.places_limit);
+                                    $('#limit-reports-display').text(data.reports_remaining + ' / ' + data.reports_limit);
+                                    $('#limit-places-input').val(data.places_limit);
+                                    $('#limit-reports-input').val(data.reports_limit);
+                                }
                             }
-                        }
-                    });
+                        });
 
-                    // Fetch monthly photo limits
-                    $.ajax({
-                        url: ajaxurl,
-                        method: 'POST',
-                        data: {
-                            action: 'jg_admin_get_user_photo_limit',
-                            user_id: currentUserId,
-                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                var data = response.data;
-                                $('#photo-used-display').text(data.used_mb);
-                                $('#photo-limit-display').text(data.limit_mb);
-                                $('#photo-limit-input').val(data.limit_mb);
+                        // Fetch monthly photo limits
+                        $.ajax({
+                            url: ajaxurl,
+                            method: 'POST',
+                            data: {
+                                action: 'jg_admin_get_user_photo_limit',
+                                user_id: currentUserId,
+                                _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    var data = response.data;
+                                    $('#photo-used-display').text(data.used_mb);
+                                    $('#photo-limit-display').text(data.limit_mb);
+                                    $('#photo-limit-input').val(data.limit_mb);
+                                }
                             }
-                        }
-                    });
+                        });
 
-                    // Fetch daily edit limit
-                    $.ajax({
-                        url: ajaxurl,
-                        method: 'POST',
-                        data: {
-                            action: 'jg_admin_get_user_edit_limit',
-                            user_id: currentUserId,
-                            _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                var data = response.data;
-                                $('#edit-count-display').text(data.edit_count + ' / 2');
+                        // Fetch daily edit limit
+                        $.ajax({
+                            url: ajaxurl,
+                            method: 'POST',
+                            data: {
+                                action: 'jg_admin_get_user_edit_limit',
+                                user_id: currentUserId,
+                                _ajax_nonce: '<?php echo wp_create_nonce('jg_map_nonce'); ?>'
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    var data = response.data;
+                                    $('#edit-count-display').text(data.edit_count + ' / 2');
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
 
                     modal.css('display', 'flex');
                 });
