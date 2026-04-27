@@ -3828,7 +3828,7 @@ class JG_Map_Admin {
 
                     <div id="jg-user-current-status" style="margin-bottom:20px;padding:12px;background:#f5f5f5;border-radius:8px;"></div>
 
-                    <div style="margin-bottom:20px;">
+                    <div id="jg-ban-section" style="margin-bottom:20px;">
                         <h3>Bany</h3>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
                             <button class="button jg-ban-permanent">Ban permanentny</button>
@@ -3837,7 +3837,7 @@ class JG_Map_Admin {
                         </div>
                     </div>
 
-                    <div style="margin-bottom:20px;">
+                    <div id="jg-restriction-section" style="margin-bottom:20px;">
                         <h3>Blokady</h3>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                             <button class="button jg-toggle-restriction" data-type="voting">Głosowanie</button>
@@ -3953,12 +3953,14 @@ class JG_Map_Admin {
                         var unlimitedBadge = '<div id="jg-unlimited-badge" style="background:#f0fdf4;border:2px solid #16a34a;padding:12px 16px;border-radius:8px;margin-bottom:16px;display:flex;align-items:center;gap:10px">' +
                             '<span style="font-size:20px">🛡️</span>' +
                             '<div><strong style="color:#15803d;font-size:14px">Administrator / Moderator</strong>' +
-                            '<br><span style="color:#166534;font-size:12px">Ten użytkownik jest poza wszelkimi limitami i restrykcjami. Nie można go usunąć.</span></div>' +
+                            '<br><span style="color:#166534;font-size:12px">Ten użytkownik jest poza wszelkimi limitami i restrykcjami. Nie można go zbanować, blokować ani usunąć.</span></div>' +
                             '</div>';
                         if (!$('#jg-unlimited-badge').length) {
                             $('#jg-user-current-status').after(unlimitedBadge);
                         }
-                        // Hide delete section
+                        // Hide ban, restriction and delete sections
+                        $('#jg-ban-section').hide();
+                        $('#jg-restriction-section').hide();
                         $('.jg-delete-user-profile').closest('div[style*="fee2e2"]').hide();
                         // Show "unlimited" in limit displays
                         $('#limit-places-display').text('∞');
@@ -3968,6 +3970,8 @@ class JG_Map_Admin {
                         $('#edit-count-display').text('∞');
                     } else {
                         $('#jg-unlimited-badge').remove();
+                        $('#jg-ban-section').show();
+                        $('#jg-restriction-section').show();
                         $('.jg-delete-user-profile').closest('div[style*="fee2e2"]').show();
                     }
                 }

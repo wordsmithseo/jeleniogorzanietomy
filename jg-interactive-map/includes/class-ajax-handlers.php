@@ -5756,6 +5756,12 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        // Prevent banning admins and moderators
+        if (user_can($user_id, 'manage_options') || user_can($user_id, 'jg_map_moderate')) {
+            wp_send_json_error(array('message' => 'Nie można zbanować administratora ani moderatora'));
+            exit;
+        }
+
         if ($ban_type === 'permanent') {
             update_user_meta($user_id, 'jg_map_banned', 'permanent');
             delete_user_meta($user_id, 'jg_map_ban_until');
@@ -5837,6 +5843,12 @@ class JG_Map_Ajax_Handlers {
         $user = get_userdata($user_id);
         if (!$user) {
             wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        // Prevent restricting admins and moderators
+        if (user_can($user_id, 'manage_options') || user_can($user_id, 'jg_map_moderate')) {
+            wp_send_json_error(array('message' => 'Nie można blokować akcji administratora ani moderatora'));
             exit;
         }
 
