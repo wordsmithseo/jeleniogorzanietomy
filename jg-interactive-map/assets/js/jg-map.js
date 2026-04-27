@@ -4996,52 +4996,54 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             // Sync rich editor content before building FormData
             if (addRte) addRte.syncContent();
 
-            // Validate all required fields
-            var errors = [];
-            var firstErrorEl = null;
+            function markErr(container, text) {
+              container.style.background = '#fff0f0';
+              container.style.borderRadius = '8px';
+              container.style.boxShadow = '0 0 0 2px #b91c1c';
+              container.style.padding = '8px';
+              var existing = container.querySelector('.jg-val-err');
+              if (!existing) {
+                var errDiv = document.createElement('div');
+                errDiv.className = 'jg-val-err';
+                errDiv.style.cssText = 'font-size:12px;color:#b91c1c;font-weight:600;margin-top:6px';
+                errDiv.textContent = '⚠ ' + text;
+                container.appendChild(errDiv);
+              }
+            }
+            function clearErr(container) {
+              container.style.background = '';
+              container.style.borderRadius = '';
+              container.style.boxShadow = '';
+              container.style.padding = '';
+              var errDiv = container.querySelector('.jg-val-err');
+              if (errDiv) errDiv.remove();
+            }
+
+            var firstErrContainer = null;
 
             var titleInput = qs('input[name="title"]', form);
+            var titleContainer = titleInput && titleInput.closest('label');
             if (titleInput && !titleInput.value.trim()) {
-              errors.push('Tytuł (nazwa miejsca) jest wymagany.');
-              titleInput.style.borderColor = '#b91c1c';
-              if (!firstErrorEl) firstErrorEl = titleInput;
-            } else if (titleInput) {
-              titleInput.style.borderColor = '';
-            }
+              if (titleContainer) { markErr(titleContainer, 'Podaj nazwę miejsca.'); if (!firstErrContainer) firstErrContainer = titleContainer; }
+            } else if (titleContainer) { clearErr(titleContainer); }
 
             var contentVal = qs('#add-rte-hidden', modalAdd);
-            var rteEditorEl = qs('#add-rte-editor', modalAdd);
+            var rteWrap = qs('#add-rte-wrap', modalAdd);
+            var rteContainer = rteWrap && rteWrap.parentElement;
             if (contentVal && !contentVal.value.replace(/<\/?[^>]+(>|$)/g, '').trim()) {
-              errors.push('Opis jest wymagany.');
-              if (rteEditorEl) {
-                rteEditorEl.style.outline = '2px solid #b91c1c';
-                rteEditorEl.style.borderRadius = '4px';
-                if (!firstErrorEl) firstErrorEl = rteEditorEl;
-              }
-            } else if (rteEditorEl) {
-              rteEditorEl.style.outline = '';
-            }
+              if (rteContainer) { markErr(rteContainer, 'Dodaj opis miejsca.'); if (!firstErrContainer) firstErrContainer = rteContainer; }
+            } else if (rteContainer) { clearErr(rteContainer); }
 
             var addTypeEl = qs('#add-type-select', form);
-            if (addTypeEl && addTypeEl.value === 'zgloszenie') {
-              var catSelect = qs('#add-category-select', form);
-              if (catSelect && !catSelect.value) {
-                errors.push('Kategoria zgłoszenia jest wymagana.');
-                catSelect.style.borderColor = '#b91c1c';
-                if (!firstErrorEl) firstErrorEl = catSelect;
-              } else if (catSelect) {
-                catSelect.style.borderColor = '';
-              }
-            }
+            var catField = qs('#add-category-field', modalAdd);
+            var catSelect = qs('#add-category-select', form);
+            if (addTypeEl && addTypeEl.value === 'zgloszenie' && catSelect && !catSelect.value) {
+              if (catField) { markErr(catField, 'Wybierz kategorię zgłoszenia.'); if (!firstErrContainer) firstErrContainer = catField; }
+            } else if (catField) { clearErr(catField); }
 
-            if (errors.length > 0) {
-              msg.innerHTML = '<strong>Uzupełnij wymagane pola:</strong><ul style="margin:6px 0 0 16px;padding:0">' +
-                errors.map(function(e) { return '<li>' + e + '</li>'; }).join('') + '</ul>';
-              msg.style.color = '#b91c1c';
-              if (firstErrorEl) {
-                firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                firstErrorEl.focus();
-              }
+            if (firstErrContainer) {
+              msg.textContent = '';
+              firstErrContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
               return;
             }
 
@@ -14811,51 +14813,54 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               if (fabRte) fabRte.syncContent();
 
               // Validate all required fields
-              var fabErrors = [];
-              var fabFirstErr = null;
+              function fabMarkErr(container, text) {
+                container.style.background = '#fff0f0';
+                container.style.borderRadius = '8px';
+                container.style.boxShadow = '0 0 0 2px #b91c1c';
+                container.style.padding = '8px';
+                var existing = container.querySelector('.jg-val-err');
+                if (!existing) {
+                  var errDiv = document.createElement('div');
+                  errDiv.className = 'jg-val-err';
+                  errDiv.style.cssText = 'font-size:12px;color:#b91c1c;font-weight:600;margin-top:6px';
+                  errDiv.textContent = '⚠ ' + text;
+                  container.appendChild(errDiv);
+                }
+              }
+              function fabClearErr(container) {
+                container.style.background = '';
+                container.style.borderRadius = '';
+                container.style.boxShadow = '';
+                container.style.padding = '';
+                var errDiv = container.querySelector('.jg-val-err');
+                if (errDiv) errDiv.remove();
+              }
+
+              var fabFirstErrContainer = null;
 
               var fabTitleInput = qs('input[name="title"]', form);
+              var fabTitleContainer = fabTitleInput && fabTitleInput.closest('label');
               if (fabTitleInput && !fabTitleInput.value.trim()) {
-                fabErrors.push('Tytuł (nazwa miejsca) jest wymagany.');
-                fabTitleInput.style.borderColor = '#b91c1c';
-                if (!fabFirstErr) fabFirstErr = fabTitleInput;
-              } else if (fabTitleInput) {
-                fabTitleInput.style.borderColor = '';
-              }
+                if (fabTitleContainer) { fabMarkErr(fabTitleContainer, 'Podaj nazwę miejsca.'); if (!fabFirstErrContainer) fabFirstErrContainer = fabTitleContainer; }
+              } else if (fabTitleContainer) { fabClearErr(fabTitleContainer); }
 
               var fabContentVal = qs('#fab-rte-hidden', modalAdd);
-              var fabRteEditorEl = qs('#fab-rte-editor', modalAdd);
+              var fabRteWrap = qs('#fab-rte-wrap', modalAdd);
+              var fabRteContainer = fabRteWrap && fabRteWrap.parentElement;
               if (fabContentVal && !fabContentVal.value.replace(/<\/?[^>]+(>|$)/g, '').trim()) {
-                fabErrors.push('Opis jest wymagany.');
-                if (fabRteEditorEl) {
-                  fabRteEditorEl.style.outline = '2px solid #b91c1c';
-                  fabRteEditorEl.style.borderRadius = '4px';
-                  if (!fabFirstErr) fabFirstErr = fabRteEditorEl;
-                }
-              } else if (fabRteEditorEl) {
-                fabRteEditorEl.style.outline = '';
-              }
+                if (fabRteContainer) { fabMarkErr(fabRteContainer, 'Dodaj opis miejsca.'); if (!fabFirstErrContainer) fabFirstErrContainer = fabRteContainer; }
+              } else if (fabRteContainer) { fabClearErr(fabRteContainer); }
 
               var fabTypeEl = qs('#add-type-select', form);
-              if (fabTypeEl && fabTypeEl.value === 'zgloszenie') {
-                var fabCatSelect = qs('#add-category-select', form);
-                if (fabCatSelect && !fabCatSelect.value) {
-                  fabErrors.push('Kategoria zgłoszenia jest wymagana.');
-                  fabCatSelect.style.borderColor = '#b91c1c';
-                  if (!fabFirstErr) fabFirstErr = fabCatSelect;
-                } else if (fabCatSelect) {
-                  fabCatSelect.style.borderColor = '';
-                }
-              }
+              var fabCatField = qs('#add-category-field', modalAdd);
+              var fabCatSelect = qs('#add-category-select', form);
+              if (fabTypeEl && fabTypeEl.value === 'zgloszenie' && fabCatSelect && !fabCatSelect.value) {
+                if (fabCatField) { fabMarkErr(fabCatField, 'Wybierz kategorię zgłoszenia.'); if (!fabFirstErrContainer) fabFirstErrContainer = fabCatField; }
+              } else if (fabCatField) { fabClearErr(fabCatField); }
 
-              if (fabErrors.length > 0) {
-                msg.innerHTML = '<strong>Uzupełnij wymagane pola:</strong><ul style="margin:6px 0 0 16px;padding:0">' +
-                  fabErrors.map(function(e) { return '<li>' + e + '</li>'; }).join('') + '</ul>';
-                msg.style.color = '#b91c1c';
-                if (fabFirstErr) {
-                  fabFirstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  fabFirstErr.focus();
-                }
+              if (fabFirstErrContainer) {
+                msg.textContent = '';
+                fabFirstErrContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
               }
 
