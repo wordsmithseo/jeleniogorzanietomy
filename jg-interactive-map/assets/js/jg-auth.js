@@ -15,7 +15,7 @@
       modalEdit.id = 'jg-map-modal-edit';
       modalEdit.className = 'jg-modal-bg';
       modalEdit.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999999;align-items:center;justify-content:center;';
-      modalEdit.innerHTML = '<div class="jg-modal" style="background:#fff;border-radius:8px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;position:relative;"></div>';
+      modalEdit.innerHTML = '<div class="jg-modal" style="background:#fff;border-radius:8px;max-width:480px;width:90%;overflow:hidden;position:relative;"></div>';
       document.body.appendChild(modalEdit);
 
       // Close on background click
@@ -414,67 +414,67 @@
 
     function mkGBtn(p) {
       if (!googleClientId) return '';
-      return '<button id="' + p + '-g" type="button" style="width:100%;padding:11px 16px;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;box-sizing:border-box" onmouseover="this.style.background=\'#f8f9fa\'" onmouseout="this.style.background=\'#fff\'">' + gSvg + 'Kontynuuj z Google</button>';
+      return '<button id="' + p + '-g" type="button" style="width:100%;padding:8px 12px;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;box-sizing:border-box" onmouseover="this.style.background=\'#f8f9fa\'" onmouseout="this.style.background=\'#fff\'">' + gSvg + 'Kontynuuj z Google</button>';
     }
     function mkFbBtn(p) {
       if (!facebookAppId) return '';
-      return '<button id="' + p + '-fb" type="button" style="width:100%;padding:11px 16px;background:#1877f2;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;box-sizing:border-box" onmouseover="this.style.background=\'#1666d9\'" onmouseout="this.style.background=\'#1877f2\'">' + fbSvg + 'Kontynuuj przez Facebook</button>';
+      return '<button id="' + p + '-fb" type="button" style="width:100%;padding:8px 12px;background:#1877f2;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;box-sizing:border-box" onmouseover="this.style.background=\'#1666d9\'" onmouseout="this.style.background=\'#1877f2\'">' + fbSvg + 'Kontynuuj przez Facebook</button>';
     }
 
-    var divider = hasSocial ? '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><div style="flex:1;height:1px;background:#e5e5e5"></div><span style="font-size:11px;color:#9ca3af;white-space:nowrap;text-transform:uppercase;letter-spacing:.5px">lub przez email</span><div style="flex:1;height:1px;background:#e5e5e5"></div></div>' : '';
-    var infoBanner = infoMessage ? '<div style="background:#fef3c7;border-bottom:1px solid #f59e0b;padding:10px 20px;display:flex;align-items:flex-start;gap:8px"><span style="flex-shrink:0;margin-top:1px;font-size:16px">&#9432;</span><p style="margin:0;font-size:12px;color:#92400e;line-height:1.5">' + infoMessage + '</p></div>' : '';
+    var divider = hasSocial ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="flex:1;height:1px;background:#e5e5e5"></div><span style="font-size:11px;color:#9ca3af;white-space:nowrap;text-transform:uppercase;letter-spacing:.5px">lub przez email</span><div style="flex:1;height:1px;background:#e5e5e5"></div></div>' : '';
+    var infoBanner = infoMessage ? '<div style="background:#fef3c7;border-bottom:1px solid #f59e0b;padding:6px 14px;display:flex;align-items:flex-start;gap:8px"><span style="flex-shrink:0;margin-top:1px;font-size:14px">&#9432;</span><p style="margin:0;font-size:11px;color:#92400e;line-height:1.4">' + infoMessage + '</p></div>' : '';
 
-    var hS = 'background:linear-gradient(135deg,#8d2324 0%,#b03030 100%);color:#fff;padding:20px 24px 16px;border-radius:8px 8px 0 0;position:relative';
-    var cS = 'position:absolute;top:12px;right:14px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:18px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center';
-    var bS = 'padding:20px 24px 16px';
-    var iS = 'width:100%;padding:10px 12px;border:2px solid #e5e5e5;border-radius:6px;font-size:14px;box-sizing:border-box;outline:none;transition:border-color 0.2s';
-    var lS = 'display:block;margin-bottom:5px;font-weight:600;color:#333;font-size:13px';
-    var pB = 'width:100%;padding:13px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;box-sizing:border-box';
-    var lkB = 'background:none;border:none;color:#8d2324;font-size:13px;cursor:pointer;padding:4px;font-weight:600;text-decoration:underline';
-    var dmB = 'background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;padding:4px;margin-top:2px';
+    var hS = 'background:linear-gradient(135deg,#8d2324 0%,#b03030 100%);color:#fff;padding:12px 18px 10px;border-radius:8px 8px 0 0;position:relative';
+    var cS = 'position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:26px;height:26px;border-radius:50%;font-size:16px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center';
+    var bS = 'padding:10px 16px 8px';
+    var iS = 'width:100%;padding:7px 10px;border:2px solid #e5e5e5;border-radius:6px;font-size:13px;box-sizing:border-box;outline:none;transition:border-color 0.2s';
+    var lS = 'display:block;margin-bottom:3px;font-weight:600;color:#333;font-size:12px';
+    var pB = 'width:100%;padding:9px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;box-sizing:border-box';
+    var lkB = 'background:none;border:none;color:#8d2324;font-size:12px;cursor:pointer;padding:3px;font-weight:600;text-decoration:underline';
+    var dmB = 'background:none;border:none;color:#bbb;font-size:11px;cursor:pointer;padding:2px';
 
     var regFormHtml = regEnabled
       ? '<form id="jm-reg-form" autocomplete="on">' +
           '<div style="position:absolute;left:-9999px"><label for="jm-hp">Website</label><input type="text" id="jm-hp" name="website" tabindex="-1" autocomplete="off"></div>' +
-          '<div style="margin-bottom:14px"><label style="' + lS + '">Nazwa użytkownika (max 60 znaków)</label><input type="text" id="jm-reg-u" maxlength="60" required autocomplete="username" style="' + iS + '" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#e5e5e5\'"></div>' +
-          '<div style="margin-bottom:14px"><label style="' + lS + '">Adres email</label><input type="email" id="jm-reg-e" required autocomplete="email" style="' + iS + '" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#e5e5e5\'"></div>' +
-          '<div style="margin-bottom:14px"><label style="' + lS + '">Hasło</label><input type="password" id="jm-reg-p" required autocomplete="new-password" style="' + iS + '" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#e5e5e5\'"></div>' +
-          '<div style="margin-bottom:10px"><label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#333;cursor:pointer;line-height:1.4"><input type="checkbox" id="jm-reg-terms" required style="margin-top:2px;flex-shrink:0;width:15px;height:15px;cursor:pointer"><span>Akceptuję <a ' + termsHref + ' style="color:#8d2324;font-weight:600;text-decoration:underline">Regulamin</a> serwisu *</span></label></div>' +
-          '<div style="margin-bottom:16px"><label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#333;cursor:pointer;line-height:1.4"><input type="checkbox" id="jm-reg-priv" required style="margin-top:2px;flex-shrink:0;width:15px;height:15px;cursor:pointer"><span>Akceptuję <a ' + privacyHref + ' style="color:#8d2324;font-weight:600;text-decoration:underline">Politykę prywatności</a> serwisu *</span></label></div>' +
-          '<p style="font-size:11px;color:#9ca3af;margin:0 0 14px">📧 Link aktywacyjny zostanie wysłany na podany email</p>' +
+          '<div style="margin-bottom:8px"><label style="' + lS + '">Nazwa użytkownika (max 60 znaków)</label><input type="text" id="jm-reg-u" maxlength="60" required autocomplete="username" style="' + iS + '" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#e5e5e5\'"></div>' +
+          '<div style="margin-bottom:8px"><label style="' + lS + '">Adres email</label><input type="email" id="jm-reg-e" required autocomplete="email" style="' + iS + '" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#e5e5e5\'"></div>' +
+          '<div style="margin-bottom:8px"><label style="' + lS + '">Hasło</label><input type="password" id="jm-reg-p" required autocomplete="new-password" style="' + iS + '" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#e5e5e5\'"></div>' +
+          '<div style="margin-bottom:5px"><label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;color:#333;cursor:pointer;line-height:1.4"><input type="checkbox" id="jm-reg-terms" required style="margin-top:2px;flex-shrink:0;width:14px;height:14px;cursor:pointer"><span>Akceptuję <a ' + termsHref + ' style="color:#8d2324;font-weight:600;text-decoration:underline">Regulamin</a> serwisu *</span></label></div>' +
+          '<div style="margin-bottom:8px"><label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;color:#333;cursor:pointer;line-height:1.4"><input type="checkbox" id="jm-reg-priv" required style="margin-top:2px;flex-shrink:0;width:14px;height:14px;cursor:pointer"><span>Akceptuję <a ' + privacyHref + ' style="color:#8d2324;font-weight:600;text-decoration:underline">Politykę prywatności</a> serwisu *</span></label></div>' +
+          '<p style="font-size:11px;color:#9ca3af;margin:0 0 6px">📧 Link aktywacyjny zostanie wysłany na podany email</p>' +
         '</form>' +
         '<button id="jm-reg-submit" type="button" style="' + pB + '" onmouseover="this.style.background=\'#a32929\'" onmouseout="this.style.background=\'#8d2324\'">Zarejestruj się (bezpłatnie)</button>'
       : '<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:16px;margin-bottom:16px;text-align:center"><p style="margin:0;font-size:14px;color:#92400e">' + esc(CFG.registrationDisabledMessage || 'Rejestracja jest obecnie wyłączona.') + '</p></div>';
 
     var html =
-      '<div id="jm-reg" style="' + (initialView === 'login' ? 'display:none' : '') + '">' +
+      '<div id="jm-reg" style="overflow:hidden;' + (initialView === 'login' ? 'display:none' : '') + '">' +
         '<div style="' + hS + '"><button id="jm-close" type="button" style="' + cS + '">&times;</button>' +
-          '<h2 style="margin:0 0 4px;font-size:19px;font-weight:700">Dołącz do społeczności!</h2>' +
-          '<p style="margin:0;font-size:13px;opacity:0.9">Zacznij kształtować mapę Jeleniej Góry</p>' +
+          '<h2 style="margin:0 0 2px;font-size:17px;font-weight:700">Dołącz do społeczności!</h2>' +
+          '<p style="margin:0;font-size:12px;opacity:0.9">Zacznij kształtować mapę Jeleniej Góry</p>' +
         '</div>' + infoBanner +
         '<div style="' + bS + '">' +
-          '<div style="display:flex;gap:8px;margin-bottom:18px">' +
-            '<div style="flex:1;background:#fef2f2;border-radius:8px;padding:10px 6px;text-align:center;min-width:0"><div style="font-size:20px;margin-bottom:3px">📍</div><div style="font-size:11px;font-weight:700;color:#333;line-height:1.3">Dodawaj<br>miejsca</div><div style="font-size:10px;color:#8d2324;margin-top:3px;font-weight:600">+XP</div></div>' +
-            '<div style="flex:1;background:#fff7ed;border-radius:8px;padding:10px 6px;text-align:center;min-width:0"><div style="font-size:20px;margin-bottom:3px">⚠️</div><div style="font-size:11px;font-weight:700;color:#333;line-height:1.3">Zgłaszaj<br>problemy</div><div style="font-size:10px;color:#8d2324;margin-top:3px;font-weight:600">+XP</div></div>' +
-            '<div style="flex:1;background:#f0fdf4;border-radius:8px;padding:10px 6px;text-align:center;min-width:0"><div style="font-size:20px;margin-bottom:3px">🏆</div><div style="font-size:11px;font-weight:700;color:#333;line-height:1.3">Zdobywaj<br>nagrody</div><div style="font-size:10px;color:#666;margin-top:3px">Odznaki</div></div>' +
+          '<div class="jm-benefits" style="display:flex;gap:6px;margin-bottom:10px">' +
+            '<div style="flex:1;background:#fef2f2;border-radius:6px;padding:6px 4px;text-align:center;min-width:0"><div style="font-size:16px;margin-bottom:2px">📍</div><div style="font-size:10px;font-weight:700;color:#333;line-height:1.3">Dodawaj<br>miejsca</div><div style="font-size:9px;color:#8d2324;margin-top:2px;font-weight:600">+XP</div></div>' +
+            '<div style="flex:1;background:#fff7ed;border-radius:6px;padding:6px 4px;text-align:center;min-width:0"><div style="font-size:16px;margin-bottom:2px">⚠️</div><div style="font-size:10px;font-weight:700;color:#333;line-height:1.3">Zgłaszaj<br>problemy</div><div style="font-size:9px;color:#8d2324;margin-top:2px;font-weight:600">+XP</div></div>' +
+            '<div style="flex:1;background:#f0fdf4;border-radius:6px;padding:6px 4px;text-align:center;min-width:0"><div style="font-size:16px;margin-bottom:2px">🏆</div><div style="font-size:10px;font-weight:700;color:#333;line-height:1.3">Zdobywaj<br>nagrody</div><div style="font-size:9px;color:#666;margin-top:2px">Odznaki</div></div>' +
           '</div>' +
           mkGBtn('jm-r') + mkFbBtn('jm-r') + divider + regFormHtml +
           '<div style="text-align:center"><button id="jm-to-login" type="button" style="' + lkB + '">Mam już konto — zaloguj się</button></div>' +
           '<div style="text-align:center"><button id="jm-dismiss" type="button" style="' + dmB + '">Przeglądaj bez logowania</button></div>' +
         '</div>' +
       '</div>' +
-      '<div id="jm-log" style="' + (initialView !== 'login' ? 'display:none' : '') + '">' +
+      '<div id="jm-log" style="overflow:hidden;' + (initialView !== 'login' ? 'display:none' : '') + '">' +
         '<div style="' + hS + '"><button id="jm-close-log" type="button" style="' + cS + '">&times;</button>' +
-          '<h2 style="margin:0 0 4px;font-size:19px;font-weight:700">Zaloguj się</h2>' +
-          '<p style="margin:0;font-size:13px;opacity:0.9">Wróć do swojej mapy Jeleniej Góry</p>' +
+          '<h2 style="margin:0 0 2px;font-size:17px;font-weight:700">Zaloguj się</h2>' +
+          '<p style="margin:0;font-size:12px;opacity:0.9">Wróć do swojej mapy Jeleniej Góry</p>' +
         '</div>' + infoBanner +
         '<div style="' + bS + '">' +
           mkGBtn('jm-l') + mkFbBtn('jm-l') + divider +
           '<form id="jm-log-form" autocomplete="on">' +
             '<div style="position:absolute;left:-9999px"><label for="jm-log-hp">Website</label><input type="text" id="jm-log-hp" name="website" tabindex="-1" autocomplete="off"></div>' +
-            '<div style="margin-bottom:14px"><label style="' + lS + '">Nazwa użytkownika lub email</label><input type="text" id="jm-log-u" required autocomplete="username" style="' + iS + '" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#e5e5e5\'"></div>' +
-            '<div style="margin-bottom:6px"><label style="' + lS + '">Hasło</label><input type="password" id="jm-log-p" required autocomplete="current-password" style="' + iS + '" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#e5e5e5\'"></div>' +
-            '<div style="text-align:right;margin-bottom:16px"><a href="#" id="jm-forgot" style="color:#8d2324;font-size:12px;font-weight:600" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">Zapomniałeś hasła?</a></div>' +
+            '<div style="margin-bottom:8px"><label style="' + lS + '">Nazwa użytkownika lub email</label><input type="text" id="jm-log-u" required autocomplete="username" style="' + iS + '" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#e5e5e5\'"></div>' +
+            '<div style="margin-bottom:4px"><label style="' + lS + '">Hasło</label><input type="password" id="jm-log-p" required autocomplete="current-password" style="' + iS + '" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#e5e5e5\'"></div>' +
+            '<div style="text-align:right;margin-bottom:10px"><a href="#" id="jm-forgot" style="color:#8d2324;font-size:12px;font-weight:600" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">Zapomniałeś hasła?</a></div>' +
           '</form>' +
           '<button id="jm-log-submit" type="button" style="' + pB + '" onmouseover="this.style.background=\'#a32929\'" onmouseout="this.style.background=\'#8d2324\'">Zaloguj się</button>' +
           '<div style="text-align:center"><button id="jm-to-reg" type="button" style="' + lkB + '">← Nie masz konta? Zarejestruj się</button></div>' +
@@ -484,9 +484,22 @@
 
     open(modalEdit, html);
 
+    // Inject compact auth-modal styles once
+    if (!document.getElementById('jg-auth-modal-css')) {
+      var styleEl = document.createElement('style');
+      styleEl.id = 'jg-auth-modal-css';
+      styleEl.textContent = [
+        '#jg-map-modal-edit .jg-modal{overflow:hidden!important;max-height:min(96vh,calc(var(--jg-footer-top,100dvh) - var(--jg-nav-bottom,60px) - 16px))!important;}',
+        '#jm-reg,#jm-log{overflow:hidden!important;flex:none!important;}',
+        '@media (max-height:500px){.jm-benefits{display:none!important;}}'
+      ].join('');
+      document.head.appendChild(styleEl);
+    }
+
     var regView = document.getElementById('jm-reg');
     var logView = document.getElementById('jm-log');
     var inner = modalEdit.querySelector('.jg-modal');
+    if (inner) { inner.style.setProperty('overflow', 'hidden', 'important'); }
 
     function showView(v) {
       if (v === 'login') {
