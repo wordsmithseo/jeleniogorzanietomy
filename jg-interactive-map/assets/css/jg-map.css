@@ -2803,13 +2803,20 @@ body.jg-fullscreen-active .jg-fs-top-controls {
     /* On mobile scroll the whole modal as a single block */
     overflow: auto !important;
     display: block !important;
+    /* Larger side padding so form elements don't touch modal edges */
+    padding-left: 20px !important;
+    padding-right: 20px !important;
   }
 
   /* Modal header - allow wrapping for badges but hide X from flex */
   .jg-modal header {
     flex-wrap: wrap;
     gap: 8px;
-    padding: 12px 48px 12px 10px !important; /* Extra right padding for absolute X */
+    /* Negative margins must match the modal's 20px side padding so the header
+       spans edge-to-edge inside the modal rounded corners. */
+    margin-left: -20px !important;
+    margin-right: -20px !important;
+    padding: 12px 48px 12px 20px !important; /* Extra right padding for absolute X; left aligns with form content */
     position: relative;
     overflow: hidden;
   }
@@ -3154,7 +3161,10 @@ body.jg-modal-open {
 .jg-modal {
   background: #fff;
   color: #111;
-  width: min(900px, 96vw);
+  /* 100% respects the flex parent's (jg-modal-bg) padding so the modal never
+     overflows the background's padded edges. max-width caps it on desktop. */
+  width: 100%;
+  max-width: 900px;
   /* max-height spans from below the nav bar to above the footer,
      minus equal gaps on each side. JS overwrites with measured values. */
   max-height: calc(var(--jg-footer-top, 100dvh) - var(--jg-nav-bottom, 90px) - 36 * var(--jg));
@@ -3836,6 +3846,27 @@ body.jg-has-map #jg-map-wrap:not(.jg-fullscreen) {
 
 .jg-grid.cols-2 > .cols-2 {
   grid-column: 1/-1;
+}
+
+/* On mobile collapse the 2-column form grid to a single column so
+   form fields don't get cramped into ~150px-wide cells. */
+@media (max-width: 768px) {
+  .jg-modal .jg-grid.cols-2 {
+    grid-template-columns: 1fr;
+  }
+  .jg-modal .jg-grid.cols-2 > .cols-2 {
+    grid-column: 1;
+  }
+  /* Opening-hours rows: prevent overflow on narrow screens by allowing
+     the time selects to shrink and the row to wrap if needed. */
+  .jg-oh-row {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+  .jg-oh-row > label {
+    min-width: 60px !important;
+    flex-shrink: 0;
+  }
 }
 
 /* Badges */
