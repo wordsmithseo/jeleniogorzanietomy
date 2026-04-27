@@ -156,6 +156,7 @@
         type: 'POST',
         data: {
           action: 'jg_map_resend_activation',
+          _ajax_nonce: CFG.nonce,
           username: username,
           email: email
         },
@@ -555,7 +556,7 @@
 
       $.ajax({
         url: CFG.ajax, type: 'POST',
-        data: { action: 'jg_map_register', honeypot: honeypot, username: username, email: email, password: password },
+        data: { action: 'jg_map_register', _ajax_nonce: CFG.nonce, honeypot: honeypot, username: username, email: email, password: password },
         success: function(response) {
           if (response.success) {
             open(modalEdit,
@@ -600,7 +601,7 @@
 
       $.ajax({
         url: CFG.ajax, type: 'POST',
-        data: { action: 'jg_map_login', honeypot: honeypot, username: username, password: password },
+        data: { action: 'jg_map_login', _ajax_nonce: CFG.nonce, honeypot: honeypot, username: username, password: password },
         success: function(response) {
           if (response.success) {
             closeModal(); location.reload();
@@ -727,6 +728,7 @@
         type: 'POST',
         data: {
           action: 'jg_map_forgot_password',
+          _ajax_nonce: CFG.nonce,
           email: email
         },
         success: function(response) {

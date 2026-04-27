@@ -1521,6 +1521,8 @@ class JG_Map_Enqueue {
                 $error = 'Hasło musi mieć co najmniej 12 znaków.';
             } elseif (!preg_match('/[A-Z]/', $new_password) || !preg_match('/[a-z]/', $new_password) || !preg_match('/[0-9]/', $new_password)) {
                 $error = 'Hasło musi zawierać co najmniej jedną wielką literę, małą literę i cyfrę.';
+            } elseif (!preg_match('/[^a-zA-Z0-9]/', $new_password)) {
+                $error = 'Hasło musi zawierać co najmniej jeden znak specjalny (np. !@#$%^&*).';
             } else {
                 // Update password
                 wp_set_password($new_password, $user->ID);
@@ -1706,6 +1708,11 @@ class JG_Map_Enqueue {
 
                     if (!/[0-9]/.test(password)) {
                         alert('Hasło musi zawierać co najmniej jedną cyfrę');
+                        return false;
+                    }
+
+                    if (!/[^a-zA-Z0-9]/.test(password)) {
+                        alert('Hasło musi zawierać co najmniej jeden znak specjalny (np. !@#$%^&*)');
                         return false;
                     }
 
