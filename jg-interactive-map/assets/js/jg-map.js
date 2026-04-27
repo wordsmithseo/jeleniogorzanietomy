@@ -1191,6 +1191,106 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         });
       }
 
+      // ── Duplicate-detection helpers ──────────────────────────────────────────
+      function jgNormStr(s) {
+        return (s || '').toLowerCase()
+          .replace(/ą/g,'a').replace(/ć/g,'c').replace(/ę/g,'e')
+          .replace(/ł/g,'l').replace(/ń/g,'n').replace(/ó/g,'o')
+          .replace(/ś/g,'s').replace(/ź/g,'z').replace(/ż/g,'z')
+          .replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+      }
+      var _jgStop = {i:1,w:1,z:1,na:1,do:1,ul:1,al:1,pl:1,przy:1,nad:1,pod:1,za:1,o:1,a:1,ze:1,po:1,dla:1,nr:1,ten:1,ta:1,to:1,jest:1,sie:1};
+      function jgWordsOf(norm) {
+        return norm.split(' ').filter(function(w){ return w.length >= 2 && !_jgStop[w]; });
+      }
+      function jgStripHtml(h) {
+        return (h || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      }
+      function jgJaccard(wa, wb) {
+        if (!wa.length || !wb.length) return 0;
+        var sb = {};
+        wb.forEach(function(w){ sb[w]=1; });
+        var inter = wa.filter(function(w){ return sb[w]; }).length;
+        var union = wa.length + wb.length - inter;
+        return union <= 0 ? 0 : inter / union;
+      }
+      function jgHaversineM(lat1, lng1, lat2, lng2) {
+        var R = 6371000, toR = Math.PI/180;
+        var dLat = (lat2-lat1)*toR, dLng = (lng2-lng1)*toR;
+        var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+                Math.cos(lat1*toR)*Math.cos(lat2*toR)*Math.sin(dLng/2)*Math.sin(dLng/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      }
+      function jgFindDuplicates(title, content, lat, lng, type) {
+        var DIST_MAX   = 150;   // metry — twardy limit zasięgu
+        var JAC_TITLE  = 0.50;  // próg Jaccarda dla tytułu
+        var MIN_COMMON = 2;     // min. wspólnych słów znaczących
+        var CONT_SIM   = 0.28;  // próg podobieństwa treści (fallback)
+        var normT = jgNormStr(title);
+        var wT    = jgWordsOf(normT);
+        var wC    = jgWordsOf(jgNormStr(jgStripHtml(content)));
+        var hits  = [];
+        (ALL || []).forEach(function(p) {
+          if (p.type !== type)      return;
+          if (p.status === 'trash') return;
+          var dist = jgHaversineM(lat, lng, p.lat, p.lng);
+          if (dist > DIST_MAX) return;
+          var wP     = jgWordsOf(jgNormStr(p.title));
+          var jac    = jgJaccard(wT, wP);
+          var common = wT.filter(function(w){ return wP.indexOf(w) >= 0; }).length;
+          var titleOk = (common >= MIN_COMMON && jac >= JAC_TITLE) || jac >= 0.80;
+          var wPc  = jgWordsOf(jgNormStr(p.excerpt || jgStripHtml(p.content)));
+          var cSim = (dist <= 100 && wC.length >= 5) ? jgJaccard(wC, wPc) : 0;
+          if (!titleOk && cSim < CONT_SIM) return;
+          hits.push({ point: p, dist: Math.round(dist), score: jac*0.7 + cSim*0.3 });
+        });
+        return hits.sort(function(a,b){ return b.score-a.score; }).slice(0,3);
+      }
+      function jgShowDuplicateWarning(candidates, addModal, onContinue) {
+        var t = candidates[0] && candidates[0].point && candidates[0].point.type;
+        var subj = t === 'ciekawostka' ? 'ciekawostkę' : 'miejsce';
+        var listHtml = candidates.map(function(c) {
+          var p = c.point;
+          var addr = p.address ? ' · ' + esc(p.address.split(',')[0]) : '';
+          return '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:8px;background:#f9fafb">' +
+            '<div style="font-weight:700;font-size:14px;color:#111;margin-bottom:4px">' + esc(p.title) + '</div>' +
+            '<div style="font-size:12px;color:#6b7280;margin-bottom:8px">📍 ~' + c.dist + ' m' + addr + '</div>' +
+            '<button data-dup-pid="' + p.id + '" style="padding:5px 12px;background:#8d2324;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Przejdź do istniejącego</button>' +
+          '</div>';
+        }).join('');
+        var overlay = document.createElement('div');
+        overlay.id = 'jg-dup-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55)';
+        overlay.innerHTML =
+          '<div style="background:#fff;border-radius:12px;width:min(460px,92vw);max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.28)">' +
+            '<div style="background:#d97706;color:#fff;padding:16px 20px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:10px">' +
+              '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+              '<strong style="font-size:15px">Podobny wpis już istnieje</strong>' +
+            '</div>' +
+            '<div style="padding:16px 20px">' +
+              '<p style="margin:0 0 14px;font-size:14px;color:#374151">Znaleźliśmy podobn' + (t === 'miejsce' ? 'e <strong>miejsce</strong>' : 'ą <strong>' + subj + '</strong>') + ' w pobliżu. Sprawdź czy to nie ten sam obiekt — zamiast tworzyć duplikat możesz edytować istniejący wpis.</p>' +
+              listHtml +
+            '</div>' +
+            '<div style="padding:12px 20px 16px;border-top:1px solid #e5e7eb;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' +
+              '<button id="jg-dup-cancel" style="padding:8px 16px;background:#fff;color:#374151;border:1.5px solid #d1d5db;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Anuluj</button>' +
+              '<button id="jg-dup-continue" style="padding:8px 16px;background:#374151;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Mimo to dodaj nowe</button>' +
+            '</div>' +
+          '</div>';
+        document.body.appendChild(overlay);
+        function _closeWarn() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+        overlay.querySelector('#jg-dup-cancel').onclick = _closeWarn;
+        overlay.querySelector('#jg-dup-continue').onclick = function() { _closeWarn(); onContinue(); };
+        overlay.querySelectorAll('[data-dup-pid]').forEach(function(btn) {
+          btn.onclick = function() {
+            var pid = parseInt(btn.getAttribute('data-dup-pid'), 10);
+            _closeWarn();
+            if (addModal) addModal.style.display = 'none';
+            window.location.hash = '#point-' + pid;
+          };
+        });
+      }
+      // ── koniec helpers duplicate-detection ──────────────────────────────────
+
       // ===== OPENING HOURS PICKER =====
       var OH_DAYS = [
         { key: 'Mo', label: 'Pon' },
@@ -4889,15 +4989,54 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             // Sync rich editor content before building FormData
             if (addRte) addRte.syncContent();
 
-            // Validate content is not empty
-            var contentVal = qs('#add-rte-hidden', modalAdd);
-            if (contentVal && !contentVal.value.replace(/<\/?[^>]+(>|$)/g, '').trim()) {
-              msg.textContent = 'Opis jest wymagany.';
-              msg.style.color = '#b91c1c';
-              return;
+            // Validate all required fields
+            var errors = [];
+            var firstErrorEl = null;
+
+            var titleInput = qs('input[name="title"]', form);
+            if (titleInput && !titleInput.value.trim()) {
+              errors.push('Tytuł (nazwa miejsca) jest wymagany.');
+              titleInput.style.borderColor = '#b91c1c';
+              if (!firstErrorEl) firstErrorEl = titleInput;
+            } else if (titleInput) {
+              titleInput.style.borderColor = '';
             }
 
-            msg.textContent = 'Wysyłanie...';
+            var contentVal = qs('#add-rte-hidden', modalAdd);
+            var rteEditorEl = qs('#add-rte-editor', modalAdd);
+            if (contentVal && !contentVal.value.replace(/<\/?[^>]+(>|$)/g, '').trim()) {
+              errors.push('Opis jest wymagany.');
+              if (rteEditorEl) {
+                rteEditorEl.style.outline = '2px solid #b91c1c';
+                rteEditorEl.style.borderRadius = '4px';
+                if (!firstErrorEl) firstErrorEl = rteEditorEl;
+              }
+            } else if (rteEditorEl) {
+              rteEditorEl.style.outline = '';
+            }
+
+            var addTypeEl = qs('#add-type-select', form);
+            if (addTypeEl && addTypeEl.value === 'zgloszenie') {
+              var catSelect = qs('#add-category-select', form);
+              if (catSelect && !catSelect.value) {
+                errors.push('Kategoria zgłoszenia jest wymagana.');
+                catSelect.style.borderColor = '#b91c1c';
+                if (!firstErrorEl) firstErrorEl = catSelect;
+              } else if (catSelect) {
+                catSelect.style.borderColor = '';
+              }
+            }
+
+            if (errors.length > 0) {
+              msg.innerHTML = '<strong>Uzupełnij wymagane pola:</strong><ul style="margin:6px 0 0 16px;padding:0">' +
+                errors.map(function(e) { return '<li>' + e + '</li>'; }).join('') + '</ul>';
+              msg.style.color = '#b91c1c';
+              if (firstErrorEl) {
+                firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorEl.focus();
+              }
+              return;
+            }
 
             var fd = new FormData(form);
             fd.append('action', 'jg_submit_point');
@@ -4930,93 +5069,110 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               formDataObj[key] = value;
             });
 
-            fetch(CFG.ajax, {
-              method: 'POST',
-              body: fd,
-              credentials: 'same-origin'
-            })
-            .then(function(r) {
-              return r.text();
-            })
-            .then(function(t) {
-              var j = null;
-              try {
-                j = JSON.parse(t);
-              } catch (_) {}
+            function _doAddFetch() {
+              msg.textContent = 'Wysyłanie...';
+              fetch(CFG.ajax, {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin'
+              })
+              .then(function(r) {
+                return r.text();
+              })
+              .then(function(t) {
+                var j = null;
+                try {
+                  j = JSON.parse(t);
+                } catch (_) {}
 
-              if (!j || j.success === false) {
-                // Handle duplicate point error specially
-                if (j && j.data && j.data.duplicate_point_id) {
-                  var duplicatePointId = parseInt(j.data.duplicate_point_id, 10);
-                  msg.innerHTML = (j.data.message || 'Błąd') + ' <br><button style="margin-top:8px;padding:6px 12px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="' +
-                    'document.getElementById(\'jg-map-modal-add\').style.display=\'none\';' +
-                    'window.location.hash=\'#point-' + duplicatePointId + '\';' +
-                    '">Zobacz istniejące zgłoszenie</button>';
-                  msg.style.color = '#b91c1c';
-                  return;
+                if (!j || j.success === false) {
+                  // Handle duplicate point error specially
+                  if (j && j.data && j.data.duplicate_point_id) {
+                    var duplicatePointId = parseInt(j.data.duplicate_point_id, 10);
+                    msg.innerHTML = (j.data.message || 'Błąd') + ' <br><button style="margin-top:8px;padding:6px 12px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="' +
+                      'document.getElementById(\'jg-map-modal-add\').style.display=\'none\';' +
+                      'window.location.hash=\'#point-' + duplicatePointId + '\';' +
+                      '">Zobacz istniejące zgłoszenie</button>';
+                    msg.style.color = '#b91c1c';
+                    return;
+                  }
+                  throw new Error((j && j.data && j.data.message) || 'Błąd');
                 }
-                throw new Error((j && j.data && j.data.message) || 'Błąd');
-              }
 
-              var submitTime = Date.now();
-              lastSubmitTime = submitTime;
-              setLastSubmitTime(submitTime);
+                var submitTime = Date.now();
+                lastSubmitTime = submitTime;
+                setLastSubmitTime(submitTime);
 
-              msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
-              msg.style.color = '#15803d';
-              form.reset();
-              // Invalidate tag cache so newly added tags appear in suggestions immediately
-              cachedAllTags = null;
-              cachedAllTagsTime = 0;
+                msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
+                msg.style.color = '#15803d';
+                form.reset();
+                // Invalidate tag cache so newly added tags appear in suggestions immediately
+                cachedAllTags = null;
+                cachedAllTagsTime = 0;
 
-              // Update level/XP bar immediately if server returned XP data
-              if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
-              refreshChallengeProgress();
+                // Update level/XP bar immediately if server returned XP data
+                if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
+                refreshChallengeProgress();
 
-              // For admin/mod: point is published immediately — shoot confetti at pin
-              var _addedLat = j.data && j.data.lat;
-              var _addedLng = j.data && j.data.lng;
-              if (CFG.isAdmin && j.data && j.data.status === 'publish' && _addedLat && _addedLng) {
-                setTimeout(function(lat, lng) {
-                  return function() {
-                    shootMapMarkerConfetti(lat, lng,
-                      ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#ffffff', '#f0fdf4'], 44);
-                  };
-                }(_addedLat, _addedLng), 600);
-              }
+                // For admin/mod: point is published immediately — shoot confetti at pin
+                var _addedLat = j.data && j.data.lat;
+                var _addedLng = j.data && j.data.lng;
+                if (CFG.isAdmin && j.data && j.data.status === 'publish' && _addedLat && _addedLng) {
+                  setTimeout(function(lat, lng) {
+                    return function() {
+                      shootMapMarkerConfetti(lat, lng,
+                        ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#ffffff', '#f0fdf4'], 44);
+                    };
+                  }(_addedLat, _addedLng), 600);
+                }
 
-              // Immediate refresh for better UX
-              refreshAll().then(function() {
-                msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
+                // Immediate refresh for better UX
+                refreshAll().then(function() {
+                  msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
 
-                // Show special info modal for reports
-                if (j.data && j.data.show_report_info_modal && j.data.case_id) {
+                  // Show special info modal for reports
+                  if (j.data && j.data.show_report_info_modal && j.data.case_id) {
+                    setTimeout(function() {
+                      close(modalAdd);
+
+                      var modalMessage = 'Twoje zgłoszenie zostało przyjęte i otrzymało unikalny numer sprawy: <strong>' + j.data.case_id + '</strong>.\n\n' +
+                        'Teraz zostanie poddane weryfikacji przez nasz zespół. Po weryfikacji, jeśli zgłoszenie spełni nasze wytyczne, zostanie ono przekazane do właściwej instytucji (np. Straż Miejska, Urząd Miasta, administratorzy osiedli).\n\n' +
+                        'Monitorujemy status każdego zgłoszenia i aktualizujemy jego statusy na mapie. Możesz śledzić postępy rozwiązywania problemu, wchodząc na mapę i klikając na pineskę Twojego zgłoszenia.\n\n' +
+                        '<strong>Ważne:</strong> Portal nie daje gwarancji rozwiązania problemu, gdyż nie jest z definicji instytucją pośredniczącą, a jedynie organizacją, która stara się naświetlać istnienie nieprawidłowości w przestrzeni publicznej miasta Jelenia Góra oraz jej okolic.';
+
+                      showAlert(modalMessage.replace(/\n\n/g, '<br><br>'));
+                    }, 800);
+                  } else {
+                    setTimeout(function() {
+                      close(modalAdd);
+                    }, 800);
+                  }
+                }).catch(function(err) {
+                  debugError('[JG MAP] Błąd odświeżania:', err);
                   setTimeout(function() {
                     close(modalAdd);
-
-                    var modalMessage = 'Twoje zgłoszenie zostało przyjęte i otrzymało unikalny numer sprawy: <strong>' + j.data.case_id + '</strong>.\n\n' +
-                      'Teraz zostanie poddane weryfikacji przez nasz zespół. Po weryfikacji, jeśli zgłoszenie spełni nasze wytyczne, zostanie ono przekazane do właściwej instytucji (np. Straż Miejska, Urząd Miasta, administratorzy osiedli).\n\n' +
-                      'Monitorujemy status każdego zgłoszenia i aktualizujemy jego statusy na mapie. Możesz śledzić postępy rozwiązywania problemu, wchodząc na mapę i klikając na pineskę Twojego zgłoszenia.\n\n' +
-                      '<strong>Ważne:</strong> Portal nie daje gwarancji rozwiązania problemu, gdyż nie jest z definicji instytucją pośredniczącą, a jedynie organizacją, która stara się naświetlać istnienie nieprawidłowości w przestrzeni publicznej miasta Jelenia Góra oraz jej okolic.';
-
-                    showAlert(modalMessage.replace(/\n\n/g, '<br><br>'));
-                  }, 800);
-                } else {
-                  setTimeout(function() {
-                    close(modalAdd);
-                  }, 800);
-                }
-              }).catch(function(err) {
-                debugError('[JG MAP] Błąd odświeżania:', err);
-                setTimeout(function() {
-                  close(modalAdd);
-                }, 1000);
+                  }, 1000);
+                });
+              })
+              .catch(function(err) {
+                msg.textContent = err.message || 'Błąd';
+                msg.style.color = '#b91c1c';
               });
-            })
-            .catch(function(err) {
-              msg.textContent = err.message || 'Błąd';
-              msg.style.color = '#b91c1c';
-            });
+            }
+
+            // Duplicate check: only for miejsca and ciekawostki (zgłoszenia have server-side check)
+            var _addType = fd.get('type') || '';
+            var _addLat  = parseFloat(fd.get('lat'));
+            var _addLng  = parseFloat(fd.get('lng'));
+            if (_addType !== 'zgloszenie' && !isNaN(_addLat) && !isNaN(_addLng)) {
+              var _addDups = jgFindDuplicates(fd.get('title') || '', fd.get('content') || '', _addLat, _addLng, _addType);
+              if (_addDups.length) {
+                msg.textContent = '';
+                jgShowDuplicateWarning(_addDups, modalAdd, _doAddFetch);
+                return;
+              }
+            }
+            _doAddFetch();
           };
         })
         .catch(function(err) {
@@ -14648,8 +14804,6 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 return;
               }
 
-              msg.textContent = 'Wysyłanie...';
-
               var fd = new FormData(form);
               fd.append('action', 'jg_submit_point');
               fd.append('_ajax_nonce', CFG.nonce);
@@ -14663,93 +14817,110 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
               // For zgloszenie, the category is already in the form as 'category'
 
-              fetch(CFG.ajax, {
-                method: 'POST',
-                body: fd,
-                credentials: 'same-origin'
-              })
-              .then(function(r) {
-                return r.text();
-              })
-              .then(function(t) {
-                var j = null;
-                try {
-                  j = JSON.parse(t);
-                } catch (_) {}
+              function _doFabFetch() {
+                msg.textContent = 'Wysyłanie...';
+                fetch(CFG.ajax, {
+                  method: 'POST',
+                  body: fd,
+                  credentials: 'same-origin'
+                })
+                .then(function(r) {
+                  return r.text();
+                })
+                .then(function(t) {
+                  var j = null;
+                  try {
+                    j = JSON.parse(t);
+                  } catch (_) {}
 
-                if (!j || j.success === false) {
-                  // Handle duplicate point error specially
-                  if (j && j.data && j.data.duplicate_point_id) {
-                    var duplicatePointId = parseInt(j.data.duplicate_point_id, 10);
-                    msg.innerHTML = (j.data.message || 'Błąd') + ' <br><button style="margin-top:8px;padding:6px 12px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="' +
-                      'document.getElementById(\'jg-map-modal-add\').style.display=\'none\';' +
-                      'window.location.hash=\'#point-' + duplicatePointId + '\';' +
-                      '">Zobacz istniejące zgłoszenie</button>';
-                    msg.style.color = '#b91c1c';
-                    return;
+                  if (!j || j.success === false) {
+                    // Handle duplicate point error specially
+                    if (j && j.data && j.data.duplicate_point_id) {
+                      var duplicatePointId = parseInt(j.data.duplicate_point_id, 10);
+                      msg.innerHTML = (j.data.message || 'Błąd') + ' <br><button style="margin-top:8px;padding:6px 12px;background:#8d2324;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="' +
+                        'document.getElementById(\'jg-map-modal-add\').style.display=\'none\';' +
+                        'window.location.hash=\'#point-' + duplicatePointId + '\';' +
+                        '">Zobacz istniejące zgłoszenie</button>';
+                      msg.style.color = '#b91c1c';
+                      return;
+                    }
+                    throw new Error((j && j.data && j.data.message) || 'Błąd');
                   }
-                  throw new Error((j && j.data && j.data.message) || 'Błąd');
-                }
 
-                var submitTime = Date.now();
-              lastSubmitTime = submitTime;
-              setLastSubmitTime(submitTime);
+                  var submitTime = Date.now();
+                  lastSubmitTime = submitTime;
+                  setLastSubmitTime(submitTime);
 
-                msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
-                msg.style.color = '#15803d';
-                form.reset();
-                // Invalidate tag cache so newly added tags appear in suggestions immediately
-                cachedAllTags = null;
-                cachedAllTagsTime = 0;
+                  msg.textContent = 'Wysłano do moderacji! Odświeżanie...';
+                  msg.style.color = '#15803d';
+                  form.reset();
+                  // Invalidate tag cache so newly added tags appear in suggestions immediately
+                  cachedAllTags = null;
+                  cachedAllTagsTime = 0;
 
-                // Update level/XP bar immediately if server returned XP data
-                if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
-                refreshChallengeProgress();
+                  // Update level/XP bar immediately if server returned XP data
+                  if (j.data && j.data.xp_result) { updateLevelDisplay(j.data.xp_result); }
+                  refreshChallengeProgress();
 
-                // For admin/mod: point is published immediately — shoot confetti at pin
-                var _fabLat = j.data && j.data.lat;
-                var _fabLng = j.data && j.data.lng;
-                if (CFG.isAdmin && j.data && j.data.status === 'publish' && _fabLat && _fabLng) {
-                  setTimeout(function(lat, lng) {
-                    return function() {
-                      shootMapMarkerConfetti(lat, lng,
-                        ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#ffffff', '#f0fdf4'], 44);
-                    };
-                  }(_fabLat, _fabLng), 600);
-                }
+                  // For admin/mod: point is published immediately — shoot confetti at pin
+                  var _fabLat = j.data && j.data.lat;
+                  var _fabLng = j.data && j.data.lng;
+                  if (CFG.isAdmin && j.data && j.data.status === 'publish' && _fabLat && _fabLng) {
+                    setTimeout(function(lat, lng) {
+                      return function() {
+                        shootMapMarkerConfetti(lat, lng,
+                          ['#10b981', '#34d399', '#6ee7b7', '#fbbf24', '#ffffff', '#f0fdf4'], 44);
+                      };
+                    }(_fabLat, _fabLng), 600);
+                  }
 
-                // Immediate refresh for better UX
-                refreshAll().then(function() {
-                  msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
+                  // Immediate refresh for better UX
+                  refreshAll().then(function() {
+                    msg.textContent = 'Wysłano do moderacji! Miejsce pojawi się po zaakceptowaniu.';
 
-                  // Show special info modal for reports
-                  if (j.data && j.data.show_report_info_modal && j.data.case_id) {
+                    // Show special info modal for reports
+                    if (j.data && j.data.show_report_info_modal && j.data.case_id) {
+                      setTimeout(function() {
+                        close(modalAdd);
+
+                        var modalMessage = 'Twoje zgłoszenie zostało przyjęte i otrzymało unikalny numer sprawy: <strong>' + j.data.case_id + '</strong>.\n\n' +
+                          'Teraz zostanie poddane weryfikacji przez nasz zespół. Po weryfikacji, jeśli zgłoszenie spełni nasze wytyczne, zostanie ono przekazane do właściwej instytucji (np. Straż Miejska, Urząd Miasta, administratorzy osiedli).\n\n' +
+                          'Monitorujemy status każdego zgłoszenia i aktualizujemy jego statusy na mapie. Możesz śledzić postępy rozwiązywania problemu, wchodząc na mapę i klikając na pineskę Twojego zgłoszenia.\n\n' +
+                          '<strong>Ważne:</strong> Portal nie daje gwarancji rozwiązania problemu, gdyż nie jest z definicji instytucją pośredniczącą, a jedynie organizacją, która stara się naświetlać istnienie nieprawidłowości w przestrzeni publicznej miasta Jelenia Góra oraz jej okolic.';
+
+                        showAlert(modalMessage.replace(/\n\n/g, '<br><br>'));
+                      }, 800);
+                    } else {
+                      setTimeout(function() {
+                        close(modalAdd);
+                      }, 800);
+                    }
+                  }).catch(function(err) {
+                    debugError('[JG FAB] Błąd odświeżania:', err);
                     setTimeout(function() {
                       close(modalAdd);
-
-                      var modalMessage = 'Twoje zgłoszenie zostało przyjęte i otrzymało unikalny numer sprawy: <strong>' + j.data.case_id + '</strong>.\n\n' +
-                        'Teraz zostanie poddane weryfikacji przez nasz zespół. Po weryfikacji, jeśli zgłoszenie spełni nasze wytyczne, zostanie ono przekazane do właściwej instytucji (np. Straż Miejska, Urząd Miasta, administratorzy osiedli).\n\n' +
-                        'Monitorujemy status każdego zgłoszenia i aktualizujemy jego statusy na mapie. Możesz śledzić postępy rozwiązywania problemu, wchodząc na mapę i klikając na pineskę Twojego zgłoszenia.\n\n' +
-                        '<strong>Ważne:</strong> Portal nie daje gwarancji rozwiązania problemu, gdyż nie jest z definicji instytucją pośredniczącą, a jedynie organizacją, która stara się naświetlać istnienie nieprawidłowości w przestrzeni publicznej miasta Jelenia Góra oraz jej okolic.';
-
-                      showAlert(modalMessage.replace(/\n\n/g, '<br><br>'));
-                    }, 800);
-                  } else {
-                    setTimeout(function() {
-                      close(modalAdd);
-                    }, 800);
-                  }
-                }).catch(function(err) {
-                  debugError('[JG FAB] Błąd odświeżania:', err);
-                  setTimeout(function() {
-                    close(modalAdd);
-                  }, 1000);
+                    }, 1000);
+                  });
+                })
+                .catch(function(err) {
+                  msg.textContent = err.message || 'Błąd';
+                  msg.style.color = '#b91c1c';
                 });
-              })
-              .catch(function(err) {
-                msg.textContent = err.message || 'Błąd';
-                msg.style.color = '#b91c1c';
-              });
+              }
+
+              // Duplicate check: only for miejsca and ciekawostki (zgłoszenia have server-side check)
+              var _fabType = fd.get('type') || '';
+              var _fabNewLat = parseFloat(fd.get('lat'));
+              var _fabNewLng = parseFloat(fd.get('lng'));
+              if (_fabType !== 'zgloszenie' && !isNaN(_fabNewLat) && !isNaN(_fabNewLng)) {
+                var _fabDups = jgFindDuplicates(fd.get('title') || '', fd.get('content') || '', _fabNewLat, _fabNewLng, _fabType);
+                if (_fabDups.length) {
+                  msg.textContent = '';
+                  jgShowDuplicateWarning(_fabDups, modalAdd, _doFabFetch);
+                  return;
+                }
+              }
+              _doFabFetch();
             };
           })
           .catch(function(err) {
