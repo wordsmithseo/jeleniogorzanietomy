@@ -1781,8 +1781,8 @@ class JG_Map_Ajax_Handlers {
      * Check daily limits for user
      */
     private function check_daily_limit($user_id, $limit_type) {
-        // Admins have no limits
-        if (current_user_can('manage_options')) {
+        // Admins and moderators have no limits
+        if (current_user_can('manage_options') || current_user_can('jg_map_moderate')) {
             return true;
         }
 
@@ -1840,8 +1840,8 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        // Admins have no limits
-        if (current_user_can('manage_options')) {
+        // Admins and moderators have no limits
+        if (current_user_can('manage_options') || current_user_can('jg_map_moderate')) {
             wp_send_json_success(array(
                 'places_remaining' => 999,
                 'reports_remaining' => 999,
@@ -6001,11 +6001,13 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        if (user_can($user_id, 'manage_options')) {
+        if (user_can($user_id, 'manage_options') || user_can($user_id, 'jg_map_moderate')) {
             wp_send_json_success(array(
                 'places_remaining' => 999,
                 'reports_remaining' => 999,
-                'is_admin' => true
+                'places_limit' => 999,
+                'reports_limit' => 999,
+                'is_unlimited' => true
             ));
             exit;
         }
@@ -6118,6 +6120,16 @@ class JG_Map_Ajax_Handlers {
         $user = get_userdata($user_id);
         if (!$user) {
             wp_send_json_error(array('message' => 'Użytkownik nie istnieje'));
+            exit;
+        }
+
+        if (user_can($user_id, 'manage_options') || user_can($user_id, 'jg_map_moderate')) {
+            wp_send_json_success(array(
+                'used_mb' => 0,
+                'limit_mb' => 999,
+                'used_bytes' => 0,
+                'is_unlimited' => true
+            ));
             exit;
         }
 
@@ -6235,6 +6247,14 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        if (user_can($user_id, 'manage_options') || user_can($user_id, 'jg_map_moderate')) {
+            wp_send_json_success(array(
+                'edit_count' => 0,
+                'is_unlimited' => true
+            ));
+            exit;
+        }
+
         // Get current edit count and date
         $edit_count = intval(get_user_meta($user_id, 'jg_map_edits_count', true));
         $edit_date = get_user_meta($user_id, 'jg_map_edits_date', true);
@@ -6246,7 +6266,8 @@ class JG_Map_Ajax_Handlers {
         }
 
         wp_send_json_success(array(
-            'edit_count' => $edit_count
+            'edit_count' => $edit_count,
+            'is_unlimited' => false
         ));
     }
 
