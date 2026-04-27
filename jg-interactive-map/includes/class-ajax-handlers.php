@@ -2145,10 +2145,9 @@ class JG_Map_Ajax_Handlers {
             // Award XP for submitting a point
             $xp_result = JG_Map_Levels_Achievements::award_xp($user_id, 'submit_point', $point_id);
 
-            // Award XP for photos if images were uploaded
-            if (!empty($_FILES['images'])) {
-                $photo_count = is_array($_FILES['images']['name']) ? count(array_filter($_FILES['images']['name'])) : 1;
-                for ($i = 0; $i < $photo_count; $i++) {
+            // Award XP for photos that were actually saved (not raw $_FILES count)
+            if (!empty($images)) {
+                foreach ($images as $_img) {
                     $photo_xp = JG_Map_Levels_Achievements::award_xp($user_id, 'add_photo', $point_id);
                     if ($photo_xp && $xp_result) {
                         $xp_result['xp_gained']  += $photo_xp['xp_gained'];
@@ -2476,6 +2475,14 @@ class JG_Map_Ajax_Handlers {
                 'email' => !empty($email) ? $email : null
             );
             JG_Map_Database::add_admin_edit_history($point_id, $user_id, $old_values, $new_values);
+
+            // Award XP for admin edit and any new photos (mirrors user edit path)
+            JG_Map_Levels_Achievements::award_xp($user_id, 'edit_point', $point_id);
+            if (!empty($new_images)) {
+                foreach ($new_images as $_img) {
+                    JG_Map_Levels_Achievements::award_xp($user_id, 'add_photo', $point_id);
+                }
+            }
 
             // Log user action (admin direct edit)
             JG_Map_Activity_Log::log_user_action(
@@ -3544,6 +3551,11 @@ class JG_Map_Ajax_Handlers {
 
         // Notify author before deletion — notify_author_rejected re-fetches point internally
         $this->notify_author_rejected($point_id, $reason);
+
+        // Revoke XP that was awarded on submission (pending points were never approved)
+        if ($point['status'] === 'pending') {
+            JG_Map_Levels_Achievements::revoke_xp($author_id, 'submit_point', $point_id);
+        }
 
         JG_Map_Database::delete_point($point_id);
 
@@ -5708,6 +5720,28 @@ class JG_Map_Ajax_Handlers {
         if (!$point) {
             wp_send_json_error(array('message' => 'Punkt nie istnieje'));
             exit;
+        }
+
+        // Revoke XP for a published point being moved to trash
+        if ($point['status'] === 'publish') {
+            $point_author_id = intval($point['author_id']);
+            JG_Map_Levels_Achievements::revoke_xp($point_author_id, 'submit_point', $point_id);
+            JG_Map_Levels_Achievements::revoke_xp($point_author_id, 'point_approved', $point_id);
+            $imgs = json_decode($point['images'] ?? '[]', true);
+            if (is_array($imgs)) {
+                foreach ($imgs as $_img) {
+                    JG_Map_Levels_Achievements::revoke_xp($point_author_id, 'add_photo', $point_id);
+                }
+            }
+            global $wpdb;
+            $votes_table = JG_Map_Database::get_votes_table();
+            $ext_vote_count = intval($wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $votes_table WHERE point_id = %d AND user_id != %d",
+                $point_id, $point_author_id
+            )));
+            for ($i = 0; $i < $ext_vote_count; $i++) {
+                JG_Map_Levels_Achievements::revoke_xp($point_author_id, 'receive_upvote', $point_id);
+            }
         }
 
         // Soft delete (move to trash)
@@ -8625,6 +8659,26 @@ class JG_Map_Ajax_Handlers {
 
         // Restore point to publish status
         JG_Map_Database::update_point($point_id, array('status' => 'publish'));
+
+        // Re-award XP that was revoked when the point was trashed
+        $restore_author_id = intval($point['author_id']);
+        JG_Map_Levels_Achievements::award_xp($restore_author_id, 'submit_point', $point_id);
+        JG_Map_Levels_Achievements::award_xp($restore_author_id, 'point_approved', $point_id);
+        $restore_imgs = json_decode($point['images'] ?? '[]', true);
+        if (is_array($restore_imgs)) {
+            foreach ($restore_imgs as $_img) {
+                JG_Map_Levels_Achievements::award_xp($restore_author_id, 'add_photo', $point_id);
+            }
+        }
+        global $wpdb;
+        $votes_table = JG_Map_Database::get_votes_table();
+        $ext_vote_count = intval($wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $votes_table WHERE point_id = %d AND user_id != %d",
+            $point_id, $restore_author_id
+        )));
+        for ($i = 0; $i < $ext_vote_count; $i++) {
+            JG_Map_Levels_Achievements::award_xp($restore_author_id, 'receive_upvote', $point_id);
+        }
 
         // Log action
         JG_Map_Activity_Log::log(

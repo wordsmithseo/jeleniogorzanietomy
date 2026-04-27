@@ -378,6 +378,9 @@ class JG_Map_Maintenance {
                     remove_filter('wp_mail_from', $custom_from_email, 99);
                 }
 
+                // Revoke XP awarded on submission (pending = never approved)
+                JG_Map_Levels_Achievements::revoke_xp($point->author_id, 'submit_point', $point->id);
+
                 // Delete the point (will also delete related data thanks to our delete_point() function)
                 JG_Map_Database::delete_point($point->id);
             }
