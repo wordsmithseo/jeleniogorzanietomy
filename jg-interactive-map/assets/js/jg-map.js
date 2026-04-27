@@ -4827,6 +4827,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               // Initialize opening hours picker
               var addOhPicker = initOpeningHoursPicker('add', modalAdd);
 
+              // Reset scroll after init — contenteditable triggers browser auto-scroll
+              setTimeout(function() {
+                var modalC = qs('.jg-modal', modalAdd);
+                if (modalC) modalC.scrollTop = 0;
+                form.scrollTop = 0;
+              }, 0);
+
               // On form submit, ensure the hidden input has content
               var origAddSubmit = form.onsubmit;
               form.addEventListener('submit', function() {
@@ -14684,6 +14691,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             // Initialize opening hours picker for FAB add form
             var fabOhPicker = initOpeningHoursPicker('fab', modalAdd);
 
+            // Reset scroll after init — contenteditable triggers browser auto-scroll
+            setTimeout(function() {
+              var modalC = qs('.jg-modal', modalAdd);
+              if (modalC) modalC.scrollTop = 0;
+              form.scrollTop = 0;
+            }, 0);
+
             // On form submit, sync the rich editor content and tags
             form.addEventListener('submit', function() {
               if (fabRte) fabRte.syncContent();
@@ -14796,11 +14810,52 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               // Sync rich editor content before building FormData
               if (fabRte) fabRte.syncContent();
 
-              // Validate content is not empty
+              // Validate all required fields
+              var fabErrors = [];
+              var fabFirstErr = null;
+
+              var fabTitleInput = qs('input[name="title"]', form);
+              if (fabTitleInput && !fabTitleInput.value.trim()) {
+                fabErrors.push('Tytuł (nazwa miejsca) jest wymagany.');
+                fabTitleInput.style.borderColor = '#b91c1c';
+                if (!fabFirstErr) fabFirstErr = fabTitleInput;
+              } else if (fabTitleInput) {
+                fabTitleInput.style.borderColor = '';
+              }
+
               var fabContentVal = qs('#fab-rte-hidden', modalAdd);
+              var fabRteEditorEl = qs('#fab-rte-editor', modalAdd);
               if (fabContentVal && !fabContentVal.value.replace(/<\/?[^>]+(>|$)/g, '').trim()) {
-                msg.textContent = 'Opis jest wymagany.';
+                fabErrors.push('Opis jest wymagany.');
+                if (fabRteEditorEl) {
+                  fabRteEditorEl.style.outline = '2px solid #b91c1c';
+                  fabRteEditorEl.style.borderRadius = '4px';
+                  if (!fabFirstErr) fabFirstErr = fabRteEditorEl;
+                }
+              } else if (fabRteEditorEl) {
+                fabRteEditorEl.style.outline = '';
+              }
+
+              var fabTypeEl = qs('#add-type-select', form);
+              if (fabTypeEl && fabTypeEl.value === 'zgloszenie') {
+                var fabCatSelect = qs('#add-category-select', form);
+                if (fabCatSelect && !fabCatSelect.value) {
+                  fabErrors.push('Kategoria zgłoszenia jest wymagana.');
+                  fabCatSelect.style.borderColor = '#b91c1c';
+                  if (!fabFirstErr) fabFirstErr = fabCatSelect;
+                } else if (fabCatSelect) {
+                  fabCatSelect.style.borderColor = '';
+                }
+              }
+
+              if (fabErrors.length > 0) {
+                msg.innerHTML = '<strong>Uzupełnij wymagane pola:</strong><ul style="margin:6px 0 0 16px;padding:0">' +
+                  fabErrors.map(function(e) { return '<li>' + e + '</li>'; }).join('') + '</ul>';
                 msg.style.color = '#b91c1c';
+                if (fabFirstErr) {
+                  fabFirstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  fabFirstErr.focus();
+                }
                 return;
               }
 
