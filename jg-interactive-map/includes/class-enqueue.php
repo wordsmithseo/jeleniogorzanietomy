@@ -238,6 +238,9 @@ class JG_Map_Enqueue {
             'termsContent' => get_option('jg_map_terms_content', ''),
             'privacyUrl' => get_option('jg_map_privacy_url', ''),
             'privacyContent' => get_option('jg_map_privacy_content', ''),
+            'googleClientId' => get_option('jg_map_google_client_id', ''),
+            'facebookAppId' => get_option('jg_map_facebook_app_id', ''),
+            'oauthCallbackBase' => admin_url('admin-ajax.php') . '?action=',
         ));
 
         // Load session monitor script on ALL pages (for logged in users)
@@ -400,7 +403,8 @@ class JG_Map_Enqueue {
 
         // Plugin JS - CRITICAL: Add 'heartbeat' as dependency for real-time sync
         // 'twemoji' is already enqueued globally via enqueue_topbar_css()
-        $dependencies = array('jquery', 'leaflet', 'leaflet-markercluster', 'heartbeat', 'twemoji');
+        // 'jg-map-auth' must load before jg-map.js (openJoinModal used by map)
+        $dependencies = array('jquery', 'leaflet', 'leaflet-markercluster', 'heartbeat', 'twemoji', 'jg-map-auth');
 
         // Add notifications script as dependency if user is admin/moderator
         if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('jg_map_moderate'))) {

@@ -839,6 +839,21 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         return;
       }
 
+      if (!CFG.isLoggedIn) {
+        var _jgEngage = {
+          shown: !!sessionStorage.getItem('jg_join_modal_shown'),
+          placesViewed: 0,
+          trigger: function(reason) {
+            if (this.shown) return;
+            this.shown = true;
+            sessionStorage.setItem('jg_join_modal_shown', '1');
+            if (typeof window.openJoinModal === 'function') window.openJoinModal({trigger: reason});
+          }
+        };
+        window._jgGuestEngagement = _jgEngage;
+        setTimeout(function() { window._jgGuestEngagement && window._jgGuestEngagement.trigger('timer'); }, 20000);
+      }
+
       var elMap = document.getElementById('jg-map');
       var elFilters = document.getElementById('jg-map-filters');
       var modalAdd = document.getElementById('jg-map-modal-add');
@@ -1061,451 +1076,18 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         rankingBtn.jgHandlerAttached = true;
       }
 
-      // Open login modal function - reusable
       function openLoginModal() {
-        var modalEdit = document.getElementById('jg-map-modal-edit');
-        var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
-          '<h2 style="margin:0;font-size:20px;font-weight:600">Logowanie</h2>' +
-          '</div>' +
-          '<div class="jg-modal-body" style="padding:24px">' +
-          '<form id="jg-login-form">' +
-          '<!-- Honeypot field - hidden from users, visible to bots -->' +
-          '<div style="position:absolute;left:-9999px;top:-9999px">' +
-          '<label for="login-website">Website</label>' +
-          '<input type="text" id="login-website" name="website" tabindex="-1" autocomplete="off">' +
-          '</div>' +
-          '<div class="jg-form-group" style="margin-bottom:20px">' +
-          '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nazwa użytkownika lub email</label>' +
-          '<input type="text" id="login-username" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-          '</div>' +
-          '<div class="jg-form-group" style="margin-bottom:20px">' +
-          '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Hasło</label>' +
-          '<input type="password" id="login-password" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-          '</div>' +
-          '<div style="text-align:right;margin-bottom:20px">' +
-          '<a href="#" id="forgot-password-link" style="color:#8d2324;font-size:13px;text-decoration:none;font-weight:600" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">Zapomniałeś hasła?</a>' +
-          '</div>' +
-          '</form>' +
-          '</div>' +
-          '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
-          '<button class="jg-btn jg-btn--secondary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'" style="padding:10px 20px;background:#fff;color:#333;border:2px solid #ddd;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'#fff\'">Anuluj</button>' +
-          '<button class="jg-btn jg-btn--primary" id="submit-login-btn" style="padding:10px 24px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#a02829\'" onmouseout="this.style.background=\'#8d2324\'">Zaloguj się</button>' +
-          '</div>';
-
-        open(modalEdit, html);
-
-        // Forgot password link handler
-        document.getElementById('forgot-password-link').addEventListener('click', function(e) {
-          e.preventDefault();
-          showForgotPasswordModal();
-        });
-
-        // Login submission handler
-        function submitLogin() {
-          var username = document.getElementById('login-username').value;
-          var password = document.getElementById('login-password').value;
-          var honeypot = document.getElementById('login-website').value;
-
-          if (!username || !password) {
-            showAlert('Proszę wypełnić wszystkie pola');
-            return;
-          }
-
-          jQuery.ajax({
-            url: CFG.ajax,
-            type: 'POST',
-            data: {
-              action: 'jg_map_login',
-              honeypot: honeypot,
-              username: username,
-              password: password
-            },
-            success: function(response) {
-              if (response.success) {
-                // No alert - just reload the page
-                close(modalEdit);
-                location.reload();
-              } else {
-                showAlert(response.data || 'Błąd logowania');
-              }
-            },
-            error: function() {
-              showAlert('Wystąpił błąd podczas logowania');
-            }
-          });
+        if (typeof window.openJoinModal === 'function') {
+          window.openJoinModal({view: 'login'});
         }
-
-        // Button click handler
-        document.getElementById('submit-login-btn').addEventListener('click', submitLogin);
-
-        // Enter key handler
-        document.getElementById('jg-login-form').addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            submitLogin();
-          }
-        });
       }
 
-      // Benefits modal: shown to guests before opening login/register
-      function showBenefitsModal() {
-        var modalEdit = document.getElementById('jg-map-modal-edit');
-
-        var html =
-          '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
-            '<h2 style="margin:0;font-size:20px;font-weight:600">Dołącz do społeczności!</h2>' +
-            '<p style="margin:6px 0 0;font-size:13px;opacity:0.85">Zarejestruj się i zacznij kształtować mapę Jeleniej Góry</p>' +
-          '</div>' +
-          '<div class="jg-modal-body" style="padding:20px 24px">' +
-            '<div class="jg-benefits-grid">' +
-              '<div class="jg-benefit-card">' +
-                '<div class="jg-benefit-icon">📍</div>' +
-                '<div class="jg-benefit-title">Dodawaj miejsca</div>' +
-                '<div class="jg-benefit-desc">Zaznacz restauracje, atrakcje i ciekawostki — zdobywaj XP za każdy wkład</div>' +
-              '</div>' +
-              '<div class="jg-benefit-card">' +
-                '<div class="jg-benefit-icon">⚠️</div>' +
-                '<div class="jg-benefit-title">Zgłaszaj problemy</div>' +
-                '<div class="jg-benefit-desc">Informuj o dziurach w drodze, połamanej infrastrukturze i innych usterkach</div>' +
-              '</div>' +
-              '<div class="jg-benefit-card">' +
-                '<div class="jg-benefit-icon">🏆</div>' +
-                '<div class="jg-benefit-title">Zdobywaj nagrody</div>' +
-                '<div class="jg-benefit-desc">Zbieraj XP, awansuj na poziomy i odblokuj odznaki aktywnego mieszkańca</div>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-          '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;flex-direction:column;gap:10px;border-radius:0 0 8px 8px">' +
-            (CFG.registrationEnabled
-              ? '<button id="jg-benefits-register-btn" style="width:100%;padding:12px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer">Zarejestruj się (bezpłatnie)</button>'
-              : '') +
-            '<button id="jg-benefits-login-btn" style="width:100%;padding:11px;background:#fff;color:#8d2324;border:2px solid #8d2324;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer">Mam już konto — Zaloguj się</button>' +
-            '<button id="jg-benefits-close-btn" style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;padding:4px">Przeglądaj bez logowania</button>' +
-          '</div>';
-
-        open(modalEdit, html);
-
-        document.getElementById('jg-benefits-close-btn').addEventListener('click', function() { close(modalEdit); });
-        document.getElementById('jg-benefits-login-btn').addEventListener('click', function() { close(modalEdit); openLoginModal(); });
-        var regBtn = document.getElementById('jg-benefits-register-btn');
-        if (regBtn) regBtn.addEventListener('click', function() { close(modalEdit); showRegistrationForm(); });
-      }
-
-      // Single auth button handler (replaces separate login/register buttons)
       var authBtn = document.getElementById('jg-auth-btn');
       if (authBtn && !authBtn.jgHandlerAttached) {
         authBtn.addEventListener('click', function() {
-          if (typeof window.openAuthModal === 'function') {
-            window.openAuthModal('register');
-          } else {
-            openLoginModal();
-          }
+          if (typeof window.openJoinModal === 'function') window.openJoinModal({view: 'register'});
         });
         authBtn.jgHandlerAttached = true;
-      }
-
-      // Registration form function
-      function showRegistrationForm() {
-          // Show registration form
-          var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
-            '<h2 style="margin:0;font-size:20px;font-weight:600">Rejestracja</h2>' +
-            '</div>' +
-            '<div class="jg-modal-body" style="padding:24px">' +
-            '<form id="jg-register-form">' +
-            '<!-- Honeypot field - hidden from users, visible to bots -->' +
-            '<div style="position:absolute;left:-9999px;top:-9999px">' +
-            '<label for="register-website">Website</label>' +
-            '<input type="text" id="register-website" name="website" tabindex="-1" autocomplete="off">' +
-            '</div>' +
-            '<div class="jg-form-group" style="margin-bottom:20px">' +
-            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nazwa użytkownika</label>' +
-            '<input type="text" id="register-username" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-            '</div>' +
-            '<div class="jg-form-group" style="margin-bottom:20px">' +
-            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Adres email</label>' +
-            '<input type="email" id="register-email" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-            '</div>' +
-            '<div class="jg-form-group" style="margin-bottom:20px">' +
-            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Hasło</label>' +
-            '<input type="password" id="register-password" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-            '</div>' +
-            '<div style="font-size:12px;color:#666;margin-top:8px">📧 Na podany adres email zostanie wysłany link aktywacyjny</div>' +
-            '</form>' +
-            '</div>' +
-            '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
-            '<button class="jg-btn jg-btn--secondary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\'" style="padding:10px 20px;background:#fff;color:#333;border:2px solid #ddd;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'#fff\'">Anuluj</button>' +
-            '<button class="jg-btn jg-btn--primary" id="submit-register-btn" style="padding:10px 24px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#a02829\'" onmouseout="this.style.background=\'#8d2324\'">Zarejestruj się</button>' +
-            '</div>';
-
-          open(modalEdit, html);
-
-          // Registration submission handler
-          function submitRegistration() {
-            var username = document.getElementById('register-username').value;
-            var email = document.getElementById('register-email').value;
-            var password = document.getElementById('register-password').value;
-            var honeypot = document.getElementById('register-website').value;
-
-            if (!username || !email || !password) {
-              showAlert('Proszę wypełnić wszystkie pola');
-              return;
-            }
-
-            jQuery.ajax({
-              url: CFG.ajax,
-              type: 'POST',
-              data: {
-                action: 'jg_map_register',
-                honeypot: honeypot,
-                username: username,
-                email: email,
-                password: password
-              },
-              success: function(response) {
-                if (response.success) {
-                  // Show beautiful success modal instead of alert
-                  var successHtml = '<div class="jg-modal-header" style="background:#15803d;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
-                    '<h2 style="margin:0;font-size:20px;font-weight:600">✅ Rejestracja zakończona pomyślnie!</h2>' +
-                    '</div>' +
-                    '<div class="jg-modal-body" style="padding:24px;text-align:center">' +
-                    '<div style="font-size:48px;margin:20px 0">📧</div>' +
-                    '<p style="font-size:16px;line-height:1.6;color:#333;margin-bottom:20px">Na adres email <strong style="color:#8d2324">' + esc(email) + '</strong> wysłaliśmy wiadomość z linkiem aktywacyjnym.</p>' +
-                    '<p style="font-size:14px;color:#666;margin-bottom:20px">Sprawdź swoją skrzynkę pocztową (również folder SPAM) i kliknij w link, aby dokończyć rejestrację.</p>' +
-                    '<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin-top:20px">' +
-                    '<p style="font-size:13px;color:#92400e;margin:0">⏰ Link aktywacyjny jest ważny przez 48 godzin</p>' +
-                    '</div>' +
-                    '</div>' +
-                    '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:center;border-radius:0 0 8px 8px">' +
-                    '<button class="jg-btn jg-btn--primary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\';location.reload()" style="padding:10px 24px;background:#15803d;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">OK, rozumiem</button>' +
-                    '</div>';
-
-                  open(modalEdit, successHtml);
-                } else {
-                  showAlert(response.data || 'Błąd rejestracji');
-                }
-              },
-              error: function() {
-                showAlert('Wystąpił błąd podczas rejestracji');
-              }
-            });
-          }
-
-          // Button click handler
-          document.getElementById('submit-register-btn').addEventListener('click', submitRegistration);
-
-          // Enter key handler
-          document.getElementById('jg-register-form').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              submitRegistration();
-            }
-          });
-      }
-
-      // Auth modal with tabs (login/register) shown when non-logged user clicks "Zapytaj o ofertę"
-      function showPromoAuthModal() {
-        var modalEdit = document.getElementById('jg-map-modal-edit');
-
-        var tabStyle = 'padding:10px 20px;border:none;cursor:pointer;font-size:14px;font-weight:600;border-radius:6px 6px 0 0;transition:all 0.2s;';
-        var activeTabStyle = 'background:#fff;color:#8d2324;';
-        var inactiveTabStyle = 'background:transparent;color:rgba(255,255,255,0.7);';
-
-        var html = '<div class="jg-modal-header" style="background:#8d2324;color:#fff;padding:16px 24px 0;border-radius:8px 8px 0 0">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
-            '<h2 style="margin:0;font-size:20px;font-weight:600">Konto wymagane</h2>' +
-            '<button id="promo-auth-close" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:0 4px;line-height:1">&times;</button>' +
-          '</div>' +
-          '<div style="display:flex;gap:4px">' +
-            '<button id="promo-tab-register" style="' + tabStyle + activeTabStyle + '">Rejestracja</button>' +
-            '<button id="promo-tab-login" style="' + tabStyle + inactiveTabStyle + '">Logowanie</button>' +
-          '</div>' +
-        '</div>' +
-        // Info banner
-        '<div style="background:#fef3c7;border-bottom:1px solid #f59e0b;padding:12px 24px;display:flex;align-items:center;gap:10px">' +
-          '<span style="font-size:18px;flex-shrink:0">&#9432;</span>' +
-          '<p style="margin:0;font-size:13px;color:#92400e;line-height:1.4">Aby wysłać zapytanie o ofertę promocji, musisz posiadać konto w naszym portalu. Zarejestruj się lub zaloguj, aby kontynuować.</p>' +
-        '</div>' +
-        // Register form (visible by default)
-        '<div id="promo-register-panel" class="jg-modal-body" style="padding:24px">' +
-          '<form id="promo-register-form">' +
-          '<div style="position:absolute;left:-9999px;top:-9999px">' +
-            '<label for="promo-register-website">Website</label>' +
-            '<input type="text" id="promo-register-website" name="website" tabindex="-1" autocomplete="off">' +
-          '</div>' +
-          '<div class="jg-form-group" style="margin-bottom:20px">' +
-            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nazwa użytkownika</label>' +
-            '<input type="text" id="promo-register-username" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-          '</div>' +
-          '<div class="jg-form-group" style="margin-bottom:20px">' +
-            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Adres email</label>' +
-            '<input type="email" id="promo-register-email" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-          '</div>' +
-          '<div class="jg-form-group" style="margin-bottom:20px">' +
-            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Hasło</label>' +
-            '<input type="password" id="promo-register-password" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-          '</div>' +
-          '<div style="font-size:12px;color:#666;margin-top:8px">Na podany adres email zostanie wysłany link aktywacyjny</div>' +
-          '</form>' +
-        '</div>' +
-        // Login form (hidden by default)
-        '<div id="promo-login-panel" class="jg-modal-body" style="padding:24px;display:none">' +
-          '<form id="promo-login-form">' +
-          '<div style="position:absolute;left:-9999px;top:-9999px">' +
-            '<label for="promo-login-website">Website</label>' +
-            '<input type="text" id="promo-login-website" name="website" tabindex="-1" autocomplete="off">' +
-          '</div>' +
-          '<div class="jg-form-group" style="margin-bottom:20px">' +
-            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Nazwa użytkownika lub email</label>' +
-            '<input type="text" id="promo-login-username" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-          '</div>' +
-          '<div class="jg-form-group" style="margin-bottom:20px">' +
-            '<label style="display:block;margin-bottom:8px;font-weight:600;color:#333;font-size:14px">Hasło</label>' +
-            '<input type="password" id="promo-login-password" class="jg-input" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color 0.2s" onfocus="this.style.borderColor=\'#8d2324\'" onblur="this.style.borderColor=\'#ddd\'">' +
-          '</div>' +
-          '</form>' +
-        '</div>' +
-        // Footer with action buttons
-        '<div id="promo-footer-register" class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
-          '<button class="jg-btn jg-btn--secondary" id="promo-cancel-reg" style="padding:10px 20px;background:#fff;color:#333;border:2px solid #ddd;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'#fff\'">Anuluj</button>' +
-          '<button class="jg-btn jg-btn--primary" id="promo-submit-register" style="padding:10px 24px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#a02829\'" onmouseout="this.style.background=\'#8d2324\'">Zarejestruj się</button>' +
-        '</div>' +
-        '<div id="promo-footer-login" class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:none;gap:12px;justify-content:flex-end;border-radius:0 0 8px 8px">' +
-          '<button class="jg-btn jg-btn--secondary" id="promo-cancel-login" style="padding:10px 20px;background:#fff;color:#333;border:2px solid #ddd;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'#fff\'">Anuluj</button>' +
-          '<button class="jg-btn jg-btn--primary" id="promo-submit-login" style="padding:10px 24px;background:#8d2324;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background=\'#a02829\'" onmouseout="this.style.background=\'#8d2324\'">Zaloguj się</button>' +
-        '</div>';
-
-        open(modalEdit, html);
-
-        var tabRegister = document.getElementById('promo-tab-register');
-        var tabLogin = document.getElementById('promo-tab-login');
-        var panelRegister = document.getElementById('promo-register-panel');
-        var panelLogin = document.getElementById('promo-login-panel');
-        var footerRegister = document.getElementById('promo-footer-register');
-        var footerLogin = document.getElementById('promo-footer-login');
-
-        function switchTab(tab) {
-          if (tab === 'register') {
-            tabRegister.style.background = '#fff';
-            tabRegister.style.color = '#8d2324';
-            tabLogin.style.background = 'transparent';
-            tabLogin.style.color = 'rgba(255,255,255,0.7)';
-            panelRegister.style.display = '';
-            panelLogin.style.display = 'none';
-            footerRegister.style.display = 'flex';
-            footerLogin.style.display = 'none';
-          } else {
-            tabLogin.style.background = '#fff';
-            tabLogin.style.color = '#8d2324';
-            tabRegister.style.background = 'transparent';
-            tabRegister.style.color = 'rgba(255,255,255,0.7)';
-            panelLogin.style.display = '';
-            panelRegister.style.display = 'none';
-            footerLogin.style.display = 'flex';
-            footerRegister.style.display = 'none';
-          }
-        }
-
-        tabRegister.addEventListener('click', function() { switchTab('register'); });
-        tabLogin.addEventListener('click', function() { switchTab('login'); });
-
-        // Close buttons
-        var closeModal = function() { modalEdit.style.display = 'none'; };
-        document.getElementById('promo-auth-close').addEventListener('click', closeModal);
-        document.getElementById('promo-cancel-reg').addEventListener('click', closeModal);
-        document.getElementById('promo-cancel-login').addEventListener('click', closeModal);
-
-        // Register submission
-        function submitPromoRegister() {
-          var username = document.getElementById('promo-register-username').value;
-          var email = document.getElementById('promo-register-email').value;
-          var password = document.getElementById('promo-register-password').value;
-          var honeypot = document.getElementById('promo-register-website').value;
-
-          if (!username || !email || !password) {
-            showAlert('Proszę wypełnić wszystkie pola');
-            return;
-          }
-
-          jQuery.ajax({
-            url: CFG.ajax,
-            type: 'POST',
-            data: {
-              action: 'jg_map_register',
-              honeypot: honeypot,
-              username: username,
-              email: email,
-              password: password
-            },
-            success: function(response) {
-              if (response.success) {
-                var successHtml = '<div class="jg-modal-header" style="background:#15803d;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">' +
-                  '<h2 style="margin:0;font-size:20px;font-weight:600">Rejestracja zakończona pomyślnie!</h2>' +
-                  '</div>' +
-                  '<div class="jg-modal-body" style="padding:24px;text-align:center">' +
-                  '<div style="font-size:48px;margin:20px 0">&#128231;</div>' +
-                  '<p style="font-size:16px;line-height:1.6;color:#333;margin-bottom:20px">Na adres email <strong style="color:#8d2324">' + esc(email) + '</strong> wysłaliśmy wiadomość z linkiem aktywacyjnym.</p>' +
-                  '<p style="font-size:14px;color:#666;margin-bottom:20px">Sprawdź swoją skrzynkę pocztową (również folder SPAM) i kliknij w link, aby dokończyć rejestrację.</p>' +
-                  '<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;margin-top:20px">' +
-                  '<p style="font-size:13px;color:#92400e;margin:0">Link aktywacyjny jest ważny przez 48 godzin</p>' +
-                  '</div>' +
-                  '</div>' +
-                  '<div class="jg-modal-footer" style="padding:16px 24px;background:#f9f9f9;border-top:1px solid #e5e5e5;display:flex;gap:12px;justify-content:center;border-radius:0 0 8px 8px">' +
-                  '<button class="jg-btn jg-btn--primary" onclick="document.getElementById(\'jg-map-modal-edit\').style.display=\'none\';location.reload()" style="padding:10px 24px;background:#15803d;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">OK, rozumiem</button>' +
-                  '</div>';
-                open(modalEdit, successHtml);
-              } else {
-                showAlert(response.data || 'Błąd rejestracji');
-              }
-            },
-            error: function() {
-              showAlert('Wystąpił błąd podczas rejestracji');
-            }
-          });
-        }
-
-        document.getElementById('promo-submit-register').addEventListener('click', submitPromoRegister);
-        document.getElementById('promo-register-form').addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') { e.preventDefault(); submitPromoRegister(); }
-        });
-
-        // Login submission
-        function submitPromoLogin() {
-          var username = document.getElementById('promo-login-username').value;
-          var password = document.getElementById('promo-login-password').value;
-          var honeypot = document.getElementById('promo-login-website').value;
-
-          if (!username || !password) {
-            showAlert('Proszę wypełnić wszystkie pola');
-            return;
-          }
-
-          jQuery.ajax({
-            url: CFG.ajax,
-            type: 'POST',
-            data: {
-              action: 'jg_map_login',
-              honeypot: honeypot,
-              username: username,
-              password: password
-            },
-            success: function(response) {
-              if (response.success) {
-                closeModal();
-                location.reload();
-              } else {
-                showAlert(response.data || 'Błąd logowania');
-              }
-            },
-            error: function() {
-              showAlert('Wystąpił błąd podczas logowania');
-            }
-          });
-        }
-
-        document.getElementById('promo-submit-login').addEventListener('click', submitPromoLogin);
-        document.getElementById('promo-login-form').addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') { e.preventDefault(); submitPromoLogin(); }
-        });
       }
 
       // Forgot password modal function
@@ -4974,7 +4556,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
         mapClickTimeout = setTimeout(function() {
           if (!CFG.isLoggedIn) {
-            showBenefitsModal();
+            if (typeof window.openJoinModal === 'function') window.openJoinModal({trigger: 'action'});
             return;
           }
 
@@ -10643,6 +10225,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       }
 
       function openDetailsModalContent(p) {
+        if (!CFG.isLoggedIn && window._jgGuestEngagement) {
+          window._jgGuestEngagement.placesViewed++;
+          if (window._jgGuestEngagement.placesViewed >= 2) {
+            setTimeout(function() { window._jgGuestEngagement.trigger('places'); }, 300);
+          }
+        }
+
         var imgs = Array.isArray(p.images) ? p.images : [];
 
         // Check if user can delete images (admin/moderator or own place)
@@ -11974,10 +11563,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           promoBtn.onclick = function() {
             // Non-logged user: show login/register modal on register tab
             if (!CFG.isLoggedIn) {
-              if (typeof window.openAuthModal === 'function') {
-                window.openAuthModal('register', 'Aby wysłać zapytanie o ofertę promocji, musisz posiadać konto w naszym portalu. Zarejestruj się lub zaloguj, aby kontynuować.');
-              } else {
-                showPromoAuthModal();
+              if (typeof window.openJoinModal === 'function') {
+                window.openJoinModal({view: 'register', message: 'Aby wysłać zapytanie o ofertę promocji, musisz posiadać konto w naszym portalu. Zarejestruj się lub zaloguj, aby kontynuować.'});
               }
               return;
             }
@@ -14716,7 +14303,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       function openAddPlaceModal(lat, lng) {
         // Check if user is logged in
         if (!CFG.isLoggedIn) {
-          showBenefitsModal();
+          if (typeof window.openJoinModal === 'function') window.openJoinModal({trigger: 'action'});
           return;
         }
 
@@ -15397,7 +14984,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           if (isGuest) {
             barEl.onclick = function(e) {
               e.stopPropagation();
-              showBenefitsModal();
+              if (typeof window.openJoinModal === 'function') window.openJoinModal({trigger: 'action'});
             };
           }
         }
@@ -15498,7 +15085,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                     '<div class="jg-cw-ctrl-meta jg-cw-guest-hint">Zaloguj si\u0119, by \u015bledzi\u0107 post\u0119p \u2192</div>' +
                   '</div>' +
                 '</div>';
-              dw.onclick = function(e) { e.stopPropagation(); showBenefitsModal(); };
+              dw.onclick = function(e) { e.stopPropagation(); if (typeof window.openJoinModal === 'function') window.openJoinModal({trigger: 'action'}); };
             } else {
               dw.innerHTML =
                 (v.done ? '<button class="jg-cw-close-btn" title="Zamknij">\xd7</button>' : '') +

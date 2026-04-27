@@ -4606,6 +4606,12 @@ class JG_Map_Admin {
                 update_option('jg_map_privacy_content', wp_kses_post($_POST['jg_map_privacy_content'] ?? ''));
             }
 
+            // Social OAuth credentials
+            update_option('jg_map_google_client_id', sanitize_text_field($_POST['jg_map_google_client_id'] ?? ''));
+            update_option('jg_map_google_client_secret', sanitize_text_field($_POST['jg_map_google_client_secret'] ?? ''));
+            update_option('jg_map_facebook_app_id', sanitize_text_field($_POST['jg_map_facebook_app_id'] ?? ''));
+            update_option('jg_map_facebook_app_secret', sanitize_text_field($_POST['jg_map_facebook_app_secret'] ?? ''));
+
             // IndexNow: regenerate key if requested
             if (!empty($_POST['jg_map_indexnow_regenerate'])) {
                 update_option('jg_map_indexnow_key', wp_generate_uuid4());
@@ -4807,6 +4813,54 @@ class JG_Map_Admin {
                                           class="large-text"
                                           placeholder="Wpisz treść polityki prywatności..."><?php echo esc_textarea($privacy_content); ?></textarea>
                                 <p class="description">Treść polityki prywatności zostanie wyświetlona użytkownikom w okienku modalnym. Dozwolony HTML.</p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="jg-card jg-card-body" style="max-width:800px">
+                    <h2>Logowanie przez media społecznościowe (OAuth)</h2>
+                    <p class="description" style="margin-bottom:16px">
+                        Aby umożliwić logowanie przez Google i Facebook, utwórz aplikacje OAuth w odpowiednich konsolach
+                        deweloperskich i wpisz poniżej dane uwierzytelniające. Pola zostaw puste, aby wyłączyć dany provider.
+                    </p>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row"><label for="jg_map_google_client_id">Google Client ID</label></th>
+                            <td>
+                                <input type="text" name="jg_map_google_client_id" id="jg_map_google_client_id"
+                                       value="<?php echo esc_attr(get_option('jg_map_google_client_id', '')); ?>"
+                                       class="regular-text" placeholder="xxxxxxxxxxxx-xxxxxxxx.apps.googleusercontent.com">
+                                <p class="description">Redirect URI do ustawienia w Google Cloud Console:<br>
+                                    <code><?php echo esc_html(admin_url('admin-ajax.php') . '?action=jg_google_oauth_callback'); ?></code>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="jg_map_google_client_secret">Google Client Secret</label></th>
+                            <td>
+                                <input type="password" name="jg_map_google_client_secret" id="jg_map_google_client_secret"
+                                       value="<?php echo esc_attr(get_option('jg_map_google_client_secret', '')); ?>"
+                                       class="regular-text">
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="jg_map_facebook_app_id">Facebook App ID</label></th>
+                            <td>
+                                <input type="text" name="jg_map_facebook_app_id" id="jg_map_facebook_app_id"
+                                       value="<?php echo esc_attr(get_option('jg_map_facebook_app_id', '')); ?>"
+                                       class="regular-text" placeholder="123456789012345">
+                                <p class="description">Redirect URI do ustawienia w Facebook Developer Console:<br>
+                                    <code><?php echo esc_html(admin_url('admin-ajax.php') . '?action=jg_facebook_oauth_callback'); ?></code>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><label for="jg_map_facebook_app_secret">Facebook App Secret</label></th>
+                            <td>
+                                <input type="password" name="jg_map_facebook_app_secret" id="jg_map_facebook_app_secret"
+                                       value="<?php echo esc_attr(get_option('jg_map_facebook_app_secret', '')); ?>"
+                                       class="regular-text">
                             </td>
                         </tr>
                     </table>

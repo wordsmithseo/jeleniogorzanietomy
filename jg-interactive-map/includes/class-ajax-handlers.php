@@ -558,6 +558,8 @@ class JG_Map_Ajax_Handlers {
         add_action('wp_ajax_nopriv_jg_map_login', array($this, 'login_user'));
         add_action('wp_ajax_nopriv_jg_map_register', array($this, 'register_user'));
         add_action('wp_ajax_nopriv_jg_map_forgot_password', array($this, 'forgot_password'));
+        add_action('wp_ajax_nopriv_jg_google_oauth_callback', array($this, 'google_oauth_callback'));
+        add_action('wp_ajax_nopriv_jg_facebook_oauth_callback', array($this, 'facebook_oauth_callback'));
         add_action('wp_ajax_nopriv_jg_map_resend_activation', array($this, 'resend_activation_email'));
         add_action('wp_ajax_jg_map_resend_activation', array($this, 'resend_activation_email'));
         add_action('wp_ajax_jg_check_registration_status', array($this, 'check_registration_status'));
@@ -6622,12 +6624,16 @@ class JG_Map_Ajax_Handlers {
         $is_admin = user_can($current_user->ID, 'manage_options');
         $is_moderator = user_can($current_user->ID, 'jg_map_moderate');
 
+        $is_oauth_user = !empty(get_user_meta($current_user->ID, 'jg_google_id', true))
+                      || !empty(get_user_meta($current_user->ID, 'jg_facebook_id', true));
+
         wp_send_json_success(array(
             'display_name' => $current_user->display_name,
             'email' => $current_user->user_email,
             'is_admin' => $is_admin,
             'is_moderator' => $is_moderator,
-            'can_delete_profile' => !$is_admin && !$is_moderator
+            'can_delete_profile' => !$is_admin && !$is_moderator,
+            'is_oauth_user' => $is_oauth_user,
         ));
     }
 
@@ -6815,16 +6821,19 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
-        if (empty($password)) {
-            wp_send_json_error('Proszę podać hasło w celu potwierdzenia');
-            exit;
-        }
+        $is_oauth_user = !empty(get_user_meta($user_id, 'jg_google_id', true))
+                      || !empty(get_user_meta($user_id, 'jg_facebook_id', true));
 
-        // Verify password
-        $user = wp_get_current_user();
-        if (!wp_check_password($password, $user->user_pass, $user_id)) {
-            wp_send_json_error('Nieprawidłowe hasło');
-            exit;
+        if (!$is_oauth_user) {
+            if (empty($password)) {
+                wp_send_json_error('Proszę podać hasło w celu potwierdzenia');
+                exit;
+            }
+            $user = wp_get_current_user();
+            if (!wp_check_password($password, $user->user_pass, $user_id)) {
+                wp_send_json_error('Nieprawidłowe hasło');
+                exit;
+            }
         }
 
         // Get all user's points (pins)
@@ -10200,5 +10209,228 @@ class JG_Map_Ajax_Handlers {
         ));
 
         wp_send_json_success();
+    }
+
+    public function google_oauth_callback() {
+        $code  = sanitize_text_field($_GET['code'] ?? '');
+        $state = sanitize_text_field($_GET['state'] ?? '');
+
+        if (empty($code)) {
+            $this->output_oauth_result(false, 'google', 'Brak kodu autoryzacji', $state);
+            return;
+        }
+
+        $client_id     = get_option('jg_map_google_client_id', '');
+        $client_secret = get_option('jg_map_google_client_secret', '');
+        $redirect_uri  = admin_url('admin-ajax.php') . '?action=jg_google_oauth_callback';
+
+        if (empty($client_id) || empty($client_secret)) {
+            $this->output_oauth_result(false, 'google', 'OAuth Google nie jest skonfigurowane', $state);
+            return;
+        }
+
+        $token_resp = wp_remote_post('https://oauth2.googleapis.com/token', array(
+            'body' => array(
+                'code'          => $code,
+                'client_id'     => $client_id,
+                'client_secret' => $client_secret,
+                'redirect_uri'  => $redirect_uri,
+                'grant_type'    => 'authorization_code',
+            ),
+        ));
+
+        if (is_wp_error($token_resp)) {
+            $this->output_oauth_result(false, 'google', 'Błąd wymiany tokena', $state);
+            return;
+        }
+
+        $token_data   = json_decode(wp_remote_retrieve_body($token_resp), true);
+        $access_token = $token_data['access_token'] ?? '';
+
+        if (empty($access_token)) {
+            $this->output_oauth_result(false, 'google', 'Nie uzyskano tokena dostępu', $state);
+            return;
+        }
+
+        $user_resp = wp_remote_get('https://www.googleapis.com/oauth2/v3/userinfo', array(
+            'headers' => array('Authorization' => 'Bearer ' . $access_token),
+        ));
+
+        if (is_wp_error($user_resp)) {
+            $this->output_oauth_result(false, 'google', 'Błąd pobierania danych użytkownika', $state);
+            return;
+        }
+
+        $user_data    = json_decode(wp_remote_retrieve_body($user_resp), true);
+        $google_id    = sanitize_text_field($user_data['sub'] ?? '');
+        $email        = sanitize_email($user_data['email'] ?? '');
+        $display_name = sanitize_text_field($user_data['name'] ?? '');
+
+        if (empty($google_id) || empty($email)) {
+            $this->output_oauth_result(false, 'google', 'Nie uzyskano danych użytkownika z Google', $state);
+            return;
+        }
+
+        $user_id = $this->find_or_create_social_user($email, $display_name, $google_id, 'google');
+        if (is_wp_error($user_id)) {
+            $this->output_oauth_result(false, 'google', $user_id->get_error_message(), $state);
+            return;
+        }
+
+        wp_set_current_user($user_id);
+        wp_set_auth_cookie($user_id, true);
+        $this->output_oauth_result(true, 'google', '', $state);
+    }
+
+    public function facebook_oauth_callback() {
+        $code  = sanitize_text_field($_GET['code'] ?? '');
+        $state = sanitize_text_field($_GET['state'] ?? '');
+
+        if (empty($code)) {
+            $this->output_oauth_result(false, 'facebook', 'Brak kodu autoryzacji', $state);
+            return;
+        }
+
+        $app_id     = get_option('jg_map_facebook_app_id', '');
+        $app_secret = get_option('jg_map_facebook_app_secret', '');
+        $redirect_uri = admin_url('admin-ajax.php') . '?action=jg_facebook_oauth_callback';
+
+        if (empty($app_id) || empty($app_secret)) {
+            $this->output_oauth_result(false, 'facebook', 'OAuth Facebook nie jest skonfigurowane', $state);
+            return;
+        }
+
+        $token_url  = add_query_arg(array(
+            'client_id'     => $app_id,
+            'redirect_uri'  => $redirect_uri,
+            'client_secret' => $app_secret,
+            'code'          => $code,
+        ), 'https://graph.facebook.com/v18.0/oauth/access_token');
+
+        $token_resp = wp_remote_get($token_url);
+        if (is_wp_error($token_resp)) {
+            $this->output_oauth_result(false, 'facebook', 'Błąd wymiany tokena', $state);
+            return;
+        }
+
+        $token_data   = json_decode(wp_remote_retrieve_body($token_resp), true);
+        $access_token = $token_data['access_token'] ?? '';
+
+        if (empty($access_token)) {
+            $this->output_oauth_result(false, 'facebook', 'Nie uzyskano tokena dostępu', $state);
+            return;
+        }
+
+        $user_url  = add_query_arg(array(
+            'fields'       => 'id,name,email',
+            'access_token' => $access_token,
+        ), 'https://graph.facebook.com/v18.0/me');
+
+        $user_resp = wp_remote_get($user_url);
+        if (is_wp_error($user_resp)) {
+            $this->output_oauth_result(false, 'facebook', 'Błąd pobierania danych użytkownika', $state);
+            return;
+        }
+
+        $user_data    = json_decode(wp_remote_retrieve_body($user_resp), true);
+        $fb_id        = sanitize_text_field($user_data['id'] ?? '');
+        $email        = sanitize_email($user_data['email'] ?? '');
+        $display_name = sanitize_text_field($user_data['name'] ?? '');
+
+        if (empty($fb_id)) {
+            $this->output_oauth_result(false, 'facebook', 'Nie uzyskano danych użytkownika z Facebook', $state);
+            return;
+        }
+
+        if (empty($email)) {
+            $this->output_oauth_result(false, 'facebook', 'Twoje konto Facebook nie udostępniło adresu email. Zarejestruj się przez formularz lub użyj konta Google.', $state);
+            return;
+        }
+
+        $user_id = $this->find_or_create_social_user($email, $display_name, $fb_id, 'facebook');
+        if (is_wp_error($user_id)) {
+            $this->output_oauth_result(false, 'facebook', $user_id->get_error_message(), $state);
+            return;
+        }
+
+        wp_set_current_user($user_id);
+        wp_set_auth_cookie($user_id, true);
+        $this->output_oauth_result(true, 'facebook', '', $state);
+    }
+
+    private function find_or_create_social_user($email, $display_name, $provider_id, $provider) {
+        $meta_key = 'jg_' . $provider . '_id';
+
+        $existing = get_users(array(
+            'meta_key'   => $meta_key,
+            'meta_value' => $provider_id,
+            'number'     => 1,
+            'fields'     => 'ID',
+        ));
+
+        if (!empty($existing)) {
+            return $existing[0];
+        }
+
+        $by_email = get_user_by('email', $email);
+        if ($by_email) {
+            update_user_meta($by_email->ID, $meta_key, $provider_id);
+            return $by_email->ID;
+        }
+
+        $username = $this->generate_social_username($display_name, $email);
+
+        $user_id = wp_insert_user(array(
+            'user_login'   => $username,
+            'user_email'   => $email,
+            'display_name' => $display_name ?: $username,
+            'user_pass'    => wp_generate_password(32, true, true),
+            'role'         => 'subscriber',
+        ));
+
+        if (is_wp_error($user_id)) {
+            return $user_id;
+        }
+
+        update_user_meta($user_id, $meta_key, $provider_id);
+        update_user_meta($user_id, 'account_status', 'active');
+
+        return $user_id;
+    }
+
+    private function generate_social_username($display_name, $email) {
+        $base = $display_name
+            ? preg_replace('/[^a-z0-9_]/i', '', strtolower(str_replace(' ', '_', $display_name)))
+            : strstr($email, '@', true);
+        $base = preg_replace('/[^a-z0-9_]/i', '', $base);
+        $base = $base ?: 'user';
+        $base = substr($base, 0, 40);
+
+        $candidate = $base;
+        $i = 1;
+        while (username_exists($candidate)) {
+            $candidate = $base . $i;
+            $i++;
+        }
+        return $candidate;
+    }
+
+    private function output_oauth_result($success, $provider, $message = '', $state = '') {
+        $type         = $success ? 'jg_oauth_success' : 'jg_oauth_error';
+        $msg_js       = esc_js($message);
+        $prov_js      = esc_js($provider);
+        $state_js     = esc_js($state);
+        $parsed       = wp_parse_url(home_url());
+        $parent_origin = $parsed['scheme'] . '://' . $parsed['host'] . (isset($parsed['port']) ? ':' . $parsed['port'] : '');
+        $origin_js    = esc_js($parent_origin);
+        echo '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script>';
+        if ($success) {
+            echo 'window.opener&&window.opener.postMessage({type:"' . $type . '",jg_provider:"' . $prov_js . '",state:"' . $state_js . '"},"' . $origin_js . '");';
+        } else {
+            echo 'window.opener&&window.opener.postMessage({type:"' . $type . '",jg_provider:"' . $prov_js . '",message:"' . $msg_js . '",state:"' . $state_js . '"},"' . $origin_js . '");';
+        }
+        echo 'window.close();';
+        echo '</script></body></html>';
+        exit;
     }
 }
