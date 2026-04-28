@@ -3882,6 +3882,14 @@ class JG_Map_Ajax_Handlers {
             );
         }
 
+        // Must contain special character
+        if (!preg_match('/[^a-zA-Z0-9]/', $password)) {
+            return array(
+                'valid' => false,
+                'error' => 'Hasło musi zawierać co najmniej jeden znak specjalny (np. !@#$%^&*)'
+            );
+        }
+
         return array('valid' => true);
     }
 
@@ -4021,29 +4029,14 @@ class JG_Map_Ajax_Handlers {
      * Get user IP address (with proper validation to prevent spoofing)
      */
     private function get_user_ip() {
-        $ip = '';
+        // Always use REMOTE_ADDR as the authoritative source — it cannot be spoofed
+        // by the connecting client. Trusting HTTP_X_FORWARDED_FOR or
+        // HTTP_CF_CONNECTING_IP without verifying the source of the request allows
+        // an attacker to bypass rate limiting by sending arbitrary header values.
+        $ip = sanitize_text_field($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
 
-        // Check CloudFlare (if using CF)
-        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-            $ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
-        }
-        // Check X-Forwarded-For (take first IP in chain)
-        elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            $ip = trim($ips[0]);
-        }
-        // Fallback to REMOTE_ADDR
-        else {
-            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        }
-
-        // Sanitize
-        $ip = sanitize_text_field($ip);
-
-        // Validate IP format
         if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-            // If invalid, use REMOTE_ADDR as fallback
-            $ip = sanitize_text_field($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+            $ip = '0.0.0.0';
         }
 
         return $ip;
@@ -6850,6 +6843,12 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        $password_check = $this->validate_password_strength($password);
+        if (!$password_check['valid']) {
+            wp_send_json_error($password_check['error']);
+            exit;
+        }
+
         // Update user data (only password)
         $user_data = array(
             'ID' => $user_id,
@@ -6969,6 +6968,8 @@ class JG_Map_Ajax_Handlers {
      * Resend activation email
      */
     public function resend_activation_email() {
+        $this->verify_nonce();
+
         $username = isset($_POST['username']) ? sanitize_text_field($_POST['username']) : '';
         $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
 
@@ -6988,78 +6989,74 @@ class JG_Map_Ajax_Handlers {
             $user = get_user_by('email', $email);
         }
 
-        if (!$user) {
-            wp_send_json_error('Nie znaleziono użytkownika');
-            exit;
-        }
+        // Always return the same generic message to prevent user enumeration
+        $generic_success = 'Jeśli konto z podanymi danymi istnieje i oczekuje na aktywację, wysłaliśmy nowy link aktywacyjny.';
 
-        // Check if account is already activated
-        $account_status = get_user_meta($user->ID, 'jg_map_account_status', true);
-        if ($account_status === 'active') {
-            wp_send_json_error('To konto jest już aktywowane. Możesz się zalogować.');
-            exit;
-        }
-
-        // Rate limiting for resend attempts (max 3 per hour)
+        // Rate limiting before we reveal anything about user existence
         $ip = $this->get_user_ip();
-        $user_data = array(
-            'ip' => $ip,
-            'username' => $user->user_login,
-            'email' => $user->user_email
-        );
-
-        // Check rate limit
-        $rate_check = $this->check_rate_limit('resend_activation', $ip, 3, 3600, $user_data, false);
+        $rate_check = $this->check_rate_limit('resend_activation', $ip, 3, 3600, array(), false);
         if (!$rate_check['allowed']) {
             $minutes = isset($rate_check['minutes_remaining']) ? $rate_check['minutes_remaining'] : 60;
             wp_send_json_error('Zbyt wiele prób wysłania linku aktywacyjnego. Spróbuj ponownie za ' . $minutes . ' ' . ($minutes === 1 ? 'minutę' : ($minutes < 5 ? 'minuty' : 'minut')) . '.');
             exit;
         }
 
-        // Generate new activation key
+        if (!$user) {
+            // Increment rate limit even for non-existent users to prevent enumeration via timing
+            $this->check_rate_limit('resend_activation', $ip, 3, 3600, array(), true);
+            wp_send_json_success($generic_success);
+            exit;
+        }
+
+        // Check if account is already activated — return generic message so as not to leak account state
+        $account_status = get_user_meta($user->ID, 'jg_map_account_status', true);
+        if ($account_status === 'active') {
+            $this->check_rate_limit('resend_activation', $ip, 3, 3600, array(), true);
+            wp_send_json_success($generic_success);
+            exit;
+        }
+
+        $user_data = array(
+            'ip' => $ip,
+            'username' => $user->user_login,
+            'email' => $user->user_email
+        );
+
+        // Generate new activation key — use same ?jg_activate= format as initial registration
         $activation_key = wp_generate_password(32, false);
         update_user_meta($user->ID, 'jg_map_activation_key', $activation_key);
         update_user_meta($user->ID, 'jg_map_activation_key_time', time());
 
-        // Send activation email
-        $activation_link = add_query_arg(
-            array(
-                'action' => 'activate',
-                'key' => $activation_key,
-                'email' => rawurlencode($user->user_email)
-            ),
-            home_url()
-        );
+        $activation_link = home_url('/?jg_activate=' . $activation_key);
 
-        $subject = 'Aktywacja konta - Jeleniogórzanie to my';
+        $subject = 'Aktywacja konta - ' . get_bloginfo('name');
         $message = "Witaj " . $user->user_login . ",\n\n";
-        $message .= "Aby aktywować swoje konto w serwisie Jeleniogórzanie to my, kliknij w poniższy link:\n\n";
+        $message .= "Aby aktywować swoje konto w serwisie " . get_bloginfo('name') . ", kliknij w poniższy link:\n\n";
         $message .= $activation_link . "\n\n";
-        $message .= "Link aktywacyjny jest ważny przez 24 godziny.\n\n";
+        $message .= "Link aktywacyjny jest ważny przez 48 godzin.\n\n";
         $message .= "Jeśli nie rejestrowałeś się w naszym serwisie, zignoruj tę wiadomość.\n\n";
         $message .= "Pozdrawiamy,\n";
-        $message .= "Zespół Jeleniogórzanie to my";
+        $message .= "Zespół " . get_bloginfo('name');
 
         $email_sent = $this->send_plugin_email($user->user_email, $subject, $message);
 
-        if (!$email_sent) {
-            wp_send_json_error('Wystąpił błąd podczas wysyłania emaila');
-            exit;
+        // Record when activation email was sent (overwrites previous send time)
+        if ($email_sent) {
+            update_user_meta($user->ID, 'jg_map_email_sent_at', time());
         }
 
-        // Record when activation email was sent (overwrites previous send time)
-        update_user_meta($user->ID, 'jg_map_email_sent_at', time());
-
-        // Increment rate limit after successful send
+        // Increment rate limit after attempt
         $this->check_rate_limit('resend_activation', $ip, 3, 3600, $user_data, true);
 
-        wp_send_json_success('Link aktywacyjny został wysłany ponownie. Sprawdź swoją skrzynkę email.');
+        wp_send_json_success($generic_success);
     }
 
     /**
      * Login user via AJAX
      */
     public function login_user() {
+        $this->verify_nonce();
+
         // Honeypot check - if filled, it's a bot
         $honeypot = isset($_POST['honeypot']) ? $_POST['honeypot'] : '';
         if (!empty($honeypot)) {
@@ -7229,6 +7226,8 @@ class JG_Map_Ajax_Handlers {
      * Register user via AJAX
      */
     public function register_user() {
+        $this->verify_nonce();
+
         // Check if registration is enabled - server-side validation
         $registration_enabled = get_option('jg_map_registration_enabled', 1);
         if (!$registration_enabled || $registration_enabled === '0' || $registration_enabled === 0) {
@@ -7409,6 +7408,8 @@ class JG_Map_Ajax_Handlers {
     }
 
     public function forgot_password() {
+        $this->verify_nonce();
+
         // Rate limiting check (check only, don't increment yet)
         $ip = $this->get_user_ip();
         $rate_check = $this->check_rate_limit('forgot_password', $ip, 3, 1800, array(), false);
