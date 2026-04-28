@@ -3191,6 +3191,15 @@ body.jg-modal-open {
     overflow-y: auto;
     min-height: 0;
   }
+
+  /* overflow-y:auto implicitly forces overflow-x:auto, which clips the browser's
+     native focus ring on form inputs sitting flush with the scroll container edge.
+     4px horizontal padding gives the outline room to render without affecting
+     non-form modal content (view grid, ranking body). */
+  .jg-modal > form {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
 }
 
 .jg-modal header {
