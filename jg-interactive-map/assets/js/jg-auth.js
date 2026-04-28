@@ -845,7 +845,7 @@
         type: 'POST',
         data: {
           action: 'jg_map_update_profile',
-          nonce: CFG.nonce,
+          _ajax_nonce: CFG.nonce,
           password: password
         },
         success: function(response) {

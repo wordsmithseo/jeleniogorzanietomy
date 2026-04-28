@@ -6843,6 +6843,12 @@ class JG_Map_Ajax_Handlers {
             exit;
         }
 
+        $password_check = $this->validate_password_strength($password);
+        if (!$password_check['valid']) {
+            wp_send_json_error($password_check['error']);
+            exit;
+        }
+
         // Update user data (only password)
         $user_data = array(
             'ID' => $user_id,
