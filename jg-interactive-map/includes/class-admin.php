@@ -8505,7 +8505,7 @@ JAVASCRIPT;
                 var form    = document.getElementById('jg-nav-menu-form');
                 var jsonFld = document.getElementById('jg-nav-menu-json');
 
-                if (!tbody || !addBtn || !form) return;
+                if (!tbody || !addBtn || !form || !jsonFld) return;
 
                 /* ── Refresh row numbers for parent rows ── */
                 function refreshNumbers() {
@@ -8546,6 +8546,11 @@ JAVASCRIPT;
                     return JSON.stringify(items);
                 }
 
+                /* ── Keep hidden field in sync with DOM at all times ── */
+                function syncJSON() {
+                    jsonFld.value = collectJSON();
+                }
+
                 /* ── Add parent row ── */
                 addBtn.addEventListener('click', function () {
                     var uid = String(Date.now());
@@ -8569,6 +8574,7 @@ JAVASCRIPT;
                     bindAddSub(tr.querySelector('.jg-nav-add-sub'));
                     tr.querySelector('.jg-nav-label').focus();
                     refreshNumbers();
+                    syncJSON();
                 });
 
                 /* ── Add subrow under a parent ── */
@@ -8589,6 +8595,7 @@ JAVASCRIPT;
                     anchor.insertAdjacentElement('afterend', tr);
                     bindRemoveSub(tr.querySelector('.jg-nav-remove-subrow'));
                     tr.querySelector('.jg-nav-sub-label').focus();
+                    syncJSON();
                 }
 
                 function bindAddSub(btn) {
@@ -8600,6 +8607,7 @@ JAVASCRIPT;
                 function bindRemoveSub(btn) {
                     btn.addEventListener('click', function () {
                         btn.closest('.jg-nav-subrow').remove();
+                        syncJSON();
                     });
                 }
 
@@ -8609,6 +8617,7 @@ JAVASCRIPT;
                         getSubrows(row).forEach(function (sr) { sr.remove(); });
                         row.remove();
                         refreshNumbers();
+                        syncJSON();
                     });
                 }
 
@@ -8662,6 +8671,7 @@ JAVASCRIPT;
 
                         row.classList.remove('jg-drag-over');
                         refreshNumbers();
+                        syncJSON();
                     });
                 }
 
@@ -8670,7 +8680,11 @@ JAVASCRIPT;
                 tbody.querySelectorAll('.jg-nav-add-sub').forEach(bindAddSub);
                 tbody.querySelectorAll('.jg-nav-remove-subrow').forEach(bindRemoveSub);
 
-                /* ── Serialize to JSON before submit ── */
+                /* ── Sync on any value change in the table ── */
+                tbody.addEventListener('input', syncJSON);
+                tbody.addEventListener('change', syncJSON);
+
+                /* ── Final sync before submit (safety net) ── */
                 form.addEventListener('submit', function () {
                     jsonFld.value = collectJSON();
                 });

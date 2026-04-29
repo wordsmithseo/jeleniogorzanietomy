@@ -68,9 +68,13 @@ All prefixed `wp_jg_map_*`. Use `JG_Map_Database::get_points_table()` etc. — n
 
 ### JavaScript files
 
+> **TOKEN BUDGET RULE — `jg-map.js` is ~16k lines / 800KB. NEVER read it whole.**
+> Always `grep -n` first to find the relevant function, then `Read` only ±300 lines around it.
+> The file is a single IIFE with shared closure state — do not propose splitting it without a bundler (Vite/webpack).
+
 | File | Purpose |
 |------|---------|
-| `assets/js/jg-map.js` | Main frontend (~15k lines): Leaflet map, pin rendering, detail modals, add/edit forms, filters, GA4 events |
+| `assets/js/jg-map.js` | Main frontend (~16k lines): Leaflet map, pin rendering, detail modals, add/edit forms, filters, GA4 events |
 | `assets/js/jg-auth.js` | Login/register modals — loaded on **all pages**, not just the map page |
 | `assets/js/jg-sidebar.js` | Sidebar list with filtering, sorting, lazy loading |
 | `assets/js/jg-map-ext.js` | Map extensions (additional controls) |
