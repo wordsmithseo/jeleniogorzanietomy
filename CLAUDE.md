@@ -84,6 +84,45 @@ All prefixed `wp_jg_map_*`. Use `JG_Map_Database::get_points_table()` etc. — n
 | `assets/js/jg-banner-admin.js` | Banner admin UI |
 | `assets/js/tile-sw.js` | Service worker for map tile caching |
 
+### jg-map.js — indeks sekcji
+
+> Zasada: przed każdą operacją na jg-map.js zajrzyj tu po numer linii,
+> potem `Read` tylko ±150 linii wokół celu. Nigdy nie czytaj pliku całego.
+
+| Linia | Sekcja / Symbol | Co zawiera |
+|-------|----------------|------------|
+| 44 | SECTION: UTILITIES & HELPERS | `setupEmojiObserver`, `getCategoryEmojis`, `getOfferingsLabel`, `getCategoryLabel` |
+| 282 | BODY SCROLL LOCK | `lockBodyScroll`, `unlockBodyScroll` |
+| 301 | MESSAGE MODALS | `showAlert`, `showConfirm`, `showRejectReasonModal`, `showApprovalNotification` |
+| 599 | CONFETTI UTILITIES | `_prestigeConfettiColors`, `shootMapMarkerConfetti` (689) |
+| 822 | SECTION: MAP INIT | `function init()` — inicjalizacja Leaflet, ładowanie danych, guest engagement |
+| 882 | Custom Top Bar | przyciski profilu, `openLoginModal` (1083), ranking modal |
+| 1296 | OPENING HOURS PICKER | `initOpeningHoursPicker` (1381) |
+| 1432 | RICH TEXT EDITOR | `initRichEditor` (1719) |
+| 1486 | TAG INPUT | `initTagInput` (1527) |
+| 2080 | SECTION: MODAL HELPERS | `open()`, `close()`, `jgFitModal`, `saveEditModalState`, `setMapCookie`/`getMapCookie` |
+| 3329 | SECTION: MAP SIDEBAR & NAVIGATION | `syncNotifications`, lista sidebar, custom nav, filtry UI |
+| 3640 | SECTION: PIN RENDERING & CLUSTERING | `setupFsPromo`, `showMap` (4177), klastry Leaflet (~4216 / ~4322), promo marker GP (4511) |
+| 5534 | SECTION: VOTING & RATING | `voteReq` (5534), `addPulsingMarker` (5763), `loadFromCache` (5811), `removeMarkersById` (5901) |
+| 6253 | SECTION: USER MODALS & LIGHTBOX | `openLightbox`, `openAuthorModal` (6260), `openUserModal` (6916), `openAllAchievementsModal` (7285), `openVisitorsModal` (7395) |
+| 7473 | SECTION: PLACE DETAIL EDITORS | `loadMenuSection` (7474), `openOfferingsEditor` (7681), `openMenuEditor` (7821) |
+| 8381 | SECTION: POINT MANAGEMENT MODALS | `openStatsModal` (8382), `openReportModal` (8516), `openEditModal` (8954), `openDeletionRequestModal` (9747), `openPromoModal` (9793) |
+| 9427 | `searchEditAddressSuggestions()` | Autouzupełnianie adresu w formularzu edycji |
+| 10049 | `loadUsers()` | Ładuje listę użytkowników do formularza |
+| 10377 | SECTION: DETAILS MODAL | `openDetails` (10378), `openDetailsModalContent` (10416), `doVote` (11985) |
+| 12628 | SECTION: POINT HISTORY MODAL | `openPointHistoryModal` (12629) — historia edycji z workflow zatwierdzania |
+| 12928 | NEW SEARCH FUNCTIONALITY | `performSearch` (13109), `searchAddressSuggestions` (14168), `closeSearchPanel` |
+| 13334 | SECTION: CATEGORY FILTERS | `initMapCategoryFilters` (13334) |
+| 13513 | REAL-TIME SYNCHRONIZATION | `createSyncStatusIndicator` (13523), `updateSyncStatus` (13534) — Heartbeat API |
+| 13813 | FLOATING ACTION BUTTON (FAB) | `openAddPlaceModal` (14494), `searchAddressSuggestions` (14168) |
+| 15007 | ADMIN/MOD USER COUNT INDICATOR | `updateUserCountIndicator` — złoty krąg z liczbą użytkowników |
+| 15160 | CHALLENGE WIDGETS | `showChallengeCompleteModal` (15418) — do 4 wyzwań jednocześnie |
+| 15570 | REAL-TIME LEVEL / XP BAR UPDATE | `updateLevelDisplay` (15582) — pasek XP bez przeładowania |
+| 15638 | `window.jgUpdateLevelDisplay` | Publiczne API — aktualizacja poziomu i paska XP |
+| 15640 | LEVEL-UP & ACHIEVEMENT NOTIFICATION SYSTEM | `showLevelUpModal` (15691), `showAchievementModal` (15726) |
+| 15793 | `window.jgOpenPointById()` | Publiczne API — otwiera punkt po ID (szuka w tablicy ALL) |
+| 15804 | `window.jgZoomToPoint()` | Publiczne API — zoom do współrzędnych punktu |
+
 ### PHP → JS config bridge
 
 `JG_MAP_CFG` is the central JS config object injected via `wp_localize_script` in `class-enqueue.php`. It carries AJAX URL, nonce, user info, map defaults, and all category definitions. Always reference this object from JS rather than hardcoding values.
@@ -148,33 +187,35 @@ All prefixed `wp_jg_map_*`. Use `JG_Map_Database::get_points_table()` etc. — n
 
 ---
 
-### `assets/js/jg-map.js` (15 839 linii)
+### `assets/js/jg-map.js` (15 851 linii)
+
+> Szczegółowy indeks sekcji → patrz **jg-map.js — indeks sekcji** wyżej.
 
 | Blok | Linia | Opis |
 |------|-------|------|
-| `init()` | 821 | Inicjalizacja całej mapy Leaflet + ładowanie danych |
+| `init()` | 822 | Inicjalizacja całej mapy Leaflet + ładowanie danych |
 | `ALL` (dane punktów) | ~5947 | Tablica wszystkich punktów mapy (wypełniana przez AJAX) |
-| `addPulsingMarker` | 5757 | Dodaje animowany marker (pulsujący) |
-| `voteReq` | 5528 | Funkcja wysyłająca głos (ocena gwiazdkowa) AJAX |
-| `doVote` (handler kliknięcia gwiazdki) | 11975 | Obsługa kliknięcia gwiazdki w modalu |
-| `removeMarkersById` | 5895 | Usuwa markery z mapy po ID |
-| `openDetails` | 10368 | Otwiera modal ze szczegółami punktu |
-| `openDetailsModalContent` | 10406 | Wypełnia treść modalu + ręczny `gtag page_view` |
-| `initMapCategoryFilters` | 13322 | Inicjalizacja przycisków filtrów kategorii |
-| `searchAddressSuggestions` | 14156 | Autouzupełnianie wyszukiwarki adresu (główna mapa) |
-| `searchEditAddressSuggestions` | 9418 | Autouzupełnianie w formularzu edycji |
-| `loadUsers` | 10040 | Ładuje listę userów do formularza |
-| `closeIt` | 15446 | Zamyka modal alertu |
-| `shootMapMarkerConfetti` | 688 | Efekt konfetti przy dodaniu punktu |
-| `initTagInput` | 1525 | Inicjalizacja pola tagów |
-| `initRichEditor` | 1717 | Inicjalizacja edytora tekstu |
-| `initOpeningHoursPicker` | 1379 | Picker godzin otwarcia |
-| Klastry Leaflet (MCR) | ~4211 | `iconCreateFunction` — renderowanie klastrów (pełnoekranowy) |
-| Klastry (sidebar) | ~4317 | `iconCreateFunction` — klastry w sidebarze |
-| Promo marker (GP) | 4498–4512 | Marker reklamowy (typ `gp`) |
+| `addPulsingMarker` | 5763 | Dodaje animowany marker (pulsujący) |
+| `voteReq` | 5534 | Funkcja wysyłająca głos (ocena gwiazdkowa) AJAX |
+| `doVote` (handler kliknięcia gwiazdki) | 11985 | Obsługa kliknięcia gwiazdki w modalu |
+| `removeMarkersById` | 5901 | Usuwa markery z mapy po ID |
+| `openDetails` | 10378 | Otwiera modal ze szczegółami punktu |
+| `openDetailsModalContent` | 10416 | Wypełnia treść modalu + ręczny `gtag page_view` |
+| `initMapCategoryFilters` | 13334 | Inicjalizacja przycisków filtrów kategorii |
+| `searchAddressSuggestions` | 14168 | Autouzupełnianie wyszukiwarki adresu (FAB / add form) |
+| `searchEditAddressSuggestions` | 9427 | Autouzupełnianie w formularzu edycji |
+| `loadUsers` | 10049 | Ładuje listę userów do formularza |
+| `closeIt` | 15458 | Zamyka modal alertu |
+| `shootMapMarkerConfetti` | 689 | Efekt konfetti przy dodaniu punktu |
+| `initTagInput` | 1527 | Inicjalizacja pola tagów |
+| `initRichEditor` | 1719 | Inicjalizacja edytora tekstu |
+| `initOpeningHoursPicker` | 1381 | Picker godzin otwarcia |
+| Klastry Leaflet (MCR) | ~4216 | `iconCreateFunction` — renderowanie klastrów (pełnoekranowy) |
+| Klastry (sidebar) | ~4322 | `iconCreateFunction` — klastry w sidebarze |
+| Promo marker (GP) | ~4511 | Marker reklamowy (typ `gp`) |
 
 **Wzorzec `grep` do odnajdywania funkcji:**
 ```bash
 grep -n "function nazwaFunkcji" jg-map.js
-sed -n '10368,10440p' jg-map.js   # czyta ~70 linii od celu
+sed -n '10378,10450p' jg-map.js   # czyta ~70 linii od celu
 ```
