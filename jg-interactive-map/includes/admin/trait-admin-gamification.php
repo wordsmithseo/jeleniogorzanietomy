@@ -533,13 +533,13 @@ trait JG_Map_Admin_Gamification {
 
                             '<div class="jg-ch-field">' +
                                 '<label>Data i godzina startu <span style="color:#dc2626">*</span></label>' +
-                                '<input type="datetime-local" class="ch-start" value="' + toDatetimeLocal(ch.start_date || fmt(now).replace(\'T\',\' \')) + '">' +
+                                '<input type="datetime-local" class="ch-start" value="' + toDatetimeLocal(ch.start_date || fmt(now).replace('T',' ')) + '">' +
                                 '<span class="jg-ch-error" id="err-start-' + (ch.id||'new') + '">Data startu jest wymagana</span>' +
                             '</div>' +
 
                             '<div class="jg-ch-field">' +
                                 '<label>Data i godzina zakończenia <span style="color:#dc2626">*</span></label>' +
-                                '<input type="datetime-local" class="ch-end" value="' + toDatetimeLocal(ch.end_date || fmt(week).replace(\'T\',\' \')) + '">' +
+                                '<input type="datetime-local" class="ch-end" value="' + toDatetimeLocal(ch.end_date || fmt(week).replace('T',' ')) + '">' +
                                 '<span class="jg-ch-error" id="err-end-' + (ch.id||'new') + '">Data zakończenia musi być po starcie</span>' +
                             '</div>' +
 
