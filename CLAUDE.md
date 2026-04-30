@@ -99,3 +99,82 @@ All prefixed `wp_jg_map_*`. Use `JG_Map_Database::get_points_table()` etc. — n
 - **Sync queue is DB-backed** — `class-sync-manager.php` deliberately avoids WordPress transients for the sync queue because transients are unreliable under heavy load. All sync events go to `wp_jg_map_sync_queue`.
 
 - **`jg-auth.js` on all pages** — login/register modals can be triggered from any page (nav bar, map sidebar, etc.), so `jg-auth.js` is enqueued globally, not conditionally.
+
+## Kod - Mapa Drogowa
+
+> Indeks nawigacyjny do chirurgicznej pracy `grep -n` + `sed -n`. Zamiast czytać plik w całości, używaj tych numerów linii jako punktów startu.
+
+### `includes/class-admin.php` (8 867 linii)
+
+| Blok | Linia | Opis |
+|------|-------|------|
+| `__construct` | 31 | Bootstrap: rejestracja wszystkich hooków |
+| `add_admin_bar_notifications` | 87 | Ikonka powiadomień w górnym pasku WP |
+| `handle_manual_activate_user` | 186 | POST handler: ręczna aktywacja konta |
+| `modify_admin_title` | 228 | Filter: tytuł zakładki przeglądarki |
+| `add_admin_menu` | 367 | Rejestracja stron menu w panelu admina |
+| `restrict_sidebar_for_non_wp_admins` | 552 | Ukrywanie menu dla nie-adminów WP |
+| `render_main_page` | 585 | Strona główna panelu (dashboard) |
+| `render_places_page` | 816 | Lista miejsc do moderacji |
+| `render_place_row` *(private)* | 1398 | Wiersz tabeli miejsca |
+| `render_place_actions` *(private)* | 1445 | Przyciski akcji (zatwierdź/odrzuć) |
+| `render_moderation_page` | 1572 | Kolejka moderacji |
+| `render_reports_page` | 2354 | Zgłoszenia nadużyć |
+| `render_promos_page` | 2407 | Zarządzanie promocjami/slotami |
+| `render_all_points_page` | 2590 | Wszystkie punkty (lista zbiorcza) |
+| `render_roles_page` | 2687 | Zarządzanie rolami użytkowników |
+| `render_deletions_page` | 2879 | Historia usunięć |
+| `render_gallery_page` | 3010 | Galeria zdjęć |
+| `render_users_page` | 3376 | Lista użytkowników |
+| `render_activity_log_page` | 4411 | Dziennik aktywności |
+| `render_settings_page` | 4616 | Ustawienia wtyczki |
+| `render_report_reasons_page` | 5041 | Powody zgłoszeń |
+| `render_filter_reset_card` *(private)* | 5750 | Karta resetu filtrów |
+| `heartbeat_received` | 5860 | Heartbeat: odpowiedź AJAX (live notifications) |
+| `render_page_header` *(private)* | 6023 | Nagłówek strony admina |
+| `enqueue_admin_styles` | 5943 | Rejestracja stylów CSS panelu |
+| `render_maintenance_page` | 6138 | Strona konserwacji / crony |
+| `render_place_categories_page` | 6302 | Kategorie miejsc |
+| `render_curiosity_categories_page` | 6756 | Kategorie ciekawostek |
+| `render_xp_editor_page` | 7126 | Edytor punktów XP |
+| `render_achievements_editor_page` | 7253 | Edytor osiągnięć |
+| `render_challenges_page` | 7423 | Wyzwania tygodniowe |
+| `render_tags_page` | 7832 | Tagi punktów |
+| `render_nav_menu_page` | 8355 | Edytor menu nawigacyjnego |
+| `render_seo_page` | 8700 | Ustawienia SEO |
+| `enqueue_admin_bar_script` | 6036 | Skrypt paska admina |
+
+**Hooki zarejestrowane w `__construct` (linia 31):** `admin_menu` (×2), `admin_bar_menu`, `admin_title`, `heartbeat_received`, `admin_enqueue_scripts` (×2), `admin_post_jg_map_activate_user`
+
+---
+
+### `assets/js/jg-map.js` (15 839 linii)
+
+| Blok | Linia | Opis |
+|------|-------|------|
+| `init()` | 821 | Inicjalizacja całej mapy Leaflet + ładowanie danych |
+| `ALL` (dane punktów) | ~5947 | Tablica wszystkich punktów mapy (wypełniana przez AJAX) |
+| `addPulsingMarker` | 5757 | Dodaje animowany marker (pulsujący) |
+| `voteReq` | 5528 | Funkcja wysyłająca głos (ocena gwiazdkowa) AJAX |
+| `doVote` (handler kliknięcia gwiazdki) | 11975 | Obsługa kliknięcia gwiazdki w modalu |
+| `removeMarkersById` | 5895 | Usuwa markery z mapy po ID |
+| `openDetails` | 10368 | Otwiera modal ze szczegółami punktu |
+| `openDetailsModalContent` | 10406 | Wypełnia treść modalu + ręczny `gtag page_view` |
+| `initMapCategoryFilters` | 13322 | Inicjalizacja przycisków filtrów kategorii |
+| `searchAddressSuggestions` | 14156 | Autouzupełnianie wyszukiwarki adresu (główna mapa) |
+| `searchEditAddressSuggestions` | 9418 | Autouzupełnianie w formularzu edycji |
+| `loadUsers` | 10040 | Ładuje listę userów do formularza |
+| `closeIt` | 15446 | Zamyka modal alertu |
+| `shootMapMarkerConfetti` | 688 | Efekt konfetti przy dodaniu punktu |
+| `initTagInput` | 1525 | Inicjalizacja pola tagów |
+| `initRichEditor` | 1717 | Inicjalizacja edytora tekstu |
+| `initOpeningHoursPicker` | 1379 | Picker godzin otwarcia |
+| Klastry Leaflet (MCR) | ~4211 | `iconCreateFunction` — renderowanie klastrów (pełnoekranowy) |
+| Klastry (sidebar) | ~4317 | `iconCreateFunction` — klastry w sidebarze |
+| Promo marker (GP) | 4498–4512 | Marker reklamowy (typ `gp`) |
+
+**Wzorzec `grep` do odnajdywania funkcji:**
+```bash
+grep -n "function nazwaFunkcji" jg-map.js
+sed -n '10368,10440p' jg-map.js   # czyta ~70 linii od celu
+```
