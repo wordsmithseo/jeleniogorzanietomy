@@ -34,10 +34,10 @@ composer run check      # All three
 
 | File | Class | Responsibility |
 |------|-------|---------------|
-| `jg-interactive-map.php` | `JG_Interactive_Map` | Plugin bootstrap, hook wiring, rewrite rules, SEO URLs |
+| `jg-interactive-map.php` | `JG_Interactive_Map` | Plugin bootstrap, hook wiring, rewrite rules, point pages, SEO URLs (4 465 linii) |
 | `includes/class-database.php` | `JG_Map_Database` | Schema creation, migrations, static table-name accessors |
-| `includes/class-ajax-handlers.php` | `JG_Map_Ajax_Handlers` | All `wp_ajax_*` endpoints — point CRUD, voting, reports, categories (~10k lines) |
-| `includes/class-admin.php` | `JG_Map_Admin` | Admin panel UI, moderation queue, Heartbeat-based notifications (~8k lines) |
+| `includes/class-ajax-handlers.php` | `JG_Map_Ajax_Handlers` | Shell klasy — wszystkie `wp_ajax_*` delegowane do traitów w `includes/ajax/` |
+| `includes/class-admin.php` | `JG_Map_Admin` | Shell klasy — panel admina delegowany do traitów w `includes/admin/` |
 | `includes/class-enqueue.php` | `JG_Map_Enqueue` | Asset registration, top bar, mobile nav bar, footer bar HTML injection |
 | `includes/class-shortcode.php` | `JG_Map_Shortcode` | `[jg_map]`, `[jg_map_sidebar]`, `[jg_map_directory]`, `[jg_banner]` |
 | `includes/class-sync-manager.php` | `JG_Map_Sync_Manager` | DB-backed real-time sync queue for pin state changes (no transients) |
@@ -49,6 +49,41 @@ composer run check      # All three
 | `includes/class-activity-log.php` | `JG_Map_Activity_Log` | Activity logging |
 | `includes/class-maintenance.php` | `JG_Map_Maintenance` | Cron-based cleanup tasks |
 | `includes/class-slot-keys.php` | `JG_Slot_Keys` | Per-request random CSS class/ID names for promotional slot (ad-blocker evasion) |
+
+**Traity AJAX** (`includes/ajax/` — używane przez `class-ajax-handlers.php`):
+
+| Trait | Linie | Odpowiedzialność |
+|-------|-------|-----------------|
+| `trait-points-read.php` | 1 807 | Pobieranie punktów, wyszukiwanie, sortowanie, filtry |
+| `trait-admin-edits.php` | 1 402 | Edycja punktów przez adminów/modów |
+| `trait-auth.php` | 1 295 | Logowanie, rejestracja, profil użytkownika |
+| `trait-admin-users.php` | 1 169 | Zarządzanie użytkownikami (admin) |
+| `trait-points-write.php` | 1 085 | Dodawanie i edycja punktów przez użytkowników |
+| `trait-admin-categories.php` | 782 | Zarządzanie kategoriami (admin) |
+| `trait-admin-moderation.php` | 620 | Moderacja punktów |
+| `trait-place-features.php` | 535 | Menu, oferty, godziny otwarcia |
+| `trait-categories.php` | 529 | Kategorie (endpointy publiczne) |
+| `trait-images.php` | 473 | Upload i zarządzanie zdjęciami |
+| `trait-geocoding.php` | 330 | Geocoding / autouzupełnianie adresów |
+| `trait-notifications.php` | 233 | Powiadomienia push |
+
+**Traity Admin** (`includes/admin/` — używane przez `class-admin.php`):
+
+| Trait | Linie | Odpowiedzialność |
+|-------|-------|-----------------|
+| `trait-admin-other.php` | 1 532 | SEO, menu nawigacyjne, tagi, info bar i inne strony |
+| `trait-admin-users.php` | 1 165 | Strony zarządzania użytkownikami |
+| `trait-admin-categories.php` | 825 | Strony kategorii miejsc i ciekawostek |
+| `trait-admin-moderation.php` | 785 | Kolejka moderacji |
+| `trait-admin-reports.php` | 767 | Zgłoszenia nadużyć |
+| `trait-admin-places.php` | 753 | Lista miejsc do moderacji |
+| `trait-admin-gamification.php` | 713 | Edytory XP, osiągnięć, wyzwań |
+| `trait-admin-settings.php` | 431 | Ustawienia wtyczki |
+| `trait-admin-promos.php` | 280 | Zarządzanie slotami promocyjnymi |
+| `trait-admin-gallery.php` | 248 | Galeria zdjęć |
+| `trait-admin-dashboard.php` | 234 | Dashboard (strona główna panelu) |
+| `trait-admin-activity.php` | 211 | Dziennik aktywności |
+| `trait-admin-helpers.php` | 123 | Współdzielone helpery panelu |
 
 ### Database tables
 
@@ -143,7 +178,20 @@ All prefixed `wp_jg_map_*`. Use `JG_Map_Database::get_points_table()` etc. — n
 
 > Indeks nawigacyjny do chirurgicznej pracy `grep -n` + `sed -n`. Zamiast czytać plik w całości, używaj tych numerów linii jako punktów startu.
 
-### `includes/class-admin.php` (8 867 linii)
+### `jg-interactive-map.php` (4 473 linii)
+
+| Linia | Sekcja / Metoda | Co zawiera |
+|-------|----------------|------------|
+| 46 | SECTION: BOOTSTRAP & INIT HOOKS | `get_instance()`, `__construct()`, `load_dependencies()`, `init_hooks()` (85) |
+| 185 | SECTION: CORE SETUP | `init_components()`, `disable_wp_emoji()`, `add_security_headers()`, `add_rewrite_rules()`, `handle_tile_sw()`, `is_bot()` |
+| 534 | SECTION: POINT PAGE RENDERING | `handle_point_page()` (535), `render_menu_page()` (719), `render_offerings_page()` (1043), `render_point_page()` (1204), `render_related_points()` (2341), `render_fallback_page()` (2410) |
+| 2797 | SECTION: POINT SEO META | `add_theme_color_meta()`, `add_point_meta_tags()` (2802) — Open Graph, structured data, meta tagi punktu |
+| 3205 | SECTION: SITEMAP | `handle_sitemap()` (3382), `generate_sitemap_xml_string()` (3449), `regenerate_sitemap_cache()` |
+| 3563 | SECTION: CATEGORY SEO | `add_category_page_meta_tags()` (3855), `get_category_seo_title()`, `get_category_intro()`, `get_og_image_for_points()` |
+| 3957 | SECTION: TAG & CATALOG SEO | `add_tag_page_meta_tags()` (4182), `resolve_catalog_category/tag()`, `redirect_legacy_tag_urls()`, `ping_indexnow_url()` (4423), `handle_indexnow_key_file()` (4443) |
+| 4467 | SECTION: PLUGIN ENTRY POINT | `jg_interactive_map()` — singleton bootstrap, `add_action('plugins_loaded')` |
+
+### `includes/class-admin.php` + traity (877 + ~8 000 linii w `includes/admin/`)
 
 | Blok | Linia | Opis |
 |------|-------|------|

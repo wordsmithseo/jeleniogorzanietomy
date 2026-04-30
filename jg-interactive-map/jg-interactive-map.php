@@ -43,6 +43,7 @@ class JG_Interactive_Map {
     /**
      * Get single instance
      */
+    // ===== SECTION: BOOTSTRAP & INIT HOOKS =====
     public static function get_instance() {
         if (null === self::$instance) {
             self::$instance = new self();
@@ -181,6 +182,7 @@ class JG_Interactive_Map {
      * Set email sender name for all emails from this WordPress site
      * Replaces default "WordPress" sender with our brand name
      */
+    // ===== SECTION: CORE SETUP =====
     public function set_email_from_name($from_name) {
         return 'Jeleniogórzanie to my';
     }
@@ -529,6 +531,7 @@ class JG_Interactive_Map {
     /**
      * Handle single point page display
      */
+    // ===== SECTION: POINT PAGE RENDERING =====
     public function handle_point_page() {
         $point_slug = get_query_var('jg_map_point');
 
@@ -2791,6 +2794,7 @@ class JG_Interactive_Map {
     /**
      * Add SEO meta tags for point pages
      */
+    // ===== SECTION: POINT SEO META =====
     public function add_theme_color_meta() {
         echo '<meta name="theme-color" content="#8d2324">' . "\n";
     }
@@ -3198,6 +3202,7 @@ class JG_Interactive_Map {
      * Add map sitemap to Yoast sitemap index
      * This helps Google discover the map sitemap through Yoast's main sitemap
      */
+    // ===== SECTION: SITEMAP =====
     public function add_map_sitemap_to_yoast_index($sitemap_index) {
         global $wpdb;
         $table = JG_Map_Database::get_points_table();
@@ -3555,6 +3560,7 @@ class JG_Interactive_Map {
     /**
      * Filter document title parts for category pages (WordPress native title)
      */
+    // ===== SECTION: CATEGORY SEO =====
     public function filter_category_page_title($title_parts) {
         $category = self::resolve_catalog_category();
         if ($category !== '') {
@@ -3948,6 +3954,7 @@ class JG_Interactive_Map {
     /**
      * Filter document title parts for tag pages (WordPress native title)
      */
+    // ===== SECTION: TAG & CATALOG SEO =====
     public function filter_tag_page_title($title_parts) {
         $tag = self::resolve_catalog_tag();
         if ($tag !== '') {
@@ -4457,6 +4464,7 @@ class JG_Interactive_Map {
 /**
  * Initialize the plugin
  */
+// ===== SECTION: PLUGIN ENTRY POINT =====
 function jg_interactive_map() {
     return JG_Interactive_Map::get_instance();
 }
