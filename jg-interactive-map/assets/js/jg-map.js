@@ -41,6 +41,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
   // and automatically replace emoji with Twemoji images.
   // Parsing each added node immediately (no debounce) prevents the flash caused
   // by the browser painting text emoji before Twemoji replaces them.
+  // ===== SECTION: UTILITIES & HELPERS =====
   function setupEmojiObserver() {
     if (!window.MutationObserver || !window.twemoji) return;
     var observer = new MutationObserver(function(mutations) {
@@ -818,6 +819,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
 
   wait(init, 100);
 
+  // ===== SECTION: MAP INIT =====
   function init() {
     try {
       // Static content (top bar, notifications) was already parsed by the inline
@@ -2075,6 +2077,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         }
       }
 
+      // ===== SECTION: MODAL HELPERS =====
       function open(bg, html, opts) {
         if (!bg) return;
         var c = qs('.jg-modal, .jg-lightbox', bg);
@@ -3323,6 +3326,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           }
 
           // Notification syncing for fullscreen mode
+          // ===== SECTION: MAP SIDEBAR & NAVIGATION =====
           function syncNotifications() {
             if (!isFullscreen || window.innerWidth <= 768) {
               fsNotifContainer.innerHTML = '';
@@ -3633,6 +3637,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             syncNotifications();
 
             // Show floating content in fullscreen
+            // ===== SECTION: PIN RENDERING & CLUSTERING =====
             (function setupFsPromo() {
               var $wrap = document.querySelector('[data-cid]');
               if (!$wrap) return;
@@ -5525,6 +5530,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         return api('jg_handle_reports', d);
       };
 
+      // ===== SECTION: VOTING & RATING =====
       var voteReq = function(d) {
         return api('jg_vote', d);
       };
@@ -6244,6 +6250,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         return html;
       }
 
+      // ===== SECTION: USER MODALS & LIGHTBOX =====
       function openLightbox(src) {
         // The close button and backdrop are handled via event delegation bound on the
         // lightbox element itself (see setup above) — no per-open binding needed.
@@ -7463,6 +7470,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       // Menu section (modal preview)
       // -----------------------------------------------------------------------
 
+      // ===== SECTION: PLACE DETAIL EDITORS =====
       function loadMenuSection(p, menuSection) {
         if (!menuSection) return;
         var menuContent = menuSection.querySelector('#jg-menu-content') || menuSection;
@@ -8370,6 +8378,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       /**
        * Open stats modal with real-time updates
        */
+      // ===== SECTION: POINT MANAGEMENT MODALS =====
       function openStatsModal(p) {
         var modalHtml = renderStatsContent(p);
         open(modalReport, modalHtml);
@@ -10365,6 +10374,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         };
       }
 
+      // ===== SECTION: DETAILS MODAL =====
       function openDetails(p) {
         // CRITICAL: Validate point exists before opening modal
         // Prevents showing deleted points when user hasn't refreshed yet
@@ -12615,6 +12625,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       /**
        * Open a full history modal for a point with revert functionality.
        */
+      // ===== SECTION: POINT HISTORY MODAL =====
       function openPointHistoryModal(pointId, currentPoint) {
         // Create overlay
         var overlay = document.createElement('div');
@@ -13319,6 +13330,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
       }, 500);
 
       // Initialize category filters for the main map
+      // ===== SECTION: CATEGORY FILTERS =====
       function initMapCategoryFilters() {
         var placeCategories = (window.JG_MAP_CFG && JG_MAP_CFG.placeCategories) || {};
         var curiosityCategories = (window.JG_MAP_CFG && JG_MAP_CFG.curiosityCategories) || {};
