@@ -1356,17 +1356,21 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
         var parsed = parseOpeningHours(currentValue);
         var rows = OH_DAYS.map(function(d) {
           var active = !!parsed[d.key];
-          var openT  = (parsed[d.key] && parsed[d.key].open)  || '09:00';
-          var closeT = (parsed[d.key] && parsed[d.key].close) || '17:00';
+          var is24h  = active && parsed[d.key].open === '00:00' && parsed[d.key].close === '24:00';
+          var openT  = (parsed[d.key] && parsed[d.key].open  && !is24h) ? parsed[d.key].open  : '09:00';
+          var closeT = (parsed[d.key] && parsed[d.key].close && !is24h) ? parsed[d.key].close : '17:00';
           return '<div class="jg-oh-row" style="display:flex;align-items:center;gap:6px;padding:3px 0">' +
             '<label style="display:flex;align-items:center;gap:5px;min-width:70px;cursor:pointer;font-weight:' + (active ? '600' : '400') + ';color:' + (active ? '#111' : '#9ca3af') + '">' +
             '<input type="checkbox" class="jg-oh-check" data-day="' + d.key + '" data-prefix="' + prefix + '"' + (active ? ' checked' : '') + ' style="cursor:pointer">' +
             '<span>' + d.label + '</span></label>' +
-            '<div class="jg-oh-times-' + d.key + '" style="display:flex;align-items:center;gap:4px;' + (active ? '' : 'opacity:0.3;pointer-events:none') + '">' +
+            '<div class="jg-oh-times-' + d.key + '" style="display:flex;align-items:center;gap:4px;' + (!active || is24h ? 'opacity:0.3;pointer-events:none' : '') + '">' +
             '<select class="jg-oh-open" data-day="' + d.key + '" data-prefix="' + prefix + '" style="padding:3px 4px;border:1px solid #ddd;border-radius:5px;font-size:13px">' + buildTimeOptions(openT) + '</select>' +
             '<span style="color:#6b7280;font-size:13px">–</span>' +
             '<select class="jg-oh-close" data-day="' + d.key + '" data-prefix="' + prefix + '" style="padding:3px 4px;border:1px solid #ddd;border-radius:5px;font-size:13px">' + buildTimeOptions(closeT) + '</select>' +
             '</div>' +
+            '<label class="jg-oh-allday" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#6b7280;white-space:nowrap;' + (!active ? 'opacity:0.3;pointer-events:none' : '') + '">' +
+            '<input type="checkbox" class="jg-oh-allday-check" data-day="' + d.key + '"' + (is24h ? ' checked' : '') + ' style="cursor:pointer">' +
+            '<span>Cała doba</span></label>' +
             '<span class="jg-oh-closed-label" style="font-size:12px;color:#9ca3af;' + (active ? 'display:none' : '') + '">nieczynne</span>' +
             '</div>';
         }).join('');
@@ -1387,11 +1391,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
           OH_DAYS.forEach(function(d) {
             var check = picker.querySelector('.jg-oh-check[data-day="' + d.key + '"]');
             if (check && check.checked) {
-              var openSel  = picker.querySelector('.jg-oh-open[data-day="' + d.key + '"]');
-              var closeSel = picker.querySelector('.jg-oh-close[data-day="' + d.key + '"]');
-              var openVal  = openSel  ? openSel.value  : '09:00';
-              var closeVal = closeSel ? closeSel.value : '17:00';
-              lines.push(d.key + ' ' + openVal + '-' + closeVal);
+              var alldayChk = picker.querySelector('.jg-oh-allday-check[data-day="' + d.key + '"]');
+              if (alldayChk && alldayChk.checked) {
+                lines.push(d.key + ' 00:00-24:00');
+              } else {
+                var openSel  = picker.querySelector('.jg-oh-open[data-day="' + d.key + '"]');
+                var closeSel = picker.querySelector('.jg-oh-close[data-day="' + d.key + '"]');
+                var openVal  = openSel  ? openSel.value  : '09:00';
+                var closeVal = closeSel ? closeSel.value : '17:00';
+                lines.push(d.key + ' ' + openVal + '-' + closeVal);
+              }
             }
           });
           var hidden = picker.querySelector('#' + prefix + '-oh-hidden');
@@ -1405,14 +1414,33 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var timesDiv = picker.querySelector('.jg-oh-times-' + day);
             var closedLabel = this.closest('.jg-oh-row').querySelector('.jg-oh-closed-label');
             var label = this.closest('label');
+            var alldayLabel = this.closest('.jg-oh-row').querySelector('.jg-oh-allday');
+            var alldayChk = this.closest('.jg-oh-row').querySelector('.jg-oh-allday-check');
             if (this.checked) {
-              if (timesDiv) { timesDiv.style.opacity = '1'; timesDiv.style.pointerEvents = ''; }
+              var alldayOn = alldayChk && alldayChk.checked;
+              if (timesDiv) { timesDiv.style.opacity = alldayOn ? '0.3' : '1'; timesDiv.style.pointerEvents = alldayOn ? 'none' : ''; }
               if (closedLabel) closedLabel.style.display = 'none';
               if (label) { label.style.fontWeight = '600'; label.style.color = '#111'; }
+              if (alldayLabel) { alldayLabel.style.opacity = ''; alldayLabel.style.pointerEvents = ''; }
             } else {
               if (timesDiv) { timesDiv.style.opacity = '0.3'; timesDiv.style.pointerEvents = 'none'; }
               if (closedLabel) closedLabel.style.display = '';
               if (label) { label.style.fontWeight = '400'; label.style.color = '#9ca3af'; }
+              if (alldayLabel) { alldayLabel.style.opacity = '0.3'; alldayLabel.style.pointerEvents = 'none'; }
+            }
+            syncHidden();
+          });
+        });
+
+        // Cała doba toggle: hide/show time selects
+        picker.querySelectorAll('.jg-oh-allday-check').forEach(function(alldayChk) {
+          alldayChk.addEventListener('change', function() {
+            var day = this.getAttribute('data-day');
+            var timesDiv = picker.querySelector('.jg-oh-times-' + day);
+            if (this.checked) {
+              if (timesDiv) { timesDiv.style.opacity = '0.3'; timesDiv.style.pointerEvents = 'none'; }
+            } else {
+              if (timesDiv) { timesDiv.style.opacity = '1'; timesDiv.style.pointerEvents = ''; }
             }
             syncHidden();
           });
@@ -11505,7 +11533,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               var ohCloseMins = parseInt(todayData.close.split(':')[0]) * 60 + parseInt(todayData.close.split(':')[1]);
               ohIsOpen = nowMins >= ohOpenMins && nowMins < ohCloseMins;
             }
-            var minsToClose = (todayData && ohIsOpen) ? (parseInt(todayData.close.split(':')[0]) * 60 + parseInt(todayData.close.split(':')[1])) - nowMins : -1;
+            var todayIs24h = todayData && todayData.open === '00:00' && todayData.close === '24:00';
+            var minsToClose = (todayData && ohIsOpen && !todayIs24h) ? (parseInt(todayData.close.split(':')[0]) * 60 + parseInt(todayData.close.split(':')[1])) - nowMins : -1;
             var closingWarning = (ohIsOpen && minsToClose > 0 && minsToClose < 60) ? 'Uwaga, zamknięcie za ' + minsToClose + ' min' : '';
 
             // Today row
@@ -11532,10 +11561,14 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 '<span style="color:#dc2626;font-weight:600">Zamknięte</span>' +
                 (ohNextOpen ? '<span style="font-size:0.8rem;opacity:0.75">· ' + esc(ohNextOpen) + '</span>' : '') +
                 '</div>';
+            } else if (todayIs24h) {
+              todayRowHtml = '<div style="display:flex;align-items:center;gap:8px">' +
+                '<span style="font-weight:600">Otwarte całą dobę</span>' +
+                '</div>';
             } else {
               todayRowHtml = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
                   '<span style="font-weight:600">' + esc(ohDayLabels[todayKey] || todayKey) + '</span>' +
-                  '<span>' + esc(todayData.open) + ' – ' + esc(todayData.close === '24:00' ? '00:00' : todayData.close) + '</span>' +
+                  '<span>' + esc(todayData.open) + ' – ' + esc(todayData.close) + '</span>' +
                   (closingWarning ? '<span id="jg-oh-warning" style="color:#d97706;font-size:0.8rem;font-weight:700">' + esc(closingWarning) + '</span>' : '') +
                 '</div>';
             }
@@ -11546,7 +11579,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               var isToday = dk === todayKey;
               return '<div style="display:flex;justify-content:space-between;gap:16px' + (isToday ? ';font-weight:700' : '') + '">' +
                 '<span style="min-width:36px">' + esc(ohDayLabels[dk] || dk) + '</span>' +
-                (dd ? '<span>' + esc(dd.open) + ' – ' + esc(dd.close === '24:00' ? '00:00' : dd.close) + '</span>' : '<span style="color:#dc2626">Nieczynne</span>') +
+                (dd ? '<span>' + (dd.open === '00:00' && dd.close === '24:00' ? 'Całą dobę' : esc(dd.open) + ' – ' + esc(dd.close)) + '</span>' : '<span style="color:#dc2626">Nieczynne</span>') +
                 '</div>';
             }).join('');
 

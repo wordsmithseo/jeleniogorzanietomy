@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.41.11
+ * Version: 3.43.0
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.41.11');
+define('JG_MAP_VERSION', '3.43.0');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -2107,7 +2107,14 @@ class JG_Interactive_Map {
                             <td class="jg-sp-oh-day"><?php echo esc_html($sp_oh_labels[$sp_oh_key]); ?></td>
                             <td class="jg-sp-oh-time">
                                 <?php if (isset($sp_oh_parsed[$sp_oh_key])): ?>
-                                    <?php echo esc_html($sp_oh_parsed[$sp_oh_key]['open'] . ' – ' . ($sp_oh_parsed[$sp_oh_key]['close'] === '24:00' ? '00:00' : $sp_oh_parsed[$sp_oh_key]['close'])); ?>
+                                    <?php
+                                    $sp_oh_entry = $sp_oh_parsed[$sp_oh_key];
+                                    if ($sp_oh_entry['open'] === '00:00' && $sp_oh_entry['close'] === '24:00') {
+                                        echo 'Całą dobę';
+                                    } else {
+                                        echo esc_html($sp_oh_entry['open'] . ' – ' . $sp_oh_entry['close']);
+                                    }
+                                    ?>
                                 <?php else: ?>
                                     <span class="jg-sp-oh-closed">Nieczynne</span>
                                 <?php endif; ?>

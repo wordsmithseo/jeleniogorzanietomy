@@ -132,31 +132,31 @@ All prefixed `wp_jg_map_*`. Use `JG_Map_Database::get_points_table()` etc. — n
 | 599 | CONFETTI UTILITIES | `_prestigeConfettiColors`, `shootMapMarkerConfetti` (689) |
 | 822 | SECTION: MAP INIT | `function init()` — inicjalizacja Leaflet, ładowanie danych, guest engagement |
 | 882 | Custom Top Bar | przyciski profilu, `openLoginModal` (1083), ranking modal |
-| 1296 | OPENING HOURS PICKER | `initOpeningHoursPicker` (1381) |
-| 1432 | RICH TEXT EDITOR | `initRichEditor` (1719) |
-| 1486 | TAG INPUT | `initTagInput` (1527) |
-| 2080 | SECTION: MODAL HELPERS | `open()`, `close()`, `jgFitModal`, `saveEditModalState`, `setMapCookie`/`getMapCookie` |
-| 3329 | SECTION: MAP SIDEBAR & NAVIGATION | `syncNotifications`, lista sidebar, custom nav, filtry UI |
-| 3640 | SECTION: PIN RENDERING & CLUSTERING | `setupFsPromo`, `showMap` (4177), klastry Leaflet (~4216 / ~4322), promo marker GP (4511) |
-| 5534 | SECTION: VOTING & RATING | `voteReq` (5534), `addPulsingMarker` (5763), `loadFromCache` (5811), `removeMarkersById` (5901) |
-| 6253 | SECTION: USER MODALS & LIGHTBOX | `openLightbox`, `openAuthorModal` (6260), `openUserModal` (6916), `openAllAchievementsModal` (7285), `openVisitorsModal` (7395) |
-| 7473 | SECTION: PLACE DETAIL EDITORS | `loadMenuSection` (7474), `openOfferingsEditor` (7681), `openMenuEditor` (7821) |
-| 8381 | SECTION: POINT MANAGEMENT MODALS | `openStatsModal` (8382), `openReportModal` (8516), `openEditModal` (8954), `openDeletionRequestModal` (9747), `openPromoModal` (9793) |
-| 9427 | `searchEditAddressSuggestions()` | Autouzupełnianie adresu w formularzu edycji |
-| 10049 | `loadUsers()` | Ładuje listę użytkowników do formularza |
-| 10377 | SECTION: DETAILS MODAL | `openDetails` (10378), `openDetailsModalContent` (10416), `doVote` (11985) |
-| 12628 | SECTION: POINT HISTORY MODAL | `openPointHistoryModal` (12629) — historia edycji z workflow zatwierdzania |
-| 12928 | NEW SEARCH FUNCTIONALITY | `performSearch` (13109), `searchAddressSuggestions` (14168), `closeSearchPanel` |
-| 13334 | SECTION: CATEGORY FILTERS | `initMapCategoryFilters` (13334) |
-| 13513 | REAL-TIME SYNCHRONIZATION | `createSyncStatusIndicator` (13523), `updateSyncStatus` (13534) — Heartbeat API |
-| 13813 | FLOATING ACTION BUTTON (FAB) | `openAddPlaceModal` (14494), `searchAddressSuggestions` (14168) |
-| 15007 | ADMIN/MOD USER COUNT INDICATOR | `updateUserCountIndicator` — złoty krąg z liczbą użytkowników |
-| 15160 | CHALLENGE WIDGETS | `showChallengeCompleteModal` (15418) — do 4 wyzwań jednocześnie |
-| 15570 | REAL-TIME LEVEL / XP BAR UPDATE | `updateLevelDisplay` (15582) — pasek XP bez przeładowania |
-| 15638 | `window.jgUpdateLevelDisplay` | Publiczne API — aktualizacja poziomu i paska XP |
-| 15640 | LEVEL-UP & ACHIEVEMENT NOTIFICATION SYSTEM | `showLevelUpModal` (15691), `showAchievementModal` (15726) |
-| 15793 | `window.jgOpenPointById()` | Publiczne API — otwiera punkt po ID (szuka w tablicy ALL) |
-| 15804 | `window.jgZoomToPoint()` | Publiczne API — zoom do współrzędnych punktu |
+| 1296 | OPENING HOURS PICKER | `initOpeningHoursPicker` (1385) |
+| 1460 | RICH TEXT EDITOR | `initRichEditor` (1747) |
+| 1514 | TAG INPUT | `initTagInput` (1555) |
+| 2108 | SECTION: MODAL HELPERS | `open()`, `close()`, `jgFitModal`, `saveEditModalState`, `setMapCookie`/`getMapCookie` |
+| 3357 | SECTION: MAP SIDEBAR & NAVIGATION | `syncNotifications`, lista sidebar, custom nav, filtry UI |
+| 3668 | SECTION: PIN RENDERING & CLUSTERING | `setupFsPromo`, `showMap` (~4205), klastry Leaflet (~4244 / ~4350), promo marker GP (~4539) |
+| 5561 | SECTION: VOTING & RATING | `voteReq` (5562), `addPulsingMarker` (5791), `loadFromCache` (5839), `removeMarkersById` (5929) |
+| 6281 | SECTION: USER MODALS & LIGHTBOX | `openLightbox`, `openAuthorModal` (6288), `openUserModal` (6944), `openAllAchievementsModal` (7313), `openVisitorsModal` (7423) |
+| 7501 | SECTION: PLACE DETAIL EDITORS | `loadMenuSection` (7502), `openOfferingsEditor` (7709), `openMenuEditor` (7849) |
+| 8409 | SECTION: POINT MANAGEMENT MODALS | `openStatsModal` (8410), `openReportModal` (8544), `openEditModal` (8982), `openDeletionRequestModal` (9775), `openPromoModal` (9821) |
+| 9455 | `searchEditAddressSuggestions()` | Autouzupełnianie adresu w formularzu edycji |
+| 10077 | `loadUsers()` | Ładuje listę użytkowników do formularza |
+| 10405 | SECTION: DETAILS MODAL | `openDetails` (10406), `openDetailsModalContent` (10444), `doVote` (12018) |
+| 12661 | SECTION: POINT HISTORY MODAL | `openPointHistoryModal` (12662) — historia edycji z workflow zatwierdzania |
+| 12962 | NEW SEARCH FUNCTIONALITY | `performSearch` (13142), `searchAddressSuggestions` (14201), `closeSearchPanel` |
+| 13367 | SECTION: CATEGORY FILTERS | `initMapCategoryFilters` (13367) |
+| 13547 | REAL-TIME SYNCHRONIZATION | `createSyncStatusIndicator` (13556), `updateSyncStatus` (13567) — Heartbeat API |
+| 13847 | FLOATING ACTION BUTTON (FAB) | `openAddPlaceModal` (14527), `searchAddressSuggestions` (14201) |
+| 15041 | ADMIN/MOD USER COUNT INDICATOR | `updateUserCountIndicator` — złoty krąg z liczbą użytkowników |
+| 15194 | CHALLENGE WIDGETS | `showChallengeCompleteModal` (15451) — do 4 wyzwań jednocześnie |
+| 15604 | REAL-TIME LEVEL / XP BAR UPDATE | `updateLevelDisplay` (15615) — pasek XP bez przeładowania |
+| 15671 | `window.jgUpdateLevelDisplay` | Publiczne API — aktualizacja poziomu i paska XP |
+| 15674 | LEVEL-UP & ACHIEVEMENT NOTIFICATION SYSTEM | `showLevelUpModal` (15724), `showAchievementModal` (15759) |
+| 15826 | `window.jgOpenPointById()` | Publiczne API — otwiera punkt po ID (szuka w tablicy ALL) |
+| 15837 | `window.jgZoomToPoint()` | Publiczne API — zoom do współrzędnych punktu |
 
 ### PHP → JS config bridge
 

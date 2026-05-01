@@ -504,7 +504,7 @@ class JG_Map_Shortcode {
         $query_args = array_merge($where_args, array($per_page, $offset));
         $points = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT title, slug, type, address, tags
+                "SELECT title, slug, type, address, tags, images, featured_image_index
                  FROM $table
                  WHERE $where
                  ORDER BY type ASC, title ASC
@@ -541,6 +541,8 @@ class JG_Map_Shortcode {
         }
         // Base URL without tag/category (for cloud links and "remove filter")
         $base_url_no_tag = home_url('/katalog/');
+
+        $is_filtered = ($active_category !== '' || $active_tag !== '');
 
         ob_start();
         ?>
@@ -597,72 +599,176 @@ class JG_Map_Shortcode {
                 .jg-dir-pagination .current { color: #fff; background: #2563eb; font-weight: 700; }
                 .jg-dir-pagination .dots { color: #9ca3af; background: none; }
                 .jg-dir-info { font-size: calc(13 * var(--jg)); color: #9ca3af; margin-top: 8px; }
+                .jg-dir-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 24px; }
+                .jg-dir-card { display: flex; flex-direction: column; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; text-decoration: none; overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s; }
+                .jg-dir-card:hover { border-color: #2563eb; box-shadow: 0 2px 8px rgba(37,99,235,0.12); }
+                .jg-dir-card-thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #f3f4f6; }
+                .jg-dir-card-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; }
+                .jg-dir-card-title { font-size: calc(15.5 * var(--jg)); font-weight: 600; color: #111827; margin: 0 0 5px; line-height: 1.35; }
+                .jg-dir-card-addr { font-size: calc(12.5 * var(--jg)); color: #6b7280; margin: 0 0 6px; }
+                .jg-dir-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; padding-top: 8px; }
+                .jg-dir-card-tag { font-size: calc(11.5 * var(--jg)); color: #6b7280; background: #f3f4f6; border-radius: 10px; padding: 2px 8px; }
+                .jg-dir-card-type { display: inline-block; font-size: calc(11 * var(--jg)); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; padding: 2px 7px; border-radius: 6px; margin-bottom: 7px; }
+                .jg-dir-card-type-miejsce { background: #dcfce7; color: #166534; }
+                .jg-dir-card-type-ciekawostka { background: #dbeafe; color: #1e40af; }
+                .jg-dir-card-type-zgloszenie { background: #fee2e2; color: #991b1b; }
+                .jg-dir-clouds-divider { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0 24px; }
             </style>
 
-            <?php $this->render_category_cloud($table, $base_url_no_tag, $active_category); ?>
-            <?php $this->render_tag_cloud($table, $base_url_no_tag, $active_tag); ?>
-
-            <?php if ($active_category !== ''): ?>
-                <div class="jg-dir-active-filter">
-                    Kategoria: <strong><?php echo esc_html($active_category); ?></strong>
-                    <a href="<?php echo esc_url($base_url_no_tag); ?>">Usuń filtr &times;</a>
-                    <span style="color:#9ca3af;margin-left:auto;font-size:calc(12 * var(--jg))"><?php echo $total; ?> <?php echo $total === 1 ? 'wynik' : ($total < 5 ? 'wyniki' : 'wyników'); ?></span>
-                </div>
-            <?php elseif ($active_tag !== ''): ?>
-                <div class="jg-dir-active-filter">
-                    Filtrowanie po tagu: <strong>#<?php echo esc_html($active_tag); ?></strong>
-                    <a href="<?php echo esc_url($base_url_no_tag); ?>">Usuń filtr &times;</a>
-                    <span style="color:#9ca3af;margin-left:auto;font-size:calc(12 * var(--jg))"><?php echo $total; ?> <?php echo $total === 1 ? 'wynik' : ($total < 5 ? 'wyniki' : 'wyników'); ?></span>
-                </div>
-            <?php endif; ?>
-
-            <?php foreach ($type_labels as $type => $label): ?>
-                <?php if (!empty($grouped[$type])): ?>
-                    <div class="jg-dir-section">
-                        <h3><?php echo esc_html($label); ?></h3>
-                        <ul class="jg-dir-list">
-                            <?php foreach ($grouped[$type] as $p):
-                                $path = isset($type_paths[$p['type']]) ? $type_paths[$p['type']] : 'miejsce';
-                                $url = home_url('/' . $path . '/' . $p['slug'] . '/');
-                            ?>
-                                <li class="jg-dir-item">
-                                    <a href="<?php echo esc_url($url); ?>"><?php echo esc_html($p['title']); ?></a><?php
-                                    if (!empty($p['address'])): ?> <span class="jg-dir-addr"><?php echo esc_html($p['address']); ?></span><?php endif;
-                                    $p_tags = !empty($p['tags']) ? json_decode($p['tags'], true) : array();
-                                    if (!empty($p_tags)): ?> <span class="jg-dir-tags"><?php foreach ($p_tags as $pt): ?><a href="<?php echo esc_url(JG_Interactive_Map::get_tag_url($pt)); ?>" class="jg-dir-tag-inline" rel="tag">#<?php echo esc_html($pt); ?></a> <?php endforeach; ?></span><?php endif; ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
+            <?php if ($is_filtered): ?>
+                <?php if ($active_category !== ''): ?>
+                    <div class="jg-dir-active-filter">
+                        Kategoria: <strong><?php echo esc_html($active_category); ?></strong>
+                        <a href="<?php echo esc_url($base_url_no_tag); ?>">Usuń filtr &times;</a>
+                        <span style="color:#9ca3af;margin-left:auto;font-size:calc(12 * var(--jg))"><?php echo $total; ?> <?php echo $total === 1 ? 'wynik' : ($total < 5 ? 'wyniki' : 'wyników'); ?></span>
+                    </div>
+                <?php else: ?>
+                    <div class="jg-dir-active-filter">
+                        Filtrowanie po tagu: <strong>#<?php echo esc_html($active_tag); ?></strong>
+                        <a href="<?php echo esc_url($base_url_no_tag); ?>">Usuń filtr &times;</a>
+                        <span style="color:#9ca3af;margin-left:auto;font-size:calc(12 * var(--jg))"><?php echo $total; ?> <?php echo $total === 1 ? 'wynik' : ($total < 5 ? 'wyniki' : 'wyników'); ?></span>
                     </div>
                 <?php endif; ?>
-            <?php endforeach; ?>
 
-            <?php if ($total_pages > 1): ?>
-                <nav class="jg-dir-pagination" aria-label="Paginacja katalogu">
-                    <?php if ($current_page > 1): ?>
-                        <a href="<?php echo esc_url(add_query_arg('katalog-strona', $current_page - 1, $base_url)); ?>">&larr;</a>
-                    <?php endif; ?>
+                <?php
+                $type_labels_filtered = array('miejsce' => 'Miejsce', 'ciekawostka' => 'Ciekawostka', 'zgloszenie' => 'Zgłoszenie');
+                $all_filtered = array();
+                foreach ($type_labels as $type => $label) {
+                    if (!empty($grouped[$type])) {
+                        foreach ($grouped[$type] as $p) {
+                            $all_filtered[] = $p;
+                        }
+                    }
+                }
+                ?>
+                <ul class="jg-dir-card-grid" style="list-style:none;margin:0;padding:0;">
+                    <?php foreach ($all_filtered as $p):
+                        $path = isset($type_paths[$p['type']]) ? $type_paths[$p['type']] : 'miejsce';
+                        $url  = home_url('/' . $path . '/' . $p['slug'] . '/');
+                        $type_label = isset($type_labels_filtered[$p['type']]) ? $type_labels_filtered[$p['type']] : $p['type'];
+                        $p_tags = !empty($p['tags']) ? json_decode($p['tags'], true) : array();
 
-                    <?php
-                    // Show pagination with ellipsis for large page counts
-                    $range = 2; // pages around current
-                    for ($i = 1; $i <= $total_pages; $i++):
-                        if ($i === 1 || $i === $total_pages || abs($i - $current_page) <= $range):
-                            if ($i === $current_page): ?>
-                                <span class="current"><?php echo $i; ?></span>
-                            <?php else: ?>
-                                <a href="<?php echo esc_url(add_query_arg('katalog-strona', $i, $base_url)); ?>"><?php echo $i; ?></a>
+                        // Extract featured thumbnail
+                        $thumb_url = '';
+                        if (!empty($p['images'])) {
+                            $imgs = json_decode($p['images'], true);
+                            if (is_array($imgs) && !empty($imgs)) {
+                                $fi = isset($p['featured_image_index'], $imgs[(int)$p['featured_image_index']]) ? (int)$p['featured_image_index'] : 0;
+                                $img = $imgs[$fi];
+                                $thumb_url = is_array($img) ? ($img['thumb'] ?? $img['full'] ?? '') : (string)$img;
+                                if ($thumb_url && strpos($thumb_url, 'http') !== 0) {
+                                    $thumb_url = home_url($thumb_url);
+                                }
+                            }
+                        }
+                    ?>
+                        <li>
+                            <a href="<?php echo esc_url($url); ?>" class="jg-dir-card">
+                                <?php if ($thumb_url): ?>
+                                    <img src="<?php echo esc_url($thumb_url); ?>" alt="<?php echo esc_attr($p['title']); ?>" class="jg-dir-card-thumb" loading="lazy" width="400" height="225">
+                                <?php endif; ?>
+                                <div class="jg-dir-card-body">
+                                    <span class="jg-dir-card-type jg-dir-card-type-<?php echo esc_attr($p['type']); ?>"><?php echo esc_html($type_label); ?></span>
+                                    <div class="jg-dir-card-title"><?php echo esc_html($p['title']); ?></div>
+                                    <?php if (!empty($p['address'])): ?>
+                                        <div class="jg-dir-card-addr"><?php echo esc_html($p['address']); ?></div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($p_tags)): ?>
+                                        <div class="jg-dir-card-tags">
+                                            <?php foreach ($p_tags as $pt): ?>
+                                                <span class="jg-dir-card-tag">#<?php echo esc_html($pt); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+
+                <?php if ($total_pages > 1): ?>
+                    <nav class="jg-dir-pagination" aria-label="Paginacja katalogu">
+                        <?php if ($current_page > 1): ?>
+                            <a href="<?php echo esc_url(add_query_arg('katalog-strona', $current_page - 1, $base_url)); ?>">&larr;</a>
+                        <?php endif; ?>
+                        <?php
+                        $range = 2;
+                        for ($i = 1; $i <= $total_pages; $i++):
+                            if ($i === 1 || $i === $total_pages || abs($i - $current_page) <= $range):
+                                if ($i === $current_page): ?>
+                                    <span class="current"><?php echo $i; ?></span>
+                                <?php else: ?>
+                                    <a href="<?php echo esc_url(add_query_arg('katalog-strona', $i, $base_url)); ?>"><?php echo $i; ?></a>
+                                <?php endif;
+                            elseif ($i === 2 || $i === $total_pages - 1): ?>
+                                <span class="dots">&hellip;</span>
                             <?php endif;
-                        elseif ($i === 2 || $i === $total_pages - 1): ?>
-                            <span class="dots">&hellip;</span>
-                        <?php endif;
-                    endfor; ?>
+                        endfor; ?>
+                        <?php if ($current_page < $total_pages): ?>
+                            <a href="<?php echo esc_url(add_query_arg('katalog-strona', $current_page + 1, $base_url)); ?>">&rarr;</a>
+                        <?php endif; ?>
+                    </nav>
+                    <div class="jg-dir-info">Strona <?php echo $current_page; ?> z <?php echo $total_pages; ?> &middot; <?php echo $total; ?> miejsc</div>
+                <?php endif; ?>
 
-                    <?php if ($current_page < $total_pages): ?>
-                        <a href="<?php echo esc_url(add_query_arg('katalog-strona', $current_page + 1, $base_url)); ?>">&rarr;</a>
+                <hr class="jg-dir-clouds-divider">
+                <?php $this->render_category_cloud($table, $base_url_no_tag, $active_category); ?>
+                <?php $this->render_tag_cloud($table, $base_url_no_tag, $active_tag); ?>
+
+            <?php else: ?>
+
+                <?php $this->render_category_cloud($table, $base_url_no_tag, $active_category); ?>
+                <?php $this->render_tag_cloud($table, $base_url_no_tag, $active_tag); ?>
+
+                <?php foreach ($type_labels as $type => $label): ?>
+                    <?php if (!empty($grouped[$type])): ?>
+                        <div class="jg-dir-section">
+                            <h3><?php echo esc_html($label); ?></h3>
+                            <ul class="jg-dir-list">
+                                <?php foreach ($grouped[$type] as $p):
+                                    $path = isset($type_paths[$p['type']]) ? $type_paths[$p['type']] : 'miejsce';
+                                    $url = home_url('/' . $path . '/' . $p['slug'] . '/');
+                                ?>
+                                    <li class="jg-dir-item">
+                                        <a href="<?php echo esc_url($url); ?>"><?php echo esc_html($p['title']); ?></a><?php
+                                        if (!empty($p['address'])): ?> <span class="jg-dir-addr"><?php echo esc_html($p['address']); ?></span><?php endif;
+                                        $p_tags = !empty($p['tags']) ? json_decode($p['tags'], true) : array();
+                                        if (!empty($p_tags)): ?> <span class="jg-dir-tags"><?php foreach ($p_tags as $pt): ?><a href="<?php echo esc_url(JG_Interactive_Map::get_tag_url($pt)); ?>" class="jg-dir-tag-inline" rel="tag">#<?php echo esc_html($pt); ?></a> <?php endforeach; ?></span><?php endif; ?>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
                     <?php endif; ?>
-                </nav>
-                <div class="jg-dir-info">Strona <?php echo $current_page; ?> z <?php echo $total_pages; ?> &middot; <?php echo $total; ?> miejsc</div>
+                <?php endforeach; ?>
+
+                <?php if ($total_pages > 1): ?>
+                    <nav class="jg-dir-pagination" aria-label="Paginacja katalogu">
+                        <?php if ($current_page > 1): ?>
+                            <a href="<?php echo esc_url(add_query_arg('katalog-strona', $current_page - 1, $base_url)); ?>">&larr;</a>
+                        <?php endif; ?>
+
+                        <?php
+                        // Show pagination with ellipsis for large page counts
+                        $range = 2; // pages around current
+                        for ($i = 1; $i <= $total_pages; $i++):
+                            if ($i === 1 || $i === $total_pages || abs($i - $current_page) <= $range):
+                                if ($i === $current_page): ?>
+                                    <span class="current"><?php echo $i; ?></span>
+                                <?php else: ?>
+                                    <a href="<?php echo esc_url(add_query_arg('katalog-strona', $i, $base_url)); ?>"><?php echo $i; ?></a>
+                                <?php endif;
+                            elseif ($i === 2 || $i === $total_pages - 1): ?>
+                                <span class="dots">&hellip;</span>
+                            <?php endif;
+                        endfor; ?>
+
+                        <?php if ($current_page < $total_pages): ?>
+                            <a href="<?php echo esc_url(add_query_arg('katalog-strona', $current_page + 1, $base_url)); ?>">&rarr;</a>
+                        <?php endif; ?>
+                    </nav>
+                    <div class="jg-dir-info">Strona <?php echo $current_page; ?> z <?php echo $total_pages; ?> &middot; <?php echo $total; ?> miejsc</div>
+                <?php endif; ?>
+
             <?php endif; ?>
         </div>
         <?php
