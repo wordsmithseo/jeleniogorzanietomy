@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.43.1
+ * Version: 3.43.2
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.43.1');
+define('JG_MAP_VERSION', '3.43.2');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1199,6 +1199,21 @@ class JG_Interactive_Map {
     }
 
     /**
+     * Returns 'godziny otwarcia' when the point has any opening hours defined, '' otherwise.
+     */
+    private function get_opening_hours_title_part($opening_hours) {
+        if (empty($opening_hours)) {
+            return '';
+        }
+        foreach (explode("\n", trim($opening_hours)) as $line) {
+            if (preg_match('/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+\d{2}:\d{2}-\d{2}:\d{2}$/', trim($line))) {
+                return 'godziny otwarcia';
+            }
+        }
+        return '';
+    }
+
+    /**
      * Render single point page (standalone, no Elementor header/footer)
      */
     private function render_point_page($point, $request_id = 'unknown', $user_agent_short = '') {
@@ -1269,16 +1284,18 @@ class JG_Interactive_Map {
 
         // Page title – category-aware suffix for better search CTR
         $point_cat_key = $point['category'] ?? '';
+        $oh_title_part = $this->get_opening_hours_title_part($point['opening_hours'] ?? '');
+        $oh_suffix     = $oh_title_part ? ' | ' . $oh_title_part : '';
         if ($point['type'] === 'miejsce' && !empty($point_cat_key)) {
             $all_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
             if (isset($all_place_cats[$point_cat_key]['label'])) {
                 $cat_label_lower = mb_strtolower($all_place_cats[$point_cat_key]['label']);
-                $page_title = esc_html($point['title']) . ' – ' . $cat_label_lower . ' w Jeleniej Górze';
+                $page_title = esc_html($point['title']) . ' – ' . $cat_label_lower . ' w Jeleniej Górze' . $oh_suffix;
             } else {
-                $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze';
+                $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze' . $oh_suffix;
             }
         } else {
-            $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze';
+            $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze' . $oh_suffix;
         }
 
         // Site logo URL
@@ -2513,7 +2530,11 @@ class JG_Interactive_Map {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo esc_html($point['title']); ?> – Jelenia Góra | JeleniogorzaNieTomy</title>
+    <?php
+    $fb_oh_part = $this->get_opening_hours_title_part($point['opening_hours'] ?? '');
+    $fb_oh_suffix = $fb_oh_part ? ' | ' . $fb_oh_part : '';
+    ?>
+    <title><?php echo esc_html($point['title']); ?> – Jelenia Góra<?php echo esc_html($fb_oh_suffix); ?> | JeleniogorzaNieTomy</title>
     <meta name="description" content="<?php echo esc_attr($description); ?>">
     <meta name="robots" content="<?php echo esc_attr($robots_content); ?>">
     <link rel="canonical" href="<?php echo esc_url(!empty($point['seo_canonical']) ? $point['seo_canonical'] : $url); ?>">
@@ -2940,13 +2961,17 @@ class JG_Interactive_Map {
         );
         $type_label = isset($type_labels[$point['type']]) ? $type_labels[$point['type']] : 'Mapa';
 
+        $og_oh_part   = $this->get_opening_hours_title_part($point['opening_hours'] ?? '');
+        $og_oh_suffix = $og_oh_part ? ' | ' . $og_oh_part : '';
+        $og_title     = $point['title'] . ' – Jelenia Góra' . $og_oh_suffix;
+
         ?>
         <meta name="description" content="<?php echo esc_attr($description); ?>">
         <meta name="robots" content="<?php echo esc_attr($robots_content); ?>">
 
         <!-- Open Graph / Facebook -->
         <meta property="og:type" content="article">
-        <meta property="og:title" content="<?php echo esc_attr($point['title'] . ' – Jelenia Góra'); ?>">
+        <meta property="og:title" content="<?php echo esc_attr($og_title); ?>">
         <meta property="og:description" content="<?php echo esc_attr($description); ?>">
         <meta property="og:url" content="<?php echo esc_url($url); ?>">
         <meta property="og:site_name" content="<?php bloginfo('name'); ?>">
@@ -2981,7 +3006,7 @@ class JG_Interactive_Map {
 
         <!-- Twitter Card -->
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="<?php echo esc_attr($point['title'] . ' – Jelenia Góra'); ?>">
+        <meta name="twitter:title" content="<?php echo esc_attr($og_title); ?>">
         <meta name="twitter:description" content="<?php echo esc_attr($description); ?>">
         <meta name="twitter:image" content="<?php echo esc_url($first_image); ?>">
         <meta name="twitter:image:alt" content="<?php echo esc_attr($point['title']); ?>">

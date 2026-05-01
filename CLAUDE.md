@@ -178,14 +178,14 @@ All prefixed `wp_jg_map_*`. Use `JG_Map_Database::get_points_table()` etc. — n
 
 > Indeks nawigacyjny do chirurgicznej pracy `grep -n` + `sed -n`. Zamiast czytać plik w całości, używaj tych numerów linii jako punktów startu.
 
-### `jg-interactive-map.php` (4 473 linii)
+### `jg-interactive-map.php` (~4 510 linii)
 
 | Linia | Sekcja / Metoda | Co zawiera |
 |-------|----------------|------------|
 | 46 | SECTION: BOOTSTRAP & INIT HOOKS | `get_instance()`, `__construct()`, `load_dependencies()`, `init_hooks()` (85) |
 | 185 | SECTION: CORE SETUP | `init_components()`, `disable_wp_emoji()`, `add_security_headers()`, `add_rewrite_rules()`, `handle_tile_sw()`, `is_bot()` |
-| 534 | SECTION: POINT PAGE RENDERING | `handle_point_page()` (535), `render_menu_page()` (719), `render_offerings_page()` (1043), `render_point_page()` (1204), `render_related_points()` (2341), `render_fallback_page()` (2410) |
-| 2797 | SECTION: POINT SEO META | `add_theme_color_meta()`, `add_point_meta_tags()` (2802) — Open Graph, structured data, meta tagi punktu |
+| 534 | SECTION: POINT PAGE RENDERING | `handle_point_page()` (535), `render_menu_page()` (719), `render_offerings_page()` (1043), `get_opening_hours_title_part()` (1201), `render_point_page()` (1241), `render_related_points()` (~2380), `render_fallback_page()` (~2450) |
+| ~2840 | SECTION: POINT SEO META | `add_theme_color_meta()`, `add_point_meta_tags()` (~2845) — Open Graph, structured data, meta tagi punktu; OG/Twitter title zawiera godziny otwarcia |
 | 3205 | SECTION: SITEMAP | `handle_sitemap()` (3382), `generate_sitemap_xml_string()` (3449), `regenerate_sitemap_cache()` |
 | 3563 | SECTION: CATEGORY SEO | `add_category_page_meta_tags()` (3855), `get_category_seo_title()`, `get_category_intro()`, `get_og_image_for_points()` |
 | 3957 | SECTION: TAG & CATALOG SEO | `add_tag_page_meta_tags()` (4182), `resolve_catalog_category/tag()`, `redirect_legacy_tag_urls()`, `ping_indexnow_url()` (4423), `handle_indexnow_key_file()` (4443) |
