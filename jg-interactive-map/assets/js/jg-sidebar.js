@@ -688,26 +688,45 @@
             return '';
         }
         var sbDayKeys = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+        var sbDayLabels = { Mo: 'Pon', Tu: 'Wt', We: 'Śr', Th: 'Czw', Fr: 'Pt', Sa: 'Sob', Su: 'Niedz' };
         var sbTodayKey = sbDayKeys[(new Date().getDay() + 6) % 7];
+        var sbTodayIdx = sbDayKeys.indexOf(sbTodayKey);
         var sbParsed = {};
         point.opening_hours.trim().split('\n').forEach(function(line) {
             var m = line.trim().match(/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
             if (m) sbParsed[m[1]] = { open: m[2], close: m[3] };
         });
         if (Object.keys(sbParsed).length === 0) return '';
+
+        function is24h(d) { return d && d.open === '00:00' && d.close === '24:00'; }
+
         var sbToday = sbParsed[sbTodayKey] || null;
         if (!sbToday) {
+            for (var i = 1; i <= 7; i++) {
+                var nk = sbDayKeys[(sbTodayIdx + i) % 7];
+                if (sbParsed[nk] && is24h(sbParsed[nk])) {
+                    var nl = i === 1 ? 'Jutro' : (sbDayLabels[nk] || nk);
+                    return '<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Nieczynne · ' + escapeHtml(nl) + ' całą dobę</div>';
+                }
+            }
             return '<div class="jg-sidebar-item__hours jg-sidebar-item__hours--closed">🕐 Nieczynne</div>';
         }
+
+        if (is24h(sbToday)) {
+            var all24h = Object.keys(sbParsed).every(function(k) { return is24h(sbParsed[k]); });
+            if (all24h) {
+                return '<div class="jg-sidebar-item__hours">' + JG_SVG.clock + ' Otwarte 24/7</div>';
+            }
+            return '<div class="jg-sidebar-item__hours">' + JG_SVG.clock + ' Dziś otwarte całą dobę</div>';
+        }
+
         var sbNow = new Date();
         var sbNowMins = sbNow.getHours() * 60 + sbNow.getMinutes();
         var sbOpenMins = parseInt(sbToday.open.split(':')[0]) * 60 + parseInt(sbToday.open.split(':')[1]);
         var sbCloseMins = parseInt(sbToday.close.split(':')[0]) * 60 + parseInt(sbToday.close.split(':')[1]);
         var sbIsOpen = sbNowMins >= sbOpenMins && sbNowMins < sbCloseMins;
         if (!sbIsOpen) {
-            var sbDayLabels = { Mo: 'Pon', Tu: 'Wt', We: 'Śr', Th: 'Czw', Fr: 'Pt', Sa: 'Sob', Su: 'Niedz' };
             var sbNextOpen = '';
-            var sbTodayIdx = sbDayKeys.indexOf(sbTodayKey);
             if (sbNowMins < sbOpenMins) {
                 sbNextOpen = 'Otwiera o ' + sbToday.open;
             } else {
@@ -715,7 +734,9 @@
                     var sbNextKey = sbDayKeys[(sbTodayIdx + sbDi) % 7];
                     if (sbParsed[sbNextKey]) {
                         var sbNextLabel = sbDi === 1 ? 'Jutro' : (sbDayLabels[sbNextKey] || sbNextKey);
-                        sbNextOpen = sbNextLabel + ' o ' + sbParsed[sbNextKey].open;
+                        sbNextOpen = is24h(sbParsed[sbNextKey])
+                            ? sbNextLabel + ' całą dobę'
+                            : sbNextLabel + ' o ' + sbParsed[sbNextKey].open;
                         break;
                     }
                 }
