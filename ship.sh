@@ -82,6 +82,39 @@ read -rp "Zasoby wysłane na serwer. Sprawdź stronę w przeglądarce. Czy wszys
 
 # 5. Git workflow
 if [[ "$ANSWER" == "y" || "$ANSWER" == "Y" ]]; then
+    # 5.1. Aktualizacja CLAUDE.md jeśli zmiany architektoniczne
+    if [[ -n "$DIFF" || -n "$NEW_FILES" ]]; then
+      echo ""
+      echo "Sprawdzam czy CLAUDE.md wymaga aktualizacji..."
+      CLAUDE_MD_CONTENT=$(cat "$SCRIPT_DIR/CLAUDE.md")
+      PROMPT_CLAUDE_MD="Jesteś ekspertem od dokumentacji kodu WordPress. Przeanalizuj git diff i zaktualizuj CLAUDE.md.
+
+ZASADY:
+- Jeśli diff nie wprowadza zmian architektonicznych (nowe klasy PHP, traity, tabele DB, pliki JS, nowe shortcody, endpointy AJAX) — odpowiedz TYLKO słowem: BRAK_ZMIAN
+- Jeśli są zmiany — odpowiedz WYŁĄCZNIE pełną zaktualizowaną treścią CLAUDE.md (bez markdown fences, bez komentarzy)
+- Zachowaj istniejącą strukturę, styl i język dokumentu
+- Aktualizuj tylko tabele/sekcje których dotyczą zmiany (klasy, traity, tabele DB, pliki JS)
+- NIE zmieniaj sekcji 'Receptury zadań' — to szablony niezależne od kodu
+
+CLAUDE.md:
+$CLAUDE_MD_CONTENT
+
+DIFF:
+$DIFF
+
+NOWE PLIKI:
+$NEW_FILES"
+
+      UPDATED_CLAUDE=$(echo "$PROMPT_CLAUDE_MD" | claude -p 2>/dev/null || echo "BRAK_ZMIAN")
+
+      if [[ "$UPDATED_CLAUDE" != "BRAK_ZMIAN" && ${#UPDATED_CLAUDE} -gt 1000 ]]; then
+        echo "$UPDATED_CLAUDE" > "$SCRIPT_DIR/CLAUDE.md"
+        echo "CLAUDE.md zaktualizowany."
+      else
+        echo "CLAUDE.md bez zmian architektonicznych."
+      fi
+    fi
+
     cd "$SCRIPT_DIR"
     git add .
     git commit -m "$COMMIT_MSG"
