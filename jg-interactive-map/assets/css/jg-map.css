@@ -11019,6 +11019,95 @@ footer.site-footer .site-branding {
   border-radius: var(--jg-r-lg) var(--jg-r-lg) 0 0 !important;
 }
 
+/* ─── Mobile swipe-in sidebar drawer ──────────────────────────────────────── */
+
+/* Swipe handle: visible tab on right edge, only in fullscreen */
+.jg-sidebar-swipe-handle {
+  display: none;
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 56px;
+  background: var(--jg-color-primary);
+  border-radius: 8px 0 0 8px;
+  z-index: 1100;
+  pointer-events: auto;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: -2px 0 10px rgba(141, 35, 36, 0.35);
+}
+
+.jg-sidebar-swipe-handle::before {
+  content: '';
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-left: 2.5px solid rgba(255, 255, 255, 0.9);
+  border-bottom: 2.5px solid rgba(255, 255, 255, 0.9);
+  transform: rotate(45deg) translateX(2px);
+  margin-left: 6px;
+}
+
+@media (max-width: 768px) {
+  .jg-sidebar-swipe-handle {
+    display: flex;
+    animation: jg-swipe-handle-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+}
+
+@keyframes jg-swipe-handle-in {
+  from { transform: translateY(-50%) translateX(28px); opacity: 0; }
+  to   { transform: translateY(-50%) translateX(0);   opacity: 1; }
+}
+
+.jg-sidebar-swipe-handle.hidden {
+  display: none !important;
+}
+
+/* Backdrop behind the open drawer */
+.jg-sidebar-mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 100001;
+  touch-action: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.jg-sidebar-mobile-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Sidebar as a slide-in drawer on mobile */
+@media (max-width: 768px) {
+  #jg-map-sidebar.jg-sidebar-mobile-open {
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: auto !important;
+    width: min(85vw, 340px) !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    z-index: 100002 !important;
+    border-radius: 16px 0 0 16px !important;
+    box-shadow: -6px 0 32px rgba(0, 0, 0, 0.22) !important;
+    transform: translateX(0);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    background: #fff !important;
+  }
+}
+
 /* pill = pełne zaokrąglenie dla elementów pill-shaped */
 .jg-filter-label,
 .jg-sort-pill,

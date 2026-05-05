@@ -3737,6 +3737,23 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             isFullscreen = false;
             mapWrap.classList.remove('jg-fullscreen');
             document.body.classList.remove('jg-fullscreen-active');
+            // Clean up mobile sidebar drawer if it was open
+            var _mbb = document.querySelector('.jg-sidebar-mobile-backdrop');
+            var _swh = document.querySelector('.jg-sidebar-swipe-handle');
+            if (_mbb) { _mbb.classList.remove('active'); _mbb.style.opacity = ''; }
+            if (sidebar) {
+              sidebar.classList.remove('jg-sidebar-mobile-open');
+              sidebar.style.transform = ''; sidebar.style.transition = '';
+              if (sidebar._sbMobileOrigHeight !== undefined) {
+                sidebar.style.height = sidebar._sbMobileOrigHeight;
+                sidebar._sbMobileOrigHeight = undefined;
+              }
+            }
+            if (_swh) { _swh.classList.remove('hidden'); }
+            // If sidebar was moved to body by mobile drawer, schedule restore after fullscreen cleanup
+            if (sidebar && sidebar._sbMobileOrigParent) {
+              sidebar._sbPendingMobileRestore = true;
+            }
             if (sidebar) {
               sidebar.classList.remove('jg-sidebar-fullscreen-overlay');
               // Restore original inline height
@@ -3747,6 +3764,16 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 sidebarOriginalParent.insertBefore(sidebar, sidebarOriginalNext);
               } else {
                 sidebarOriginalParent.appendChild(sidebar);
+              }
+              // If mobile drawer previously moved sidebar to body, restore to original Elementor position
+              if (sidebar._sbPendingMobileRestore && sidebar._sbMobileOrigParent) {
+                var _mobP = sidebar._sbMobileOrigParent;
+                var _mobN = sidebar._sbMobileOrigNext;
+                sidebar._sbMobileOrigParent = null;
+                sidebar._sbMobileOrigNext = null;
+                sidebar._sbPendingMobileRestore = false;
+                if (_mobN && _mobN.parentNode === _mobP) { _mobP.insertBefore(sidebar, _mobN); }
+                else { _mobP.appendChild(sidebar); }
               }
             }
             // Move map/satellite toggle back to topright
@@ -4189,6 +4216,268 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               exitFullscreen();
             }
           });
+
+          // ── Mobile: swipe-to-open sidebar from right edge ──
+          if (isMobile) {
+            var swipeHandle = document.createElement('div');
+            swipeHandle.className = 'jg-sidebar-swipe-handle';
+            swipeHandle.setAttribute('aria-label', 'Otwórz listę');
+            swipeHandle.setAttribute('role', 'button');
+            swipeHandle.setAttribute('tabindex', '0');
+            document.body.appendChild(swipeHandle);
+
+            var mobileBackdrop = document.createElement('div');
+            mobileBackdrop.className = 'jg-sidebar-mobile-backdrop';
+            document.body.appendChild(mobileBackdrop);
+
+            var mobileSbOpen = false;
+            var swTouchId = null;
+            var swStartX = 0;
+            var swStartY = 0;
+            var swMode = ''; // 'open' | 'close'
+            var swSidebar = null;
+            var EDGE_ZONE = 22; // px from right viewport edge
+            var OPEN_THRESHOLD = 0.28;
+            var CLOSE_THRESHOLD = 0.25;
+
+            function openMobileSb() {
+              var sb = document.getElementById('jg-map-sidebar');
+              if (!sb) return;
+              // Move to body to escape stacking contexts or display:none parents
+              if (!sb._sbMobileOrigParent && sb.parentNode !== document.body) {
+                sb._sbMobileOrigParent = sb.parentNode;
+                sb._sbMobileOrigNext = sb.nextSibling;
+                document.body.appendChild(sb);
+              }
+              // Clear inline height so CSS height:100dvh can take effect
+              if (sb._sbMobileOrigHeight === undefined) {
+                sb._sbMobileOrigHeight = sb.style.height;
+                sb.style.height = '';
+              }
+              mobileSbOpen = true;
+              swipeHandle.classList.add('hidden');
+              mobileBackdrop.classList.add('active');
+              mobileBackdrop.style.opacity = '';
+              sb.classList.add('jg-sidebar-mobile-open');
+              sb.style.transition = '';
+              requestAnimationFrame(function() { sb.style.transform = ''; });
+            }
+
+            swipeHandle.addEventListener('click', function() { openMobileSb(); });
+
+            function closeMobileSb() {
+              var sb = document.getElementById('jg-map-sidebar');
+              if (!sb) return;
+              mobileSbOpen = false;
+              mobileBackdrop.classList.remove('active');
+              mobileBackdrop.style.opacity = '';
+              sb.style.transition = '';
+              requestAnimationFrame(function() {
+                sb.style.transform = 'translateX(100%)';
+                var done = false;
+                function onEnd() {
+                  if (done) return;
+                  done = true;
+                  sb.removeEventListener('transitionend', onEnd);
+                  sb.classList.remove('jg-sidebar-mobile-open');
+                  sb.style.transform = '';
+                  // Restore inline height
+                  if (sb._sbMobileOrigHeight !== undefined) {
+                    sb.style.height = sb._sbMobileOrigHeight;
+                    sb._sbMobileOrigHeight = undefined;
+                  }
+                  // Restore sidebar to original DOM position
+                  if (sb._sbMobileOrigParent) {
+                    var _p = sb._sbMobileOrigParent;
+                    var _n = sb._sbMobileOrigNext;
+                    sb._sbMobileOrigParent = null;
+                    sb._sbMobileOrigNext = null;
+                    if (_n && _n.parentNode === _p) { _p.insertBefore(sb, _n); }
+                    else { _p.appendChild(sb); }
+                  }
+                  swipeHandle.classList.remove('hidden');
+                }
+                sb.addEventListener('transitionend', onEnd);
+                setTimeout(onEnd, 350);
+              });
+            }
+
+            mobileBackdrop.addEventListener('touchstart', function(e) {
+              e.preventDefault();
+              closeMobileSb();
+            }, { passive: false });
+
+            mobileBackdrop.addEventListener('click', closeMobileSb);
+
+            elMap.addEventListener('touchstart', function(e) {
+              var touch = e.touches[0];
+
+              if (!mobileSbOpen) {
+                if (touch.clientX >= window.innerWidth - EDGE_ZONE) {
+                  swMode = 'open';
+                  swTouchId = touch.identifier;
+                  swStartX = touch.clientX;
+                  swStartY = touch.clientY;
+                  swSidebar = document.getElementById('jg-map-sidebar');
+                  if (swSidebar) {
+                    // Move to body to escape stacking contexts or display:none parents
+                    if (!swSidebar._sbMobileOrigParent && swSidebar.parentNode !== document.body) {
+                      swSidebar._sbMobileOrigParent = swSidebar.parentNode;
+                      swSidebar._sbMobileOrigNext = swSidebar.nextSibling;
+                      document.body.appendChild(swSidebar);
+                    }
+                    // Clear inline height so CSS height:100dvh can take effect
+                    if (swSidebar._sbMobileOrigHeight === undefined) {
+                      swSidebar._sbMobileOrigHeight = swSidebar.style.height;
+                      swSidebar.style.height = '';
+                    }
+                    swSidebar.classList.add('jg-sidebar-mobile-open');
+                    swSidebar.style.transition = 'none';
+                    swSidebar.style.transform = 'translateX(100%)';
+                    mobileBackdrop.classList.add('active');
+                    mobileBackdrop.style.opacity = '0';
+                  }
+                  e.preventDefault();
+                }
+              } else {
+                swSidebar = document.getElementById('jg-map-sidebar');
+                if (swSidebar) {
+                  var sbRect = swSidebar.getBoundingClientRect();
+                  if (touch.clientX >= sbRect.left) {
+                    swMode = 'close';
+                    swTouchId = touch.identifier;
+                    swStartX = touch.clientX;
+                    swStartY = touch.clientY;
+                  }
+                }
+              }
+            }, { passive: false });
+
+            elMap.addEventListener('touchmove', function(e) {
+              if (!swMode || !swSidebar) return;
+              var touch = null;
+              for (var i = 0; i < e.touches.length; i++) {
+                if (e.touches[i].identifier === swTouchId) { touch = e.touches[i]; break; }
+              }
+              if (!touch) return;
+              var dx = touch.clientX - swStartX;
+              var dy = touch.clientY - swStartY;
+              var sbW = swSidebar.offsetWidth || 300;
+
+              if (swMode === 'open') {
+                if (Math.abs(dy) > Math.abs(dx) + 8) {
+                  swSidebar.classList.remove('jg-sidebar-mobile-open');
+                  swSidebar.style.transform = '';
+                  swSidebar.style.transition = '';
+                  mobileBackdrop.classList.remove('active');
+                  mobileBackdrop.style.opacity = '';
+                  swMode = '';
+                  swSidebar = null;
+                  swTouchId = null;
+                  return;
+                }
+                var progress = Math.min(1, Math.max(0, -dx / sbW));
+                swSidebar.style.transform = 'translateX(' + ((1 - progress) * 100) + '%)';
+                mobileBackdrop.style.opacity = String(progress);
+                e.preventDefault();
+              } else if (swMode === 'close' && dx > 0) {
+                swSidebar.style.transform = 'translateX(' + dx + 'px)';
+                mobileBackdrop.style.opacity = String(1 - Math.min(1, dx / sbW));
+                e.preventDefault();
+              }
+            }, { passive: false });
+
+            elMap.addEventListener('touchend', function(e) {
+              if (!swMode || !swSidebar) return;
+              var touch = null;
+              for (var i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === swTouchId) { touch = e.changedTouches[i]; break; }
+              }
+              if (!touch) { swMode = ''; swSidebar = null; swTouchId = null; return; }
+              var dx = touch.clientX - swStartX;
+              var sbW = swSidebar.offsetWidth || 300;
+              var _sb = swSidebar;
+              var _mode = swMode;
+              swMode = ''; swSidebar = null; swTouchId = null;
+              _sb.style.transition = '';
+
+              if (_mode === 'open') {
+                if (-dx > sbW * OPEN_THRESHOLD) {
+                  openMobileSb();
+                } else {
+                  // Snap back closed
+                  requestAnimationFrame(function() {
+                    _sb.style.transform = 'translateX(100%)';
+                    var done = false;
+                    function onSnapEnd() {
+                      if (done) return; done = true;
+                      _sb.removeEventListener('transitionend', onSnapEnd);
+                      _sb.classList.remove('jg-sidebar-mobile-open');
+                      _sb.style.transform = '';
+                      // Restore inline height
+                      if (_sb._sbMobileOrigHeight !== undefined) {
+                        _sb.style.height = _sb._sbMobileOrigHeight;
+                        _sb._sbMobileOrigHeight = undefined;
+                      }
+                      // Restore sidebar to original DOM position
+                      if (_sb._sbMobileOrigParent) {
+                        var _p = _sb._sbMobileOrigParent;
+                        var _n = _sb._sbMobileOrigNext;
+                        _sb._sbMobileOrigParent = null;
+                        _sb._sbMobileOrigNext = null;
+                        if (_n && _n.parentNode === _p) { _p.insertBefore(_sb, _n); }
+                        else { _p.appendChild(_sb); }
+                      }
+                      mobileBackdrop.classList.remove('active');
+                      mobileBackdrop.style.opacity = '';
+                    }
+                    _sb.addEventListener('transitionend', onSnapEnd);
+                    setTimeout(onSnapEnd, 350);
+                  });
+                }
+              } else if (_mode === 'close') {
+                if (dx > sbW * CLOSE_THRESHOLD) {
+                  closeMobileSb();
+                } else {
+                  // Snap back open
+                  requestAnimationFrame(function() {
+                    _sb.style.transform = '';
+                    mobileBackdrop.style.opacity = '';
+                  });
+                }
+              }
+            }, { passive: false });
+
+            elMap.addEventListener('touchcancel', function() {
+              if (!swMode || !swSidebar) return;
+              var _sb = swSidebar;
+              var _mode = swMode;
+              swMode = ''; swSidebar = null; swTouchId = null;
+              if (_mode === 'open') {
+                _sb.classList.remove('jg-sidebar-mobile-open');
+                _sb.style.transform = ''; _sb.style.transition = '';
+                // Restore inline height
+                if (_sb._sbMobileOrigHeight !== undefined) {
+                  _sb.style.height = _sb._sbMobileOrigHeight;
+                  _sb._sbMobileOrigHeight = undefined;
+                }
+                // Restore sidebar to original DOM position on cancelled swipe
+                if (_sb._sbMobileOrigParent) {
+                  var _p = _sb._sbMobileOrigParent;
+                  var _n = _sb._sbMobileOrigNext;
+                  _sb._sbMobileOrigParent = null;
+                  _sb._sbMobileOrigNext = null;
+                  if (_n && _n.parentNode === _p) { _p.insertBefore(_sb, _n); }
+                  else { _p.appendChild(_sb); }
+                }
+                mobileBackdrop.classList.remove('active');
+                mobileBackdrop.style.opacity = '';
+              } else if (_mode === 'close') {
+                _sb.style.transform = ''; _sb.style.transition = '';
+                mobileBackdrop.style.opacity = '';
+              }
+            }, { passive: true });
+          }
 
           return container;
         }

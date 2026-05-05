@@ -157,6 +157,7 @@ All prefixed `wp_jg_map_*`. Use `JG_Map_Database::get_points_table()` etc. — n
 | 15674 | LEVEL-UP & ACHIEVEMENT NOTIFICATION SYSTEM | `showLevelUpModal` (15724), `showAchievementModal` (15759) |
 | 15826 | `window.jgOpenPointById()` | Publiczne API — otwiera punkt po ID (szuka w tablicy ALL) |
 | 15837 | `window.jgZoomToPoint()` | Publiczne API — zoom do współrzędnych punktu |
+| ~4197 | MOBILE SWIPE-IN SIDEBAR | `openMobileSb`, `closeMobileSb` — swipe z prawej krawędzi ekranu otwiera sidebar jako drawer (tylko mobile + fullscreen) |
 
 ### PHP → JS config bridge
 
@@ -171,6 +172,8 @@ All prefixed `wp_jg_map_*`. Use `JG_Map_Database::get_points_table()` etc. — n
 - **Table names via SQL string interpolation** — `$wpdb->prepare()` cannot parameterize table names. The codebase uses `esc_sql($table_name)` + string interpolation for `SHOW COLUMNS FROM` and `ALTER TABLE` queries. This is intentional and safe — don't change to `%s` placeholders.
 
 - **Sync queue is DB-backed** — `class-sync-manager.php` deliberately avoids WordPress transients for the sync queue because transients are unreliable under heavy load. All sync events go to `wp_jg_map_sync_queue`.
+
+- **Mobile swipe sidebar** — on mobile fullscreen, `#jg-map-sidebar` is hidden by `.jg-map .jg-sidebar-fullscreen-overlay { display: none }`. A swipe-from-right gesture (last 22px of viewport) shows it as a `position: fixed` drawer via `.jg-sidebar-mobile-open` class. The CSS `transform` on the drawer does NOT use `!important` so inline `style.transform` can override it during drag. `.jg-sidebar-mobile-backdrop` and `.jg-sidebar-swipe-handle` are appended to `document.body`; both are cleaned up inside `exitFullscreen()`.
 
 - **`jg-auth.js` on all pages** — login/register modals can be triggered from any page (nav bar, map sidebar, etc.), so `jg-auth.js` is enqueued globally, not conditionally.
 
