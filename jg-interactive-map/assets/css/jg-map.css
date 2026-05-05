@@ -11067,18 +11067,26 @@ footer.site-footer .site-branding {
   display: none !important;
 }
 
-/* Three small lines on the opening pill — hint that there's a list inside */
+/* Vertical "MIEJSCA" label — replaces the three-line hint */
+.jg-sidebar-swipe-handle::before {
+  display: none;
+}
+
 .jg-sidebar-swipe-handle::after {
-  content: '';
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 13px;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.60);
-  border-radius: 1px;
-  box-shadow: 0 -5px 0 rgba(255, 255, 255, 0.60), 0 5px 0 rgba(255, 255, 255, 0.60);
+  content: 'MIEJSCA';
+  position: static;
+  writing-mode: vertical-lr;
+  text-orientation: upright;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.92);
+  background: none;
+  box-shadow: none;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  transform: none;
 }
 
 /* Close handle: analogous pill on the left edge of the open drawer */
@@ -11098,6 +11106,7 @@ footer.site-footer .site-branding {
   align-items: center;
   justify-content: center;
   box-shadow: -2px 0 10px rgba(141, 35, 36, 0.35);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .jg-sidebar-close-handle.visible {

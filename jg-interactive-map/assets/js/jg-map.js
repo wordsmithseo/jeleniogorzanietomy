@@ -4283,8 +4283,10 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               mobileBackdrop.classList.remove('active');
               mobileBackdrop.style.opacity = '';
               sb.style.transition = '';
+              closeHandle.style.transition = '';
               requestAnimationFrame(function() {
                 sb.style.transform = 'translateX(100%)';
+                closeHandle.style.transform = 'translateY(-50%) translateX(calc(min(85vw, 340px) + 28px))';
                 var done = false;
                 function onEnd() {
                   if (done) return;
@@ -4293,6 +4295,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   sb.classList.remove('jg-sidebar-mobile-open');
                   sb.style.transform = '';
                   closeHandle.classList.remove('visible');
+                  closeHandle.style.transform = '';
+                  closeHandle.style.transition = '';
                   // Restore inline height
                   if (sb._sbMobileOrigHeight !== undefined) {
                     sb.style.height = sb._sbMobileOrigHeight;
@@ -4362,6 +4366,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                     swTouchId = touch.identifier;
                     swStartX = touch.clientX;
                     swStartY = touch.clientY;
+                    closeHandle.style.transition = 'none';
                   }
                 }
               }
@@ -4396,6 +4401,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 e.preventDefault();
               } else if (swMode === 'close' && dx > 0) {
                 swSidebar.style.transform = 'translateX(' + dx + 'px)';
+                closeHandle.style.transform = 'translateY(-50%) translateX(' + dx + 'px)';
                 mobileBackdrop.style.opacity = String(1 - Math.min(1, dx / sbW));
                 e.preventDefault();
               }
@@ -4414,6 +4420,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               var _mode = swMode;
               swMode = ''; swSidebar = null; swTouchId = null;
               _sb.style.transition = '';
+              closeHandle.style.transition = '';
 
               if (_mode === 'open') {
                 if (-dx > sbW * OPEN_THRESHOLD) {
@@ -4456,6 +4463,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   // Snap back open
                   requestAnimationFrame(function() {
                     _sb.style.transform = '';
+                    closeHandle.style.transform = '';
                     mobileBackdrop.style.opacity = '';
                   });
                 }
@@ -4488,6 +4496,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 mobileBackdrop.style.opacity = '';
               } else if (_mode === 'close') {
                 _sb.style.transform = ''; _sb.style.transition = '';
+                closeHandle.style.transform = '';
                 mobileBackdrop.style.opacity = '';
               }
             }, { passive: true });
