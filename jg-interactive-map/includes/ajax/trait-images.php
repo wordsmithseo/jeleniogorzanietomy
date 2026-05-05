@@ -1,8 +1,8 @@
 <?php
 /**
  * Trait: image handling
- * handle_image_upload, verify_image_mime_type, resize_image_if_needed,
- * get_monthly_photo_usage, update_monthly_photo_usage, create_thumbnail,
+ * handle_image_upload, verify_image_mime_type, process_uploaded_image,
+ * get_monthly_photo_usage, update_monthly_photo_usage,
  * delete_image, delete_image_files, set_featured_image
  */
 
@@ -80,19 +80,16 @@ trait JG_Ajax_Images {
                             return array('error' => $mime_check['error']);
                         }
 
-                        // Resize to 800x800 if needed
-                        $resized_file = $this->resize_image_if_needed($movefile['file'], $MAX_DIMENSION);
-
-                        // Create thumbnail
-                        $thumbnail_url = $this->create_thumbnail($resized_file, $movefile['url']);
+                        // Resize + thumbnail in one editor pass
+                        $processed = $this->process_uploaded_image($movefile['file'], $movefile['url'], $MAX_DIMENSION);
 
                         // Get actual file size after resize
-                        $actual_size = file_exists($resized_file) ? filesize($resized_file) : 0;
+                        $actual_size = file_exists($movefile['file']) ? filesize($movefile['file']) : 0;
                         $total_size_uploaded += $actual_size;
 
                         $images[] = array(
-                            'full' => $movefile['url'],
-                            'thumb' => $thumbnail_url ?: $movefile['url']
+                            'full' => $processed['full'],
+                            'thumb' => $processed['thumb']
                         );
                     } else {
                         return array('error' => 'Błąd uploadu: ' . ($movefile['error'] ?? 'Nieznany błąd'));
@@ -117,19 +114,16 @@ trait JG_Ajax_Images {
                         return array('error' => $mime_check['error']);
                     }
 
-                    // Resize to 800x800 if needed
-                    $resized_file = $this->resize_image_if_needed($movefile['file'], $MAX_DIMENSION);
-
-                    // Create thumbnail
-                    $thumbnail_url = $this->create_thumbnail($resized_file, $movefile['url']);
+                    // Resize + thumbnail in one editor pass
+                    $processed = $this->process_uploaded_image($movefile['file'], $movefile['url'], $MAX_DIMENSION);
 
                     // Get actual file size after resize
-                    $actual_size = file_exists($resized_file) ? filesize($resized_file) : 0;
+                    $actual_size = file_exists($movefile['file']) ? filesize($movefile['file']) : 0;
                     $total_size_uploaded += $actual_size;
 
                     $images[] = array(
-                        'full' => $movefile['url'],
-                        'thumb' => $thumbnail_url ?: $movefile['url']
+                        'full' => $processed['full'],
+                        'thumb' => $processed['thumb']
                     );
                 } else {
                     return array('error' => 'Błąd uploadu: ' . ($movefile['error'] ?? 'Nieznany błąd'));
@@ -192,26 +186,38 @@ trait JG_Ajax_Images {
     }
 
     /**
-     * Resize image if it exceeds max dimension
+     * Resize to max_dimension and create 300px thumbnail in a single editor load.
+     * Returns array with 'full' (original URL) and 'thumb' (thumbnail URL).
      */
-    private function resize_image_if_needed($file_path, $max_dimension) {
+    private function process_uploaded_image($file_path, $original_url, $max_dimension) {
         $image_editor = wp_get_image_editor($file_path);
 
         if (is_wp_error($image_editor)) {
-            return $file_path; // Return original if can't edit
+            return array('full' => $original_url, 'thumb' => $original_url);
         }
 
         $size = $image_editor->get_size();
-        $width = $size['width'];
-        $height = $size['height'];
 
-        // Only resize if larger than max
-        if ($width > $max_dimension || $height > $max_dimension) {
+        if ($size['width'] > $max_dimension || $size['height'] > $max_dimension) {
             $image_editor->resize($max_dimension, $max_dimension, false);
             $image_editor->save($file_path);
         }
 
-        return $file_path;
+        $image_editor->resize(300, 300, false);
+        $file_info     = pathinfo($file_path);
+        $thumbnail_path = $file_info['dirname'] . '/' . $file_info['filename'] . '-thumb.' . $file_info['extension'];
+        $saved          = $image_editor->save($thumbnail_path);
+
+        $thumbnail_url = null;
+        if (!is_wp_error($saved)) {
+            $upload_dir    = wp_upload_dir();
+            $thumbnail_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $thumbnail_path);
+        }
+
+        return array(
+            'full'  => $original_url,
+            'thumb' => $thumbnail_url ?: $original_url,
+        );
     }
 
     /**
@@ -246,35 +252,6 @@ trait JG_Ajax_Images {
         $current_usage = intval(get_user_meta($user_id, 'jg_map_photo_used_bytes', true));
         $new_usage = $current_usage + $bytes_to_add;
         update_user_meta($user_id, 'jg_map_photo_used_bytes', $new_usage);
-    }
-
-    /**
-     * Create thumbnail for uploaded image
-     */
-    private function create_thumbnail($file_path, $original_url) {
-        $image_editor = wp_get_image_editor($file_path);
-
-        if (is_wp_error($image_editor)) {
-            return false;
-        }
-
-        // Resize to 300x300 thumbnail
-        $image_editor->resize(300, 300, false);
-
-        $file_info = pathinfo($file_path);
-        $thumbnail_path = $file_info['dirname'] . '/' . $file_info['filename'] . '-thumb.' . $file_info['extension'];
-
-        $saved = $image_editor->save($thumbnail_path);
-
-        if (is_wp_error($saved)) {
-            return false;
-        }
-
-        // Convert file path to URL
-        $upload_dir = wp_upload_dir();
-        $thumbnail_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $thumbnail_path);
-
-        return $thumbnail_url;
     }
 
     /**

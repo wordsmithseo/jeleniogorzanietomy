@@ -333,9 +333,9 @@ trait JG_Ajax_PlaceFeatures {
             exit;
         }
 
-        // Resize to 1200px max (wider than dish photos for readability)
-        $resized = $this->resize_image_if_needed($movefile['file'], 1200);
-        $thumb   = $this->create_thumbnail($resized, $movefile['url']);
+        // Resize + thumbnail in one editor pass (1200px max for menu readability)
+        $processed = $this->process_uploaded_image($movefile['file'], $movefile['url'], 1200);
+        $thumb      = $processed['thumb'];
 
         $photo_id = JG_Map_Database::add_menu_photo($point_id, $movefile['url'], $thumb ?: $movefile['url']);
 

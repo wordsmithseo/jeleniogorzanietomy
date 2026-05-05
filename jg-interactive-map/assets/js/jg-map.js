@@ -5112,7 +5112,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             });
 
             function _doAddFetch() {
-              msg.textContent = 'Wysyłanie...';
+              var submitBtn = qs('button[type="submit"]', form);
+              if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Wysyłanie…'; }
+              msg.textContent = '';
               fetch(CFG.ajax, {
                 method: 'POST',
                 body: fd,
@@ -5136,6 +5138,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                       'window.location.hash=\'#point-' + duplicatePointId + '\';' +
                       '">Zobacz istniejące zgłoszenie</button>';
                     msg.style.color = '#b91c1c';
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Wyślij do moderacji'; }
                     return;
                   }
                   throw new Error((j && j.data && j.data.message) || 'Błąd');
@@ -5199,6 +5202,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               .catch(function(err) {
                 msg.textContent = err.message || 'Błąd';
                 msg.style.color = '#b91c1c';
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Wyślij do moderacji'; }
               });
             }
 
@@ -8065,6 +8069,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             var photoMsg = qs('#jg-menu-photo-msg', modalEdit);
             photoMsg.textContent = 'Przesyłanie\u2026';
             photoMsg.style.color = '#9ca3af';
+            photoInput.disabled = true;
             var uploadFd = new FormData();
             uploadFd.append('action', 'jg_upload_menu_photo');
             uploadFd.append('_ajax_nonce', CFG.nonce);
@@ -8073,6 +8078,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             fetch(CFG.ajax, { method: 'POST', body: uploadFd, credentials: 'same-origin' })
               .then(function(r) { return r.json(); })
               .then(function(resp) {
+                photoInput.disabled = false;
                 if (resp && resp.success) {
                   photoMsg.textContent = 'Zdjęcie dodane.';
                   photoMsg.style.color = '#15803d';
@@ -8098,6 +8104,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 }
               })
               .catch(function() {
+                photoInput.disabled = false;
                 var photoMsg2 = qs('#jg-menu-photo-msg', modalEdit);
                 if (photoMsg2) { photoMsg2.textContent = 'Błąd sieci.'; photoMsg2.style.color = '#b91c1c'; }
               });
@@ -14923,7 +14930,9 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               // For zgloszenie, the category is already in the form as 'category'
 
               function _doFabFetch() {
-                msg.textContent = 'Wysyłanie...';
+                var submitBtn = qs('button[type="submit"]', form);
+                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Wysyłanie…'; }
+                msg.textContent = '';
                 fetch(CFG.ajax, {
                   method: 'POST',
                   body: fd,
@@ -14947,6 +14956,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                         'window.location.hash=\'#point-' + duplicatePointId + '\';' +
                         '">Zobacz istniejące zgłoszenie</button>';
                       msg.style.color = '#b91c1c';
+                      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Wyślij do moderacji'; }
                       return;
                     }
                     throw new Error((j && j.data && j.data.message) || 'Błąd');
@@ -15010,6 +15020,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                 .catch(function(err) {
                   msg.textContent = err.message || 'Błąd';
                   msg.style.color = '#b91c1c';
+                  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Wyślij do moderacji'; }
                 });
               }
 
