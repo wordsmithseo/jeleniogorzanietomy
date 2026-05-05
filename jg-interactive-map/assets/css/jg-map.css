@@ -11067,6 +11067,54 @@ footer.site-footer .site-branding {
   display: none !important;
 }
 
+/* Three small lines on the opening pill — hint that there's a list inside */
+.jg-sidebar-swipe-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 13px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.60);
+  border-radius: 1px;
+  box-shadow: 0 -5px 0 rgba(255, 255, 255, 0.60), 0 5px 0 rgba(255, 255, 255, 0.60);
+}
+
+/* Close handle: analogous pill on the left edge of the open drawer */
+.jg-sidebar-close-handle {
+  display: none;
+  position: fixed;
+  right: min(85vw, 340px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 56px;
+  background: var(--jg-color-primary);
+  border-radius: 8px 0 0 8px;
+  z-index: 100003;
+  pointer-events: auto;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: -2px 0 10px rgba(141, 35, 36, 0.35);
+}
+
+.jg-sidebar-close-handle.visible {
+  display: flex;
+}
+
+.jg-sidebar-close-handle::before {
+  content: '';
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-right: 2.5px solid rgba(255, 255, 255, 0.9);
+  border-top: 2.5px solid rgba(255, 255, 255, 0.9);
+  transform: rotate(45deg) translateX(-2px);
+  margin-right: 6px;
+}
+
 /* Backdrop behind the open drawer */
 .jg-sidebar-mobile-backdrop {
   position: fixed;

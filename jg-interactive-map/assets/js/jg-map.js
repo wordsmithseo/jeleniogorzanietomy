@@ -3750,6 +3750,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
             }
             if (_swh) { _swh.classList.remove('hidden'); }
+            var _cch = document.querySelector('.jg-sidebar-close-handle');
+            if (_cch) { _cch.classList.remove('visible'); }
             // If sidebar was moved to body by mobile drawer, schedule restore after fullscreen cleanup
             if (sidebar && sidebar._sbMobileOrigParent) {
               sidebar._sbPendingMobileRestore = true;
@@ -4230,6 +4232,13 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             mobileBackdrop.className = 'jg-sidebar-mobile-backdrop';
             document.body.appendChild(mobileBackdrop);
 
+            var closeHandle = document.createElement('div');
+            closeHandle.className = 'jg-sidebar-close-handle';
+            closeHandle.setAttribute('aria-label', 'Zamknij listę');
+            closeHandle.setAttribute('role', 'button');
+            closeHandle.setAttribute('tabindex', '0');
+            document.body.appendChild(closeHandle);
+
             var mobileSbOpen = false;
             var swTouchId = null;
             var swStartX = 0;
@@ -4256,6 +4265,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               }
               mobileSbOpen = true;
               swipeHandle.classList.add('hidden');
+              closeHandle.classList.add('visible');
               mobileBackdrop.classList.add('active');
               mobileBackdrop.style.opacity = '';
               sb.classList.add('jg-sidebar-mobile-open');
@@ -4264,6 +4274,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
             }
 
             swipeHandle.addEventListener('click', function() { openMobileSb(); });
+            closeHandle.addEventListener('click', function() { closeMobileSb(); });
 
             function closeMobileSb() {
               var sb = document.getElementById('jg-map-sidebar');
@@ -4281,6 +4292,7 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
                   sb.removeEventListener('transitionend', onEnd);
                   sb.classList.remove('jg-sidebar-mobile-open');
                   sb.style.transform = '';
+                  closeHandle.classList.remove('visible');
                   // Restore inline height
                   if (sb._sbMobileOrigHeight !== undefined) {
                     sb.style.height = sb._sbMobileOrigHeight;
