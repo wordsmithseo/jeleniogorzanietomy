@@ -11028,8 +11028,8 @@ footer.site-footer .site-branding {
   right: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 28px;
-  height: 56px;
+  width: 36px;
+  height: 88px;
   background: var(--jg-color-primary);
   border-radius: 8px 0 0 8px;
   z-index: 1100;
@@ -11059,7 +11059,7 @@ footer.site-footer .site-branding {
 }
 
 @keyframes jg-swipe-handle-in {
-  from { transform: translateY(-50%) translateX(28px); opacity: 0; }
+  from { transform: translateY(-50%) translateX(36px); opacity: 0; }
   to   { transform: translateY(-50%) translateX(0);   opacity: 1; }
 }
 
@@ -11077,9 +11077,9 @@ footer.site-footer .site-branding {
   position: static;
   writing-mode: vertical-lr;
   text-orientation: upright;
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   color: rgba(255, 255, 255, 0.92);
   background: none;
   box-shadow: none;
@@ -11087,6 +11087,7 @@ footer.site-footer .site-branding {
   height: auto;
   border-radius: 0;
   transform: none;
+  padding-inline: 10px;
 }
 
 /* Close handle: analogous pill on the left edge of the open drawer */
@@ -11096,8 +11097,8 @@ footer.site-footer .site-branding {
   right: min(85vw, 340px);
   top: 50%;
   transform: translateY(-50%);
-  width: 28px;
-  height: 56px;
+  width: 36px;
+  height: 88px;
   background: var(--jg-color-primary);
   border-radius: 8px 0 0 8px;
   z-index: 100003;
@@ -11116,8 +11117,8 @@ footer.site-footer .site-branding {
 .jg-sidebar-close-handle::before {
   content: '';
   display: block;
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
   border-right: 2.5px solid rgba(255, 255, 255, 0.9);
   border-top: 2.5px solid rgba(255, 255, 255, 0.9);
   transform: rotate(45deg) translateX(-2px);
