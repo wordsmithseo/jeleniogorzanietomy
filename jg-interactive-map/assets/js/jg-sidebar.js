@@ -942,6 +942,11 @@
      * the existing search result zoom mechanic (setView + pulsing circle).
      */
     function handlePointClick(point) {
+        // Close mobile drawer if open
+        if (typeof window.closeMobileSb === 'function') {
+            window.closeMobileSb();
+        }
+
         // First check if point still exists (protection against clicking deleted points before sync)
         $.ajax({
             url: JG_MAP_CFG.ajax,

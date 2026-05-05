@@ -4314,6 +4314,8 @@ var _jgNativeReplaceState = (window.history && window.history.replaceState)
               });
             }
 
+            window.closeMobileSb = closeMobileSb;
+
             mobileBackdrop.addEventListener('touchstart', function(e) {
               e.preventDefault();
               closeMobileSb();
