@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.50.0
+ * Version: 3.50.1
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.50.0');
+define('JG_MAP_VERSION', '3.50.1');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1302,24 +1302,36 @@ class JG_Interactive_Map {
      * Returns the | suffix for <title>: rating > menu year > hours > site name.
      */
     private function get_title_suffix($point) {
-        $rating = JG_Map_Database::get_rating_data($point['id']);
-        if ($rating['count'] >= 3) {
-            $avg = number_format((float) $rating['avg'], 1, ',', '');
-            return 'ocena ' . $avg . '/5';
-        }
-        if ($point['type'] === 'miejsce') {
-            $menu_cats = JG_Map_Ajax_Handlers::get_menu_categories();
-            if (in_array($point['category'] ?? '', $menu_cats, true) && JG_Map_Database::point_has_menu($point['id'])) {
-                return 'menu ' . date('Y');
-            }
-        }
+        $rating    = JG_Map_Database::get_rating_data($point['id']);
+        $has_rating = $rating['count'] >= 3;
+        $avg        = $has_rating ? number_format((float) $rating['avg'], 1, ',', '') : '';
+
+        $has_hours = false;
         if (! empty($point['opening_hours'])) {
             foreach (explode("\n", trim($point['opening_hours'])) as $line) {
                 if (preg_match('/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+\d{2}:\d{2}-\d{2}:\d{2}$/', trim($line))) {
-                    return 'godziny otwarcia';
+                    $has_hours = true;
+                    break;
                 }
             }
         }
+
+        $has_menu = false;
+        if ($point['type'] === 'miejsce') {
+            $menu_cats = JG_Map_Ajax_Handlers::get_menu_categories();
+            if (in_array($point['category'] ?? '', $menu_cats, true) && JG_Map_Database::point_has_menu($point['id'])) {
+                $has_menu = true;
+            }
+        }
+
+        $year = date('Y');
+
+        if ($has_rating && $has_hours)  return 'ocena ' . $avg . ' · godziny';
+        if ($has_rating && $has_menu)   return 'ocena ' . $avg . ' · menu ' . $year;
+        if ($has_rating)                return 'ocena ' . $avg . '/5';
+        if ($has_hours && $has_menu)    return 'godziny · menu ' . $year;
+        if ($has_hours)                 return 'godziny otwarcia';
+        if ($has_menu)                  return 'menu ' . $year;
         return get_bloginfo('name');
     }
 

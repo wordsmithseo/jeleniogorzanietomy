@@ -50,6 +50,29 @@ assert_same( 'pn–sb 08:00–18:00',                  Testable_SEO_Helpers::get
 assert_same( '',                                    Testable_SEO_Helpers::get_stable_hours_for_description( $complex ),     'complex pattern' );
 assert_same( '',                                    Testable_SEO_Helpers::get_stable_hours_for_description( 'Mo 09:00-17:00' ), 'single day only' );
 
+// ── get_title_suffix logic (pure combinations, no DB) ────────────────────────
+echo "\nget_title_suffix combinations\n";
+
+// Simulate the combination logic extracted from get_title_suffix
+function mock_title_suffix( bool $has_rating, string $avg, bool $has_hours, bool $has_menu ): string {
+    $year = '2026';
+    if ($has_rating && $has_hours)  return 'ocena ' . $avg . ' · godziny';
+    if ($has_rating && $has_menu)   return 'ocena ' . $avg . ' · menu ' . $year;
+    if ($has_rating)                return 'ocena ' . $avg . '/5';
+    if ($has_hours && $has_menu)    return 'godziny · menu ' . $year;
+    if ($has_hours)                 return 'godziny otwarcia';
+    if ($has_menu)                  return 'menu ' . $year;
+    return 'JeleniogorzaNieTomy.pl';
+}
+
+assert_same( 'ocena 4,3 · godziny',       mock_title_suffix( true,  '4,3', true,  false ), 'rating + hours' );
+assert_same( 'ocena 4,3 · menu 2026',     mock_title_suffix( true,  '4,3', false, true  ), 'rating + menu' );
+assert_same( 'ocena 4,3/5',               mock_title_suffix( true,  '4,3', false, false ), 'rating only' );
+assert_same( 'godziny · menu 2026',        mock_title_suffix( false, '',    true,  true  ), 'hours + menu (no rating)' );
+assert_same( 'godziny otwarcia',           mock_title_suffix( false, '',    true,  false ), 'hours only' );
+assert_same( 'menu 2026',                  mock_title_suffix( false, '',    false, true  ), 'menu only' );
+assert_same( 'JeleniogorzaNieTomy.pl',     mock_title_suffix( false, '',    false, false ), 'no data → site name' );
+
 echo "\npl_votes\n";
 $cases = [
     0 => 'głosów', 1 => 'głos',   2 => 'głosy',  3 => 'głosy',
