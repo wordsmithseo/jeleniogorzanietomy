@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.48.7
+ * Version: 3.50.0
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.48.7');
+define('JG_MAP_VERSION', '3.50.0');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -1214,6 +1214,116 @@ class JG_Interactive_Map {
     }
 
     /**
+     * Stable hours summary for meta descriptions: "pn–pt 9:00–17:00", "codziennie 10:00–22:00", etc.
+     * Returns '' for complex/irregular schedules (safe fallback — won't show wrong info).
+     */
+    private function get_stable_hours_for_description($opening_hours) {
+        if (empty($opening_hours)) {
+            return '';
+        }
+        $day_hours = array();
+        foreach (explode("\n", trim($opening_hours)) as $line) {
+            $line = trim($line);
+            if (preg_match('/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/', $line, $m)) {
+                $day_hours[$m[1]] = $m[2] . '–' . $m[3];
+            }
+        }
+        if (empty($day_hours)) {
+            return '';
+        }
+        $weekdays  = array('Mo', 'Tu', 'We', 'Th', 'Fr');
+        $weekend   = array('Sa', 'Su');
+        $all_7     = array('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su');
+        $wday_vals = array();
+        foreach ($weekdays as $d) {
+            if (isset($day_hours[$d])) {
+                $wday_vals[] = $day_hours[$d];
+            }
+        }
+        $wend_vals = array();
+        foreach ($weekend as $d) {
+            if (isset($day_hours[$d])) {
+                $wend_vals[] = $day_hours[$d];
+            }
+        }
+        $has_all_7   = count(array_diff($all_7, array_keys($day_hours))) === 0;
+        $wday_unique = array_unique($wday_vals);
+        $wend_unique = array_unique($wend_vals);
+        // All 7 days, same hours
+        if ($has_all_7 && count(array_unique(array_values($day_hours))) === 1) {
+            $h = reset($day_hours);
+            if ($h === '00:00–24:00' || $h === '00:00–23:59') {
+                return 'całą dobę';
+            }
+            return 'codziennie ' . $h;
+        }
+        // Mon–Fri only, all uniform
+        if (count($wday_vals) === 5 && count($wend_vals) === 0 && count($wday_unique) === 1) {
+            return 'pn–pt ' . $wday_unique[0];
+        }
+        // Mon–Fri + Sat–Sun, each group uniform
+        if (count($wday_vals) === 5 && count($wend_vals) === 2 && count($wday_unique) === 1 && count($wend_unique) === 1) {
+            if ($wday_unique[0] === $wend_unique[0]) {
+                return 'codziennie ' . $wday_unique[0];
+            }
+            return 'pn–pt ' . $wday_unique[0] . ', sb–nd ' . $wend_unique[0];
+        }
+        // Mon–Sat (no Sun), uniform
+        $mon_sat   = array('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa');
+        $msat_vals = array();
+        foreach ($mon_sat as $d) {
+            if (isset($day_hours[$d])) {
+                $msat_vals[] = $day_hours[$d];
+            }
+        }
+        if (count($msat_vals) === 6 && ! isset($day_hours['Su']) && count(array_unique($msat_vals)) === 1) {
+            return 'pn–sb ' . $msat_vals[0];
+        }
+        return '';
+    }
+
+    /**
+     * Polish pluralization for vote counts: 1 → głos, 2–4 → głosy, 5+ → głosów.
+     */
+    private function pl_votes($n) {
+        $n      = (int) $n;
+        $mod10  = $n % 10;
+        $mod100 = $n % 100;
+        if ($n === 1) {
+            return 'głos';
+        }
+        if ($mod10 >= 2 && $mod10 <= 4 && ($mod100 < 10 || $mod100 >= 20)) {
+            return 'głosy';
+        }
+        return 'głosów';
+    }
+
+    /**
+     * Returns the | suffix for <title>: rating > menu year > hours > site name.
+     */
+    private function get_title_suffix($point) {
+        $rating = JG_Map_Database::get_rating_data($point['id']);
+        if ($rating['count'] >= 3) {
+            $avg = number_format((float) $rating['avg'], 1, ',', '');
+            return 'ocena ' . $avg . '/5';
+        }
+        if ($point['type'] === 'miejsce') {
+            $menu_cats = JG_Map_Ajax_Handlers::get_menu_categories();
+            if (in_array($point['category'] ?? '', $menu_cats, true) && JG_Map_Database::point_has_menu($point['id'])) {
+                return 'menu ' . date('Y');
+            }
+        }
+        if (! empty($point['opening_hours'])) {
+            foreach (explode("\n", trim($point['opening_hours'])) as $line) {
+                if (preg_match('/^(Mo|Tu|We|Th|Fr|Sa|Su)\s+\d{2}:\d{2}-\d{2}:\d{2}$/', trim($line))) {
+                    return 'godziny otwarcia';
+                }
+            }
+        }
+        return get_bloginfo('name');
+    }
+
+    /**
      * Render single point page (standalone, no Elementor header/footer)
      */
     private function render_point_page($point, $request_id = 'unknown', $user_agent_short = '') {
@@ -1282,20 +1392,19 @@ class JG_Interactive_Map {
         $type_path = ($point['type'] === 'ciekawostka') ? 'ciekawostka' : (($point['type'] === 'zgloszenie') ? 'zgloszenie' : 'miejsce');
         $share_url = home_url('/' . $type_path . '/' . $point['slug'] . '/');
 
-        // Page title – category-aware suffix for better search CTR
+        // Page title – category-aware with dynamic suffix (rating > menu > hours > branding)
         $point_cat_key = $point['category'] ?? '';
-        $oh_title_part = $this->get_opening_hours_title_part($point['opening_hours'] ?? '');
-        $oh_suffix     = $oh_title_part ? ' | ' . $oh_title_part : '';
-        if ($point['type'] === 'miejsce' && !empty($point_cat_key)) {
+        $title_suffix  = ' | ' . $this->get_title_suffix($point);
+        if ($point['type'] === 'miejsce' && ! empty($point_cat_key)) {
             $all_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
             if (isset($all_place_cats[$point_cat_key]['label'])) {
                 $cat_label_lower = mb_strtolower($all_place_cats[$point_cat_key]['label']);
-                $page_title = esc_html($point['title']) . ' – ' . $cat_label_lower . ' w Jeleniej Górze' . $oh_suffix;
+                $page_title = esc_html($point['title']) . ' – ' . $cat_label_lower . ' w Jeleniej Górze' . $title_suffix;
             } else {
-                $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze' . $oh_suffix;
+                $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze' . $title_suffix;
             }
         } else {
-            $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze' . $oh_suffix;
+            $page_title = esc_html($point['title']) . ' – ' . esc_html($type_label) . ' w Jeleniej Górze' . $title_suffix;
         }
 
         // Site logo URL
@@ -2918,25 +3027,47 @@ class JG_Interactive_Map {
         } elseif (!empty($point['content'])) {
             $description = wp_trim_words(strip_tags($point['content']), 30);
         } else {
-            // Category-aware fallback description for better CTR when no excerpt/content
-            $desc_cat_key  = $point['category'] ?? '';
-            $desc_type_key = $point['type'] ?? 'miejsce';
+            // Category-aware fallback with real data injected for better CTR
+            $desc_cat_key    = $point['category'] ?? '';
+            $desc_type_key   = $point['type'] ?? 'miejsce';
+            $desc_rating     = JG_Map_Database::get_rating_data($point['id']);
+            $desc_oh_summary = $this->get_stable_hours_for_description($point['opening_hours'] ?? '');
+
             if ($desc_type_key === 'ciekawostka') {
                 $description = 'Ciekawostka: ' . $point['title'] . ' – odkryj historię i szczegóły na jeleniogorzanietomy.pl, interaktywna mapa Jeleniej Góry.';
-            } elseif ($desc_type_key === 'miejsce' && !empty($desc_cat_key)) {
+            } elseif ($desc_type_key === 'miejsce') {
                 $desc_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
-                if (!empty($desc_place_cats[$desc_cat_key]['has_menu'])) {
-                    // Gastro place page: focus on location/hours/ratings — NOT "menu" (menu page owns those queries)
-                    $description = $point['title'] . ' w Jeleniej Górze – godziny otwarcia, adres, zdjęcia i opinie na jeleniogorzanietomy.pl';
-                } elseif (!empty($desc_place_cats[$desc_cat_key]['offerings_label'])) {
-                    // Services/products place page: focus on location/identity — NOT the offerings label
-                    // (oferta page /oferta/ owns "[name] + service/product" queries)
-                    $description = $point['title'] . ' w Jeleniej Górze – adres, godziny otwarcia, zdjęcia i kontakt na jeleniogorzanietomy.pl';
-                } elseif (isset($desc_place_cats[$desc_cat_key]['label'])) {
-                    $desc_cat_label = mb_strtolower($desc_place_cats[$desc_cat_key]['label']);
-                    $description = $point['title'] . ' w Jeleniej Górze – ' . $desc_cat_label . '. Zdjęcia, mapa dojazdu i szczegółowe informacje na jeleniogorzanietomy.pl';
+                $desc_cat_label  = isset($desc_place_cats[$desc_cat_key]['label'])
+                    ? mb_strtolower($desc_place_cats[$desc_cat_key]['label'])
+                    : 'miejsce';
+
+                // Assemble real-data parts
+                $desc_parts = array();
+                if ($desc_oh_summary) {
+                    $desc_parts[] = 'czynne ' . $desc_oh_summary;
+                }
+                if ($desc_rating['count'] >= 3) {
+                    $avg          = number_format((float) $desc_rating['avg'], 1, ',', '');
+                    $desc_parts[] = 'ocena ' . $avg . '/5 (' . $desc_rating['count'] . ' ' . $this->pl_votes($desc_rating['count']) . ')';
+                }
+                if (! empty($point['address'])) {
+                    $desc_parts[] = $point['address'];
+                }
+                $desc_infix = $desc_parts
+                    ? '. ' . implode(' · ', $desc_parts) . '.'
+                    : ' –';
+
+                if (! empty($desc_place_cats[$desc_cat_key]['has_menu'])) {
+                    // Gastro: menu page owns "menu" queries — focus on location/ratings here
+                    $description = $point['title'] . ' – ' . $desc_cat_label . ' w Jeleniej Górze' . $desc_infix . ' Zdjęcia, menu i mapa dojazdu na jeleniogorzanietomy.pl';
+                } elseif (! empty($desc_place_cats[$desc_cat_key]['offerings_label'])) {
+                    // Services: oferta page owns service queries — focus on location/identity
+                    $description = $point['title'] . ' – ' . $desc_cat_label . ' w Jeleniej Górze' . $desc_infix . ' Zdjęcia, kontakt i mapa na jeleniogorzanietomy.pl';
                 } else {
-                    $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na jeleniogorzanietomy.pl';
+                    $description = $point['title'] . ' – ' . $desc_cat_label . ' w Jeleniej Górze' . $desc_infix . ' Zdjęcia, mapa dojazdu i szczegóły na jeleniogorzanietomy.pl';
+                }
+                if (mb_strlen($description) > 160) {
+                    $description = mb_substr($description, 0, 157) . '...';
                 }
             } else {
                 $description = $point['title'] . ' w Jeleniej Górze – szczegółowe informacje, zdjęcia i mapa dojazdu na jeleniogorzanietomy.pl';
