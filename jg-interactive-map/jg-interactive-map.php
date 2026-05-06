@@ -3,7 +3,7 @@
  * Plugin Name: JG Interactive Map
  * Plugin URI: https://jeleniogorzanietomy.pl
  * Description: Interaktywna mapa Jeleniej Góry z możliwością dodawania zgłoszeń, ciekawostek i miejsc
- * Version: 3.50.1
+ * Version: 3.51.0
  * Author: JeleniogorzaNieTomy
  * Author URI: https://jeleniogorzanietomy.pl
  * Text Domain: jg-map
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('JG_MAP_VERSION', '3.50.1');
+define('JG_MAP_VERSION', '3.51.0');
 define('JG_MAP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('JG_MAP_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('JG_MAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -732,8 +732,21 @@ class JG_Interactive_Map {
         $site_icon_192 = get_site_icon_url(192);
         $site_icon_180 = get_site_icon_url(180);
 
-        $sections = JG_Map_Database::get_menu($point['id']);
-        $photos   = JG_Map_Database::get_menu_photos($point['id']);
+        $sections      = JG_Map_Database::get_menu($point['id']);
+        $photos        = JG_Map_Database::get_menu_photos($point['id']);
+        $map_modal_url = home_url('/?from=point#point-' . $point['id']);
+
+        $og_image = '';
+        if (!empty($point['images'])) {
+            $imgs = json_decode($point['images'], true);
+            if (!empty($imgs)) {
+                $fi  = isset($point['featured_image_index']) ? (int)$point['featured_image_index'] : 0;
+                $img = isset($imgs[$fi]) ? $imgs[$fi] : $imgs[0];
+                $raw = is_array($img) ? ($img['full'] ?? ($img['thumb'] ?? '')) : $img;
+                if ($raw && strpos($raw, 'http') !== 0) { $raw = home_url($raw); }
+                $og_image = $raw;
+            }
+        }
 
         $page_title = 'Menu – ' . esc_html($point['title']) . ' | ' . esc_html($site_name);
         $description = 'Sprawdź aktualne menu restauracji ' . $point['title'] . ' w Jeleniej Górze.';
@@ -762,11 +775,17 @@ class JG_Interactive_Map {
     <meta property="og:description" content="<?php echo esc_attr($description); ?>">
     <meta property="og:url" content="<?php echo $canonical; ?>">
     <meta property="og:locale" content="pl_PL">
+    <?php if ($og_image): ?><meta property="og:image" content="<?php echo esc_url($og_image); ?>">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630"><?php endif; ?>
     <?php if ($site_icon_32): ?>
     <link rel="icon" href="<?php echo esc_url($site_icon_32); ?>" sizes="32x32">
     <link rel="icon" href="<?php echo esc_url($site_icon_192); ?>" sizes="192x192">
     <link rel="apple-touch-icon" href="<?php echo esc_url($site_icon_180); ?>">
     <?php endif; ?>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-B6E2GMXWCL"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-B6E2GMXWCL');</script>
+    <script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script","vrf65qsjp5");</script>
     <?php
     // Schema.org Menu structured data
     if (!empty($sections)):
@@ -877,7 +896,9 @@ class JG_Interactive_Map {
         .jg-menu-item__variant { font-size: calc(12 * var(--jg)); color: #374151; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 8px; white-space: nowrap; }
         .jg-menu-item__variant strong { color: <?php echo esc_attr($type_color); ?>; }
 
-        .jg-sp-site-footer { text-align: center; padding: 24px 20px; font-size: calc(12 * var(--jg)); color: #9ca3af; border-top: 1px solid #e5e7eb; }
+        .jg-sp-site-footer { background: #1f2937; color: #9ca3af; text-align: center; padding: 24px 20px; font-size: calc(13 * var(--jg)); line-height: 1.6; }
+        .jg-sp-site-footer a { color: #d1d5db; text-decoration: underline; }
+        .jg-sp-site-footer a:hover { color: #fff; }
         .jg-menu-empty { color: #9ca3af; font-size: calc(14 * var(--jg)); padding: 24px 0; }
         .jg-menu-meta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
         .jg-menu-price-range, .jg-menu-cuisine { padding: 8px 14px; border-radius: 8px; font-size: calc(14 * var(--jg)); }
@@ -891,22 +912,101 @@ class JG_Interactive_Map {
             .jg-menu-photos { grid-template-columns: repeat(2, 1fr); }
             .jg-menu-meta-row { flex-direction: column; }
         }
+        /* Redirect banner */
+        .jg-redirect-notify { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: <?php echo esc_attr($type_color); ?>; color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
+        .jg-redirect-notify-inner { display: flex; align-items: center; gap: 12px; padding: 10px 16px; flex-wrap: wrap; }
+        .jg-redirect-icon { font-size: calc(22 * var(--jg)); flex-shrink: 0; }
+        .jg-redirect-text { flex: 1; min-width: 0; }
+        .jg-redirect-title { display: block; font-size: calc(19 * var(--jg)); font-weight: 700; line-height: 1.3; }
+        .jg-redirect-text span { font-size: calc(15 * var(--jg)); opacity: 0.9; }
+        .jg-redirect-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .jg-redirect-btn-go { background: #fff; color: <?php echo esc_attr($type_color); ?>; padding: 7px 16px; border-radius: 7px; font-size: calc(13 * var(--jg)); font-weight: 700; white-space: nowrap; text-decoration: none; border: none; cursor: pointer; transition: opacity 0.15s; }
+        .jg-redirect-btn-go:hover { opacity: 0.88; }
+        .jg-redirect-btn-cancel { background: rgba(255,255,255,0.18); color: #fff; padding: 7px 14px; border-radius: 7px; font-size: calc(13 * var(--jg)); font-weight: 600; border: 1px solid rgba(255,255,255,0.4); cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+        .jg-redirect-btn-cancel:hover { background: rgba(255,255,255,0.28); }
+        .jg-redirect-progress { height: 3px; background: rgba(255,255,255,0.4); width: 100%; }
+        .jg-redirect-progress-bar { height: 100%; background: #fff; width: 100%; }
+        @media (max-width: 480px) { .jg-redirect-title { font-size: calc(16 * var(--jg)); } }
+        /* CTA map banner */
+        .jg-sp-map-cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(135deg, <?php echo esc_attr($type_color); ?>, <?php echo esc_attr($type_color); ?>cc); color: #fff; padding: 18px 24px; border-radius: 12px; margin-bottom: 28px; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(0,0,0,0.12); animation: jg-cta-pulse 1.8s ease-in-out infinite; }
+        .jg-sp-map-cta:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); animation: none; }
+        .jg-sp-map-cta-text { font-size: calc(18 * var(--jg)); font-weight: 700; color: #fff; line-height: 1.3; }
+        .jg-sp-map-cta-sub { font-size: calc(13 * var(--jg)); opacity: 0.9; margin-top: 4px; color: #fff; }
+        .jg-sp-map-cta-arrow { font-size: calc(28 * var(--jg)); flex-shrink: 0; color: #fff; animation: jg-cta-arrow-nudge 1s ease-in-out infinite; }
+        @keyframes jg-cta-pulse { 0% { transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 0 0 0 <?php echo esc_attr($type_color); ?>99; } 50% { transform: scale(1.02); box-shadow: 0 6px 20px rgba(0,0,0,0.2), 0 0 0 14px <?php echo esc_attr($type_color); ?>00; } 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 0 0 0 <?php echo esc_attr($type_color); ?>99; } }
+        @keyframes jg-cta-arrow-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
+        /* Stay banner */
+        .jg-stay-banner { display: none; background: linear-gradient(135deg, <?php echo esc_attr($type_color); ?> 0%, #6b1a1a 100%); color: #fff; border-radius: 14px; padding: 18px 22px; margin-bottom: 24px; animation: jg-stay-pulse 2s ease-in-out infinite; }
+        @keyframes jg-stay-pulse { 0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 0 0 0 rgba(141,35,36,0.45); } 50% { box-shadow: 0 4px 18px rgba(0,0,0,0.2), 0 0 0 10px rgba(141,35,36,0); } }
+        .jg-stay-banner__inner { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .jg-stay-banner__icon { font-size: calc(32 * var(--jg)); flex-shrink: 0; line-height: 1; }
+        .jg-stay-banner__body { flex: 1; font-size: calc(16 * var(--jg)); font-weight: 600; min-width: 140px; line-height: 1.4; }
+        .jg-stay-banner__timer { display: flex; align-items: center; gap: 8px; font-size: calc(14 * var(--jg)); white-space: nowrap; opacity: 0.92; }
+        .jg-stay-countdown { font-size: calc(30 * var(--jg)); font-family: monospace; font-variant-numeric: tabular-nums; font-weight: 800; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 6px; letter-spacing: 0.04em; }
+        .jg-stay-banner__cta { display: inline-block; background: rgba(255,255,255,0.2); color: #fff; font-size: calc(15 * var(--jg)); font-weight: 700; padding: 9px 20px; border-radius: 8px; text-decoration: none; white-space: nowrap; transition: background 0.15s; }
+        .jg-stay-banner__cta:hover { background: rgba(255,255,255,0.35); color: #fff; }
+        @media (max-width: 600px) { .jg-stay-banner__timer { flex-basis: 100%; } .jg-stay-countdown { font-size: calc(26 * var(--jg)); } }
+        /* Badge & hero image */
+        .jg-sp-header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px; flex-wrap: wrap; }
+        .jg-sp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: calc(12 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.5; }
+        .jg-sp-hero-img { width: 100%; max-height: 400px; object-fit: cover; border-radius: 12px; margin-bottom: 24px; margin-top: 16px; }
+        /* Branded nav button override */
+        .jg-sp-site-nav a.jg-sp-map-btn { color: #fff; background: <?php echo esc_attr($type_color); ?>; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; }
     </style>
 </head>
 <body>
+<div id="jg-redirect-notify" class="jg-redirect-notify">
+    <div class="jg-redirect-notify-inner">
+        <span class="jg-redirect-icon">🗺️</span>
+        <div class="jg-redirect-text">
+            <strong class="jg-redirect-title">Mapa interaktywna Jelenia Góra</strong>
+            <span id="jg-redirect-sub">Odkryj setki miejsc, ciekawostek i zgłoszeń &mdash; przenosisz się za <strong id="jg-countdown">10</strong>s</span>
+        </div>
+        <div class="jg-redirect-actions">
+            <a href="<?php echo esc_url($map_modal_url); ?>" id="jg-redirect-now" class="jg-redirect-btn-go">Otwórz mapę &rarr;</a>
+            <button onclick="jgCancelRedirect()" class="jg-redirect-btn-cancel">Zostań</button>
+        </div>
+    </div>
+    <div class="jg-redirect-progress"><div id="jg-progress-bar" class="jg-redirect-progress-bar"></div></div>
+</div>
 <header class="jg-sp-site-header">
     <a href="<?php echo esc_url(home_url('/')); ?>">
         <?php if ($logo_url): ?><img src="<?php echo esc_url($logo_url); ?>" alt="<?php echo esc_attr($site_name); ?>"><?php else: echo esc_html($site_name); endif; ?>
     </a>
     <nav class="jg-sp-site-nav">
         <a href="<?php echo esc_url($point_url); ?>">← <?php echo esc_html($point['title']); ?></a>
-        <a href="<?php echo esc_url(home_url('/')); ?>">Mapa</a>
+        <a href="<?php echo esc_url($map_modal_url); ?>" class="jg-sp-map-btn">Otwórz na mapie</a>
     </nav>
 </header>
 
 <div class="jg-sp">
     <a href="<?php echo esc_url($point_url); ?>" class="jg-menu-back">← Wróć do: <?php echo esc_html($point['title']); ?></a>
+    <a href="<?php echo esc_url($map_modal_url); ?>" class="jg-sp-map-cta">
+        <div>
+            <div class="jg-sp-map-cta-text">Zobacz na mapie interaktywnej</div>
+            <div class="jg-sp-map-cta-sub"><?php echo esc_html($point['title']); ?> &mdash; menu w Jeleniej Górze</div>
+        </div>
+        <span class="jg-sp-map-cta-arrow">&rarr;</span>
+    </a>
+    <div id="jg-stay-banner" class="jg-stay-banner" role="status" aria-live="polite">
+        <div class="jg-stay-banner__inner">
+            <span class="jg-stay-banner__icon">🎯</span>
+            <div class="jg-stay-banner__body">Świetnie! Sprawdź menu i wróć do mapy kiedy chcesz.</div>
+            <div class="jg-stay-banner__timer">Odkryj więcej za: <strong id="jg-stay-countdown" class="jg-stay-countdown">05:00</strong></div>
+            <a href="<?php echo esc_url($map_modal_url); ?>" class="jg-stay-banner__cta">Otwórz mapę &rarr;</a>
+        </div>
+    </div>
+    <?php
+    $_bd_cats  = JG_Map_Ajax_Handlers::get_place_categories();
+    $_bd_label = isset($_bd_cats[$point['category'] ?? '']['label']) ? $_bd_cats[$point['category'] ?? '']['label'] : 'Miejsce';
+    ?>
+    <div class="jg-sp-header">
+        <span class="jg-sp-badge" style="background:<?php echo esc_attr($type_color); ?>;color:#fff"><?php echo esc_html($_bd_label); ?></span>
+    </div>
     <h1 class="jg-sp-title">Menu – <?php echo esc_html($point['title']); ?></h1>
+    <?php if ($og_image): ?>
+    <img src="<?php echo esc_url($og_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" class="jg-sp-hero-img" loading="eager">
+    <?php endif; ?>
 
     <?php
     $menu_place_cats = JG_Map_Ajax_Handlers::get_place_categories();
@@ -1032,6 +1132,67 @@ class JG_Interactive_Map {
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') overlay.classList.remove('active'); });
 })();
 </script>
+<script>
+(function() {
+    var DELAY = 10;
+    var mapUrl = <?php echo json_encode($map_modal_url); ?>;
+    var countdown = DELAY;
+    var timer = null;
+    var cancelled = false;
+    var bar = document.getElementById('jg-progress-bar');
+    var countEl = document.getElementById('jg-countdown');
+    var notify = document.getElementById('jg-redirect-notify');
+    function syncBodyPadding() {
+        if (notify && notify.style.display !== 'none') {
+            document.body.style.paddingTop = notify.offsetHeight + 'px';
+        }
+    }
+    syncBodyPadding();
+    window.addEventListener('resize', syncBodyPadding);
+    if (bar) {
+        bar.style.transition = 'width ' + DELAY + 's linear';
+        requestAnimationFrame(function() { requestAnimationFrame(function() { bar.style.width = '0%'; }); });
+    }
+    timer = setInterval(function() {
+        if (cancelled) return;
+        countdown--;
+        if (countEl) countEl.textContent = countdown;
+        if (countdown <= 0) { clearInterval(timer); window.location.href = mapUrl; }
+    }, 1000);
+    window.jgCancelRedirect = function() {
+        cancelled = true;
+        clearInterval(timer);
+        var banner = document.getElementById('jg-redirect-notify');
+        if (banner) {
+            window.removeEventListener('resize', syncBodyPadding);
+            banner.style.transition = 'opacity 0.3s';
+            banner.style.opacity = '0';
+            setTimeout(function() { banner.style.display = 'none'; document.body.style.paddingTop = '0'; }, 300);
+        }
+        var stayBanner = document.getElementById('jg-stay-banner');
+        if (stayBanner && !stayBanner._stayShown) {
+            stayBanner._stayShown = true;
+            stayBanner.style.display = 'block';
+            var staySeconds = 5 * 60;
+            var stayEl = document.getElementById('jg-stay-countdown');
+            var stayTimer = setInterval(function() {
+                staySeconds--;
+                if (stayEl) {
+                    var m = Math.floor(staySeconds / 60);
+                    var s = staySeconds % 60;
+                    stayEl.textContent = ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
+                }
+                if (staySeconds <= 0) {
+                    clearInterval(stayTimer);
+                    stayBanner.style.transition = 'opacity 0.5s';
+                    stayBanner.style.opacity = '0';
+                    setTimeout(function() { stayBanner.style.display = 'none'; }, 500);
+                }
+            }, 1000);
+        }
+    };
+})();
+</script>
 </body>
 </html>
 <?php
@@ -1043,7 +1204,8 @@ class JG_Interactive_Map {
     private function render_offerings_page($point, $request_id = 'unknown') {
         $point_url    = home_url('/miejsce/' . $point['slug'] . '/');
         $offering_url = home_url('/miejsce/' . $point['slug'] . '/oferta/');
-        $type_color   = '#166534'; // green
+        $type_colors  = array('miejsce' => '#8d2324', 'ciekawostka' => '#3b82f6', 'zgloszenie' => '#ef4444');
+        $type_color   = $type_colors[$point['type']] ?? '#6b7280';
 
         $site_name  = get_bloginfo('name');
         $logo_url   = '';
@@ -1055,10 +1217,23 @@ class JG_Interactive_Map {
         $site_icon_192 = get_site_icon_url(192);
         $site_icon_180 = get_site_icon_url(180);
 
-        $off_cats  = JG_Map_Ajax_Handlers::get_offerings_categories();
-        $off_key   = $point['category'] ?? '';
-        $off_label = isset($off_cats[$off_key]) ? $off_cats[$off_key] : 'Oferta';
-        $items     = JG_Map_Database::get_offerings($point['id']);
+        $off_cats      = JG_Map_Ajax_Handlers::get_offerings_categories();
+        $off_key       = $point['category'] ?? '';
+        $off_label     = isset($off_cats[$off_key]) ? $off_cats[$off_key] : 'Oferta';
+        $items         = JG_Map_Database::get_offerings($point['id']);
+        $map_modal_url = home_url('/?from=point#point-' . $point['id']);
+
+        $og_image = '';
+        if (!empty($point['images'])) {
+            $imgs = json_decode($point['images'], true);
+            if (!empty($imgs)) {
+                $fi  = isset($point['featured_image_index']) ? (int)$point['featured_image_index'] : 0;
+                $img = isset($imgs[$fi]) ? $imgs[$fi] : $imgs[0];
+                $raw = is_array($img) ? ($img['full'] ?? ($img['thumb'] ?? '')) : $img;
+                if ($raw && strpos($raw, 'http') !== 0) { $raw = home_url($raw); }
+                $og_image = $raw;
+            }
+        }
 
         $page_title  = $off_label . ' – ' . $point['title'] . ' | ' . $site_name;
         $description = 'Sprawdź ' . mb_strtolower($off_label) . ' firmy ' . $point['title'] . ' w Jeleniej Górze.';
@@ -1078,11 +1253,17 @@ class JG_Interactive_Map {
     <meta property="og:description" content="<?php echo esc_attr($description); ?>">
     <meta property="og:url" content="<?php echo $canonical; ?>">
     <meta property="og:locale" content="pl_PL">
+    <?php if ($og_image): ?><meta property="og:image" content="<?php echo esc_url($og_image); ?>">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630"><?php endif; ?>
     <?php if ($site_icon_32): ?>
     <link rel="icon" href="<?php echo esc_url($site_icon_32); ?>" sizes="32x32">
     <link rel="icon" href="<?php echo esc_url($site_icon_192); ?>" sizes="192x192">
     <link rel="apple-touch-icon" href="<?php echo esc_url($site_icon_180); ?>">
     <?php endif; ?>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-B6E2GMXWCL"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-B6E2GMXWCL');</script>
+    <script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script","vrf65qsjp5");</script>
     <?php
     // Schema.org: LocalBusiness + OfferCatalog
     if (!empty($items)):
@@ -1140,8 +1321,8 @@ class JG_Interactive_Map {
 
         /* Offering items */
         .jg-off-list { margin-bottom: 28px; }
-        .jg-off-item { display: flex; align-items: baseline; gap: 8px; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
-        .jg-off-item:last-child { border-bottom: none; }
+        .jg-off-item { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; border-radius: 8px; background: #f9fafb; border: 1px solid #f3f4f6; margin-bottom: 8px; }
+        .jg-off-item:last-child { margin-bottom: 0; }
         .jg-off-item--unavailable .jg-off-item__name { color: #9ca3af; text-decoration: line-through; }
         .jg-off-item--unavailable .jg-off-item__price { color: #9ca3af; }
         .jg-off-item__info { flex: 1; min-width: 0; }
@@ -1150,23 +1331,104 @@ class JG_Interactive_Map {
         .jg-off-item__price { font-size: calc(15 * var(--jg)); font-weight: 700; color: <?php echo esc_attr($type_color); ?>; white-space: nowrap; flex-shrink: 0; }
         .jg-off-empty { color: #9ca3af; font-size: calc(14 * var(--jg)); padding: 24px 0; }
 
-        .jg-sp-site-footer { text-align: center; padding: 24px 20px; font-size: calc(12 * var(--jg)); color: #9ca3af; border-top: 1px solid #e5e7eb; }
+        .jg-sp-site-footer { background: #1f2937; color: #9ca3af; text-align: center; padding: 24px 20px; font-size: calc(13 * var(--jg)); line-height: 1.6; }
+        .jg-sp-site-footer a { color: #d1d5db; text-decoration: underline; }
+        .jg-sp-site-footer a:hover { color: #fff; }
+        /* Redirect banner */
+        .jg-redirect-notify { position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: <?php echo esc_attr($type_color); ?>; color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
+        .jg-redirect-notify-inner { display: flex; align-items: center; gap: 12px; padding: 10px 16px; flex-wrap: wrap; }
+        .jg-redirect-icon { font-size: calc(22 * var(--jg)); flex-shrink: 0; }
+        .jg-redirect-text { flex: 1; min-width: 0; }
+        .jg-redirect-title { display: block; font-size: calc(19 * var(--jg)); font-weight: 700; line-height: 1.3; }
+        .jg-redirect-text span { font-size: calc(15 * var(--jg)); opacity: 0.9; }
+        .jg-redirect-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .jg-redirect-btn-go { background: #fff; color: <?php echo esc_attr($type_color); ?>; padding: 7px 16px; border-radius: 7px; font-size: calc(13 * var(--jg)); font-weight: 700; white-space: nowrap; text-decoration: none; border: none; cursor: pointer; transition: opacity 0.15s; }
+        .jg-redirect-btn-go:hover { opacity: 0.88; }
+        .jg-redirect-btn-cancel { background: rgba(255,255,255,0.18); color: #fff; padding: 7px 14px; border-radius: 7px; font-size: calc(13 * var(--jg)); font-weight: 600; border: 1px solid rgba(255,255,255,0.4); cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+        .jg-redirect-btn-cancel:hover { background: rgba(255,255,255,0.28); }
+        .jg-redirect-progress { height: 3px; background: rgba(255,255,255,0.4); width: 100%; }
+        .jg-redirect-progress-bar { height: 100%; background: #fff; width: 100%; }
+        @media (max-width: 480px) { .jg-redirect-title { font-size: calc(16 * var(--jg)); } }
+        /* CTA map banner */
+        .jg-sp-map-cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(135deg, <?php echo esc_attr($type_color); ?>, <?php echo esc_attr($type_color); ?>cc); color: #fff; padding: 18px 24px; border-radius: 12px; margin-bottom: 28px; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(0,0,0,0.12); animation: jg-cta-pulse 1.8s ease-in-out infinite; }
+        .jg-sp-map-cta:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); animation: none; }
+        .jg-sp-map-cta-text { font-size: calc(18 * var(--jg)); font-weight: 700; color: #fff; line-height: 1.3; }
+        .jg-sp-map-cta-sub { font-size: calc(13 * var(--jg)); opacity: 0.9; margin-top: 4px; color: #fff; }
+        .jg-sp-map-cta-arrow { font-size: calc(28 * var(--jg)); flex-shrink: 0; color: #fff; animation: jg-cta-arrow-nudge 1s ease-in-out infinite; }
+        @keyframes jg-cta-pulse { 0% { transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 0 0 0 <?php echo esc_attr($type_color); ?>99; } 50% { transform: scale(1.02); box-shadow: 0 6px 20px rgba(0,0,0,0.2), 0 0 0 14px <?php echo esc_attr($type_color); ?>00; } 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 0 0 0 <?php echo esc_attr($type_color); ?>99; } }
+        @keyframes jg-cta-arrow-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
+        /* Stay banner */
+        .jg-stay-banner { display: none; background: linear-gradient(135deg, <?php echo esc_attr($type_color); ?> 0%, #1a4a2a 100%); color: #fff; border-radius: 14px; padding: 18px 22px; margin-bottom: 24px; animation: jg-stay-pulse 2s ease-in-out infinite; }
+        @keyframes jg-stay-pulse { 0%, 100% { box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 0 0 0 rgba(22,101,52,0.45); } 50% { box-shadow: 0 4px 18px rgba(0,0,0,0.2), 0 0 0 10px rgba(22,101,52,0); } }
+        .jg-stay-banner__inner { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .jg-stay-banner__icon { font-size: calc(32 * var(--jg)); flex-shrink: 0; line-height: 1; }
+        .jg-stay-banner__body { flex: 1; font-size: calc(16 * var(--jg)); font-weight: 600; min-width: 140px; line-height: 1.4; }
+        .jg-stay-banner__timer { display: flex; align-items: center; gap: 8px; font-size: calc(14 * var(--jg)); white-space: nowrap; opacity: 0.92; }
+        .jg-stay-countdown { font-size: calc(30 * var(--jg)); font-family: monospace; font-variant-numeric: tabular-nums; font-weight: 800; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 6px; letter-spacing: 0.04em; }
+        .jg-stay-banner__cta { display: inline-block; background: rgba(255,255,255,0.2); color: #fff; font-size: calc(15 * var(--jg)); font-weight: 700; padding: 9px 20px; border-radius: 8px; text-decoration: none; white-space: nowrap; transition: background 0.15s; }
+        .jg-stay-banner__cta:hover { background: rgba(255,255,255,0.35); color: #fff; }
+        @media (max-width: 600px) { .jg-stay-banner__timer { flex-basis: 100%; } .jg-stay-countdown { font-size: calc(26 * var(--jg)); } }
+        /* Badge & hero image */
+        .jg-sp-header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px; flex-wrap: wrap; }
+        .jg-sp-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: calc(12 * var(--jg)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.5; }
+        .jg-sp-hero-img { width: 100%; max-height: 400px; object-fit: cover; border-radius: 12px; margin-bottom: 24px; margin-top: 16px; }
+        /* Branded nav button override */
+        .jg-sp-site-nav a.jg-sp-map-btn { color: #fff; background: <?php echo esc_attr($type_color); ?>; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; }
     </style>
 </head>
 <body>
+<div id="jg-redirect-notify" class="jg-redirect-notify">
+    <div class="jg-redirect-notify-inner">
+        <span class="jg-redirect-icon">🗺️</span>
+        <div class="jg-redirect-text">
+            <strong class="jg-redirect-title">Mapa interaktywna Jelenia Góra</strong>
+            <span id="jg-redirect-sub">Odkryj setki miejsc, ciekawostek i zgłoszeń &mdash; przenosisz się za <strong id="jg-countdown">10</strong>s</span>
+        </div>
+        <div class="jg-redirect-actions">
+            <a href="<?php echo esc_url($map_modal_url); ?>" id="jg-redirect-now" class="jg-redirect-btn-go">Otwórz mapę &rarr;</a>
+            <button onclick="jgCancelRedirect()" class="jg-redirect-btn-cancel">Zostań</button>
+        </div>
+    </div>
+    <div class="jg-redirect-progress"><div id="jg-progress-bar" class="jg-redirect-progress-bar"></div></div>
+</div>
 <header class="jg-sp-site-header">
     <a href="<?php echo esc_url(home_url('/')); ?>">
         <?php if ($logo_url): ?><img src="<?php echo esc_url($logo_url); ?>" alt="<?php echo esc_attr($site_name); ?>"><?php else: echo esc_html($site_name); endif; ?>
     </a>
     <nav class="jg-sp-site-nav">
         <a href="<?php echo esc_url($point_url); ?>">← <?php echo esc_html($point['title']); ?></a>
-        <a href="<?php echo esc_url(home_url('/')); ?>">Mapa</a>
+        <a href="<?php echo esc_url($map_modal_url); ?>" class="jg-sp-map-btn">Otwórz na mapie</a>
     </nav>
 </header>
 
 <div class="jg-sp">
     <a href="<?php echo esc_url($point_url); ?>" class="jg-off-back">← Wróć do: <?php echo esc_html($point['title']); ?></a>
-    <h1 class="jg-sp-title">📋 <?php echo esc_html($off_label); ?> – <?php echo esc_html($point['title']); ?></h1>
+    <a href="<?php echo esc_url($map_modal_url); ?>" class="jg-sp-map-cta">
+        <div>
+            <div class="jg-sp-map-cta-text">Zobacz na mapie interaktywnej</div>
+            <div class="jg-sp-map-cta-sub"><?php echo esc_html($point['title']); ?> &mdash; <?php echo esc_html(mb_strtolower($off_label)); ?> w Jeleniej Górze</div>
+        </div>
+        <span class="jg-sp-map-cta-arrow">&rarr;</span>
+    </a>
+    <div id="jg-stay-banner" class="jg-stay-banner" role="status" aria-live="polite">
+        <div class="jg-stay-banner__inner">
+            <span class="jg-stay-banner__icon">🎯</span>
+            <div class="jg-stay-banner__body">Świetnie! Sprawdź ofertę i wróć do mapy kiedy chcesz.</div>
+            <div class="jg-stay-banner__timer">Odkryj więcej za: <strong id="jg-stay-countdown" class="jg-stay-countdown">05:00</strong></div>
+            <a href="<?php echo esc_url($map_modal_url); ?>" class="jg-stay-banner__cta">Otwórz mapę &rarr;</a>
+        </div>
+    </div>
+    <?php
+    $_bd_cats  = JG_Map_Ajax_Handlers::get_place_categories();
+    $_bd_label = isset($_bd_cats[$point['category'] ?? '']['label']) ? $_bd_cats[$point['category'] ?? '']['label'] : 'Miejsce';
+    ?>
+    <div class="jg-sp-header">
+        <span class="jg-sp-badge" style="background:<?php echo esc_attr($type_color); ?>;color:#fff"><?php echo esc_html($_bd_label); ?></span>
+    </div>
+    <h1 class="jg-sp-title"><?php echo esc_html($off_label); ?> – <?php echo esc_html($point['title']); ?></h1>
+    <?php if ($og_image): ?>
+    <img src="<?php echo esc_url($og_image); ?>" alt="<?php echo esc_attr($point['title']); ?>" class="jg-sp-hero-img" loading="eager">
+    <?php endif; ?>
 
     <?php if (!empty($items)): ?>
     <div class="jg-off-list">
@@ -1193,6 +1455,67 @@ class JG_Interactive_Map {
     <a href="<?php echo esc_url(home_url('/')); ?>"><?php echo esc_html($site_name); ?></a> &middot;
     <a href="<?php echo esc_url($point_url); ?>"><?php echo esc_html($point['title']); ?></a>
 </footer>
+<script>
+(function() {
+    var DELAY = 10;
+    var mapUrl = <?php echo json_encode($map_modal_url); ?>;
+    var countdown = DELAY;
+    var timer = null;
+    var cancelled = false;
+    var bar = document.getElementById('jg-progress-bar');
+    var countEl = document.getElementById('jg-countdown');
+    var notify = document.getElementById('jg-redirect-notify');
+    function syncBodyPadding() {
+        if (notify && notify.style.display !== 'none') {
+            document.body.style.paddingTop = notify.offsetHeight + 'px';
+        }
+    }
+    syncBodyPadding();
+    window.addEventListener('resize', syncBodyPadding);
+    if (bar) {
+        bar.style.transition = 'width ' + DELAY + 's linear';
+        requestAnimationFrame(function() { requestAnimationFrame(function() { bar.style.width = '0%'; }); });
+    }
+    timer = setInterval(function() {
+        if (cancelled) return;
+        countdown--;
+        if (countEl) countEl.textContent = countdown;
+        if (countdown <= 0) { clearInterval(timer); window.location.href = mapUrl; }
+    }, 1000);
+    window.jgCancelRedirect = function() {
+        cancelled = true;
+        clearInterval(timer);
+        var banner = document.getElementById('jg-redirect-notify');
+        if (banner) {
+            window.removeEventListener('resize', syncBodyPadding);
+            banner.style.transition = 'opacity 0.3s';
+            banner.style.opacity = '0';
+            setTimeout(function() { banner.style.display = 'none'; document.body.style.paddingTop = '0'; }, 300);
+        }
+        var stayBanner = document.getElementById('jg-stay-banner');
+        if (stayBanner && !stayBanner._stayShown) {
+            stayBanner._stayShown = true;
+            stayBanner.style.display = 'block';
+            var staySeconds = 5 * 60;
+            var stayEl = document.getElementById('jg-stay-countdown');
+            var stayTimer = setInterval(function() {
+                staySeconds--;
+                if (stayEl) {
+                    var m = Math.floor(staySeconds / 60);
+                    var s = staySeconds % 60;
+                    stayEl.textContent = ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
+                }
+                if (staySeconds <= 0) {
+                    clearInterval(stayTimer);
+                    stayBanner.style.transition = 'opacity 0.5s';
+                    stayBanner.style.opacity = '0';
+                    setTimeout(function() { stayBanner.style.display = 'none'; }, 500);
+                }
+            }, 1000);
+        }
+    };
+})();
+</script>
 </body>
 </html>
 <?php
